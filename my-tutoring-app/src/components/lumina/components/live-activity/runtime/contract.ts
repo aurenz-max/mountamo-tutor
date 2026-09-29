@@ -39,6 +39,8 @@ export interface WorkspaceLever {
 }
 export interface WorkspaceInput { targets?: string[]; lever?: string; dialogue?: {
   responseId: string; verdict: 'correct' | 'incorrect'; transition: 'none' | 'retry' | 'advance'; tutor: string;
+  /** Not credited from the learner's words (RP-2): the workspace commits it only on a named miss in an allowed mode. */
+  fromWords?: true;
 } }
 export interface TutorPrimitiveState {
   itemId: string;
@@ -316,6 +318,12 @@ export interface PrimitiveRuntimeAdapter {
   getAffordances(): ExecutableAffordance[];
   /** Only implement after timers, cues, judgments and gesture commits can be synchronously quiesced. */
   suspension?: { suspend(): void; resume(): void };
+  /**
+   * Read-only: would this spoken response's not-credited verdict stand from the learner's words (RP-2)? True only
+   * in an allowed mode once `spoken_miss` named a miss for exactly this response. The observer asks before offering
+   * the verdict, so a coaching reply with nothing named changes nothing, not even the revision.
+   */
+  acceptsMissFromWords?: (responseId: string) => boolean;
   /** Trusted host supplies examples, never an LLM-supplied capability descriptor. */
   supportArtifacts?: SupportArtifact[];
   /**
@@ -466,7 +474,10 @@ export function validWorkspaceInput(v: unknown): v is WorkspaceInput {
   return object(v) && Object.keys(v).every(k => k === 'targets' || k === 'dialogue' || k === 'lever')
     && (v.lever === undefined || v.targets === undefined && v.dialogue === undefined && id(v.lever))
     && (v.dialogue === undefined || v.targets === undefined && object(v.dialogue)
-      && exactKeys(v.dialogue, ['responseId', 'verdict', 'transition', 'tutor']) && id(v.dialogue.responseId)
+      && (exactKeys(v.dialogue, ['responseId', 'verdict', 'transition', 'tutor'])
+        || exactKeys(v.dialogue, ['responseId', 'verdict', 'transition', 'tutor', 'fromWords']) && v.dialogue.fromWords === true
+          && v.dialogue.verdict === 'incorrect' && v.dialogue.transition === 'retry')
+      && id(v.dialogue.responseId)
       && ['correct', 'incorrect'].includes(v.dialogue.verdict as string)
       && ['none', 'retry', 'advance'].includes(v.dialogue.transition as string)
       && typeof v.dialogue.tutor === 'string' && !!v.dialogue.tutor.trim() && v.dialogue.tutor.length <= 4000)

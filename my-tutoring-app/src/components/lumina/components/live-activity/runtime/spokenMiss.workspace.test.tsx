@@ -23,9 +23,9 @@ const MISSES: KnownMiss[] = [
 const item = (misses?: KnownMiss[]): TeachingItem =>
   ({ id: 'bees', task: 'How many bees?', expectedAnswer: '4', response: 'speech', checkResponse: () => null, ...(misses ? { misses } : {}) });
 
-function Spoken({ items }: { items: TeachingItem[] }) {
+function Spoken({ items, primitiveId }: { items: TeachingItem[]; primitiveId: string }) {
   const workspace = useRef<TeachingWorkspace | null>(null);
-  useTeachingWorkspace({ instanceId: 'bees', primitiveId: 'bee-test', items, workspace });
+  useTeachingWorkspace({ instanceId: 'bees', primitiveId, items, workspace });
   useLayoutEffect(() => { workspace.current = { objects: [], facts: { shown: 'bees on a flower' } }; });
   return null;
 }
@@ -44,24 +44,26 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
-function mount(items: TeachingItem[]) {
+function mount(items: TeachingItem[], { primitiveId = 'bee-test', pin = 'count' } = {}) {
   const runtime = new LiveLessonRuntime('spoken', { allowAnswerExposure: true, maxSupportLevel: 3, allowSupportArtifacts: false });
-  const tree = () => <LiveRuntimeContext.Provider value={runtime}><WorkspacePin pin="count"><Spoken items={items} /></WorkspacePin></LiveRuntimeContext.Provider>;
+  const tree = () => <LiveRuntimeContext.Provider value={runtime}><WorkspacePin pin={pin}><Spoken items={items} primitiveId={primitiveId} /></WorkspacePin></LiveRuntimeContext.Provider>;
   const view = render(tree());
   const say = async (text: string) => {
     seam.conversation = [...seam.conversation, { role: 'user', content: text, timestamp: seam.conversation.length + 1 }];
     await act(async () => { view.rerender(tree()); for (let i = 0; i < 12; i++) await Promise.resolve(); });
   };
-  const verdict = (v: 'correct' | 'incorrect') => {
+  const verdict = (v: 'correct' | 'incorrect', fromWords = false) => {
     const s = runtime.getSnapshot();
     const a = s.affordances.find(x => x.action.type === 'workspace' && (x.action as any).operation === 'apply_tutor_verdict')!;
     let status = '';
     act(() => { status = runtime.dispatch({ sessionEpoch: s.sessionEpoch, commandId: crypto.randomUUID(), instanceId: 'bees', itemId: 'bees',
       expectedRevision: s.revision, action: { ...a.action, input: { dialogue: { responseId: s.task!.workspace!.pendingResponse!.id, verdict: v,
-        transition: v === 'correct' ? 'advance' : 'retry', tutor: v === 'correct' ? 'Yes.' : 'Not quite, count again.' } } } }).status; });
+        transition: v === 'correct' ? 'advance' : 'retry', tutor: v === 'correct' ? 'Yes.' : "Let's count them together slowly!",
+        ...(fromWords ? { fromWords: true } : {}) } } } }).status; });
     return status;
   };
-  return { runtime, say, verdict, attempts: () => runtime.getSnapshot().task!.workspace!.attempts };
+  const accepts = () => runtime.acceptsMissFromWords(runtime.getSnapshot().task!.workspace!.pendingResponse!.id);
+  return { runtime, say, verdict, accepts, attempts: () => runtime.getSnapshot().task!.workspace!.attempts };
 }
 
 it('names the miss on a not-credited spoken answer from the item\'s own list, and keeps the list out of the tutor packet', async () => {
@@ -118,4 +120,42 @@ it('asks nothing for an item with no known misses', async () => {
   h.verdict('incorrect');
   expect(requests).toHaveLength(0);
   expect(h.attempts().at(-1)?.miss).toBeUndefined();
+});
+
+// RP-2 (user ruling 09-28): a reply that credits nothing is decided from the learner's words, per mode (catalog
+// `teachingWorkspace.missFromWords`). The observer offers the verdict; the workspace commits it only on a named miss.
+it('records a not-credited answer from the words in an allowed mode, and reopens the item', async () => {
+  const h = mount([item(MISSES)], { primitiveId: 'counting-board', pin: 'count' });
+  await h.say('three');
+  expect(h.accepts()).toBe(true);
+  expect(h.verdict('incorrect', true)).toBe('committed');
+  expect(h.attempts().at(-1)).toMatchObject({ source: 'speech', correct: false, miss: 'one_short' });
+  expect(h.runtime.getSnapshot().task!.phase).toBe('working');
+});
+
+it('offers and commits no verdict from the words when nothing was named', async () => {
+  decide = async () => ({ miss: null, reading: 'correct', p: .9, accepted: true, reason: 'correct', ms: 1 });
+  const h = mount([item(MISSES)], { primitiveId: 'counting-board', pin: 'count' });
+  await h.say('sechs');
+  expect(h.accepts()).toBe(false);
+  expect(h.verdict('incorrect', true)).not.toBe('committed');
+  expect(h.attempts()).toHaveLength(0);
+});
+
+it('refuses a verdict from the words in a mode the pilot did not allow, or in a blend that includes one', async () => {
+  for (const pin of ['take_away', 'count|take_away']) {
+    const h = mount([item(MISSES)], { primitiveId: 'counting-board', pin });
+    await h.say('three');
+    expect(h.accepts()).toBe(false);
+    expect(h.verdict('incorrect', true)).not.toBe('committed');
+    expect(h.attempts()).toHaveLength(0);
+    cleanup();
+  }
+});
+
+it('sends the tutor line the learner answered, so a sub-question answer is read as no answer to the task', async () => {
+  const h = mount([item(MISSES)]);
+  seam.conversation = [{ role: 'assistant', content: 'How many bees on the top ', timestamp: 1 }, { role: 'assistant', content: 'petal?', timestamp: 2 }];
+  await h.say('two');
+  expect(requests[0]).toMatchObject({ learner: 'two', priorTutor: 'How many bees on the top petal?' });
 });

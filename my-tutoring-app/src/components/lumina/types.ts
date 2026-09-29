@@ -1923,7 +1923,14 @@ export interface ComponentDefinition {
      * Per eval mode with levers, the misses no lever answers, each by decision (the reason beside it in the
      * catalog). Every other miss in `misses` must be in some lever's `answers` (J9, handoff 21 S1).
      */
-    unanswered?: Readonly<Record<string, readonly string[]>> };
+    unanswered?: Readonly<Record<string, readonly string[]>>;
+    /**
+     * Spoken eval modes whose wrong answers are known from the learner's words (user ruling 2026-09-28, RP-2):
+     * when the tutor's reply credits nothing and `spoken_miss` names one of the item's misses, the attempt is
+     * recorded as not credited and the item reopens. A mode is listed only after its pilot on real Live input
+     * transcripts named no right answer wrong (qa/tutor-reports/spoken-miss/rp2-*).
+     */
+    missFromWords?: readonly string[] };
   /** Optional Gemini Live audio-input request (e.g. manual voice-activity for
    *  DI live-judged packs). Sent at WebSocket auth; a lesson session applies it
    *  when ANY of its manifest items declares one. */

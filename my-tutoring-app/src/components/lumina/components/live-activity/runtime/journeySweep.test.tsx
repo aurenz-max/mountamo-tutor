@@ -41,6 +41,7 @@ import { buildLiveActivitySpec } from '../liveActivitySpec';
 import { helpBeforeLastWrong, lastMiss, nextLever } from './observerLever';
 import { leverPulledMessage } from './runtimeTransport';
 import { validSpokenMissRequest, type SpokenMissRequest } from './spokenMissContract';
+import { pinAllowsMissFromWords } from '../pinnedModes';
 
 /** The rules every bound family owes on the dry journey. Ids are stable: the baseline and the sweep report cite them. */
 export const JOURNEY_INVARIANTS = {
@@ -469,7 +470,9 @@ type MomentKind = 'start' | 'miss' | 'stuck' | 'lever' | 'credit';
 interface Moment { kind: MomentKind; itemId: string; packet: unknown; host: string[]; learner?: string; miss?: string;
   lever?: { id: string; kind: string; does: string }; spoken: boolean;
   /** The observer's request for this exchange without the tutor's reply (spoken answers only). */
-  dialogue?: Record<string, unknown> }
+  dialogue?: Record<string, unknown>;
+  /** The runtime's `spoken_miss` request for this answer, and whether the mode records a miss from the words (RP-2). */
+  spokenMiss?: SpokenMissRequest; missFromWords?: boolean }
 interface MomentRecord { payload: string; primitiveId: string; evalMode: string; guidance: string; topic: string;
   gradeLevel: string | null; leakTokens: string[]; ask: string; keys: string[]; moments: Moment[]; stopped?: string }
 const MOMENTS: MomentRecord[] = [];
@@ -507,13 +510,15 @@ async function recordMoments({ primitiveId, evalMode, data, file }: Payload & { 
   const answer = (inputs: DriverInput[], kind: 'miss' | 'credit') => {
     const commitAt = inputs.some(a => a.type === 'answer') ? inputs.findIndex(a => a.type === 'answer') : inputs.length - 1;
     perform(h, inputs.slice(0, commitAt));
-    const at = mark(), attempts = task().evidence.attemptNumber;
+    const at = mark(), attempts = task().evidence.attemptNumber, heard = SPOKEN_MISS.length;
     const spoken = perform(h, inputs.slice(commitAt));
     h.settle();
     if (spoken !== null && task().evidence.attemptNumber === attempts) {
       h.say(spoken);
       if (!task().workspace?.pendingResponse) { record.stopped = `${kind}: the spoken answer opened no pending response`; return false; }
-      moment(kind, { learner: spoken, spoken: true, host: hostSince(at), dialogue: dialogue(spoken) });
+      const request = SPOKEN_MISS.slice(heard).at(-1);
+      moment(kind, { learner: spoken, spoken: true, host: hostSince(at), dialogue: dialogue(spoken),
+        ...(request ? { spokenMiss: request, missFromWords: pinAllowsMissFromWords(primitiveId, evalMode) } : {}) });
       h.feedback(kind === 'credit' ? 'correct' : 'incorrect', kind === 'credit' ? 'advance' : 'retry');
       h.confirmVisible(); h.settle();
       return true;

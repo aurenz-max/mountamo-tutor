@@ -32,7 +32,7 @@ const argv = process.argv.slice(2);
 const opt = (name, dflt) => argv.includes(`--${name}`) ? argv[argv.indexOf(`--${name}`) + 1] : dflt;
 const RUNS = Number(opt('runs', argv.includes('--requests') ? 2 : 3));
 const ONLY = opt('only', null);
-const OUT = argv.find((a, i) => a.endsWith('.json') && argv[i - 1] !== '--requests');
+const OUT = argv.find((a, i) => a.endsWith('.json') && !['--requests', '--transcripts'].includes(argv[i - 1]));
 // Held-out phrasings, written after the decision policy was fixed on the main set: the policy is judged on these.
 const HELD = argv.includes('--heldout');
 
@@ -215,7 +215,36 @@ function requestCases() {
   }));
 }
 
-const cases = (REQUESTS ? requestCases() : [...countingCases(), ...frameCases(), ...letterCases()]).filter(c => !ONLY || c.family.startsWith(ONLY));
+// ── Real Live input transcripts (handoff 27, RP-2 pilot) ─────────────────────
+// `--transcripts <file>`: what Gemini Live's input ASR wrote on saved runs, labelled by what the item expected
+// (qa/tutor-reports/spoken-miss/rp2-*). Each distinct (item, transcript, label) runs once per rep, weighted by how often
+// it occurred. Gold is a class, not an id: a right answer, a non-answer or an answer to the tutor's sub-question must
+// name nothing; a wrong answer should name a miss (which one is reported, not gated).
+const TRANSCRIPTS = opt('transcripts', null);
+const PRIOR = argv.includes('--prior');
+function transcriptCases() {
+  const itemFor = {
+    'counting-board.count': (key, noun) => cb.workspaceAssignment({ id: `n${key}`, kind: 'count_all', answerKind: 'voice', target: key, objectWord: noun }),
+    'ten-frame.subitize': key => tfw.workspaceAssignment({ id: `n${key}`, kind: 'subitize', answerKind: 'voice', answer: key, capacity: 10, shown: 0 }),
+  };
+  const groups = new Map();
+  for (const t of JSON.parse(readFileSync(TRANSCRIPTS, 'utf8'))) {
+    if (!t.gold || !Number.isInteger(t.key) || !itemFor[t.family]) continue;
+    // With `--prior`, the tutor line before the answer rides along as the runtime sends it (`priorTutor`).
+    const prior = PRIOR ? t.priorTutor ?? undefined : undefined;
+    const id = JSON.stringify([t.family, t.key, t.noun, t.learner, t.gold, prior]);
+    const g = groups.get(id) ?? { ...t, prior, n: 0, sources: new Set() };
+    g.n++; g.sources.add(t.source); groups.set(id, g);
+  }
+  return [...groups.values()].map(g => {
+    const a = itemFor[g.family](g.key, g.noun);
+    return { family: g.family, item: `n${g.key}`, name: g.gold, source: [...g.sources].join('+'), gold: g.gold, weight: g.n,
+      expectMiss: g.gold === 'wrong', correctAnswer: g.gold === 'right',
+      request: { task: a.task, expectedAnswer: a.expectedAnswer, learner: g.learner, misses: a.misses, ...(g.prior ? { priorTutor: g.prior } : {}) } };
+  });
+}
+
+const cases = (TRANSCRIPTS ? transcriptCases() : REQUESTS ? requestCases() : [...countingCases(), ...frameCases(), ...letterCases()]).filter(c => !ONLY || c.family.startsWith(ONLY));
 const invalid = cases.filter(c => !validSpokenMissRequest({ scope: { sessionEpoch: 'probe', instanceId: 'probe', itemId: c.item }, ...c.request }));
 if (invalid.length) { console.error('invalid requests:', invalid.map(c => `${c.family} ${c.item} ${c.name}`)); process.exit(1); }
 console.log(`${cases.length} cases x ${RUNS} runs`);
@@ -236,7 +265,10 @@ async function worker() {
     const d = await runObservation(spokenMissKind, { scope: { sessionEpoch: 'probe', instanceId: 'probe', itemId: c.item }, ...c.request });
     const r = { rep, family: c.family, item: c.item, name: c.name, source: c.source, learner: c.request.learner, gold: c.gold,
       correctAnswer: c.correctAnswer, miss: d.miss, reading: d.reading, p: d.p, reason: d.reason, ms: d.ms, answers: d.assessment?.answers,
-      pass: d.accepted && (d.miss === c.gold || (c.alsoFair ?? []).includes(d.miss)), falsePositive: c.correctAnswer && d.miss !== null };
+      weight: c.weight ?? 1,
+      pass: c.expectMiss !== undefined ? d.accepted && (c.expectMiss ? d.miss !== null : d.miss === null)
+        : d.accepted && (d.miss === c.gold || (c.alsoFair ?? []).includes(d.miss)),
+      falsePositive: (c.correctAnswer || c.expectMiss === false) && d.miss !== null };
     results.push(r);
     if (!r.pass) console.log('MISS', rep, c.family.padEnd(28), c.item.padEnd(8), c.name.padEnd(24), JSON.stringify(c.request.learner).padEnd(34),
       `gold=${c.gold} got=${d.miss} reading=${d.reading} p=${d.p?.toFixed(2)} ${d.reason}`);
@@ -246,18 +278,21 @@ await Promise.all(Array.from({ length: 6 }, worker));
 await server.close();
 
 // ── Report ──────────────────────────────────────────────────────────────────
+const wt = r => TRANSCRIPTS ? r.weight : 1, sum = rs => rs.reduce((n, r) => n + wt(r), 0);
 const byFamily = {};
 for (const r of results) {
   const f = byFamily[r.family] ??= { total: 0, pass: 0, falsePositive: 0, abstained: 0, perGold: {} };
-  f.total++; if (r.pass) f.pass++; if (r.falsePositive) f.falsePositive++; if (r.reason !== 'named' && r.miss === null && !r.reading) f.abstained++;
+  // A transcript case stands for every occurrence of that transcript on the saved runs.
+  const w = wt(r);
+  f.total += w; if (r.pass) f.pass += w; if (r.falsePositive) f.falsePositive += w; if (r.reason !== 'named' && r.miss === null && !r.reading) f.abstained += w;
   const g = f.perGold[r.gold ?? 'none'] ??= { n: 0, right: 0, otherMiss: 0, unnamed: 0 };
-  g.n++; if (r.pass) g.right++; else if (r.miss) g.otherMiss++; else g.unnamed++;
+  g.n += w; if (r.pass) g.right += w; else if (r.miss) g.otherMiss += w; else g.unnamed += w;
 }
 console.log();
 for (const [fam, f] of Object.entries(byFamily)) {
   console.log(`${fam}: ${f.pass}/${f.total} pass, false positives ${f.falsePositive}, abstained ${f.abstained}`);
   for (const [g, s] of Object.entries(f.perGold)) console.log(`  ${g.padEnd(18)} ${s.right}/${s.n}  wrong-miss ${s.otherMiss}  unnamed ${s.unnamed}`);
 }
-const fp = results.filter(r => r.falsePositive).length;
-console.log(`\nALL: ${results.filter(r => r.pass).length}/${results.length} pass, false positives ${fp}`);
+const fp = sum(results.filter(r => r.falsePositive));
+console.log(`\nALL: ${sum(results.filter(r => r.pass))}/${sum(results)} pass, false positives ${fp}`);
 if (OUT) { mkdirSync(dirname(OUT), { recursive: true }); writeFileSync(OUT, JSON.stringify({ runs: RUNS, byFamily, results }, null, 2)); }

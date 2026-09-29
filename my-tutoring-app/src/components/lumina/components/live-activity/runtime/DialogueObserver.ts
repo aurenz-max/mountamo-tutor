@@ -29,7 +29,8 @@ export class DialogueObserver {
   pending = false;
   constructor(private snapshot: () => RuntimeSnapshot, private classify: DialogueClassifier,
     private execute: (command: TutorCommand) => Promise<string | undefined>,
-    private report: (event: Record<string, unknown>) => void) {}
+    private report: (event: Record<string, unknown>) => void,
+    private acceptsMissFromWords: (responseId: string) => boolean = () => false) {}
   private key() { return snapshotScopeKey(this.snapshot()); }
   private cancel() {
     if (!this.closed && (this.pending || this.waitingForAudio)) this.status('cancelled', 'new_input_or_interruption');
@@ -149,6 +150,22 @@ export class DialogueObserver {
               && next.task.itemId !== request.scope.itemId)
             this.report({ type: 'text', scripted: false, source: 'dialogue_progression',
               content: 'The next task is now visible in liveRuntime. Introduce that task naturally and wait for the learner.' });
+        }
+      }
+      // RP-2 (user ruling 09-28): the reply credited nothing, so nothing above committed.
+      // A wrong spoken answer is known from the learner's words: the workspace records it as not credited when the
+      // lesson's mode allows it and `spoken_miss` named a miss for this very response (asked first, read-only, so
+      // nothing is offered that would be refused). The tutor never has to say "not yet"; its affirmation still credits.
+      if (status === 'abstained' && spoken && decision.creditsNothing === true && generation === this.generation && !this.closed
+          && this.acceptsMissFromWords(request.pendingResponse!.id)) {
+        const words = await this.execute({ sessionEpoch: request.scope.sessionEpoch, instanceId: request.scope.instanceId,
+          itemId: request.scope.itemId, expectedRevision: request.scope.revision,
+          commandId: `dialogue:${request.scope.sessionEpoch}:${generation}:${request.scope.revision}:words`,
+          action: { type: 'workspace', operation: 'apply_tutor_verdict', input: { dialogue: {
+            responseId: request.pendingResponse!.id, verdict: 'incorrect', transition: 'retry', tutor: request.tutor, fromWords: true } } } });
+        if (words === 'visible') {
+          status = words;
+          runtimeReason = "Not credited from the learner's words: the reply credited nothing and spoken_miss named a miss.";
         }
       }
       // A settled tutor turn that recorded nothing leaves the assignment open with nobody holding the

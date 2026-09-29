@@ -2408,6 +2408,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         build_teen: ['one_short', 'one_over', 'filled_frame', 'short_by_more', 'over_by_more'],
         decompose_teen: ['one_short', 'one_over', 'all_flipped', 'short_by_more', 'over_by_more'],
       }),
+      // RP-2 pilot on real Live transcripts (spoken-miss/rp2-pilot-2026-09-29): 0/150 right-answer readings named wrong.
+      missFromWords: ['subitize'],
     },
     evalModes: [
       {
@@ -2567,6 +2569,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       }),
       // recount_moved has no lever: holding the number while the set moves is the task (approved table).
       unanswered: { recount_moved: ['one_short', 'one_over', 'short_by_more', 'over_by_more'] },
+      // RP-2 pilot on real Live transcripts (spoken-miss/rp2-pilot-2026-09-29): 0/510 right-answer and 0/393
+      // non-answer readings named wrong.
+      missFromWords: ['count'],
     },
     misconceptionScope: 'skill',
     observationDelivery: 'server',

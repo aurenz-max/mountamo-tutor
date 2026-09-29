@@ -149,7 +149,25 @@ def observe(frontend, moment, text):
     except Exception as error:
         return {'error': repr(error)[:200]}
     # resolution / replyFinished: a finished reply below the verdict gate still resolves (user ruling 09-24), not a stall.
-    return {k: decision.get(k) for k in ('verdict', 'transition', 'accepted', 'resolution', 'replyFinished', 'reason')}
+    seen = {k: decision.get(k) for k in ('verdict', 'transition', 'accepted', 'resolution', 'replyFinished', 'reason', 'creditsNothing')}
+    # RP-2 (user ruling 09-28), as the runtime does it (DialogueObserver + useTeachingWorkspace): a reply that committed
+    # nothing and credits nothing is recorded as not credited when the mode allows it and `spoken_miss` names a miss.
+    if not decision.get('accepted') and decision.get('creditsNothing') and moment.get('missFromWords') and moment.get('spokenMiss'):
+        words = post(frontend, '/api/lumina/observe-spoken-miss', moment['spokenMiss'])
+        seen['wordsMiss'] = words.get('miss')
+        if words.get('miss'):
+            seen.update(verdict='incorrect', transition='retry', accepted=True, resolution='miss_from_words')
+    return seen
+
+
+def post(frontend, path, body):
+    request = urllib.request.Request(f'{frontend}{path}', data=json.dumps(body).encode(),
+                                     headers={'Content-Type': 'application/json'}, method='POST')
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            return json.loads(response.read())
+    except Exception as error:
+        return {'error': repr(error)[:200]}
 
 
 async def replay_record(api, record, args, gate):
@@ -167,6 +185,9 @@ async def replay_record(api, record, args, gate):
                 result['observer'] = seen
                 result['checks']['observer_agrees'] = (seen.get('verdict') == 'correct') if want else (seen.get('verdict') != 'correct') \
                     if 'verdict' in seen else None
+                # RP-2: a wrong spoken answer is recorded (not left open with nothing committed).
+                if moment['kind'] == 'miss' and 'verdict' in seen:
+                    result['checks']['miss_recorded'] = bool(seen.get('accepted')) and seen.get('verdict') == 'incorrect'
             scored.append({**s, **result})
         out.append({'kind': moment['kind'], 'itemId': moment['itemId'], 'trigger': trigger(moment)[:400], 'miss': moment.get('miss'),
                     'scoredWith': {'keys': record.get('keys'), 'ask': record.get('ask'), 'leakTokens': record.get('leakTokens')},

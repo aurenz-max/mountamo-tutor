@@ -60,6 +60,13 @@ export function decideDialogue(input: DialogueRequest, answers: any, ms: number,
   const likeliest = (c: string) => ['correct', 'incorrect', 'none'].filter(o => o !== c)
     .every(o => verdict.probabilities[c] > verdict.probabilities[o]);
   const belowGate = spoken && replyFinished && !gated;
+  // RP-2 (user ruling 09-28): a reply that credits nothing (coaching, a re-count invitation, the question asked again)
+  // is not a verdict, and it stays unsupported here. The runtime may still record the answer as not credited from the
+  // learner's own words (`spoken_miss`), per mode. A reply most likely crediting the learner stays the tutor's call.
+  // The verdict probabilities do not separate a re-ask from praise of a sub-step (both read `none`, 09-29 probe), so
+  // an answer to the tutor's sub-question is kept out on the words side: `spoken_miss` reads it with `priorTutor`.
+  const creditsNothing = spoken && !(gated && verdict.choice !== 'none') && !likeliest('correct');
+  const words = creditsNothing ? { creditsNothing: true } : {};
   // The tutor was asked to say plainly and did: its judgment moves the lesson (user direction 09-24: the
   // tutor judges the flow, the scoring pass re-grades the learner's own answer for the record).
   // At the gate too: a confirming reply that clears 0.9 is no less a confirmation, and requiring it to be
@@ -97,14 +104,14 @@ export function decideDialogue(input: DialogueRequest, answers: any, ms: number,
   const settledFailure = grounded === 1 && !correct && verdictCertain && verdict.choice === 'incorrect';
   // These observations are independent: "Let's try again" can clearly invite a
   // retry without clearly declaring the previous answer wrong. Do not couple them.
-  if (!verdictCertain && !transitionCertain && !checkedSettled) return { ...abstain('uncertain_or_invalid', ms), feedbackComplete, replyFinished };
+  if (!verdictCertain && !transitionCertain && !checkedSettled) return { ...abstain('uncertain_or_invalid', ms), feedbackComplete, replyFinished, ...words };
   const base = { verdict: verdictCertain ? verdict.choice : 'none',
     transition: finishedSuccess ? 'advance' : settledFailure ? 'retry' : transitionCertain ? transition.choice : 'none',
     confidence: finishedSuccess ? confirmedByTutor ? verdict.probabilities.correct
         : checkedSettled ? feedback.probabilities.finished : Math.min(verdict.probabilities.correct, feedback.probabilities.finished)
       : settledFailure ? verdict.probabilities.incorrect
       : transitionCertain ? transition.probabilities[transition.choice] : 0,
-    verdictConfidence: verdictCertain ? verdict.probabilities[verdict.choice] : 0, feedbackComplete, replyFinished, grounded, ms, model,
+    verdictConfidence: verdictCertain ? verdict.probabilities[verdict.choice] : 0, feedbackComplete, replyFinished, grounded, ms, model, ...words,
     ...(notCredited ? { resolution: 'not_credited' as const } : confirmedByTutor ? { resolution: 'confirmed_by_tutor' as const } : {}) };
   // A refused observation reports no score. Carrying the transition probability
   // through a refusal read as proof the answer was recognized; it never was.

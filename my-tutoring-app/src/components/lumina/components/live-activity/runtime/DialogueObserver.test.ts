@@ -7,7 +7,7 @@ import type { DialogueDecision } from './dialogueContract';
 
 const success: DialogueDecision = { verdict: 'correct', transition: 'advance', confidence: .99,
   grounded: 1, accepted: true, reason: 'supported', ms: 200 };
-function setup(spoken = false) {
+function setup(spoken = false, acceptsMissFromWords: (responseId: string) => boolean = () => false) {
   const runtime = new LiveLessonRuntime('test');
   runtime.register({ instanceId: 'board', primitiveId: 'test', planItemId: 'p', objectiveId: 'o', evalMode: 'count',
     adapter: { getTutorState: () => ({ itemId: 'one', task: 'Count the blocks.', phase: spoken ? 'working' : 'checked', completed: false,
@@ -21,7 +21,7 @@ function setup(spoken = false) {
         description: 'record', execute: () => true }] : [])] } });
   let state = structuredClone(runtime.getSnapshot());
   const classify = vi.fn(async () => success), execute = vi.fn(async () => 'visible'), report = vi.fn();
-  const observer = new DialogueObserver(() => state, classify, execute, report);
+  const observer = new DialogueObserver(() => state, classify, execute, report, acceptsMissFromWords);
   const turn = () => { observer.learnerText('three', true); observer.output('Yes, three!'); observer.end(false); };
   return { observer, classify, execute, report, turn, state, replace: (next: RuntimeSnapshot) => { state = next; } };
 }
@@ -145,4 +145,38 @@ it('stays silent when the turn is unfinished, committed, or out of scope', async
     accepted: false, reason: 'unavailable', ms: 0 });
   down.turn(); await settle();
   expect(cues(down.report)).toHaveLength(0);
+});
+
+// RP-2 (user ruling 09-28): a reply that credits nothing and leans not credited is decided from the learner's words.
+const coaching: DialogueDecision = { verdict: 'none', transition: 'none', confidence: 0, verdictConfidence: 0, grounded: 0,
+  accepted: false, reason: 'unsupported', ms: 200, replyFinished: false, creditsNothing: true };
+const wordsTurn = (s: ReturnType<typeof setup>) => {
+  s.observer.learnerText('three', true); s.observer.output("Let's count them together slowly!"); s.observer.end(false);
+};
+
+it('records a coaching reply as not credited from the words when the workspace accepts it', async () => {
+  const accepts = vi.fn(() => true);
+  const s = setup(true, accepts); s.classify.mockResolvedValue(coaching); wordsTurn(s); await settle();
+  expect(accepts).toHaveBeenCalledWith('turn-1');
+  expect(s.execute).toHaveBeenCalledOnce();
+  expect((s.execute.mock.calls as unknown[][])[0][0]).toMatchObject({ action: { type: 'workspace', operation: 'apply_tutor_verdict', input: { dialogue: {
+    responseId: 'turn-1', verdict: 'incorrect', transition: 'retry', fromWords: true } } } });
+  expect(s.report).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'dialogue_observation', status: 'visible' }));
+});
+
+it.each([
+  ['the workspace does not accept it (no miss named, or a mode the pilot did not allow)', coaching, () => false],
+  ['the reply does not lean not credited (sub-step praise)', { ...coaching, creditsNothing: undefined }, () => true],
+])('offers nothing from the words when %s', async (_name, decision, accepts) => {
+  const s = setup(true, accepts); s.classify.mockResolvedValue(decision); wordsTurn(s); await settle();
+  expect(s.execute).not.toHaveBeenCalled();
+});
+
+it('lets a verdict the reply itself grounds commit once, with nothing from the words beside it', async () => {
+  const s = setup(true, () => true);
+  s.classify.mockResolvedValue({ verdict: 'incorrect', transition: 'retry', confidence: .95, verdictConfidence: .95, grounded: 1,
+    accepted: true, reason: 'tutor_incorrect_reopen', ms: 200, creditsNothing: true });
+  wordsTurn(s); await settle();
+  expect(s.execute).toHaveBeenCalledOnce();
+  expect(((s.execute.mock.calls as unknown[][])[0][0] as any).action.input.dialogue.fromWords).toBeUndefined();
 });

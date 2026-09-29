@@ -13,6 +13,7 @@ import { SoundManager } from '../../../utils/SoundManager';
 import { latestLearnerUtterance } from './learnerUtterance';
 import { lastMiss, nextLever } from './observerLever';
 import { useWorkspacePin } from './workspacePin';
+import { pinAllowsMissFromWords } from '../pinnedModes';
 import type { ExecutableAffordance, RuntimeMount, WorkspaceLever } from './contract';
 
 export interface TeachingItem {
@@ -254,6 +255,8 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
             if (!d || !speech || d.responseId !== speech.id || (d.transition === 'advance' && d.verdict !== 'correct')) return false;
             // Only a reading of THIS answer that has already landed; a late one is dropped, never attached afterwards.
             const miss = d.verdict !== 'correct' && spokenMiss.current?.speechId === speech.id ? spokenMiss.current.miss ?? undefined : undefined;
+            // RP-2: a verdict from the learner's words stands only on a named miss, in a mode whose pilot allows it.
+            if (d.fromWords && (!miss || !pinAllowsMissFromWords(options.primitiveId, evalMode))) return false;
             return commit(() => {
               if (!session.submit(speech.id, speech.text, 'speech', d.verdict === 'correct', true, d.tutor, miss)) return false;
               pendingSpeech.current = null; dropSpokenMiss();
@@ -287,6 +290,8 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
         if (lever > 0) actions.unshift(...actions.splice(lever, 1));
         return actions;
       },
+      acceptsMissFromWords: responseId => pinAllowsMissFromWords(options.primitiveId, evalMode) && pendingSpeech.current?.id === responseId
+        && spokenMiss.current?.speechId === responseId && !!spokenMiss.current.miss,
       suspension: { suspend: () => { suspended.current = true; latest.current.workspace.current?.clearPresentation?.(); },
         resume: () => { suspended.current = false; } },
     },
@@ -385,14 +390,16 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
    * words in parallel with the tutor's reply. Advisory: it judges no credit and moves nothing; the dialogue
    * observer's not-credited verdict carries it onto the attempt, where the packet and `nextLever` read it.
    */
-  const observeSpokenMiss = (speech: { id: string; text: string }) => {
+  const observeSpokenMiss = (speech: { id: string; text: string; priorTutor?: string }) => {
     dropSpokenMiss();
     const i = currentItem(), epoch = runtime?.getSnapshot().sessionEpoch;
     if (!i.misses?.length || i.expectedAnswer === undefined || !epoch) return;
     const abort = new AbortController(), entry = { speechId: speech.id, miss: null as string | null, abort };
     spokenMiss.current = entry;
     const request: SpokenMissRequest = { scope: { sessionEpoch: epoch, instanceId: latest.current.instanceId, itemId: i.id },
-      task: i.task.slice(0, 1500), expectedAnswer: String(i.expectedAnswer).slice(0, 2000), learner: speech.text.slice(-2000), misses: i.misses };
+      task: i.task.slice(0, 1500), expectedAnswer: String(i.expectedAnswer).slice(0, 2000), learner: speech.text.slice(-2000), misses: i.misses,
+      // Which question the learner answered: an answer to a sub-question the tutor asked is no answer to the task (RP-2).
+      ...(speech.priorTutor ? { priorTutor: speech.priorTutor.slice(-4000) } : {}) };
     const timer = setTimeout(() => abort.abort(), OBSERVATION_TIMEOUT_MS);
     void nameSpokenMiss(request, abort.signal).catch(() => abstainSpokenMiss(abort.signal.aborted ? 'timeout' : 'unavailable'))
       .then(decision => {

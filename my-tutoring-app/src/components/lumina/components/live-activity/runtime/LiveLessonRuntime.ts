@@ -80,6 +80,8 @@ export class LiveLessonRuntime {
   }
 
   getSnapshot = () => this.snapshot;
+  /** The mounted workspace's read-only answer (`PrimitiveRuntimeAdapter.acceptsMissFromWords`). */
+  acceptsMissFromWords = (responseId: string) => this.status === 'active' && !!this.mount?.adapter.acceptsMissFromWords?.(responseId);
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   onCompletion = (listener: (state: RuntimeSnapshot) => void) => {
     this.completionListeners.add(listener);

@@ -79,7 +79,7 @@ export class RuntimeTransport {
       if (message.type === 'dialogue_observation') runtime.trace.record({ stage: 'dialogue', status: String(message.status),
         reason: String(message.reason), input: message.input, result: message });
       send(message);
-    });
+    }, runtime.acceptsMissFromWords);
     this.unsubscribe = runtime.subscribe(() => { this.publish(); this.dialogue.stateChanged(); this.wrongCommitted(); });
   }
   /** The packet the tutor receives. Every shared-workspace binding carries learner facts; nothing is wired per primitive. */

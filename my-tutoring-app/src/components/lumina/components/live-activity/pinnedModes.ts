@@ -30,6 +30,14 @@ export function pinBindsWorkspace(primitiveId: string, workspaceModes: readonly 
   return !!modes && modes.every(mode => workspaceModes.includes(mode));
 }
 
+/** Every mode the pin names may record a wrong spoken answer from the learner's words (`missFromWords`, RP-2).
+ *  A blend or `mixed` pin that includes any other mode does not: the pin is lesson-level, not per item. */
+export function pinAllowsMissFromWords(primitiveId: string, pin: string | undefined): boolean {
+  const allowed = getComponentById(primitiveId)?.teachingWorkspace?.missFromWords ?? [];
+  const modes = pinnedModes(primitiveId, pin);
+  return !!modes && modes.every(mode => allowed.includes(mode));
+}
+
 /** The catalog declares a teaching workspace and the pin names only its modes: the rule every host
  *  and every component switch applies, read from the one declaration. */
 export function catalogBindsWorkspace(primitiveId: string, pin: string | undefined): boolean {

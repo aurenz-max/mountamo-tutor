@@ -43,6 +43,13 @@ export interface DialogueDecision {
   /** The reply's likeliest reading is finished feedback (below the feedback gate too). A finished reply that
    *  records nothing gets one plain-verdict request, so no answered item is left waiting in silence. */
   replyFinished?: boolean;
+  /**
+   * A reply to a spoken answer that credits nothing (no gated verdict, and crediting is not its likeliest reading):
+   * coaching, a re-count invitation, the question asked again. The reply alone grounds no verdict; the runtime may
+   * record the attempt as not credited from the learner's own words (`spoken_miss`) in a mode that allows it (user
+   * ruling 09-28, RP-2).
+   */
+  creditsNothing?: boolean;
   grounded: number;
   accepted: boolean;
   reason: string;

@@ -15,6 +15,10 @@ export function latestLearnerUtterance(messages: readonly {
   }
   // A response whose start belongs to a prior item/stimulus stays there, even when its tail arrives late.
   if (start < floor) return null;
+  // The tutor's turn just before the answer: which question the learner was answering (a row, a step, the task).
+  let before = start;
+  while (before > 0 && messages[before - 1].role === 'assistant') before--;
+  const priorTutor = messages.slice(before, start).map(m => m.content).join('').trim();
   return { text: messages.slice(start, end + 1).filter(m => m.role === 'user' && m.streamId === last.streamId).map(m => m.content).join('').trim(),
-    id: `speech:${start}:${messages[start].timestamp}` };
+    id: `speech:${start}:${messages[start].timestamp}`, ...(priorTutor ? { priorTutor } : {}) };
 }

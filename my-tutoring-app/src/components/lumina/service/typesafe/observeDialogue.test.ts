@@ -173,3 +173,22 @@ it('never leaves a finished confirming reply unresolved: one that does not credi
   expect(decideDialogue(spoken, reply({ none: .6, correct: .35, incorrect: .05 }, .2), 1).accepted).toBe(false);
   expect(decideDialogue({ ...spoken, confirming: undefined }, reply({ none: .6, correct: .35, incorrect: .05 }), 1).transition).not.toBe('retry');
 });
+
+it('marks a spoken reply that credits nothing, and only that (RP-2, 09-28)', () => {
+  const spoken = { ...input, phase: 'working', lastResponse: null, learner: '1 2 3 4 5', pendingResponse: { id: 'turn-1', text: '1 2 3 4 5' },
+    activity: { responseSource: null, attemptNumber: 0, objects: [], demonstration: [], facts: { response: 'speech' }, assistance: { level: 0, answerExposure: 'none' as const } } };
+  const read = (verdict: Record<string, number>, transition = choice('retry', ['advance', 'retry', 'none'], .95), feedback = choice('open', ['finished', 'open'], .98)) =>
+    decideDialogue(spoken, { verdict: { type: 'choice', choice: Object.entries(verdict).sort((a, b) => b[1] - a[1])[0][0], confidence: .9, probabilities: verdict },
+      transition, feedback }, 200);
+  // Captured 09-29 (counting-board count): "Let's count them together and touch each butterfly as we go."
+  expect(read({ incorrect: .63, correct: .01, none: .36 })).toMatchObject({ accepted: false, reason: 'unsupported', creditsNothing: true });
+  expect(read({ incorrect: .4, correct: .01, none: .59 }, choice('none', ['advance', 'retry', 'none'], .6)))
+    .toMatchObject({ accepted: false, reason: 'uncertain_or_invalid', creditsNothing: true });
+  // Captured 09-29 probe: the question asked again ("Watch closely! How many counters did you see?").
+  expect(read({ none: .93, correct: .04, incorrect: .03 }, choice('none', ['advance', 'retry', 'none'], .88)).creditsNothing).toBe(true);
+  // A reply most likely crediting the learner stays the tutor's call ("That's correct, four in the first row! ...").
+  expect(read({ correct: .64, none: .35, incorrect: .01 }, choice('none', ['advance', 'retry', 'none'], .62)).creditsNothing).toBeUndefined();
+  // A gated verdict decides by itself.
+  expect(read({ incorrect: .96, correct: 0, none: .04 })).toMatchObject({ accepted: true, verdict: 'incorrect' });
+  expect(decideDialogue({ ...input }, answers('none', 'retry'), 200).creditsNothing).toBeUndefined();
+});
