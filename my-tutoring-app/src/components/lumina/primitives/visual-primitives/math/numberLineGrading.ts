@@ -7,6 +7,17 @@ export function isSnappedPlacementExact(placed: number, expected: number, snapPr
   return Math.abs(placed - expected) < snapPrecision / 2;
 }
 
+/**
+ * plot_point (NL-2): the placement must be the grid point nearest the target.
+ * Unlike a jump landing, a plot target need not sit on the grid (a fraction
+ * like 1/3 on eighths), so the nearest point is accepted, and a target exactly
+ * halfway between two grid points accepts both. One tick off an on-grid target
+ * is a whole snap step away, so it is wrong.
+ */
+export function isPlotPlacementCorrect(placed: number, target: number, snapPrecision: number): boolean {
+  return Math.abs(placed - target) <= snapPrecision / 2 + 1e-6;
+}
+
 export function isFindBetweenAnswerCorrect(
   point: number,
   bounds: number[],

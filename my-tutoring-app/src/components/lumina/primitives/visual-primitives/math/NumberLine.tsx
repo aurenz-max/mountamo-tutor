@@ -24,7 +24,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { isFindBetweenAnswerCorrect, isSnappedPlacementExact } from './numberLineGrading';
+import { isFindBetweenAnswerCorrect, isPlotPlacementCorrect, isSnappedPlacementExact } from './numberLineGrading';
 import { buildJumpDiagnosisEvidence, jumpFirstResponseScore, jumpResponseFor, type JumpResponse } from './numberLineEvidence';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { numberLinePipPose } from '../../../pip/numberLinePipPose';
@@ -642,8 +642,9 @@ const NumberLineSurface = ({ data, className, onControlsReady, runtimePlanItemId
     switch (currentChallenge.type) {
       case 'plot_point': {
         const tolerance = getSnapPrecision(activeNumberType);
+        // One tick off is a different number, not tolerance (NL-2).
         const matched = targets.every(target =>
-          placedPoints.some(p => Math.abs(p - target) <= tolerance + 0.001)
+          placedPoints.some(p => isPlotPlacementCorrect(p, target, tolerance))
         );
         correct = matched;
         if (matched && placedPoints.length > 0) {

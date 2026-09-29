@@ -1,10 +1,4 @@
 {
- "number-line.plot": {
-  "J2-miss-committed": "EVAL_TRACKER NL-2"
- },
- "number-line.identify": {
-  "J2-miss-committed": "EVAL_TRACKER NL-2"
- },
  "balance-scale.equality_hard": {
   "J6-completes-once": "EVAL_TRACKER BS-3"
  },
