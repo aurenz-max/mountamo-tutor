@@ -137,10 +137,10 @@ describe('reconstructSortChallenge — a card never shows its group picture', ()
 
   it('skips a word whose picture is a mat picture, even with a variation selector; keeps a different picture of the group', () => {
     const c = reconstructSortChallenge(flat, 'ternary_sort')!;
-    const kept = c.words.map((w) => w.word).sort();
+    const kept = (c.words ?? []).map((w) => w.word).sort();
     expect(kept).toEqual(['dog', 'fish', 'hound', 'kit', 'milk', 'pie', 'tom']);
     const mats = new Set(c.bucketEmojis);
-    expect(c.words.every((w) => !w.emoji || !mats.has(w.emoji))).toBe(true);
+    expect((c.words ?? []).every((w) => !w.emoji || !mats.has(w.emoji))).toBe(true);
   });
 
   it('rejects the challenge when too few honest words survive', () => {
