@@ -9,9 +9,27 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 
 ## Open — ONE list, newest first (as of 2026-09-09, K Language Arts atlas refresh)
 
-> **127 rows open.** **Newest:** #177 math M1 spoken levers, counting-board, number-bond, base-ten, place-value, MIC (handoff 21); #176 literacy L4 levers, you-and-me, story-ribbon, word-sorter, SOUND ON (handoff 22); #175 math M2 levers, compare and order tap modes (handoff 21); #174 literacy L3 levers, four reading primitives and the shared print overlay (handoff 22); #173 literacy L2 levers, five spoken sound-work primitives, SOUND ON (handoff 22); #172 literacy L1 levers, five phonics primitives (handoff 22); #171 jump levers on the number line (handoff 18); #170 lesson demonstration detour (LA-15 D2); #169 composed demonstrations (LA-15) in the runtime lab; #168 counting-board THE THIRD BRANCH — say "can you help me" mid-item and hear an answer, not the correction line; #167 live runtime lab (help/return; mic after adoption); #166 counting-board themed objects (first browser sighting + does the theme hold him); #165 Live transcript refusal-phrase ear check; #148 Ramp Lab investigation MIC + tablet; #147 Bar Model graph explanation MIC ? #146 Story Ribbon tablet + MIC + sound · #145 Story Bridge
+> **129 rows open.** **Newest:** #179 literacy K-2 close, spoken-mode models and phonics-blender levers, SOUND ON (handoff 24); #178 knowledge-check levers, cue picture and greyed-out choice (handoff 25); #177 math M1 spoken levers, counting-board, number-bond, base-ten, place-value, MIC (handoff 21); #176 literacy L4 levers, you-and-me, story-ribbon, word-sorter, SOUND ON (handoff 22); #175 math M2 levers, compare and order tap modes (handoff 21); #174 literacy L3 levers, four reading primitives and the shared print overlay (handoff 22); #173 literacy L2 levers, five spoken sound-work primitives, SOUND ON (handoff 22); #172 literacy L1 levers, five phonics primitives (handoff 22); #171 jump levers on the number line (handoff 18); #170 lesson demonstration detour (LA-15 D2); #169 composed demonstrations (LA-15) in the runtime lab; #168 counting-board THE THIRD BRANCH — say "can you help me" mid-item and hear an answer, not the correction line; #167 live runtime lab (help/return; mic after adoption); #166 counting-board themed objects (first browser sighting + does the theme hold him); #165 Live transcript refusal-phrase ear check; #148 Ramp Lab investigation MIC + tablet; #147 Bar Model graph explanation MIC ? #146 Story Ribbon tablet + MIC + sound · #145 Story Bridge
 > tablet + MIC · #144 You & Me role-switch MIC · #143 Letter Workshop manuscript/touch/audio ·
-> #142 ten-frame teen numbers. Next free ID is **#178**.
+> #142 ten-frame teen numbers. Next free ID is **#180**.
+
+### #179 — **literacy K-2 close: do the new spoken-mode models and the phonics-blender levers help without giving the answer?** (handoff 24) · SOUND ON
+
+**Drive it:** a lesson per primitive, tutor connected, sound on. On each: answer wrong once, then say "I'm stuck."
+- phoneme-explorer medial (K, a session with all five short vowels): another picture word in three boxes, middle lit; its middle is a long vowel (rain, feet, boat), never a short vowel the session asks.
+- cvc-speller fill_vowel and word_sort: another picture word, middle box lit, never a session word; the item's middle stays "?".
+- letter-sound-link see_hear: another letter card (same kind of sound: held, clipped or vowel); keyword_match: that letter with its picture. Never the item's letter or picture.
+- letter-spotter name_it: another picture word, printed, first letter lit; the star still hides the item's letter.
+- picture-vocabulary opposite / association / scale / sentence frame: a model on other words (hot and cold; bread and butter; cool, warm, hot on growing bars; "We eat soup with a spoon."), never a session word.
+- phonics-blender (easy and hard): split row slides together over an arrow; hard's joined row gets one dot per sound; an arrow shows left to right; a letter name beside its sound on a letter not in the session; "an easier word" opens a two-letter word (cvc) or a CVC word, then the full word comes back.
+**Check:** the tutor never reads the item's letters or sounds in a row on phonics-blender; each change appears before the tutor mentions it; the next item starts with no aids. [Report](eval-reports/levers-literacy-K2-close-2026-09-29.md). Owner: user.
+
+### #178 — **knowledge-check levers: does the cue picture or the greyed-out choice help, without showing the answer?** (handoff 25)
+
+**Drive it:** a K lesson and a Grade 2 lesson that end in a knowledge check, tutor connected. On a spoken choice: say "I'm stuck" before answering. At K the tutor may grey out one choice (it stays in its place, faded and crossed out). Then answer wrong once and say "I'm stuck" again: a picture of what the question is about may appear beside it (never a picture of a choice). On a touched number menu with four choices: touch a wrong one, then "I'm stuck": the number farthest from the answer greys out and cannot be touched.
+Check: nothing marks the right choice; the tutor describes the change only after it appears; a K menu of three never greys out a choice after a wrong answer.
+
+Machine evidence: `qa/eval-reports/knowledge-check-levers-2026-09-29.md`.
 
 ### #177 — **math M1 spoken levers: does each board help a stuck child say the number, without saying it?** (handoff 21) · MIC
 

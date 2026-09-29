@@ -30,11 +30,11 @@ it. Gesture misses are named for bound families; every later link is partial.
 
 | Item | State | As of |
 |---|---|---|
-| `main` | `87ecb56d`; branch 77 ahead, pushed to `951a23fb`. ~93 paths uncommitted 09-29: M1 spoken levers, L4, story-bridge, picture-vocabulary, oral-sentence-studio, the spoken-miss route (now `src/app/...`). `/ship` next | 09-29 |
+| `main` | `87ecb56d`; branch pushed through `f26c2915` (M1 Live gate). ~127 paths uncommitted 09-29: knowledge-check levers (25), literacy K-2 close (24), `runtime/` (64 paths). `/ship` next | 09-29 |
 | Test ladder | T0 dry sweep J1-J8 (free) · T1 miss/lever `it.each` (free) · T2 JEV observer on recorded packets (NOT BUILT) · T3 text replay, harm checks only · T4 Live, weekly sample (`LIVE_TESTING.md`) | 09-27 |
-| Gates | `typecheck:lumina` 0; full tsc 773 (last measured 09-27; re-run at `/ship`) | 09-27 |
-| Human checks | 125 open, next free **#176** (`my-tutoring-app/qa/HUMAN-CHECKS.md`) | 09-28 |
-| Sessions | M1-spoken (handoff 21) and L4 (handoff 22) lanes wrote 09-28/29; J10/J11 + RP-2 lane (handoff 19/20) | 09-29 |
+| Gates | `typecheck:lumina` 0; full tsc 770 (handoff 24, 09-29) | 09-29 |
+| Human checks | 129 open, next free **#180** (`my-tutoring-app/qa/HUMAN-CHECKS.md`) | 09-29 |
+| Sessions | none running 09-29; handoffs 23 (step 1 done), 24 (steps 1-2 done), 25 (done) wait on `/ship` | 09-29 |
 
 ## Phase 1 — A miss is one contract, detected on both channels (CURRENT)
 
@@ -57,7 +57,7 @@ the classes replay cannot see (tool narration, timing, audio).
 
 | # | Item | Executor · queue | State |
 |---|---|---|---|
-| 2.0a | J10 clean pass: every item right first time completes once, and the submission says so (passed, score, first-try count = items, no assistance). The sweep today only runs wrong-then-right and checks the submission COUNT, never its content | `/add-live-tutor-tools` · handoff 19 slice 9 | done 09-28: 228/237 payloads' records checked on a clean mount; 2 findings need a ruling (19 9a, 9b) |
+| 2.0a | J10 clean pass: the submission says passed, score, first-try = items, no assistance | `/add-live-tutor-tools` · handoff 19 slice 9 | done 09-28: 228/237 payloads; rulings 19 9a, 9b owed |
 | 2.0b | J11 honest record after a recovery: solved, not first-try, the miss in the attempts, score by the first-response gate | `/add-live-tutor-tools` · handoff 19 slice 9 | done 09-28: 224/237 checked; mutation (merge keeps the primitive's score) fails 68 |
 | 2.1 | T2: recorded packets sent to the real observer; missed credit (a stall) and false credit per family | `/add-live-tutor-tools` · handoff 19 slice 8 | open |
 | 2.2 | T3 responsiveness: after a named miss, does the reply address that pattern with no answer, fix or guessed cause? A typed JEV judgment, calibrated on hand-labelled Live lines | `/add-live-tutor-tools` · handoff 20 Part C | open; RP-2 ruled 09-28 (JEV knows a wrong spoken answer from the learner's words; build in handoff 20) |
@@ -70,13 +70,13 @@ its vitest gate; Live is 1-2 runs per class, never per primitive.
 
 | # | Item | Executor · queue | State |
 |---|---|---|---|
-| 3.0 | J9 sweep rule + S2 trigger ladder in `runtime/` (2nd wrong auto-pulls help; stuck-first = help only) | `/add-support-tiers`, `/add-live-tutor-tools` · handoff 21 S1-S2 | DONE 09-27 (replay 2/30 vs 3/20 baseline) |
-| 3.0b | Measure every math mode: payloads + sweep `leverInventory` | handoff 21 S1b | DONE 09-28: 24/319 graded modes have levers; findings NL-2, BS-3 (`/eval-fix`), CO-6, SW-1..8 (`/add-live-tutor-tools`); backend session-score ruling open |
-| 3.1 | Math by class; vitest gate per primitive · `qa/support-levers/reinventory-2026-09-29.md` | `/add-support-tiers` · handoff 21, **23** | M1 every mode DONE 09-29, **Live gate passed 09-29** (`qa/tutor-reports/m1-live-gate-2026-09-29.md`; LB-15 open). M2 tap modes only (12 spoken modes open). Next: handoff 23 step 2 (M2 spoken: compare-objects, number-sequencer, ordinal-line), then the M2 Live pair, then M3 |
-| 3.1b | Literacy by class; literacy files only | `/add-support-tiers` · handoff 22, **24** | L1-L4 closed on measured modes; 48/93 modes unmeasured. Next: handoff 24 (measure, close K-2 gaps incl. phonics-blender, Live pairs) |
-| 3.1c | knowledge-check levers (every subject; near/far tag first) | `/add-support-tiers` · handoff **25** | open |
+| 3.0 | J9 sweep rule + S2 trigger ladder (2nd wrong auto-pulls help) | handoff 21 S1-S2 | DONE 09-27 |
+| 3.0b | Measure every math mode | handoff 21 S1b | DONE 09-28; findings NL-2, BS-3 (`/eval-fix`), CO-6, SW-1..8 (`/add-live-tutor-tools`) |
+| 3.1 | Math by class · `qa/support-levers/reinventory-2026-09-29.md` | `/add-support-tiers` · handoff 21, **23** | M1 all modes DONE, **Live gate PASSED 09-29** (`qa/tutor-reports/m1-live-gate-2026-09-29.md`; LB-15 open). Next: 23 step 2 (M2 spoken: compare-objects, number-sequencer, ordinal-line), M2 Live pair, M3 |
+| 3.1b | Literacy by class; literacy files only | `/add-support-tiers` · handoff 22, **24** | 09-29: all 93 modes measured; every K-2 mode levered or ruled out by decision (handoff 24 steps 1-2, [report](my-tutoring-app/qa/eval-reports/levers-literacy-K2-close-2026-09-29.md)). Next: step 3 Live pairs, after the user rules on story-bridge's three spoken comparisons (L4) |
+| 3.1c | knowledge-check levers (every subject; near/far tag first) | `/add-support-tiers` · handoff **25** | DONE 09-29: `cue_picture` + `drop_far_choice` on choice items, all 4 modes levered, J9 green (`qa/eval-reports/knowledge-check-levers-2026-09-29.md`). Finding **KC-UB** (`/eval-fix`): 6/12 G1-2 generations run as the tap flow (stem > 24 words, key word in a quoted-sentence stem) |
 | 3.2 | Lever bench misses from Live runs | row executor · `qa/lever-bench/QUEUE.md` | 12 rows |
-| 3.3 | Class E2E, 2 Live runs on `--mode mixed` (text + `--audio`). Only when every eval mode of every primitive in the class has misses and levers (user 09-28); tutor pulls unprompted, receipt before narration | `/add-live-tutor-tools` · handoff 21 | M1 ready 09-29 (handoff 23 step 1) |
+| 3.3 | Class E2E, 2 Live runs on `--mode mixed` (text + `--audio`). Only when every eval mode of every primitive in the class has misses and levers (user 09-28); tutor pulls unprompted, receipt before narration | `/add-live-tutor-tools` · handoff 21 | M1 PASSED 09-29; K-2 literacy classes ready except L4 (story-bridge ruling); knowledge-check ready |
 
 ## Later (proposed, user to confirm) — misses reach the next lesson
 
@@ -88,6 +88,7 @@ levers get built. Owner `/student-data-loop` §7. Human sittings: HUMAN-CHECKS.
 
 | Ruling | Where |
 |---|---|
+| story-bridge say_alike, say_different, main_idea_compare: spoken misses (Part B), or out of L4's class gate? | handoff 24 step 3 |
 | 19-9a: push-pull-arena `success` = passed (67% recovery now records failed)? 19-9b: per-problem records keep their own score? | handoff 19 |
 | Do DI families get in-item levers, or keep "my turn" only? | `reinventory-2026-09-29.md` |
 | Pip: DECIDE (4 sims) and DESIGN rows | `qa/pip-surface/ROLLOUT.md` |
