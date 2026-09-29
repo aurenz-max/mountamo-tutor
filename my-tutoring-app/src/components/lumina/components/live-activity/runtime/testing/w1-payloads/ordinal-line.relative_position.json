@@ -1,0 +1,282 @@
+{
+ "source": "qa/tutor-reports/ordinal-line-runtime-relative_position-payload-2026-09-28.json",
+ "primitiveId": "ordinal-line",
+ "evalMode": "relative_position",
+ "data": {
+  "title": "Animal Race: Who is First?",
+  "description": "Join our fun animal race and learn to say which place each animal is standing in using ordinal numbers.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "relative-position",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "\ud83d\udc30"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "\ud83d\udc22"
+     },
+     {
+      "name": "Bear",
+      "emoji": "\ud83d\udc3b"
+     },
+     {
+      "name": "Monkey",
+      "emoji": "\ud83d\udc35"
+     },
+     {
+      "name": "Penguin",
+      "emoji": "\ud83d\udc27"
+     }
+    ],
+    "instruction": "Say who is right before the third one.",
+    "targetPosition": 3,
+    "targetOrdinalWord": "third",
+    "targetOrdinalSymbol": "3rd",
+    "relativeQuery": "before",
+    "options": [
+     "Turtle",
+     "Rabbit",
+     "Penguin",
+     "Monkey"
+    ],
+    "correctAnswer": "Turtle"
+   },
+   {
+    "id": "c2",
+    "type": "relative-position",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "\ud83d\udc30"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "\ud83d\udc22"
+     },
+     {
+      "name": "Bear",
+      "emoji": "\ud83d\udc3b"
+     },
+     {
+      "name": "Monkey",
+      "emoji": "\ud83d\udc35"
+     },
+     {
+      "name": "Penguin",
+      "emoji": "\ud83d\udc27"
+     }
+    ],
+    "instruction": "Say who is right after the fourth one.",
+    "targetPosition": 4,
+    "targetOrdinalWord": "fourth",
+    "targetOrdinalSymbol": "4th",
+    "relativeQuery": "after",
+    "options": [
+     "Bear",
+     "Penguin",
+     "Turtle",
+     "Rabbit"
+    ],
+    "correctAnswer": "Penguin"
+   },
+   {
+    "id": "c3",
+    "type": "relative-position",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "\ud83d\udc30"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "\ud83d\udc22"
+     },
+     {
+      "name": "Bear",
+      "emoji": "\ud83d\udc3b"
+     },
+     {
+      "name": "Monkey",
+      "emoji": "\ud83d\udc35"
+     },
+     {
+      "name": "Penguin",
+      "emoji": "\ud83d\udc27"
+     }
+    ],
+    "instruction": "Say who is right after the first one.",
+    "targetPosition": 1,
+    "targetOrdinalWord": "first",
+    "targetOrdinalSymbol": "1st",
+    "relativeQuery": "after",
+    "options": [
+     "Bear",
+     "Turtle",
+     "Monkey",
+     "Rabbit"
+    ],
+    "correctAnswer": "Turtle"
+   },
+   {
+    "id": "c4",
+    "type": "relative-position",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "\ud83d\udc30"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "\ud83d\udc22"
+     },
+     {
+      "name": "Bear",
+      "emoji": "\ud83d\udc3b"
+     },
+     {
+      "name": "Monkey",
+      "emoji": "\ud83d\udc35"
+     },
+     {
+      "name": "Penguin",
+      "emoji": "\ud83d\udc27"
+     }
+    ],
+    "instruction": "Say who is right after the third one.",
+    "targetPosition": 3,
+    "targetOrdinalWord": "third",
+    "targetOrdinalSymbol": "3rd",
+    "relativeQuery": "after",
+    "options": [
+     "Rabbit",
+     "Bear",
+     "Monkey",
+     "Penguin"
+    ],
+    "correctAnswer": "Monkey"
+   },
+   {
+    "id": "c5",
+    "type": "relative-position",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "\ud83d\udc30"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "\ud83d\udc22"
+     },
+     {
+      "name": "Bear",
+      "emoji": "\ud83d\udc3b"
+     },
+     {
+      "name": "Monkey",
+      "emoji": "\ud83d\udc35"
+     },
+     {
+      "name": "Penguin",
+      "emoji": "\ud83d\udc27"
+     }
+    ],
+    "instruction": "Say who is right before the fifth one.",
+    "targetPosition": 5,
+    "targetOrdinalWord": "fifth",
+    "targetOrdinalSymbol": "5th",
+    "relativeQuery": "before",
+    "options": [
+     "Monkey",
+     "Turtle",
+     "Penguin",
+     "Bear"
+    ],
+    "correctAnswer": "Monkey"
+   },
+   {
+    "id": "c6",
+    "type": "relative-position",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "\ud83d\udc30"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "\ud83d\udc22"
+     },
+     {
+      "name": "Bear",
+      "emoji": "\ud83d\udc3b"
+     },
+     {
+      "name": "Monkey",
+      "emoji": "\ud83d\udc35"
+     },
+     {
+      "name": "Penguin",
+      "emoji": "\ud83d\udc27"
+     }
+    ],
+    "instruction": "Say who is right before the second one.",
+    "targetPosition": 2,
+    "targetOrdinalWord": "second",
+    "targetOrdinalSymbol": "2nd",
+    "relativeQuery": "before",
+    "options": [
+     "Bear",
+     "Penguin",
+     "Turtle",
+     "Rabbit"
+    ],
+    "correctAnswer": "Rabbit"
+   },
+   {
+    "id": "c7",
+    "type": "relative-position",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "\ud83d\udc30"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "\ud83d\udc22"
+     },
+     {
+      "name": "Bear",
+      "emoji": "\ud83d\udc3b"
+     },
+     {
+      "name": "Monkey",
+      "emoji": "\ud83d\udc35"
+     },
+     {
+      "name": "Penguin",
+      "emoji": "\ud83d\udc27"
+     }
+    ],
+    "instruction": "Say who is right before the fourth one.",
+    "targetPosition": 4,
+    "targetOrdinalWord": "fourth",
+    "targetOrdinalSymbol": "4th",
+    "relativeQuery": "before",
+    "options": [
+     "Bear",
+     "Turtle",
+     "Monkey",
+     "Penguin"
+    ],
+    "correctAnswer": "Bear"
+   }
+  ],
+  "maxPosition": 5,
+  "context": "race",
+  "showOrdinalLabels": true,
+  "labelFormat": "word",
+  "gradeBand": "K"
+ }
+}

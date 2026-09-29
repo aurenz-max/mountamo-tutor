@@ -1,0 +1,79 @@
+{
+ "source": "qa/tutor-reports/ten-frame-runtime-decompose_teen-payload-2026-09-28.json",
+ "primitiveId": "ten-frame",
+ "evalMode": "decompose_teen",
+ "data": {
+  "title": "Finding the Ten in Teen Numbers",
+  "description": "Discover the hidden ten inside teen numbers by coloring ten counters yellow.",
+  "mode": "double",
+  "counters": {
+   "count": 0,
+   "color": "red",
+   "positions": []
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "decompose_teen",
+    "targetCount": 11,
+    "hint": "Count them out one at a time and stop at ten.",
+    "narration": "Here is a mixed-up group. Find the ten hiding inside it.",
+    "instruction": "Here are 11 counters. Turn 10 of them yellow!"
+   },
+   {
+    "id": "c2",
+    "type": "decompose_teen",
+    "targetCount": 12,
+    "hint": "Count them out one at a time and stop at ten.",
+    "narration": "Here is a mixed-up group. Find the ten hiding inside it.",
+    "instruction": "Here are 12 counters. Turn 10 of them yellow!"
+   },
+   {
+    "id": "c3",
+    "type": "decompose_teen",
+    "targetCount": 13,
+    "hint": "Count them out one at a time and stop at ten.",
+    "narration": "Here is a mixed-up group. Find the ten hiding inside it.",
+    "instruction": "Here are 13 counters. Turn 10 of them yellow!"
+   },
+   {
+    "id": "c4",
+    "type": "decompose_teen",
+    "targetCount": 14,
+    "hint": "Count them out one at a time and stop at ten.",
+    "narration": "Here is a mixed-up group. Find the ten hiding inside it.",
+    "instruction": "Here are 14 counters. Turn 10 of them yellow!"
+   },
+   {
+    "id": "c5",
+    "type": "decompose_teen",
+    "targetCount": 15,
+    "hint": "Count them out one at a time and stop at ten.",
+    "narration": "Here is a mixed-up group. Find the ten hiding inside it.",
+    "instruction": "Here are 15 counters. Turn 10 of them yellow!"
+   },
+   {
+    "id": "c6",
+    "type": "decompose_teen",
+    "targetCount": 16,
+    "hint": "Count them out one at a time and stop at ten.",
+    "narration": "Here is a mixed-up group. Find the ten hiding inside it.",
+    "instruction": "Here are 16 counters. Turn 10 of them yellow!"
+   }
+  ],
+  "showOptions": {
+   "showCount": true,
+   "showEquation": false,
+   "showEmptyCount": false,
+   "allowFlip": true
+  },
+  "gradeBand": "K",
+  "twoColorMode": {
+   "enabled": true,
+   "color1Count": 0,
+   "color2Count": 0,
+   "color1": "red",
+   "color2": "yellow"
+  }
+ }
+}

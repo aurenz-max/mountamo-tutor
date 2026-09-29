@@ -1,0 +1,65 @@
+{
+ "source": "qa/tutor-reports/number-line-runtime-plot-payload-2026-09-28.json",
+ "primitiveId": "number-line",
+ "evalMode": "plot",
+ "data": {
+  "title": "Backward Bunny Hops",
+  "description": "Learn to subtract numbers by hopping backward on a number line.",
+  "range": {
+   "min": 0,
+   "max": 10
+  },
+  "gradeBand": "K-2",
+  "numberType": "integer",
+  "interactionMode": "plot",
+  "challenges": [
+   {
+    "id": "plot_point-0",
+    "type": "plot_point",
+    "instruction": "Place a point at 2 on the number line.",
+    "targetValues": [
+     2
+    ],
+    "hint": "Look between the 1 and the 3 to find your spot."
+   },
+   {
+    "id": "plot_point-1",
+    "type": "plot_point",
+    "instruction": "Can you find and place a point on the number line to show 6?",
+    "targetValues": [
+     6
+    ],
+    "hint": "Look at the number 5, and take one big hop forward to the very next tick mark."
+   },
+   {
+    "id": "plot_point-2",
+    "type": "plot_point",
+    "instruction": "Can you show me where the number 5 lives on our number line today?",
+    "targetValues": [
+     5
+    ],
+    "hint": "Look right in the middle between 4 and 6 to find your spot!"
+   },
+   {
+    "id": "plot_point-3",
+    "type": "plot_point",
+    "instruction": "Can you find where the number 4 lives on our number line and place a point right there?",
+    "targetValues": [
+     4
+    ],
+    "hint": "Start at 5 and take one little hop backward to find your target!"
+   },
+   {
+    "id": "plot_point-4",
+    "type": "plot_point",
+    "instruction": "Can you find where the number 3 lives on our number line? Place your point right there!",
+    "targetValues": [
+     3
+    ],
+    "hint": "Try counting backward 2 steps from the number 5 to see where you land."
+   }
+  ],
+  "highlights": [],
+  "operations": []
+ }
+}

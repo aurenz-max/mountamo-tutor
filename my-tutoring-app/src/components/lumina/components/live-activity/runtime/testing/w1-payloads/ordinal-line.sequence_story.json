@@ -1,0 +1,220 @@
+{
+ "source": "qa/tutor-reports/ordinal-line-runtime-sequence_story-payload-2026-09-28.json",
+ "primitiveId": "ordinal-line",
+ "evalMode": "sequence_story",
+ "data": {
+  "title": "Animal Parade: Who Is Next?",
+  "description": "Join the fun animal parade to practice saying which place someone is standing in a line using ordinal words like first, second, and third.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "sequence-story",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "\ud83d\udc30"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "\ud83d\udc22"
+     },
+     {
+      "name": "Monkey",
+      "emoji": "\ud83d\udc12"
+     },
+     {
+      "name": "Elephant",
+      "emoji": "\ud83d\udc18"
+     },
+     {
+      "name": "Penguin",
+      "emoji": "\ud83d\udc27"
+     }
+    ],
+    "instruction": "Look at the parade line and tell me which place each animal is standing.",
+    "storyText": "Look at our fun animal parade! The cute little rabbit is first and the slow turtle is second. The playful monkey hops in third place, the big elephant is fourth, and the sliding penguin proudly marches in fifth.",
+    "clues": [
+     {
+      "character": "Rabbit",
+      "position": 1
+     },
+     {
+      "character": "Turtle",
+      "position": 2
+     },
+     {
+      "character": "Monkey",
+      "position": 3
+     },
+     {
+      "character": "Elephant",
+      "position": 4
+     },
+     {
+      "character": "Penguin",
+      "position": 5
+     }
+    ],
+    "correctAnswer": "sequence_complete"
+   },
+   {
+    "id": "c2",
+    "type": "sequence-story",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "\ud83d\udc30"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "\ud83d\udc22"
+     },
+     {
+      "name": "Monkey",
+      "emoji": "\ud83d\udc12"
+     },
+     {
+      "name": "Elephant",
+      "emoji": "\ud83d\udc18"
+     },
+     {
+      "name": "Penguin",
+      "emoji": "\ud83d\udc27"
+     }
+    ],
+    "instruction": "Look closely at our cheerful parade lineup and tell me who is in each spot.",
+    "storyText": "Look at the fun animal parade marching by today. Monkey is in first place, Rabbit is in second place, and Turtle is in third place. Penguin waddles along in fourth place while Elephant proudly brings up the rear in fifth place.",
+    "clues": [
+     {
+      "character": "Monkey",
+      "position": 1
+     },
+     {
+      "character": "Rabbit",
+      "position": 2
+     },
+     {
+      "character": "Turtle",
+      "position": 3
+     },
+     {
+      "character": "Penguin",
+      "position": 4
+     },
+     {
+      "character": "Elephant",
+      "position": 5
+     }
+    ],
+    "correctAnswer": "sequence_complete"
+   },
+   {
+    "id": "c3",
+    "type": "sequence-story",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "\ud83d\udc30"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "\ud83d\udc22"
+     },
+     {
+      "name": "Monkey",
+      "emoji": "\ud83d\udc12"
+     },
+     {
+      "name": "Elephant",
+      "emoji": "\ud83d\udc18"
+     },
+     {
+      "name": "Penguin",
+      "emoji": "\ud83d\udc27"
+     }
+    ],
+    "instruction": "Look at our fun parade line and tell me which place each animal friend is standing in today.",
+    "storyText": "Rabbit leads the happy parade as first in line, while Penguin steps right behind as second. Elephant marches proudly in third place, followed by Monkey as fourth, and Turtle brings up the very end as fifth.",
+    "clues": [
+     {
+      "character": "Rabbit",
+      "position": 1
+     },
+     {
+      "character": "Penguin",
+      "position": 2
+     },
+     {
+      "character": "Elephant",
+      "position": 3
+     },
+     {
+      "character": "Monkey",
+      "position": 4
+     },
+     {
+      "character": "Turtle",
+      "position": 5
+     }
+    ],
+    "correctAnswer": "sequence_complete"
+   },
+   {
+    "id": "c4",
+    "type": "sequence-story",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "\ud83d\udc30"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "\ud83d\udc22"
+     },
+     {
+      "name": "Monkey",
+      "emoji": "\ud83d\udc12"
+     },
+     {
+      "name": "Elephant",
+      "emoji": "\ud83d\udc18"
+     },
+     {
+      "name": "Penguin",
+      "emoji": "\ud83d\udc27"
+     }
+    ],
+    "instruction": "Look at our fun animal parade and tell me where everyone is standing.",
+    "storyText": "The big Elephant marches proudly in first place while the cute Penguin waddles right behind in second. The fluffy Rabbit hops along in third place, the playful Monkey swings right into fourth, and the sleepy Turtle finishes our wonderful line in fifth.",
+    "clues": [
+     {
+      "character": "Elephant",
+      "position": 1
+     },
+     {
+      "character": "Penguin",
+      "position": 2
+     },
+     {
+      "character": "Rabbit",
+      "position": 3
+     },
+     {
+      "character": "Monkey",
+      "position": 4
+     },
+     {
+      "character": "Turtle",
+      "position": 5
+     }
+    ],
+    "correctAnswer": "sequence_complete"
+   }
+  ],
+  "maxPosition": 5,
+  "context": "parade",
+  "showOrdinalLabels": true,
+  "labelFormat": "word",
+  "gradeBand": "K"
+ }
+}

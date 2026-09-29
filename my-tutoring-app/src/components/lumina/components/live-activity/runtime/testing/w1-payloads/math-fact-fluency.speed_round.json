@@ -1,0 +1,113 @@
+{
+ "source": "qa/tutor-reports/math-fact-fluency-runtime-speed_round-payload-2026-09-28.json",
+ "primitiveId": "math-fact-fluency",
+ "evalMode": "speed_round",
+ "data": {
+  "title": "Addition Facts to 5",
+  "description": "Practice rapid recall of addition facts within 5.",
+  "maxNumber": 5,
+  "includeSubtraction": false,
+  "showVisualAids": false,
+  "targetResponseTime": 3,
+  "adaptiveDifficulty": true,
+  "gradeBand": "K",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "speed-round",
+    "instruction": "Type the answer to this addition fact.",
+    "equation": "1 + 1 = 2",
+    "operation": "addition",
+    "operand1": 1,
+    "operand2": 1,
+    "result": 2,
+    "unknownPosition": "result",
+    "correctAnswer": 2
+   },
+   {
+    "id": "c2",
+    "type": "speed-round",
+    "instruction": "Find the sum for this equation.",
+    "equation": "2 + 1 = 3",
+    "operation": "addition",
+    "operand1": 2,
+    "operand2": 1,
+    "result": 3,
+    "unknownPosition": "result",
+    "correctAnswer": 3
+   },
+   {
+    "id": "c3",
+    "type": "speed-round",
+    "instruction": "What is the total of this addition problem?",
+    "equation": "2 + 2 = 4",
+    "operation": "addition",
+    "operand1": 2,
+    "operand2": 2,
+    "result": 4,
+    "unknownPosition": "result",
+    "correctAnswer": 4
+   },
+   {
+    "id": "c4",
+    "type": "speed-round",
+    "instruction": "Type the correct answer below.",
+    "equation": "3 + 1 = 4",
+    "operation": "addition",
+    "operand1": 3,
+    "operand2": 1,
+    "result": 4,
+    "unknownPosition": "result",
+    "correctAnswer": 4
+   },
+   {
+    "id": "c5",
+    "type": "speed-round",
+    "instruction": "Solve this addition equation.",
+    "equation": "3 + 2 = 5",
+    "operation": "addition",
+    "operand1": 3,
+    "operand2": 2,
+    "result": 5,
+    "unknownPosition": "result",
+    "correctAnswer": 5
+   },
+   {
+    "id": "c6",
+    "type": "speed-round",
+    "instruction": "What does this equation equal?",
+    "equation": "1 + 3 = 4",
+    "operation": "addition",
+    "operand1": 1,
+    "operand2": 3,
+    "result": 4,
+    "unknownPosition": "result",
+    "correctAnswer": 4
+   },
+   {
+    "id": "c7",
+    "type": "speed-round",
+    "instruction": "Type the answer for this math fact.",
+    "equation": "4 + 1 = 5",
+    "operation": "addition",
+    "operand1": 4,
+    "operand2": 1,
+    "result": 5,
+    "unknownPosition": "result",
+    "correctAnswer": 5
+   },
+   {
+    "id": "c8",
+    "type": "speed-round",
+    "instruction": "Find the sum for this addition fact.",
+    "equation": "2 + 3 = 5",
+    "operation": "addition",
+    "operand1": 2,
+    "operand2": 3,
+    "result": 5,
+    "unknownPosition": "result",
+    "correctAnswer": 5
+   }
+  ]
+ }
+}

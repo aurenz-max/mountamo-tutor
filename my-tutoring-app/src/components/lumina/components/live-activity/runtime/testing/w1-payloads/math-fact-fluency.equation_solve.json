@@ -1,0 +1,143 @@
+{
+ "source": "qa/tutor-reports/math-fact-fluency-runtime-equation_solve-payload-2026-09-28.json",
+ "primitiveId": "math-fact-fluency",
+ "evalMode": "equation_solve",
+ "data": {
+  "title": "Addition Facts Within 5",
+  "description": "Practice rapid recall of addition facts up to 5 with bare equations.",
+  "maxNumber": 5,
+  "includeSubtraction": false,
+  "showVisualAids": false,
+  "targetResponseTime": 3,
+  "adaptiveDifficulty": true,
+  "gradeBand": "K",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "equation-solve",
+    "instruction": "Find the sum for this equation!",
+    "equation": "1 + 1 = 2",
+    "operation": "addition",
+    "operand1": 1,
+    "operand2": 1,
+    "result": 2,
+    "unknownPosition": "result",
+    "correctAnswer": 2,
+    "options": [
+     1,
+     2,
+     3,
+     4
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "equation-solve",
+    "instruction": "What is the answer to this addition problem?",
+    "equation": "2 + 1 = 3",
+    "operation": "addition",
+    "operand1": 2,
+    "operand2": 1,
+    "result": 3,
+    "unknownPosition": "result",
+    "correctAnswer": 3,
+    "options": [
+     2,
+     3,
+     4,
+     5
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "equation-solve",
+    "instruction": "Solve this equation carefully.",
+    "equation": "2 + 2 = 4",
+    "operation": "addition",
+    "operand1": 2,
+    "operand2": 2,
+    "result": 4,
+    "unknownPosition": "result",
+    "correctAnswer": 4,
+    "options": [
+     2,
+     3,
+     4,
+     5
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "equation-solve",
+    "instruction": "Can you solve this addition equation?",
+    "equation": "3 + 1 = 4",
+    "operation": "addition",
+    "operand1": 3,
+    "operand2": 1,
+    "result": 4,
+    "unknownPosition": "result",
+    "correctAnswer": 4,
+    "options": [
+     2,
+     3,
+     4,
+     5
+    ]
+   },
+   {
+    "id": "c5",
+    "type": "equation-solve",
+    "instruction": "Figure out the total for this equation.",
+    "equation": "3 + 2 = 5",
+    "operation": "addition",
+    "operand1": 3,
+    "operand2": 2,
+    "result": 5,
+    "unknownPosition": "result",
+    "correctAnswer": 5,
+    "options": [
+     3,
+     4,
+     5,
+     2
+    ]
+   },
+   {
+    "id": "c6",
+    "type": "equation-solve",
+    "instruction": "What number completes this addition fact?",
+    "equation": "1 + 3 = 4",
+    "operation": "addition",
+    "operand1": 1,
+    "operand2": 3,
+    "result": 4,
+    "unknownPosition": "result",
+    "correctAnswer": 4,
+    "options": [
+     2,
+     3,
+     4,
+     5
+    ]
+   },
+   {
+    "id": "c7",
+    "type": "equation-solve",
+    "instruction": "Solve this addition problem to show what you know!",
+    "equation": "4 + 1 = 5",
+    "operation": "addition",
+    "operand1": 4,
+    "operand2": 1,
+    "result": 5,
+    "unknownPosition": "result",
+    "correctAnswer": 5,
+    "options": [
+     2,
+     3,
+     4,
+     5
+    ]
+   }
+  ]
+ }
+}

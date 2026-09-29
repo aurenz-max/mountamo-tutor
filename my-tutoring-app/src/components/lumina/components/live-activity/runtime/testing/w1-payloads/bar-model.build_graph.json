@@ -1,0 +1,243 @@
+{
+ "source": "qa/tutor-reports/bar-model-runtime-build_graph-payload-2026-09-28.json",
+ "primitiveId": "bar-model",
+ "evalMode": "build_graph",
+ "data": {
+  "title": "Favorite Zoo Animals",
+  "description": "Build a graph of zoo animals and pick the right scale.",
+  "challenges": [
+   {
+    "id": "bm-1",
+    "evalMode": "build_graph",
+    "values": [
+     {
+      "label": "Lions",
+      "value": 0,
+      "color": "blue"
+     },
+     {
+      "label": "Monkeys",
+      "value": 0,
+      "color": "green"
+     },
+     {
+      "label": "Zebras",
+      "value": 0,
+      "color": "purple"
+     },
+     {
+      "label": "Giraffes",
+      "value": 0,
+      "color": "orange"
+     }
+    ],
+    "graphStyle": "scaled_bar",
+    "scale": {
+     "step": 2,
+     "max": 20
+    },
+    "prompt": "Build the graph and choose the best scale for our zoo animals: Lions=12, Monkeys=16, Zebras=8, and Giraffes=20.",
+    "hint": "Look at your largest value. Which step helps all the bars fit nicely without using too many extra lines?",
+    "expectedDataset": [
+     {
+      "label": "Lions",
+      "value": 12
+     },
+     {
+      "label": "Monkeys",
+      "value": 16
+     },
+     {
+      "label": "Zebras",
+      "value": 8
+     },
+     {
+      "label": "Giraffes",
+      "value": 20
+     }
+    ],
+    "expectedScaleStep": 2,
+    "availableScaleSteps": [
+     1,
+     2,
+     5,
+     10
+    ]
+   },
+   {
+    "id": "bm-2",
+    "evalMode": "build_graph",
+    "values": [
+     {
+      "label": "Cars",
+      "value": 0,
+      "color": "blue"
+     },
+     {
+      "label": "Blocks",
+      "value": 0,
+      "color": "green"
+     },
+     {
+      "label": "Dolls",
+      "value": 0,
+      "color": "purple"
+     },
+     {
+      "label": "Balls",
+      "value": 0,
+      "color": "orange"
+     }
+    ],
+    "graphStyle": "scaled_bar",
+    "scale": {
+     "step": 2,
+     "max": 12
+    },
+    "prompt": "Build the graph and choose the best scale for our favorite toys: Cars=6, Blocks=12, Dolls=8, and Balls=10.",
+    "hint": "Look at your largest value\u2014which step lets it fit nicely without lots of empty space?",
+    "expectedDataset": [
+     {
+      "label": "Cars",
+      "value": 6
+     },
+     {
+      "label": "Blocks",
+      "value": 12
+     },
+     {
+      "label": "Dolls",
+      "value": 8
+     },
+     {
+      "label": "Balls",
+      "value": 10
+     }
+    ],
+    "expectedScaleStep": 2,
+    "availableScaleSteps": [
+     1,
+     2,
+     5,
+     10
+    ]
+   },
+   {
+    "id": "bm-3",
+    "evalMode": "build_graph",
+    "values": [
+     {
+      "label": "Cars",
+      "value": 0,
+      "color": "blue"
+     },
+     {
+      "label": "Dolls",
+      "value": 0,
+      "color": "green"
+     },
+     {
+      "label": "Blocks",
+      "value": 0,
+      "color": "purple"
+     },
+     {
+      "label": "Balls",
+      "value": 0,
+      "color": "orange"
+     }
+    ],
+    "graphStyle": "scaled_bar",
+    "scale": {
+     "step": 2,
+     "max": 12
+    },
+    "prompt": "Build a graph: Cars=6, Dolls=12, Blocks=8, Balls=10. Choose the best scale.",
+    "hint": "Look at your largest value. Which step lets all the bars fit nicely without going off the chart?",
+    "expectedDataset": [
+     {
+      "label": "Cars",
+      "value": 6
+     },
+     {
+      "label": "Dolls",
+      "value": 12
+     },
+     {
+      "label": "Blocks",
+      "value": 8
+     },
+     {
+      "label": "Balls",
+      "value": 10
+     }
+    ],
+    "expectedScaleStep": 2,
+    "availableScaleSteps": [
+     1,
+     2,
+     5,
+     10
+    ]
+   },
+   {
+    "id": "bm-4",
+    "evalMode": "build_graph",
+    "values": [
+     {
+      "label": "Blocks",
+      "value": 0,
+      "color": "blue"
+     },
+     {
+      "label": "Dolls",
+      "value": 0,
+      "color": "green"
+     },
+     {
+      "label": "Cars",
+      "value": 0,
+      "color": "purple"
+     },
+     {
+      "label": "Puzzles",
+      "value": 0,
+      "color": "orange"
+     }
+    ],
+    "graphStyle": "scaled_bar",
+    "scale": {
+     "step": 2,
+     "max": 12
+    },
+    "prompt": "Build the graph and choose the best scale. Blocks=6, Dolls=12, Cars=8, and Puzzles=4.",
+    "hint": "Look at your largest value \u2014 which step lets it fit without lots of empty space?",
+    "expectedDataset": [
+     {
+      "label": "Blocks",
+      "value": 6
+     },
+     {
+      "label": "Dolls",
+      "value": 12
+     },
+     {
+      "label": "Cars",
+      "value": 8
+     },
+     {
+      "label": "Puzzles",
+      "value": 4
+     }
+    ],
+    "expectedScaleStep": 2,
+    "availableScaleSteps": [
+     1,
+     2,
+     5,
+     10
+    ]
+   }
+  ]
+ }
+}

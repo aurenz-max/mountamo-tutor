@@ -1,0 +1,327 @@
+{
+ "source": "qa/tutor-reports/sorting-station-runtime-two_attributes-payload-2026-09-28.json",
+ "primitiveId": "sorting-station",
+ "evalMode": "two_attributes",
+ "data": {
+  "title": "Super Sorters: Sorting Our Needs!",
+  "description": "Help young learners practice sorting objects into groups by one primary objective category while adding a fun secondary attribute challenge!",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "two-attributes",
+    "instruction": "Find all the NEEDS that are also food!",
+    "sortingAttribute": "category + type",
+    "objects": [
+     {
+      "id": "obj1",
+      "label": "Juicy Apple",
+      "emoji": "\ud83c\udf4e",
+      "attributes": {
+       "type": "food",
+       "category": "need"
+      }
+     },
+     {
+      "id": "obj2",
+      "label": "Cozy Coat",
+      "emoji": "\ud83e\udde5",
+      "attributes": {
+       "type": "clothing",
+       "category": "need"
+      }
+     },
+     {
+      "id": "obj3",
+      "label": "Sweet Candy",
+      "emoji": "\ud83c\udf6c",
+      "attributes": {
+       "type": "food",
+       "category": "want"
+      }
+     },
+     {
+      "id": "obj4",
+      "label": "Toy Car",
+      "emoji": "\ud83d\ude97",
+      "attributes": {
+       "type": "toy",
+       "category": "want"
+      }
+     },
+     {
+      "id": "obj5",
+      "label": "Fresh Bread",
+      "emoji": "\ud83c\udf5e",
+      "attributes": {
+       "type": "food",
+       "category": "need"
+      }
+     },
+     {
+      "id": "obj6",
+      "label": "Sturdy Boots",
+      "emoji": "\ud83d\udc62",
+      "attributes": {
+       "type": "clothing",
+       "category": "need"
+      }
+     }
+    ],
+    "targetCategory": "need",
+    "secondaryAttribute": "type",
+    "secondaryValue": "food",
+    "categories": [
+     {
+      "label": "Needs That Are Food",
+      "rule": {
+       "category": "need",
+       "type": "food"
+      }
+     },
+     {
+      "label": "Others",
+      "rule": {}
+     }
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "two-attributes",
+    "instruction": "Find all the NEEDS that are clothing items!",
+    "sortingAttribute": "category + type",
+    "objects": [
+     {
+      "id": "obj7",
+      "label": "Warm Sweater",
+      "emoji": "\ud83e\uddf6",
+      "attributes": {
+       "type": "clothing",
+       "category": "need"
+      }
+     },
+     {
+      "id": "obj8",
+      "label": "Fresh Banana",
+      "emoji": "\ud83c\udf4c",
+      "attributes": {
+       "type": "food",
+       "category": "need"
+      }
+     },
+     {
+      "id": "obj9",
+      "label": "Dress Up Cape",
+      "emoji": "\ud83e\uddb8",
+      "attributes": {
+       "type": "clothing",
+       "category": "want"
+      }
+     },
+     {
+      "id": "obj10",
+      "label": "Toy Robot",
+      "emoji": "\ud83e\udd16",
+      "attributes": {
+       "type": "toy",
+       "category": "want"
+      }
+     },
+     {
+      "id": "obj11",
+      "label": "Rain Pants",
+      "emoji": "\ud83d\udc56",
+      "attributes": {
+       "type": "clothing",
+       "category": "need"
+      }
+     },
+     {
+      "id": "obj12",
+      "label": "Drinking Water",
+      "emoji": "\ud83d\udca7",
+      "attributes": {
+       "type": "drink",
+       "category": "need"
+      }
+     }
+    ],
+    "targetCategory": "need",
+    "secondaryAttribute": "type",
+    "secondaryValue": "clothing",
+    "categories": [
+     {
+      "label": "Needs That Are Clothing",
+      "rule": {
+       "category": "need",
+       "type": "clothing"
+      }
+     },
+     {
+      "label": "Others",
+      "rule": {}
+     }
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "two-attributes",
+    "instruction": "Find all the NEEDS that are clothing items!",
+    "sortingAttribute": "category + type",
+    "objects": [
+     {
+      "id": "obj13",
+      "label": "Winter Gloves",
+      "emoji": "\ud83e\udde4",
+      "attributes": {
+       "type": "clothing",
+       "category": "need"
+      }
+     },
+     {
+      "id": "obj14",
+      "label": "Juicy Orange",
+      "emoji": "\ud83c\udf4a",
+      "attributes": {
+       "type": "food",
+       "category": "need"
+      }
+     },
+     {
+      "id": "obj15",
+      "label": "Fairy Wings",
+      "emoji": "\ud83e\uddda",
+      "attributes": {
+       "type": "clothing",
+       "category": "want"
+      }
+     },
+     {
+      "id": "obj16",
+      "label": "Building Blocks",
+      "emoji": "\ud83e\uddf1",
+      "attributes": {
+       "type": "toy",
+       "category": "want"
+      }
+     },
+     {
+      "id": "obj17",
+      "label": "Cozy Socks",
+      "emoji": "\ud83e\udde6",
+      "attributes": {
+       "type": "clothing",
+       "category": "need"
+      }
+     },
+     {
+      "id": "obj18",
+      "label": "Family Doctor",
+      "emoji": "\ud83d\udc68\u200d\u2695\ufe0f",
+      "attributes": {
+       "type": "health",
+       "category": "need"
+      }
+     }
+    ],
+    "targetCategory": "need",
+    "secondaryAttribute": "type",
+    "secondaryValue": "clothing",
+    "categories": [
+     {
+      "label": "Needs That Are Clothing",
+      "rule": {
+       "category": "need",
+       "type": "clothing"
+      }
+     },
+     {
+      "label": "Others",
+      "rule": {}
+     }
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "two-attributes",
+    "instruction": "Find all the NEEDS that are clothing items!",
+    "sortingAttribute": "category + type",
+    "objects": [
+     {
+      "id": "obj19",
+      "label": "Warm Scarf",
+      "emoji": "\ud83e\udde3",
+      "attributes": {
+       "type": "clothing",
+       "category": "need"
+      }
+     },
+     {
+      "id": "obj20",
+      "label": "Bowl of Rice",
+      "emoji": "\ud83c\udf5a",
+      "attributes": {
+       "type": "food",
+       "category": "need"
+      }
+     },
+     {
+      "id": "obj21",
+      "label": "Party Crown",
+      "emoji": "\ud83d\udc51",
+      "attributes": {
+       "type": "clothing",
+       "category": "want"
+      }
+     },
+     {
+      "id": "obj22",
+      "label": "Action Figure",
+      "emoji": "\ud83e\uddb8\u200d\u2642\ufe0f",
+      "attributes": {
+       "type": "toy",
+       "category": "want"
+      }
+     },
+     {
+      "id": "obj23",
+      "label": "Comfy Shirt",
+      "emoji": "\ud83d\udc55",
+      "attributes": {
+       "type": "clothing",
+       "category": "need"
+      }
+     },
+     {
+      "id": "obj24",
+      "label": "First Aid Kit",
+      "emoji": "\ud83e\uddf0",
+      "attributes": {
+       "type": "health",
+       "category": "need"
+      }
+     }
+    ],
+    "targetCategory": "need",
+    "secondaryAttribute": "type",
+    "secondaryValue": "clothing",
+    "categories": [
+     {
+      "label": "Needs That Are Clothing",
+      "rule": {
+       "category": "need",
+       "type": "clothing"
+      }
+     },
+     {
+      "label": "Others",
+      "rule": {}
+     }
+    ]
+   }
+  ],
+  "maxCategories": 2,
+  "showCounts": true,
+  "showTallyChart": false,
+  "gradeBand": "K"
+ }
+}

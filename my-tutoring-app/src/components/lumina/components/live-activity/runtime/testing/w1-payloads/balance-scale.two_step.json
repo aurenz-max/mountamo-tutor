@@ -1,0 +1,262 @@
+{
+ "source": "qa/tutor-reports/balance-scale-runtime-two_step-payload-2026-09-28.json",
+ "primitiveId": "balance-scale",
+ "evalMode": "two_step",
+ "data": {
+  "gradeLevel": "elementary",
+  "title": "Build the Equation",
+  "description": "Use the weights to subtract and share. Connect each move to its equation.",
+  "leftSide": [
+   {
+    "value": 1,
+    "label": "x",
+    "isVariable": true
+   },
+   {
+    "value": 1,
+    "label": "x",
+    "isVariable": true
+   },
+   {
+    "value": 1,
+    "label": "x",
+    "isVariable": true
+   },
+   {
+    "value": 1,
+    "label": "x",
+    "isVariable": true
+   },
+   {
+    "value": 1,
+    "label": "x",
+    "isVariable": true
+   },
+   {
+    "value": 1,
+    "label": "x",
+    "isVariable": true
+   },
+   {
+    "value": 3,
+    "label": "3"
+   }
+  ],
+  "rightSide": [
+   {
+    "value": 12,
+    "label": "12"
+   },
+   {
+    "value": 3,
+    "label": "3"
+   }
+  ],
+  "variableValue": 2,
+  "showTilt": true,
+  "showSideValues": false,
+  "showBalanceStatus": true,
+  "allowOperations": [
+   "add",
+   "subtract",
+   "multiply",
+   "divide"
+  ],
+  "gradeBand": "5",
+  "challenges": [
+   {
+    "type": "two_step",
+    "instruction": "Use the weights to subtract and share. Connect each move to its equation.",
+    "leftSide": [
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 3,
+      "label": "3"
+     }
+    ],
+    "rightSide": [
+     {
+      "value": 12,
+      "label": "12"
+     },
+     {
+      "value": 3,
+      "label": "3"
+     }
+    ],
+    "variableValue": 2,
+    "hint": "Use the current weight task. Keep equal amounts together and use one group per identical parcel."
+   },
+   {
+    "type": "two_step",
+    "instruction": "Use the weights to subtract and share. Connect each move to its equation.",
+    "leftSide": [
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 2,
+      "label": "2"
+     }
+    ],
+    "rightSide": [
+     {
+      "value": 30,
+      "label": "30"
+     },
+     {
+      "value": 2,
+      "label": "2"
+     }
+    ],
+    "variableValue": 6,
+    "hint": "Use the current weight task. Keep equal amounts together and use one group per identical parcel."
+   },
+   {
+    "type": "two_step",
+    "instruction": "Use the weights to subtract and share. Connect each move to its equation.",
+    "leftSide": [
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "1"
+     }
+    ],
+    "rightSide": [
+     {
+      "value": 32,
+      "label": "32"
+     },
+     {
+      "value": 1,
+      "label": "1"
+     }
+    ],
+    "variableValue": 8,
+    "hint": "Use the current weight task. Keep equal amounts together and use one group per identical parcel."
+   },
+   {
+    "type": "two_step",
+    "instruction": "Use the weights to subtract and share. Connect each move to its equation.",
+    "leftSide": [
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 4,
+      "label": "4"
+     }
+    ],
+    "rightSide": [
+     {
+      "value": 42,
+      "label": "42"
+     },
+     {
+      "value": 4,
+      "label": "4"
+     }
+    ],
+    "variableValue": 7,
+    "hint": "Use the current weight task. Keep equal amounts together and use one group per identical parcel."
+   }
+  ]
+ }
+}

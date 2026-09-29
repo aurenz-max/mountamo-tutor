@@ -1,0 +1,71 @@
+{
+ "source": "qa/tutor-reports/counting-board-runtime-recount_moved-payload-2026-09-28.json",
+ "primitiveId": "counting-board",
+ "evalMode": "recount_moved",
+ "data": {
+  "title": "Magic Moving Stars",
+  "description": "Learn that the number of objects stays the same even when they move around!",
+  "objects": {
+   "type": "stars"
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "recount_moved",
+    "instruction": "Count the stars. Then watch them move!",
+    "targetAnswer": 7,
+    "count": 7,
+    "arrangement": "line",
+    "hint": "Tap each star slowly to count them all up.",
+    "narration": "Let's count these stars together! Tap each one as we go."
+   },
+   {
+    "id": "c2",
+    "type": "recount_moved",
+    "instruction": "Count the stars. Then watch them move!",
+    "targetAnswer": 6,
+    "count": 6,
+    "arrangement": "line",
+    "hint": "Remember how many we had, or tap them again to check!",
+    "narration": "Look, they lined up! Do we still have the same amount?"
+   },
+   {
+    "id": "c3",
+    "type": "recount_moved",
+    "instruction": "Count the stars. Then watch them move!",
+    "targetAnswer": 3,
+    "count": 3,
+    "arrangement": "line",
+    "hint": "Count the stars in each group to be sure.",
+    "narration": "The stars are grouping up! Let's see how many there are."
+   },
+   {
+    "id": "c4",
+    "type": "recount_moved",
+    "instruction": "Count the stars. Then watch them move!",
+    "targetAnswer": 5,
+    "count": 5,
+    "arrangement": "line",
+    "hint": "Pick a starting star and go all the way around the circle.",
+    "narration": "Around and around they go in a circle. How many are hiding here?"
+   },
+   {
+    "id": "c5",
+    "type": "recount_moved",
+    "instruction": "Count the stars. Then watch them move!",
+    "targetAnswer": 10,
+    "count": 10,
+    "arrangement": "line",
+    "hint": "Take your time and tap each star carefully.",
+    "narration": "One last big move! Can you count all the stars on the board?"
+   }
+  ],
+  "showOptions": {
+   "showRunningCount": true,
+   "showGroupCircles": false,
+   "highlightOnTap": true,
+   "showLastNumber": true
+  },
+  "gradeBand": "K"
+ }
+}

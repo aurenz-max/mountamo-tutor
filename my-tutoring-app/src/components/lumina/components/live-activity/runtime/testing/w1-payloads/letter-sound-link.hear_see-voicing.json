@@ -1,0 +1,21 @@
+{
+  "source": "hand-authored 2026-09-28, handoff 22 L1: a group-3 hear_see session with voicing pairs, so J9 sees voice_feel_model (the saved group-1 payload has none)",
+  "primitiveId": "letter-sound-link",
+  "evalMode": "hear_see",
+  "data": {
+    "title": "Letter Sounds - Group 3!",
+    "letterGroup": 3,
+    "cumulativeLetters": ["s", "a", "t", "i", "p", "n", "c", "k", "e", "h", "r", "m", "d", "g", "o", "u", "l", "f", "b"],
+    "gradeLevel": "K",
+    "challenges": [
+      { "id": "ch1", "mode": "hear-see", "targetLetter": "d", "targetSound": "/d/", "keywordWord": "dog", "keywordImage": "dog",
+        "options": [{ "letter": "d", "isCorrect": true }, { "letter": "t", "isCorrect": false }] },
+      { "id": "ch2", "mode": "hear-see", "targetLetter": "b", "targetSound": "/b/", "keywordWord": "bat", "keywordImage": "bat",
+        "options": [{ "letter": "p", "isCorrect": false }, { "letter": "b", "isCorrect": true }] },
+      { "id": "ch3", "mode": "hear-see", "targetLetter": "o", "targetSound": "/o/", "keywordWord": "octopus", "keywordImage": "octopus",
+        "options": [{ "letter": "o", "isCorrect": true }, { "letter": "u", "isCorrect": false }] },
+      { "id": "ch4", "mode": "hear-see", "targetLetter": "g", "targetSound": "/g/", "keywordWord": "goat", "keywordImage": "goat",
+        "options": [{ "letter": "k", "isCorrect": false }, { "letter": "g", "isCorrect": true }] }
+    ]
+  }
+}

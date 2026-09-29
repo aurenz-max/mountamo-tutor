@@ -1,0 +1,243 @@
+{
+ "source": "qa/tutor-reports/sorting-station-runtime-odd_one_out-payload-2026-09-28.json",
+ "primitiveId": "sorting-station",
+ "evalMode": "odd_one_out",
+ "data": {
+  "title": "Sorting Friends!",
+  "description": "Help sort objects into groups by finding the one that does not belong!",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "odd-one-out",
+    "instruction": "Which one doesn't belong? Look at the groups!",
+    "objects": [
+     {
+      "id": "obj1",
+      "label": "Apple",
+      "emoji": "\ud83c\udf4e",
+      "attributes": {
+       "color": "red",
+       "shape": "round",
+       "size": "medium",
+       "type": "food",
+       "category": "fruit"
+      }
+     },
+     {
+      "id": "obj2",
+      "label": "Banana",
+      "emoji": "\ud83c\udf4c",
+      "attributes": {
+       "color": "yellow",
+       "shape": "long",
+       "size": "medium",
+       "type": "food",
+       "category": "fruit"
+      }
+     },
+     {
+      "id": "obj3",
+      "label": "Grapes",
+      "emoji": "\ud83c\udf47",
+      "attributes": {
+       "color": "purple",
+       "shape": "round",
+       "size": "small",
+       "type": "food",
+       "category": "fruit"
+      }
+     },
+     {
+      "id": "obj4",
+      "label": "Carrot",
+      "emoji": "\ud83e\udd55",
+      "attributes": {
+       "color": "orange",
+       "shape": "long",
+       "size": "medium",
+       "type": "food",
+       "category": "vegetable"
+      }
+     }
+    ],
+    "oddOneOut": "obj4",
+    "oddOneOutReason": "The carrot is a vegetable, but all the others are fruits!"
+   },
+   {
+    "id": "c2",
+    "type": "odd-one-out",
+    "instruction": "Which one doesn't belong? Find the different group!",
+    "objects": [
+     {
+      "id": "obj5",
+      "label": "Dog",
+      "emoji": "\ud83d\udc36",
+      "attributes": {
+       "color": "brown",
+       "shape": "various",
+       "size": "medium",
+       "type": "living",
+       "category": "animal"
+      }
+     },
+     {
+      "id": "obj6",
+      "label": "Cat",
+      "emoji": "\ud83d\udc31",
+      "attributes": {
+       "color": "white",
+       "shape": "various",
+       "size": "small",
+       "type": "living",
+       "category": "animal"
+      }
+     },
+     {
+      "id": "obj7",
+      "label": "Cow",
+      "emoji": "\ud83d\udc2e",
+      "attributes": {
+       "color": "black",
+       "shape": "various",
+       "size": "large",
+       "type": "living",
+       "category": "animal"
+      }
+     },
+     {
+      "id": "obj8",
+      "label": "Soccer Ball",
+      "emoji": "\u26bd",
+      "attributes": {
+       "color": "white",
+       "shape": "round",
+       "size": "medium",
+       "type": "object",
+       "category": "toy"
+      }
+     }
+    ],
+    "oddOneOut": "obj8",
+    "oddOneOutReason": "The soccer ball is a toy, but all the others are animals!"
+   },
+   {
+    "id": "c3",
+    "type": "odd-one-out",
+    "instruction": "Which one doesn't belong? Check their groups!",
+    "objects": [
+     {
+      "id": "obj9",
+      "label": "Car",
+      "emoji": "\ud83d\ude97",
+      "attributes": {
+       "color": "red",
+       "shape": "various",
+       "size": "medium",
+       "type": "transport",
+       "category": "vehicle"
+      }
+     },
+     {
+      "id": "obj10",
+      "label": "Bus",
+      "emoji": "\ud83d\ude8c",
+      "attributes": {
+       "color": "yellow",
+       "shape": "various",
+       "size": "large",
+       "type": "transport",
+       "category": "vehicle"
+      }
+     },
+     {
+      "id": "obj11",
+      "label": "Train",
+      "emoji": "\ud83d\ude82",
+      "attributes": {
+       "color": "black",
+       "shape": "various",
+       "size": "large",
+       "type": "transport",
+       "category": "vehicle"
+      }
+     },
+     {
+      "id": "obj12",
+      "label": "Teddy Bear",
+      "emoji": "\ud83e\uddf8",
+      "attributes": {
+       "color": "brown",
+       "shape": "various",
+       "size": "medium",
+       "type": "object",
+       "category": "toy"
+      }
+     }
+    ],
+    "oddOneOut": "obj12",
+    "oddOneOutReason": "The teddy bear is a toy, but all the others are vehicles!"
+   },
+   {
+    "id": "c4",
+    "type": "odd-one-out",
+    "instruction": "Which one doesn't belong? Look closely!",
+    "objects": [
+     {
+      "id": "obj13",
+      "label": "Shirt",
+      "emoji": "\ud83d\udc55",
+      "attributes": {
+       "color": "blue",
+       "shape": "flat",
+       "size": "medium",
+       "type": "wearable",
+       "category": "clothing"
+      }
+     },
+     {
+      "id": "obj14",
+      "label": "Pants",
+      "emoji": "\ud83d\udc56",
+      "attributes": {
+       "color": "blue",
+       "shape": "long",
+       "size": "medium",
+       "type": "wearable",
+       "category": "clothing"
+      }
+     },
+     {
+      "id": "obj15",
+      "label": "Dress",
+      "emoji": "\ud83d\udc57",
+      "attributes": {
+       "color": "pink",
+       "shape": "long",
+       "size": "medium",
+       "type": "wearable",
+       "category": "clothing"
+      }
+     },
+     {
+      "id": "obj16",
+      "label": "Pizza",
+      "emoji": "\ud83c\udf55",
+      "attributes": {
+       "color": "yellow",
+       "shape": "triangle",
+       "size": "small",
+       "type": "eat",
+       "category": "food"
+      }
+     }
+    ],
+    "oddOneOut": "obj16",
+    "oddOneOutReason": "The pizza is food, but all the others are clothing!"
+   }
+  ],
+  "maxCategories": 2,
+  "showCounts": true,
+  "showTallyChart": false,
+  "gradeBand": "K"
+ }
+}

@@ -1,0 +1,201 @@
+{
+ "source": "qa/tutor-reports/compare-objects-runtime-identify_attribute-payload-2026-09-28.json",
+ "primitiveId": "compare-objects",
+ "evalMode": "identify_attribute",
+ "data": {
+  "title": "Compare Objects: Deciding which of two objects is longer",
+  "description": "Compare and measure real-world objects by their attributes",
+  "challenges": [
+   {
+    "id": "co-1",
+    "type": "identify_attribute",
+    "instruction": "What can we measure about these two objects?",
+    "attribute": "length",
+    "objects": [
+     {
+      "name": "blue ribbon",
+      "visualSize": 30,
+      "actualValue": 5
+     },
+     {
+      "name": "red ribbon",
+      "visualSize": 75,
+      "actualValue": 12
+     }
+    ],
+    "correctAnswer": "length",
+    "comparisonWord": "longer",
+    "hint": "Think about stretching from one end to the other!",
+    "attributeOptions": [
+     "length",
+     "weight",
+     "capacity"
+    ],
+    "correctAttribute": "length"
+   },
+   {
+    "id": "co-2",
+    "type": "identify_attribute",
+    "instruction": "How can we compare these two items?",
+    "attribute": "weight",
+    "objects": [
+     {
+      "name": "feather",
+      "visualSize": 40,
+      "actualValue": 1
+     },
+     {
+      "name": "rock",
+      "visualSize": 50,
+      "actualValue": 10
+     }
+    ],
+    "correctAnswer": "weight",
+    "comparisonWord": "longer",
+    "hint": "Think about how heavy they feel in your hands!",
+    "attributeOptions": [
+     "length",
+     "weight",
+     "capacity"
+    ],
+    "correctAttribute": "weight"
+   },
+   {
+    "id": "co-3",
+    "type": "identify_attribute",
+    "instruction": "What attribute are we looking at for these objects?",
+    "attribute": "capacity",
+    "objects": [
+     {
+      "name": "paper cup",
+      "visualSize": 35,
+      "actualValue": 4
+     },
+     {
+      "name": "bucket",
+      "visualSize": 80,
+      "actualValue": 20
+     }
+    ],
+    "correctAnswer": "capacity",
+    "comparisonWord": "longer",
+    "hint": "Think about how much juice or water each one can hold!",
+    "attributeOptions": [
+     "weight",
+     "capacity",
+     "length"
+    ],
+    "correctAttribute": "capacity"
+   },
+   {
+    "id": "co-4",
+    "type": "identify_attribute",
+    "instruction": "What can we measure about these things?",
+    "attribute": "length",
+    "objects": [
+     {
+      "name": "yellow pencil",
+      "visualSize": 45,
+      "actualValue": 7
+     },
+     {
+      "name": "green crayon",
+      "visualSize": 25,
+      "actualValue": 3
+     }
+    ],
+    "correctAnswer": "length",
+    "comparisonWord": "longer",
+    "hint": "Which one stretches out farther from end to end?",
+    "attributeOptions": [
+     "length",
+     "capacity",
+     "weight"
+    ],
+    "correctAttribute": "length"
+   },
+   {
+    "id": "co-5",
+    "type": "identify_attribute",
+    "instruction": "What can we tell by looking at how much these can hold?",
+    "attribute": "capacity",
+    "objects": [
+     {
+      "name": "spoon",
+      "visualSize": 20,
+      "actualValue": 1
+     },
+     {
+      "name": "bathtub",
+      "visualSize": 90,
+      "actualValue": 50
+     }
+    ],
+    "correctAnswer": "capacity",
+    "comparisonWord": "longer",
+    "hint": "Think about filling them up with water!",
+    "attributeOptions": [
+     "weight",
+     "length",
+     "capacity"
+    ],
+    "correctAttribute": "capacity"
+   },
+   {
+    "id": "co-6",
+    "type": "identify_attribute",
+    "instruction": "What attribute fits these two objects?",
+    "attribute": "length",
+    "objects": [
+     {
+      "name": "paper strip",
+      "visualSize": 35,
+      "actualValue": 6
+     },
+     {
+      "name": "wooden ruler",
+      "visualSize": 80,
+      "actualValue": 12
+     }
+    ],
+    "correctAnswer": "length",
+    "comparisonWord": "longer",
+    "hint": "Lay them flat and see which one goes further!",
+    "attributeOptions": [
+     "capacity",
+     "weight",
+     "length"
+    ],
+    "correctAttribute": "length"
+   },
+   {
+    "id": "co-7",
+    "type": "identify_attribute",
+    "instruction": "Which attribute can we measure here?",
+    "attribute": "weight",
+    "objects": [
+     {
+      "name": "cotton ball",
+      "visualSize": 40,
+      "actualValue": 1
+     },
+     {
+      "name": "textbook",
+      "visualSize": 70,
+      "actualValue": 8
+     }
+    ],
+    "correctAnswer": "weight",
+    "comparisonWord": "longer",
+    "hint": "Which one feels heavier to lift?",
+    "attributeOptions": [
+     "length",
+     "capacity",
+     "weight"
+    ],
+    "correctAttribute": "weight"
+   }
+  ],
+  "gradeBand": "K"
+ }
+}

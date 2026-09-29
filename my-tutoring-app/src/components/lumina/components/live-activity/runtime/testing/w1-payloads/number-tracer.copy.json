@@ -1,0 +1,62 @@
+{
+ "source": "qa/tutor-reports/number-tracer-runtime-copy-payload-2026-09-28.json",
+ "primitiveId": "number-tracer",
+ "evalMode": "copy",
+ "data": {
+  "title": "Writing Numerals Zero Through Five",
+  "description": "Practice writing the numerals 0 through 5 by looking at the model and copying each digit.",
+  "gradeBand": "K",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "copy",
+    "digit": 0,
+    "showModel": true,
+    "showArrows": false,
+    "hint": "Draw a smooth oval, starting near the top.",
+    "strokePaths": [],
+    "instruction": "Copy the number 0!"
+   },
+   {
+    "id": "c2",
+    "type": "copy",
+    "digit": 1,
+    "showModel": true,
+    "showArrows": false,
+    "hint": "Pull straight down from the top.",
+    "strokePaths": [],
+    "instruction": "Copy the number 1!"
+   },
+   {
+    "id": "c3",
+    "type": "copy",
+    "digit": 2,
+    "showModel": true,
+    "showArrows": false,
+    "hint": "Curve around the top, then slide straight across.",
+    "strokePaths": [],
+    "instruction": "Copy the number 2!"
+   },
+   {
+    "id": "c4",
+    "type": "copy",
+    "digit": 3,
+    "showModel": true,
+    "showArrows": false,
+    "hint": "Make two small bumps facing to the right.",
+    "strokePaths": [],
+    "instruction": "Copy the number 3!"
+   },
+   {
+    "id": "c5",
+    "type": "copy",
+    "digit": 4,
+    "showModel": true,
+    "showArrows": false,
+    "hint": "Go down, across, and then straight down again.",
+    "strokePaths": [],
+    "instruction": "Copy the number 4!"
+   }
+  ]
+ }
+}

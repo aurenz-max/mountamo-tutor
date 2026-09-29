@@ -1,0 +1,59 @@
+{
+ "source": "qa/tutor-reports/comparison-builder-runtime-compare_numbers-payload-2026-09-28.json",
+ "primitiveId": "comparison-builder",
+ "evalMode": "compare_numbers",
+ "data": {
+  "title": "Compare the Numbers!",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "compare-numbers",
+    "instruction": "Which symbol belongs between these two numbers?",
+    "leftNumber": 3,
+    "rightNumber": 5,
+    "targetNumber": 0,
+    "correctSymbol": "<"
+   },
+   {
+    "id": "c2",
+    "type": "compare-numbers",
+    "instruction": "Compare these two numbers using the correct sign.",
+    "leftNumber": 7,
+    "rightNumber": 4,
+    "targetNumber": 0,
+    "correctSymbol": ">"
+   },
+   {
+    "id": "c3",
+    "type": "compare-numbers",
+    "instruction": "Look at these numbers and pick the correct symbol.",
+    "leftNumber": 6,
+    "rightNumber": 6,
+    "targetNumber": 0,
+    "correctSymbol": "="
+   },
+   {
+    "id": "c4",
+    "type": "compare-numbers",
+    "instruction": "Can you choose the right symbol for this pair?",
+    "leftNumber": 9,
+    "rightNumber": 12,
+    "targetNumber": 0,
+    "correctSymbol": "<"
+   },
+   {
+    "id": "c5",
+    "type": "compare-numbers",
+    "instruction": "Compare this final pair of numbers carefully.",
+    "leftNumber": 15,
+    "rightNumber": 11,
+    "targetNumber": 0,
+    "correctSymbol": ">"
+   }
+  ],
+  "gradeBand": "1",
+  "showCorrespondenceLines": true,
+  "useAlligatorMnemonic": true,
+  "description": "Students practice comparing numbers using greater than, less than, and equal to symbols in progressive steps."
+ }
+}

@@ -1,0 +1,62 @@
+{
+ "source": "qa/tutor-reports/number-tracer-runtime-write-payload-2026-09-28.json",
+ "primitiveId": "number-tracer",
+ "evalMode": "write",
+ "data": {
+  "title": "Writing Numerals Zero Through Five",
+  "description": "Practice writing numerals 0 through 5 from prompts without models or arrows.",
+  "gradeBand": "K",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "write",
+    "digit": 0,
+    "showModel": false,
+    "showArrows": false,
+    "hint": "Draw a round oval shape like a zero.",
+    "strokePaths": [],
+    "instruction": "Write the number 0!"
+   },
+   {
+    "id": "c2",
+    "type": "write",
+    "digit": 1,
+    "showModel": false,
+    "showArrows": false,
+    "hint": "Pull straight down to make a one.",
+    "strokePaths": [],
+    "instruction": "Write the number 1!"
+   },
+   {
+    "id": "c3",
+    "type": "write",
+    "digit": 2,
+    "showModel": false,
+    "showArrows": false,
+    "hint": "Curve around and slide down for two.",
+    "strokePaths": [],
+    "instruction": "Write the number 2!"
+   },
+   {
+    "id": "c4",
+    "type": "write",
+    "digit": 3,
+    "showModel": false,
+    "showArrows": false,
+    "hint": "Make two small curves to the right for three.",
+    "strokePaths": [],
+    "instruction": "Write the number 3!"
+   },
+   {
+    "id": "c5",
+    "type": "write",
+    "digit": 5,
+    "showModel": false,
+    "showArrows": false,
+    "hint": "Go down, round around, and put a hat on top for five.",
+    "strokePaths": [],
+    "instruction": "Write the number 5!"
+   }
+  ]
+ }
+}

@@ -1,0 +1,195 @@
+{
+ "source": "qa/tutor-reports/balance-scale-runtime-one_step_hard-payload-2026-09-28.json",
+ "primitiveId": "balance-scale",
+ "evalMode": "one_step_hard",
+ "data": {
+  "gradeLevel": "elementary",
+  "title": "Share the Weight",
+  "description": "Share the weight equally among identical parcels. Find one parcel weight.",
+  "leftSide": [
+   {
+    "value": 1,
+    "label": "x",
+    "isVariable": true
+   },
+   {
+    "value": 1,
+    "label": "x",
+    "isVariable": true
+   },
+   {
+    "value": 1,
+    "label": "x",
+    "isVariable": true
+   },
+   {
+    "value": 1,
+    "label": "x",
+    "isVariable": true
+   },
+   {
+    "value": 1,
+    "label": "x",
+    "isVariable": true
+   }
+  ],
+  "rightSide": [
+   {
+    "value": 15,
+    "label": "15"
+   }
+  ],
+  "variableValue": 3,
+  "showTilt": true,
+  "showSideValues": false,
+  "showBalanceStatus": true,
+  "allowOperations": [
+   "multiply",
+   "divide"
+  ],
+  "gradeBand": "3-4",
+  "challenges": [
+   {
+    "type": "one_step_hard",
+    "instruction": "Share the weight equally among identical parcels. Find one parcel weight.",
+    "leftSide": [
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     }
+    ],
+    "rightSide": [
+     {
+      "value": 15,
+      "label": "15"
+     }
+    ],
+    "variableValue": 3,
+    "hint": "Use the current weight task. Keep equal amounts together and use one group per identical parcel."
+   },
+   {
+    "type": "one_step_hard",
+    "instruction": "Share the weight equally among identical parcels. Find one parcel weight.",
+    "leftSide": [
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     }
+    ],
+    "rightSide": [
+     {
+      "value": 16,
+      "label": "16"
+     }
+    ],
+    "variableValue": 4,
+    "hint": "Use the current weight task. Keep equal amounts together and use one group per identical parcel."
+   },
+   {
+    "type": "one_step_hard",
+    "instruction": "Share the weight equally among identical parcels. Find one parcel weight.",
+    "leftSide": [
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     }
+    ],
+    "rightSide": [
+     {
+      "value": 24,
+      "label": "24"
+     }
+    ],
+    "variableValue": 6,
+    "hint": "Use the current weight task. Keep equal amounts together and use one group per identical parcel."
+   },
+   {
+    "type": "one_step_hard",
+    "instruction": "Share the weight equally among identical parcels. Find one parcel weight.",
+    "leftSide": [
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     }
+    ],
+    "rightSide": [
+     {
+      "value": 28,
+      "label": "28"
+     }
+    ],
+    "variableValue": 7,
+    "hint": "Use the current weight task. Keep equal amounts together and use one group per identical parcel."
+   }
+  ]
+ }
+}

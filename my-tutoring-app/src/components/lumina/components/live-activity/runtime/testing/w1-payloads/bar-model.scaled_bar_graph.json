@@ -1,0 +1,195 @@
+{
+ "source": "qa/tutor-reports/bar-model-runtime-scaled_bar_graph-payload-2026-09-28.json",
+ "primitiveId": "bar-model",
+ "evalMode": "scaled_bar_graph",
+ "data": {
+  "title": "Favorite Park Toys",
+  "description": "Read the chart to find out how many kids played on the swings!",
+  "challenges": [
+   {
+    "id": "bm-1",
+    "evalMode": "scaled_bar_graph",
+    "values": [
+     {
+      "label": "Slides",
+      "value": 10,
+      "color": "blue"
+     },
+     {
+      "label": "Swings",
+      "value": 14,
+      "color": "green"
+     },
+     {
+      "label": "Seesaw",
+      "value": 5,
+      "color": "purple"
+     },
+     {
+      "label": "Sandbox",
+      "value": 20,
+      "color": "orange"
+     },
+     {
+      "label": "Climber",
+      "value": 8,
+      "color": "pink"
+     }
+    ],
+    "graphStyle": "scaled_bar",
+    "scale": {
+     "step": 5,
+     "max": 20
+    },
+    "prompt": "How many children chose the swings?",
+    "hint": "Look at the top of the bar for swings and check where it reaches between the tick marks.",
+    "expectedValue": 14,
+    "options": [
+     9,
+     14,
+     19,
+     24
+    ],
+    "targetBarIndex": 1
+   },
+   {
+    "id": "bm-2",
+    "evalMode": "scaled_bar_graph",
+    "values": [
+     {
+      "label": "Teddy Bears",
+      "value": 14,
+      "color": "blue"
+     },
+     {
+      "label": "Toy Cars",
+      "value": 20,
+      "color": "green"
+     },
+     {
+      "label": "Blocks",
+      "value": 25,
+      "color": "purple"
+     },
+     {
+      "label": "Dolls",
+      "value": 10,
+      "color": "orange"
+     },
+     {
+      "label": "Puzzles",
+      "value": 35,
+      "color": "pink"
+     }
+    ],
+    "graphStyle": "scaled_bar",
+    "scale": {
+     "step": 5,
+     "max": 35
+    },
+    "prompt": "How many teddy bears do we have?",
+    "hint": "Look at the top of the bar for teddy bears and see which two lines it sits between.",
+    "expectedValue": 14,
+    "options": [
+     9,
+     14,
+     19,
+     24
+    ],
+    "targetBarIndex": 0
+   },
+   {
+    "id": "bm-3",
+    "evalMode": "scaled_bar_graph",
+    "values": [
+     {
+      "label": "Blocks",
+      "value": 14,
+      "color": "blue"
+     },
+     {
+      "label": "Cars",
+      "value": 20,
+      "color": "green"
+     },
+     {
+      "label": "Dolls",
+      "value": 25,
+      "color": "purple"
+     },
+     {
+      "label": "Puzzles",
+      "value": 10,
+      "color": "orange"
+     },
+     {
+      "label": "Balls",
+      "value": 35,
+      "color": "pink"
+     }
+    ],
+    "graphStyle": "scaled_bar",
+    "scale": {
+     "step": 5,
+     "max": 35
+    },
+    "prompt": "How many children chose the blocks?",
+    "hint": "Look at the top of the bar for blocks and follow it across to the numbers. See where it stops between the tick marks.",
+    "expectedValue": 14,
+    "options": [
+     9,
+     14,
+     19,
+     24
+    ],
+    "targetBarIndex": 0
+   },
+   {
+    "id": "bm-4",
+    "evalMode": "scaled_bar_graph",
+    "values": [
+     {
+      "label": "Dolls",
+      "value": 10,
+      "color": "blue"
+     },
+     {
+      "label": "Cars",
+      "value": 25,
+      "color": "green"
+     },
+     {
+      "label": "Blocks",
+      "value": 13,
+      "color": "purple"
+     },
+     {
+      "label": "Puzzles",
+      "value": 20,
+      "color": "orange"
+     },
+     {
+      "label": "Balls",
+      "value": 35,
+      "color": "pink"
+     }
+    ],
+    "graphStyle": "scaled_bar",
+    "scale": {
+     "step": 5,
+     "max": 35
+    },
+    "prompt": "How many children chose Blocks as their favorite toy?",
+    "hint": "Look at the top of the bar for Blocks and see where it lands between the grid lines.",
+    "expectedValue": 13,
+    "options": [
+     8,
+     13,
+     18,
+     23
+    ],
+    "targetBarIndex": 2
+   }
+  ]
+ }
+}

@@ -1,0 +1,171 @@
+{
+ "source": "qa/tutor-reports/bar-model-runtime-graph_word_problem-payload-2026-09-28.json",
+ "primitiveId": "bar-model",
+ "evalMode": "graph_word_problem",
+ "data": {
+  "title": "Favorite Toys",
+  "description": "Read the graph to find out how many toys there are!",
+  "challenges": [
+   {
+    "id": "bm-1",
+    "evalMode": "graph_word_problem",
+    "values": [
+     {
+      "label": "Cars",
+      "value": 17,
+      "color": "blue"
+     },
+     {
+      "label": "Dolls",
+      "value": 8,
+      "color": "green"
+     },
+     {
+      "label": "Balls",
+      "value": 3,
+      "color": "purple"
+     },
+     {
+      "label": "Trains",
+      "value": 15,
+      "color": "orange"
+     }
+    ],
+    "graphStyle": "scaled_bar",
+    "scale": {
+     "step": 5,
+     "max": 20
+    },
+    "prompt": "How many more cars than dolls are there?",
+    "hint": "Subtract the number of dolls from the number of cars.",
+    "expectedValue": 9,
+    "options": [
+     4,
+     9,
+     14,
+     19
+    ]
+   },
+   {
+    "id": "bm-2",
+    "evalMode": "graph_word_problem",
+    "values": [
+     {
+      "label": "Toy Cars",
+      "value": 29,
+      "color": "blue"
+     },
+     {
+      "label": "Toy Trains",
+      "value": 11,
+      "color": "green"
+     },
+     {
+      "label": "Teddy Bears",
+      "value": 32,
+      "color": "purple"
+     },
+     {
+      "label": "Building Blocks",
+      "value": 15,
+      "color": "orange"
+     }
+    ],
+    "graphStyle": "scaled_bar",
+    "scale": {
+     "step": 5,
+     "max": 35
+    },
+    "prompt": "What is the total of Toy Cars and Toy Trains?",
+    "hint": "Add the values of Toy Cars and Toy Trains together.",
+    "expectedValue": 40,
+    "options": [
+     35,
+     40,
+     45,
+     50
+    ]
+   },
+   {
+    "id": "bm-3",
+    "evalMode": "graph_word_problem",
+    "values": [
+     {
+      "label": "Swings",
+      "value": 38,
+      "color": "blue"
+     },
+     {
+      "label": "Slides",
+      "value": 14,
+      "color": "green"
+     },
+     {
+      "label": "Climbers",
+      "value": 6,
+      "color": "purple"
+     },
+     {
+      "label": "Seesaws",
+      "value": 27,
+      "color": "orange"
+     }
+    ],
+    "graphStyle": "scaled_bar",
+    "scale": {
+     "step": 5,
+     "max": 40
+    },
+    "prompt": "How many more swings than slides are there?",
+    "hint": "Find the values for swings and slides, then subtract the smaller number from the larger number.",
+    "expectedValue": 24,
+    "options": [
+     19,
+     24,
+     29,
+     34
+    ]
+   },
+   {
+    "id": "bm-4",
+    "evalMode": "graph_word_problem",
+    "values": [
+     {
+      "label": "Birds",
+      "value": 33,
+      "color": "blue"
+     },
+     {
+      "label": "Ducks",
+      "value": 13,
+      "color": "green"
+     },
+     {
+      "label": "Frogs",
+      "value": 20,
+      "color": "purple"
+     },
+     {
+      "label": "Squirrels",
+      "value": 28,
+      "color": "orange"
+     }
+    ],
+    "graphStyle": "scaled_bar",
+    "scale": {
+     "step": 5,
+     "max": 35
+    },
+    "prompt": "How many more birds than ducks were seen at the park?",
+    "hint": "Subtract the number of ducks from the number of birds.",
+    "expectedValue": 20,
+    "options": [
+     15,
+     20,
+     25,
+     30
+    ]
+   }
+  ]
+ }
+}

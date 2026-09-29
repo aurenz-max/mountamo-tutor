@@ -1,0 +1,178 @@
+{
+ "source": "qa/tutor-reports/spatial-scene-runtime-place_between-payload-2026-09-28.json",
+ "primitiveId": "spatial-scene",
+ "evalMode": "place_between",
+ "data": {
+  "title": "Spatial Scene: Position words: above, below, beside and next to",
+  "description": "Explore spatial relationships with a a classroom with furniture and toys",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "place_between",
+    "instruction": "Put the ball BETWEEN the box and the chair.",
+    "hint": "Look for the box and the chair in the same row. Tap the empty space right between them!",
+    "sceneObjects": [
+     {
+      "name": "box",
+      "image": "\ud83d\udce6",
+      "position": {
+       "row": 1,
+       "col": 0
+      }
+     },
+     {
+      "name": "chair",
+      "image": "\ud83e\ude91",
+      "position": {
+       "row": 1,
+       "col": 2
+      }
+     },
+     {
+      "name": "cat",
+      "image": "\ud83d\udc31",
+      "position": {
+       "row": 0,
+       "col": 1
+      }
+     },
+     {
+      "name": "star",
+      "image": "\u2b50",
+      "position": {
+       "row": 2,
+       "col": 1
+      }
+     }
+    ],
+    "targetObject": {
+     "name": "ball",
+     "image": "\u26bd",
+     "position": {
+      "row": 0,
+      "col": 0
+     }
+    },
+    "correctPosition": "between",
+    "referenceObjectName": "box",
+    "referenceObjectName2": "chair",
+    "correctCell": {
+     "row": 1,
+     "col": 1
+    }
+   },
+   {
+    "id": "c2",
+    "type": "place_between",
+    "instruction": "Put the star BETWEEN the tree and the house.",
+    "hint": "Find the tree and the house in the same column. Tap the empty square right in the middle!",
+    "sceneObjects": [
+     {
+      "name": "tree",
+      "image": "\ud83c\udf33",
+      "position": {
+       "row": 0,
+       "col": 2
+      }
+     },
+     {
+      "name": "house",
+      "image": "\ud83c\udfe0",
+      "position": {
+       "row": 2,
+       "col": 2
+      }
+     },
+     {
+      "name": "dog",
+      "image": "\ud83d\udc15",
+      "position": {
+       "row": 0,
+       "col": 0
+      }
+     },
+     {
+      "name": "car",
+      "image": "\ud83d\ude97",
+      "position": {
+       "row": 2,
+       "col": 0
+      }
+     }
+    ],
+    "targetObject": {
+     "name": "star",
+     "image": "\u2b50",
+     "position": {
+      "row": 0,
+      "col": 0
+     }
+    },
+    "correctPosition": "between",
+    "referenceObjectName": "tree",
+    "referenceObjectName2": "house",
+    "correctCell": {
+     "row": 1,
+     "col": 2
+    }
+   },
+   {
+    "id": "c3",
+    "type": "place_between",
+    "instruction": "Put the flower BETWEEN the cat and the dog.",
+    "hint": "Check the cat and the dog. They share the same row with one empty space between them!",
+    "sceneObjects": [
+     {
+      "name": "cat",
+      "image": "\ud83d\udc31",
+      "position": {
+       "row": 2,
+       "col": 0
+      }
+     },
+     {
+      "name": "dog",
+      "image": "\ud83d\udc15",
+      "position": {
+       "row": 2,
+       "col": 2
+      }
+     },
+     {
+      "name": "ball",
+      "image": "\u26bd",
+      "position": {
+       "row": 0,
+       "col": 1
+      }
+     },
+     {
+      "name": "box",
+      "image": "\ud83d\udce6",
+      "position": {
+       "row": 1,
+       "col": 1
+      }
+     }
+    ],
+    "targetObject": {
+     "name": "flower",
+     "image": "\ud83c\udf38",
+     "position": {
+      "row": 0,
+      "col": 0
+     }
+    },
+    "correctPosition": "between",
+    "referenceObjectName": "cat",
+    "referenceObjectName2": "dog",
+    "correctCell": {
+     "row": 2,
+     "col": 1
+    }
+   }
+  ],
+  "gridSize": 3,
+  "gradeBand": "K"
+ }
+}

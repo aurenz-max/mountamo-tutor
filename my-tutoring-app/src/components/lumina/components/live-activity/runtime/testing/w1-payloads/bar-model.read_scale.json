@@ -1,0 +1,175 @@
+{
+ "source": "qa/tutor-reports/bar-model-runtime-read_scale-payload-2026-09-28.json",
+ "primitiveId": "bar-model",
+ "evalMode": "read_scale",
+ "data": {
+  "title": "Favorite Fruits",
+  "description": "Find out how many fruits the kids picked in the garden!",
+  "challenges": [
+   {
+    "id": "bm-1",
+    "evalMode": "read_scale",
+    "values": [
+     {
+      "label": "Leo",
+      "value": 7,
+      "color": "blue"
+     },
+     {
+      "label": "Maya",
+      "value": 4,
+      "color": "green"
+     },
+     {
+      "label": "Sam",
+      "value": 9,
+      "color": "purple"
+     },
+     {
+      "label": "Zoe",
+      "value": 5,
+      "color": "orange"
+     }
+    ],
+    "graphStyle": "scaled_bar",
+    "scale": {
+     "step": 1,
+     "max": 9
+    },
+    "prompt": "How many apples did Leo pick?",
+    "hint": "Find Leo on the graph and follow the line across to the numbers to count.",
+    "expectedValue": 7,
+    "options": [
+     6,
+     7,
+     8,
+     9
+    ],
+    "targetBarIndex": 0
+   },
+   {
+    "id": "bm-2",
+    "evalMode": "read_scale",
+    "values": [
+     {
+      "label": "Apples",
+      "value": 5,
+      "color": "blue"
+     },
+     {
+      "label": "Bananas",
+      "value": 3,
+      "color": "green"
+     },
+     {
+      "label": "Oranges",
+      "value": 7,
+      "color": "purple"
+     },
+     {
+      "label": "Grapes",
+      "value": 2,
+      "color": "orange"
+     }
+    ],
+    "graphStyle": "scaled_bar",
+    "scale": {
+     "step": 1,
+     "max": 7
+    },
+    "prompt": "How many children chose apples?",
+    "hint": "Look at the row for apples and count the pictures across to the number on the axis.",
+    "expectedValue": 5,
+    "options": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "targetBarIndex": 0
+   },
+   {
+    "id": "bm-3",
+    "evalMode": "read_scale",
+    "values": [
+     {
+      "label": "Leo",
+      "value": 4,
+      "color": "blue"
+     },
+     {
+      "label": "Mia",
+      "value": 7,
+      "color": "green"
+     },
+     {
+      "label": "Sam",
+      "value": 2,
+      "color": "purple"
+     },
+     {
+      "label": "Zoe",
+      "value": 9,
+      "color": "orange"
+     }
+    ],
+    "graphStyle": "scaled_bar",
+    "scale": {
+     "step": 1,
+     "max": 9
+    },
+    "prompt": "How many apples did Leo pick?",
+    "hint": "Find Leo on the graph and follow the line across to the numbers to count.",
+    "expectedValue": 4,
+    "options": [
+     3,
+     4,
+     5,
+     6
+    ],
+    "targetBarIndex": 0
+   },
+   {
+    "id": "bm-4",
+    "evalMode": "read_scale",
+    "values": [
+     {
+      "label": "Mia",
+      "value": 3,
+      "color": "blue"
+     },
+     {
+      "label": "Leo",
+      "value": 7,
+      "color": "green"
+     },
+     {
+      "label": "Sam",
+      "value": 2,
+      "color": "purple"
+     },
+     {
+      "label": "Zoe",
+      "value": 5,
+      "color": "orange"
+     }
+    ],
+    "graphStyle": "scaled_bar",
+    "scale": {
+     "step": 1,
+     "max": 7
+    },
+    "prompt": "How many toys did Leo have?",
+    "hint": "Find Leo's name on the bottom, follow the picture column up, and count the marks on the side.",
+    "expectedValue": 7,
+    "options": [
+     6,
+     7,
+     8,
+     9
+    ],
+    "targetBarIndex": 1
+   }
+  ]
+ }
+}

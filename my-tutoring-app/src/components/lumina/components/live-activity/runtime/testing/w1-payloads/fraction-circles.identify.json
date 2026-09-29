@@ -1,0 +1,57 @@
+{
+ "source": "qa/tutor-reports/fraction-circles-runtime-identify-payload-2026-09-28.json",
+ "primitiveId": "fraction-circles",
+ "evalMode": "identify",
+ "data": {
+  "title": "Fun with Fraction Circles: Halves, Thirds, and Fourths",
+  "challenges": [
+   {
+    "id": "fc1",
+    "type": "identify",
+    "instruction": "What fraction of the circle is shaded?",
+    "denominator": 2,
+    "numerator": 1,
+    "hint": "Count the equal parts, then count the shaded parts.",
+    "narration": "What fraction of the circle is shaded?"
+   },
+   {
+    "id": "fc2",
+    "type": "identify",
+    "instruction": "What fraction of the circle is shaded?",
+    "denominator": 3,
+    "numerator": 2,
+    "hint": "Count the equal parts, then count the shaded parts.",
+    "narration": "What fraction of the circle is shaded?"
+   },
+   {
+    "id": "fc3",
+    "type": "identify",
+    "instruction": "What fraction of the circle is shaded?",
+    "denominator": 4,
+    "numerator": 3,
+    "hint": "Count the equal parts, then count the shaded parts.",
+    "narration": "What fraction of the circle is shaded?"
+   },
+   {
+    "id": "fc4",
+    "type": "identify",
+    "instruction": "What fraction of the circle is shaded?",
+    "denominator": 3,
+    "numerator": 1,
+    "hint": "Count the equal parts, then count the shaded parts.",
+    "narration": "What fraction of the circle is shaded?"
+   },
+   {
+    "id": "fc5",
+    "type": "identify",
+    "instruction": "What fraction of the circle is shaded?",
+    "denominator": 4,
+    "numerator": 2,
+    "hint": "Count the equal parts, then count the shaded parts.",
+    "narration": "What fraction of the circle is shaded?"
+   }
+  ],
+  "description": "Practice identifying halves, thirds, and fourths by examining shaded equal slices on fraction circles.",
+  "gradeBand": "K-2"
+ }
+}

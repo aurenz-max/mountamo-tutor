@@ -1,0 +1,127 @@
+{
+ "source": "qa/tutor-reports/spatial-scene-runtime-follow_directions-payload-2026-09-28.json",
+ "primitiveId": "spatial-scene",
+ "evalMode": "follow_directions",
+ "data": {
+  "title": "Spatial Scene: Position words: above, below, beside and next to",
+  "description": "Explore spatial relationships with a a zoo with animals in enclosures",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "follow_directions",
+    "instruction": "Let's help the zookeeper place the animals in their correct enclosures!",
+    "hint": "Look at where the tree is first. Then place the next animal right above or beside it.",
+    "sceneObjects": [
+     {
+      "name": "tree",
+      "image": "\ud83c\udf33",
+      "position": {
+       "row": 1,
+       "col": 1
+      }
+     }
+    ],
+    "targetObject": {
+     "name": "tree",
+     "image": "\ud83c\udf33",
+     "position": {
+      "row": 1,
+      "col": 1
+     }
+    },
+    "correctPosition": "above",
+    "steps": [
+     {
+      "instruction": "Put the monkey above the tree.",
+      "targetObject": {
+       "name": "monkey",
+       "image": "\ud83d\udc35",
+       "position": {
+        "row": 0,
+        "col": 1
+       }
+      },
+      "correctCell": {
+       "row": 0,
+       "col": 1
+      }
+     },
+     {
+      "instruction": "Put the lion beside the tree.",
+      "targetObject": {
+       "name": "lion",
+       "image": "\ud83e\udd81",
+       "position": {
+        "row": 1,
+        "col": 2
+       }
+      },
+      "correctCell": {
+       "row": 1,
+       "col": 2
+      }
+     }
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "follow_directions",
+    "instruction": "Time to organize more animals at the zoo!",
+    "hint": "Find the house first. Remember that below means lower in the same column, and next to means right beside in the same row.",
+    "sceneObjects": [
+     {
+      "name": "house",
+      "image": "\ud83c\udfe0",
+      "position": {
+       "row": 1,
+       "col": 1
+      }
+     }
+    ],
+    "targetObject": {
+     "name": "house",
+     "image": "\ud83c\udfe0",
+     "position": {
+      "row": 1,
+      "col": 1
+     }
+    },
+    "correctPosition": "above",
+    "steps": [
+     {
+      "instruction": "Put the dog below the house.",
+      "targetObject": {
+       "name": "dog",
+       "image": "\ud83d\udc15",
+       "position": {
+        "row": 2,
+        "col": 1
+       }
+      },
+      "correctCell": {
+       "row": 2,
+       "col": 1
+      }
+     },
+     {
+      "instruction": "Put the cat next to the house.",
+      "targetObject": {
+       "name": "cat",
+       "image": "\ud83d\udc31",
+       "position": {
+        "row": 1,
+        "col": 0
+       }
+      },
+      "correctCell": {
+       "row": 1,
+       "col": 0
+      }
+     }
+    ]
+   }
+  ],
+  "gridSize": 3,
+  "gradeBand": "K"
+ }
+}

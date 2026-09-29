@@ -1,0 +1,183 @@
+{
+ "source": "qa/tutor-reports/bar-model-runtime-picture_graph-payload-2026-09-28.json",
+ "primitiveId": "bar-model",
+ "evalMode": "picture_graph",
+ "data": {
+  "title": "Favorite Toys",
+  "description": "Read the picture graph to find out how many toys there are.",
+  "challenges": [
+   {
+    "id": "bm-1",
+    "evalMode": "picture_graph",
+    "values": [
+     {
+      "label": "Cars",
+      "value": 10,
+      "color": "blue"
+     },
+     {
+      "label": "Blocks",
+      "value": 15,
+      "color": "green"
+     },
+     {
+      "label": "Dolls",
+      "value": 20,
+      "color": "purple"
+     },
+     {
+      "label": "Balls",
+      "value": 5,
+      "color": "orange"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 5,
+     "max": 20,
+     "iconEmoji": "\ud83e\uddf8",
+     "iconValue": 5
+    },
+    "prompt": "How many blocks were collected? Each \ud83e\uddf8 stands for 5.",
+    "hint": "Count the toys for blocks, then multiply by 5.",
+    "expectedValue": 15,
+    "options": [
+     3,
+     10,
+     15,
+     20
+    ],
+    "targetBarIndex": 1
+   },
+   {
+    "id": "bm-2",
+    "evalMode": "picture_graph",
+    "values": [
+     {
+      "label": "Apples",
+      "value": 15,
+      "color": "blue"
+     },
+     {
+      "label": "Bananas",
+      "value": 10,
+      "color": "green"
+     },
+     {
+      "label": "Oranges",
+      "value": 20,
+      "color": "purple"
+     },
+     {
+      "label": "Pears",
+      "value": 5,
+      "color": "orange"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 5,
+     "max": 20,
+     "iconEmoji": "\ud83c\udf4e",
+     "iconValue": 5
+    },
+    "prompt": "Each \ud83c\udf4e stands for 5 items. How many Apples are there?",
+    "hint": "Count the apple icons for Apples and multiply by 5.",
+    "expectedValue": 15,
+    "options": [
+     3,
+     10,
+     15,
+     20
+    ],
+    "targetBarIndex": 0
+   },
+   {
+    "id": "bm-3",
+    "evalMode": "picture_graph",
+    "values": [
+     {
+      "label": "Apples",
+      "value": 6,
+      "color": "blue"
+     },
+     {
+      "label": "Bananas",
+      "value": 4,
+      "color": "green"
+     },
+     {
+      "label": "Oranges",
+      "value": 8,
+      "color": "purple"
+     },
+     {
+      "label": "Grapes",
+      "value": 10,
+      "color": "orange"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 2,
+     "max": 10,
+     "iconEmoji": "\ud83c\udf4e",
+     "iconValue": 2
+    },
+    "prompt": "How many apples were picked for the Fruit category? Each \ud83c\udf4e stands for 2.",
+    "hint": "Count the apple icons and multiply by 2 to find the total.",
+    "expectedValue": 6,
+    "options": [
+     3,
+     4,
+     6,
+     8
+    ],
+    "targetBarIndex": 0
+   },
+   {
+    "id": "bm-4",
+    "evalMode": "picture_graph",
+    "values": [
+     {
+      "label": "Apples",
+      "value": 15,
+      "color": "blue"
+     },
+     {
+      "label": "Bananas",
+      "value": 10,
+      "color": "green"
+     },
+     {
+      "label": "Oranges",
+      "value": 20,
+      "color": "purple"
+     },
+     {
+      "label": "Grapes",
+      "value": 5,
+      "color": "orange"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 5,
+     "max": 20,
+     "iconEmoji": "\ud83c\udf4e",
+     "iconValue": 5
+    },
+    "prompt": "How many apples were picked? Each \ud83c\udf4e stands for 5.",
+    "hint": "Count the apple icons for apples, then multiply by 5.",
+    "expectedValue": 15,
+    "options": [
+     3,
+     10,
+     15,
+     20
+    ],
+    "targetBarIndex": 0
+   }
+  ]
+ }
+}

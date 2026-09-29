@@ -1,0 +1,72 @@
+{
+ "source": "qa/tutor-reports/3d-shape-explorer-runtime-match_real_world-payload-2026-09-28.json",
+ "primitiveId": "3d-shape-explorer",
+ "evalMode": "match_real_world",
+ "data": {
+  "title": "Real World Solid Shapes",
+  "description": "Identify and name solid shapes found in everyday objects.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "match-to-real-world",
+    "matchPairs": [
+     {
+      "realWorldObject": "dice",
+      "emoji": "\ud83c\udfb2",
+      "shape3d": "cube"
+     },
+     {
+      "realWorldObject": "ball",
+      "emoji": "\u26bd",
+      "shape3d": "sphere"
+     },
+     {
+      "realWorldObject": "can",
+      "emoji": "\ud83e\udd6b",
+      "shape3d": "cylinder"
+     },
+     {
+      "realWorldObject": "party hat",
+      "emoji": "\ud83c\udf89",
+      "shape3d": "cone"
+     }
+    ],
+    "supportTier": "medium",
+    "showElementLabels": false,
+    "showFaceHighlight": false
+   },
+   {
+    "id": "c2",
+    "type": "match-to-real-world",
+    "matchPairs": [
+     {
+      "realWorldObject": "box",
+      "emoji": "\ud83d\udce6",
+      "shape3d": "cube"
+     },
+     {
+      "realWorldObject": "marble",
+      "emoji": "\ud83d\udd2e",
+      "shape3d": "sphere"
+     },
+     {
+      "realWorldObject": "battery",
+      "emoji": "\ud83d\udd0b",
+      "shape3d": "cylinder"
+     },
+     {
+      "realWorldObject": "traffic cone",
+      "emoji": "\ud83d\udea7",
+      "shape3d": "cone"
+     }
+    ],
+    "supportTier": "medium",
+    "showElementLabels": false,
+    "showFaceHighlight": false
+   }
+  ],
+  "gradeBand": "K",
+  "showUnfoldAnimation": false,
+  "show3dRotation": true
+ }
+}

@@ -1,0 +1,346 @@
+{
+ "source": "qa/tutor-reports/sorting-station-runtime-sort_variety-payload-2026-09-28.json",
+ "primitiveId": "sorting-station",
+ "evalMode": "sort_variety",
+ "data": {
+  "title": "Fun Animal Sort",
+  "description": "Explore sorting the same friendly animals by different rules like size, type, category, color, and shape!",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "sort-variety",
+    "instruction": "Now sort them by where they live!",
+    "sortingAttribute": "category",
+    "objects": [
+     {
+      "id": "obj1",
+      "label": "Brown Bear",
+      "emoji": "\ud83d\udc3b",
+      "attributes": {
+       "color": "brown",
+       "shape": "round",
+       "size": "big",
+       "type": "mammal",
+       "category": "wild"
+      }
+     },
+     {
+      "id": "obj2",
+      "label": "Grey Mouse",
+      "emoji": "\ud83d\udc2d",
+      "attributes": {
+       "color": "grey",
+       "shape": "round",
+       "size": "small",
+       "type": "mammal",
+       "category": "wild"
+      }
+     },
+     {
+      "id": "obj3",
+      "label": "Green Frog",
+      "emoji": "\ud83d\udc38",
+      "attributes": {
+       "color": "green",
+       "shape": "round",
+       "size": "small",
+       "type": "amphibian",
+       "category": "wild"
+      }
+     },
+     {
+      "id": "obj4",
+      "label": "White Sheep",
+      "emoji": "\ud83d\udc11",
+      "attributes": {
+       "color": "white",
+       "shape": "oval",
+       "size": "big",
+       "type": "mammal",
+       "category": "farm"
+      }
+     },
+     {
+      "id": "obj5",
+      "label": "Brown Dog",
+      "emoji": "\ud83d\udc36",
+      "attributes": {
+       "color": "brown",
+       "shape": "oval",
+       "size": "small",
+       "type": "mammal",
+       "category": "farm"
+      }
+     }
+    ],
+    "categories": [
+     {
+      "label": "Wild",
+      "rule": {
+       "category": "wild"
+      },
+      "bucketEmoji": "\ud83c\udf33"
+     },
+     {
+      "label": "Farm",
+      "rule": {
+       "category": "farm"
+      },
+      "bucketEmoji": "\ud83c\udfe1"
+     }
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "sort-variety",
+    "instruction": "Now sort them by what type of animal they are!",
+    "sortingAttribute": "type",
+    "objects": [
+     {
+      "id": "obj6",
+      "label": "Brown Bear",
+      "emoji": "\ud83d\udc3b",
+      "attributes": {
+       "color": "brown",
+       "shape": "round",
+       "size": "big",
+       "type": "mammal",
+       "category": "wild"
+      }
+     },
+     {
+      "id": "obj7",
+      "label": "Grey Mouse",
+      "emoji": "\ud83d\udc2d",
+      "attributes": {
+       "color": "grey",
+       "shape": "round",
+       "size": "small",
+       "type": "mammal",
+       "category": "wild"
+      }
+     },
+     {
+      "id": "obj8",
+      "label": "Green Frog",
+      "emoji": "\ud83d\udc38",
+      "attributes": {
+       "color": "green",
+       "shape": "round",
+       "size": "small",
+       "type": "amphibian",
+       "category": "wild"
+      }
+     },
+     {
+      "id": "obj9",
+      "label": "White Sheep",
+      "emoji": "\ud83d\udc11",
+      "attributes": {
+       "color": "white",
+       "shape": "oval",
+       "size": "big",
+       "type": "mammal",
+       "category": "farm"
+      }
+     },
+     {
+      "id": "obj10",
+      "label": "Brown Dog",
+      "emoji": "\ud83d\udc36",
+      "attributes": {
+       "color": "brown",
+       "shape": "oval",
+       "size": "small",
+       "type": "mammal",
+       "category": "farm"
+      }
+     }
+    ],
+    "categories": [
+     {
+      "label": "Mammal",
+      "rule": {
+       "type": "mammal"
+      },
+      "bucketEmoji": "\ud83c\udf7c"
+     },
+     {
+      "label": "Amphibian",
+      "rule": {
+       "type": "amphibian"
+      },
+      "bucketEmoji": "\ud83c\udf3f"
+     }
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "sort-variety",
+    "instruction": "Now sort them by size!",
+    "sortingAttribute": "size",
+    "objects": [
+     {
+      "id": "obj11",
+      "label": "Brown Bear",
+      "emoji": "\ud83d\udc3b",
+      "attributes": {
+       "color": "brown",
+       "shape": "round",
+       "size": "big",
+       "type": "mammal",
+       "category": "wild"
+      }
+     },
+     {
+      "id": "obj12",
+      "label": "Grey Mouse",
+      "emoji": "\ud83d\udc2d",
+      "attributes": {
+       "color": "grey",
+       "shape": "round",
+       "size": "small",
+       "type": "mammal",
+       "category": "wild"
+      }
+     },
+     {
+      "id": "obj13",
+      "label": "Green Frog",
+      "emoji": "\ud83d\udc38",
+      "attributes": {
+       "color": "green",
+       "shape": "round",
+       "size": "small",
+       "type": "amphibian",
+       "category": "wild"
+      }
+     },
+     {
+      "id": "obj14",
+      "label": "White Sheep",
+      "emoji": "\ud83d\udc11",
+      "attributes": {
+       "color": "white",
+       "shape": "oval",
+       "size": "big",
+       "type": "mammal",
+       "category": "farm"
+      }
+     },
+     {
+      "id": "obj15",
+      "label": "Brown Dog",
+      "emoji": "\ud83d\udc36",
+      "attributes": {
+       "color": "brown",
+       "shape": "oval",
+       "size": "small",
+       "type": "mammal",
+       "category": "farm"
+      }
+     }
+    ],
+    "categories": [
+     {
+      "label": "Big",
+      "rule": {
+       "size": "big"
+      },
+      "bucketEmoji": "\ud83c\udfd4\ufe0f"
+     },
+     {
+      "label": "Small",
+      "rule": {
+       "size": "small"
+      },
+      "bucketEmoji": "\ud83d\udd0d"
+     }
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "sort-variety",
+    "instruction": "Now let us sort them by whether they are pets or wild animals!",
+    "sortingAttribute": "category",
+    "objects": [
+     {
+      "id": "obj16",
+      "label": "Red Fox",
+      "emoji": "\ud83e\udd8a",
+      "attributes": {
+       "color": "orange",
+       "size": "small",
+       "type": "mammal",
+       "category": "wild"
+      }
+     },
+     {
+      "id": "obj17",
+      "label": "Brown Bear",
+      "emoji": "\ud83d\udc3b",
+      "attributes": {
+       "color": "brown",
+       "size": "big",
+       "type": "mammal",
+       "category": "wild"
+      }
+     },
+     {
+      "id": "obj18",
+      "label": "White Rabbit",
+      "emoji": "\ud83d\udc30",
+      "attributes": {
+       "color": "white",
+       "size": "small",
+       "type": "mammal",
+       "category": "pet"
+      }
+     },
+     {
+      "id": "obj19",
+      "label": "Yellow Duck",
+      "emoji": "\ud83e\udd86",
+      "attributes": {
+       "color": "yellow",
+       "size": "small",
+       "type": "bird",
+       "category": "pet"
+      }
+     },
+     {
+      "id": "obj20",
+      "label": "Blue Bird",
+      "emoji": "\ud83d\udc26",
+      "attributes": {
+       "color": "blue",
+       "size": "small",
+       "type": "bird",
+       "category": "wild"
+      }
+     }
+    ],
+    "categories": [
+     {
+      "label": "Wild",
+      "rule": {
+       "category": "wild"
+      },
+      "bucketEmoji": "\ud83c\udf32"
+     },
+     {
+      "label": "Pet",
+      "rule": {
+       "category": "pet"
+      },
+      "bucketEmoji": "\ud83c\udfe0"
+     }
+    ]
+   }
+  ],
+  "maxCategories": 2,
+  "showCounts": true,
+  "showTallyChart": false,
+  "gradeBand": "K"
+ }
+}

@@ -1,0 +1,91 @@
+{
+ "source": "qa/tutor-reports/number-sequencer-runtime-fill_missing-payload-2026-09-28.json",
+ "primitiveId": "number-sequencer",
+ "evalMode": "fill_missing",
+ "data": {
+  "title": "What Comes Before and After?",
+  "description": "Practice finding the missing numbers that come just before or just after a given number within 20.",
+  "challenges": [
+   {
+    "id": "seq1",
+    "type": "fill-missing",
+    "instruction": "What number is missing?",
+    "sequence": [
+     3,
+     4,
+     null
+    ],
+    "correctAnswers": [
+     5
+    ],
+    "rangeMin": 3,
+    "rangeMax": 5
+   },
+   {
+    "id": "seq2",
+    "type": "fill-missing",
+    "instruction": "Which numbers are hiding?",
+    "sequence": [
+     null,
+     8,
+     9
+    ],
+    "correctAnswers": [
+     7
+    ],
+    "rangeMin": 7,
+    "rangeMax": 9
+   },
+   {
+    "id": "seq3",
+    "type": "fill-missing",
+    "instruction": "Can you find the missing number?",
+    "sequence": [
+     10,
+     null,
+     12
+    ],
+    "correctAnswers": [
+     11
+    ],
+    "rangeMin": 10,
+    "rangeMax": 12
+   },
+   {
+    "id": "seq4",
+    "type": "fill-missing",
+    "instruction": "What number is missing in this row?",
+    "sequence": [
+     14,
+     15,
+     null
+    ],
+    "correctAnswers": [
+     16
+    ],
+    "rangeMin": 14,
+    "rangeMax": 16
+   },
+   {
+    "id": "seq5",
+    "type": "fill-missing",
+    "instruction": "Which numbers are hiding at the end?",
+    "sequence": [
+     17,
+     null,
+     19,
+     null
+    ],
+    "correctAnswers": [
+     18,
+     20
+    ],
+    "rangeMin": 17,
+    "rangeMax": 20
+   }
+  ],
+  "gradeBand": "K",
+  "showNumberLine": true,
+  "showDotArrays": true
+ }
+}

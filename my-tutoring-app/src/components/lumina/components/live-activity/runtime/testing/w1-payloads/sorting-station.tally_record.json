@@ -1,0 +1,239 @@
+{
+ "source": "qa/tutor-reports/sorting-station-runtime-tally_record-payload-2026-09-28.json",
+ "primitiveId": "sorting-station",
+ "evalMode": "tally_record",
+ "data": {
+  "title": "Super Sorters: Group and Tally",
+  "description": "Let us practice sorting everyday items into groups and tallying how many are in each group!",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "tally-record",
+    "instruction": "Can you sort these items into things we need and things we want, and then tally them up?",
+    "sortingAttribute": "category",
+    "objects": [
+     {
+      "id": "obj1",
+      "label": "Warm Coat",
+      "emoji": "\ud83e\udde5",
+      "attributes": {
+       "category": "need"
+      }
+     },
+     {
+      "id": "obj2",
+      "label": "Toy Robot",
+      "emoji": "\ud83e\udd16",
+      "attributes": {
+       "category": "want"
+      }
+     },
+     {
+      "id": "obj3",
+      "label": "Fresh Apple",
+      "emoji": "\ud83c\udf4e",
+      "attributes": {
+       "category": "need"
+      }
+     },
+     {
+      "id": "obj4",
+      "label": "Video Game",
+      "emoji": "\ud83c\udfae",
+      "attributes": {
+       "category": "want"
+      }
+     }
+    ],
+    "categories": [
+     {
+      "label": "Need",
+      "rule": {
+       "category": "need"
+      },
+      "bucketEmoji": "\ud83c\udfe0"
+     },
+     {
+      "label": "Want",
+      "rule": {
+       "category": "want"
+      },
+      "bucketEmoji": "\ud83c\udf81"
+     }
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "tally-record",
+    "instruction": "Let us sort these items into needs and wants, and count them with tallies!",
+    "sortingAttribute": "category",
+    "objects": [
+     {
+      "id": "obj5",
+      "label": "Drinking Water",
+      "emoji": "\ud83d\udca7",
+      "attributes": {
+       "category": "need"
+      }
+     },
+     {
+      "id": "obj6",
+      "label": "Silly Balloon",
+      "emoji": "\ud83c\udf88",
+      "attributes": {
+       "category": "want"
+      }
+     },
+     {
+      "id": "obj7",
+      "label": "Cozy Bed",
+      "emoji": "\ud83d\udecf\ufe0f",
+      "attributes": {
+       "category": "need"
+      }
+     },
+     {
+      "id": "obj8",
+      "label": "Comic Book",
+      "emoji": "\ud83d\udcda",
+      "attributes": {
+       "category": "want"
+      }
+     }
+    ],
+    "categories": [
+     {
+      "label": "Need",
+      "rule": {
+       "category": "need"
+      },
+      "bucketEmoji": "\ud83c\udfe0"
+     },
+     {
+      "label": "Want",
+      "rule": {
+       "category": "want"
+      },
+      "bucketEmoji": "\ud83c\udf81"
+     }
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "tally-record",
+    "instruction": "Sort these friendly things into needs and wants, and record your tallies!",
+    "sortingAttribute": "category",
+    "objects": [
+     {
+      "id": "obj9",
+      "label": "Loaf of Bread",
+      "emoji": "\ud83c\udf5e",
+      "attributes": {
+       "category": "need"
+      }
+     },
+     {
+      "id": "obj10",
+      "label": "Fluffy Teddy Bear",
+      "emoji": "\ud83e\uddf8",
+      "attributes": {
+       "category": "want"
+      }
+     },
+     {
+      "id": "obj11",
+      "label": "Safe House",
+      "emoji": "\ud83c\udfe1",
+      "attributes": {
+       "category": "need"
+      }
+     },
+     {
+      "id": "obj12",
+      "label": "Shiny Bicycle",
+      "emoji": "\ud83d\udeb2",
+      "attributes": {
+       "category": "want"
+      }
+     }
+    ],
+    "categories": [
+     {
+      "label": "Need",
+      "rule": {
+       "category": "need"
+      },
+      "bucketEmoji": "\ud83c\udfe0"
+     },
+     {
+      "label": "Want",
+      "rule": {
+       "category": "want"
+      },
+      "bucketEmoji": "\ud83c\udf81"
+     }
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "tally-record",
+    "instruction": "Can you put these objects into needs and wants groups and tally the totals?",
+    "sortingAttribute": "category",
+    "objects": [
+     {
+      "id": "obj13",
+      "label": "Box of Band-Aids",
+      "emoji": "\ud83e\ude79",
+      "attributes": {
+       "category": "need"
+      }
+     },
+     {
+      "id": "obj14",
+      "label": "Sweet Lollipop",
+      "emoji": "\ud83c\udf6d",
+      "attributes": {
+       "category": "want"
+      }
+     },
+     {
+      "id": "obj15",
+      "label": "Healthy Banana",
+      "emoji": "\ud83c\udf4c",
+      "attributes": {
+       "category": "need"
+      }
+     },
+     {
+      "id": "obj16",
+      "label": "Plush Dinosaur",
+      "emoji": "\ud83e\udd96",
+      "attributes": {
+       "category": "want"
+      }
+     }
+    ],
+    "categories": [
+     {
+      "label": "Need",
+      "rule": {
+       "category": "need"
+      },
+      "bucketEmoji": "\ud83c\udfe0"
+     },
+     {
+      "label": "Want",
+      "rule": {
+       "category": "want"
+      },
+      "bucketEmoji": "\ud83c\udf81"
+     }
+    ]
+   }
+  ],
+  "maxCategories": 2,
+  "showCounts": true,
+  "showTallyChart": true,
+  "gradeBand": "K"
+ }
+}

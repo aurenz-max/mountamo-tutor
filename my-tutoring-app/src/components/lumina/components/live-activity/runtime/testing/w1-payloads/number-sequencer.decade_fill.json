@@ -1,0 +1,82 @@
+{
+ "source": "qa/tutor-reports/number-sequencer-runtime-decade_fill-payload-2026-09-28.json",
+ "primitiveId": "number-sequencer",
+ "evalMode": "decade_fill",
+ "data": {
+  "title": "Cross the Decade Adventure!",
+  "description": "Practice finding missing numbers and crossing decade boundaries with fun number sequences.",
+  "challenges": [
+   {
+    "id": "seq1",
+    "type": "fill-missing",
+    "instruction": "Which numbers are hiding in this sequence?",
+    "sequence": [
+     7,
+     null,
+     9,
+     10,
+     11
+    ],
+    "correctAnswers": [
+     8
+    ],
+    "rangeMin": 7,
+    "rangeMax": 11
+   },
+   {
+    "id": "seq2",
+    "type": "fill-missing",
+    "instruction": "Can you fill in the missing numbers?",
+    "sequence": [
+     8,
+     9,
+     10,
+     null,
+     12
+    ],
+    "correctAnswers": [
+     11
+    ],
+    "rangeMin": 8,
+    "rangeMax": 12
+   },
+   {
+    "id": "seq3",
+    "type": "fill-missing",
+    "instruction": "What number is missing here?",
+    "sequence": [
+     9,
+     10,
+     null,
+     12,
+     13
+    ],
+    "correctAnswers": [
+     11
+    ],
+    "rangeMin": 9,
+    "rangeMax": 13
+   },
+   {
+    "id": "fallback2",
+    "type": "decade-fill",
+    "instruction": "Can you find the missing number?",
+    "sequence": [
+     6,
+     7,
+     8,
+     null,
+     10
+    ],
+    "correctAnswers": [
+     9
+    ],
+    "rangeMin": 6,
+    "rangeMax": 10
+   }
+  ],
+  "gradeBand": "K",
+  "showNumberLine": true,
+  "showDotArrays": false
+ }
+}

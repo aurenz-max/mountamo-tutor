@@ -1,0 +1,62 @@
+{
+ "source": "qa/tutor-reports/fraction-circles-runtime-equivalent-payload-2026-09-28.json",
+ "primitiveId": "fraction-circles",
+ "evalMode": "equivalent",
+ "data": {
+  "title": "Exploring Equivalent Fractions with Circles",
+  "challenges": [
+   {
+    "id": "fc1",
+    "type": "equivalent",
+    "instruction": "Build a fraction equivalent to 1/2 using 4 equal slices.",
+    "denominator": 2,
+    "numerator": 1,
+    "hint": "Look at the equal parts and the amount you need to shade.",
+    "narration": "Build a fraction equivalent to 1/2 using 4 equal slices.",
+    "equivalentDenominator": 4
+   },
+   {
+    "id": "fc2",
+    "type": "equivalent",
+    "instruction": "Build a fraction equivalent to 1/3 using 6 equal slices.",
+    "denominator": 3,
+    "numerator": 1,
+    "hint": "Look at the equal parts and the amount you need to shade.",
+    "narration": "Build a fraction equivalent to 1/3 using 6 equal slices.",
+    "equivalentDenominator": 6
+   },
+   {
+    "id": "fc3",
+    "type": "equivalent",
+    "instruction": "Build a fraction equivalent to 2/4 using 6 equal slices.",
+    "denominator": 4,
+    "numerator": 2,
+    "hint": "Look at the equal parts and the amount you need to shade.",
+    "narration": "Build a fraction equivalent to 2/4 using 6 equal slices.",
+    "equivalentDenominator": 6
+   },
+   {
+    "id": "fc4",
+    "type": "equivalent",
+    "instruction": "Build a fraction equivalent to 3/6 using 12 equal slices.",
+    "denominator": 6,
+    "numerator": 3,
+    "hint": "Look at the equal parts and the amount you need to shade.",
+    "narration": "Build a fraction equivalent to 3/6 using 12 equal slices.",
+    "equivalentDenominator": 12
+   },
+   {
+    "id": "fc5",
+    "type": "equivalent",
+    "instruction": "Build a fraction equivalent to 3/5 using 10 equal slices.",
+    "denominator": 5,
+    "numerator": 3,
+    "hint": "Look at the equal parts and the amount you need to shade.",
+    "narration": "Build a fraction equivalent to 3/5 using 10 equal slices.",
+    "equivalentDenominator": 10
+   }
+  ],
+  "description": "Practice finding and building equivalent fractions using visual circle models with different denominators.",
+  "gradeBand": "3-5"
+ }
+}

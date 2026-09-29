@@ -1,0 +1,138 @@
+{
+ "source": "qa/tutor-reports/compare-objects-runtime-non_standard-payload-2026-09-28.json",
+ "primitiveId": "compare-objects",
+ "evalMode": "non_standard",
+ "data": {
+  "title": "Compare Objects: Deciding which of two objects is longer",
+  "description": "Compare and measure real-world objects by their attributes",
+  "challenges": [
+   {
+    "id": "co-1",
+    "type": "non_standard",
+    "instruction": "How many paper clips long is the pencil?",
+    "attribute": "length",
+    "objects": [
+     {
+      "name": "pencil",
+      "visualSize": 30,
+      "actualValue": 3
+     }
+    ],
+    "correctAnswer": "3",
+    "comparisonWord": "longer",
+    "hint": "Count each paper clip carefully from left to right along the pencil.",
+    "unitName": "paper clip",
+    "unitCount": 3
+   },
+   {
+    "id": "co-2",
+    "type": "non_standard",
+    "instruction": "How many cubes long is the book?",
+    "attribute": "length",
+    "objects": [
+     {
+      "name": "book",
+      "visualSize": 50,
+      "actualValue": 5
+     }
+    ],
+    "correctAnswer": "5",
+    "comparisonWord": "longer",
+    "hint": "Line up your counting and count every single cube under the book.",
+    "unitName": "cube",
+    "unitCount": 5
+   },
+   {
+    "id": "co-3",
+    "type": "non_standard",
+    "instruction": "How many crayons long is the ribbon?",
+    "attribute": "length",
+    "objects": [
+     {
+      "name": "ribbon",
+      "visualSize": 70,
+      "actualValue": 7
+     }
+    ],
+    "correctAnswer": "7",
+    "comparisonWord": "longer",
+    "hint": "Count each crayon placed end to end below the ribbon.",
+    "unitName": "crayon",
+    "unitCount": 7
+   },
+   {
+    "id": "co-4",
+    "type": "non_standard",
+    "instruction": "How many erasers long is the shoe?",
+    "attribute": "length",
+    "objects": [
+     {
+      "name": "shoe",
+      "visualSize": 40,
+      "actualValue": 4
+     }
+    ],
+    "correctAnswer": "4",
+    "comparisonWord": "longer",
+    "hint": "Count the erasers one by one from start to finish.",
+    "unitName": "eraser",
+    "unitCount": 4
+   },
+   {
+    "id": "co-5",
+    "type": "non_standard",
+    "instruction": "How many blocks long is the ruler?",
+    "attribute": "length",
+    "objects": [
+     {
+      "name": "ruler",
+      "visualSize": 60,
+      "actualValue": 6
+     }
+    ],
+    "correctAnswer": "6",
+    "comparisonWord": "longer",
+    "hint": "Touch each block as you count to find the total length.",
+    "unitName": "block",
+    "unitCount": 6
+   },
+   {
+    "id": "co-6",
+    "type": "non_standard",
+    "instruction": "How many buttons long is the spoon?",
+    "attribute": "length",
+    "objects": [
+     {
+      "name": "spoon",
+      "visualSize": 20,
+      "actualValue": 2
+     }
+    ],
+    "correctAnswer": "2",
+    "comparisonWord": "longer",
+    "hint": "Count the buttons carefully from the top to the bottom of the spoon.",
+    "unitName": "button",
+    "unitCount": 2
+   },
+   {
+    "id": "co-7",
+    "type": "non_standard",
+    "instruction": "How many paper clips long is the marker?",
+    "attribute": "length",
+    "objects": [
+     {
+      "name": "marker",
+      "visualSize": 80,
+      "actualValue": 8
+     }
+    ],
+    "correctAnswer": "8",
+    "comparisonWord": "longer",
+    "hint": "Count all the paper clips laid out under the marker.",
+    "unitName": "paper clip",
+    "unitCount": 8
+   }
+  ],
+  "gradeBand": "1"
+ }
+}

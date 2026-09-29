@@ -1,0 +1,65 @@
+{
+ "source": "qa/tutor-reports/number-line-runtime-identify-payload-2026-09-28.json",
+ "primitiveId": "number-line",
+ "evalMode": "identify",
+ "data": {
+  "title": "Hop Back on the Number Line",
+  "description": "Learn how to subtract numbers by hopping backward on a fun number line from 0 to 10.",
+  "range": {
+   "min": 0,
+   "max": 10
+  },
+  "gradeBand": "K-2",
+  "numberType": "integer",
+  "interactionMode": "plot",
+  "challenges": [
+   {
+    "id": "plot_point-0",
+    "type": "plot_point",
+    "instruction": "Can you find and place a point at 2 on our number line?",
+    "targetValues": [
+     2
+    ],
+    "hint": "Start at 0 and hop forward two little steps to find your spot!"
+   },
+   {
+    "id": "plot_point-1",
+    "type": "plot_point",
+    "instruction": "Place a point at 9 on the number line.",
+    "targetValues": [
+     9
+    ],
+    "hint": "Find the number 8 right before the end, and take one more hop forward to the next tick mark."
+   },
+   {
+    "id": "plot_point-2",
+    "type": "plot_point",
+    "instruction": "Place a point at the number 8 on the number line.",
+    "targetValues": [
+     8
+    ],
+    "hint": "Look for the number right after 7 and right before 9."
+   },
+   {
+    "id": "plot_point-3",
+    "type": "plot_point",
+    "instruction": "Can you show me where the very beginning of the number line is by placing a point at 0?",
+    "targetValues": [
+     0
+    ],
+    "hint": "Look all the way to the left of the number line, right before you start counting up with 1."
+   },
+   {
+    "id": "plot_point-4",
+    "type": "plot_point",
+    "instruction": "Can you find the number that comes right after five? Place a point there!",
+    "targetValues": [
+     6
+    ],
+    "hint": "Look at five, and take one little hop forward to find your spot."
+   }
+  ],
+  "highlights": [],
+  "operations": []
+ }
+}

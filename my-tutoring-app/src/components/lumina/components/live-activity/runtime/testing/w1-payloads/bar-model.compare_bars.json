@@ -1,0 +1,111 @@
+{
+ "source": "qa/tutor-reports/bar-model-runtime-compare_bars-payload-2026-09-28.json",
+ "primitiveId": "bar-model",
+ "evalMode": "compare_bars",
+ "data": {
+  "title": "Toy Train Time",
+  "description": "Compare your favorite toys to see which group has more!",
+  "challenges": [
+   {
+    "id": "bm-1",
+    "evalMode": "compare_bars",
+    "values": [
+     {
+      "label": "Teddy Bear",
+      "value": 3,
+      "color": "blue"
+     },
+     {
+      "label": "Toy Car",
+      "value": 7,
+      "color": "green"
+     }
+    ],
+    "graphStyle": "bar",
+    "prompt": "Which toy has more pieces in the graph?",
+    "hint": "Count the blocks for each toy and see which stack goes higher!",
+    "targetBarIndex": 1
+   },
+   {
+    "id": "bm-2",
+    "evalMode": "compare_bars",
+    "values": [
+     {
+      "label": "Cars",
+      "value": 3,
+      "color": "blue"
+     },
+     {
+      "label": "Blocks",
+      "value": 7,
+      "color": "green"
+     }
+    ],
+    "graphStyle": "bar",
+    "prompt": "Which toy has more votes?",
+    "hint": "Count the pictures in each row or look at which line reaches higher!",
+    "targetBarIndex": 1
+   },
+   {
+    "id": "bm-3",
+    "evalMode": "compare_bars",
+    "values": [
+     {
+      "label": "Teddy Bears",
+      "value": 3,
+      "color": "blue"
+     },
+     {
+      "label": "Toy Cars",
+      "value": 7,
+      "color": "green"
+     }
+    ],
+    "graphStyle": "bar",
+    "prompt": "Which toy group has more?",
+    "hint": "Count the toys in each row and look for the longer line.",
+    "targetBarIndex": 1
+   },
+   {
+    "id": "bm-4",
+    "evalMode": "compare_bars",
+    "values": [
+     {
+      "label": "Teddy Bears",
+      "value": 3,
+      "color": "blue"
+     },
+     {
+      "label": "Toy Cars",
+      "value": 7,
+      "color": "green"
+     }
+    ],
+    "graphStyle": "bar",
+    "prompt": "Which toy group has MORE?",
+    "hint": "Count the toys in each row and look to see which row goes further across.",
+    "targetBarIndex": 1
+   },
+   {
+    "id": "bm-5",
+    "evalMode": "compare_bars",
+    "values": [
+     {
+      "label": "Teddy Bears",
+      "value": 3,
+      "color": "blue"
+     },
+     {
+      "label": "Toy Cars",
+      "value": 7,
+      "color": "green"
+     }
+    ],
+    "graphStyle": "bar",
+    "prompt": "Which toy group has more?",
+    "hint": "Count the pictures in each row to see which one reaches higher!",
+    "targetBarIndex": 1
+   }
+  ]
+ }
+}

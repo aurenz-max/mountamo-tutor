@@ -1,0 +1,181 @@
+{
+ "source": "qa/tutor-reports/bar-model-runtime-most_least-payload-2026-09-28.json",
+ "primitiveId": "bar-model",
+ "evalMode": "most_least",
+ "data": {
+  "title": "Toy Bin Fun",
+  "description": "Look at the toys in the bin to see what we have.",
+  "challenges": [
+   {
+    "id": "bm-1",
+    "evalMode": "most_least",
+    "values": [
+     {
+      "label": "Blocks",
+      "value": 5,
+      "color": "blue",
+      "emoji": "\ud83e\uddf1"
+     },
+     {
+      "label": "Cars",
+      "value": 8,
+      "color": "green",
+      "emoji": "\ud83d\ude97"
+     },
+     {
+      "label": "Teddy",
+      "value": 7,
+      "color": "purple",
+      "emoji": "\ud83e\uddf8"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 8,
+     "iconEmoji": "\ud83e\uddf1",
+     "iconValue": 1
+    },
+    "prompt": "Which toy row has the fewest?",
+    "hint": "Count the pictures in each row and compare.",
+    "targetBarIndex": 0
+   },
+   {
+    "id": "bm-2",
+    "evalMode": "most_least",
+    "values": [
+     {
+      "label": "Apple",
+      "value": 5,
+      "color": "blue",
+      "emoji": "\ud83c\udf4e"
+     },
+     {
+      "label": "Banana",
+      "value": 7,
+      "color": "green",
+      "emoji": "\ud83c\udf4c"
+     },
+     {
+      "label": "Pretzel",
+      "value": 3,
+      "color": "purple",
+      "emoji": "\ud83e\udd68"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 7,
+     "iconEmoji": "\ud83c\udf4e",
+     "iconValue": 1
+    },
+    "prompt": "Which snack has the most votes?",
+    "hint": "Count the pictures in each row and compare to find the answer.",
+    "targetBarIndex": 1
+   },
+   {
+    "id": "bm-3",
+    "evalMode": "most_least",
+    "values": [
+     {
+      "label": "Swing",
+      "value": 4,
+      "color": "blue",
+      "emoji": "\ud83d\udedd"
+     },
+     {
+      "label": "Slide",
+      "value": 2,
+      "color": "green",
+      "emoji": "\ud83c\udfa2"
+     },
+     {
+      "label": "Ball",
+      "value": 6,
+      "color": "purple",
+      "emoji": "\u26bd"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 6,
+     "iconEmoji": "\ud83d\udedd",
+     "iconValue": 1
+    },
+    "prompt": "Which toy has the most votes?",
+    "hint": "Count the pictures in each row and compare.",
+    "targetBarIndex": 2
+   },
+   {
+    "id": "bm-4",
+    "evalMode": "most_least",
+    "values": [
+     {
+      "label": "Carrots",
+      "value": 3,
+      "color": "blue",
+      "emoji": "\ud83e\udd55"
+     },
+     {
+      "label": "Peas",
+      "value": 8,
+      "color": "green",
+      "emoji": "\ud83d\udfe2"
+     },
+     {
+      "label": "Peppers",
+      "value": 5,
+      "color": "purple",
+      "emoji": "\ud83e\uded1"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 8,
+     "iconEmoji": "\ud83e\udd55",
+     "iconValue": 1
+    },
+    "prompt": "Which vegetable row has the fewest pictures?",
+    "hint": "Count the pictures in each row and compare to see which line is longer",
+    "targetBarIndex": 0
+   },
+   {
+    "id": "bm-5",
+    "evalMode": "most_least",
+    "values": [
+     {
+      "label": "Bird",
+      "value": 6,
+      "color": "blue",
+      "emoji": "\ud83d\udc26"
+     },
+     {
+      "label": "Fish",
+      "value": 8,
+      "color": "green",
+      "emoji": "\ud83d\udc20"
+     },
+     {
+      "label": "Bunny",
+      "value": 3,
+      "color": "purple",
+      "emoji": "\ud83d\udc30"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 8,
+     "iconEmoji": "\ud83d\udc26",
+     "iconValue": 1
+    },
+    "prompt": "Which pet has the most pictures on the graph",
+    "hint": "Count the pictures in each row and compare them",
+    "targetBarIndex": 1
+   }
+  ]
+ }
+}

@@ -1,0 +1,87 @@
+{
+ "source": "qa/tutor-reports/coin-counter-runtime-fewest-coins-payload-2026-09-28.json",
+ "primitiveId": "coin-counter",
+ "evalMode": "fewest-coins",
+ "data": {
+  "title": "Making Amounts Fun!",
+  "description": "Practice making amounts with coins.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "make-amount",
+    "instruction": "A thirsty customer wants a small cup of lemonade that costs 12\u00a2. Drag the correct coins to make 12\u00a2!",
+    "hint": "Try using one dime (10\u00a2) and two pennies (1\u00a2 each) to reach 12\u00a2.",
+    "targetAmount": 12,
+    "availableCoins": [
+     "penny",
+     "nickel",
+     "dime"
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "make-amount",
+    "instruction": "A cheerful neighbor buys a glass for 20\u00a2. Make 20\u00a2 using your coins!",
+    "hint": "You can use two dimes (10\u00a2 + 10\u00a2) or four nickels to make 20\u00a2.",
+    "targetAmount": 20,
+    "availableCoins": [
+     "penny",
+     "nickel",
+     "dime"
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "make-amount",
+    "instruction": "Another customer orders a big glass of lemonade for 35\u00a2. Show 35\u00a2 with your coins!",
+    "hint": "Start with a quarter (25\u00a2) and add a dime (10\u00a2) to make 35\u00a2.",
+    "targetAmount": 35,
+    "availableCoins": [
+     "nickel",
+     "dime",
+     "quarter"
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "make-amount",
+    "instruction": "Your friend buys lemonade and a cookie for 42\u00a2. Can you make 42\u00a2?",
+    "hint": "Try one quarter (25\u00a2), one dime (10\u00a2), one nickel (5\u00a2), and two pennies (2\u00a2)!",
+    "targetAmount": 42,
+    "availableCoins": [
+     "penny",
+     "nickel",
+     "dime",
+     "quarter"
+    ]
+   },
+   {
+    "id": "c5",
+    "type": "make-amount",
+    "instruction": "A group of kids buys snacks for 68\u00a2. Make 68\u00a2 using your coins!",
+    "hint": "Use two quarters (50\u00a2), one dime (10\u00a2), one nickel (5\u00a2), and three pennies (3\u00a2).",
+    "targetAmount": 68,
+    "availableCoins": [
+     "penny",
+     "nickel",
+     "dime",
+     "quarter"
+    ]
+   },
+   {
+    "id": "c6",
+    "type": "make-amount",
+    "instruction": "The final customer gives a big order totaling 89\u00a2! Make 89\u00a2 to close the stand for the day.",
+    "hint": "Try three quarters (75\u00a2), one dime (10\u00a2), and four pennies (4\u00a2).",
+    "targetAmount": 89,
+    "availableCoins": [
+     "penny",
+     "nickel",
+     "dime",
+     "quarter"
+    ]
+   }
+  ],
+  "gradeBand": "1"
+ }
+}

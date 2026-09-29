@@ -1,0 +1,76 @@
+{
+ "source": "qa/tutor-reports/counting-board-runtime-group-payload-2026-09-28.json",
+ "primitiveId": "counting-board",
+ "evalMode": "group",
+ "data": {
+  "title": "Counting in Groups with Bears!",
+  "description": "Learn how to count objects arranged in equal groups using friendly bears.",
+  "objects": {
+   "type": "bears"
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "group_count",
+    "instruction": "Can you count all the bears in the groups?",
+    "targetAnswer": 9,
+    "count": 9,
+    "arrangement": "groups",
+    "hint": "Try counting the bears in each group one by one!",
+    "narration": "Let us count these lovely bears together by looking at the groups.",
+    "groupSize": 3
+   },
+   {
+    "id": "c2",
+    "type": "group_count",
+    "instruction": "Count the bears in these groups to find the total!",
+    "targetAnswer": 12,
+    "count": 12,
+    "arrangement": "groups",
+    "hint": "Count how many bears are in one group, then add the next group.",
+    "narration": "Look at these new groups of bears. Can you count them all?",
+    "groupSize": 4
+   },
+   {
+    "id": "c3",
+    "type": "group_count",
+    "instruction": "How many bears are hiding in these groups?",
+    "targetAnswer": 15,
+    "count": 15,
+    "arrangement": "groups",
+    "hint": "Count each group carefully to get the total number of bears.",
+    "narration": "Here are more bears in neat groups. Let us count them up!",
+    "groupSize": 5
+   },
+   {
+    "id": "c4",
+    "type": "group_count",
+    "instruction": "Can you find the total number of bears in these groups?",
+    "targetAnswer": 9,
+    "count": 9,
+    "arrangement": "groups",
+    "hint": "Take your time and count the bears in each circle.",
+    "narration": "You are doing great! Let us count this group of bears together.",
+    "groupSize": 3
+   },
+   {
+    "id": "c5",
+    "type": "group_count",
+    "instruction": "Count the final set of groups to finish the adventure!",
+    "targetAnswer": 8,
+    "count": 8,
+    "arrangement": "groups",
+    "hint": "Count every bear in every group to find the final number.",
+    "narration": "This is our last challenge. Let us count all the bears to win!",
+    "groupSize": 4
+   }
+  ],
+  "showOptions": {
+   "showRunningCount": true,
+   "showGroupCircles": true,
+   "highlightOnTap": true,
+   "showLastNumber": true
+  },
+  "gradeBand": "1"
+ }
+}

@@ -34,10 +34,11 @@ import { LIVE_JOURNEYS, type DriverInput, type JourneyContext, type LearnerInten
 import type { LivePrimitiveId } from '../activityContract';
 import { installRuntimeTimers, restoreRuntimeTimers, seam } from './testing/liveRuntimeSeams';
 import { mountWorkspace, type WorkspaceHarness } from './testing/workspaceHarness';
-import { getComponentById } from '../../../service/manifest/catalog';
+import { UNIVERSAL_CATALOG, getComponentById } from '../../../service/manifest/catalog';
 import { buildLiveActivitySpec } from '../liveActivitySpec';
 import { helpBeforeLastWrong, lastMiss, nextLever } from './observerLever';
 import { leverPulledMessage } from './runtimeTransport';
+import { validSpokenMissRequest, type SpokenMissRequest } from './spokenMissContract';
 
 /** The rules every bound family owes on the dry journey. Ids are stable: the baseline and the sweep report cite them. */
 export const JOURNEY_INVARIANTS = {
@@ -48,7 +49,7 @@ export const JOURNEY_INVARIANTS = {
   'J5-credit-moves-on': 'A credited answer moves to the next item or completes the lesson: no dead end',
   'J6-completes-once': 'Answering every item completes the lesson, with at most one submission',
   'J7-commit-visible': 'A committed verdict, retry or advance is confirmed on screen by the real visibility wait: a later render of the same item and phase does not supersede it',
-  'J8-miss-named': 'On a mode whose catalog entry lists misses, every checked miss names one from that list',
+  'J8-miss-named': "On a mode whose catalog entry lists misses, every checked miss names one from that list; a spoken item's known misses are all on the list and a wrong spoken answer records one",
   'J9-miss-answered': "On a mode with levers, every catalog miss is in some lever's answers or in the catalog's unanswered list",
 } as const;
 type Invariant = keyof typeof JOURNEY_INVARIANTS;
@@ -56,8 +57,11 @@ type Invariant = keyof typeof JOURNEY_INVARIANTS;
 interface Payload { primitiveId: LivePrimitiveId; evalMode: string; data: Record<string, any> }
 interface Finding { invariant: Invariant; detail: string }
 interface Result { payload: string; items: number; skipped?: string; findings: Finding[]; advisories: string[];
-  /** Checked gesture misses on this payload, and how many named a miss (handoff 20 coverage). */
-  misses?: { checked: number; named: number; declared: boolean } }
+  /**
+   * Checked gesture misses on this payload, and how many named a miss (handoff 20 coverage). `spoken`: wrong spoken
+   * answers, and how many had a known-miss list to name one from (handoff 20 Part B).
+   */
+  misses?: { checked: number; named: number; declared: boolean; spoken: { answered: number; named: number } } }
 
 const DIR = join(process.cwd(), 'src/components/lumina/components/live-activity/runtime/testing');
 const PAYLOADS: Array<Payload & { file: string }> = readdirSync(join(DIR, 'w1-payloads')).filter(f => f.endsWith('.json')).sort()
@@ -68,7 +72,32 @@ const BASELINE: Record<string, Record<string, string>> = existsSync(BASELINE_FIL
 const RESULTS: Result[] = [];
 /** Per `<primitive>.<mode>`, every lever `answers` id seen on its payloads' items (J9). */
 const ANSWERED = new Map<string, Set<string>>();
+/** Per `<primitive>.<mode>`, every lever seen on its payloads' items, by id (the lever inventory). */
+const LEVERS_SEEN = new Map<string, Map<string, { kind: string; answers: readonly string[] }>>();
 const MAX_ITEMS = 24;
+/**
+ * Every `spoken_miss` request the runtime sent. The sweep has no model: its stand-in names the first listed miss
+ * of a valid request, so what is checked is the wiring (the list reaches the observer, its ids are the catalog's,
+ * a not-credited verdict records the named one), never which miss a transcript shows (`scripts/spoken-miss-probe.mjs`).
+ */
+const SPOKEN_MISS: SpokenMissRequest[] = [];
+/** The payload each request came from, by index. */
+const SPOKEN_MISS_FROM: string[] = [];
+let driving = '';
+function stubObservationRoutes() {
+  vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+    if (!String(url).endsWith('/api/lumina/observe-spoken-miss')) return { ok: false, json: async () => ({}) };
+    const body = JSON.parse(String(init?.body ?? '{}'));
+    SPOKEN_MISS.push(body); SPOKEN_MISS_FROM.push(driving);
+    const miss = validSpokenMissRequest(body) ? body.misses[0].id : null;
+    return { ok: true, json: async () => ({ miss, reading: miss, p: miss ? 0.9 : null, accepted: !!miss, reason: miss ? 'named' : 'invalid', ms: 0 }) };
+  }));
+}
+/** A finished learner turn, then the observation requests it started (resolved promises, not timers). */
+async function hear(h: WorkspaceHarness, text: string) {
+  h.say(text);
+  await act(async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); });
+}
 
 const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
   'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty'];
@@ -180,17 +209,25 @@ function perform(h: WorkspaceHarness, inputs: DriverInput[]): string | null {
 
 async function drive({ primitiveId, evalMode, data, file }: Payload & { file: string }): Promise<Result> {
   const result: Result = { payload: file, items: 0, findings: [], advisories: [] };
+  driving = file;
   const find = (invariant: Invariant, detail: string) => result.findings.push({ invariant, detail });
   const row = LIVE_JOURNEYS[primitiveId];
   const workspaceEntry = getComponentById(primitiveId)?.teachingWorkspace;
   const declared = workspaceEntry?.misses?.[evalMode];
-  const tally = { checked: 0, named: 0, declared: !!declared };
+  // A blended or mixed pin is no catalog mode: its spoken misses are checked against every mode's list.
+  const anyModeDeclared = Object.values(workspaceEntry?.misses ?? {}).flat();
+  const spokenDeclared = getComponentById(primitiveId)?.evalModes?.some(m => m.evalMode === evalMode) ? declared : anyModeDeclared;
+  const tally = { checked: 0, named: 0, declared: !!declared, spoken: { answered: 0, named: 0 } };
   const modeKey = `${primitiveId}.${evalMode}`;
   const noteLevers = () => {
     const levers = h.state().task?.workspace?.levers;
     if (!levers?.length) return;
     if (!ANSWERED.has(modeKey)) ANSWERED.set(modeKey, new Set());
     levers.forEach(l => l.answers?.forEach(m => ANSWERED.get(modeKey)!.add(m)));
+    if (!LEVERS_SEEN.has(modeKey)) LEVERS_SEEN.set(modeKey, new Map());
+    // A lever's answers can differ by item (a two-jump item adds one), so every sighting adds to it.
+    levers.forEach(l => { const had = LEVERS_SEEN.get(modeKey)!.get(l.id)?.answers ?? [];
+      LEVERS_SEEN.get(modeKey)!.set(l.id, { kind: l.kind, answers: Array.from(new Set([...had, ...(l.answers ?? [])])) }); });
   };
   result.misses = tally;
   if (!row) return { ...result, skipped: 'no journey row' };
@@ -233,7 +270,7 @@ async function drive({ primitiveId, evalMode, data, file }: Payload & { file: st
     h.settle();
     // The gesture itself was checked (balance-scale's weights), so the spoken claim after it is talk, not the answer.
     if (spoken === null || h.state().task?.evidence.attemptNumber !== attempts) return 'gesture';
-    h.say(spoken);
+    await hear(h, spoken);
     if (!h.state().task?.workspace?.pendingResponse) {
       // A gesture item (no spoken key published) hears speech as talk, never as the answer.
       const gestureItem = h.state().task?.workspace?.expectedAnswer === undefined;
@@ -269,9 +306,22 @@ async function drive({ primitiveId, evalMode, data, file }: Payload & { file: st
       const commitAt = wrong.some(a => a.type === 'answer') ? wrong.findIndex(a => a.type === 'answer') : wrong.length - 1;
       try { perform(h, wrong.slice(0, commitAt)); } catch (e) { find('J1-drivable', `${item} wrong: ${(e as Error).message}`); break; }
       const before = { screen: screenText(h), facts: JSON.stringify(h.state().task!.demand ?? {}), sends: seam.send.mock.calls.length };
+      const heardBefore = SPOKEN_MISS.length;
       const how = await answer(wrong.slice(commitAt), item, 'wrong', 'incorrect', wrong.some(a => a.type !== 'answer'));
       if (!how) break;
       const s = h.state();
+      if (how === 'spoken') {
+        const request = SPOKEN_MISS.slice(heardBefore).at(-1), miss = s.task?.workspace?.attempts.at(-1)?.miss;
+        tally.spoken.answered++;
+        if (request) {
+          tally.spoken.named++;
+          const ids = Array.isArray(request.misses) ? request.misses.map(m => m?.id) : [];
+          const unlisted = ids.filter(id => !spokenDeclared?.includes(id));
+          if (!validSpokenMissRequest(request)) find('J8-miss-named', `${item}: the spoken_miss request is invalid (misses ${JSON.stringify(ids)})`);
+          else if (unlisted.length) find('J8-miss-named', `${item}: known spoken misses ${unlisted.map(m => `"${m}"`).join(', ')} are not in the catalog's list for ${evalMode}`);
+          else if (miss !== ids[0]) find('J8-miss-named', `${item}: the not-credited spoken answer recorded ${miss ? `"${miss}"` : 'no miss'}, not the named "${ids[0]}"`);
+        }
+      }
       if (how === 'exploration') result.advisories.push(`${item}: the wrong input is exploration (no verdict), so the miss checks did not run`);
       if (s.status === 'completed' || s.task?.itemId !== item) { find('J2-miss-committed', `${item}: a wrong answer moved the lesson on`); break; }
       if (how === 'gesture') {
@@ -456,6 +506,7 @@ async function recordMoments({ primitiveId, evalMode, data, file }: Payload & { 
 
 beforeEach(() => {
   installRuntimeTimers();
+  stubObservationRoutes();
   // Animations that time themselves with performance.now() (ramp-lab's trials) advance with the fake clock too.
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'] });
   // The driver's jsdom: no 2D context (a trial bench then measures at once), and a paint callback that throws on the
@@ -467,9 +518,37 @@ beforeEach(() => {
     right: 760, bottom: 480, x: 0, y: 0, toJSON: () => ({}) });
 });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); vi.restoreAllMocks(); });
+/**
+ * Every graded bound family and catalog mode: the levers seen on its saved payloads, and each catalog miss as
+ * answered (by which levers), unanswered by decision, or open. A mode with no saved payload is `unmeasured`:
+ * the sweep never drove it, so "no levers" there is unknown, not absent.
+ */
+function leverInventory() {
+  return UNIVERSAL_CATALOG.filter(c => c.teachingWorkspace && !c.teachingWorkspace.ungraded).flatMap(c => {
+    const tw = c.teachingWorkspace!;
+    const modes = c.evalModes?.length ? c.evalModes.map(m => m.evalMode) : ['mixed'];
+    return modes.map(mode => {
+      const key = `${c.id}.${mode}`, seen = LEVERS_SEEN.get(key);
+      const payloads = PAYLOADS.filter(p => `${p.primitiveId}.${p.evalMode}` === key).map(p => p.file);
+      const misses = tw.misses?.[mode] ?? [], unanswered = tw.unanswered?.[mode] ?? [];
+      const levers = seen ? Array.from(seen).map(([id, l]) => ({ id, kind: l.kind, answers: l.answers })) : [];
+      return { primitiveId: c.id, evalMode: mode, declaresLevers: !!tw.levers, payloads,
+        status: !payloads.length ? 'unmeasured' : levers.length ? 'levers' : 'none',
+        levers, misses: misses.map(m => ({ miss: m, answeredBy: levers.filter(l => l.answers.includes(m)).map(l => l.id),
+          unanswered: unanswered.includes(m) })) };
+    });
+  });
+}
+
 afterAll(() => {
-  if (process.env.JOURNEY_SWEEP_OUT) writeFileSync(process.env.JOURNEY_SWEEP_OUT, JSON.stringify({ invariants: JOURNEY_INVARIANTS, results: RESULTS }, null, 1));
+  if (process.env.JOURNEY_SWEEP_OUT) writeFileSync(process.env.JOURNEY_SWEEP_OUT,
+    JSON.stringify({ invariants: JOURNEY_INVARIANTS, results: RESULTS, leverInventory: leverInventory() }, null, 1));
   if (process.env.TUTOR_REPLAY_OUT) writeFileSync(process.env.TUTOR_REPLAY_OUT, JSON.stringify({ lessonEntry: LESSON_ENTRY, records: MOMENTS }, null, 1));
+  // The runtime's own spoken_miss requests, one per item, for `scripts/spoken-miss-probe.mjs --requests <file>`.
+  // Each item is heard wrong first and right last, so the last words heard on it are the journey's correct answer.
+  if (process.env.SPOKEN_MISS_OUT) writeFileSync(process.env.SPOKEN_MISS_OUT, JSON.stringify(Array.from(new Map(SPOKEN_MISS
+    .map((r, i) => [`${SPOKEN_MISS_FROM[i]}/${r.scope?.itemId}`, { payload: SPOKEN_MISS_FROM[i], ...r, learner: undefined,
+      correctSaid: r.learner }])).values()), null, 1));
 });
 
 /** `TUTOR_REPLAY_LADDER=second_wrong` records the auto-pull path (two wrong answers, no "I'm stuck") in place of stuck-then-pull. */

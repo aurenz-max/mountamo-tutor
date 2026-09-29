@@ -1,0 +1,87 @@
+{
+ "source": "qa/tutor-reports/ten-frame-runtime-build_teen-payload-2026-09-28.json",
+ "primitiveId": "ten-frame",
+ "evalMode": "build_teen",
+ "data": {
+  "title": "Ten and Some More",
+  "description": "Explore teen numbers by building them with a full ten frame and extra counters.",
+  "mode": "double",
+  "counters": {
+   "count": 0,
+   "color": "red",
+   "positions": []
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "build_teen",
+    "targetCount": 11,
+    "hint": "The top frame is a whole ten. Count on from ten.",
+    "narration": "The top frame is full \u2014 that is one ten. Now make the number.",
+    "instruction": "The top frame is full \u2014 that is 10. Make 11!"
+   },
+   {
+    "id": "c2",
+    "type": "build_teen",
+    "targetCount": 12,
+    "hint": "The top frame is a whole ten. Count on from ten.",
+    "narration": "The top frame is full \u2014 that is one ten. Now make the number.",
+    "instruction": "The top frame is full \u2014 that is 10. Make 12!"
+   },
+   {
+    "id": "c3",
+    "type": "build_teen",
+    "targetCount": 13,
+    "hint": "The top frame is a whole ten. Count on from ten.",
+    "narration": "The top frame is full \u2014 that is one ten. Now make the number.",
+    "instruction": "The top frame is full \u2014 that is 10. Make 13!"
+   },
+   {
+    "id": "c4",
+    "type": "build_teen",
+    "targetCount": 14,
+    "hint": "The top frame is a whole ten. Count on from ten.",
+    "narration": "The top frame is full \u2014 that is one ten. Now make the number.",
+    "instruction": "The top frame is full \u2014 that is 10. Make 14!"
+   },
+   {
+    "id": "c5",
+    "type": "build_teen",
+    "targetCount": 15,
+    "hint": "The top frame is a whole ten. Count on from ten.",
+    "narration": "The top frame is full \u2014 that is one ten. Now make the number.",
+    "instruction": "The top frame is full \u2014 that is 10. Make 15!"
+   },
+   {
+    "id": "c6",
+    "type": "build_teen",
+    "targetCount": 16,
+    "hint": "The top frame is a whole ten. Count on from ten.",
+    "narration": "The top frame is full \u2014 that is one ten. Now make the number.",
+    "instruction": "The top frame is full \u2014 that is 10. Make 16!"
+   },
+   {
+    "id": "c7",
+    "type": "build_teen",
+    "targetCount": 17,
+    "hint": "The top frame is a whole ten. Count on from ten.",
+    "narration": "The top frame is full \u2014 that is one ten. Now make the number.",
+    "instruction": "The top frame is full \u2014 that is 10. Make 17!"
+   }
+  ],
+  "showOptions": {
+   "showCount": true,
+   "showEquation": false,
+   "showEmptyCount": false,
+   "allowFlip": false
+  },
+  "gradeBand": "K",
+  "twoColorMode": {
+   "enabled": false,
+   "color1Count": 0,
+   "color2Count": 0,
+   "color1": "red",
+   "color2": "yellow"
+  }
+ }
+}

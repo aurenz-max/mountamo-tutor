@@ -1,0 +1,60 @@
+{
+ "source": "qa/tutor-reports/number-line-runtime-between-payload-2026-09-28.json",
+ "primitiveId": "number-line",
+ "evalMode": "between",
+ "data": {
+  "title": "Hop Back on the Number Line",
+  "description": "Learn to subtract by taking two backward jumps on the number line to find mystery numbers.",
+  "range": {
+   "min": 0,
+   "max": 10
+  },
+  "gradeBand": "K-2",
+  "numberType": "integer",
+  "interactionMode": "compare",
+  "challenges": [
+   {
+    "id": "find_between-0",
+    "type": "find_between",
+    "instruction": "Can you find a secret number hiding strictly between 3 and 6 on the number line?",
+    "targetValues": [
+     3,
+     6
+    ],
+    "hint": "Start at 3 and count up, or start at 6 and count down, to see what numbers live in the middle."
+   },
+   {
+    "id": "find_between-1",
+    "type": "find_between",
+    "instruction": "Look at the number line! Can you find a secret number that is strictly between 1 and 4?",
+    "targetValues": [
+     1,
+     4
+    ],
+    "hint": "Start at 1 and count forward, or start at 4 and count backward, to see which numbers live in the middle."
+   },
+   {
+    "id": "find_between-2",
+    "type": "find_between",
+    "instruction": "Can you find a secret number that hides right between 2 and 6 on the number line?",
+    "targetValues": [
+     2,
+     6
+    ],
+    "hint": "Start at 2 and count up, or start at 6 and count down, to see which numbers are in the middle."
+   },
+   {
+    "id": "find_between-3",
+    "type": "find_between",
+    "instruction": "Look at the number line and find a mystery number that is strictly between 2 and 5! Tap or type the number that lives in that space.",
+    "targetValues": [
+     2,
+     5
+    ],
+    "hint": "Think about the numbers that come right after 2 and right before 5."
+   }
+  ],
+  "highlights": [],
+  "operations": []
+ }
+}

@@ -1,0 +1,255 @@
+{
+ "source": "qa/tutor-reports/sorting-station-runtime-sort_attribute-payload-2026-09-28.json",
+ "primitiveId": "sorting-station",
+ "evalMode": "sort_attribute",
+ "data": {
+  "title": "Living and Non-Living Sort Adventure!",
+  "description": "Help young learners practice sorting objects into groups by one attribute by deciding which things are living and which things are non-living!",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "sort-by-attribute",
+    "instruction": "Can you sort these objects into living things and non-living things?",
+    "sortingAttribute": "category",
+    "objects": [
+     {
+      "id": "obj1",
+      "label": "Cute Puppy",
+      "emoji": "\ud83d\udc36",
+      "attributes": {
+       "type": "animal",
+       "category": "living"
+      }
+     },
+     {
+      "id": "obj2",
+      "label": "Happy Kitty",
+      "emoji": "\ud83d\udc31",
+      "attributes": {
+       "type": "animal",
+       "category": "living"
+      }
+     },
+     {
+      "id": "obj3",
+      "label": "Toy Car",
+      "emoji": "\ud83d\ude97",
+      "attributes": {
+       "type": "toy",
+       "category": "non-living"
+      }
+     },
+     {
+      "id": "obj4",
+      "label": "Building Block",
+      "emoji": "\ud83e\uddf1",
+      "attributes": {
+       "type": "toy",
+       "category": "non-living"
+      }
+     }
+    ],
+    "categories": [
+     {
+      "label": "Living",
+      "rule": {
+       "category": "living"
+      },
+      "bucketEmoji": "\ud83c\udf31"
+     },
+     {
+      "label": "Non-living",
+      "rule": {
+       "category": "non-living"
+      },
+      "bucketEmoji": "\ud83e\udea8"
+     }
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "sort-by-attribute",
+    "instruction": "Let us sort more friends! Which ones are living and which ones are non-living?",
+    "sortingAttribute": "category",
+    "objects": [
+     {
+      "id": "obj5",
+      "label": "Green Tree",
+      "emoji": "\ud83c\udf33",
+      "attributes": {
+       "type": "plant",
+       "category": "living"
+      }
+     },
+     {
+      "id": "obj6",
+      "label": "Buzzing Bee",
+      "emoji": "\ud83d\udc1d",
+      "attributes": {
+       "type": "animal",
+       "category": "living"
+      }
+     },
+     {
+      "id": "obj7",
+      "label": "Soccer Ball",
+      "emoji": "\u26bd",
+      "attributes": {
+       "type": "toy",
+       "category": "non-living"
+      }
+     },
+     {
+      "id": "obj8",
+      "label": "Teddy Bear",
+      "emoji": "\ud83e\uddf8",
+      "attributes": {
+       "type": "toy",
+       "category": "non-living"
+      }
+     }
+    ],
+    "categories": [
+     {
+      "label": "Living",
+      "rule": {
+       "category": "living"
+      },
+      "bucketEmoji": "\ud83c\udf31"
+     },
+     {
+      "label": "Non-living",
+      "rule": {
+       "category": "non-living"
+      },
+      "bucketEmoji": "\ud83e\udea8"
+     }
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "sort-by-attribute",
+    "instruction": "Time to sort again! Put the living things in one group and non-living things in the other.",
+    "sortingAttribute": "category",
+    "objects": [
+     {
+      "id": "obj9",
+      "label": "Pretty Flower",
+      "emoji": "\ud83c\udf37",
+      "attributes": {
+       "type": "plant",
+       "category": "living"
+      }
+     },
+     {
+      "id": "obj10",
+      "label": "Little Bird",
+      "emoji": "\ud83d\udc26",
+      "attributes": {
+       "type": "animal",
+       "category": "living"
+      }
+     },
+     {
+      "id": "obj11",
+      "label": "Bicycle",
+      "emoji": "\ud83d\udeb2",
+      "attributes": {
+       "type": "toy",
+       "category": "non-living"
+      }
+     },
+     {
+      "id": "obj12",
+      "label": "Crayon Box",
+      "emoji": "\ud83d\udd8d\ufe0f",
+      "attributes": {
+       "type": "tool",
+       "category": "non-living"
+      }
+     }
+    ],
+    "categories": [
+     {
+      "label": "Living",
+      "rule": {
+       "category": "living"
+      },
+      "bucketEmoji": "\ud83c\udf31"
+     },
+     {
+      "label": "Non-living",
+      "rule": {
+       "category": "non-living"
+      },
+      "bucketEmoji": "\ud83e\udea8"
+     }
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "sort-by-attribute",
+    "instruction": "Sort these fun items! Is it living or non-living?",
+    "sortingAttribute": "category",
+    "objects": [
+     {
+      "id": "obj13",
+      "label": "Jumping Frog",
+      "emoji": "\ud83d\udc38",
+      "attributes": {
+       "type": "animal",
+       "category": "living"
+      }
+     },
+     {
+      "id": "obj14",
+      "label": "Sunny Sunflower",
+      "emoji": "\ud83c\udf3b",
+      "attributes": {
+       "type": "plant",
+       "category": "living"
+      }
+     },
+     {
+      "id": "obj15",
+      "label": "Paper Kite",
+      "emoji": "\ud83e\ude81",
+      "attributes": {
+       "type": "toy",
+       "category": "non-living"
+      }
+     },
+     {
+      "id": "obj16",
+      "label": "Plastic Robot",
+      "emoji": "\ud83e\udd16",
+      "attributes": {
+       "type": "toy",
+       "category": "non-living"
+      }
+     }
+    ],
+    "categories": [
+     {
+      "label": "Living",
+      "rule": {
+       "category": "living"
+      },
+      "bucketEmoji": "\ud83c\udf31"
+     },
+     {
+      "label": "Non-living",
+      "rule": {
+       "category": "non-living"
+      },
+      "bucketEmoji": "\ud83e\udea8"
+     }
+    ]
+   }
+  ],
+  "maxCategories": 2,
+  "showCounts": true,
+  "showTallyChart": false,
+  "gradeBand": "K"
+ }
+}

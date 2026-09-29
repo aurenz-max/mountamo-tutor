@@ -1,0 +1,97 @@
+{
+ "source": "qa/tutor-reports/number-tracer-runtime-sequence-payload-2026-09-28.json",
+ "primitiveId": "number-tracer",
+ "evalMode": "sequence",
+ "data": {
+  "title": "Find the Missing Numbers",
+  "description": "Work out the hidden number in each counting run, then write it.",
+  "gradeBand": "K",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "sequence",
+    "digit": 2,
+    "instruction": "What's the missing number? Fill in the blank!",
+    "strokePaths": [],
+    "showModel": false,
+    "showArrows": false,
+    "hint": "Count up by ones \u2014 each number is one more than the last.",
+    "sequenceNumbers": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "missingIndex": 2
+   },
+   {
+    "id": "c2",
+    "type": "sequence",
+    "digit": 4,
+    "instruction": "What's the missing number? Fill in the blank!",
+    "strokePaths": [],
+    "showModel": false,
+    "showArrows": false,
+    "hint": "Count up by ones \u2014 each number is one more than the last.",
+    "sequenceNumbers": [
+     2,
+     3,
+     4,
+     5
+    ],
+    "missingIndex": 2
+   },
+   {
+    "id": "c3",
+    "type": "sequence",
+    "digit": 3,
+    "instruction": "What's the missing number? Fill in the blank!",
+    "strokePaths": [],
+    "showModel": false,
+    "showArrows": false,
+    "hint": "Count up by ones \u2014 each number is one more than the last.",
+    "sequenceNumbers": [
+     1,
+     2,
+     3,
+     4
+    ],
+    "missingIndex": 2
+   },
+   {
+    "id": "c4",
+    "type": "sequence",
+    "digit": 1,
+    "instruction": "What's the missing number? Fill in the blank!",
+    "strokePaths": [],
+    "showModel": false,
+    "showArrows": false,
+    "hint": "Count up by ones \u2014 each number is one more than the last.",
+    "sequenceNumbers": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "missingIndex": 1
+   },
+   {
+    "id": "c5",
+    "type": "sequence",
+    "digit": 3,
+    "instruction": "What's the missing number? Fill in the blank!",
+    "strokePaths": [],
+    "showModel": false,
+    "showArrows": false,
+    "hint": "Count up by ones \u2014 each number is one more than the last.",
+    "sequenceNumbers": [
+     2,
+     3,
+     4,
+     5
+    ],
+    "missingIndex": 1
+   }
+  ]
+ }
+}

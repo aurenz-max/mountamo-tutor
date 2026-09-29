@@ -1,0 +1,76 @@
+{
+ "source": "qa/tutor-reports/counting-board-runtime-count_on-payload-2026-09-28.json",
+ "primitiveId": "counting-board",
+ "evalMode": "count_on",
+ "data": {
+  "title": "Apple Counting Adventure",
+  "description": "Practice counting on from a known group of apples to find the total amount.",
+  "objects": {
+   "type": "apples"
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "count_on",
+    "instruction": "We already have 4 apples in the basket. Count on the rest to find the total!",
+    "targetAnswer": 9,
+    "count": 9,
+    "arrangement": "line",
+    "hint": "Start counting after 4. Touch each new apple as you count!",
+    "narration": "There are 4 apples lined up. Let's count on to find out how many there are in total.",
+    "startFrom": 4
+   },
+   {
+    "id": "c2",
+    "type": "count_on",
+    "instruction": "There are 6 apples ready. Can you count on to get the total count?",
+    "targetAnswer": 9,
+    "count": 9,
+    "arrangement": "scattered",
+    "hint": "Keep counting starting right after 6.",
+    "narration": "We have 6 apples here. Count on from 6 to see the final number.",
+    "startFrom": 6
+   },
+   {
+    "id": "c3",
+    "type": "count_on",
+    "instruction": "Start with 5 apples and count on to find the new total.",
+    "targetAnswer": 7,
+    "count": 7,
+    "arrangement": "line",
+    "hint": "Say 5, then touch the next apple and say 6!",
+    "narration": "Begin with 5 apples and count on until you reach the end.",
+    "startFrom": 5
+   },
+   {
+    "id": "c4",
+    "type": "count_on",
+    "instruction": "We have 7 apples counted out. Count on the rest of them!",
+    "targetAnswer": 11,
+    "count": 11,
+    "arrangement": "scattered",
+    "hint": "Remember the number 7, then keep counting the rest.",
+    "narration": "Start from 7 and count on to find the big total.",
+    "startFrom": 7
+   },
+   {
+    "id": "c5",
+    "type": "count_on",
+    "instruction": "Start from 3 apples and count on to finish the collection.",
+    "targetAnswer": 6,
+    "count": 6,
+    "arrangement": "line",
+    "hint": "Start at 3 and count each apple one by one.",
+    "narration": "We start with 3 apples. Count on to find the final total.",
+    "startFrom": 3
+   }
+  ],
+  "showOptions": {
+   "showRunningCount": true,
+   "showGroupCircles": false,
+   "highlightOnTap": true,
+   "showLastNumber": true
+  },
+  "gradeBand": "1"
+ }
+}

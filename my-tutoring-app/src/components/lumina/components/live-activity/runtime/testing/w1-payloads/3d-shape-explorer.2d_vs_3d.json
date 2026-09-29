@@ -1,0 +1,71 @@
+{
+ "source": "qa/tutor-reports/3d-shape-explorer-runtime-2d_vs_3d-payload-2026-09-28.json",
+ "primitiveId": "3d-shape-explorer",
+ "evalMode": "2d_vs_3d",
+ "data": {
+  "title": "Shape Identification",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "2d-vs-3d",
+    "mixedShapes": [
+     {
+      "name": "sphere",
+      "emoji": "\u26bd",
+      "is3d": true
+     },
+     {
+      "name": "square",
+      "emoji": "\ud83d\udfea",
+      "is3d": false
+     },
+     {
+      "name": "cube",
+      "emoji": "\ud83d\udce6",
+      "is3d": true
+     },
+     {
+      "name": "circle",
+      "emoji": "\u2b55",
+      "is3d": false
+     }
+    ],
+    "supportTier": "medium",
+    "showElementLabels": false,
+    "showFaceHighlight": false
+   },
+   {
+    "id": "c2",
+    "type": "2d-vs-3d",
+    "mixedShapes": [
+     {
+      "name": "cylinder",
+      "emoji": "\ud83d\udd0b",
+      "is3d": true
+     },
+     {
+      "name": "triangle",
+      "emoji": "\ud83d\udd3a",
+      "is3d": false
+     },
+     {
+      "name": "cone",
+      "emoji": "\ud83c\udf66",
+      "is3d": true
+     },
+     {
+      "name": "rectangle",
+      "emoji": "\u25af",
+      "is3d": false
+     }
+    ],
+    "supportTier": "medium",
+    "showElementLabels": false,
+    "showFaceHighlight": false
+   }
+  ],
+  "gradeBand": "K",
+  "showUnfoldAnimation": false,
+  "show3dRotation": true
+ }
+}

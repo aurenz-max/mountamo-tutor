@@ -1,0 +1,77 @@
+{
+ "source": "qa/tutor-reports/counting-board-runtime-take_away-payload-2026-09-28.json",
+ "primitiveId": "counting-board",
+ "evalMode": "take_away",
+ "data": {
+  "title": "Fish Tank Take Away",
+  "description": "Learn about taking away objects and finding out how many are left in the fish tank.",
+  "objects": {
+   "type": "fish"
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "take_away",
+    "instruction": "Take away three fish. How many are left?",
+    "targetAnswer": 2,
+    "count": 5,
+    "arrangement": "line",
+    "hint": "Count the fish that are still swimming together in a row.",
+    "narration": "Let's watch the fish tank and see how many fish are left after some swim away.",
+    "changeBy": 3
+   },
+   {
+    "id": "c2",
+    "type": "take_away",
+    "instruction": "Take away two fish. How many are left?",
+    "targetAnswer": 4,
+    "count": 6,
+    "arrangement": "scattered",
+    "hint": "Look closely around the tank to count every single fish remaining.",
+    "narration": "Some fish are hiding now. Tap each fish you can see to find out how many are left.",
+    "changeBy": 2
+   },
+   {
+    "id": "c3",
+    "type": "take_away",
+    "instruction": "Take away three fish. How many are left?",
+    "targetAnswer": 4,
+    "count": 7,
+    "arrangement": "groups",
+    "hint": "Count the fish in each little group to find the total left behind.",
+    "narration": "The fish have split into friendly little groups. Let's count them all!",
+    "changeBy": 3,
+    "groupSize": 5
+   },
+   {
+    "id": "c4",
+    "type": "take_away",
+    "instruction": "Take away two fish. How many are left?",
+    "targetAnswer": 6,
+    "count": 8,
+    "arrangement": "circle",
+    "hint": "Follow the circle round and round as you count the remaining fish.",
+    "narration": "The fish are swimming in a circle. Tap them one by one to count the ones that stay.",
+    "changeBy": 2
+   },
+   {
+    "id": "c5",
+    "type": "take_away",
+    "instruction": "Take away one fish. How many are left?",
+    "targetAnswer": 8,
+    "count": 9,
+    "arrangement": "scattered",
+    "hint": "Take your time and tap every fish carefully so none get missed.",
+    "narration": "You are doing wonderful work! Let's do one more big count of the fish left in the tank.",
+    "changeBy": 1
+   }
+  ],
+  "showOptions": {
+   "showRunningCount": true,
+   "showGroupCircles": false,
+   "highlightOnTap": true,
+   "showLastNumber": true
+  },
+  "gradeBand": "K"
+ }
+}

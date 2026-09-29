@@ -1,0 +1,322 @@
+{
+ "source": "qa/tutor-reports/ordinal-line-runtime-match-payload-2026-09-28.json",
+ "primitiveId": "ordinal-line",
+ "evalMode": "match",
+ "data": {
+  "title": "Animal Parade: Who Is First?",
+  "description": "Join the fun animal parade to practice identifying and saying ordinal positions from first to fifth!",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "match",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "\ud83d\udc30"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "\ud83d\udc22"
+     },
+     {
+      "name": "Monkey",
+      "emoji": "\ud83d\udc12"
+     },
+     {
+      "name": "Penguin",
+      "emoji": "\ud83d\udc27"
+     },
+     {
+      "name": "Lion",
+      "emoji": "\ud83e\udd81"
+     }
+    ],
+    "instruction": "Read each place symbol out loud.",
+    "matchPairs": [
+     {
+      "word": "first",
+      "symbol": "1st"
+     },
+     {
+      "word": "second",
+      "symbol": "2nd"
+     },
+     {
+      "word": "fifth",
+      "symbol": "5th"
+     }
+    ],
+    "correctAnswer": "all_matched"
+   },
+   {
+    "id": "c2",
+    "type": "match",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "\ud83d\udc30"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "\ud83d\udc22"
+     },
+     {
+      "name": "Monkey",
+      "emoji": "\ud83d\udc12"
+     },
+     {
+      "name": "Penguin",
+      "emoji": "\ud83d\udc27"
+     },
+     {
+      "name": "Lion",
+      "emoji": "\ud83e\udd81"
+     }
+    ],
+    "instruction": "Read each place symbol out loud.",
+    "matchPairs": [
+     {
+      "word": "second",
+      "symbol": "2nd"
+     },
+     {
+      "word": "third",
+      "symbol": "3rd"
+     },
+     {
+      "word": "fifth",
+      "symbol": "5th"
+     }
+    ],
+    "correctAnswer": "all_matched"
+   },
+   {
+    "id": "c3",
+    "type": "match",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "\ud83d\udc30"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "\ud83d\udc22"
+     },
+     {
+      "name": "Monkey",
+      "emoji": "\ud83d\udc12"
+     },
+     {
+      "name": "Penguin",
+      "emoji": "\ud83d\udc27"
+     },
+     {
+      "name": "Lion",
+      "emoji": "\ud83e\udd81"
+     }
+    ],
+    "instruction": "Read each place symbol out loud.",
+    "matchPairs": [
+     {
+      "word": "first",
+      "symbol": "1st"
+     },
+     {
+      "word": "second",
+      "symbol": "2nd"
+     },
+     {
+      "word": "third",
+      "symbol": "3rd"
+     },
+     {
+      "word": "fourth",
+      "symbol": "4th"
+     },
+     {
+      "word": "fifth",
+      "symbol": "5th"
+     }
+    ],
+    "correctAnswer": "all_matched"
+   },
+   {
+    "id": "c4",
+    "type": "match",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "\ud83d\udc30"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "\ud83d\udc22"
+     },
+     {
+      "name": "Monkey",
+      "emoji": "\ud83d\udc12"
+     },
+     {
+      "name": "Penguin",
+      "emoji": "\ud83d\udc27"
+     },
+     {
+      "name": "Lion",
+      "emoji": "\ud83e\udd81"
+     }
+    ],
+    "instruction": "Read each place symbol out loud.",
+    "matchPairs": [
+     {
+      "word": "first",
+      "symbol": "1st"
+     },
+     {
+      "word": "third",
+      "symbol": "3rd"
+     },
+     {
+      "word": "fifth",
+      "symbol": "5th"
+     }
+    ],
+    "correctAnswer": "all_matched"
+   },
+   {
+    "id": "c5",
+    "type": "match",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "\ud83d\udc30"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "\ud83d\udc22"
+     },
+     {
+      "name": "Monkey",
+      "emoji": "\ud83d\udc12"
+     },
+     {
+      "name": "Penguin",
+      "emoji": "\ud83d\udc27"
+     },
+     {
+      "name": "Lion",
+      "emoji": "\ud83e\udd81"
+     }
+    ],
+    "instruction": "Read each place symbol out loud.",
+    "matchPairs": [
+     {
+      "word": "first",
+      "symbol": "1st"
+     },
+     {
+      "word": "third",
+      "symbol": "3rd"
+     },
+     {
+      "word": "fourth",
+      "symbol": "4th"
+     },
+     {
+      "word": "fifth",
+      "symbol": "5th"
+     }
+    ],
+    "correctAnswer": "all_matched"
+   },
+   {
+    "id": "c6",
+    "type": "match",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "\ud83d\udc30"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "\ud83d\udc22"
+     },
+     {
+      "name": "Monkey",
+      "emoji": "\ud83d\udc12"
+     },
+     {
+      "name": "Penguin",
+      "emoji": "\ud83d\udc27"
+     },
+     {
+      "name": "Lion",
+      "emoji": "\ud83e\udd81"
+     }
+    ],
+    "instruction": "Read each place symbol out loud.",
+    "matchPairs": [
+     {
+      "word": "first",
+      "symbol": "1st"
+     },
+     {
+      "word": "second",
+      "symbol": "2nd"
+     },
+     {
+      "word": "fourth",
+      "symbol": "4th"
+     }
+    ],
+    "correctAnswer": "all_matched"
+   },
+   {
+    "id": "c7",
+    "type": "match",
+    "characters": [
+     {
+      "name": "Rabbit",
+      "emoji": "\ud83d\udc30"
+     },
+     {
+      "name": "Turtle",
+      "emoji": "\ud83d\udc22"
+     },
+     {
+      "name": "Monkey",
+      "emoji": "\ud83d\udc12"
+     },
+     {
+      "name": "Penguin",
+      "emoji": "\ud83d\udc27"
+     },
+     {
+      "name": "Lion",
+      "emoji": "\ud83e\udd81"
+     }
+    ],
+    "instruction": "Read each place symbol out loud.",
+    "matchPairs": [
+     {
+      "word": "first",
+      "symbol": "1st"
+     },
+     {
+      "word": "third",
+      "symbol": "3rd"
+     },
+     {
+      "word": "fourth",
+      "symbol": "4th"
+     }
+    ],
+    "correctAnswer": "all_matched"
+   }
+  ],
+  "maxPosition": 5,
+  "context": "parade",
+  "showOrdinalLabels": true,
+  "labelFormat": "word",
+  "gradeBand": "K"
+ }
+}

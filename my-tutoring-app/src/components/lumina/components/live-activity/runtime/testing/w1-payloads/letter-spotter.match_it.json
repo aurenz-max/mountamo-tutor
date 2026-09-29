@@ -1,0 +1,17 @@
+{
+  "source": "hand-authored 2026-09-28, handoff 22 L1: no saved match_it payload existed, so its levers had no journey or replay coverage",
+  "primitiveId": "letter-spotter",
+  "evalMode": "match_it",
+  "data": {
+    "title": "Big and Little Letters",
+    "letterGroup": 3,
+    "cumulativeLetters": ["s", "a", "t", "i", "p", "n", "c", "k", "e", "h", "r", "m", "d", "g", "o", "u", "l", "f", "b"],
+    "newLetters": ["g", "o", "u", "l", "f", "b"],
+    "gradeLevel": "K",
+    "challenges": [
+      { "id": "m1", "mode": "match-it", "targetLetter": "d", "targetCase": "both", "options": ["b", "d", "p", "t"] },
+      { "id": "m2", "mode": "match-it", "targetLetter": "n", "targetCase": "both", "options": ["u", "h", "n", "r"] },
+      { "id": "m3", "mode": "match-it", "targetLetter": "g", "targetCase": "both", "options": ["q", "g", "p", "e"] }
+    ]
+  }
+}

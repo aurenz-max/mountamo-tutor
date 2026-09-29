@@ -1,0 +1,57 @@
+{
+ "source": "qa/tutor-reports/fraction-circles-runtime-touch_fraction-payload-2026-09-28.json",
+ "primitiveId": "fraction-circles",
+ "evalMode": "touch_fraction",
+ "data": {
+  "title": "Exploring Halves, Thirds, and Fourths",
+  "challenges": [
+   {
+    "id": "fc1",
+    "type": "touch_fraction",
+    "instruction": "Touch the picture showing one half.",
+    "denominator": 2,
+    "numerator": 1,
+    "hint": "Look at the equal parts and the shaded parts.",
+    "narration": "Touch the picture showing one half."
+   },
+   {
+    "id": "fc2",
+    "type": "touch_fraction",
+    "instruction": "Touch the picture showing one third.",
+    "denominator": 3,
+    "numerator": 1,
+    "hint": "Look at the equal parts and the shaded parts.",
+    "narration": "Touch the picture showing one third."
+   },
+   {
+    "id": "fc3",
+    "type": "touch_fraction",
+    "instruction": "Touch the picture showing three fourths.",
+    "denominator": 4,
+    "numerator": 3,
+    "hint": "Look at the equal parts and the shaded parts.",
+    "narration": "Touch the picture showing three fourths."
+   },
+   {
+    "id": "fc4",
+    "type": "touch_fraction",
+    "instruction": "Touch the picture showing two thirds.",
+    "denominator": 3,
+    "numerator": 2,
+    "hint": "Look at the equal parts and the shaded parts.",
+    "narration": "Touch the picture showing two thirds."
+   },
+   {
+    "id": "fc5",
+    "type": "touch_fraction",
+    "instruction": "Touch the picture showing one fourth.",
+    "denominator": 4,
+    "numerator": 1,
+    "hint": "Look at the equal parts and the shaded parts.",
+    "narration": "Touch the picture showing one fourth."
+   }
+  ],
+  "description": "Practice listening to fractions and identifying halves, thirds, and fourths visually using interactive circles.",
+  "gradeBand": "K-2"
+ }
+}

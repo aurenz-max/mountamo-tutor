@@ -1,0 +1,21 @@
+{
+ "source": "qa/tutor-reports/comparison-builder-runtime-one_more_less-payload-2026-09-28.json",
+ "primitiveId": "comparison-builder",
+ "evalMode": "one_more_less",
+ "data": {
+  "title": "Comparison Practice",
+  "description": "Compare, order, and reason about numbers.",
+  "gradeBand": "1",
+  "showCorrespondenceLines": true,
+  "useAlligatorMnemonic": true,
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "one-more-one-less",
+    "instruction": "What is one more than 5? What is one less?",
+    "targetNumber": 5,
+    "askFor": "both"
+   }
+  ]
+ }
+}

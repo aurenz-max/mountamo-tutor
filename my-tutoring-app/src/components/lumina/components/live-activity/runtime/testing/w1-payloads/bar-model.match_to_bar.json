@@ -1,0 +1,283 @@
+{
+ "source": "qa/tutor-reports/bar-model-runtime-match_to_bar-payload-2026-09-28.json",
+ "primitiveId": "bar-model",
+ "evalMode": "match_to_bar",
+ "data": {
+  "title": "Match the Blocks",
+  "description": "Find the row that matches the toy bin group",
+  "challenges": [
+   {
+    "id": "bm-1",
+    "evalMode": "match_to_bar",
+    "values": [
+     {
+      "label": "Emma",
+      "value": 6,
+      "color": "blue",
+      "emoji": "\ud83e\uddf1"
+     },
+     {
+      "label": "Noah",
+      "value": 8,
+      "color": "green",
+      "emoji": "\ud83e\uddf1"
+     },
+     {
+      "label": "Mia",
+      "value": 10,
+      "color": "purple",
+      "emoji": "\ud83e\uddf1"
+     },
+     {
+      "label": "Leo",
+      "value": 2,
+      "color": "orange",
+      "emoji": "\ud83e\uddf1"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 10,
+     "iconEmoji": "\ud83e\uddf1",
+     "iconValue": 1
+    },
+    "prompt": "Which row shows the same number of blocks?",
+    "hint": "Count the blocks in the group first, then check each row.",
+    "sourceItems": [
+     {
+      "emoji": "\ud83e\uddf1",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83e\uddf1",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83e\uddf1",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83e\uddf1",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83e\uddf1",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83e\uddf1",
+      "categoryIndex": 0
+     }
+    ],
+    "sourceScattered": false,
+    "stimulusCount": 6,
+    "targetBarIndex": 0
+   },
+   {
+    "id": "bm-2",
+    "evalMode": "match_to_bar",
+    "values": [
+     {
+      "label": "Mia",
+      "value": 3,
+      "color": "blue",
+      "emoji": "\ud83c\udf6a"
+     },
+     {
+      "label": "Leo",
+      "value": 7,
+      "color": "green",
+      "emoji": "\ud83c\udf6a"
+     },
+     {
+      "label": "Zoe",
+      "value": 5,
+      "color": "purple",
+      "emoji": "\ud83c\udf6a"
+     },
+     {
+      "label": "Max",
+      "value": 10,
+      "color": "orange",
+      "emoji": "\ud83c\udf6a"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 10,
+     "iconEmoji": "\ud83c\udf6a",
+     "iconValue": 1
+    },
+    "prompt": "Which row shows the same number of crackers?",
+    "hint": "Count the crackers in the box, then count each row to find the match.",
+    "sourceItems": [
+     {
+      "emoji": "\ud83c\udf6a",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83c\udf6a",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83c\udf6a",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83c\udf6a",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83c\udf6a",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83c\udf6a",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83c\udf6a",
+      "categoryIndex": 0
+     }
+    ],
+    "sourceScattered": false,
+    "stimulusCount": 7,
+    "targetBarIndex": 1
+   },
+   {
+    "id": "bm-3",
+    "evalMode": "match_to_bar",
+    "values": [
+     {
+      "label": "Mia",
+      "value": 7,
+      "color": "blue",
+      "emoji": "\u26bd"
+     },
+     {
+      "label": "Leo",
+      "value": 6,
+      "color": "green",
+      "emoji": "\u26bd"
+     },
+     {
+      "label": "Zoe",
+      "value": 4,
+      "color": "purple",
+      "emoji": "\u26bd"
+     },
+     {
+      "label": "Sam",
+      "value": 1,
+      "color": "orange",
+      "emoji": "\u26bd"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 7,
+     "iconEmoji": "\u26bd",
+     "iconValue": 1
+    },
+    "prompt": "Which row shows the same number of balls?",
+    "hint": "Count the group first, then touch and count each row to find a match.",
+    "sourceItems": [
+     {
+      "emoji": "\u26bd",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\u26bd",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\u26bd",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\u26bd",
+      "categoryIndex": 0
+     }
+    ],
+    "sourceScattered": false,
+    "stimulusCount": 4,
+    "targetBarIndex": 2
+   },
+   {
+    "id": "bm-4",
+    "evalMode": "match_to_bar",
+    "values": [
+     {
+      "label": "Emma",
+      "value": 5,
+      "color": "blue",
+      "emoji": "\ud83e\udd55"
+     },
+     {
+      "label": "Liam",
+      "value": 1,
+      "color": "green",
+      "emoji": "\ud83e\udd55"
+     },
+     {
+      "label": "Maya",
+      "value": 2,
+      "color": "purple",
+      "emoji": "\ud83e\udd55"
+     },
+     {
+      "label": "Noah",
+      "value": 7,
+      "color": "orange",
+      "emoji": "\ud83e\udd55"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 7,
+     "iconEmoji": "\ud83e\udd55",
+     "iconValue": 1
+    },
+    "prompt": "Which row shows the same number of carrots?",
+    "hint": "Count the top group first, then touch and count each row to find the match.",
+    "sourceItems": [
+     {
+      "emoji": "\ud83e\udd55",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83e\udd55",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83e\udd55",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83e\udd55",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83e\udd55",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83e\udd55",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83e\udd55",
+      "categoryIndex": 0
+     }
+    ],
+    "sourceScattered": false,
+    "stimulusCount": 7,
+    "targetBarIndex": 3
+   }
+  ]
+ }
+}

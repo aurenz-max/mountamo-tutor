@@ -1,0 +1,180 @@
+{
+ "source": "qa/tutor-reports/spatial-scene-runtime-describe-payload-2026-09-28.json",
+ "primitiveId": "spatial-scene",
+ "evalMode": "describe",
+ "data": {
+  "title": "Spatial Scene: Position words: above, below, beside and next to",
+  "description": "Explore spatial relationships with a a classroom with furniture and toys",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "describe",
+    "instruction": "Look at the classroom! Where is the ball \u26bd compared to the box \ud83d\udce6?",
+    "hint": "Check if the ball is directly higher up in the same column as the box.",
+    "sceneObjects": [
+     {
+      "name": "ball",
+      "image": "\u26bd",
+      "position": {
+       "row": 0,
+       "col": 1
+      }
+     },
+     {
+      "name": "box",
+      "image": "\ud83d\udce6",
+      "position": {
+       "row": 2,
+       "col": 1
+      }
+     },
+     {
+      "name": "chair",
+      "image": "\ud83e\ude91",
+      "position": {
+       "row": 1,
+       "col": 0
+      }
+     },
+     {
+      "name": "star",
+      "image": "\u2b50",
+      "position": {
+       "row": 1,
+       "col": 2
+      }
+     }
+    ],
+    "targetObject": {
+     "name": "ball",
+     "image": "\u26bd",
+     "position": {
+      "row": 0,
+      "col": 1
+     }
+    },
+    "correctPosition": "above",
+    "referenceObjectName": "box",
+    "options": [
+     "below",
+     "beside",
+     "next_to",
+     "above"
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "describe",
+    "instruction": "Look at the toys! Where is the cat \ud83d\udc31 compared to the dog \ud83d\udc15?",
+    "hint": "Look down from the cat to find the dog in the same column.",
+    "sceneObjects": [
+     {
+      "name": "cat",
+      "image": "\ud83d\udc31",
+      "position": {
+       "row": 0,
+       "col": 2
+      }
+     },
+     {
+      "name": "dog",
+      "image": "\ud83d\udc15",
+      "position": {
+       "row": 2,
+       "col": 2
+      }
+     },
+     {
+      "name": "car",
+      "image": "\ud83d\ude97",
+      "position": {
+       "row": 1,
+       "col": 0
+      }
+     },
+     {
+      "name": "tree",
+      "image": "\ud83c\udf33",
+      "position": {
+       "row": 1,
+       "col": 1
+      }
+     }
+    ],
+    "targetObject": {
+     "name": "cat",
+     "image": "\ud83d\udc31",
+     "position": {
+      "row": 0,
+      "col": 2
+     }
+    },
+    "correctPosition": "above",
+    "referenceObjectName": "dog",
+    "options": [
+     "above",
+     "beside",
+     "next_to",
+     "below"
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "describe",
+    "instruction": "Check out the classroom corner! Where is the flower \ud83c\udf38 compared to the house \ud83c\udfe0?",
+    "hint": "Look right next to the house in the very same row.",
+    "sceneObjects": [
+     {
+      "name": "flower",
+      "image": "\ud83c\udf38",
+      "position": {
+       "row": 1,
+       "col": 1
+      }
+     },
+     {
+      "name": "house",
+      "image": "\ud83c\udfe0",
+      "position": {
+       "row": 1,
+       "col": 2
+      }
+     },
+     {
+      "name": "chair",
+      "image": "\ud83e\ude91",
+      "position": {
+       "row": 0,
+       "col": 0
+      }
+     },
+     {
+      "name": "ball",
+      "image": "\u26bd",
+      "position": {
+       "row": 2,
+       "col": 0
+      }
+     }
+    ],
+    "targetObject": {
+     "name": "flower",
+     "image": "\ud83c\udf38",
+     "position": {
+      "row": 1,
+      "col": 1
+     }
+    },
+    "correctPosition": "beside",
+    "referenceObjectName": "house",
+    "options": [
+     "below",
+     "beside",
+     "above"
+    ]
+   }
+  ],
+  "gridSize": 3,
+  "gradeBand": "K"
+ }
+}

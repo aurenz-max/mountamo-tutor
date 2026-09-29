@@ -1,0 +1,64 @@
+{
+ "source": "qa/tutor-reports/number-line-runtime-order-payload-2026-09-28.json",
+ "primitiveId": "number-line",
+ "evalMode": "order",
+ "data": {
+  "title": "Hop Back on the Number Line",
+  "description": "Practice backward jumps and ordering numbers on a number line up to 10.",
+  "range": {
+   "min": 0,
+   "max": 10
+  },
+  "gradeBand": "K-2",
+  "numberType": "integer",
+  "interactionMode": "order",
+  "challenges": [
+   {
+    "id": "order_values-0",
+    "type": "order_values",
+    "instruction": "Let's put our numbers in order! Can you arrange 8, 5, and 7 from smallest to largest?",
+    "targetValues": [
+     8,
+     5,
+     7
+    ],
+    "hint": "Find each number on the line first and look at which one comes first as you count up."
+   },
+   {
+    "id": "order_values-1",
+    "type": "order_values",
+    "instruction": "Look at the numbers 3, 6, and 4 on the number line. Can you drag or place them in order from the smallest number to the largest number?",
+    "targetValues": [
+     3,
+     6,
+     4
+    ],
+    "hint": "Find each number on the line first to see which one comes first!"
+   },
+   {
+    "id": "order_values-2",
+    "type": "order_values",
+    "instruction": "Let us put our numbers in order! Look at the numbers 8, 4, and 5 on your number line, and arrange them from the smallest to the largest.",
+    "targetValues": [
+     8,
+     4,
+     5
+    ],
+    "hint": "Find each number on the line first to see which one comes first!"
+   },
+   {
+    "id": "order_values-3",
+    "type": "order_values",
+    "instruction": "Look at the numbers 7, 5, and 4. Can you put them in order from smallest to largest on the number line?",
+    "targetValues": [
+     7,
+     5,
+     4
+    ],
+    "hint": "Find each number on the line first to see which one comes first!"
+   }
+  ],
+  "highlights": [],
+  "operations": []
+ }
+}

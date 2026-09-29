@@ -1,0 +1,77 @@
+{
+ "source": "qa/tutor-reports/counting-board-runtime-add_more-payload-2026-09-28.json",
+ "primitiveId": "counting-board",
+ "evalMode": "add_more",
+ "data": {
+  "title": "Butterfly Picnic!",
+  "description": "Practice giving a requested number of objects from a larger collection by adding more butterflies to the board.",
+  "objects": {
+   "type": "butterflies"
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "add_more",
+    "instruction": "Put two more butterflies on the board. How many altogether?",
+    "targetAnswer": 4,
+    "count": 2,
+    "arrangement": "scattered",
+    "hint": "Try touching each butterfly one by one as you count them all together.",
+    "narration": "Look at these butterflies! Let's put some more on the board and count the total amount together.",
+    "changeBy": 2
+   },
+   {
+    "id": "c2",
+    "type": "add_more",
+    "instruction": "Put two more butterflies on the board. How many altogether?",
+    "targetAnswer": 5,
+    "count": 3,
+    "arrangement": "line",
+    "hint": "Count the first ones, then keep counting the new ones we added!",
+    "narration": "Wonderful! We added a few more butterflies. Can you find out how many there are altogether?",
+    "changeBy": 2
+   },
+   {
+    "id": "c3",
+    "type": "add_more",
+    "instruction": "Put one more butterflies on the board. How many altogether?",
+    "targetAnswer": 6,
+    "count": 5,
+    "arrangement": "groups",
+    "hint": "Touch every single butterfly to make sure you get the total count right.",
+    "narration": "The garden is getting busier! Let's count every butterfly on the board.",
+    "changeBy": 1,
+    "groupSize": 5
+   },
+   {
+    "id": "c4",
+    "type": "add_more",
+    "instruction": "Put one more butterflies on the board. How many altogether?",
+    "targetAnswer": 7,
+    "count": 6,
+    "arrangement": "circle",
+    "hint": "Go around in a circle and tap each butterfly to count them all.",
+    "narration": "Look at them fly in! Can you count every single butterfly on the board now?",
+    "changeBy": 1
+   },
+   {
+    "id": "c5",
+    "type": "add_more",
+    "instruction": "Put three more butterflies on the board. How many altogether?",
+    "targetAnswer": 8,
+    "count": 5,
+    "arrangement": "scattered",
+    "hint": "Take your time and touch each butterfly slowly so none get missed.",
+    "narration": "This is our biggest butterfly group yet! Count them carefully from start to finish.",
+    "changeBy": 3
+   }
+  ],
+  "showOptions": {
+   "showRunningCount": true,
+   "showGroupCircles": false,
+   "highlightOnTap": true,
+   "showLastNumber": true
+  },
+  "gradeBand": "K"
+ }
+}

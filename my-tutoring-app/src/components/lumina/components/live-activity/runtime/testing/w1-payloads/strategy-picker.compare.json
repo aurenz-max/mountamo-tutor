@@ -1,0 +1,92 @@
+{
+ "source": "qa/tutor-reports/strategy-picker-runtime-compare-payload-2026-09-28.json",
+ "primitiveId": "strategy-picker",
+ "evalMode": "compare",
+ "data": {
+  "title": "Super Strategy Math Lab!",
+  "description": "Master adding numbers up to 10 by discovering fun tricks like counting on, using doubles, and making ten.",
+  "challenges": [
+   {
+    "id": "ch1",
+    "type": "compare",
+    "instruction": "You solved 3 + 3 two ways: using tally marks and doubles. Both ways give us the same answer, 6!",
+    "problem": {
+     "equation": "3 + 3",
+     "operation": "addition",
+     "operand1": 3,
+     "operand2": 3,
+     "result": 6
+    },
+    "strategies": [
+     "tally-marks",
+     "doubles"
+    ],
+    "comparisonQuestion": "Which way was faster for you to figure out?"
+   },
+   {
+    "id": "ch2",
+    "type": "compare",
+    "instruction": "You solved 3 + 3 two different ways! First, you used counting-on (saying 3, then 4, 5, 6). Next, you used a doubles fact (since 3 and 3 make 6). Both ways give you the exact same answer of 6.",
+    "problem": {
+     "equation": "3 + 3",
+     "operation": "addition",
+     "operand1": 3,
+     "operand2": 3,
+     "result": 6
+    },
+    "strategies": [
+     "counting-on",
+     "doubles"
+    ],
+    "comparisonQuestion": "Which strategy felt easier for your brain today?"
+   },
+   {
+    "id": "ch3",
+    "type": "compare",
+    "instruction": "You solved 5 + 5 two ways! You used a doubles fact (5 + 5) and you made a ten. Both ways give you the same answer: 10!",
+    "problem": {
+     "equation": "5 + 5",
+     "operation": "addition",
+     "operand1": 5,
+     "operand2": 5,
+     "result": 10
+    },
+    "strategies": [
+     "doubles",
+     "make-ten"
+    ],
+    "comparisonQuestion": "Which way was faster for your brain today?"
+   },
+   {
+    "id": "ch4",
+    "type": "compare",
+    "instruction": "You solved 1 + 1 in two cool ways: counting-on and using doubles!",
+    "problem": {
+     "equation": "1 + 1",
+     "operation": "addition",
+     "operand1": 1,
+     "operand2": 1,
+     "result": 2
+    },
+    "strategies": [
+     "counting-on",
+     "doubles"
+    ],
+    "comparisonQuestion": "Which strategy felt easier for your brain today?"
+   }
+  ],
+  "maxNumber": 10,
+  "operations": [
+   "addition",
+   "subtraction"
+  ],
+  "strategiesIntroduced": [
+   "counting-on",
+   "counting-back",
+   "make-ten",
+   "doubles",
+   "tally-marks"
+  ],
+  "gradeBand": "1"
+ }
+}

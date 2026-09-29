@@ -1,0 +1,96 @@
+{
+ "source": "qa/tutor-reports/counting-board-runtime-compare-payload-2026-09-28.json",
+ "primitiveId": "counting-board",
+ "evalMode": "compare",
+ "data": {
+  "title": "Which Group Has More Fish?",
+  "description": "Compare groups of fish to see which side has more!",
+  "objects": {
+   "type": "fish"
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "compare",
+    "instruction": "Look at the two groups of fish. Which side has more fish?",
+    "targetAnswer": 6,
+    "count": 9,
+    "arrangement": "groups",
+    "hint": "Count the fish in each group to find out which number is bigger.",
+    "narration": "Let us look at these two groups of fish and find out which one has more.",
+    "groupSize": 6,
+    "compareGroups": [
+     6,
+     3
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "compare",
+    "instruction": "Compare these two fish bowls. Which group has more fish?",
+    "targetAnswer": 5,
+    "count": 7,
+    "arrangement": "groups",
+    "hint": "Try counting the fish on the left, then the right.",
+    "narration": "Can you spot which group of fish has more?",
+    "groupSize": 5,
+    "compareGroups": [
+     2,
+     5
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "compare",
+    "instruction": "Which of these two groups has more fish swimming around?",
+    "targetAnswer": 4,
+    "count": 5,
+    "arrangement": "groups",
+    "hint": "Count carefully! Which group has the bigger number?",
+    "narration": "Compare the two groups of fish to see which one has more.",
+    "groupSize": 4,
+    "compareGroups": [
+     1,
+     4
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "compare",
+    "instruction": "Look at the groups. Which side has more fish this time?",
+    "targetAnswer": 4,
+    "count": 6,
+    "arrangement": "groups",
+    "hint": "Check both sides by counting every fish.",
+    "narration": "Let us count and compare these fish groups.",
+    "groupSize": 4,
+    "compareGroups": [
+     2,
+     4
+    ]
+   },
+   {
+    "id": "c5",
+    "type": "compare",
+    "instruction": "Find the group that has more fish!",
+    "targetAnswer": 5,
+    "count": 8,
+    "arrangement": "groups",
+    "hint": "Which group has a greater total of fish?",
+    "narration": "You are doing great! Which group has more fish?",
+    "groupSize": 5,
+    "compareGroups": [
+     5,
+     3
+    ]
+   }
+  ],
+  "showOptions": {
+   "showRunningCount": true,
+   "showGroupCircles": true,
+   "highlightOnTap": true,
+   "showLastNumber": true
+  },
+  "gradeBand": "1"
+ }
+}

@@ -1,0 +1,93 @@
+{
+ "source": "qa/tutor-reports/counting-board-runtime-subitize-payload-2026-09-28.json",
+ "primitiveId": "counting-board",
+ "evalMode": "subitize",
+ "data": {
+  "title": "Quick Apple Peek!",
+  "description": "Practicing quick visual recognition of apple collections to build subitizing skills.",
+  "objects": {
+   "type": "apples"
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "subitize",
+    "instruction": "Take a quick peek! How many apples do you see right away?",
+    "targetAnswer": 2,
+    "count": 2,
+    "arrangement": "line",
+    "hint": "Try covering one apple with your finger and look at the other one!",
+    "narration": "Look at these apples in a row. How many are there?"
+   },
+   {
+    "id": "c2",
+    "type": "subitize",
+    "instruction": "Quick! How many apples are hiding here?",
+    "targetAnswer": 3,
+    "count": 3,
+    "arrangement": "groups",
+    "hint": "Look at the little cluster of apples together.",
+    "narration": "Can you spot how many apples are in this group?",
+    "groupSize": 3
+   },
+   {
+    "id": "c3",
+    "type": "subitize",
+    "instruction": "Can you see all the apples at a glance?",
+    "targetAnswer": 3,
+    "count": 3,
+    "arrangement": "scattered",
+    "hint": "They are spread out a little, but you can see them all at once!",
+    "narration": "Take a fast look and tell me how many apples you see."
+   },
+   {
+    "id": "c4",
+    "type": "subitize",
+    "instruction": "Spot the apples fast! How many are there?",
+    "targetAnswer": 4,
+    "count": 4,
+    "arrangement": "circle",
+    "hint": "They are making a ring shape. Count them around the circle!",
+    "narration": "Here are some apples in a circle. How many can you find?"
+   },
+   {
+    "id": "c5",
+    "type": "subitize",
+    "instruction": "How many apples are in this group?",
+    "targetAnswer": 4,
+    "count": 4,
+    "arrangement": "groups",
+    "hint": "Try to see them as two pairs of apples.",
+    "narration": "Look closely at this bunch of apples. How many are there?",
+    "groupSize": 4
+   },
+   {
+    "id": "c6",
+    "type": "subitize",
+    "instruction": "Quick look! How many apples do you see?",
+    "targetAnswer": 5,
+    "count": 5,
+    "arrangement": "scattered",
+    "hint": "A whole hand full of apples! Can you see the total?",
+    "narration": "Let's test your eyes with these apples. How many are there?"
+   },
+   {
+    "id": "c7",
+    "type": "subitize",
+    "instruction": "Last fast look! How many apples are on the board?",
+    "targetAnswer": 5,
+    "count": 5,
+    "arrangement": "line",
+    "hint": "Count them smoothly from one end to the other.",
+    "narration": "Here is our final apple challenge. How many do you see?"
+   }
+  ],
+  "showOptions": {
+   "showRunningCount": false,
+   "showGroupCircles": false,
+   "highlightOnTap": true,
+   "showLastNumber": true
+  },
+  "gradeBand": "K"
+ }
+}

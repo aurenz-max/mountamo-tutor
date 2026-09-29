@@ -1,0 +1,175 @@
+{
+ "source": "qa/tutor-reports/spatial-scene-runtime-place_in-payload-2026-09-28.json",
+ "primitiveId": "spatial-scene",
+ "evalMode": "place_in",
+ "data": {
+  "title": "Spatial Scene: Position words: above, below, beside and next to",
+  "description": "Explore spatial relationships with a a garden with flowers and bugs",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "place_in",
+    "instruction": "Put the apple IN the backpack.",
+    "hint": "Look for the backpack resting in the garden. Tap it to place the apple inside!",
+    "sceneObjects": [
+     {
+      "name": "backpack",
+      "image": "\ud83c\udf92",
+      "position": {
+       "row": 1,
+       "col": 1
+      }
+     },
+     {
+      "name": "flower",
+      "image": "\ud83c\udf38",
+      "position": {
+       "row": 0,
+       "col": 1
+      }
+     },
+     {
+      "name": "tree",
+      "image": "\ud83c\udf33",
+      "position": {
+       "row": 2,
+       "col": 0
+      }
+     },
+     {
+      "name": "cat",
+      "image": "\ud83d\udc31",
+      "position": {
+       "row": 1,
+       "col": 2
+      }
+     }
+    ],
+    "targetObject": {
+     "name": "apple",
+     "image": "\ud83c\udf4e",
+     "position": {
+      "row": 0,
+      "col": 0
+     }
+    },
+    "correctPosition": "in",
+    "referenceObjectName": "backpack",
+    "correctCell": {
+     "row": 1,
+     "col": 1
+    }
+   },
+   {
+    "id": "c2",
+    "type": "place_in",
+    "instruction": "Put the ball IN the bowl.",
+    "hint": "Find the bowl sitting on the grass. Tap it to put the ball right inside!",
+    "sceneObjects": [
+     {
+      "name": "bowl",
+      "image": "\ud83e\udd63",
+      "position": {
+       "row": 2,
+       "col": 1
+      }
+     },
+     {
+      "name": "flower",
+      "image": "\ud83c\udf38",
+      "position": {
+       "row": 2,
+       "col": 0
+      }
+     },
+     {
+      "name": "dog",
+      "image": "\ud83d\udc15",
+      "position": {
+       "row": 0,
+       "col": 2
+      }
+     },
+     {
+      "name": "star",
+      "image": "\u2b50",
+      "position": {
+       "row": 1,
+       "col": 1
+      }
+     }
+    ],
+    "targetObject": {
+     "name": "ball",
+     "image": "\u26bd",
+     "position": {
+      "row": 0,
+      "col": 0
+     }
+    },
+    "correctPosition": "in",
+    "referenceObjectName": "bowl",
+    "correctCell": {
+     "row": 2,
+     "col": 1
+    }
+   },
+   {
+    "id": "c3",
+    "type": "place_in",
+    "instruction": "Put the star IN the basket.",
+    "hint": "Search for the basket among the garden plants. Tap it to place the star inside!",
+    "sceneObjects": [
+     {
+      "name": "basket",
+      "image": "\ud83e\uddfa",
+      "position": {
+       "row": 0,
+       "col": 0
+      }
+     },
+     {
+      "name": "flower",
+      "image": "\ud83c\udf38",
+      "position": {
+       "row": 0,
+       "col": 2
+      }
+     },
+     {
+      "name": "tree",
+      "image": "\ud83c\udf33",
+      "position": {
+       "row": 2,
+       "col": 2
+      }
+     },
+     {
+      "name": "chair",
+      "image": "\ud83e\ude91",
+      "position": {
+       "row": 1,
+       "col": 0
+      }
+     }
+    ],
+    "targetObject": {
+     "name": "star",
+     "image": "\u2b50",
+     "position": {
+      "row": 0,
+      "col": 0
+     }
+    },
+    "correctPosition": "in",
+    "referenceObjectName": "basket",
+    "correctCell": {
+     "row": 0,
+     "col": 0
+    }
+   }
+  ],
+  "gridSize": 3,
+  "gradeBand": "K"
+ }
+}

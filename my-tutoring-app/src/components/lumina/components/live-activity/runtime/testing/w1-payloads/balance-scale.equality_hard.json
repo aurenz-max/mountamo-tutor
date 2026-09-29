@@ -1,0 +1,169 @@
+{
+ "source": "qa/tutor-reports/balance-scale-runtime-equality_hard-payload-2026-09-28.json",
+ "primitiveId": "balance-scale",
+ "evalMode": "equality_hard",
+ "data": {
+  "gradeLevel": "elementary",
+  "title": "Make It Another Way",
+  "description": "Match the weight, then make the same weight with a different combination.",
+  "leftSide": [
+   {
+    "value": 7,
+    "label": "7"
+   },
+   {
+    "value": 1,
+    "label": "?",
+    "isVariable": true
+   }
+  ],
+  "rightSide": [
+   {
+    "value": 7,
+    "label": "7"
+   },
+   {
+    "value": 2,
+    "label": "2"
+   }
+  ],
+  "variableValue": 2,
+  "showTilt": true,
+  "showSideValues": false,
+  "showBalanceStatus": true,
+  "allowOperations": [
+   "add",
+   "subtract"
+  ],
+  "gradeBand": "K-2",
+  "challenges": [
+   {
+    "type": "equality_hard",
+    "instruction": "Match the weight, then make the same weight with a different combination.",
+    "leftSide": [
+     {
+      "value": 7,
+      "label": "7"
+     },
+     {
+      "value": 1,
+      "label": "?",
+      "isVariable": true
+     }
+    ],
+    "rightSide": [
+     {
+      "value": 7,
+      "label": "7"
+     },
+     {
+      "value": 2,
+      "label": "2"
+     }
+    ],
+    "variableValue": 2,
+    "hint": "Use the current weight task. Keep equal amounts together and use one group per identical parcel."
+   },
+   {
+    "type": "equality_hard",
+    "instruction": "Match the weight, then make the same weight with a different combination.",
+    "leftSide": [
+     {
+      "value": 6,
+      "label": "6"
+     },
+     {
+      "value": 1,
+      "label": "?",
+      "isVariable": true
+     }
+    ],
+    "rightSide": [
+     {
+      "value": 6,
+      "label": "6"
+     },
+     {
+      "value": 5,
+      "label": "5"
+     }
+    ],
+    "variableValue": 5,
+    "hint": "Use the current weight task. Keep equal amounts together and use one group per identical parcel."
+   },
+   {
+    "type": "equality_hard",
+    "instruction": "Match the weight, then make the same weight with a different combination.",
+    "leftSide": [
+     {
+      "value": 6,
+      "label": "6"
+     },
+     {
+      "value": 1,
+      "label": "?",
+      "isVariable": true
+     }
+    ],
+    "rightSide": [
+     {
+      "value": 6,
+      "label": "6"
+     },
+     {
+      "value": 7,
+      "label": "7"
+     }
+    ],
+    "variableValue": 7,
+    "hint": "Use the current weight task. Keep equal amounts together and use one group per identical parcel."
+   },
+   {
+    "type": "equality_hard",
+    "instruction": "Match the weight, then make the same weight with a different combination.",
+    "leftSide": [
+     {
+      "value": 1,
+      "label": "?",
+      "isVariable": true
+     }
+    ],
+    "rightSide": [
+     {
+      "value": 12,
+      "label": "12"
+     },
+     {
+      "value": 5,
+      "label": "5"
+     }
+    ],
+    "variableValue": 17,
+    "hint": "Use the current weight task. Keep equal amounts together and use one group per identical parcel."
+   },
+   {
+    "type": "equality_hard",
+    "instruction": "Match the weight, then make the same weight with a different combination.",
+    "leftSide": [
+     {
+      "value": 1,
+      "label": "?",
+      "isVariable": true
+     }
+    ],
+    "rightSide": [
+     {
+      "value": 17,
+      "label": "17"
+     },
+     {
+      "value": 3,
+      "label": "3"
+     }
+    ],
+    "variableValue": 20,
+    "hint": "Use the current weight task. Keep equal amounts together and use one group per identical parcel."
+   }
+  ]
+ }
+}

@@ -1,0 +1,69 @@
+{
+ "source": "qa/tutor-reports/equation-builder-runtime-missing-result-payload-2026-09-28.json",
+ "primitiveId": "equation-builder",
+ "evalMode": "missing-result",
+ "data": {
+  "title": "Equal Sign Explorer!",
+  "description": "Learn what the equal sign really means by finding the missing numbers to make both sides balanced and equal within 10.",
+  "maxNumber": 10,
+  "gradeBand": "1",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "missing-value",
+    "instruction": "Let's find the total! What number goes after the equal sign to make this side match?",
+    "equation": "2 + 2 = ?",
+    "missingPosition": 4,
+    "correctValue": 4,
+    "options": [
+     4,
+     6,
+     3,
+     5
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "missing-value",
+    "instruction": "You are doing wonderful! Can you find the sum for this subtraction problem?",
+    "equation": "5 - 2 = ?",
+    "missingPosition": 4,
+    "correctValue": 3,
+    "options": [
+     1,
+     3,
+     2,
+     4
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "missing-value",
+    "instruction": "Almost there! Balance this equation by finding what number comes after the equal sign.",
+    "equation": "4 + 4 = ?",
+    "missingPosition": 4,
+    "correctValue": 8,
+    "options": [
+     9,
+     6,
+     8,
+     7
+    ]
+   },
+   {
+    "id": "c5",
+    "type": "missing-value",
+    "instruction": "Final challenge! Find the missing number to solve this tricky subtraction equation.",
+    "equation": "9 - 4 = ?",
+    "missingPosition": 4,
+    "correctValue": 5,
+    "options": [
+     5,
+     4,
+     3,
+     6
+    ]
+   }
+  ]
+ }
+}

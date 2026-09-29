@@ -1,0 +1,379 @@
+{
+ "source": "qa/tutor-reports/bar-model-runtime-build_one_to_one-payload-2026-09-28.json",
+ "primitiveId": "bar-model",
+ "evalMode": "build_one_to_one",
+ "data": {
+  "title": "Our Toy Box Chart",
+  "description": "Let us sort the toys from the bin!",
+  "challenges": [
+   {
+    "id": "bm-1",
+    "evalMode": "build_one_to_one",
+    "values": [
+     {
+      "label": "Blocks",
+      "value": 0,
+      "color": "blue",
+      "emoji": "\ud83e\uddf1"
+     },
+     {
+      "label": "Crayons",
+      "value": 0,
+      "color": "green",
+      "emoji": "\ud83d\udd8d\ufe0f"
+     },
+     {
+      "label": "Cars",
+      "value": 0,
+      "color": "purple",
+      "emoji": "\ud83d\ude97"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 7,
+     "iconEmoji": "\ud83e\uddf1",
+     "iconValue": 1
+    },
+    "prompt": "Put one sticker in a row for each toy you see.",
+    "hint": "Match one sticker to one toy, one by one.",
+    "sourceItems": [
+     {
+      "emoji": "\ud83d\udd8d\ufe0f",
+      "categoryIndex": 1
+     },
+     {
+      "emoji": "\ud83e\uddf1",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83d\udd8d\ufe0f",
+      "categoryIndex": 1
+     },
+     {
+      "emoji": "\ud83d\ude97",
+      "categoryIndex": 2
+     },
+     {
+      "emoji": "\ud83d\udd8d\ufe0f",
+      "categoryIndex": 1
+     },
+     {
+      "emoji": "\ud83e\uddf1",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83e\uddf1",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83e\uddf1",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83d\ude97",
+      "categoryIndex": 2
+     },
+     {
+      "emoji": "\ud83e\uddf1",
+      "categoryIndex": 0
+     }
+    ],
+    "sourceScattered": true,
+    "expectedCounts": [
+     5,
+     3,
+     2
+    ]
+   },
+   {
+    "id": "bm-2",
+    "evalMode": "build_one_to_one",
+    "values": [
+     {
+      "label": "Apples",
+      "value": 0,
+      "color": "blue",
+      "emoji": "\ud83c\udf4e"
+     },
+     {
+      "label": "Crackers",
+      "value": 0,
+      "color": "green",
+      "emoji": "\ud83c\udf58"
+     },
+     {
+      "label": "Cheese",
+      "value": 0,
+      "color": "purple",
+      "emoji": "\ud83e\uddc0"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 9,
+     "iconEmoji": "\ud83c\udf4e",
+     "iconValue": 1
+    },
+    "prompt": "Put one sticker in a row for each snack you see.",
+    "hint": "Match one sticker to each snack so none are left out.",
+    "sourceItems": [
+     {
+      "emoji": "\ud83c\udf58",
+      "categoryIndex": 1
+     },
+     {
+      "emoji": "\ud83c\udf4e",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83e\uddc0",
+      "categoryIndex": 2
+     },
+     {
+      "emoji": "\ud83c\udf58",
+      "categoryIndex": 1
+     },
+     {
+      "emoji": "\ud83c\udf4e",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83c\udf58",
+      "categoryIndex": 1
+     },
+     {
+      "emoji": "\ud83c\udf4e",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83c\udf4e",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83c\udf4e",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83c\udf4e",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83e\uddc0",
+      "categoryIndex": 2
+     },
+     {
+      "emoji": "\ud83c\udf4e",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83e\uddc0",
+      "categoryIndex": 2
+     },
+     {
+      "emoji": "\ud83e\uddc0",
+      "categoryIndex": 2
+     }
+    ],
+    "sourceScattered": true,
+    "expectedCounts": [
+     7,
+     3,
+     4
+    ]
+   },
+   {
+    "id": "bm-3",
+    "evalMode": "build_one_to_one",
+    "values": [
+     {
+      "label": "Balls",
+      "value": 0,
+      "color": "blue",
+      "emoji": "\u26bd"
+     },
+     {
+      "label": "Buckets",
+      "value": 0,
+      "color": "green",
+      "emoji": "\ud83e\udea3"
+     },
+     {
+      "label": "Kites",
+      "value": 0,
+      "color": "purple",
+      "emoji": "\ud83e\ude81"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 8,
+     "iconEmoji": "\u26bd",
+     "iconValue": 1
+    },
+    "prompt": "Put one sticker in a row for each toy you see.",
+    "hint": "Match one sticker to one toy so no one gets left out.",
+    "sourceItems": [
+     {
+      "emoji": "\ud83e\ude81",
+      "categoryIndex": 2
+     },
+     {
+      "emoji": "\ud83e\udea3",
+      "categoryIndex": 1
+     },
+     {
+      "emoji": "\u26bd",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83e\udea3",
+      "categoryIndex": 1
+     },
+     {
+      "emoji": "\ud83e\udea3",
+      "categoryIndex": 1
+     },
+     {
+      "emoji": "\u26bd",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83e\ude81",
+      "categoryIndex": 2
+     },
+     {
+      "emoji": "\ud83e\udea3",
+      "categoryIndex": 1
+     },
+     {
+      "emoji": "\u26bd",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83e\udea3",
+      "categoryIndex": 1
+     },
+     {
+      "emoji": "\u26bd",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\u26bd",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\u26bd",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83e\ude81",
+      "categoryIndex": 2
+     },
+     {
+      "emoji": "\ud83e\ude81",
+      "categoryIndex": 2
+     }
+    ],
+    "sourceScattered": true,
+    "expectedCounts": [
+     6,
+     5,
+     4
+    ]
+   },
+   {
+    "id": "bm-4",
+    "evalMode": "build_one_to_one",
+    "values": [
+     {
+      "label": "Carrots",
+      "value": 0,
+      "color": "blue",
+      "emoji": "\ud83e\udd55"
+     },
+     {
+      "label": "Tomatoes",
+      "value": 0,
+      "color": "green",
+      "emoji": "\ud83c\udf45"
+     },
+     {
+      "label": "Peas",
+      "value": 0,
+      "color": "purple",
+      "emoji": "\ud83d\udfe2"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 7,
+     "iconEmoji": "\ud83e\udd55",
+     "iconValue": 1
+    },
+    "prompt": "Put one sticker in a row for each vegetable you see.",
+    "hint": "Match one sticker to each vegetable so no one is left out.",
+    "sourceItems": [
+     {
+      "emoji": "\ud83e\udd55",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83c\udf45",
+      "categoryIndex": 1
+     },
+     {
+      "emoji": "\ud83c\udf45",
+      "categoryIndex": 1
+     },
+     {
+      "emoji": "\ud83d\udfe2",
+      "categoryIndex": 2
+     },
+     {
+      "emoji": "\ud83e\udd55",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83d\udfe2",
+      "categoryIndex": 2
+     },
+     {
+      "emoji": "\ud83e\udd55",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "\ud83d\udfe2",
+      "categoryIndex": 2
+     },
+     {
+      "emoji": "\ud83c\udf45",
+      "categoryIndex": 1
+     },
+     {
+      "emoji": "\ud83d\udfe2",
+      "categoryIndex": 2
+     },
+     {
+      "emoji": "\ud83d\udfe2",
+      "categoryIndex": 2
+     },
+     {
+      "emoji": "\ud83c\udf45",
+      "categoryIndex": 1
+     }
+    ],
+    "sourceScattered": true,
+    "expectedCounts": [
+     3,
+     4,
+     5
+    ]
+   }
+  ]
+ }
+}

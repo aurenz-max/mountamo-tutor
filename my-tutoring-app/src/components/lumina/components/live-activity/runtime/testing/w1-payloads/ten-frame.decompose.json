@@ -1,0 +1,79 @@
+{
+ "source": "qa/tutor-reports/ten-frame-runtime-decompose-payload-2026-09-28.json",
+ "primitiveId": "ten-frame",
+ "evalMode": "decompose",
+ "data": {
+  "title": "Partitioning Numbers with Ten Frames",
+  "description": "Decompose numbers into different pairs of colors on a single ten frame.",
+  "mode": "single",
+  "counters": {
+   "count": 0,
+   "color": "red",
+   "positions": []
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "split",
+    "targetCount": 3,
+    "hint": "Try turning one counter yellow and keep two red.",
+    "narration": "Let us split three counters into two different colors.",
+    "instruction": "Turn some of the 3 counters yellow to make two groups!"
+   },
+   {
+    "id": "c2",
+    "type": "split",
+    "targetCount": 3,
+    "hint": "Can you split three counters in a different way this time?",
+    "narration": "Let us find another way to break apart three counters.",
+    "instruction": "Turn some of the 3 counters yellow to make two groups!"
+   },
+   {
+    "id": "c3",
+    "type": "split",
+    "targetCount": 4,
+    "hint": "Try coloring two red and two yellow.",
+    "narration": "Now let us work with four counters and split them into two colors.",
+    "instruction": "Turn some of the 4 counters yellow to make two groups!"
+   },
+   {
+    "id": "c4",
+    "type": "split",
+    "targetCount": 4,
+    "hint": "What if you make three yellow and one red?",
+    "narration": "Can you show me a different way to partition four counters?",
+    "instruction": "Turn some of the 4 counters yellow to make two groups!"
+   },
+   {
+    "id": "c5",
+    "type": "split",
+    "targetCount": 5,
+    "hint": "Try turning three counters yellow and two red.",
+    "narration": "Let us explore ways to split a group of five counters.",
+    "instruction": "Turn some of the 5 counters yellow to make two groups!"
+   },
+   {
+    "id": "c6",
+    "type": "split",
+    "targetCount": 5,
+    "hint": "Can you show another way, like one red and four yellow?",
+    "narration": "Here is one more challenge to show a brand new way to split five counters.",
+    "instruction": "Turn some of the 5 counters yellow to make two groups!"
+   }
+  ],
+  "showOptions": {
+   "showCount": true,
+   "showEquation": false,
+   "showEmptyCount": false,
+   "allowFlip": true
+  },
+  "gradeBand": "K",
+  "twoColorMode": {
+   "enabled": true,
+   "color1Count": 0,
+   "color2Count": 0,
+   "color1": "red",
+   "color2": "yellow"
+  }
+ }
+}

@@ -1,0 +1,38 @@
+{
+ "number-line.plot": {
+  "J2-miss-committed": "EVAL_TRACKER NL-2"
+ },
+ "number-line.identify": {
+  "J2-miss-committed": "EVAL_TRACKER NL-2"
+ },
+ "balance-scale.equality_hard": {
+  "J6-completes-once": "EVAL_TRACKER BS-3"
+ },
+ "number-line.between": {
+  "J5-credit-moves-on": "handoff 21 SW-1"
+ },
+ "number-line.order": {
+  "J1-drivable": "handoff 21 SW-2"
+ },
+ "ten-frame.decompose": {
+  "J5-credit-moves-on": "handoff 21 SW-3"
+ },
+ "counting-board.subitize": {
+  "J2-miss-committed": "handoff 21 SW-4"
+ },
+ "fraction-circles.touch_fraction": {
+  "J1-drivable": "handoff 21 SW-6"
+ },
+ "number-tracer.copy": {
+  "J1-drivable": "handoff 21 SW-7"
+ },
+ "number-tracer.write": {
+  "J1-drivable": "handoff 21 SW-7"
+ },
+ "number-tracer.sequence": {
+  "J1-drivable": "handoff 21 SW-7"
+ },
+ "strategy-picker.compare": {
+  "J1-drivable": "handoff 21 SW-8 (by design)"
+ }
+}

@@ -1,0 +1,54 @@
+{
+ "source": "qa/tutor-reports/3d-shape-explorer-runtime-faces_properties-payload-2026-09-28.json",
+ "primitiveId": "3d-shape-explorer",
+ "evalMode": "faces_properties",
+ "data": {
+  "title": "Solid Shapes Exploration",
+  "description": "Explore the properties of common three-dimensional shapes by answering questions about their attributes.",
+  "challenges": [
+   {
+    "id": "fallback-properties",
+    "type": "faces-and-properties",
+    "displayShape": "cylinder",
+    "propertyQuestions": [
+     {
+      "propertyKey": "flatFaces",
+      "answerType": "number",
+      "correctAnswer": "2"
+     },
+     {
+      "propertyKey": "curvedSurfaces",
+      "answerType": "number",
+      "correctAnswer": "1"
+     },
+     {
+      "propertyKey": "faceShape",
+      "answerType": "choice",
+      "correctAnswer": "circle"
+     },
+     {
+      "propertyKey": "canStack",
+      "answerType": "boolean",
+      "correctAnswer": "true"
+     }
+    ],
+    "supportTier": "medium",
+    "showElementLabels": false,
+    "showFaceHighlight": false,
+    "properties": {
+     "flatFaces": 2,
+     "curvedSurfaces": 1,
+     "faceShapes": [
+      "circle"
+     ],
+     "canRoll": true,
+     "canStack": true,
+     "canSlide": true
+    }
+   }
+  ],
+  "gradeBand": "K",
+  "showUnfoldAnimation": true,
+  "show3dRotation": true
+ }
+}

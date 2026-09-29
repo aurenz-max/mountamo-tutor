@@ -1,0 +1,197 @@
+{
+ "source": "qa/tutor-reports/balance-scale-runtime-two_step_intro-payload-2026-09-28.json",
+ "primitiveId": "balance-scale",
+ "evalMode": "two_step_intro",
+ "data": {
+  "gradeLevel": "elementary",
+  "title": "Unpack and Share",
+  "description": "Set known weight aside on both sides, then share what remains among the parcels.",
+  "leftSide": [
+   {
+    "value": 1,
+    "label": "x",
+    "isVariable": true
+   },
+   {
+    "value": 1,
+    "label": "x",
+    "isVariable": true
+   },
+   {
+    "value": 1,
+    "label": "x",
+    "isVariable": true
+   },
+   {
+    "value": 3,
+    "label": "3"
+   }
+  ],
+  "rightSide": [
+   {
+    "value": 6,
+    "label": "6"
+   },
+   {
+    "value": 3,
+    "label": "3"
+   }
+  ],
+  "variableValue": 2,
+  "showTilt": true,
+  "showSideValues": false,
+  "showBalanceStatus": true,
+  "allowOperations": [
+   "add",
+   "subtract",
+   "multiply",
+   "divide"
+  ],
+  "gradeBand": "3-4",
+  "challenges": [
+   {
+    "type": "two_step_intro",
+    "instruction": "Set known weight aside on both sides, then share what remains among the parcels.",
+    "leftSide": [
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 3,
+      "label": "3"
+     }
+    ],
+    "rightSide": [
+     {
+      "value": 6,
+      "label": "6"
+     },
+     {
+      "value": 3,
+      "label": "3"
+     }
+    ],
+    "variableValue": 2,
+    "hint": "Use the current weight task. Keep equal amounts together and use one group per identical parcel."
+   },
+   {
+    "type": "two_step_intro",
+    "instruction": "Set known weight aside on both sides, then share what remains among the parcels.",
+    "leftSide": [
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 4,
+      "label": "4"
+     }
+    ],
+    "rightSide": [
+     {
+      "value": 6,
+      "label": "6"
+     },
+     {
+      "value": 4,
+      "label": "4"
+     }
+    ],
+    "variableValue": 3,
+    "hint": "Use the current weight task. Keep equal amounts together and use one group per identical parcel."
+   },
+   {
+    "type": "two_step_intro",
+    "instruction": "Set known weight aside on both sides, then share what remains among the parcels.",
+    "leftSide": [
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 3,
+      "label": "3"
+     }
+    ],
+    "rightSide": [
+     {
+      "value": 8,
+      "label": "8"
+     },
+     {
+      "value": 3,
+      "label": "3"
+     }
+    ],
+    "variableValue": 4,
+    "hint": "Use the current weight task. Keep equal amounts together and use one group per identical parcel."
+   },
+   {
+    "type": "two_step_intro",
+    "instruction": "Set known weight aside on both sides, then share what remains among the parcels.",
+    "leftSide": [
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 1,
+      "label": "x",
+      "isVariable": true
+     },
+     {
+      "value": 5,
+      "label": "5"
+     }
+    ],
+    "rightSide": [
+     {
+      "value": 20,
+      "label": "20"
+     },
+     {
+      "value": 5,
+      "label": "5"
+     }
+    ],
+    "variableValue": 5,
+    "hint": "Use the current weight task. Keep equal amounts together and use one group per identical parcel."
+   }
+  ]
+ }
+}
