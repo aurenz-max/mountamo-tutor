@@ -18,6 +18,7 @@ from app.api.endpoints.lumina_tutor import (
     interpolate_template,
     input_transcription_message,
     InputTranscriptBoundary,
+    OutputTranscriptBoundary,
     should_queue_greeting,
     switch_tail,
 )
@@ -721,3 +722,37 @@ def test_a_child_who_walks_on_never_hears_the_held_switch():
     out = [e.render() for e in kept.values()]
     assert rendered == ["take-home-activity"]
     assert out == ["[PRIMITIVE SWITCH] -> take-home-activity"]
+
+
+def _spoken(chunks):
+    """(text, audio frames received so far) per chunk -> the chunks that reach the client (LB-15)."""
+    boundary = OutputTranscriptBoundary()
+    return [text for text, frames in chunks if boundary.spoken(text, frames)]
+
+
+def test_output_transcript_drops_unspoken_markup_and_the_rest_of_its_turn():
+    # Session 2026-09-29-115635: the spoken line, then the system instruction with no audio behind it.
+    assert _spoken([("Let's count them together ", 4), ('and touch each butterfly', 7), (' as we go.', 10),
+                    ('---\n\n**LESSON ACTIVITIES (0 total):**\nNone\n\n**YOUR ROLE:**\n1. **Provide', 10),
+                    ('scaffolded hints** - Never give away the answer', 10)]) \
+        == ["Let's count them together ", 'and touch each butterfly', ' as we go.']
+    # 2026-09-24-230229: an answer key after the question.
+    assert _spoken([('Look at the picture and ', 3), ('tell me what you see.', 7),
+                    ('---\n\n### Answer Key & Explanation:\n- **Correct Answer:** Bowl', 7)]) \
+        == ['Look at the picture and ', 'tell me what you see.']
+    assert _spoken([('What word do you ', 5), ('see on the card?', 10), ('---', 10)]) == ['What word do you ', 'see on the card?']
+
+
+def test_output_transcript_keeps_spoken_words_including_inline_bold_and_line_breaks():
+    # DI era: the transcript bolds a spoken word; audio carries it.
+    assert _spoken([('The first sound in', 3), (' **ant**', 5), (' is aaa.', 8)]) == ['The first sound in', ' **ant**', ' is aaa.']
+    assert _spoken([(' I see\nfive fish.', 4), (' Great!', 4)]) == [' I see\nfive fish.', ' Great!']
+    # Markup with new audio behind it is left alone: only text no audio carries is dropped.
+    assert _spoken([('Step one', 2), ('\n1. **count**', 5)]) == ['Step one', '\n1. **count**']
+
+
+def test_output_transcript_boundary_resets_each_turn():
+    boundary = OutputTranscriptBoundary()
+    assert boundary.spoken('Nice.', 3) and not boundary.spoken('---', 3) and not boundary.spoken('more', 3)
+    boundary.turn_start()
+    assert boundary.spoken('Next one!', 2)

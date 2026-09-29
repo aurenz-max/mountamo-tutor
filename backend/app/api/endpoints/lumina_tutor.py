@@ -419,6 +419,36 @@ class InputTranscriptBoundary:
         return messages
 
 
+# A rule, heading or table bar at a line start; bold or a list item after a line break. Inline bold on a
+# spoken word (" **ant**", DI era) is not markup here.
+_UNSPOKEN_MARKUP = re.compile(r'(^|\n)[ \t]*(-{3,}|#{1,6}\s|\|)|\n[ \t]*(\*\*|\d+\.\s+\*\*|[-*]\s+\*\*)')
+
+
+class OutputTranscriptBoundary:
+    """Keep the tutor transcript to what was spoken (LB-15).
+
+    Rarely (36 of 22,336 tutor turns in the session logs, 32 of them since 09-19) the provider's output
+    transcription continues past the spoken sentence with text no audio carries: a bare "---", the model's own
+    reasoning after one ("I need to perform the workspace action..."), the lesson system instruction
+    ("LESSON ACTIVITIES", "YOUR ROLE"), an answer key under a markdown heading. It reached the conversation panel
+    and the outcome observer as the tutor's words. Speech transcribes to plain words, so a chunk with markdown
+    structure that arrives with no audio since the previous chunk is not speech; it and the rest of that turn's
+    transcript are dropped. Audio is never touched.
+    """
+    def __init__(self):
+        self.turn_start()
+
+    def turn_start(self):
+        self.audio_at_last = 0
+        self.derailed = False
+
+    def spoken(self, text: str, audio_frames: int) -> bool:
+        if not self.derailed and audio_frames == self.audio_at_last and _UNSPOKEN_MARKUP.search(text):
+            self.derailed = True
+        self.audio_at_last = audio_frames
+        return not self.derailed
+
+
 def should_queue_greeting(
     *,
     owns_opening: bool,
@@ -1797,6 +1827,7 @@ async def lumina_tutor_session(websocket: WebSocket):
 
             turn_had_content = False
             input_boundary = InputTranscriptBoundary()
+            output_boundary = OutputTranscriptBoundary()
             turn_count = 0
             audio_frames = 0
             audio_bytes = 0
@@ -1835,6 +1866,7 @@ async def lumina_tutor_session(websocket: WebSocket):
                     # comparing turn duration against word count).
                     audio_frames = 0
                     audio_bytes = 0
+                    output_boundary.turn_start()
                     async for response in session.receive():
                         # Complete source input before relaying output/tool events.
                         for user_message in input_boundary.observe(response):
@@ -1959,7 +1991,10 @@ async def lumina_tutor_session(websocket: WebSocket):
 
                             # Handle output transcription
                             ai_text = getattr(getattr(sc, 'output_transcription', None), 'text', None)
-                            if ai_text:
+                            if ai_text and not output_boundary.spoken(ai_text, audio_frames):
+                                # Text no audio carries (LB-15): kept for the scan, never shown or observed.
+                                ledger.write("ai-transcript-unspoken", turn=turn_count, text=ai_text[:2000])
+                            elif ai_text:
                                 logger.info(f"AI transcription: {ai_text}")
                                 # Still ledgered when fault-muted: the ledger
                                 # must show what Gemini SAID while the client
