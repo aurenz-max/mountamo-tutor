@@ -12,6 +12,8 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 // Stable sendText spy (a fresh vi.fn() per render would lose the DISAMBIGUATE call
 // we assert on). Cleared in beforeEach.
@@ -178,9 +180,8 @@ describe('ComparisonBuilder reader-fit (K chrome band-gate — item 2b)', () => 
     expect(screen.getByRole('button', { name: /read the question to me again/i })).toBeTruthy();
   });
 
-  it('GRADE-1 control: count badges, mode tabs, counter, grade badge PRESENT; no Read-me', () => {
+  it('GRADE-1 control: mode tabs, counter, grade badge PRESENT; no Read-me', () => {
     render(<ComparisonBuilder data={data1([groups('c1', 3, 5, 'less'), groups('c2', 2, 2, 'equal')])} />);
-    expect(screen.getByText(/Left:/)).toBeTruthy();                          // count badges shown
     expect(screen.getAllByText(/Compare Groups/i).length).toBeGreaterThan(0); // mode tab + type badge
     expect(screen.getByText(/Challenge 1 of/i)).toBeTruthy();               // counter present
     expect(screen.getByText(/Grade 1/i)).toBeTruthy();                       // grade badge present
@@ -189,8 +190,8 @@ describe('ComparisonBuilder reader-fit (K chrome band-gate — item 2b)', () => 
 });
 
 describe('ComparisonBuilder reader-fit (one_more_less DISAMBIGUATE symmetry — item 2b)', () => {
-  // Two number rows render for askFor 'both' (one-more first, one-less second), so a
-  // number label appears twice; index 0 = one-more row, index 1 = one-less row.
+  // Two number rows render for askFor 'both' (one-more first, one-less second); each cell is
+  // named by its row ("one more 6", "one less 4") so the two rows can be told apart.
   // The DISAMBIGUATE beat is a silent system trigger — sendText(msg, {silent:true}) —
   // so scan the calls' first arg rather than matching the whole arg list. Anchored on
   // the tag so the [ACTIVITY_START] intro (which echoes the instruction) can't match.
@@ -198,19 +199,19 @@ describe('ComparisonBuilder reader-fit (one_more_less DISAMBIGUATE symmetry — 
 
   it('answering "one MORE" first voices the "one LESS" ask at K', () => {
     render(<ComparisonBuilder data={data([oneMoreLess('c1', 5, 'both')])} />);
-    fireEvent.click(screen.getAllByRole('button', { name: '6' })[0]); // one-more row
+    fireEvent.click(screen.getByRole('button', { name: 'one more 6' })); // one-more row
     expect(sentMessages().some((m) => /\[DISAMBIGUATE\][\s\S]*one LESS than 5/i.test(m))).toBe(true);
   });
 
   it('answering "one LESS" first voices the "one MORE" ask at K (symmetric)', () => {
     render(<ComparisonBuilder data={data([oneMoreLess('c1', 5, 'both')])} />);
-    fireEvent.click(screen.getAllByRole('button', { name: '4' })[1]); // one-less row
+    fireEvent.click(screen.getByRole('button', { name: 'one less 4' })); // one-less row
     expect(sentMessages().some((m) => /\[DISAMBIGUATE\][\s\S]*one MORE than 5/i.test(m))).toBe(true);
   });
 
   it('the DISAMBIGUATE beat is answer-free (never states the target±1 value)', () => {
     render(<ComparisonBuilder data={data([oneMoreLess('c1', 5, 'both')])} />);
-    fireEvent.click(screen.getAllByRole('button', { name: '6' })[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'one more 6' }));
     const disambiguateCall = sendTextSpy.mock.calls
       .map((c) => String(c[0]))
       .find((m) => /DISAMBIGUATE/.test(m));
@@ -301,12 +302,11 @@ describe('ComparisonBuilder reader-fit (one-more-one-less @ K — item 2b tail)'
   it('K caps the answer surface to a 5-cell window around the target (no 0 / no 20)', () => {
     render(<ComparisonBuilder data={data([oneMoreLess('c1', 5, 'both')])} />);
     // Window for target 5 is [3,4,5,6,7]; cells outside it are gone.
-    expect(screen.queryByRole('button', { name: '0' })).toBeNull();
-    expect(screen.queryByRole('button', { name: '1' })).toBeNull();
-    expect(screen.queryByRole('button', { name: '20' })).toBeNull();
-    // The viable answers (4 and 6) are present.
-    expect(screen.getAllByRole('button', { name: '6' }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole('button', { name: '4' }).length).toBeGreaterThan(0);
+    expect(screen.queryAllByRole('button', { name: /^one (more|less) (0|1|20)$/ })).toHaveLength(0);
+    expect(screen.getAllByRole('button', { name: /^one more \d+$/ }).map(b => b.textContent)).toEqual(['3', '4', '5', '6', '7']);
+    // The viable answers (4 and 6) are present in both rows.
+    expect(screen.getByRole('button', { name: 'one more 6' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'one less 4' })).toBeTruthy();
   });
 
   it('single ask: tapping the correct cell atomically completes (no Check at K)', async () => {
@@ -318,8 +318,8 @@ describe('ComparisonBuilder reader-fit (one-more-one-less @ K — item 2b tail)'
 
   it("'both': answering one-more then one-less completes the challenge", async () => {
     render(<ComparisonBuilder data={data([oneMoreLess('c1', 5, 'both'), oneMoreLess('c2', 5, 'both')])} />);
-    fireEvent.click(screen.getAllByRole('button', { name: '6' })[0]); // one-more row
-    fireEvent.click(screen.getAllByRole('button', { name: '4' })[1]); // one-less row
+    fireEvent.click(screen.getByRole('button', { name: 'one more 6' })); // one-more row
+    fireEvent.click(screen.getByRole('button', { name: 'one less 4' })); // one-less row
     expect((await screen.findByText(/next challenge/i))).toBeTruthy();
   });
 
@@ -328,5 +328,59 @@ describe('ComparisonBuilder reader-fit (one-more-one-less @ K — item 2b tail)'
     fireEvent.click(screen.getByRole('button', { name: '4' })); // one LESS, but asked for one more → wrong
     expect(screen.queryByText(/next challenge/i)).toBeNull();
     expect(hasShake(screen.getByRole('button', { name: '4' }))).toBe(true);
+  });
+});
+
+// ── Leak fix (handoff 21, 2026-09-28): nothing on screen states the answer during
+// the solve. Easy tier used to ship correspondenceMode 'live' (every match line
+// drawn, leftovers circled) and Grade 1 printed "Left: N / Right: N" before the
+// answer. The first payload below is a real K easy generation that shipped 'live'.
+describe('ComparisonBuilder compare-groups: no answer on screen before the answer', () => {
+  const savedEasyK = JSON.parse(readFileSync(resolve(process.cwd(),
+    'qa/curriculum-coverage/math-k/evidence/COUNT001-03-A-comparison-builder-compare_groups-1.json'), 'utf-8'))
+    .response.fullData;
+  const svgLines = () => workspaceSvg()?.querySelectorAll('line').length ?? 0;
+  const dashedRings = () => workspaceSvg()?.querySelectorAll('circle[stroke-dasharray]').length ?? 0;
+  const firstUnequal = (cs: ComparisonBuilderChallenge[]) =>
+    cs.findIndex((c) => c.leftGroup!.count !== c.rightGroup!.count);
+
+  it("a saved K easy payload carrying correspondenceMode 'live' draws no lines or leftover rings during the solve", () => {
+    expect(savedEasyK.correspondenceMode).toBe('live');
+    const i = firstUnequal(savedEasyK.challenges);
+    const challenges = [savedEasyK.challenges[i], ...savedEasyK.challenges.filter((_: unknown, j: number) => j !== i)];
+    render(<ComparisonBuilder data={{ ...savedEasyK, challenges }} />);
+    expect(svgLines()).toBe(0);
+    expect(dashedRings()).toBe(0);
+  });
+
+  it('a correct answer reveals the lines and leftovers', async () => {
+    render(<ComparisonBuilder data={{ ...data([groups('c1', 5, 2, 'more'), groups('c2', 2, 2, 'equal')]), correspondenceMode: 'live' }} />);
+    fireEvent.click(groupRects()[0]);
+    await screen.findByText(/next challenge/i);
+    expect(svgLines()).toBe(2);
+    expect(dashedRings()).toBe(3);
+  });
+
+  it('a wrong answer does not reveal the lines', () => {
+    render(<ComparisonBuilder data={{ ...data([groups('c1', 1, 4, 'less'), groups('c2', 2, 2, 'equal')]), correspondenceMode: 'live' }} />);
+    fireEvent.click(groupRects()[0]);
+    expect(svgLines()).toBe(0);
+    expect(screen.queryByRole('button', { name: /show matching lines/i })).toBeNull();
+  });
+
+  it("hard tier ('off') never offers the lines, even after answering", async () => {
+    render(<ComparisonBuilder data={{ ...data([groups('c1', 5, 2, 'more'), groups('c2', 2, 2, 'equal')]), correspondenceMode: 'off' }} />);
+    fireEvent.click(groupRects()[0]);
+    await screen.findByText(/next challenge/i);
+    expect(screen.queryByRole('button', { name: /show matching lines/i })).toBeNull();
+  });
+
+  it('Grade 1: the count badges appear only once the item is answered', async () => {
+    render(<ComparisonBuilder data={{ ...data1([groups('c1', 3, 5, 'less'), groups('c2', 2, 2, 'equal')]), showCountBadges: true }} />);
+    expect(screen.queryByText(/Left:/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /^fewer$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /check/i }));
+    await screen.findByText(/next challenge/i);
+    expect(screen.getByText(/Left:/)).toBeTruthy();
   });
 });

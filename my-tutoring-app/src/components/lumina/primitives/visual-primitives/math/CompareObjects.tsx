@@ -102,6 +102,8 @@ import { withWorkspaceController } from '../../../components/live-activity/runti
 import { commitGesture, useWorkspaceRunner, type LiveRun, type WorkspaceRunOptions }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { compareOrderMiss, describeOrder, orderMatches, workspaceAssignment, workspaceScene } from './compareObjectsWorkspace';
+import { FAR_LEVER, GRID_LEVER, SLOTS_LEVER, STEPS_LEVER, compareObjectsLevers, farThree, leverFacts, orderSteps }
+  from './compareObjectsLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -424,6 +426,11 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
   const [reward, setReward] = useState<string | null>(null);
   /** What the board held when it last stopped changing. */
   const pendingOrderRef = useRef<string[]>([]);
+  // In-item levers (`compareObjectsLevers.ts`), keyed by the session item they were pulled on, and the easier order a
+  // simplify lever put on screen in its place (with the drawing it needs). The ref is what event handlers read.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<{ item: CompareObjectsItem; challenge: CompareObjectsChallenge } | null>(null);
+  const displayItemRef = useRef<CompareObjectsItem | null>(null);
 
   const stableInstanceIdRef = useRef(instanceId || `compare-objects-${Math.round(performance.now())}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
@@ -540,7 +547,8 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
     gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
     exhibitId,
     onFinished: handleFinished,
-    onItemOpened: resetStageFor,
+    // A fresh item never carries an easier order over from the last one.
+    onItemOpened: () => { setPractice(null); resetStageFor(); },
     onAffirmed: (item) => {
       // The first moment an answer may appear on screen.
       switch (item.kind) {
@@ -567,16 +575,22 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
     },
   });
 
-  const currentItem = runner.currentItem;
+  const sessionItem = runner.currentItem;
+  const sessionChallenge = sessionItem ? challengeById.get(sessionItem.id) ?? null : null;
+  /** What is on screen: the easier order while a simplify lever holds it, else the session item. */
+  const currentItem = practice?.item ?? sessionItem;
+  displayItemRef.current = currentItem;
   const currentSolved = runner.currentSolved;
   const kind = currentItem?.kind;
-  const currentChallenge = currentItem ? challengeById.get(currentItem.id) ?? null : null;
+  const currentChallenge = practice?.challenge ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionItem?.id ? leverState.pulled : [];
+  const gridOn = pulledLevers.includes(GRID_LEVER) && currentItem?.kind === 'order_three';
 
   // ── The gesture commit ────────────────────────────────────────────────────
   // No Check control: nothing on screen may carry the child forward. The close
   // describes the committed order; THE MATCH IS COMPUTED IN CODE.
   const commitOrder = useCallback(() => {
-    const item = runner.currentItem;
+    const item = displayItemRef.current;
     if (!item || item.kind !== 'order_three') return;
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
     const placed = pendingOrderRef.current;
@@ -589,7 +603,7 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
    *  never commits on the tap (a mis-tap is normal). Further touches re-arm it,
    *  and the runner cancels it at item open, at a correction and at the commit. */
   const armOrderSettle = useCallback((order: string[]) => {
-    const item = runner.currentItem;
+    const item = displayItemRef.current;
     pendingOrderRef.current = order;
     if (order.length === 0) {
       // Starting over is thinking, not an answer — nothing to commit.
@@ -665,7 +679,31 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!tutorOwned || !currentItem) return;
-    workspace.current = { ...workspaceScene(currentItem, { placedOrder }) };
+    const scene = workspaceScene(currentItem, { placedOrder });
+    const onScreen = leverFacts(currentItem, pulledLevers, placedOrder.length);
+    const levers = practice ? [] : compareObjectsLevers(sessionItem, sessionChallenge, pulledLevers);
+    workspace.current = {
+      ...scene,
+      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the board changes before this returns.
+      pullLever: (id) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !sessionItem || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        const pulled = { item: sessionItem.id, pulled: [...pulledLevers, id] };
+        if (id === FAR_LEVER) {
+          const easier = farThree(sessionItem, sessionChallenge);
+          if (!easier) return 'There is no easier order for this item.';
+          setLeverState(pulled);
+          setPractice(easier); resetStageFor(); runner.clearStillness();
+          return { practice: workspaceAssignment(easier.item) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { setPractice(null); resetStageFor(); runner.clearStillness(); },
+    };
   });
 
   // The workspace path shows its summary without an evaluation provider (the live host has none).
@@ -786,7 +824,12 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
                 to listen. */}
             <div className="flex justify-center py-2">
               <LuminaPanel ref={pip.ref('drawing')} data-pip-object="drawing" className="w-full max-w-md flex justify-center p-6">
-                {renderObjectVisuals()}
+                {/* measure_grid lever: even lines behind the drawing, the same for every object. */}
+                <div className="w-full flex justify-center" {...(gridOn ? { 'data-lever': 'measure-grid', style: {
+                  backgroundImage: 'repeating-linear-gradient(90deg, rgba(148,163,184,0.18) 0 1px, transparent 1px 20px),'
+                    + ' repeating-linear-gradient(0deg, rgba(148,163,184,0.18) 0 1px, transparent 1px 20px)' } } : {})}>
+                  {renderObjectVisuals()}
+                </div>
               </LuminaPanel>
             </div>
 
@@ -798,6 +841,12 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
             {/* === Ordering workspace — the ONLY interactive surface left === */}
             {kind === 'order_three' && (
               <div className="flex flex-col items-center gap-3">
+                {/* order_steps lever: wordless bars that grow the way the order goes; they name no object. */}
+                {pulledLevers.includes(STEPS_LEVER) && (
+                  <div data-lever="order-steps" className="flex items-end gap-2" aria-label="the way the order goes">
+                    {orderSteps(currentItem).map((h, i) => <span key={i} className="block w-5 rounded-sm bg-purple-400/60" style={{ height: h }} />)}
+                  </div>
+                )}
                 <div className="flex flex-wrap gap-3 justify-center">
                   {currentItem.objectNames.map((name) => {
                     const orderIndex = placedOrder.indexOf(name);
@@ -828,6 +877,15 @@ const CompareObjectsSurface = ({ data, className, autoStart = false, runtimePlan
                     );
                   })}
                 </div>
+                {/* touch_slots lever: three dots that fill one per object touched. */}
+                {pulledLevers.includes(SLOTS_LEVER) && (
+                  <div data-lever="touch-slots" className="flex gap-2">
+                    {currentItem.objectNames.map((_, i) => (
+                      <span key={i} data-filled={i < placedOrder.length}
+                        className={`block w-4 h-4 rounded-full border-2 border-emerald-300/70 ${i < placedOrder.length ? 'bg-emerald-300/80' : ''}`} />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

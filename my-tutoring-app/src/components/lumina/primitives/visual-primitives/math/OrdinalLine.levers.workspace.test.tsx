@@ -1,10 +1,8 @@
 // @vitest-environment jsdom
 /**
- * W1 minimal binding: the real OrdinalLine on the shared teaching workspace, with the
- * real TeachingSession, LiveLessonRuntime, transport and rendering shell. Only
- * microphone hardware, evaluation writes and sound are substituted. The scripted
- * runner must never mount on this path; its context push would crash on this AI
- * mock, which has no `updateContext`.
+ * The ordinal-line build_sequence levers on the shared teaching workspace (handoff 21 M2): the real OrdinalLine,
+ * TeachingSession and LiveLessonRuntime. A pull changes the line and the scene in one commit and places no picture;
+ * the easier line is ungraded and returns to the full item, which alone is credited.
  */
 import React from 'react';
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
@@ -49,7 +47,8 @@ function challengeFor(mode: Mode): Record<string, unknown> {
     case 'match': return { ...base, matchPairs: [{ symbol: '2nd', word: 'second' }] };
     case 'sequence_story': return { ...base, clues: CLUES,
       storyText: 'The Fox got to the front. The Bear came along next. The Duck came along at the end.' };
-    default: return { ...base, clues: CLUES };
+    default: return { ...base, characters: LINE, clues: [{ character: 'Duck', position: 3 }, { character: 'Fox', position: 1 },
+      { character: 'Mole', position: 4 }, { character: 'Bear', position: 2 }] };
   }
 }
 
@@ -91,73 +90,44 @@ function mount(evalMode: Mode, band: 'K' | '1' = 'K') {
   return { runtime, transport, sent, view, state, offer, dispatch, confirmVisible, touch, build, settle, say, feedback };
 }
 
-const tutorTools = (h: ReturnType<typeof mount>) => h.state().affordances.filter(a => !a.controller)
-  .map(a => (a.action as { operation?: string }).operation ?? a.action.type).sort();
+const levers = (h: ReturnType<typeof mount>) => h.state().task!.workspace!.levers ?? [];
+const drawn = (h: ReturnType<typeof mount>, kind: string) => h.view.container.querySelectorAll(`[data-lever="${kind}"]`);
 
-it.each(['identify', 'match', 'relative_position', 'sequence_story', 'build_sequence'] as const)(
-  '%s binds the workspace under tutor ownership, with no runner cue and no demonstration', mode => {
-    const h = mount(mode);
-    expect(h.state().owner).toBe('tutor');
-    expect(h.state().task!.task).not.toMatch(/Say exactly|\[OL/);
-    expect(tutorTools(h)).toEqual(mode === 'build_sequence' ? ['begin_help', 'pull_lever'] : ['begin_help']);
-    expect(seam.send.mock.calls.flat().join(' ')).not.toMatch(/\[OL|Say exactly/);
-    // The runner's re-ask button has nothing to call here; the learner asks the tutor.
-    expect(h.view.container.querySelector('[aria-label="Hear the question again"]')).toBeNull();
-  });
-
-it('a spoken item publishes its spoken key; a build never publishes its answer line', () => {
-  const h = mount('identify');
-  expect(h.state().task!.workspace!.expectedAnswer).toBe('Duck');
-  expect(h.state().task!.demand).toMatchObject({ kind: 'identify', front: 'the starting line' });
+it('declares its levers on build_sequence only; the flag and the dots place no picture and ride on the next attempt', () => {
+  expect(levers(mount('identify'))).toEqual([]);
   cleanup();
-  const g1 = mount('identify', '1');
-  expect(g1.state().task!.workspace!.expectedAnswer).toBe('third');
-  cleanup();
-  const b = mount('build_sequence');
-  expect(b.state().task!.workspace!.expectedAnswer).toBeUndefined();
-  // The clues are the spoken task; the scene reports only what the learner placed.
-  expect(b.state().task!.task).toContain('The Fox goes first.');
-  expect(b.state().task!.demand).toMatchObject({ places: 3, line: 'Placed none of the pictures' });
-});
-
-it('build: the line checks a still, full line, Try again clears it, and a right one completes once', () => {
-  seam.evaluationContext = { lesson: 'test' };
   const h = mount('build_sequence');
-  h.build('Duck', 'Bear', 'Fox'); h.settle();
-  expect(h.state().task!.evidence.correctness).toBe('incorrect');
-  const [facts, options] = seam.send.mock.calls.at(-1)!;
-  expect(options).toMatchObject({ author: 'host' });
-  expect(facts).toContain('Placed 3 of 3, from the first place: Duck, Bear, Fox');
-  expect(h.offer('advance')).toBeUndefined();
+  expect(levers(h).map(l => [l.id, l.kind])).toEqual([['front_flag', 'help'], ['place_dots', 'help'], ['three_places', 'simplify']]);
+  h.build('Mole', 'Duck', 'Bear', 'Fox'); h.settle();
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: false, miss: 'reversed' });
+  h.dispatch('pull_lever', { lever: 'front_flag' });
+  expect(drawn(h, 'front-flag')).toHaveLength(1);
+  expect(drawn(h, 'front-flag')[0].closest('[data-pip-object]')!.getAttribute('data-pip-object')).toBe('slot-1');
+  h.dispatch('pull_lever', { lever: 'place_dots' });
+  expect(Array.from(drawn(h, 'place-dots')).map(d => d.children.length)).toEqual([1, 2, 3, 4]);
+  expect(String(h.state().task!.demand.onScreen)).toMatch(/flag marks the first place.*Dots under each place/);
+  for (const n of ['Fox', 'Bear', 'Duck', 'Mole']) expect(String(h.state().task!.demand.onScreen)).not.toContain(n);
   h.dispatch('retry');
-  expect(h.view.container.querySelector('[data-pip-object="picture-Fox"]')).not.toBeNull();
-  h.build('Fox', 'Bear', 'Duck'); h.settle();
-  expect(h.state().task!.evidence.correctness).toBe('correct');
-  h.dispatch('advance');
-  expect(h.state().status).not.toBe('completed');
-  h.confirmVisible();
-  expect(h.state().status).toBe('completed');
-  expect(seam.submit).toHaveBeenCalledOnce();
-  expect(seam.submit.mock.calls[0][0]).toBe(true);
-  expect(seam.correct).toHaveBeenCalledOnce();
+  h.build('Fox', 'Bear', 'Duck', 'Mole'); h.settle();
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true, levers: ['front_flag', 'place_dots'] });
 });
 
-it('build: a part-filled line that stays still commits and is checked wrong, as on the runner', () => {
+it('the easier line is three new pictures, ungraded, and returns to the full item, which alone is credited', () => {
   const h = mount('build_sequence');
-  h.touch('picture-Fox'); h.touch('slot-1'); h.touch('picture-Duck'); h.touch('slot-3'); h.settle();
-  expect(h.state().task!.evidence.correctness).toBe('incorrect');
-  expect(seam.send.mock.calls.at(-1)![0]).toContain('Placed 2 of 3, from the first place: Fox, empty, Duck');
-});
-
-it('identify: the place labels wait for the credited answer; a wrong answer reopens the same item', () => {
-  const h = mount('identify');
-  const first = h.state().task!.itemId;
-  expect(h.view.container.textContent).not.toMatch(/3rd/);
-  h.say('the bear'); h.feedback('incorrect', 'retry');
-  expect(h.state().task!.itemId).toBe(first);
-  expect(h.state().status).not.toBe('completed');
-  h.say('duck'); h.feedback('correct');
-  expect(h.view.container.textContent).toMatch(/3rd/);
-  h.dispatch('advance'); h.confirmVisible();
-  expect(h.state().status).toBe('completed');
+  h.build('Bear', 'Fox', 'Duck', 'Mole'); h.settle();
+  h.dispatch('pull_lever', { lever: 'three_places' });
+  expect(h.state().task!.itemId).toBe('c0~simpler');
+  expect(h.offer('pull_lever')).toBeUndefined();
+  expect(h.view.container.querySelectorAll('[data-pip-object^="slot-"]')).toHaveLength(3);
+  expect(h.view.container.querySelector('[data-pip-object="picture-Cat"]')!.textContent).toBe('🐱');
+  // Spoken second, third, first: Cat second, Frog third, Owl first.
+  h.build('Owl', 'Cat', 'Frog'); h.settle();
+  expect(h.state().task!.workspace!.lastResponse).toMatchObject({ correct: true });
+  h.dispatch('advance');
+  expect(h.state().task!.itemId).toBe('c0');
+  h.build('Fox', 'Bear', 'Duck', 'Mole'); h.settle();
+  const attempts = h.state().task!.workspace!.attempts;
+  expect(attempts.map(a => [a.itemId, a.correct, 'practice' in a])).toEqual([
+    ['c0', false, false], ['c0~simpler', true, true], ['c0', true, false]]);
+  expect(attempts.at(-1)).toMatchObject({ levers: ['three_places'], assisted: true });
 });

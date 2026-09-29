@@ -42,7 +42,7 @@
 - **Probe:** `/oracle-test comparison-builder` — answer-key-desync 0 across draws.
 
 ### R5 — support tier (config.difficulty) drives scaffolding withdrawal + structural shape, NOT magnitude · OBSERVED
-- **Property:** `difficulty` easy/medium/hard withdraws on-screen aids (count badges, correspondence lines, alligator mnemonic, number-line target marker, slot hints) and hardens structure (count-gap, digit-overlap, ask breadth, sort direction) within the SAME number band (K→10, 1→20). A harder tier never means bigger numbers. Data fields: `showCountBadges`, `correspondenceMode`, `useAlligatorMnemonic`, `showTargetMarker`, `showSlotHints`, `supportTier`.
+- **Property:** `difficulty` easy/medium/hard withdraws on-screen aids (count badges and correspondence lines — both shown only after answering, never during the solve — alligator mnemonic, number-line target marker, slot hints) and hardens structure (count-gap, digit-overlap, ask breadth, sort direction) within the SAME number band (K→10, 1→20). A harder tier never means bigger numbers. Data fields: `showCountBadges`, `correspondenceMode`, `useAlligatorMnemonic`, `showTargetMarker`, `showSlotHints`, `supportTier`.
 - **Demanded by:** support-tier / structural-difficulty axis.
 - **Evidence:** `1c3e774`; generator `resolveSupportStructure`/`resolveProblemShape`.
 - **Probe:** generator draws per tier — magnitude band constant; withdrawal flags flip per tier.
@@ -65,6 +65,12 @@
 - **Evidence:** `gemini-comparison-builder.ts` (`buildCountPairPool`, `pickUnusedPair`, the distinct-problem gate); `gemini-comparison-builder.variety.test.ts` 7/7; five live `eval-test` draws 5/5 distinct each.
 - **Probe:** two `/api/lumina/eval-test?componentId=comparison-builder&evalMode=compare_groups&grade=K` draws — pairs differ between draws, one equal case per session, every count inside the objective's range (the band when it names none).
 
+### R9 — in-item levers on every mode state no answer · OBSERVED (2026-09-28)
+- **Property:** each mode publishes help and simplify levers (`comparisonBuilderLevers.ts`): compare_groups `model_match` (a model pair the item does not use, matched, extras ringed; easy's starting position), `tap_count` (the learner's own taps counted; a tap never answers), `far_groups`; compare_numbers `quantity_marks`, `far_numbers`; order `slot_steps` (heights only), `quantity_marks`, `three_far` (never a subset of the item's numbers); one_more_less `learner_hops` (0 on the target, counts only up to the learner's pick), `single_small`. A simplify item has its own id, a recomputed key, no number of the item's, is ungraded, and returns to the full item. Every catalog miss is answered (J9).
+- **Demanded by:** handoff 21 M2 (lever class compare and order).
+- **Evidence:** `comparisonBuilderLevers.test.ts` 27, `ComparisonBuilder.levers.workspace.test.tsx` 7, sweep J1-J9 on all four payloads, replay 4 x 5 clean.
+- **Probe:** those two test files; `journeySweep -t comparison-builder`.
+
 ## Conflicts
 
 _None open._ (2026-07-16 chrome band-gate is COMPATIBLE — see changelog.)
@@ -86,6 +92,8 @@ _None open._ (2026-07-16 chrome band-gate is COMPATIBLE — see changelog.)
 
 ## Changelog
 
+- 2026-09-28 — R9 added (`/add-support-tiers`, handoff 21 M2): levers on all four modes. Assessed **COMPATIBLE**: R1 K tap surface unchanged (the `tap_count` targets stop their own click and exist only while pulled); R4 keys untouched and every simplify key recomputed; R5 tier axis unchanged, easy's aid is now the `model_match` starting position; R8 pool untouched. The one_more_less cells gained a row-scoped accessible name ("one more 9") when both rows show, which closes journey row SW-5.
+- 2026-09-28 — `/eval-fix` LEV-CB-1: nothing on the compare-groups screen states the answer during the solve. R5 AMENDED: the tier no longer turns correspondence lines on during the solve (easy was `live`: the leftovers showed the side with more) and the Grade-1 count badges show only after the item is answered (two printed totals make it a numeral comparison). Lines and badges remain as the post-answer reveal; `hard` still withholds both and scatters. The easy prompt and tutor tier lines no longer permit naming the side with more (or, for order, the first number). Assessed **COMPATIBLE**: R1 tap surface unchanged; R4/R7/R8 generator numbers untouched; R5's structural axis (gap, overlap, breadth, direction) unchanged — only the on-screen aids that stated the answer moved to after answering; the support they gave returns as levers (`match_pairs`, `tap_count`). Tests: `ComparisonBuilder.reader-fit.test.tsx` 30/30 (one on the saved K easy payload that shipped `live`).
 - 2026-09-09 — R8 AMENDED for atlas CB-5 (`/eval-fix`): the pooled counts now sit inside
   the range the objective names, not just the grade band. The 09-09 K redraw found
   COUNT001-03-A and MEAS001-02-B ("groups of UP TO 5") shipping 5v9, 10v4, 3v8 — the pool

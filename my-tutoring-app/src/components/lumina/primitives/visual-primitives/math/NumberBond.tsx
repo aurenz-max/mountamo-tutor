@@ -62,8 +62,9 @@ import JudgedMicPanel from '../../../components/JudgedMicPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
 import SplitAndSayBoard from './SplitAndSayBoard';
-import { COUNTERS_LEVER, FRAME_LEVER, MOVE_LEVER, SMALLER_LEVER, WAYS_LEVER, leverFacts, madeWaysOrder, numberBondLevers,
-  smallerTeen } from './numberBondLevers';
+import { COUNTERS_LEVER, EQ_FRAME_LEVER, FRAME_LEVER, MOVE_LEVER, SMALLER_BOND_LEVER, SMALLER_LEVER, STRIP_LEVER, WAYS_LEVER,
+  equationMove, isEquationBuild, leverFacts, madeWaysOrder, moveStrip, numberBondLevers, smallerBond, smallerTeen,
+  type StripFrame } from './numberBondLevers';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { numberBondPipPose } from '../../../pip/numberBondPipPose';
 import { hasPair, moveBondCounter, prepareSplit, sortedPair, splitAndSayCue,
@@ -441,6 +442,26 @@ function useScriptedController(options: NumberBondControllerOptions): LiveRun<Nu
 
 const useWorkspaceController = (options: NumberBondControllerOptions): LiveRun<NumberBondItem> =>
   useWorkspaceRunner<NumberBondItem>({ ...options, primitiveId: 'number-bond' });
+
+
+const STRIP_DOT: Record<'red' | 'blue', string> = { red: 'bg-rose-400', blue: 'bg-sky-400' };
+
+/** `move_strip`: the move before and after, as dots in the group colours. No numeral, operator or equals sign. */
+function MoveStrip({ frames }: { frames: StripFrame[] }) {
+  if (frames.length < 2) return null;
+  const dots = (tone: 'red' | 'blue', count: number, key: string) => Array.from({ length: count }, (_, i) =>
+    <span key={`${key}-${i}`} aria-hidden="true" className={`h-3 w-3 rounded-full ${STRIP_DOT[tone]}`} />);
+  const frame = (f: StripFrame, k: string) => <div className="flex items-center gap-2">
+    <div className="flex min-h-8 min-w-10 flex-wrap items-center gap-1 rounded-full border border-white/20 px-2 py-1">
+      {dots('red', f.inWhole.red, `${k}w-r`)}{dots('blue', f.inWhole.blue, `${k}w-b`)}
+    </div>
+    {f.aside.map((g, i) => <div key={i} className="flex flex-wrap gap-1">{dots(g.tone, g.count, `${k}a${i}`)}</div>)}
+  </div>;
+  return <div data-lever="move-strip" aria-label="The move, before and after, as dots"
+    className="flex items-center justify-center gap-3 rounded-lg border border-white/10 bg-slate-800/30 p-2">
+    {frame(frames[0], 'b')}<span aria-hidden="true" className="text-slate-400">→</span>{frame(frames[1], 'a')}
+  </div>;
+}
 
 const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItemId, runtimeEvalMode, tutorOwned, useController }:
   NumberBondProps & { tutorOwned: boolean; useController: (options: NumberBondControllerOptions) => LiveRun<NumberBondItem> }) => {
@@ -895,12 +916,13 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
       if (item.interactionPhase === 'equation-build' || item.interactionPhase === 'family-build') {
         assistedEquations.current.add(interactionKeyFor(item));
         // The tray clears: the tiles are indistinguishable, so there is no
-        // "wrong slot" to preserve.
+        // "wrong slot" to preserve. A retry on an easier step keeps that step's tiles.
+        const shown = practiceRef.current ?? item;
         setEquationSlots([]);
         pendingTilesRef.current = [];
         setAvailableTiles(seededShuffle(
-          [String(item.whole), String(item.knownPart), String(item.otherPart), '+', '-', '='],
-          item.whole * 7 + 3,
+          [String(shown.whole), String(shown.knownPart), String(shown.otherPart), '+', '-', '='],
+          shown.whole * 7 + 3,
         ));
       }
     },
@@ -910,7 +932,12 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
   /** What is on screen: the easier teen split while a simplify lever holds it, else the session item. */
   const currentItem = practice ?? sessionItem;
   displayItemRef.current = currentItem;
-  const pulledLevers = leverState.item === sessionItem?.id ? leverState.pulled : [];
+  const runtimePulls = leverState.item === sessionItem?.id ? leverState.pulled : [];
+  // Easy starts with the equation frame drawn: a starting position, published as pulled, never recorded as a pull.
+  const pulledLevers = supportTier === 'easy' && isEquationBuild(sessionItem) && !runtimePulls.includes(EQ_FRAME_LEVER)
+    ? [...runtimePulls, EQ_FRAME_LEVER] : runtimePulls;
+  /** The move this equation step must describe, for the move strip. */
+  const committedMove = sessionItem ? committedActions.current[interactionKeyFor(sessionItem)] : undefined;
   const currentSolved = runner.currentSolved;
   // The runner cues the session item; its easier stand-in is worked under that cue.
   const canSplitMove = currentItem?.splitPhase === 'build' && runner.canAttempt
@@ -976,9 +1003,10 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
   }, [runner]);
 
   const commitEquation = useCallback(() => {
-    const item = runner.currentItem;
+    // The shown item: an easier step a simplify lever opened is checked on its own bond, under the session item's cue.
+    const item = practiceRef.current ?? runner.currentItem;
     if (!item || (item.interactionPhase !== 'equation-build' && item.interactionPhase !== 'family-build')) return;
-    if (!runner.canAttempt || runner.isAwaitingGesture() || runner.cuedItemId !== item.id) return;
+    if (!runner.canAttempt || runner.isAwaitingGesture() || runner.cuedItemId !== runner.currentItem?.id) return;
     if (pendingTilesRef.current.length === 0) return;
     const tiles = pendingTilesRef.current, action = committedActions.current[interactionKeyFor(item)];
     commitGesture(runner, { response: `built "${tiles.join(' ')}"`,
@@ -1186,7 +1214,8 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
     if (!tutorOwned || !currentItem) return;
     const scene = workspaceScene(currentItem, view());
     const onScreen = leverFacts(currentItem, pulledLevers);
-    const leverView = { pairsMade: foundPairsRef.current.length, countersOpen: missingSupportActive };
+    const leverView = { pairsMade: foundPairsRef.current.length, countersOpen: missingSupportActive, session: items,
+      committed: committedMove };
     workspace.current = {
       ...scene,
       ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
@@ -1196,7 +1225,18 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
         const lever = numberBondLevers(sessionItem, pulledLevers, leverView).find(l => l.id === id);
         if (practice || !sessionItem || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled.`;
-        const pulled = { item: sessionItem.id, pulled: [...pulledLevers, id] };
+        const pulled = { item: sessionItem.id, pulled: [...runtimePulls, id] };
+        if (id === SMALLER_BOND_LEVER) {
+          const easier = smallerBond(sessionItem, items, committedMove);
+          if (!easier?.bondAction) return 'There is no smaller bond for this step.';
+          setLeverState(pulled);
+          practiceRef.current = easier; setPractice(easier);
+          publishSplitCounters(countersForAction(easier, easier.bondAction)); splitUndo.current = [];
+          setEquationSlots([]); pendingTilesRef.current = []; runner.clearStillness();
+          setAvailableTiles(seededShuffle([String(easier.whole), String(easier.knownPart), String(easier.otherPart), '+', '-', '='],
+            easier.whole * 11 + 5));
+          return { practice: workspaceAssignment(easier, view()) };
+        }
         if (id === SMALLER_LEVER) {
           const easier = smallerTeen(sessionItem);
           if (!easier) return 'There is no easier teen number for this item.';
@@ -1218,6 +1258,14 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
       endPractice: () => {
         practiceRef.current = null; setPractice(null);
         if (sessionItem?.splitPhase) { publishSplitCounters(wholeCounters(sessionItem.whole)); splitUndo.current = []; }
+        // Back to the full equation step: its own move on the board, its own tiles, an empty entry.
+        const move = equationMove(sessionItem, committedMove);
+        if (sessionItem && isEquationBuild(sessionItem) && move) {
+          publishSplitCounters(countersForAction(sessionItem, move)); splitUndo.current = [];
+          setEquationSlots([]); pendingTilesRef.current = [];
+          setAvailableTiles(seededShuffle([String(sessionItem.whole), String(sessionItem.knownPart), String(sessionItem.otherPart),
+            '+', '-', '='], sessionItem.whole * 7 + 3));
+        }
       },
     };
   });
@@ -1505,6 +1553,18 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
               <div ref={pip.ref('equation')} data-pip-object="equation" className="space-y-3"
                 onPointerDownCapture={() => pip.look('equation')} onFocusCapture={() => pip.look('equation')}>
                 <p className="text-center text-sm text-slate-300">Build the equation for the action shown above.</p>
+                {pulledLevers.includes(STRIP_LEVER) && <MoveStrip frames={moveStrip(currentItem, equationMove(currentItem, practice ? undefined : committedMove))} />}
+                {pulledLevers.includes(EQ_FRAME_LEVER) && (
+                  // Slot shapes only: no tile, number or operator in any of them (contract R12).
+                  <div data-lever="equation-frame" aria-label="Equation slots: a number, a sign, a number, equals, a number"
+                    className="flex items-center justify-center gap-2">
+                    <span aria-hidden="true" className="h-9 w-9 rounded-md border-2 border-dashed border-cyan-300/60" />
+                    <span aria-hidden="true" className="h-8 w-8 rounded-full border-2 border-dashed border-amber-300/60" />
+                    <span aria-hidden="true" className="h-9 w-9 rounded-md border-2 border-dashed border-cyan-300/60" />
+                    <span aria-hidden="true" className="text-xl font-bold text-slate-300">=</span>
+                    <span aria-hidden="true" className="h-9 w-9 rounded-md border-2 border-dashed border-cyan-300/60" />
+                  </div>
+                )}
                 <LuminaInput
                   type="text"
                   inputMode="text"

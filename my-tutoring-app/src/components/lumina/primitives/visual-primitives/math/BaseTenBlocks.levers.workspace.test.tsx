@@ -80,3 +80,56 @@ it('the plainer build is ungraded practice, then the full build on an empty mat 
   expect(attempts.at(-1)).toMatchObject({ levers: ['plainer_build'], assisted: true });
   h.close();
 });
+
+// ── operate (slice 2): the typed result is the answer, so the total is never a lever ──
+
+const operate = (tier: { showColumnCounts?: boolean } = {}) => ({ title: 'Add', description: 'Add with blocks.',
+  numberValue: 148, interactionMode: 'operate', maxPlace: 'hundreds', gradeBand: '2-3',
+  challenges: [[148, 76], [37, 25]].map(([a, b], i) => ({ id: `o${i}`, type: 'add_with_blocks', instruction: `Add ${a} + ${b} using blocks.`,
+    targetNumber: a + b, secondNumber: b, hint: 'Start with the ones column.', ...tier })) });
+const model = (h: WorkspaceHarness, ...numbers: number[]) => {
+  for (const n of numbers) String(n).padStart(3, '0').split('').forEach((d, i) => {
+    for (let k = 0; k < Number(d); k++) h.press(`Add one to ${['Hundreds', 'Tens', 'Ones'][i]}`);
+  });
+};
+const type = (h: WorkspaceHarness, n: number) => { for (const key of String(n)) h.press(key); h.press('✓'); };
+
+it('operate: a lost carry on an untraded mat offers ten_bracket, which brackets the learner\'s full columns and no count', () => {
+  const h = mountWorkspace({ primitiveId: 'base-ten-blocks', evalMode: 'operate', data: operate({ showColumnCounts: false }), instanceId: 'blocks' });
+  expect(levers(h).map(l => [l.id, l.pulled])).toEqual([['column_counts', false], ['single_regroup', false]]);
+  model(h, 148, 76);
+  type(h, 214);
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: false, miss: 'one_ten_off' });
+  expect(levers(h).map(l => l.id)).toContain('ten_bracket');
+  h.dispatch('pull_lever', { lever: 'ten_bracket' });
+  expect(h.view.container.querySelectorAll('[data-lever="ten-bracket"]')).toHaveLength(2);
+  expect(h.state().task!.demand.onScreen).toMatch(/bracket/);
+  expect(h.view.container.textContent).not.toMatch(/Blocks Total/);
+  h.close();
+});
+
+it('operate: single_regroup is an ungraded operation with fewer trades, then the full item on an empty mat is credited', () => {
+  const h = mountWorkspace({ primitiveId: 'base-ten-blocks', evalMode: 'operate', data: operate(), instanceId: 'blocks' });
+  const full = h.state().task!.itemId;
+  type(h, 300);
+  h.dispatch('pull_lever', { lever: 'single_regroup' });
+  const task = h.state().task!.task;
+  const [, a, b] = task.match(/^Add (\d+) \+ (\d+) using blocks\.$/)!.map(Number);
+  expect(h.state().task!.itemId).toBe(`${full}~simpler`);
+  expect([a, b].sort()).not.toEqual([76, 148]);
+  expect(a + b).not.toBe(224);
+  type(h, a + b);
+  expect(h.state().task!.workspace!.lastResponse).toMatchObject({ correct: true });
+  h.dispatch('advance');
+  expect(h.state().task).toMatchObject({ itemId: full, task: 'Add 148 + 76 using blocks.' });
+  expect(h.state().task!.demand.learnerBlocks).toMatch(/^(0|no)/i);
+  type(h, 224);
+  const attempts = h.state().task!.workspace!.attempts;
+  expect(attempts.map(a => [a.itemId, a.correct, !!(a as { practice?: boolean }).practice])).toEqual([
+    [full, false, false], [`${full}~simpler`, true, true], [full, true, false]]);
+  expect(attempts.at(-1)).toMatchObject({ levers: ['single_regroup'], assisted: true });
+  // The one-trade item has no simpler operation.
+  h.dispatch('advance');
+  expect(levers(h).map(l => l.id)).toEqual(['column_counts']);
+  h.close();
+});

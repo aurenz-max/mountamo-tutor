@@ -18,7 +18,7 @@ doc, and its content defects below are fixed (`/eval-fix`) before its lever slic
 
 Spoken kinds: no levers yet (help-first by `when` text is a later slice). recount_moved: none (holding the number is the task).
 
-## number-bond — slice 1 DONE 09-28 (contract R22; equation levers still to build)
+## number-bond — slice 1 DONE 09-28 (contract R22); slice 2, the equation steps, DONE 09-28 (R23)
 
 No contract doc. The draft is in `levers-math2.json`, not math1.
 
@@ -28,7 +28,7 @@ No contract doc. The draft is in `levers-math2.json`, not math1.
   - `smaller_teen` (simplify): practice at whole 11; refused when the whole is 12 or less.
 - **related_fact:** `show_move` (help). The action button glows and the group that moves pulses.
 - **missing_part** (spoken): `open_counters` (help, pulled by the tutor). The covered part stays covered.
-- **Equation modes** (second slice): `equation_frame` (blank slots, no tile, no operator) and `worked_family` (the triple is never a session bond).
+- **Equation modes** (slice 2, approved and built 09-28): `equation_frame` (help: empty slots, no tile, no operator; answers unfinished_equation, other_numbers; easy starts with it drawn), `move_strip` (help: the committed move as dots, no numerals; answers false_equation, other_fact), `smaller_bond` (simplify: one build step on a bond with a whole of five or less, same move, never a session bond; answers false_equation, other_numbers). fact_family model steps reuse `show_move`. build_equation `other_move` is unanswered (swap is not offered). The drafted `worked_family` became `smaller_bond`: a practice step the learner builds, not a worked family to read.
 - **Unanswered:** decompose and ten_and_ones `not_all_placed`, because a split commits only when the parts sum to the whole.
 - **Fix first:**
   1. The `"_ + _ = _"` placeholder shows the operator (`NumberBond.tsx:1444`).
@@ -36,7 +36,7 @@ No contract doc. The draft is in `levers-math2.json`, not math1.
   3. No payloads for decompose, related_fact, fact_family or build_equation, and the journey row throws on the model and equation phases.
   4. The old spoken correction states the bond (`numberBondScript.ts:881`).
 
-## base-ten-blocks — slice 1 (build_number) DONE 09-28; operate, regroup and read_blocks still to build
+## base-ten-blocks — slice 1 (build_number) and slice 2 (operate) DONE 09-28; regroup and read_blocks (spoken mat) still to build
 
 No contract doc. It has two surfaces: the click mat (build_number, operate, mixed) and the spoken mat (read_blocks, regroup).
 

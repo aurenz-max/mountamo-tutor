@@ -113,3 +113,92 @@ it('open_counters opens the tray for the learner; the covered part stays covered
   expect(levers(h).find(l => l.id === 'open_counters')!.pulled).toBe(true);
   h.close();
 });
+
+// ── The equation levers (slice 2) ─────────────────────────────────────────────
+
+import { fireEvent, act } from '@testing-library/react';
+import { buildBondItems } from './numberBondScript';
+import { expandNumberBondInteractions } from './numberBondModes';
+import { smallerBond } from './numberBondLevers';
+
+/** Type an equation into the entry; it settles and commits. */
+const type = (h: WorkspaceHarness, equation: string) => {
+  const entry = h.view.container.querySelector('input[aria-label="Equation keyboard entry"]') as HTMLInputElement;
+  act(() => { fireEvent.change(entry, { target: { value: equation } }); });
+  h.settle();
+};
+/** From the opening model step to the first equation step: the join move, then the observer's advance. */
+const toEquation = (h: WorkspaceHarness) => {
+  h.settle(); h.press('Join the groups'); h.settle();
+  h.dispatch('advance'); h.settle();
+};
+
+it('move_strip draws the committed move as dots with no numeral or sign, and the next try carries it', () => {
+  const h = mountWorkspace({ primitiveId: 'number-bond', evalMode: 'build_equation', data: payload('build_equation'), instanceId: 'bond' });
+  toEquation(h);
+  expect(levers(h).map(l => [l.id, l.kind, l.pulled])).toEqual([
+    ['equation_frame', 'help', false], ['move_strip', 'help', false], ['smaller_bond', 'simplify', false]]);
+  type(h, '5 + 5 = 9');
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: false, miss: 'false_equation' });
+  expect(h.view.container.querySelector('[data-lever="move-strip"]')).toBeNull();
+  h.dispatch('pull_lever', { lever: 'move_strip' });
+  const strip = h.view.container.querySelector('[data-lever="move-strip"]');
+  expect(strip).toBeTruthy();
+  expect(strip!.textContent).not.toMatch(/\d|[+\-−=]/);
+  expect(h.state().task!.demand.onScreen).toMatch(/drawn as dots/);
+  h.dispatch('retry'); h.settle();
+  type(h, '5 + 5 = 10');
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true, levers: ['move_strip'] });
+  h.close();
+});
+
+it('equation_frame draws empty slots only: no tile, number or operator in them', () => {
+  const h = mountWorkspace({ primitiveId: 'number-bond', evalMode: 'build_equation', data: payload('build_equation'), instanceId: 'bond' });
+  toEquation(h);
+  type(h, '5 +');
+  h.dispatch('pull_lever', { lever: 'equation_frame' });
+  const frame = h.view.container.querySelector('[data-lever="equation-frame"]');
+  expect(frame).toBeTruthy();
+  expect(frame!.textContent).toBe('=');
+  h.close();
+});
+
+it('smaller_bond is an ungraded step on a smaller bond with the same move, then the full step, credited with its lever', () => {
+  const data = payload('fact_family');
+  const h = mountWorkspace({ primitiveId: 'number-bond', evalMode: 'fact_family', data, instanceId: 'bond' });
+  toEquation(h);
+  const full = h.state().task!.itemId;
+  type(h, '3 + 7 = 9');
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: false, miss: 'false_equation' });
+  h.dispatch('pull_lever', { lever: 'smaller_bond' });
+  const session = expandNumberBondInteractions(buildBondItems(data.challenges, { band: '1', maxNumber: data.maxNumber ?? 10 }).items);
+  const easier = smallerBond(session.find(i => i.id === full)!, session)!;
+  expect(h.state().task!.itemId).toBe(easier.id);
+  expect(h.state().task!.workspace!.practice).toEqual({ returnsTo: full });
+  expect(easier.whole).toBeLessThanOrEqual(5);
+  // The tray holds the smaller bond's numbers, never the full item's whole.
+  const tray = Array.from(h.view.container.querySelectorAll('button')).map(b => b.textContent?.trim());
+  expect(tray).toContain(String(easier.whole));
+  expect(tray).not.toContain('10');
+  type(h, `${easier.knownPart} + ${easier.otherPart} = ${easier.whole}`);
+  expect(h.state().task!.workspace!.lastResponse).toMatchObject({ correct: true });
+  h.dispatch('advance'); h.settle();
+  expect(h.state().task!.itemId).toBe(full);
+  type(h, '3 + 7 = 10');
+  const attempts = h.state().task!.workspace!.attempts.filter(a => a.itemId === full || a.itemId === easier.id);
+  expect(attempts.map(a => [a.itemId, a.correct, !!(a as { practice?: boolean }).practice])).toEqual([
+    [full, false, false], [easier.id, true, true], [full, true, false]]);
+  expect(attempts.at(-1)).toMatchObject({ levers: ['smaller_bond'], assisted: true });
+  h.close();
+});
+
+it('easy starts with the equation frame drawn, and a starting frame is never recorded as a pull', () => {
+  const h = mountWorkspace({ primitiveId: 'number-bond', evalMode: 'build_equation', instanceId: 'bond',
+    data: { ...payload('build_equation'), supportTier: 'easy' } });
+  toEquation(h);
+  expect(h.view.container.querySelector('[data-lever="equation-frame"]')).toBeTruthy();
+  expect(levers(h).find(l => l.id === 'equation_frame')!.pulled).toBe(true);
+  type(h, '5 + 5 = 10');
+  expect(h.state().task!.workspace!.attempts.at(-1)!.levers).toBeUndefined();
+  h.close();
+});

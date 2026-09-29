@@ -117,11 +117,14 @@ const TIER_GUARDRAIL =
   + 'and on-screen SUPPORT, NOT raw magnitude — a harder tier NEVER means bigger numbers.';
 
 interface SupportScaffold {
-  /** Always-on "Left: N / Right: N" readout under the groups (compare-groups). */
+  /** "Left: N / Right: N" readout (compare-groups, Grade 1), shown only after the
+   *  item is answered: before that, two printed totals turn the group comparison
+   *  into a numeral comparison. */
   showCountBadges: boolean;
-  /** Correspondence lines lifecycle: 'live' = visible during solve (strongest
-   *  self-check), 'on-check' = only after answering (current default), 'off'. */
-  correspondenceMode: 'live' | 'on-check' | 'off';
+  /** Correspondence lines after answering: 'on-check' = offered once answered,
+   *  'off' = never. No tier draws them during the solve: the leftover objects
+   *  would show which side has more. */
+  correspondenceMode: 'on-check' | 'off';
   /** Alligator mouth + hint mnemonic for the inequality symbol (compare-numbers). */
   useAlligatorMnemonic: boolean;
   /** Amber pre-highlight of the target on the number line (one-more-one-less). */
@@ -152,7 +155,7 @@ function resolveSupportStructure(
   // Defaults (medium-ish baseline; per-mode switch overrides what matters).
   const scaffold: SupportScaffold = {
     showCountBadges: tier !== 'hard',
-    correspondenceMode: tier === 'easy' ? 'live' : tier === 'medium' ? 'on-check' : 'off',
+    correspondenceMode: tier === 'hard' ? 'off' : 'on-check',
     useAlligatorMnemonic: tier !== 'hard',
     showTargetMarker: tier !== 'hard',
     showSlotHints: tier === 'easy',
@@ -172,9 +175,9 @@ function resolveSupportStructure(
     case 'compare-groups':
       scaffold.promptLines.push(
         tier === 'easy'
-          ? 'Show the count badges and matching correspondence lines so the student can pair objects one-to-one; hints may name which side has more.'
+          ? 'Lay both groups out in tidy rows so the student can pair objects one-to-one; matching lines and counts appear only after the student answers. Never say which side has more.'
           : tier === 'medium'
-            ? 'Show the count badges; correspondence lines appear only after the student answers. Hints nudge the student to count each side.'
+            ? 'Counts and correspondence lines appear only after the student answers. The instruction may nudge the student to count each side.'
             : 'Hide the count badges and the matching lines; the student must count both scattered groups themselves and justify which has more. Do NOT state either count in the instruction.',
       );
       break;

@@ -18,17 +18,92 @@
  *   stays covered; the support is recorded as counters. No miss (spoken).
  * `not_all_placed` cannot be committed on the split path (a split commits only when the parts make the whole),
  * so the catalog lists it as unanswered.
+ *
+ * Slice 2, the equation modes (approved 2026-09-28; build steps of build_equation and fact_family):
+ * - `equation_frame` (help) draws empty slot shapes and an equals sign above the tray: box, circle, box, equals,
+ *   box. Answers `unfinished_equation`, `other_numbers`. Leak rule: the same shapes for every form; no tile,
+ *   number, `+` or `-` in any slot. Choosing the operator is part of the answer (contract R9, R12). Easy starts
+ *   with it drawn (a starting position, never a pull).
+ * - `move_strip` (help) draws the move the equation must describe, before and after, as dots in the group
+ *   colours. Answers `false_equation`, `other_fact`. Leak rule: dots only; no numeral, no operator, no equals
+ *   sign, and only the committed move (the learner's own on build_equation, the named one on fact_family).
+ * - `smaller_bond` (simplify) opens one ungraded equation step on a bond with a whole of five or less and the
+ *   same move, then the full item. Answers `false_equation`, `other_numbers`. Leak rule: never the bond of any
+ *   item in the session; the family builder recomputes the answer; the move type is kept.
+ * - fact_family model steps reuse `show_move`: the instruction names the move there, so the glow gives nothing
+ *   away. build_equation's model step is the learner's free choice and gets no lever; its only wrong move (a
+ *   swap) is not offered, so `other_move` there is listed as unanswered.
  */
 import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
-import type { NumberBondItem } from './numberBondScript';
+import type { BondFamilyForm, BondModelAction, NumberBondItem } from './numberBondScript';
 import { buildBondItems } from './numberBondScript';
-import { expandNumberBondInteractions } from './numberBondModes';
+import { actionForFamilyForm, expandNumberBondInteractions } from './numberBondModes';
 
 export const WAYS_LEVER = 'made_ways';
 export const FRAME_LEVER = 'ten_frame_part';
 export const SMALLER_LEVER = 'smaller_teen';
 export const MOVE_LEVER = 'show_move';
 export const COUNTERS_LEVER = 'open_counters';
+export const EQ_FRAME_LEVER = 'equation_frame';
+export const STRIP_LEVER = 'move_strip';
+export const SMALLER_BOND_LEVER = 'smaller_bond';
+
+export const isEquationBuild = (item: NumberBondItem | null | undefined) =>
+  item?.interactionPhase === 'equation-build' || item?.interactionPhase === 'family-build';
+
+/** The family form an equation for a move takes: join is part + part, a take-away starts from the whole. */
+const FORM_FOR: Record<BondModelAction, BondFamilyForm> = {
+  join: 'add-left', swap: 'add-right', 'separate-left': 'subtract-left', 'separate-right': 'subtract-right' };
+
+/** The move the equation on this build step must describe: the learner's own on build_equation, the named one on fact_family. */
+export const equationMove = (item: NumberBondItem | null, committed?: BondModelAction): BondModelAction | undefined =>
+  item?.interactionPhase === 'equation-build' ? committed ?? item.bondAction
+    : item?.interactionPhase === 'family-build' ? item.bondAction : undefined;
+
+const bondKey = (whole: number, a: number, b: number) => `${whole}:${Math.min(a, b)}:${Math.max(a, b)}`;
+
+/**
+ * The easier equation step for `item`, or null: one fact-family build step on a bond with a whole of five or less
+ * and the same move, never the bond of any item in `session`. Deterministic, largest whole first. A swap or a
+ * take-away of the second group needs two different parts (an equal-parts family has only two forms).
+ */
+export function smallerBond(item: NumberBondItem | null, session: readonly NumberBondItem[], committed?: BondModelAction):
+    NumberBondItem | null {
+  const move = equationMove(item, committed);
+  if (!item || !isEquationBuild(item) || !move) return null;
+  const form = FORM_FOR[move];
+  const used = new Set([item, ...session].filter(i => i.whole > 0).map(i => bondKey(i.whole, i.knownPart, i.otherPart)));
+  for (let whole = Math.min(5, item.whole - 1); whole >= 2; whole--)
+    for (let a = 1; a < whole; a++) {
+      const b = whole - a;
+      if (a === b && form !== 'add-left' && form !== 'subtract-left') continue;
+      if (used.has(bondKey(whole, a, b))) continue;
+      const built = buildBondItems([{ id: `${item.sourceId}~smaller`, type: 'fact-family', whole, part1: a, part2: b }] as never,
+        { band: '1', maxNumber: 10 });
+      const step = expandNumberBondInteractions(built.items)
+        .find(i => i.interactionPhase === 'family-build' && i.familyForm === form);
+      if (step && actionForFamilyForm(form) === move) return step;
+    }
+  return null;
+}
+
+/** One frame of the move strip: dots inside the whole, and groups set aside in drawing order. No numbers anywhere. */
+export interface StripFrame { inWhole: { red: number; blue: number }; aside: Array<{ tone: 'red' | 'blue'; count: number }> }
+
+/** The committed move as two frames, before and after, drawn as dots. */
+export function moveStrip(item: NumberBondItem | null, move: BondModelAction | undefined): StripFrame[] {
+  if (!item || !move) return [];
+  const red = item.knownPart, blue = item.otherPart;
+  const apart = (first: 'red' | 'blue'): StripFrame['aside'] => first === 'red'
+    ? [{ tone: 'red', count: red }, { tone: 'blue', count: blue }] : [{ tone: 'blue', count: blue }, { tone: 'red', count: red }];
+  const none = { red: 0, blue: 0 }, all = { red, blue };
+  switch (move) {
+    case 'join': return [{ inWhole: none, aside: apart('red') }, { inWhole: all, aside: [] }];
+    case 'swap': return [{ inWhole: none, aside: apart('red') }, { inWhole: none, aside: apart('blue') }];
+    case 'separate-left': return [{ inWhole: all, aside: [] }, { inWhole: { red: 0, blue }, aside: [{ tone: 'red', count: red }] }];
+    case 'separate-right': return [{ inWhole: all, aside: [] }, { inWhole: { red, blue: 0 }, aside: [{ tone: 'blue', count: blue }] }];
+  }
+}
 
 /** The easier teen split for `item`, or null: eleven as ten and one, on its own id; never at twelve or below. */
 export function smallerTeen(item: NumberBondItem | null): NumberBondItem | null {
@@ -38,7 +113,8 @@ export function smallerTeen(item: NumberBondItem | null): NumberBondItem | null 
 }
 
 export function numberBondLevers(item: NumberBondItem | null, pulled: readonly string[],
-  view: { pairsMade: number; countersOpen: boolean }): WorkspaceLever[] {
+  view: { pairsMade: number; countersOpen: boolean; session?: readonly NumberBondItem[]; committed?: BondModelAction }):
+    WorkspaceLever[] {
   if (!item) return [];
   const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: string[], when: string,
     does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
@@ -54,7 +130,19 @@ export function numberBondLevers(item: NumberBondItem | null, pulled: readonly s
       'The learner cannot find the ten in a number this big yet.',
       'Opens an easier teen number to split first. It is not graded; the full item comes back after it.')] : []),
   ];
-  if (item.interactionPhase === 'related-join' || item.interactionPhase === 'related-separate')
+  if (isEquationBuild(item)) return [
+    lever(EQ_FRAME_LEVER, 'help', 'shown', ['unfinished_equation', 'other_numbers'],
+      'The learner cannot put the tiles into the shape of an equation, or uses numbers that are not in the bond.',
+      'Draws empty slots and an equals sign above the tiles: a number, a sign, a number, equals, a number. Nothing is placed in them.'),
+    ...(equationMove(item, view.committed) ? [lever(STRIP_LEVER, 'help', 'shown', ['false_equation', 'other_fact'],
+      'The learner builds an equation that is not true, or an equation for a different move.',
+      'Draws the move the equation must describe as two small pictures of dots, before and after. No numbers or signs.')] : []),
+    ...(smallerBond(item, view.session ?? [], view.committed) ? [lever(SMALLER_BOND_LEVER, 'simplify', 'shown',
+      ['false_equation', 'other_numbers'], 'The learner still cannot build a true equation for these numbers.',
+      'Opens an easier equation to build first, on a smaller bond with the same move. It is not graded; the full item comes back after it.')] : []),
+  ];
+  if (item.interactionPhase === 'related-join' || item.interactionPhase === 'related-separate'
+    || item.interactionPhase === 'family-model')
     return [lever(MOVE_LEVER, 'help', 'shown', ['other_move'],
       'The learner does not know which move to make with the groups.',
       'Highlights the button for the move this step asks for.')];
@@ -71,7 +159,12 @@ export function leverFacts(item: NumberBondItem | null, pulled: readonly string[
   return [
     pulled.includes(WAYS_LEVER) && item.kind === 'decompose' && 'The ways already made are drawn as small dot pictures, in the order made.',
     pulled.includes(FRAME_LEVER) && item.kind === 'ten-and-ones' && "Each part's counters sit in a ten-frame outline.",
-    pulled.includes(MOVE_LEVER) && item.kind === 'related-fact' && 'The move button for this step is highlighted.',
+    pulled.includes(MOVE_LEVER) && (item.kind === 'related-fact' || item.interactionPhase === 'family-model')
+      && 'The move button for this step is highlighted.',
+    pulled.includes(EQ_FRAME_LEVER) && isEquationBuild(item)
+      && 'Empty slots and an equals sign are drawn above the tiles; nothing is placed in them.',
+    pulled.includes(STRIP_LEVER) && isEquationBuild(item)
+      && 'The move the equation must describe is drawn as dots, before and after, with no numbers.',
     pulled.includes(COUNTERS_LEVER) && item.kind === 'missing-part' && 'The counters tray is open; the covered part stays covered.',
   ].filter((s): s is string => !!s).join(' ');
 }

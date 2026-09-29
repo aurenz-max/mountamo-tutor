@@ -128,6 +128,7 @@ import { withWorkspaceController } from '../../../components/live-activity/runti
 import { commitGesture, useWorkspaceRunner, type LiveRun, type WorkspaceRunOptions }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { describeLine, lineMatches, lineMiss, workspaceAssignment, workspaceScene } from './ordinalLineWorkspace';
+import { DOTS_LEVER, FLAG_LEVER, THREE_LEVER, leverFacts, ordinalLevers, threePlaces } from './ordinalLineLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -317,6 +318,11 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
   const [reward, setReward] = useState<string | null>(null);
   /** What the line held when it last stopped changing. */
   const pendingOrderRef = useRef<string[]>([]);
+  // In-item levers (`ordinalLineLevers.ts`), keyed by the session item they were pulled on, and the easier line a
+  // simplify lever put on screen in its place (with its own pictures). The ref is what event handlers read.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<{ item: OrdinalLineItem; emojis: Map<string, string> } | null>(null);
+  const displayItemRef = useRef<OrdinalLineItem | null>(null);
 
   const stableInstanceIdRef = useRef(instanceId || `ordinal-line-${Math.round(performance.now())}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
@@ -490,7 +496,8 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
     gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
     exhibitId,
     onFinished: handleFinished,
-    onItemOpened: resetStageFor,
+    // A fresh item never carries an easier line over from the last one.
+    onItemOpened: () => { setPractice(null); resetStageFor(); },
     onAffirmed: (item) => {
       // The first moment an answer may appear on screen — and the reveal is the
       // PAIRING (who, and which place), never the answer text on its own. Both
@@ -528,9 +535,14 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
     },
   });
 
-  const currentItem = runner.currentItem;
+  const sessionItem = runner.currentItem;
+  /** What is on screen: the easier line while a simplify lever holds it, else the session item. */
+  const currentItem = practice?.item ?? sessionItem;
+  displayItemRef.current = currentItem;
   const kind = currentItem?.kind;
-  const currentChallenge = challengeFor(currentItem);
+  const currentChallenge = challengeFor(sessionItem);
+  const pulledLevers = leverState.item === sessionItem?.id ? leverState.pulled : [];
+  const emojiOf = (name: string) => practice?.emojis.get(name) ?? emojiByName.get(name) ?? '⬤';
   // The workspace path shows its summary without an evaluation provider (the live host has none).
   const showSummary = !!runner.practiceSummary || evaluation.hasSubmitted;
 
@@ -541,7 +553,7 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
   // No Check control: nothing on screen may carry the child forward. The close
   // describes the committed line; THE MATCH IS COMPUTED IN CODE.
   const commitLine = useCallback(() => {
-    const item = runner.currentItem;
+    const item = displayItemRef.current;
     if (!item || item.kind !== 'build_sequence') return;
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
     const placed = pendingOrderRef.current;
@@ -555,7 +567,7 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
    *  commits on the tap (a mis-tap is normal). Further touches re-arm it, and
    *  the runner cancels it at item open, at a correction and at the commit. */
   const armBuildSettle = useCallback((order: string[]) => {
-    const item = runner.currentItem;
+    const item = displayItemRef.current;
     // SPARSE, not compacted: an empty place between two filled ones is part of
     // what the child made, and the verdict cue names it (see the script).
     pendingOrderRef.current = order;
@@ -578,7 +590,7 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
   }, [runner]);
 
   const dropIntoPlace = useCallback((position: number) => {
-    const item = runner.currentItem;
+    const item = displayItemRef.current;
     if (!item || item.kind !== 'build_sequence') return;
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
 
@@ -699,14 +711,22 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
                 className="flex flex-col items-center cursor-pointer"
                 onClick={() => { pip.look(`slot-${pos}`); dropIntoPlace(pos); }}
               >
+                {/* front_flag lever: a flag over the first place, the front end the task names. Never a picture. */}
+                {pos === 1 && pulledLevers.includes(FLAG_LEVER) && <span data-lever="front-flag" aria-label="the front" className="text-lg leading-none">🚩</span>}
                 <span className="text-[10px] text-slate-500 mb-1">
                   {currentChallenge?.showSlotLabels === false
                     ? '·'
                     : getOrdinalLabel(pos, labelFormat)}
                 </span>
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition-all ${dropZoneStateClass((placed ? 'filled' : 'idle') as DropZoneState)}`}>
-                  {placed ? emojiByName.get(placed) ?? '⬤' : ''}
+                  {placed ? emojiOf(placed) : ''}
                 </div>
+                {/* place_dots lever: one dot under first, two under second; places only, never a picture. */}
+                {pulledLevers.includes(DOTS_LEVER) && (
+                  <span data-lever="place-dots" data-count={pos} className="mt-1 flex max-w-12 flex-wrap justify-center gap-0.5">
+                    {Array.from({ length: pos }, (_, d) => <span key={d} className="block h-1.5 w-1.5 rounded-full bg-amber-300/80" />)}
+                  </span>
+                )}
               </div>
             );
           })}
@@ -727,7 +747,7 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
                 onClick={() => { pip.look(`picture-${name}`); holdPicture(name); }}
                 title={name}
               >
-                {emojiByName.get(name) ?? '⬤'}
+                {emojiOf(name)}
               </div>
             ))}
           </div>
@@ -799,7 +819,31 @@ const OrdinalLineSurface = ({ data, className, autoStart = false, runtimePlanIte
     if (!tutorOwned || !currentItem) return;
     const markedPlace = currentItem.kind === 'relative_position' && currentChallenge?.highlightTarget !== false
       ? currentItem.askPosition : undefined;
-    workspace.current = { ...workspaceScene(currentItem, { placedOrder, markedPlace }) };
+    const scene = workspaceScene(currentItem, { placedOrder, markedPlace });
+    const onScreen = leverFacts(currentItem, pulledLevers);
+    const levers = practice ? [] : ordinalLevers(sessionItem, pulledLevers);
+    workspace.current = {
+      ...scene,
+      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the line changes before this returns.
+      pullLever: (id) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !sessionItem || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        const pulled = { item: sessionItem.id, pulled: [...pulledLevers, id] };
+        if (id === THREE_LEVER) {
+          const easier = threePlaces(sessionItem);
+          if (!easier) return 'There is no easier line for this item.';
+          setLeverState(pulled);
+          setPractice(easier); resetStageFor(); runner.clearStillness();
+          return { practice: workspaceAssignment(easier.item) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { setPractice(null); resetStageFor(); runner.clearStillness(); },
+    };
   });
   // AFTER the runtime mount is registered, never before: `start()` waits for
   // `grantOwnership('runner')`, which cannot be granted until this primitive's

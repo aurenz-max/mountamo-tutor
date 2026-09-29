@@ -40,6 +40,8 @@ import { withWorkspaceController } from '../../../components/live-activity/runti
 import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
   from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import { comparisonMiss, describeComparison, workspaceAssignment, workspaceScene } from './comparisonBuilderWorkspace';
+import { HOPS_LEVER, MARKS_LEVER, MATCH_LEVER, STEPS_LEVER, TAP_LEVER, comparisonLevers, hopLabels, leverFacts, modelPair,
+  quantityParts, simplerItem, slotSteps, startLevers } from './comparisonBuilderLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -75,10 +77,12 @@ export interface ComparisonBuilderData {
 
   // Support-tier scaffold fields (set by the generator from config.difficulty;
   // all default to current behavior so a no-tier session is byte-identical).
-  /** Gate the always-on "Left: N / Right: N" count badges (compare-groups). */
+  /** Gate the "Left: N / Right: N" count badges (compare-groups, Grade 1). Shown
+   *  only once the item is answered: printed totals answer the comparison. */
   showCountBadges?: boolean;
-  /** Correspondence-line lifecycle: 'live' = during solve, 'on-check' = after
-   *  answering (legacy default), 'off' = never. */
+  /** Correspondence-line lifecycle: 'on-check' = offered after answering (default),
+   *  'off' = never. Legacy payloads may carry 'live'; it is read as 'on-check',
+   *  because lines drawn during the solve leave the answer as the leftovers. */
   correspondenceMode?: 'live' | 'on-check' | 'off';
   /** Gate the amber number-line target pre-highlight (one-more-one-less). The
    *  amber Target box is the stimulus and is always shown regardless. */
@@ -305,6 +309,39 @@ interface ComparisonBuilderProps {
 // Component
 // ============================================================================
 
+/** `quantity_marks` lever: a number's amount as sticks of ten and loose dots, drawn alike wherever it appears. */
+const QuantityMarks = ({ n }: { n: number }) => {
+  const { tens, ones } = quantityParts(n);
+  return (
+    <div data-lever="quantity-marks" aria-label={`${tens} tens and ${ones} ones`} className="flex items-end justify-center gap-1 min-h-[20px]">
+      {Array.from({ length: tens }, (_, i) => <span key={`t${i}`} className="block w-1.5 h-5 rounded-sm bg-amber-300/80" />)}
+      <span className="grid grid-cols-5 gap-0.5">
+        {Array.from({ length: ones }, (_, i) => <span key={`o${i}`} className="block w-1.5 h-1.5 rounded-full bg-amber-200/90" />)}
+      </span>
+    </div>
+  );
+};
+
+/** `model_match` lever: two rows of dots from a pair the item does not use, joined in pairs, the extras ringed. */
+const ModelMatch = ({ pair }: { pair: readonly [number, number] }) => {
+  const [top, bottom] = pair, gap = 22, width = top * gap + 12;
+  return (
+    <svg data-lever="model-match" width={width} height={62} viewBox={`0 0 ${width} 62`} role="img"
+      aria-label="A model: two rows of dots joined in pairs, the extra dots ringed">
+      {Array.from({ length: bottom }, (_, i) => (
+        <line key={`l${i}`} x1={12 + i * gap} y1={16} x2={12 + i * gap} y2={46} stroke="rgba(168,85,247,0.5)" strokeWidth={1.5} strokeDasharray="3 2" />
+      ))}
+      {Array.from({ length: top }, (_, i) => (
+        <g key={`t${i}`}>
+          {i >= bottom && <circle cx={12 + i * gap} cy={12} r={9} fill="none" stroke="rgba(249,115,22,0.6)" strokeWidth={1.5} strokeDasharray="3 2" />}
+          <circle cx={12 + i * gap} cy={12} r={5} fill="rgba(249,115,22,0.8)" />
+        </g>
+      ))}
+      {Array.from({ length: bottom }, (_, i) => <circle key={`b${i}`} cx={12 + i * gap} cy={50} r={5} fill="rgba(59,130,246,0.8)" />)}
+    </svg>
+  );
+};
+
 const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeEvalMode, tutorOwned, useController }:
   ComparisonBuilderProps & { tutorOwned: boolean; useController: (options: ProgressOptions<ComparisonBuilderChallenge>) => Progress }) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
@@ -376,6 +413,11 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
   const [oneMoreAnswer, setOneMoreAnswer] = useState<number | null>(null);
   const [oneLessAnswer, setOneLessAnswer] = useState<number | null>(null);
   const [showLines, setShowLines] = useState(false);
+  // In-item levers (`comparisonBuilderLevers.ts`), keyed by the session item they were pulled on; the easier item a
+  // simplify lever put on screen in its place; and, under `tap_count`, the objects the learner has tapped, in order.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<ComparisonBuilderChallenge | null>(null);
+  const [tapped, setTapped] = useState<{ left: number[]; right: number[] }>({ left: [], right: [] });
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
 
@@ -408,6 +450,11 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
     setWrongFlash(key);
     wrongFlashTimer.current = setTimeout(() => setWrongFlash(null), 600);
   }, []);
+  /** `tap_count`: the learner taps an object to count it; each object counts once. Counting is never an answer. */
+  const tapObject = useCallback((side: 'left' | 'right', index: number) => {
+    SoundManager.select();
+    setTapped(prev => prev[side].includes(index) ? prev : { ...prev, [side]: [...prev[side], index] });
+  }, []);
 
   // K (pre-reader) is a hard band gate: at K the answer surface is picture-primary
   // and the adult chrome (mode tabs, counter, grade/type badges, count badges) is
@@ -423,10 +470,15 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
   const disambiguatedLessRef = useRef(false);
 
   // Current challenge
-  const currentChallenge = useMemo(
+  const sessionChallenge = useMemo(
     () => challenges[currentChallengeIndex] || null,
     [challenges, currentChallengeIndex],
   );
+  /** What is on screen: the easier item while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  // easy starts with the model lever pulled on compare-groups; a runtime pull adds to that.
+  const startPulled = startLevers(sessionChallenge, supportTier);
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : startPulled;
 
   // Shuffled numbers for order challenges. Derived in render, not set from an effect: an
   // effect painted the previous item's cards for one commit, and on the workspace path that
@@ -530,7 +582,7 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
       }
       if (type === 'compare-groups') {
         return tier === 'easy'
-          ? ' [TIER easy] You may name the matching/one-to-one strategy and which side has more.'
+          ? ' [TIER easy] You may name the matching/one-to-one strategy; do NOT state which side has more or either count.'
           : tier === 'medium'
             ? ' [TIER medium] Nudge them to count each side; do NOT state which has more.'
             : ' [TIER hard] Counts are hidden and objects scattered — ask them to count each group themselves; do NOT name which side has more or state either count.';
@@ -544,7 +596,7 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
       }
       // order
       return tier === 'easy'
-        ? ' [TIER easy] You may name the smallest/largest to start and the direction.'
+        ? ' [TIER easy] You may name the direction (least to greatest); do NOT name which number goes first or the order.'
         : tier === 'medium'
           ? ' [TIER medium] Nudge them toward the next number; do NOT order it for them.'
           : ' [TIER hard] Descending with no slot hints — ask which is biggest first; do NOT name the sequence.';
@@ -1013,6 +1065,8 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
     // voices both sub-questions fresh.
     disambiguatedMoreRef.current = false;
     disambiguatedLessRef.current = false;
+    setPractice(null);
+    setTapped({ left: [], right: [] });
   };
 
   const advanceToNextChallenge = useCallback(() => {
@@ -1131,8 +1185,9 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
     if (orderFlashTimer.current) clearTimeout(orderFlashTimer.current);
     setWrongFlash(null);
     if (wrongFlashTimer.current) clearTimeout(wrongFlashTimer.current);
+    setTapped({ left: [], right: [] });
   }, []);
-  // Workspace path: Try again clears this response; a fresh challenge clears everything.
+  // Workspace path: Try again clears this response (an easier practice item stays); a fresh challenge clears everything.
   openItem.current = retry => { if (retry) clearResponse(); else resetForNewChallenge(); };
 
   // ── Live tutor runtime ──────────────────────────────────────────────
@@ -1166,8 +1221,32 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!tutorOwned || !currentChallenge) return;
-    workspace.current = { ...workspaceScene(currentChallenge, { selected: selectedAnswer, ordered: orderedNumbers,
-      oneMore: oneMoreAnswer, oneLess: oneLessAnswer, shuffled: shuffledNumbers, countsShown: showCountBadges && !isK }) };
+    const scene = workspaceScene(currentChallenge, { selected: selectedAnswer, ordered: orderedNumbers,
+      oneMore: oneMoreAnswer, oneLess: oneLessAnswer, shuffled: shuffledNumbers, countsShown: showCountBadges && !isK && isCurrentChallengeComplete });
+    const onScreen = leverFacts(currentChallenge, pulledLevers, { left: tapped.left.length, right: tapped.right.length });
+    const levers = practice ? [] : comparisonLevers(sessionChallenge, pulledLevers, gradeBand);
+    workspace.current = {
+      ...scene,
+      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: (id) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !sessionChallenge || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = simplerItem(sessionChallenge, gradeBand);
+          if (!easier) return 'There is no easier item for this one.';
+          setLeverState(pulled);
+          clearResponse(); setShowLines(false); setPractice(easier);
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { clearResponse(); setShowLines(false); setPractice(null); },
+    };
   });
 
   // Auto-submit when all complete
@@ -1239,14 +1318,14 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
       ? generateScatterPositions(right.count, GROUP_WIDTH + GAP, 20)
       : generateGridPositions(right.count, GROUP_WIDTH + GAP, 20);
     const pairCount = Math.min(left.count, right.count);
+    const tapCountOn = pulledLevers.includes(TAP_LEVER) && !isCurrentChallengeComplete;
+    const model = pulledLevers.includes(MATCH_LEVER) ? modelPair(currentChallenge) : null;
 
-    // Correspondence-line visibility:
-    //   'live'     → drawn during solve (strongest self-check) AND after answering
-    //   'on-check' → only after the student answers (legacy default)
-    //   'off'      → never
+    // Correspondence lines are a reveal, never shown during the solve: the unmatched
+    // leftovers ARE the answer. 'off' never draws them; 'on-check' (and a legacy
+    // 'live' payload) offers them once the item is answered.
     const linesVisible =
-      showCorrespondenceLines &&
-      (correspondenceMode === 'live' || (correspondenceMode === 'on-check' && showLines));
+      showCorrespondenceLines && correspondenceMode !== 'off' && showLines && isCurrentChallengeComplete;
 
     return (
       <div className="space-y-4">
@@ -1346,8 +1425,23 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
             {/* Left objects */}
             {leftPositions.map((pos, i) => {
               const isLeftover = linesVisible && i >= pairCount;
+              const tapNumber = tapped.left.indexOf(i) + 1;
               return (
                 <g key={`left-${i}`}>
+                  {/* tap_count lever: the object itself is a tap target that stamps its count on this side, and
+                      never answers (it stops the tap reaching the group box, which is the K answer surface). */}
+                  {tapCountOn && (
+                    <circle
+                      data-lever="tap-count" data-side="left" data-index={i}
+                      cx={pos.x} cy={pos.y} r={16} fill="transparent" pointerEvents="all"
+                      style={{ cursor: 'pointer' }}
+                      onClick={(e) => { e.stopPropagation(); tapObject('left', i); }}
+                    />
+                  )}
+                  {tapNumber > 0 && (
+                    <text x={pos.x + 13} y={pos.y - 12} textAnchor="middle" fontSize={12} fontWeight={700}
+                      fill="rgba(249,115,22,0.95)" className="select-none pointer-events-none" data-lever="tap-number">{tapNumber}</text>
+                  )}
                   {isLeftover && (
                     <circle
                       cx={pos.x} cy={pos.y} r={18}
@@ -1372,8 +1466,23 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
             {/* Right objects */}
             {rightPositions.map((pos, i) => {
               const isLeftover = linesVisible && i >= pairCount;
+              const tapNumber = tapped.right.indexOf(i) + 1;
               return (
                 <g key={`right-${i}`}>
+                  {/* tap_count lever: the object itself is a tap target that stamps its count on this side, and
+                      never answers (it stops the tap reaching the group box, which is the K answer surface). */}
+                  {tapCountOn && (
+                    <circle
+                      data-lever="tap-count" data-side="right" data-index={i}
+                      cx={pos.x} cy={pos.y} r={16} fill="transparent" pointerEvents="all"
+                      style={{ cursor: 'pointer' }}
+                      onClick={(e) => { e.stopPropagation(); tapObject('right', i); }}
+                    />
+                  )}
+                  {tapNumber > 0 && (
+                    <text x={pos.x + 13} y={pos.y - 12} textAnchor="middle" fontSize={12} fontWeight={700}
+                      fill="rgba(59,130,246,0.95)" className="select-none pointer-events-none" data-lever="tap-number">{tapNumber}</text>
+                  )}
                   {isLeftover && (
                     <circle
                       cx={pos.x} cy={pos.y} r={18}
@@ -1397,13 +1506,17 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
           </svg>
         </div>
 
-        {/* Count labels — withdrawn at the HARD tier (showCountBadges=false) so the
-            student must count both groups; the post-answer feedback still names the
-            counts, which is fine (it's the reveal, not a pre-answer crutch). ALSO
-            hard-gated OFF at K (band gate): a "Left: 3 / Right: 5" readout hands the
-            answer to a pre-reader who is meant to compare the pictures (pedagogy
-            rule #1; reader-fit Audit A flagged it as a count leak). */}
-        {showCountBadges && !isK && (
+        {model && (
+          <div className="flex justify-center">
+            <ModelMatch pair={model} />
+          </div>
+        )}
+
+        {/* Count labels — a reveal after answering, never during the solve: two
+            printed totals turn "which group has more" into a numeral comparison.
+            Withdrawn entirely at the HARD tier (showCountBadges=false) and at K
+            (band gate; reader-fit Audit A flagged them as a count leak). */}
+        {showCountBadges && !isK && isCurrentChallengeComplete && (
           <div className="flex items-center justify-center gap-8 text-sm">
             <span className="text-orange-300">
               Left: <span className="font-bold text-lg">{left.count}</span>
@@ -1443,9 +1556,9 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
           </div>
         )}
 
-        {/* Toggle correspondence lines button — only relevant in 'on-check' mode
-            ('live' already shows them; 'off' withholds them entirely). */}
-        {showCorrespondenceLines && correspondenceMode === 'on-check' && !showLines && isCurrentChallengeComplete && (
+        {/* Toggle correspondence lines button — offered after answering unless
+            the tier withholds lines entirely ('off'). */}
+        {showCorrespondenceLines && correspondenceMode !== 'off' && !showLines && isCurrentChallengeComplete && (
           <div className="flex justify-center">
             <LuminaButton
               tone="subtle"
@@ -1468,6 +1581,7 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
 
     const left = currentChallenge.leftNumber ?? 0;
     const right = currentChallenge.rightNumber ?? 0;
+    const marksOn = pulledLevers.includes(MARKS_LEVER);
 
     // K (pre-reader) picture-primary tap=choose: the child taps the BIGGER numeral
     // directly (K.CC.C.7 = compare two written numerals) instead of reading a
@@ -1497,6 +1611,7 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
         );
       };
       return (
+        <div>
         <div className="flex items-center justify-center gap-4">
           {numberBox(left, '>', 'bg-orange-500/10 border-orange-400/40 text-orange-300')}
           {/* Middle "=" — tappable "the same" target, mirrors compare-groups. */}
@@ -1514,6 +1629,14 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
             =
           </button>
           {numberBox(right, '<', 'bg-blue-500/10 border-blue-400/40 text-blue-300')}
+        </div>
+        {marksOn && (
+          <div className="flex items-start justify-center gap-4 mt-3">
+            <div className="w-28"><QuantityMarks n={left} /></div>
+            <div className="w-16" />
+            <div className="w-28"><QuantityMarks n={right} /></div>
+          </div>
+        )}
         </div>
       );
     }
@@ -1542,6 +1665,14 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
             <span className="text-5xl font-bold text-blue-300">{right}</span>
           </div>
         </div>
+
+        {marksOn && (
+          <div className="flex items-start justify-center gap-6">
+            <div className="w-28"><QuantityMarks n={left} /></div>
+            <div className="w-20" />
+            <div className="w-28"><QuantityMarks n={right} /></div>
+          </div>
+        )}
 
         {/* Alligator hint */}
         {useAlligatorMnemonic && !isCurrentChallengeComplete && (
@@ -1606,6 +1737,8 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
     const availableNumbers = shuffledNumbers.filter(
       (n) => !orderedNumbers.includes(n),
     );
+    const stepsOn = pulledLevers.includes(STEPS_LEVER);
+    const cardMarksOn = pulledLevers.includes(MARKS_LEVER);
 
     return (
       <div className="space-y-5">
@@ -1685,6 +1818,16 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
             );
           })}
         </div>
+        {/* slot_steps lever: a bar under each slot growing in the building direction; it names no card. */}
+        {stepsOn && (
+          <div data-lever="slot-steps" className="flex justify-center items-start gap-2 -mt-3">
+            {slotSteps(totalSlots, direction).map((h, i) => (
+              <div key={i} className="w-14 flex justify-center">
+                <span className="block w-8 rounded-sm bg-purple-400/50" style={{ height: h }} />
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Available number cards (bespoke draggable tiles) */}
         {!isCurrentChallengeComplete && (
@@ -1693,7 +1836,7 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
               <button
                 key={`card-${num}`}
                 type="button"
-                className={`w-14 h-14 rounded-xl border text-xl font-bold transition-all ${answerStateClass('idle')}`}
+                className={`${cardMarksOn ? 'w-16 min-h-[3.5rem] py-1' : 'w-14 h-14'} rounded-xl border text-xl font-bold transition-all ${answerStateClass('idle')}`}
                 onClick={() => {
                   if (learnerBlocked()) return;
                   SoundManager.snap();
@@ -1701,6 +1844,7 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
                 }}
               >
                 {num}
+                {cardMarksOn && <QuantityMarks n={num} />}
               </button>
             ))}
           </div>
@@ -1746,12 +1890,16 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
         })()
       : Array.from({ length: Math.min(maxNum + 1, 21) }, (_, i) => i);
 
+    const hopsOn = pulledLevers.includes(HOPS_LEVER);
     const numberRow = (
       which: 'more' | 'less',
       selected: number | null,
       label: string,
       colorClass: string,
-    ) => (
+    ) => {
+      // learner_hops lever: 0 on the target, then each cell up to the learner's own pick shows its hop count.
+      const hops = hopsOn ? hopLabels(target, selected) : null;
+      return (
       <div className="space-y-2">
         {/* Header: WORDLESS at K — an up arrow (one more, emerald) or down arrow
             (one less, blue); the tutor voices the ask. Grade-1 reads the text. */}
@@ -1784,11 +1932,14 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
             const isTarget = showTargetMarker && i === target && selected !== i;
             // Rule-5: a wrong tap shakes THIS cell (K); no text card.
             const isWrong = wrongFlash === `${which}-${i}`;
+            const hop = hops?.get(i);
             return (
               <button
                 key={i}
                 type="button"
-                className={`w-10 h-10 rounded-lg border text-sm font-bold p-0 transition-all ${
+                // The row is in the name when both rows show the same numbers; the hop badge is never in it.
+                aria-label={askFor === 'both' ? `one ${which} ${i}` : String(i)}
+                className={`relative w-10 h-10 rounded-lg border text-sm font-bold p-0 transition-all ${
                   isTarget
                     ? 'bg-amber-500/10 border-amber-400/30 text-amber-300'
                     : answerStateClass(cellState)
@@ -1807,12 +1958,18 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
                 disabled={isCurrentChallengeComplete}
               >
                 {i}
+                {hop !== undefined && (
+                  <span data-lever="hop" className="absolute -top-2 -right-1 rounded-full bg-emerald-400/90 px-1 text-[10px] leading-4 text-slate-900">
+                    {hop}
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
       </div>
-    );
+      );
+    };
 
     return (
       <div className="space-y-5">

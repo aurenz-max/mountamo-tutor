@@ -30,6 +30,8 @@ import { SoundManager } from '../../../utils/SoundManager';
 import { buildSequencerItems, orderMiss, sameOrder, targetSlot, workspaceAssignment, workspaceScene,
   type SequencerItem } from './numberSequencerDomain';
 import type { NumberSequencerChallenge, NumberSequencerData } from './NumberSequencer';
+import { MARKS_LEVER, STEPS_LEVER, THREE_LEVER, leverFacts, quantityParts, sequencerLevers, threeCards, trainSteps }
+  from './numberSequencerLevers';
 
 export interface NumberSequencerTeachingProps {
   data: NumberSequencerData;
@@ -54,12 +56,28 @@ export default function NumberSequencerTeaching({ data, className, runtimePlanIt
     runtimePlanItemId={runtimePlanItemId} />;
 }
 
+function CardMarks({ n }: { n: number }) {
+  const { tens, ones } = quantityParts(n);
+  return <span data-lever="card-marks" aria-hidden="true" className="flex items-end justify-center gap-0.5 px-1 pb-1">
+    {Array.from({ length: tens }, (_, i) => <span key={`t${i}`} className="block h-4 w-1 rounded-sm bg-purple-200/80" />)}
+    <span className="grid grid-cols-5 gap-0.5">{Array.from({ length: ones }, (_, i) =>
+      <span key={`o${i}`} className="block h-1 w-1 rounded-full bg-purple-100" />)}</span>
+  </span>;
+}
+
 function TrainWorkspace({ data, items, className, runtimePlanItemId }:
   NumberSequencerTeachingProps & { items: SequencerItem[] }) {
   const instance = useRef(data.instanceId || `number-sequencer-${Date.now()}`);
   const workspace = useRef<TeachingWorkspace | null>(null);
   const [marks, mark] = useState<string[]>([]);
   const [placed, setPlaced] = useState<number[]>([]);
+  // In-item levers (`numberSequencerLevers.ts`), keyed by the session item they were pulled on, and the easier train
+  // a simplify lever put on screen in its place. Retry on the easier train keeps it; only endPractice removes it.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPracticeState] = useState<SequencerItem | null>(null);
+  const practiceRef = useRef<SequencerItem | null>(null);
+  const setPractice = (next: SequencerItem | null) => { practiceRef.current = next; setPracticeState(next); };
+  const openedIndex = useRef(-1);
 
   const assignments = useMemo<TeachingItem[]>(() => items.map(item => ({
     ...workspaceAssignment(item),
@@ -70,7 +88,13 @@ function TrainWorkspace({ data, items, className, runtimePlanItemId }:
 
   const lesson = useTeachingWorkspace({ instanceId: instance.current, primitiveId: 'number-sequencer',
     objectiveId: data.objectiveId, planItemId: runtimePlanItemId, items: assignments, workspace,
-    onItemOpened: () => setPlaced([]) });
+    onItemOpened: opened => {
+      setPlaced([]);
+      if (opened !== openedIndex.current) setPractice(null);
+      openedIndex.current = opened;
+    },
+    checkPractice: (id, response) => practiceRef.current?.id === id
+      ? sameOrder(response.split(',').filter(Boolean).map(Number), practiceRef.current.answerOrder) : null });
 
   const evaluation = useTeachingEvaluation<NumberSequencerMetrics>({ primitiveType: 'number-sequencer',
     instanceId: instance.current, data, assignments, lesson,
@@ -88,7 +112,11 @@ function TrainWorkspace({ data, items, className, runtimePlanItemId }:
     } });
 
   const index = lesson.state.index;
-  const item = items[index];
+  const sessionItem = items[index];
+  /** What is on screen: the easier train while a simplify lever holds it, else the session item. */
+  const item = practice ?? sessionItem;
+  const pulled = leverState.item === sessionItem.id ? leverState.pulled : [];
+  const leverOn = (id: string) => !practice && pulled.includes(id);
   const gesture = item.answerKind === 'gesture';
   // Slots of this same challenge already answered, filled in on the drawn train.
   const shown = useMemo(() => item.sequence.map((value, position) => {
@@ -99,10 +127,31 @@ function TrainWorkspace({ data, items, className, runtimePlanItemId }:
   const target = targetSlot(item);
 
   useLayoutEffect(() => {
+    const scene = workspaceScene(item, { shown, placed });
+    const onScreen = practice ? '' : leverFacts(sessionItem, pulled);
+    const levers = practice ? [] : sequencerLevers(sessionItem, pulled, data.gradeBand);
     workspace.current = {
-      ...workspaceScene(item, { shown, placed }),
+      ...scene,
+      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
       demonstration: marks,
       canDemonstrate: true, mark, clearPresentation: () => mark([]),
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the train changes before this returns.
+      pullLever: id => {
+        const lever = levers.find(l => l.id === id);
+        if (!lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        if (id === THREE_LEVER) {
+          const easier = threeCards(sessionItem, data.gradeBand);
+          if (!easier) return 'There is no easier train for this item.';
+          setLeverState({ item: sessionItem.id, pulled: [...pulled, id] });
+          setPractice(easier); setPlaced([]);
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState({ item: sessionItem.id, pulled: [...pulled, id] });
+        return true;
+      },
+      endPractice: () => { setPractice(null); setPlaced([]); },
     };
   });
 
@@ -150,6 +199,11 @@ function TrainWorkspace({ data, items, className, runtimePlanItemId }:
     <LuminaCardContent className="space-y-6">
       <LuminaChallengeCounter current={index + 1} total={items.length} variant="dots" />
       {gesture ? <section aria-label="Arrange number cards" className="space-y-5">
+        {/* train_steps lever: wordless bars that grow from the first place to the last; they name no card. */}
+        {leverOn(STEPS_LEVER) && <div data-lever="train-steps" className="flex flex-wrap items-end justify-center gap-3" aria-hidden="true">
+          {trainSteps(item.answerOrder.length).map((h, i) => <span key={i} className="flex min-w-16 justify-center">
+            <span className="block w-8 rounded-sm bg-cyan-300/50" style={{ height: h }} /></span>)}
+        </div>}
         <div className="flex flex-wrap justify-center gap-3" aria-label="Your number train">
           {item.answerOrder.map((_, position) => <button key={position} type="button"
             data-testid={`train-car-${position}`} data-tutor-demonstration={false}
@@ -165,7 +219,11 @@ function TrainWorkspace({ data, items, className, runtimePlanItemId }:
             data-card-id={`card-${n}`} data-tutor-demonstration={marks.includes(`card-${n}`)}
             disabled={!lesson.canAttempt} onClick={() => changeOrder([...placed, n], 'place')} aria-label={`Place ${n}`}
             className={`min-h-16 min-w-16 rounded-xl border bg-purple-400/15 text-2xl text-purple-100 disabled:opacity-50 ${
-              marks.includes(`card-${n}`) ? 'border-purple-300 outline outline-2 outline-dashed outline-offset-4 outline-purple-400' : 'border-purple-300/40'}`}>{n}</button>)}
+              marks.includes(`card-${n}`) ? 'border-purple-300 outline outline-2 outline-dashed outline-offset-4 outline-purple-400' : 'border-purple-300/40'}`}>
+              {n}
+              {/* card_marks lever: the card's amount as sticks of ten and dots, alike on every card. */}
+              {leverOn(MARKS_LEVER) && <CardMarks n={n} />}
+            </button>)}
         </div>
       </section> : <div className="flex flex-wrap justify-center gap-3 pb-3" aria-label="Number train">{shown.map(car)}</div>}
       {data.showNumberLine && !gesture && item.challengeType !== 'spot-error' && item.rangeMax - item.rangeMin <= 30

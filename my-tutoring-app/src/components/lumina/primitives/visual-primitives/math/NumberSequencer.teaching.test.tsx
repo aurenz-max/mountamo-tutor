@@ -117,9 +117,9 @@ it.each(BOUND_KINDS)('%s publishes a factual task with no scripted cue and no tu
   expect(task.demand.kind).toBe(kind);
   expect(task.task).toBeTruthy();
   expect(task.task).not.toMatch(/\[NS_|Say exactly|My turn/);
-  // The model sees help and demonstration. Recording and progression are observer-only.
+  // The model sees help and demonstration, and on order-cards its levers. Recording and progression are observer-only.
   expect(h.state().affordances.filter(a => !a.controller).map(a => (a.action as any).operation ?? a.action.type).sort())
-    .toEqual(['begin_help', 'demonstrate']);
+    .toEqual(kind === 'order-cards' ? ['begin_help', 'demonstrate', 'pull_lever'] : ['begin_help', 'demonstrate']);
   expect(runtimePacket(h.state()).choices.some(a => ['retry', 'advance'].includes(a.action.type))).toBe(false);
   expect(task.evidence.attemptNumber).toBe(0);
   expect(task.support).toEqual({ level: 0, answerExposure: 'none' });

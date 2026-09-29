@@ -1,10 +1,8 @@
 // @vitest-environment jsdom
 /**
- * W1 minimal binding: the real CompareObjects on the shared teaching workspace, with
- * the real TeachingSession, LiveLessonRuntime, transport and rendering shell. Only
- * microphone hardware, evaluation writes and sound are substituted. The scripted
- * runner must never mount on this path; its context push would crash on this AI
- * mock, which has no `updateContext`.
+ * The compare-objects order_three levers on the shared teaching workspace (handoff 21 M2): the real CompareObjects,
+ * TeachingSession and LiveLessonRuntime. `pull_lever` changes the board and the scene in one commit, names no object's
+ * place, records the lever on the next attempt, and the easier order is ungraded and returns to the full item.
  */
 import React from 'react';
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
@@ -48,7 +46,7 @@ function challengeFor(kind: Kind, id = kind): Record<string, any> {
     case 'compare_two': return { ...base, comparisonWord: 'longer', correctAnswer: 'pencil', objects: PAIR };
     case 'identify_attribute': return { ...base, correctAttribute: 'length', attributeOptions: ['length', 'weight'], objects: PAIR };
     case 'order_three': return { ...base, comparisonWord: 'longer', correctAnswer: 'ruler,pencil,crayon',
-      objects: [obj('pencil', 120, 12), obj('ruler', 200, 30), obj('crayon', 60, 6)] };
+      objects: [obj('pencil', 50, 12), obj('ruler', 60, 30), obj('crayon', 40, 6)] };
     default: return { ...base, unitName: 'cube', unitCount: 5, objects: [obj('pencil', 120, 12)] };
   }
 }
@@ -87,82 +85,51 @@ function mount(evalMode: string, challenges: Record<string, any>[]) {
   return { runtime, transport, sent, view, state, offer, dispatch, confirmVisible, touch, settle, say, feedback };
 }
 
-const tutorTools = (h: ReturnType<typeof mount>) => h.state().affordances.filter(a => !a.controller)
-  .map(a => (a.action as { operation?: string }).operation ?? a.action.type).sort();
+const levers = (h: ReturnType<typeof mount>) => h.state().task!.workspace!.levers ?? [];
+const drawn = (h: ReturnType<typeof mount>, kind: string) => h.view.container.querySelectorAll(`[data-lever="${kind}"]`);
 
-it.each(['compare_two', 'identify_attribute', 'order_three', 'non_standard'] as const)(
-  '%s binds the workspace under tutor ownership, with no runner cue and no demonstration', kind => {
-    const h = mount(kind, [challengeFor(kind)]);
-    expect(h.state().owner).toBe('tutor');
-    expect(h.state().task!.task).not.toMatch(/Say exactly|\[CO_/);
-    expect(tutorTools(h)).toEqual(kind === 'order_three' ? ['begin_help', 'pull_lever'] : ['begin_help']);
-    expect(seam.send.mock.calls.flat().join(' ')).not.toMatch(/\[CO_|Say exactly/);
-  });
-
-it.each([['compare_two', 'pencil'], ['identify_attribute', 'length'], ['non_standard', '5']] as const)(
-  '%s publishes its spoken key; the order key is never published', (kind, key) => {
-    expect(mount(kind, [challengeFor(kind)]).state().task!.workspace!.expectedAnswer).toBe(key);
-    cleanup();
-    expect(mount('order_three', [challengeFor('order_three')]).state().task!.workspace!.expectedAnswer).toBeUndefined();
-  });
-
-it('order_three: the board checks a still arrangement, Try again clears it, and a right one completes once', () => {
-  seam.evaluationContext = { lesson: 'test' };
+it('declares its levers on order_three only, and pulls change the board without naming a place', () => {
+  expect(levers(mount('compare_two', [challengeFor('compare_two')]))).toEqual([]);
+  cleanup();
   const h = mount('order_three', [challengeFor('order_three')]);
-  h.touch('crayon', 'pencil', 'ruler');
-  expect(h.state().task!.evidence.attemptNumber).toBe(0);
-  h.settle();
-  expect(h.state().task!.evidence.correctness).toBe('incorrect');
-  const [facts, options] = seam.send.mock.calls.at(-1)!;
-  expect(options).toMatchObject({ author: 'host' });
-  expect(facts).toContain('crayon, pencil, ruler');
-  expect(h.offer('advance')).toBeUndefined();
+  expect(levers(h).map(l => [l.id, l.kind])).toEqual([['order_steps', 'help'], ['touch_slots', 'help'], ['measure_grid', 'help'],
+    ['far_three', 'simplify']]);
+  h.touch('crayon', 'pencil', 'ruler'); h.settle();
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: false, miss: 'reversed' });
+  h.dispatch('pull_lever', { lever: 'order_steps' });
+  expect(drawn(h, 'order-steps')).toHaveLength(1);
+  expect(drawn(h, 'order-steps')[0].textContent).toBe('');
+  h.dispatch('pull_lever', { lever: 'touch_slots' });
+  h.dispatch('pull_lever', { lever: 'measure_grid' });
+  expect(drawn(h, 'measure-grid')).toHaveLength(1);
+  const demand = h.state().task!.demand;
+  expect(demand.onScreen).toMatch(/wordless bars/);
+  for (const n of ['ruler', 'pencil', 'crayon']) expect(String(demand.onScreen)).not.toContain(n);
+
   h.dispatch('retry');
-  expect(h.view.container.querySelectorAll('[data-pip-object^="pick-"] .absolute').length).toBe(0);
-  h.touch('ruler', 'pencil', 'crayon'); h.settle();
-  expect(h.state().task!.evidence.correctness).toBe('correct');
-  expect(h.view.container.textContent).toContain('ruler  →  pencil  →  crayon');
-  h.dispatch('advance');
-  expect(h.state().status).not.toBe('completed');
-  h.confirmVisible();
-  expect(h.state().status).toBe('completed');
-  expect(seam.submit).toHaveBeenCalledOnce();
-  expect(seam.submit.mock.calls[0].slice(0, 2)).toEqual([true, 67]);
-  expect(seam.correct).toHaveBeenCalledOnce();
+  h.touch('ruler');
+  expect(Array.from(drawn(h, 'touch-slots')[0].children).map(d => d.getAttribute('data-filled'))).toEqual(['true', 'false', 'false']);
+  h.touch('pencil', 'crayon'); h.settle();
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true,
+    levers: ['order_steps', 'touch_slots', 'measure_grid'] });
 });
 
-it('order_three: a partial arrangement commits on stillness and is checked wrong', () => {
+it('the easier order is ungraded and returns to the full item, which alone is credited', () => {
   const h = mount('order_three', [challengeFor('order_three')]);
-  h.touch('ruler'); h.settle();
-  expect(h.state().task!.evidence.correctness).toBe('incorrect');
-  expect(seam.send.mock.calls.at(-1)![0]).toContain('Touched 1 of 3');
-});
-
-it('non_standard: the unit numbers stay hidden until the spoken count is credited', () => {
-  const h = mount('non_standard', [challengeFor('non_standard')]);
-  const numbered = () => h.view.container.querySelectorAll('.border-dashed span').length;
-  expect(numbered()).toBe(0);
-  h.say('six'); h.feedback('incorrect', 'retry');
-  expect(numbered()).toBe(0);
-  h.say('five');
-  expect(h.state().task!.workspace!.pendingResponse).toMatchObject({ text: 'five' });
-  h.feedback('correct');
-  expect(numbered()).toBe(5);
-  expect(h.view.container.textContent).toContain('5 cubes');
-});
-
-it('a mixed pin binds, and each item keeps its own response channel across transitions', async () => {
-  seam.evaluationContext = { lesson: 'test' };
-  const h = mount('mixed', [challengeFor('compare_two'), challengeFor('order_three')]);
-  expect(h.state().owner).toBe('tutor');
-  expect(h.state().task!.workspace!.expectedAnswer).toBe('pencil');
-  h.say('the pencil'); h.feedback('correct', 'advance');
+  h.touch('pencil', 'ruler', 'crayon'); h.settle();
+  h.dispatch('pull_lever', { lever: 'far_three' });
+  expect(h.state().task!.itemId).toBe('order_three~simpler');
+  expect(h.state().task!.workspace!.practice).toEqual({ returnsTo: 'order_three' });
+  expect(h.offer('pull_lever')).toBeUndefined();
+  // Blue, pink, green ribbon drawn middle, biggest, smallest: longest first is pink, blue, green.
+  h.touch('pink ribbon', 'blue ribbon', 'green ribbon'); h.settle();
+  expect(h.state().task!.workspace!.lastResponse).toMatchObject({ correct: true });
+  h.dispatch('advance');
   expect(h.state().task!.itemId).toBe('order_three');
-  expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
+  expect(h.view.container.querySelector('[data-pip-object="pick-ruler"]')).toBeTruthy();
   h.touch('ruler', 'pencil', 'crayon'); h.settle();
-  expect(h.state().task!.evidence.correctness).toBe('correct');
-  h.dispatch('advance'); h.confirmVisible();
-  expect(h.state().status).toBe('completed');
-  await flushScoring();
-  expect(seam.submit.mock.calls[0].slice(0, 2)).toEqual([true, 100]);
+  const attempts = h.state().task!.workspace!.attempts;
+  expect(attempts.map(a => [a.itemId, a.correct, 'practice' in a])).toEqual([
+    ['order_three', false, false], ['order_three~simpler', true, true], ['order_three', true, false]]);
+  expect(attempts.at(-1)).toMatchObject({ levers: ['far_three'], assisted: true });
 });

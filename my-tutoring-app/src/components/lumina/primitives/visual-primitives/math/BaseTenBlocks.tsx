@@ -30,8 +30,8 @@ import CalculatorInput from '../../input-primitives/CalculatorInput';
 import { SoundManager } from '../../../utils/SoundManager';
 import BaseTenBlocksDi from './BaseTenBlocksDi';
 import { usesBaseTenDi } from './baseTenScript';
-import { BRACKET_LEVER, COUNTS_LEVER, PLAINER_LEVER, TOTAL_LEVER, baseTenLevers, leverFacts, plainerNumber,
-  startLevers } from './baseTenLevers';
+import { BRACKET_LEVER, COUNTS_LEVER, PLAINER_LEVER, SIMPLER_OP_LEVER, TOTAL_LEVER, baseTenLevers, isOperate as isOperateType,
+  leverFacts, plainerNumber, simplerOperation, startLevers } from './baseTenLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -340,11 +340,12 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
   const isReadBlocks = currentChallenge?.type === 'read_blocks';
   // On build_number the counts and the total are levers; the tier only sets where they start.
   const isBuild = currentChallenge?.type === 'build_number';
-  const showColumnCounts = isReadBlocks ? false : isBuild ? pulledLevers.includes(COUNTS_LEVER) : (currentChallenge?.showColumnCounts ?? true);
+  const isOperate = isOperateType(currentChallenge?.type);
+  const showColumnCounts = isReadBlocks ? false : isBuild || isOperate ? pulledLevers.includes(COUNTS_LEVER)
+    : (currentChallenge?.showColumnCounts ?? true);
   // Operate never shows its total at any tier (contract R13): once the learner models the operation, the
   // total IS the typed answer, whatever the flag says. build_number keeps the default (R10).
   const bracketOn = pulledLevers.includes(BRACKET_LEVER);
-  const isOperate = currentChallenge?.type === 'add_with_blocks' || currentChallenge?.type === 'subtract_with_blocks';
   const showBlocksTotal = isReadBlocks || isOperate ? false : isBuild ? pulledLevers.includes(TOTAL_LEVER)
     : (currentChallenge?.showBlocksTotal ?? true);
 
@@ -609,14 +610,22 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
         if (practice || !sessionChallenge || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
-        if (id === PLAINER_LEVER) {
-          const plain = plainerNumber(sessionChallenge.targetNumber);
-          if (plain === null) return 'There is no plainer number for this item.';
-          const easier: PlainChallenge = { ...sessionChallenge, id: `${sessionChallenge.id}~plainer`, targetNumber: plain,
-            instruction: `Build the number ${plain} with blocks.` };
+        if (id === PLAINER_LEVER || id === SIMPLER_OP_LEVER) {
+          let easier: PlainChallenge;
+          if (id === PLAINER_LEVER) {
+            const plain = plainerNumber(sessionChallenge.targetNumber);
+            if (plain === null) return 'There is no plainer number for this item.';
+            easier = { ...sessionChallenge, id: `${sessionChallenge.id}~plainer`, targetNumber: plain,
+              instruction: `Build the number ${plain} with blocks.` };
+          } else {
+            const simpler = simplerOperation(sessionChallenge);
+            if (simpler === null) return 'There is no operation with fewer trades for this item.';
+            easier = { ...sessionChallenge, id: `${sessionChallenge.id}~simpler`, targetNumber: simpler.targetNumber,
+              secondNumber: simpler.second, instruction: simpler.instruction };
+          }
           setLeverState(pulled);
           practiceRef.current = easier; setPractice(easier);
-          setColumns(startColumnsFor(easier)); setRegroupCount(0); setFeedback(''); setFeedbackType('');
+          setColumns(startColumnsFor(easier)); setRegroupCount(0); setFeedback(''); setFeedbackType(''); setTypedAnswer('');
           return { practice: plainWorkspaceAssignment(easier) };
         }
         setLeverState(pulled);
@@ -624,7 +633,7 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
       },
       endPractice: () => {
         practiceRef.current = null; setPractice(null);
-        setColumns(startColumnsFor(sessionChallenge)); setRegroupCount(0); setFeedback(''); setFeedbackType('');
+        setColumns(startColumnsFor(sessionChallenge)); setRegroupCount(0); setFeedback(''); setFeedbackType(''); setTypedAnswer('');
       },
     };
   });

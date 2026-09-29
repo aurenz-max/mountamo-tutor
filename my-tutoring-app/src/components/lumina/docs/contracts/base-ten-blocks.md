@@ -149,6 +149,11 @@ Not a consumer: K teen numbers. The math-k atlas routes teens to ten-frame/numbe
 - **Leak rules (code, `baseTenLevers.test.ts`):** counts and total are the learner's own blocks on a mode whose number is printed; never on operate (R13); the bracket carries no count; the plainer number is never the number or its reversal (all numbers to 999 checked); no lever text or scene fact carries a number.
 - **Evidence:** `baseTenLevers.test.ts`, `BaseTenBlocks.levers.workspace.test.tsx` (3), sweep J1-J9 (the journey's wrong build is now the documented untraded ten), replay 4 payloads x 5 clean (`qa/tutor-reports/replay/base-ten-blocks-2026-09-28.json`).
 
+### R22 — in-item levers on operate (slice 2) · IMPLEMENTED 2026-09-28
+- **Property:** on add_with_blocks and subtract_with_blocks `baseTenLevers.ts` declares `column_counts` (help, answers `one_short`/`one_over`; the tier's `showColumnCounts` is its starting position), `ten_bracket` (help, answers `one_ten_off`, a carry left as ten ones; offered only while a learner column holds ten or more) and `single_regroup` (simplify, answers `one_ten_off`/`short_by_more`/`over_by_more`: an ungraded operation with one carry or borrow fewer, floor one, then the full item on an empty mat with the keypad cleared). No total lever (R13). `digits_swapped` is in the catalog's `unanswered` list. The carry/borrow builders moved from the generator to `baseTenOperands.ts`, with the random source as a parameter; the lever seeds it from the item, so a pull always builds the same practice operation.
+- **Leak rules (code, `baseTenLevers.test.ts`):** the practice operation has the item's place count, exactly one regroup fewer, M > S, and never the item's operands (either order) or its result (400 built items); an item with one regroup offers no simplify; no lever text carries a number.
+- **Evidence:** `BaseTenBlocks.levers.workspace.test.tsx` (2 operate cases), sweep J1-J9 on the operate payload (its wrong answer is now a lost carry after modelling both numbers), replay 4 payloads x 5 clean (`qa/tutor-reports/replay/base-ten-blocks-2026-09-28.json`; operate records `one_ten_off` → `ten_bracket`).
+
 ## Conflicts
 
 _None open._ Notes for the four M1 fixes and the lever slice:
@@ -174,6 +179,8 @@ Proposed only; not applied.
 - **tutoring (outside the curator prompt):** the `aiDirectives` "CHALLENGE TYPE COACHING" line says "For READ_BLOCKS: … Count each column and combine", which contradicts R6 (the child never composes the number), and "For REGROUP: Trade 10 ones for 1 ten!", which names the trade (R14's concern). `scaffoldingLevels` level2 and level3 recite the column counts and `{{currentTotal}}`, which is the answer on read_blocks. No reference to these fields was found under `components/live-activity/runtime/` (not verified at runtime). Both surfaces are workspace-only, so these lines may be unread; confirm before trimming.
 
 ## Changelog
+
+- 2026-09-28 — R22 added (operate levers). Compatible: an untiered operate deck renders as before (counts start pulled, no total); the generator draws the same operands through the moved builders (`Math.random` stays their default).
 
 - 2026-09-28 — R21 added (build_number levers). Compatible: an untiered or easy build renders as before (counts and total start pulled); catalog guidance trimmed by one clause to stay under the 2000-character cap with the lever doctrine; the W1 test's tool list gains `pull_lever` on build_number only.
 

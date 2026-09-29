@@ -17,6 +17,8 @@ import {
   type ChallengeTypeDoc,
 } from '../evalMode';
 import { createNumberPool } from './numberPoolService';
+import { analyzeBorrows, buildAdditionOperands, buildSubtractionOperands, countCarries, fromDigits, randInt, toDigits }
+  from '../../primitives/visual-primitives/math/baseTenOperands';
 import { BASE_TEN_DI_TYPE_DOCS, isBaseTenDiChallengeType } from '../../primitives/visual-primitives/math/baseTenModes';
 import { isAskableTarget, MAX_TARGET, MIN_TARGET } from '../../primitives/visual-primitives/math/baseTenScript';
 import type { BtMode } from '../../primitives/visual-primitives/math/baseTenModel';
@@ -280,14 +282,7 @@ function resolveProblemShape(type: string, tier: SupportTier, places: number): P
 // it), keeping every number `places`-digit (= in band). Digit arrays are
 // ones-first to match the component's place-value reading.
 
-const randInt = (lo: number, hi: number): number => lo + Math.floor(Math.random() * (Math.max(lo, hi) - lo + 1));
-const fromDigits = (digits: number[]): number => digits.reduce((n, d, i) => n + d * Math.pow(10, i), 0);
-const toDigits = (num: number, places: number): number[] => {
-  const out: number[] = [];
-  let n = Math.abs(Math.floor(num));
-  for (let i = 0; i < places; i++) { out.push(n % 10); n = Math.floor(n / 10); }
-  return out;
-};
+// Digit helpers and the carry/borrow builders live in baseTenOperands.ts (the runtime simplify lever uses them too).
 
 /**
  * Build a `places`-digit number with EXACTLY `zeros` interior zero columns.
@@ -328,110 +323,6 @@ function countInteriorZeros(num: number, places: number): number {
   return zeros;
 }
 
-/** Pick [da, db] with da∈[aMin,9], db∈[bMin,9], da+db within [sumLo,sumHi]. */
-function pickPair(sumLo: number, sumHi: number, aMin: number, bMin: number): [number, number] {
-  const lo = Math.max(sumLo, aMin + bMin);
-  const hi = Math.min(Math.max(sumHi, lo), 18);
-  const sum = randInt(lo, hi);
-  const daLo = Math.max(aMin, sum - 9);
-  const daHi = Math.min(9, sum - bMin);
-  const da = randInt(daLo, daHi);
-  const db = Math.min(9, Math.max(bMin, sum - da));
-  return [da, db];
-}
-
-/**
- * Build two `places`-digit addends whose column addition produces EXACTLY
- * `carries` carry events, with NO carry out of the top column (sum stays
- * `places`-digit → in band). The lowest `carries` columns carry. When `chained`,
- * the highest carrying column carries only via the incoming carry (digits sum 9).
- */
-function buildAdditionOperands(places: number, carries: number, chained: boolean): [number, number] {
-  const a = new Array(places).fill(0);
-  const b = new Array(places).fill(0);
-  let carryIn = 0;
-  for (let i = 0; i < places; i++) {
-    const top = i === places - 1;
-    const aMin = top ? 1 : 0;
-    const bMin = top ? 1 : 0;
-    let da: number, db: number;
-    if (i < carries) {
-      const isChainTop = chained && i === carries - 1 && carryIn === 1;
-      const sumLo = isChainTop ? 9 : Math.max(10 - carryIn, aMin + bMin);
-      const sumHi = isChainTop ? 9 : 16;
-      [da, db] = pickPair(sumLo, sumHi, aMin, bMin);
-      carryIn = 1;
-    } else {
-      [da, db] = pickPair(aMin + bMin, 9 - carryIn, aMin, bMin);
-      carryIn = 0;
-    }
-    a[i] = da; b[i] = db;
-  }
-  return [fromDigits(a), fromDigits(b)];
-}
-
-/**
- * Build minuend & subtrahend (`places`-digit) whose subtraction needs EXACTLY
- * `borrows` borrow events, with NO borrow out of the top column (M > S, both in
- * band). When `crossZero`, the minuend's tens digit is forced to 0 so the
- * ones-place borrow cascades across the zero (e.g. 305 − 78).
- */
-function buildSubtractionOperands(places: number, borrows: number, crossZero: boolean): [number, number] {
-  const m = new Array(places).fill(0);
-  const s = new Array(places).fill(0);
-  let borrowIn = 0;
-  for (let i = 0; i < places; i++) {
-    const top = i === places - 1;
-    const mMin = top ? 1 : 0;
-    const sMin = top ? 1 : 0;
-    let md: number, sd: number;
-    if (i < borrows) {
-      if (crossZero && i === 1) {
-        md = 0; // force the across-zero column
-        sd = randInt(Math.max(1, sMin), 9);
-      } else {
-        md = randInt(mMin, 8);
-        const effM = md - borrowIn;
-        sd = randInt(Math.max(sMin, effM + 1, 1), 9);
-        if (sd <= effM) sd = Math.min(9, effM + 1);
-      }
-      borrowIn = 1;
-    } else {
-      // No borrow: effective M (md - borrowIn) >= sd. TOP column forces STRICT
-      // inequality so the whole minuend exceeds the subtrahend (M > S) even when
-      // every lower column is equal (else a 0-borrow problem could land M == S).
-      sd = randInt(sMin, 7);
-      const slack = top ? 1 : 0;
-      md = randInt(Math.max(mMin, sd + borrowIn + slack), 9);
-      borrowIn = 0;
-    }
-    m[i] = md; s[i] = sd;
-  }
-  return [fromDigits(m), fromDigits(s)];
-}
-
-/** Count carry events when adding a + b across `places` columns. */
-function countCarries(a: number, b: number, places: number): number {
-  const da = toDigits(a, places), db = toDigits(b, places);
-  let carry = 0, n = 0;
-  for (let i = 0; i < places; i++) {
-    if (da[i] + db[i] + carry >= 10) { carry = 1; n++; } else carry = 0;
-  }
-  return n;
-}
-
-/** Count borrow events for m − s and flag whether any borrow crosses a zero. */
-function analyzeBorrows(m: number, s: number, places: number): { borrows: number; crossesZero: boolean } {
-  const dm = toDigits(m, places), ds = toDigits(s, places);
-  let borrow = 0, n = 0, crossesZero = false;
-  for (let i = 0; i < places; i++) {
-    if (dm[i] - borrow < ds[i]) {
-      if (i + 1 < places && dm[i + 1] === 0) crossesZero = true;
-      borrow = 1; n++;
-    } else borrow = 0;
-  }
-  return { borrows: n, crossesZero };
-}
 
 /**
  * Combined tier prompt block: scaffolding tone (resolveSupportStructure) PLUS

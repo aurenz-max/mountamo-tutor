@@ -114,6 +114,12 @@ in slot two on 10/10 items and `1, _, 3, 4` was served two or three times per
 session). Probe: two `/api/lumina/eval-test?componentId=number-sequencer&evalMode=fill_missing`
 draws — every window distinct, blanks covering at least three slots.
 
+### R11 — order_cards levers name no card's place · OBSERVED (2026-09-28)
+- **Property:** order_cards publishes `train_steps` (wordless bars over the places, growing left to right; never a card), `card_marks` (each card's amount as sticks of ten and dots, only when every card is 100 or less) and `three_cards` (simplify: three cards 3 or more apart, none of the item's, within 9 of its range and under the band ceiling, laid out so R9 holds, built through `sequencerItemsForChallenge`, ungraded, then the full item). Every order miss is answered (J9). The spoken modes publish no levers yet.
+- **Demanded by:** handoff 21 M2.
+- **Evidence:** `numberSequencerLevers.test.ts` 7, `NumberSequencer.levers.workspace.test.tsx` 2, sweep J1-J9 on all six payloads, replay order_cards 1 x 5 clean.
+- **Probe:** those two test files; `journeySweep -t number-sequencer`.
+
 ## Conflict resolved by 14h
 
 The prior catalog/generator ceiling (Grade 1 ≤100) was valid for generic practice
@@ -203,3 +209,4 @@ student-data slice. Evidence: `qa/tutor-reports/number-sequencer-blend-pin-2026-
 - 2026-09-27 — a wrong order-cards arrangement names its miss (`orderMiss` in `numberSequencerDomain.ts`,
   handoff 20 A2). Compatible: no requirement changed, no verdict changed (the miss runs after `sameOrder`).
 - 2026-09-27 — handoff 19 (shared runtime, `/add-live-tutor-tools`): the workspace reads the eval mode from the wrapper's lesson pin, not a mode rebuilt in this primitive (slice 1), and publishes the scene after every render, so the scene setter drops its publish call and default fields (slice 3). Wiring only: no content, check, miss, verdict or tutor input changed; the sweep over saved payloads (J1-J8) and this primitive's tests pass. Compatible: no requirement changed.
+- 2026-09-28 — R11 (`/add-support-tiers`, handoff 21 M2): order_cards levers. Compatible: R9 holds on the easier train (built through the same gates); R6 keys untouched; the tutor now sees `pull_lever` on order_cards only.
