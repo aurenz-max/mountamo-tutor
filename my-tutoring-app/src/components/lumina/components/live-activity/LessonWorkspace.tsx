@@ -157,7 +157,10 @@ function LessonWorkspaceBridge({ handler, progress }: {
       if (abort.signal.aborted) return;
       if (receipt.status !== 'visible') { opened = false; return; }
       transport.current?.publish();
-      aiRef.current.sendText('The learner is viewing the current lesson workspace. Call observe_runtime to receive its current task and ongoing updates, then continue teaching naturally. If completed, let the learner use Next. Do not read state or answers aloud.', { silent: true });
+      // Speech first, tool second: a turn whose only speech is the reply to observe_runtime's result
+      // came back as `<no speech>{pause}` in 4 of 8 lesson openings on 2026-09-28 (counting-board,
+      // phoneme-explorer). The task is already in this turn's attached state, so the tool can follow.
+      aiRef.current.sendText('The learner is viewing the current lesson workspace. In this turn, say one short sentence that poses the current task to the learner, then call observe_runtime to receive ongoing updates. If completed, let the learner use Next. Do not read state or answers aloud.', { silent: true });
     };
     const off = host.runtime.subscribe(() => { void introduce(); });
     void introduce();

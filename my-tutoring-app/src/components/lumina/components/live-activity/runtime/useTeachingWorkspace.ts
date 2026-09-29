@@ -242,7 +242,9 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
             return refusal ?? applied;
           }, true);
         if (w?.canPresent && latest.current.onPresentStimulus && s.phase === 'working') operation('present',
-          'Present this timed stimulus. Use only after preparing the learner; a repeat is assisted practice. No parameters.', input =>
+          // Nothing re-prompts the tutor after the receipt: add-sub 09-28 told the story around present and never asked.
+          'Present this timed stimulus. Use only after preparing the learner; a repeat is assisted practice. No parameters. '
+          + 'Nothing prompts you after it: once it is visible, say the rest of the task, ending with its question, in that same turn.', input =>
           !input?.targets?.length && present(), presentations.current.has(i.id));
         if (i.response === 'speech' && pendingSpeech.current) actions.push({ controller: 'observer',
           action: { type: 'workspace', operation: 'apply_tutor_verdict' },

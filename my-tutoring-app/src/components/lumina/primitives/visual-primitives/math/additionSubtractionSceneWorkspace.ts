@@ -80,7 +80,8 @@ export function additionSubtractionScene(item: AddSubSceneItem, view: AddSubView
   if (item.answerKind === 'gesture' && isEnacted(item)) facts.inPicture = view.inPicture;
   if (view.changeWaiting) {
     facts.changeGroup = `Only the first ${numberWordFor(item.startCount)} are in the picture. The ones that join arrive `
-      + 'when you use present, after you tell that part of the story.';
+      + 'when you use present, after you tell that part of the story. Then, in the same turn, finish the task: '
+      + 'the rest of the story and its question.';
   }
   facts.constraints = item.kind === 'build-equation'
     ? 'The learner builds the number sentence from tiles; it is checked when they stop. You cannot place tiles.'
