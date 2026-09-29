@@ -20,7 +20,7 @@ import type { SpatialSceneMetrics } from '../../../evaluation/types';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { describeSpatialCheck, hearSceneQuestionRequest, spatialAssignment, spatialMiss, spatialScene } from './spatialSceneWorkspace';
+import { describeSpatialCheck, hearSceneQuestionRequest, placeCellCorrect, spatialAssignment, spatialMiss, spatialScene } from './spatialSceneWorkspace';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -68,6 +68,9 @@ export interface SpatialSceneChallenge {
   // place_between — "Put the ball between the box and the tree" → an EMPTY cell with
   //   one reference on each side; referenceObjectName + referenceObjectName2 name them.
   correctCell?: { row: number; col: number };
+  /** `place` only: every empty cell where the position word holds for the reference (code-derived, RP-5).
+   *  Absent on older payloads, which are judged by `correctCell` alone. */
+  acceptableCells?: Array<{ row: number; col: number }>;
 
   /** Second reference object — `place_between` only (the checker is still cell-based). */
   referenceObjectName2?: string;
@@ -507,8 +510,7 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId }: SpatialScen
   /** Cell-judged modes: `place`, `place_in` (container's cell) and `place_between`. */
   const handleCheckPlace = useCallback(() => {
     if (!currentChallenge || !selectedCell) return false;
-    const target = currentChallenge.correctCell;
-    const correct = target ? selectedCell.row === target.row && selectedCell.col === target.col : false;
+    const correct = placeCellCorrect(currentChallenge, selectedCell);
 
     if (correct) {
       SoundManager.playCorrect();

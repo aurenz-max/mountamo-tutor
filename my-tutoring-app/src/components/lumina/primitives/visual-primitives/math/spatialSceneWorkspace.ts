@@ -62,8 +62,8 @@ export const describeSpatialCheck = (c: SpatialSceneChallenge, view: { option?: 
  *     the container), `away_from_container`;
  *   - place_between: `next_to_one` (a cell touching one of the two references, not the gap), `touches_neither`;
  *   - follow_directions: `later_step_cell` (the cell a later direction asks for), `other_cell`.
- * `place` names none: the challenge stores only the target cell, not the reference or the word, so a check
- * can say no more than "another cell". describe_scene is spoken (Part B).
+ * `place` names none yet. Since RP-5 its challenge carries the reference and the word, so misses could be named
+ * the way identify's are; not built. describe_scene is spoken (Part B).
  */
 export type SpatialMiss = 'opposite_word' | 'same_axis_word' | 'other_axis_word' | 'other_object' | 'next_to_container'
   | 'away_from_container' | 'next_to_one' | 'touches_neither' | 'later_step_cell' | 'other_cell';
@@ -74,6 +74,12 @@ const WORD_STEP: Record<string, Cell> = { above: { row: -1, col: 0 }, on: { row:
 const VERTICAL = new Set(['above', 'below', 'on', 'under']);
 const same = (a: Cell, b: Cell) => a.row === b.row && a.col === b.col;
 const touches = (a: Cell, b: Cell) => Math.abs(a.row - b.row) + Math.abs(a.col - b.col) === 1;
+
+/** Cell-judged modes: `place` credits any of its code-derived `acceptableCells` (RP-5); the others, `correctCell`. */
+export function placeCellCorrect(c: SpatialSceneChallenge, cell: Cell): boolean {
+  const cells = c.type === 'place' && c.acceptableCells?.length ? c.acceptableCells : c.correctCell ? [c.correctCell] : [];
+  return cells.some(t => same(t, cell));
+}
 
 export function spatialMiss(c: SpatialSceneChallenge, view: { option?: string | null; cell?: Cell | null; step?: number }): SpatialMiss | undefined {
   const at = (name?: string) => c.sceneObjects.find(o => o.name === name)?.position;
@@ -160,6 +166,8 @@ export function spatialHarnessInputs(c: SpatialSceneChallenge, wrong: boolean, g
       return [{ type: 'choose', label: positionLabel(pick) }, { type: 'check' }];
     }
     case 'place': case 'place_in': case 'place_between':
+      // A wrong placement is an empty cell no right answer occupies.
+      (c.acceptableCells ?? []).forEach(a => occupied.add(`${a.row}-${a.col}`));
       return [{ type: 'touch', target: wrong ? emptyExcept(c.correctCell) : `cell-${c.correctCell!.row}-${c.correctCell!.col}` },
         { type: 'check' }];
     case 'follow_directions': {

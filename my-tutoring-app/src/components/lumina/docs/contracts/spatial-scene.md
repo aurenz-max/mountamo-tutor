@@ -352,3 +352,11 @@ The 2026-06-07 curriculum-fit sweep scored this entry **0.766 "diffuse"** and fl
   2 conflicts (C1 resolved same slice, C2 open). Edit guard run for the LA preposition
   window: **COMPATIBLE** — R1/R5/R7/R9 re-probed post-edit (probe E: 11 challenges,
   4 modes, 0 out-of-window, `nObj=4`), R2/R3 newly established.
+- 2026-09-29 — handoff 28 row 4, RP-5 (`/eval-fix`): `place` answer is code-derived, like place_in/place_between. The schema
+  carries `referenceName` + `positionWord` (no cell); code builds the instruction and `acceptableCells`, every EMPTY cell where
+  `positionHolds(word, cell, reference)` is true, and rejects a challenge where there is none. `correctCell` = the nearest
+  acceptable cell (success highlight, harness). The checker (`placeCellCorrect`) credits any acceptable cell; payloads without
+  `acceptableCells` are judged by `correctCell` as before. **R3** now holds by construction for `place` (its probe recomputes
+  `acceptableCells`); **R11** holds (only empty cells qualify); **R8** unchanged (the checker reads no show-flag).
+  `--check` **COMPATIBLE**: 15/15 real challenges recompute (K ×3, G1, G2), spatial-scene vitest 56 + workspace 6, journey
+  sweep green on all seven spatial-scene payloads (place payload regenerated).

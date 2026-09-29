@@ -1,47 +1,47 @@
 {
- "source": "qa/tutor-reports/spatial-scene-runtime-place-payload-2026-09-28.json",
+ "source": "qa/tutor-reports/spatial-scene-runtime-place-payload-2026-09-29.json",
  "primitiveId": "spatial-scene",
  "evalMode": "place",
  "data": {
   "title": "Spatial Scene: Position words: above, below, beside and next to",
-  "description": "Explore spatial relationships with a a classroom with furniture and toys",
+  "description": "Explore spatial relationships with a a park with playground equipment",
   "challenges": [
    {
     "id": "c1",
     "type": "place",
-    "instruction": "Put the ball directly above the box.",
-    "hint": "Look for the box. The ball goes in the empty space right above it!",
+    "instruction": "Put the ball below the tree.",
+    "hint": "Look for the tree, then tap the empty space just underneath it.",
     "sceneObjects": [
-     {
-      "name": "box",
-      "image": "\ud83d\udce6",
-      "position": {
-       "row": 2,
-       "col": 1
-      }
-     },
-     {
-      "name": "chair",
-      "image": "\ud83e\ude91",
-      "position": {
-       "row": 0,
-       "col": 0
-      }
-     },
-     {
-      "name": "car",
-      "image": "\ud83d\ude97",
-      "position": {
-       "row": 1,
-       "col": 2
-      }
-     },
      {
       "name": "tree",
       "image": "\ud83c\udf33",
       "position": {
        "row": 0,
+       "col": 1
+      }
+     },
+     {
+      "name": "flower",
+      "image": "\ud83c\udf38",
+      "position": {
+       "row": 1,
+       "col": 0
+      }
+     },
+     {
+      "name": "house",
+      "image": "\ud83c\udfe0",
+      "position": {
+       "row": 2,
        "col": 2
+      }
+     },
+     {
+      "name": "dog",
+      "image": "\ud83d\udc15",
+      "position": {
+       "row": 2,
+       "col": 0
       }
      }
     ],
@@ -53,31 +53,106 @@
       "col": 0
      }
     },
-    "correctPosition": "above",
+    "correctPosition": "below",
+    "referenceObjectName": "tree",
     "correctCell": {
      "row": 1,
      "col": 1
-    }
+    },
+    "acceptableCells": [
+     {
+      "row": 1,
+      "col": 1
+     },
+     {
+      "row": 2,
+      "col": 1
+     }
+    ]
    },
    {
     "id": "c2",
     "type": "place",
-    "instruction": "Put the star below the flower.",
-    "hint": "Find the flower first. The star should go in the empty space lower down in the same column.",
+    "instruction": "Put the cat next to the house.",
+    "hint": "Find the house first, then place your cat in the empty space beside it.",
+    "sceneObjects": [
+     {
+      "name": "house",
+      "image": "\ud83c\udfe0",
+      "position": {
+       "row": 1,
+       "col": 1
+      }
+     },
+     {
+      "name": "tree",
+      "image": "\ud83c\udf33",
+      "position": {
+       "row": 0,
+       "col": 0
+      }
+     },
+     {
+      "name": "ball",
+      "image": "\u26bd",
+      "position": {
+       "row": 2,
+       "col": 2
+      }
+     },
+     {
+      "name": "flower",
+      "image": "\ud83c\udf38",
+      "position": {
+       "row": 2,
+       "col": 0
+      }
+     }
+    ],
+    "targetObject": {
+     "name": "cat",
+     "image": "\ud83d\udc31",
+     "position": {
+      "row": 0,
+      "col": 0
+     }
+    },
+    "correctPosition": "next_to",
+    "referenceObjectName": "house",
+    "correctCell": {
+     "row": 1,
+     "col": 0
+    },
+    "acceptableCells": [
+     {
+      "row": 1,
+      "col": 0
+     },
+     {
+      "row": 1,
+      "col": 2
+     }
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "place",
+    "instruction": "Put the star above the flower.",
+    "hint": "Find the flower on the park grass, then look straight up for the empty spot.",
     "sceneObjects": [
      {
       "name": "flower",
       "image": "\ud83c\udf38",
       "position": {
-       "row": 0,
-       "col": 1
+       "row": 2,
+       "col": 2
       }
      },
      {
-      "name": "house",
-      "image": "\ud83c\udfe0",
+      "name": "tree",
+      "image": "\ud83c\udf33",
       "position": {
-       "row": 2,
+       "row": 0,
        "col": 0
       }
      },
@@ -85,15 +160,15 @@
       "name": "dog",
       "image": "\ud83d\udc15",
       "position": {
-       "row": 2,
+       "row": 0,
        "col": 2
       }
      },
      {
-      "name": "cat",
-      "image": "\ud83d\udc31",
+      "name": "house",
+      "image": "\ud83c\udfe0",
       "position": {
-       "row": 0,
+       "row": 1,
        "col": 0
       }
      }
@@ -107,63 +182,17 @@
      }
     },
     "correctPosition": "above",
-    "correctCell": {
-     "row": 1,
-     "col": 1
-    }
-   },
-   {
-    "id": "c3",
-    "type": "place",
-    "instruction": "Put the cat next to the chair.",
-    "hint": "Locate the chair. Place the cat in the empty cell right beside it on the same row!",
-    "sceneObjects": [
-     {
-      "name": "chair",
-      "image": "\ud83e\ude91",
-      "position": {
-       "row": 1,
-       "col": 1
-      }
-     },
-     {
-      "name": "tree",
-      "image": "\ud83c\udf33",
-      "position": {
-       "row": 0,
-       "col": 0
-      }
-     },
-     {
-      "name": "box",
-      "image": "\ud83d\udce6",
-      "position": {
-       "row": 2,
-       "col": 2
-      }
-     },
-     {
-      "name": "flower",
-      "image": "\ud83c\udf38",
-      "position": {
-       "row": 0,
-       "col": 2
-      }
-     }
-    ],
-    "targetObject": {
-     "name": "cat",
-     "image": "\ud83d\udc31",
-     "position": {
-      "row": 0,
-      "col": 0
-     }
-    },
-    "correctPosition": "above",
+    "referenceObjectName": "flower",
     "correctCell": {
      "row": 1,
      "col": 2
-    }
+    },
+    "acceptableCells": [
+     {
+      "row": 1,
+      "col": 2
+     }
+    ]
    }
   ],
   "gridSize": 3,

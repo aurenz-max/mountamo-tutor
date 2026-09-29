@@ -93,3 +93,20 @@ it('describe_scene is spoken, judged on relation and reference; the model shows 
 it('the adapter refuses a word choice whose options lack the answer', () => {
   expect(() => LIVE_ADAPTERS['spatial-scene'].validate(scene([{ ...IDENTIFY, options: ['below', 'beside'] }]))).toThrow();
 });
+
+// RP-5: "above the box" with the box in the bottom row: (1,1) and (0,1) are both right.
+const PLACE_ABOVE: SpatialSceneChallenge = { id: 'pl1', type: 'place', instruction: 'Put the ball above the box.',
+  sceneObjects: objects, targetObject: ball, correctPosition: 'above', referenceObjectName: 'box',
+  correctCell: { row: 1, col: 1 }, acceptableCells: [{ row: 0, col: 1 }, { row: 1, col: 1 }] };
+
+it('place credits any cell the word describes, not only the nearest; a cell beside is still wrong', () => {
+  const far = mountWorkspace({ primitiveId: 'spatial-scene', evalMode: 'place', data: scene([PLACE_ABOVE]) });
+  cell(far, 0, 1);
+  act(() => { fireEvent.click(screen.getByRole('button', { name: /check/i })); });
+  expect(far.state().task!.evidence.correctness).toBe('correct');
+  cleanup();
+  const beside = mountWorkspace({ primitiveId: 'spatial-scene', evalMode: 'place', data: scene([PLACE_ABOVE]) });
+  cell(beside, 2, 2);
+  act(() => { fireEvent.click(screen.getByRole('button', { name: /check/i })); });
+  expect(beside.state().task!.evidence.correctness).toBe('incorrect');
+});

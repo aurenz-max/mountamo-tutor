@@ -18,6 +18,7 @@ import {
   placeAnswerSlot,
   resolveRequestedModes,
   resolveBetweenCell,
+  positionHolds,
   SUPPORTED_POSITION_SEMANTICS,
   type RelativePosition,
 } from "./spatial-scene/resolvePrepositionScope";
@@ -37,7 +38,7 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   place: {
     promptDoc:
       `"place": Student taps a grid cell to place an object at the described position: `
-      + `'Put the ball above the box'. Set correctCellRow/correctCellCol to the target cell.`,
+      + `'Put the ball above the box'. Set referenceName and positionWord; code finds the cells.`,
     schemaDescription: "'place' (tap grid cell to place object)",
   },
   describe: {
@@ -404,10 +405,10 @@ const placeSchema: Schema = {
           ...sceneObjFields(PLACE_SLOTS),
           targetName: { type: Type.STRING, description: "Target object name (student places this)" },
           targetImage: { type: Type.STRING, description: "Target object emoji" },
-          correctCellRow: { type: Type.NUMBER, description: "Correct row for placement (0-2)" },
-          correctCellCol: { type: Type.NUMBER, description: "Correct col for placement (0-2)" },
+          referenceName: { type: Type.STRING, description: "The scene object the position word is relative to (exactly as in its sceneObj slot)" },
+          positionWord: { type: Type.STRING, description: "Where the target goes relative to the reference (one of the lesson's position words)" },
         },
-        required: ["id", "instruction", "hint", ...sceneObjRequiredFields(PLACE_SLOTS), "targetName", "targetImage", "correctCellRow", "correctCellCol"],
+        required: ["id", "instruction", "hint", ...sceneObjRequiredFields(PLACE_SLOTS), "targetName", "targetImage", "referenceName", "positionWord"],
       },
     },
   },
@@ -661,8 +662,25 @@ CHALLENGE TYPE: ${modeLabel}
   return validChallenges.filter((c): c is NonNullable<typeof c> => c !== null);
 }
 
+/** How a `place` instruction says each position word. */
+const PLACE_PHRASE: Record<RelativePosition, string> = {
+  above: "above", below: "below", beside: "beside", next_to: "next to",
+  left_of: "to the left of", right_of: "to the right of", on: "on", under: "under",
+};
+
+/**
+ * `place` — "Put the ball above the box".
+ *
+ * RP-5 (2026-09-29): the LLM draws the scene and names a reference and a position
+ * word; CODE derives the answer, as place_in/place_between do. "Above"/"below" hold
+ * at any distance, so every EMPTY cell where the word holds is right
+ * (`acceptableCells`); `correctCell` is the nearest one, for the success highlight.
+ * The instruction is built from the word and the reference, so it cannot say one
+ * thing while the answer says another.
+ */
 async function generatePlace(
   topic: string, gradeLevel: string, theme: string, tierSection: string, sharedContext: string,
+  positionWindow: RelativePosition[],
 ): Promise<SpatialSceneChallenge[]> {
   const prompt = `
 Create 3 spatial reasoning "place" challenges for "${topic}" (${gradeLevel}).
@@ -674,9 +692,9 @@ CHALLENGE TYPE: place — student taps a grid cell to place an object.
 - Place 4 scene objects on a 3×3 grid as the existing scene (reference + backdrop objects).
 - ALL 4 scene object slots (sceneObj0..sceneObj3) MUST be filled — no empty slots.
 - Each scene object must occupy a UNIQUE grid cell.
-- Set targetName/targetImage for the object the student will place (do NOT set its row/col).
-- Set correctCellRow/correctCellCol for where the target should go (must be an EMPTY cell).
-- Instruction says something like "Put the ball above the box".
+- Set targetName/targetImage for the object the student will place (do NOT set its row/col). It must NOT already be on the grid.
+- Set referenceName to one scene object and positionWord to one of: ${positionWindow.join(", ")}.
+  There must be at least one EMPTY cell where positionWord holds for that reference.
 - Progress from easy to harder positions.
 `;
 
@@ -691,16 +709,8 @@ CHALLENGE TYPE: place — student taps a grid cell to place an object.
 
   const gridSize = 3;
   const validChallenges = (data.challenges as FlatObj[]).map((flat) => {
+    const challengeId = String(flat.id ?? `c${Math.random().toString(36).slice(2, 6)}`);
     const sceneObjects = collectSceneObjects(flat, PLACE_SLOTS, gridSize);
-    const targetObject: SceneObject = {
-      name: typeof flat.targetName === "string" ? flat.targetName : "ball",
-      image: typeof flat.targetImage === "string" ? flat.targetImage : "\u{26BD}",
-      position: { row: 0, col: 0 }, // placeholder — student places it
-    };
-    const correctCell = {
-      row: typeof flat.correctCellRow === "number" ? clampGrid(flat.correctCellRow, gridSize) : 0,
-      col: typeof flat.correctCellCol === "number" ? clampGrid(flat.correctCellCol, gridSize) : 0,
-    };
 
     // SS-1: Reject challenges where Gemini dropped all scene objects
     if (sceneObjects.length === 0) {
@@ -708,15 +718,55 @@ CHALLENGE TYPE: place — student taps a grid cell to place an object.
       return null;
     }
 
+    const reference = findObject(sceneObjects, flat.referenceName);
+    const word = String(flat.positionWord ?? "").trim().toLowerCase().replace(/\s+/g, "_") as RelativePosition;
+    if (!reference || !positionWindow.includes(word)) {
+      console.warn(
+        `[SpatialScene] place ${challengeId}: reference "${String(flat.referenceName)}" not on the grid or word `
+        + `"${String(flat.positionWord)}" outside [${positionWindow.join(", ")}] — rejected.`,
+      );
+      return null;
+    }
+    const targetName = typeof flat.targetName === "string" ? flat.targetName.trim() : "";
+    if (!targetName || findObject(sceneObjects, targetName)) {
+      console.warn(`[SpatialScene] place ${challengeId}: target "${targetName}" is missing or already on the grid — rejected.`);
+      return null;
+    }
+
+    // CODE OWNS THE ANSWER: every empty cell where the word holds for the reference.
+    const acceptableCells: Array<{ row: number; col: number }> = [];
+    for (let row = 0; row < gridSize; row++) {
+      for (let col = 0; col < gridSize; col++) {
+        const empty = !sceneObjects.some((o) => o.position.row === row && o.position.col === col);
+        if (empty && positionHolds(word, { row, col }, reference.position) === true) acceptableCells.push({ row, col });
+      }
+    }
+    if (!acceptableCells.length) {
+      console.warn(
+        `[SpatialScene] place ${challengeId}: no empty cell is ${word} the ${reference.name} `
+        + `(${reference.position.row},${reference.position.col}) — rejected.`,
+      );
+      return null;
+    }
+    const distance = (c: { row: number; col: number }) =>
+      Math.abs(c.row - reference.position.row) + Math.abs(c.col - reference.position.col);
+    const correctCell = acceptableCells.reduce((best, c) => (distance(c) < distance(best) ? c : best));
+
     return {
-      id: String(flat.id ?? `c${Math.random().toString(36).slice(2, 6)}`),
+      id: challengeId,
       type: "place" as const,
-      instruction: String(flat.instruction ?? "Place the object!"),
+      instruction: `Put the ${targetName} ${PLACE_PHRASE[word]} the ${reference.name}.`,
       hint: String(flat.hint ?? "Think about where things go!"),
       sceneObjects,
-      targetObject,
-      correctPosition: "above" as const, // not used for place, but satisfies type
+      targetObject: {
+        name: targetName,
+        image: typeof flat.targetImage === "string" ? flat.targetImage : "\u{26BD}",
+        position: { row: 0, col: 0 }, // placeholder — student places it
+      },
+      correctPosition: word,
+      referenceObjectName: reference.name,
       correctCell,
+      acceptableCells,
     };
   });
 
@@ -1346,7 +1396,7 @@ export const generateSpatialScene = async (
   }
   if (allowedTypes.includes("place")) {
     generators.push(
-      generatePlace(topic, gradeLevel, theme, tierSection, sharedContext)
+      generatePlace(topic, gradeLevel, theme, tierSection, sharedContext, positionWindow)
         .catch((e) => { console.error("[SpatialScene] place failed:", e); return []; }),
     );
   }

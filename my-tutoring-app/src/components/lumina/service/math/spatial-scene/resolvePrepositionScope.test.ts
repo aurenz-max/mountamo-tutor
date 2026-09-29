@@ -69,7 +69,8 @@ const SCENE_PAYLOAD = {
       targetName: 'ball', targetImage: '⚽', targetRow: 1, targetCol: 1,
       correctPosition: 'under', referenceObjectName: 'box',
       option0: 'under', option1: 'above', option2: 'beside', option3: 'below',
-      correctCellRow: 1, correctCellCol: 1,
+      // place: code derives the cells from the reference and the word (RP-5)
+      referenceName: 'box', positionWord: 'below',
       // place_in / place_between fields (same payload serves every mode)
       containerName: 'box',
       referenceAName: 'star', referenceBName: 'cat',
@@ -591,6 +592,38 @@ describe('spatial-scene generator — place_in (containment)', () => {
         (o) => o.position.row === c.correctCell?.row && o.position.col === c.correctCell?.col);
       expect(occupied).toBe(false);
     }
+  });
+
+  it('RP-5: `place` credits every empty cell the word describes, derived from the named reference', async () => {
+    resolverPayload = { requested: [], unsupported: [] };
+    const data = await generateSpatialScene(ctx({
+      scope: { topic: 'Positions', objectiveText: 'Describe positions above and below' },
+      raw: { targetEvalMode: 'place' },
+    }));
+    const c = data.challenges[0];
+    // box at (0,1); (1,1) and (2,1) are both empty and below it — both are right.
+    expect(c.acceptableCells).toEqual([{ row: 1, col: 1 }, { row: 2, col: 1 }]);
+    expect(c.correctCell).toEqual({ row: 1, col: 1 });
+    expect(c.instruction).toBe('Put the ball below the box.');
+    expect(c.referenceObjectName).toBe('box');
+  });
+
+  it('RP-5: a `place` challenge whose word holds for no empty cell is rejected, not guessed', async () => {
+    resolverPayload = { requested: [], unsupported: [] };
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    generateContent.mockImplementation((async (args: { contents?: unknown }) => {
+      const prompt = String(args?.contents ?? '');
+      if (prompt.includes(RESOLVER_SIGNATURE)) return { text: JSON.stringify(resolverPayload) };
+      // box sits in the top row: nothing is above it.
+      return { text: JSON.stringify({ challenges: [{ ...SCENE_PAYLOAD.challenges[0], positionWord: 'above' }] }) };
+    }) as never);
+    const data = await generateSpatialScene(ctx({
+      scope: { topic: 'Positions', objectiveText: 'Describe positions above and below' },
+      raw: { targetEvalMode: 'place' },
+    }));
+    expect(data.challenges.every((c) => c.type !== 'place' || c.instruction !== 'Put the ball above the box.')).toBe(true);
+    expect(warn.mock.calls.some((call) => String(call[0]).includes('no empty cell is above the box'))).toBe(true);
+    warn.mockRestore();
   });
 
   it('rejects a container nothing can go inside rather than teach "in" wrongly', async () => {
