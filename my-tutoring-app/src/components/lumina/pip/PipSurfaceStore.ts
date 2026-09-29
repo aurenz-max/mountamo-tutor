@@ -35,13 +35,18 @@ const sameSurface = (a: PipSurface, b: PipSurface) =>
 /** Which surface Pip joins is decided by events, never by a tutor connection:
  * the first surface to register, then whichever surface's pose last moved into
  * a non-idle phase (a start, a touch, a check, a cue). A host may also claim a
- * surface explicitly (the lesson's focused section, the tutor's active block).
+ * surface explicitly (the lesson's focused section, the tutor's active block),
+ * and once it has, only its claims move Pip. Engagement cannot stand in for a
+ * claim on a multi-section page: the tutor's audio is global, so every surface's
+ * pose moves when she speaks, and the last to publish (an off-screen section)
+ * would take Pip out of the one the child is working in.
  */
 export class PipSurfaceStore {
   private surfaces = new Map<string, PipSurface>();
   private listeners = new Set<() => void>();
   private version = 0;
   private activeId: string | null = null;
+  private claimed = false;
 
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);
@@ -53,6 +58,7 @@ export class PipSurfaceStore {
   /** Explicit claim by a host. A claim on a primitive with no surface parks Pip
    *  (the companion falls back to its perch) until a surface engages. */
   setActive(instanceId: string | null) {
+    this.claimed = instanceId !== null;
     if (this.activeId === instanceId) return;
     this.activeId = instanceId;
     this.emit();
@@ -65,14 +71,16 @@ export class PipSurfaceStore {
     if (previous && sameSurface(previous, surface)) return;
     this.surfaces.set(surface.instanceId, surface);
     const engaged = !!previous && !samePose(previous.pose, surface.pose) && surface.pose.phase !== 'idle';
-    if (this.activeId === null || engaged) this.activeId = surface.instanceId;
+    if (this.activeId === null || (engaged && !this.claimed)) this.activeId = surface.instanceId;
     this.emit();
   }
 
   remove(instanceId: string, dock: HTMLElement) {
     if (this.surfaces.get(instanceId)?.dock !== dock) return;
     this.surfaces.delete(instanceId);
-    if (this.activeId === instanceId) this.activeId = Array.from(this.surfaces.keys()).pop() ?? null;
+    // Under a claim, the next surface to publish takes Pip: a remounting section (or a regenerated
+    // primitive) republishes in the same commit, before an unrelated section can engage.
+    if (this.activeId === instanceId) this.activeId = this.claimed ? null : Array.from(this.surfaces.keys()).pop() ?? null;
     this.emit();
   }
 }

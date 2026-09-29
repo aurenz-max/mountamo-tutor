@@ -34,7 +34,7 @@ describe('Pip joins surfaces from their own events, with no tutor session', () =
     expect(listener).not.toHaveBeenCalled();
   });
 
-  it('lets a host claim, parks Pip on a claimed block without a surface, and falls back on removal', () => {
+  it('lets a host claim, parks Pip on a claimed block without a surface, and keeps the claim across a remount', () => {
     const store = new PipSurfaceStore();
     const a = dock('a'); const b = dock('b');
     store.publish(surface('a', working, a));
@@ -45,6 +45,32 @@ describe('Pip joins surfaces from their own events, with no tutor session', () =
     expect(store.getActive()).toBeNull();
     store.setActive('b');
     store.remove('b', b);
+    expect(store.getActive()).toBeNull();
+    const b2 = dock('b');
+    store.publish(surface('b', idle, b2));
+    expect(store.getActive()?.dock).toBe(b2);
+  });
+
+  it('keeps Pip in the claimed section when the tutor speaks and every surface engages', () => {
+    const store = new PipSurfaceStore();
+    const a = dock('a'); const b = dock('b');
+    store.publish(surface('a', working, a));
+    store.publish(surface('b', working, b));
+    store.setActive('a');
+    const introducing: PipPose = { phase: 'introducing', gesture: 'none' };
+    store.publish(surface('a', introducing, a));
+    store.publish(surface('b', introducing, b));
+    store.publish(surface('a', working, a));
+    store.publish(surface('b', working, b));
     expect(store.getActive()?.instanceId).toBe('a');
+  });
+
+  it('falls back to another surface on removal when no host has claimed', () => {
+    const store = new PipSurfaceStore();
+    const a = dock('a'); const b = dock('b');
+    store.publish(surface('a', working, a));
+    store.publish(surface('b', working, b));
+    store.remove('a', a);
+    expect(store.getActive()?.instanceId).toBe('b');
   });
 });

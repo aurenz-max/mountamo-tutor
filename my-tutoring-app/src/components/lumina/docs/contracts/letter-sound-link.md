@@ -21,6 +21,7 @@ cvc-speller 2026-09-27). No fresh census; channel [1] = the saved 2026-07-14 K c
 | Shared teaching workspace (tutor/JEV, LA-14) + live journey harness | live [2] + code | `qa/tutor-reports/letter-sound-link-teaching-2026-09-20.md`; `host-text-source-2026-09-21.md:40` (hear_see 3/3); `liveJourneySpec.ts:847-873` | 2026-09-21 |
 | Named misses for the trigger ladder (A5) | code [5] | `1a0cd42a`; catalog `teachingWorkspace.misses` (`literacy.ts:2635`) | 2026-09 |
 | Pip shared surface (scripted path) | code [5] | `c6f608e9`; `pip/letterSoundLinkPipPose.ts` | 2026-09-15 |
+| Pip shared surface (teaching workspace) | code [5] | `pip/LetterSoundLinkWorkspace.surface.test.tsx`; `LetterSoundLinkTeaching.tsx` | 2026-09-29 |
 
 Real-usage channel [4]: unknown (auth), not zero. With no authored consumer, every consumer is
 emergent (manifest routing) or a platform consumer (workspace, harness, misconception, PRE band).

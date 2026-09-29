@@ -40,7 +40,12 @@
  * neither, and the scene never says which picture sits under which card.
  */
 
-import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
+import { useSpeechScope } from '../../../pip/useSpeechScope';
+import { letterSoundLinkPipPose } from '../../../pip/letterSoundLinkPipPose';
+import { PIP_DOCK_CLASS } from '../../../pip/useWorkspacePipSurface';
 import { FAR_PAIR_LEVER, KEYWORDS_LEVER, VOICE_LEVER, cardKeywords, fartherPair, laterStimuli, letterSoundLevers,
   voiceModelFor } from './letterSoundLinkLevers';
 import { LuminaBadge, LuminaCard, LuminaCardContent, LuminaCardDescription, LuminaCardHeader,
@@ -190,10 +195,37 @@ function LinkWorkspace({ data, items, className, runtimePlanItemId }:
     };
   });
 
+  // ── Pip shared surface ────────────────────────────────────────────────────
+  // A projection of committed workspace state; Pip never answers, taps, or advances. The
+  // pose policy is the scripted mount's: the letter card on a spoken item, the two letter
+  // buttons only as a group on hear-see, and never a keyword picture (never registered).
+  const ai = useLuminaAIContext();
+  const tutorSpeaking = ai.isAudioPlaying && (ai.sessionMode !== 'lesson' || ai.activePrimitiveId === instance.current);
+  const speechOnItem = useSpeechScope(item.id, tutorSpeaking);
+  const [cuedItemId, setCuedItemId] = useState<string | null>(null);
+  useEffect(() => { if (speechOnItem) setCuedItemId(item.id); }, [speechOnItem, item.id]);
+  const latest = lesson.state.attempts[lesson.state.attempts.length - 1];
+  const pip = usePipTargets(item.id, lesson.canAttempt);
+  const pipStore = usePipSurface(() => {
+    if (!pip.dock.current || lesson.summary) return null;
+    const targets = pip.targets();
+    const cuedCurrentItem = cuedItemId === item.id || speechOnItem;
+    const pose = letterSoundLinkPipPose({
+      mode: item.mode, running: lesson.state.phase !== 'completed', preparing: false,
+      currentSolved: lesson.state.phase === 'checked' && !!lesson.state.lastResponse?.correct,
+      // The observer credits and advances in one commit: hold that credit over its praise tail.
+      revealHeld: !practice && !!latest?.correct && latest.itemId === items[lesson.state.index - 1]?.id && !cuedCurrentItem,
+      judging: false, tutorSpeaking, cueMatchesItem: !tutorSpeaking || speechOnItem,
+      visibleIds: targets.map(target => target.id), lastTouchedId: pip.lastTouchedId,
+    });
+    return { instanceId: instance.current, scopeId: item.id, label: 'Letter-sound link', dock: pip.dock.current, targets, pose };
+  });
+
   const tapLetter = (letter: string) => {
     // On the practice item the tap is checked by `checkPractice` and names its own miss.
     if (!gesture || !lesson.canAttempt || lesson.isBlocked()) return;
     SoundManager.tap();
+    pip.look(`option-${letter}`);
     setTapped(letter);
     lesson.submitGestureResponse(letter, letterSoundMiss(item, letter));
   };
@@ -223,13 +255,17 @@ function LinkWorkspace({ data, items, className, runtimePlanItemId }:
     <LuminaCardContent className="space-y-6">
       <LuminaChallengeCounter current={lesson.state.index + 1} total={items.length} variant="dots" />
       <div data-letter-stage={item.mode} className="flex flex-col items-center gap-5">
-        {printed !== null && <div data-letter-object="letter" data-pip-object="letter"
+        {printed !== null && <div ref={pip.ref('letter')} data-letter-object="letter" data-pip-object="letter"
           data-tutor-demonstration={marks.includes('letter')}
           aria-label={`The letter ${printed}`}
           className={`rounded-2xl border-2 border-white/15 bg-white/5 px-12 py-6 text-8xl font-bold ${letterColor(item.letter)} ${
             marks.includes('letter') ? 'outline outline-2 outline-dashed outline-offset-4 outline-purple-400' : ''}`}>
           {printed}
         </div>}
+
+        {/* Pip's dock sits below the letter card and above every answer surface (letter buttons,
+            keyword pictures), so a pointer to the letter never crosses a choice. */}
+        {pipStore && <div ref={pip.dock} data-pip-dock={instance.current} className={PIP_DOCK_CLASS} />}
 
         {/* voice_feel_model: a quiet and a buzzing sound on two pictures, never this item's letters. */}
         {voiceModel && <div data-lever="voice-model" className="flex items-center justify-center gap-6 rounded-2xl border border-amber-300/20 bg-amber-500/5 px-5 py-3">
@@ -242,13 +278,13 @@ function LinkWorkspace({ data, items, className, runtimePlanItemId }:
           ))}
         </div>}
 
-        {gesture && <div className="flex items-start justify-center gap-6 sm:gap-10">
+        {gesture && <div ref={pip.ref('options')} data-pip-object="options" className="flex items-start justify-center gap-6 sm:gap-10">
           {item.options.map(option => {
             const isTarget = option.value.toLowerCase() === item.answer.toLowerCase();
             const state = solved && isTarget ? 'correct'
               : tapped === option.value && !isTarget ? 'incorrect' : 'idle';
             return <button key={option.value} type="button" data-letter-option={option.value.toLowerCase()}
-              data-pip-object={`option-${option.value}`} data-tutor-demonstration={false}
+              ref={pip.ref(`option-${option.value}`)} data-pip-object={`option-${option.value}`} data-tutor-demonstration={false}
               disabled={!lesson.canAttempt} onClick={() => tapLetter(option.value)}
               aria-label={`Tap the letter ${option.value.toUpperCase()}`}
               className={`h-28 w-28 rounded-2xl border-2 text-5xl font-bold transition-all sm:h-32 sm:w-32 ${

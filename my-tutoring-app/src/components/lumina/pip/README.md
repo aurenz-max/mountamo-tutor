@@ -104,7 +104,7 @@ Objects hidden by a flash, the count-on basket, or removal are not published.
 | You & Me | both partners and the scene sentence as one region | one partner (the speaker highlight and actor marker are tier-withdrawn scaffolds) |
 | Story Bridge | the ringed friend when it is in the first story (match characters); the Venn detail; story one's event (compare events); both stories as one region otherwise | a choice card or button; the ringed friend in the second story (on a narrow screen the choices sit between it and the dock) |
 | Story Ribbon | the three-picture ribbon as a whole | one picture card (it would suggest which moment comes first) |
-| Letter-Sound Link | the big letter card (see-hear, keyword match); the letter buttons as one region (hear-see) | one letter button; a keyword picture |
+| Letter-Sound Link | the big letter card (see-hear, keyword match); the letter buttons as one region (hear-see); the tapped letter is watched. Both mounts (scripted and teaching workspace) share `letterSoundLinkPipPose` | one letter button; a keyword picture |
 | Syllable Clapper | the hear-it-again button (the word is never printed) | the reveal bar's parts |
 | Knowledge Check | the question card as a whole, on every item kind (judged surface only; the no-mic tap flow keeps the perch) | a choice, True/False card, sort group, word-bank word, or number-sentence token |
 | DI Letter Sounds | the whole stimulus, through the shared `DiTeachingStage` surface (`diStagePipPose`): a committed credit celebrates, held or advanced, until the new item's first utterance | the word's first letter |
