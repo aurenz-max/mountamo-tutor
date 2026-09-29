@@ -2,7 +2,7 @@
 
 import React, { useEffect, useId, useState } from 'react';
 import { CuratorCompanion } from './CuratorCompanion';
-import { TesterWorkspace } from './live-activity/TesterWorkspace';
+import { TesterWorkspace, testerBinds } from './live-activity/TesterWorkspace';
 import FractionBar from '../primitives/visual-primitives/math/FractionBar';
 import PlaceValueChart from '../primitives/visual-primitives/math/PlaceValueChart';
 import AreaModel from '../primitives/visual-primitives/math/AreaModel';
@@ -1435,6 +1435,8 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
   const previewInstanceId = `math-helper-${helperId}-${selectedPrimitive}-${generationKey}`;
   const [lastEvaluationResult, setLastEvaluationResult] = useState<PrimitiveEvaluationResult | null>(null);
   const [showGeneratedJson, setShowGeneratedJson] = useState(false);
+  // Offline: you play the bound item on the real runtime and lever ladder, with no paid Live session.
+  const [tutorMode, setTutorMode] = useState<'offline' | 'live'>('offline');
 
   const selectedOption = PRIMITIVE_OPTIONS.find(p => p.value === selectedPrimitive)!;
 
@@ -1710,15 +1712,27 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-white">Preview</h3>
                 {generatedData != null && (
-                  <span className="text-xs text-slate-500">
-                    {selectedOption.icon} {selectedOption.label}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    {testerBinds(selectedPrimitive, previewInstanceId, selectedEvalMode, generatedData) && (
+                      <div role="radiogroup" aria-label="Tutor" className="flex rounded-lg border border-slate-600 text-xs">
+                        {(['offline', 'live'] as const).map(m => (
+                          <button key={m} type="button" role="radio" aria-checked={tutorMode === m} onClick={() => setTutorMode(m)}
+                            className={`px-3 py-1 ${tutorMode === m ? 'bg-cyan-600/40 text-cyan-100' : 'text-slate-400'}`}>
+                            {m === 'offline' ? 'Offline levers (free)' : 'Live tutor (paid)'}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <span className="text-xs text-slate-500">
+                      {selectedOption.icon} {selectedOption.label}
+                    </span>
+                  </div>
                 )}
               </div>
 
               {generatedData ? (
-                <div key={previewInstanceId} data-primitive-instance-id={previewInstanceId}>
-                  <TesterWorkspace primitiveId={selectedPrimitive} instanceId={previewInstanceId} evalMode={selectedEvalMode}
+                <div key={`${previewInstanceId}-${tutorMode}`} data-primitive-instance-id={previewInstanceId}>
+                  <TesterWorkspace primitiveId={selectedPrimitive} instanceId={previewInstanceId} evalMode={selectedEvalMode} offline={tutorMode === 'offline'}
                     data={generatedData} topic={selectedOption.topic} gradeLevel={gradeLevel} onEvaluationSubmit={handleEvaluationSubmit}>
                     <PrimitiveRenderer
                       componentId={selectedPrimitive}

@@ -31,7 +31,7 @@ export default function JevInspector({ runtime }: { runtime: LiveLessonRuntime }
         const answers = result?.assessment?.answers as Record<string, any> | undefined;
         const assessed = !['waiting', 'observing', 'skipped', 'cancelled'].includes(entry.status);
         return <li key={entry.id} className="rounded border border-slate-700 p-3">
-          <p className="font-semibold">{entry.stage === 'learner_response' ? 'Learner context' : entry.stage === 'learner_intent' ? 'Observe learner turn' : entry.stage === 'demonstration' ? 'Demonstration diagnosis' : 'Observe tutor reply'}: {entry.status}</p>
+          <p className="font-semibold">{entry.stage === 'learner_response' ? 'Learner context' : entry.stage === 'learner_intent' ? 'Observe learner turn' : entry.stage === 'demonstration' ? 'Demonstration diagnosis' : entry.stage === 'spoken_miss' ? 'Name the spoken miss' : 'Observe tutor reply'}: {entry.status}</p>
           <time className="text-slate-500">{new Date(entry.at).toLocaleTimeString()}</time>
           {(input?.scope?.itemId || result?.scope?.itemId) && <p>Item: {input?.scope?.itemId || result?.scope?.itemId}</p>}
           {entry.reason && <p className="mt-1 break-words">{entry.reason}</p>}

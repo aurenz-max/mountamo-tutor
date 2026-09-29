@@ -23,6 +23,10 @@ import type { SupportArtifact } from './runtime/contract';
 import type { LivePrimitiveId } from './activityContract';
 import { itemsFromChallenges as shapeItems, shapeSorterHarnessAnswers } from '../../primitives/visual-primitives/math/shapeSorterScript';
 import { simplerJump } from '../../primitives/visual-primitives/math/numberLineLevers';
+import { simplerItem as simplerComparison } from '../../primitives/visual-primitives/math/comparisonBuilderLevers';
+import { farThree } from '../../primitives/visual-primitives/math/compareObjectsLevers';
+import { threeCards } from '../../primitives/visual-primitives/math/numberSequencerLevers';
+import { threePlaces } from '../../primitives/visual-primitives/math/ordinalLineLevers';
 import { COIN_CENTS, fewestCoins } from '../../primitives/visual-primitives/math/coinCounterWorkspace';
 import { simplerItem as simplerFraction } from '../../primitives/visual-primitives/math/fractionCirclesLevers';
 import { buildFractionTouchItems, twoPictureItem } from '../../primitives/visual-primitives/math/fractionCirclesWorkspace';
@@ -367,7 +371,10 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     prompts: WORKSPACE_PROMPTS,
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const item = sequencerItems(ctx.data.challenges ?? []).items.find(i => i.id === ctx.itemId);
+      const built = sequencerItems(ctx.data.challenges ?? []).items;
+      // An easier train (the simplify lever) is not a generated challenge: rebuild it from its parent.
+      const parent = ctx.itemId?.endsWith('~simpler') ? built.find(i => `${i.id}~simpler` === ctx.itemId) : undefined;
+      const item = parent ? threeCards(parent, ctx.data.gradeBand ?? 'K') : built.find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current number-train assignment');
       const answers = sequencerHarnessAnswers(item);
       const text = intent === 'wrong' ? answers.plainWrong : answers.correct;
@@ -437,8 +444,10 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // error through the hands), so a wrong line is complete.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const item = ordinalItems(ctx.data.challenges ?? [], { band: ctx.data.gradeBand ?? 'K', context: ctx.data.context ?? 'race' })
-        .items.find(i => i.id === ctx.itemId);
+      const built = ordinalItems(ctx.data.challenges ?? [], { band: ctx.data.gradeBand ?? 'K', context: ctx.data.context ?? 'race' }).items;
+      // An easier line (the simplify lever) is not a generated challenge: rebuild it from its parent.
+      const parent = ctx.itemId?.endsWith('~simpler') ? built.find(i => `${i.id}~simpler` === ctx.itemId) : undefined;
+      const item = parent ? threePlaces(parent)?.item : built.find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current ordinal-line assignment');
       if (item.answerKind === 'gesture') {
         const order = intent === 'wrong' ? [...item.answerOrder].reverse() : item.answerOrder;
@@ -511,7 +520,10 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // the wrong way. Derived from the mounted challenge, not from Python.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      // An easier practice item (a simplify lever) is not a generated challenge: rebuild it from its parent.
+      const all = ctx.data.challenges ?? [];
+      const parent = ctx.itemId?.endsWith('~simpler') ? all.find((x: { id: string }) => `${x.id}~simpler` === ctx.itemId) : null;
+      const c = parent ? simplerComparison(parent, ctx.data.gradeBand ?? 'K') : all.find((x: { id: string }) => x.id === ctx.itemId);
       if (!c) throw new Error('No current comparison-builder challenge');
       if ((ctx.data.gradeBand ?? 'K') !== '1') throw new Error(`comparison-builder ${c.type}: Kindergarten taps pictures; the row drives Grade 1`);
       const wrong = intent === 'wrong';
@@ -529,8 +541,10 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
         return [...(wrong ? sorted.reverse() : sorted).map((n: number): DriverInput => ({ type: 'choose', label: String(n) })), check];
       }
       const step = (c.askFor === 'one-less' ? -1 : 1) * (wrong ? -1 : 1);
-      if (c.askFor !== 'one-more' && c.askFor !== 'one-less')
-        throw new Error('comparison-builder one-more-one-less both: two rows share their labels and the driver has no row-scoped choice');
+      // Both rows: each cell is named by its row ("one more 9"); wrong exchanges the two answers.
+      if (c.askFor !== 'one-more' && c.askFor !== 'one-less') return [
+        { type: 'choose', label: `one more ${c.targetNumber + (wrong ? -1 : 1)}` },
+        { type: 'choose', label: `one less ${c.targetNumber + (wrong ? 1 : -1)}` }, check];
       return [{ type: 'choose', label: String(c.targetNumber + step) }, check];
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
@@ -600,8 +614,11 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // buttons, in the right order or reversed (the mode's signature error).
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const item = buildCompareItems(ctx.data.challenges ?? [], { band: ctx.data.gradeBand ?? 'K' }).items
-        .find(i => i.id === ctx.itemId);
+      const band = ctx.data.gradeBand ?? 'K', built = buildCompareItems(ctx.data.challenges ?? [], { band }).items;
+      // An easier order (the simplify lever) is not a generated challenge: rebuild it from its parent.
+      const parent = ctx.itemId?.endsWith('~simpler') ? built.find(i => `${i.id}~simpler` === ctx.itemId) : undefined;
+      const item = parent ? farThree(parent, (ctx.data.challenges ?? []).find((c: { id: string }) => c.id === parent.id))?.item
+        : built.find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current compare-objects assignment');
       if (item.answerKind === 'gesture') {
         const order = intent === 'wrong' ? [...item.answerNames].reverse() : item.answerNames;
@@ -671,7 +688,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // Two surfaces, chosen by the payload. The judged mat (read_blocks, regroup): a spoken step says the
     // pack's own answer; a trade taps a block (wrong: another size, or the asked size twice). The click mat:
     // build_number presses each column's "Add one to ..." (wrong: a ten left as ten ones), then Check My Blocks;
-    // operate types the result on the keypad (wrong: one more), then the check key.
+    // operate types the result on the keypad (wrong: a ten off; on addition after modelling both numbers), then the check key.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
       const challenges = ctx.data.challenges ?? [];
@@ -704,8 +721,16 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
         return [...presses, { type: 'choose', label: 'Check My Blocks' }];
       }
       if (c.type === 'regroup') throw new Error('base-ten-blocks regroup on the click mat (a mixed payload) is not driven at W1');
-      const typed = String(wrong ? c.targetNumber + 1 : c.targetNumber);
-      return [...typed.split('').map((key): DriverInput => ({ type: 'choose', label: key })), { type: 'choose', label: '✓' }];
+      // Wrong: the documented struggle, a lost carry or borrow (a ten off). On addition the learner first models both
+      // numbers on the mat without trading, so a column holds ten or more.
+      const add = c.type === 'add_with_blocks';
+      const modelled = wrong && add ? [c.targetNumber - c.secondNumber, c.secondNumber].flatMap((n: number) => {
+        const digits = String(n).padStart(4, '0').split('').map(Number);
+        return ['Thousands', 'Hundreds', 'Tens', 'Ones'].flatMap((column, i) =>
+          Array.from({ length: digits[i] }, (): DriverInput => ({ type: 'choose', label: `Add one to ${column}` })));
+      }) : [];
+      const typed = String(wrong ? c.targetNumber + (add ? -10 : 10) : c.targetNumber);
+      return [...modelled, ...typed.split('').map((key): DriverInput => ({ type: 'choose', label: key })), { type: 'choose', label: '✓' }];
     },
     probes: { mounted: { selector: '[data-base-ten-mat]' } },
   },

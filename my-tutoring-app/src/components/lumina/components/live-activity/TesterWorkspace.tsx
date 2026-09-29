@@ -5,6 +5,7 @@ import { getPrimitive } from '../../config/primitiveRegistry';
 import { PulseWorkspace } from '../../pulse/PulseWorkspace';
 import { workspaceMountProps } from './LessonWorkspace';
 import { workspaceBinding } from './lessonWorkspacePlan';
+import { TesterLeverBench } from './TesterLeverBench';
 
 /** The objective a tester item submits under; a tester has no curriculum objective. */
 export const TESTER_OBJECTIVE = 'tester';
@@ -18,6 +19,8 @@ interface TesterWorkspaceProps {
   topic: string;
   gradeLevel: string;
   onEvaluationSubmit?: (result: any) => void;
+  /** Play the item with no Live session: the real runtime and lever ladder, and the lever bench beside it. */
+  offline?: boolean;
   /** The tester's own render, used when the catalog does not bind this family. */
   children: React.ReactNode;
 }
@@ -28,13 +31,17 @@ interface TesterWorkspaceProps {
  * own Live session (the Pulse host). A tester never shows a retired scripted path for a bound family.
  */
 export function TesterWorkspace({ primitiveId, instanceId, evalMode, data, topic, gradeLevel,
-  onEvaluationSubmit, children }: TesterWorkspaceProps) {
+  onEvaluationSubmit, offline, children }: TesterWorkspaceProps) {
   const binding = useMemo(() => workspaceBinding({ instanceId, primitiveId, pin: evalMode ?? undefined,
     objectiveIds: [TESTER_OBJECTIVE], data }), [instanceId, primitiveId, evalMode, data]);
   if (!binding) return <>{children}</>;
   const Component = getPrimitive(primitiveId as never)?.component as React.ComponentType<any> | undefined;
   if (!Component) return <>{children}</>;
   const payload = data as Record<string, unknown>;
+  if (offline) return <TesterLeverBench key={instanceId} binding={binding}>
+    <Component data={{ ...payload, instanceId, objectiveId: binding.objectiveId, onEvaluationSubmit }}
+      {...workspaceMountProps(binding)} />
+  </TesterLeverBench>;
   return <PulseWorkspace key={instanceId} binding={binding} data={payload} sessionId={instanceId}
     topic={topic} gradeLevel={gradeLevel}>
     <Component data={{ ...payload, instanceId, objectiveId: binding.objectiveId, onEvaluationSubmit }}
