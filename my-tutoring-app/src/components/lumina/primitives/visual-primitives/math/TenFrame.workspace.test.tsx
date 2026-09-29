@@ -94,8 +94,9 @@ it.each([
   const h = mount(mode, [...challenges], band);
   expect(h.state().owner).toBe('tutor');
   expect(h.state().task!.task).not.toMatch(/Say exactly|\[TF_/);
-  // A build item declares in-item levers (tenFrameLevers.ts); the other kinds have none yet.
-  expect(tutorTools(h)).toEqual(mode === 'subitize' ? ['begin_help', 'present'] : mode === 'build' ? ['begin_help', 'pull_lever'] : ['begin_help']);
+  // build and build_teen items declare in-item levers (tenFrameLevers.ts); the other kinds have none yet.
+  expect(tutorTools(h)).toEqual(mode === 'subitize' ? ['begin_help', 'present']
+    : mode === 'build' || mode === 'build_teen' ? ['begin_help', 'pull_lever'] : ['begin_help']);
   expect(seam.send.mock.calls.flat().join(' ')).not.toMatch(/\[TF_|Say exactly/);
 });
 

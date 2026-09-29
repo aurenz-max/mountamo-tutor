@@ -8,9 +8,11 @@ export default function SplitAndSayBoard({ whole, counters, canMove, onMove, ans
   whole: number; counters: BondCounters; canMove: boolean; onMove: (index: number, destination: BondPlace) => void;
   answerSide?: 'left' | 'right'; answerGroup?: BondGroup; groups?: readonly BondGroup[];
   teen: boolean; layoutKey: string; hint?: string; allowedPlaces?: readonly BondPlace[];
-  /** The `ten_frame_part` lever: each part's own counters in a two-by-five outline. Empty boxes are drawn, never filled. */
-  frame?: boolean;
+  /** The `ten_frame_part` lever: each part's own counters in a two-by-five outline ('whole': the whole's counters, on a
+   *  related-fact say turn where the groups stay in the whole). Empty boxes are drawn, never filled. */
+  frame?: boolean | 'whole';
 }) {
+  const framed = (place: BondPlace) => frame === 'whole' ? place === 'whole' : !!frame && place !== 'whole';
   const [selected, setSelected] = useState<number | null>(null);
   const reduced = useReducedMotion();
   const move = (index: number, place: BondPlace) => { if (canMove) { onMove(index, place); setSelected(null); } };
@@ -28,8 +30,8 @@ export default function SplitAndSayBoard({ whole, counters, canMove, onMove, ans
       className="mb-2 min-h-11 w-full rounded-xl text-center font-semibold text-slate-200 focus-visible:outline focus-visible:outline-cyan-200">
       {place === 'whole' ? `Whole: ${whole}` : answerSide === place ? 'How many here?' : place === 'left' ? 'Red group' : 'Blue group'}
     </button>
-    <div data-lever={frame && place !== 'whole' ? 'ten-frame-part' : undefined}
-      className={frame && place !== 'whole' ? 'mx-auto grid w-fit grid-cols-5 gap-1 rounded-xl border border-purple-300/50 p-1'
+    <div data-lever={framed(place) ? 'ten-frame-part' : undefined}
+      className={framed(place) ? 'mx-auto grid w-fit grid-cols-5 gap-1 rounded-xl border border-purple-300/50 p-1'
         : `flex min-h-12 flex-wrap justify-center gap-1 ${teen && place !== 'whole' && counters.filter((p) => p === place).length === 10 ? 'rounded-xl border border-purple-300/50 p-1' : ''}`}>
       {counters.map((location, index) => location === place ? <motion.button key={index} type="button" layout layoutId={`${layoutKey}-counter-${index}`}
         transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 220, damping: 28 }}
@@ -41,7 +43,7 @@ export default function SplitAndSayBoard({ whole, counters, canMove, onMove, ans
           ? groups[index] === 'left' ? 'bg-rose-300' : 'bg-cyan-300'
           : place === 'whole' ? 'bg-purple-300' : place === 'left' ? 'bg-rose-300' : 'bg-cyan-300'}`} />
       </motion.button> : null)}
-      {frame && place !== 'whole' && Array.from({ length: Math.max(0, 10 - counters.filter((p) => p === place).length) }, (_, i) =>
+      {framed(place) && Array.from({ length: Math.max(0, 10 - counters.filter((p) => p === place).length) }, (_, i) =>
         <span key={`empty-${i}`} aria-hidden="true" data-frame-box="empty" className="h-11 w-11 rounded-full border border-dashed border-white/15" />)}
     </div>
   </section>;

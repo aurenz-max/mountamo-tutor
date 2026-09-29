@@ -123,7 +123,7 @@ import {
   type TenFrameItem,
 } from './tenFrameScript';
 import { tenFrameEvidenceSummary, tenFrameObservation } from './tenFrameEvidence';
-import { COUNT_LEVER, FIVE_LEVER, SMALLER_LEVER, frameMiss, smallerBuild, tenFrameLevers } from './tenFrameLevers';
+import { COUNT_LEVER, FIVE_LEVER, SMALLER_LEVER, fiveFrameIndex, frameMiss, smallerBuild, tenFrameLevers } from './tenFrameLevers';
 import { numberWordFor } from './countingBoardScript';
 import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
@@ -409,7 +409,8 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
   const observe = useCallback((item: TenFrameItem, heard: string | null) => tenFrameObservation(item, {
     heard, onFrame: pendingPlacementRef.current, splitVerdict: splitVerdictRef.current, reshows: reshowsRef.current,
     equationShown: showEquation && !isPreReader && (item.kind === 'add' || item.kind === 'subtract'),
-    countShown: showCount && (item.kind === 'build' || item.kind === 'make_ten' || item.kind === 'build_teen'),
+    // `build`'s and `build_teen`'s count is a lever the scripted path never pulls, so it is never on screen there.
+    countShown: showCount && item.kind === 'make_ten',
   }), [showEquation, showCount, isPreReader]);
 
   // The cue surface (everything the tutor is ever sent) comes from the script
@@ -610,11 +611,12 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
   /** What is on screen: the easier build while a simplify lever holds it, else the session item. */
   const currentItem = practice ?? sessionItem;
   displayItemRef.current = currentItem;
-  // `showCount` (easy, or no tier) is the starting position of the running-count lever; a pull adds to it.
-  const startPulled = showCount ? [COUNT_LEVER] : [];
-  const pulledLevers = leverState.item === sessionItem?.id ? leverState.pulled : startPulled;
-  const countPulledLive = pulledLevers.includes(COUNT_LEVER) && !startPulled.includes(COUNT_LEVER);
-  const fiveOn = pulledLevers.includes(FIVE_LEVER) && currentItem?.kind === 'build';
+  // Every build lever starts withdrawn at every tier: a count running under the frame from the first tap
+  // lets the child tap until it reads the target, which skips the counting the item measures.
+  const pulledLevers = leverState.item === sessionItem?.id ? leverState.pulled : [];
+  const leverKind = currentItem?.kind === 'build' || currentItem?.kind === 'build_teen';
+  const fiveOnFrame = pulledLevers.includes(FIVE_LEVER) && leverKind && currentItem ? fiveFrameIndex(currentItem) : -1;
+  const fiveOn = fiveOnFrame >= 0;
   const startRunnerRef = useRef(runner.start); startRunnerRef.current = runner.start;
   useEffect(() => {
     if (!autoStart || autoStartedRef.current || !live.isConnected || !live.isListening
@@ -912,7 +914,7 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
         />
         {cells}
         {/* Five-frame lever: the top row outlined and marked 5. Never offered when five is the number to build. */}
-        {fiveOn && frameIndex === 0 && (
+        {fiveOnFrame === frameIndex && (
           <g data-lever="five-frame" pointerEvents="none">
             <rect x={offsetX + FRAME_PADDING - 5} y={FRAME_PADDING - 5} width={FRAME_COLS * (CELL_SIZE + CELL_GAP) - CELL_GAP + 10}
               height={CELL_SIZE + 10} rx={CELL_RADIUS + 4} fill="none" stroke="rgba(56,189,248,0.8)" strokeWidth={3} strokeDasharray="8 5" />
@@ -921,7 +923,7 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
         )}
       </g>
     );
-  }, [filledCells, countersVisible, colorForCell, handleCellClick, pip, fiveOn]);
+  }, [filledCells, countersVisible, colorForCell, handleCellClick, pip, fiveOnFrame]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   /** `build` runs never speak an answer and `subitize` runs never place one —
@@ -975,15 +977,17 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
   // `split` is deliberately absent: the honest readout there would be the two
   // PARTS, which is the answer, and the total is already both on screen and in
   // the ask. There is nothing left for a count readout to add.
-  // `build_teen` joins them: its readout is the total on the frames, which the
-  // ask already states aloud — the child's own trace toward a public target.
+  // `build_teen`'s readout is the total on the frames, which the ask states
+  // aloud, so tapping until it matches skips the counting on; it is a lever.
   // `decompose_teen` is deliberately absent for `split`'s reason — the honest
   // readout there would be the yellow count, which IS what is being asked for.
-  // On `build` the count is the running-count lever; pulled at runtime it shows even on an empty frame,
-  // so the pull changes the screen. The other kinds keep the tier's `showCount`.
-  const showTrace = (kind === 'build' ? pulledLevers.includes(COUNT_LEVER) : showCount) && countersVisible
+  // On `build` and `build_teen` the count is the running-count lever, off until pulled at every tier: shown
+  // from the first tap, the child taps until it reads the number asked for. Once pulled it shows even on an
+  // empty frame, so the pull changes the screen. `make_ten` keeps the tier's `showCount`.
+  const countPulled = leverKind && pulledLevers.includes(COUNT_LEVER);
+  const showTrace = (leverKind ? countPulled : showCount) && countersVisible
     && (kind === 'build' || kind === 'make_ten' || kind === 'build_teen')
-    && (filledCells.size > 0 || (kind === 'build' && countPulledLive));
+    && (filledCells.size > 0 || countPulled);
 
   const stageWord = runner.stage === 'judging'
     ? 'let’s see…'

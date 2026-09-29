@@ -137,6 +137,11 @@ Calibration channel [4] not read (needs auth). No topic-fidelity or reader-fit r
 - **Property:** `placeValueLevers.ts` declares on every build_number item, with a synchronous `pullLever`: `model_chart` (a small chart of the correction's own `modelNumber`, R9, beside the learner's; plain boxes, no input, no place-label aria-label, no digit pip object), `column_worth` and `expanded_readback` (the tier's `showMultipliers`/`showExpandedForm` are their starting positions, never recorded pulls; still only on build items, R3/R12), `model_teen` (a teen and its -ty from a digit the item does not use in its last two places) and `plain_number` (simplify; an ungraded dictation with the same places, no zero, no teen, no shared column digit, no session number, only when the item has a zero or a teen; `data.challenges` and the item list are untouched). Each declares the `placeValueMiss` ids it answers (J9). The spoken asks (find_place, say_value) declare no levers yet.
 - **Evidence:** `placeValueLevers.test.ts` (13, incl. plain_number over 4000 targets), `PlaceValueChart.levers.workspace.test.tsx` (3), W1 binding test (tools gain `pull_lever` on build items only), sweep J1-J9 on four payloads, replay 4 payloads x 5 clean (`qa/tutor-reports/replay/place-value-chart-2026-09-28.json`).
 
+### R20 — in-item levers on say_value · IMPLEMENTED 2026-09-29
+- **Property:** say_value publishes `model_value` (help: a model number of the same width with a different digit glowing in the same place and its worth written under it) and `block_picture` (help: the glowing digit drawn as that many blocks of its place, no numeral or word; tens and above). find_place has no lever: any place label, on the item or on a model, names its answer by column position; its own misses (`said_value`, `next_place`, `other_place`) are listed as unanswered.
+- **Leak rules (code, `placeValueLevers.test.ts`, 400 sessions):** the model digit is never the item's and its worth is no say_value answer in the session; no scene fact names a place or states the answer.
+- **Evidence:** `PlaceValueChart.levers.workspace.test.tsx` (say_value: both levers beside the number in one commit, credit assisted). A second build payload (`place-value-chart.build-g2.json`) carries a say_value ask; the first spends its values in dictation.
+
 ## Conflicts
 
 ### C1 — R12 (structural tier) vs build's zero-trap identity (R4/R5/R7) — OPEN
@@ -166,6 +171,7 @@ Proposed only; not applied.
 
 ## Changelog
 
+- 2026-09-29 — R20 added (say_value levers). Compatible: the draft `glowing_place_label` was replaced by the model, because a label beside the item names the place.
 - 2026-09-28 — R19 added (build-item levers). Compatible: an untiered build item renders as before (worth row and read-back start pulled); the model and teen charts render only when pulled and outside the learner's chart.
 
 - 2026-09-28 — R6, R8, R9 fixed (handoff 21 M1, before the levers). R6: the behavior was right; the scene constraint, the catalog guidance and the journey comment now say a written chart is checked once the learner stops, even with a column empty. R8: the readout reads back only a full chart; an empty column shows as a gap ("5 _ 1"), and the expanded form waits for a full chart; mounted probe in `PlaceValueChart.workspace.test.tsx`, mutation-checked. R9: `buildModelFor(target, width, session, askedPairs)` builds a model as wide as the chart, never a session number, no column digit shared with the target or with a say_value ask, a zero where the target has none; `placeValueModel.test.ts` over every seventh target to 99999. Also: compare and expanded_form payloads saved. Compatible: place-value suites and sweep green.

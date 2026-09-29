@@ -121,6 +121,11 @@ The following records the 2026-09-17 implementation, not the current live contra
 - **Credit:** a pull is recorded on the item; the next attempt carries it and is assisted, never a first-response success. A removed hand is assisted work on the same item (handoff 21 ruling 3).
 - **Evidence:** `countingBoardLevers.test.ts` (50), `CountingBoard.levers.workspace.test.tsx` (4), sweep J1-J9 on the give_me_n, count and subitize_perceptual payloads, replay 3 payloads x 5 clean (`qa/tutor-reports/replay/counting-board-2026-09-28.json`). No real-learner evidence; spoken kinds declare no levers yet.
 
+### R16 — in-item levers on the spoken kinds · IMPLEMENTED 2026-09-29
+- **Property:** the spoken kinds publish levers from `countingBoardSpokenLevers.ts`. Help: `line_up` (count, count_on, take_away, add_more; not on a board already in a row), `five_groups` (subitize: rows of five; at K the pull also shows the hidden set again for one flash), `tag_one_group` (group, on a board that draws its groups: the first group numbered one to its size), `rows_apart` (compare: each group in its own row, left edges lined up). Simplify (an ungraded easier board of the same kind, through the family's own item gate): `smaller_set` (count), `change_of_one` (take_away, add_more), `small_count_on` (count_on), `fewer_groups` (group). recount_moved has no lever (holding the number is the task); its misses are listed as unanswered.
+- **Leak rules (code, `countingBoardSpokenLevers.test.ts`):** no scene fact carries a digit; group tags stop at one group's size; the rows show no numeral; an easier board is the same kind, never the item's own answer, and avoids every session answer where one is free (the saved add_more session leaves none, so it falls back to avoiding the item's own).
+- **Credit:** a stuck-first help request now pulls `line_up` on count_all (handoff 21 ladder). The runtime test that pinned "help changes nothing" was updated to that rule. `CountingBoard.levers.workspace.test.tsx` covers the row, the easier board and its return, the rows, the group tags and the K re-look.
+
 ## Conflicts
 
 _None open._ Item 13 (R4) is **COMPATIBLE / fork-by-band+mode**. It changes only the K `subitize` display lifecycle. R2/R3 keep `count_all` tap-to-count and the `count`↔`targetAnswer` identity; R5 keeps Pre-K perceptual untouched; the reader-grade branch of R4 preserves Grade-1 subitize. No generator schema or catalog change is justified — `count`/`targetAnswer` already carry everything the flash needs, and display timing is a component concern.
@@ -148,6 +153,7 @@ _None open._ Item 13 (R4) is **COMPATIBLE / fork-by-band+mode**. It changes only
 
 ## Changelog
 
+- 2026-09-29 — R16 added (spoken-kind levers). Compatible: unpulled boards render as before; the spoken kinds' tier flags are unchanged (R9).
 - 2026-09-28 — R15 added (in-item levers, `/add-support-tiers`, handoff 21 M1). Additive: the give_me_n running count and tags become levers whose tier flags are their starting positions, so an untiered or easy board renders as before; a pulled `line_up` overrides the challenge's arrangement; hand buttons gain `data-pip-object="hand-N"` for the driver. No check, miss, verdict or spoken-kind rendering changed.
 
 - 2026-09-27 — handoff 19 (shared runtime, `/add-live-tutor-tools`): the workspace reads the eval mode from the wrapper's lesson pin, not a mode rebuilt in this primitive (slice 1), and publishes the scene after every render, so the scene setter drops its publish call and default fields (slice 3). Wiring only: no content, check, miss, verdict or tutor input changed; the sweep over saved payloads (J1-J8) and this primitive's tests pass. Compatible: no requirement changed.

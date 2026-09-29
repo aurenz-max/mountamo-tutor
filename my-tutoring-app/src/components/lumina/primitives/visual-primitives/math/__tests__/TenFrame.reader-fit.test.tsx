@@ -518,12 +518,14 @@ describe('TenFrame stage · re-based and new leak gates', () => {
     expect(screen.queryByText(/Counters:/)).toBeNull();
   });
 
-  it('keeps the running count on build, where it is the child’s own trace', () => {
+  it('starts build without the running count, even with showCount on — it is a lever pulled after a miss', () => {
+    // REVERT-BITE: showCount is true in this fixture. A count from the first tap lets the child tap to the target.
     render(<TenFrame data={data('K', [challenge('b1', 'build', 3)])} />);
     openItem();
 
     fireEvent.click(cells()[0]);
-    expect(screen.getByText(/Counters:/)).toBeTruthy();
+    expect(counters()).toHaveLength(1);
+    expect(screen.queryByText(/Counters:/)).toBeNull();
   });
 
   it('never renders an empty-space readout — on a make-ten item that IS the answer (R5)', () => {
@@ -840,10 +842,11 @@ describe('TenFrame stage · teen numbers are a K double frame (contract R2 fork)
     expect(runnerState.gestureCues[0]).toContain('that is not ten yellow yet');
   });
 
-  it('never prints a count readout on decompose_teen — the honest one is the answer', () => {
-    // build_teen keeps its trace: that number is the TOTAL on the frames, which
-    // the ask states aloud. decompose_teen's would be the yellow count, which
-    // is exactly what the child is being asked to produce.
+  it('never prints a count readout on either teen mode unprompted', () => {
+    // decompose_teen's would be the yellow count, which is exactly what the
+    // child is being asked to produce. build_teen's would be the TOTAL, which
+    // the ask states aloud, so the child could tap until it matches; there it
+    // is the running-count lever, pulled only after a miss (tenFrameLevers.ts).
     vi.useFakeTimers();
     render(<TenFrame data={teenData([challenge('t2', 'decompose_teen', 14)])} />);
     const item = openItem();
@@ -854,7 +857,7 @@ describe('TenFrame stage · teen numbers are a K double frame (contract R2 fork)
     render(<TenFrame data={teenData([challenge('t1', 'build_teen', 14)])} />);
     openItem();
     fireEvent.click(cells()[10]);
-    expect(screen.getByText(/Counters:/)).toBeTruthy();
+    expect(screen.queryByText(/Counters:/)).toBeNull();
   });
 
   it('keeps the SAME scatter across a correction retry', () => {

@@ -342,7 +342,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'Check My Blocks or Check My Trade, or types a result on the keypad, and the activity checks it; the right '
         + 'value without the fewest blocks is not yet a build. Never say a column count, a total, a '
         + 'prediction or a result before the learner answers. You cannot add, remove, trade or type anything.',
-      // build_number and operate publish levers (`baseTenLevers.ts`, handoff 21 M1); the spoken mat does not yet.
+      // Both mats publish levers (handoff 21 M1): build_number and operate on the click mat (`baseTenLevers.ts`),
+      // read_blocks and regroup on the spoken mat (`baseTenSpokenLevers.ts`).
       levers: true,
       // The mats' own checks (`tradeMiss`, `plainMiss`; read_blocks' first six are the click mat's keypad, a mixed
       // payload), and the judged mat's spoken steps (`baseTenSpokenMisses`: read_blocks' count and worth, regroup's
@@ -355,8 +356,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
           'said_count', 'said_total', 'other_block_count', 'one_block_off'],
         operate: ['one_short', 'one_over', 'one_ten_off', 'digits_swapped', 'short_by_more', 'over_by_more'],
       }),
-      // operate `digits_swapped` has no lever (approved table).
-      unanswered: { operate: ['digits_swapped'] },
+      // operate `digits_swapped` has no lever (approved table). The click-mat misses of regroup and read_blocks come
+      // only from a mixed payload, whose regroup and read_blocks items have no levers.
+      unanswered: { operate: ['digits_swapped'], regroup: ['no_trade', 'value_changed'], read_blocks: ['one_ten_off', 'digits_swapped'] },
     },
     // Only read_blocks emits correction evidence; the other modes supply none,
     // so capture skips them without a model call.
@@ -702,9 +704,10 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         ['zero_left_empty', 'column_empty', 'digits_swapped', 'teen_ty_swap', 'one_short', 'one_over', 'one_ten_off',
           'short_by_more', 'over_by_more', 'said_value', 'said_digit', 'next_place', 'other_place', 'said_place',
           'shifted_place', 'said_number', 'next_digit_value']),
-      // The spoken asks have no lever yet: the M1 spoken slice (handoff 21) decides which lever answers them.
+      // find_place has no lever (a place label anywhere names its answer by column position), so its own misses are
+      // unanswered; say_value's are answered by `model_value` and `block_picture` (handoff 21 M1 spoken slice).
       unanswered: sameMisses<SpokenPlaceValueMiss>(['identify', 'build', 'compare', 'expanded_form'],
-        ['said_value', 'said_digit', 'next_place', 'other_place', 'said_place', 'shifted_place', 'said_number', 'next_digit_value']),
+        ['said_value', 'next_place', 'other_place']),
     },
     evalModes: [
       {
@@ -2544,7 +2547,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'counting-board',
     teachingWorkspace: {
       grades: ['Kindergarten', 'Grade 1'],
-      // Handovers and hand matches publish levers (`countingBoardLevers.ts`, handoff 21 M1).
+      // Handovers and hand matches publish levers (`countingBoardLevers.ts`, handoff 21 M1); the spoken kinds publish
+      // theirs from `countingBoardSpokenLevers.ts` (M1 spoken slice).
       levers: true,
       guidance: 'Use demonstrate to show a selection on the actual board without changing learner work. '
         + 'Handovers and hand choices are checked directly by the board. '
@@ -2561,6 +2565,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         compare: ['smaller_group', 'said_total', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
         ...sameMisses<SpokenCountMiss>(['take_away', 'add_more'], ['said_start', 'said_change', 'one_short', 'one_over', 'short_by_more', 'over_by_more']),
       }),
+      // recount_moved has no lever: holding the number while the set moves is the task (approved table).
+      unanswered: { recount_moved: ['one_short', 'one_over', 'short_by_more', 'over_by_more'] },
     },
     misconceptionScope: 'skill',
     observationDelivery: 'server',
@@ -3560,14 +3566,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       }),
       // A split commits only once the parts make the whole, so `not_all_placed` is never committed there (contract).
       // build_equation's model step is the learner's free choice among join and the two take-aways; its only wrong
-      // move (a swap) is not offered, so no lever answers `other_move` there. The spoken misses have no lever yet:
-      // the M1 spoken slice (handoff 21) decides which lever answers them.
+      // move (a swap) is not offered, so no lever answers `other_move` there. The spoken say turns are answered by
+      // `ten_frame_part` and missing_part's by `open_counters` (handoff 21 M1 spoken slice).
       unanswered: {
-        decompose: ['not_all_placed', 'said_given_part', 'said_whole', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        ten_and_ones: ['not_all_placed', 'said_ten', 'said_whole', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        missing_part: ['said_given_part', 'said_whole', 'added_both', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        related_fact: ['said_given_part', 'said_change', 'said_whole', 'added_both', 'one_short', 'one_over', 'short_by_more',
-          'over_by_more'],
+        decompose: ['not_all_placed'],
+        ten_and_ones: ['not_all_placed'],
         build_equation: ['other_move'],
       },
     },

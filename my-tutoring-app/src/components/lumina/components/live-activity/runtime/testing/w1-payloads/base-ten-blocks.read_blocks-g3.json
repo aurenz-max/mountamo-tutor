@@ -1,0 +1,52 @@
+{
+ "source": "qa/tutor-reports/base-ten-blocks-runtime-read_blocks-payload-2026-09-29.json",
+ "primitiveId": "base-ten-blocks",
+ "evalMode": "read_blocks",
+ "data": {
+  "title": "Block Reading Adventure",
+  "description": "Practice reading base-ten blocks column by column to discover the total value.",
+  "numberValue": 243,
+  "challenges": [
+   {
+    "type": "read_blocks",
+    "instruction": "Look at the tens place on your mat. Count them out loud and tell me what they are worth together.",
+    "targetNumber": 243,
+    "secondNumber": null,
+    "hint": "Count the long rods by tens: 10, 20, 30, 40..."
+   },
+   {
+    "type": "read_blocks",
+    "instruction": "What number is shown by these blocks?",
+    "targetNumber": 352,
+    "secondNumber": null,
+    "hint": "Count the large flats by hundreds: 100, 200, 300..."
+   },
+   {
+    "type": "read_blocks",
+    "instruction": "Count the blocks above. What number do they make?",
+    "targetNumber": 126,
+    "secondNumber": null,
+    "hint": "Count the small cubes one by one."
+   },
+   {
+    "type": "read_blocks",
+    "instruction": "Look at the blocks shown above. What number do they represent?",
+    "targetNumber": 415,
+    "secondNumber": null,
+    "hint": "Each rod equals ten. Count by tens for each rod you see."
+   },
+   {
+    "type": "read_blocks",
+    "instruction": "What number is shown by these blocks?",
+    "targetNumber": 534,
+    "secondNumber": null,
+    "hint": "Each flat is worth one hundred. Count the flats starting from one hundred."
+   }
+  ],
+  "gradeBand": "2-3",
+  "interactionMode": "decompose",
+  "decimalMode": false,
+  "maxPlace": "hundreds",
+  "supplyTray": true
+ }
+}

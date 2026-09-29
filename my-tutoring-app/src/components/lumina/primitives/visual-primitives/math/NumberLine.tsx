@@ -525,7 +525,7 @@ const NumberLineSurface = ({ data, className, onControlsReady, runtimePlanItemId
 
     // Order mode: place the selected value
     if (currentChallenge?.type === 'order_values' && selectedOrderValue !== null) {
-      SoundManager.snap();
+      SoundManager.tap();
       setOrderedPlacements(prev => {
         const next = new Map(prev);
         next.set(selectedOrderValue, snappedValue);
@@ -537,7 +537,7 @@ const NumberLineSurface = ({ data, className, onControlsReady, runtimePlanItemId
 
     // Jump mode: set endpoint
     if (currentChallenge?.type === 'show_jump') {
-      SoundManager.snap();
+      SoundManager.tap();
       setJumpEndPoints(prev => {
         if (prev.length >= activeOperations.length) {
           // Replace last endpoint when all steps already placed
@@ -553,7 +553,7 @@ const NumberLineSurface = ({ data, className, onControlsReady, runtimePlanItemId
     // Plot / find_between: add a point
     // find_between: student places 1 point anywhere between the two bounds (targetValues are the bounds, not the answer)
     if (currentChallenge?.type === 'plot_point' || currentChallenge?.type === 'find_between') {
-      SoundManager.snap();
+      SoundManager.tap();
       const maxPoints = currentChallenge.type === 'find_between' ? 1 : currentChallenge.targetValues.length;
       setPlacedPoints(prev => {
         if (prev.length >= maxPoints) {

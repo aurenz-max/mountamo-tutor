@@ -1,0 +1,108 @@
+{
+ "source": "qa/tutor-reports/place-value-chart-runtime-build-payload-2026-09-29.json",
+ "primitiveId": "place-value-chart",
+ "evalMode": "build",
+ "data": {
+  "title": "Hundreds, Tens, and Ones Place Value Practice",
+  "description": "Welcome to your place value session! Together we will explore numbers by naming places, saying what digits are worth, and writing the numbers you hear directly into the chart.",
+  "challenges": [
+   {
+    "id": "pvc-1",
+    "targetNumber": 330,
+    "highlightedDigitPlace": 1,
+    "minPlace": 0,
+    "maxPlace": 2,
+    "placeNameChoices": [
+     "Ones",
+     "Hundreds",
+     "Tens",
+     "Thousands"
+    ],
+    "digitValueChoices": [
+     {
+      "value": 3,
+      "wordForm": "Three"
+     },
+     {
+      "value": 300,
+      "wordForm": "Three Hundred"
+     },
+     {
+      "value": 0.30000000000000004,
+      "wordForm": "Three Tenths"
+     },
+     {
+      "value": 30,
+      "wordForm": "Thirty"
+     }
+    ]
+   },
+   {
+    "id": "pvc-2",
+    "targetNumber": 783,
+    "highlightedDigitPlace": 1,
+    "minPlace": 0,
+    "maxPlace": 2,
+    "placeNameChoices": [
+     "Tens",
+     "Ones",
+     "Hundreds",
+     "Thousands"
+    ],
+    "digitValueChoices": [
+     {
+      "value": 8,
+      "wordForm": "Eight"
+     },
+     {
+      "value": 80,
+      "wordForm": "Eighty"
+     },
+     {
+      "value": 800,
+      "wordForm": "Eight Hundred"
+     },
+     {
+      "value": 0.8,
+      "wordForm": "Eight Tenths"
+     }
+    ]
+   },
+   {
+    "id": "pvc-3",
+    "targetNumber": 336,
+    "highlightedDigitPlace": 1,
+    "minPlace": 0,
+    "maxPlace": 2,
+    "placeNameChoices": [
+     "Tens",
+     "Ones",
+     "Hundreds",
+     "Thousands"
+    ],
+    "digitValueChoices": [
+     {
+      "value": 3,
+      "wordForm": "Three"
+     },
+     {
+      "value": 300,
+      "wordForm": "Three Hundred"
+     },
+     {
+      "value": 30,
+      "wordForm": "Thirty"
+     },
+     {
+      "value": 0.30000000000000004,
+      "wordForm": "Three Tenths"
+     }
+    ]
+   }
+  ],
+  "challengeType": "build",
+  "showExpandedForm": true,
+  "showMultipliers": true,
+  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

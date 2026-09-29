@@ -4,11 +4,15 @@
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { itemsFromChallenges, type PlaceValueItem } from './placeValueScript';
-import { MODEL_LEVER, PLAIN_LEVER, READBACK_LEVER, TEEN_LEVER, WORTH_LEVER, leverFacts, placeValueLevers, plainItem, plainNumber,
-  startLevers, teenDigit } from './placeValueLevers';
+import { BLOCKS_LEVER, MODEL_LEVER, PLAIN_LEVER, READBACK_LEVER, TEEN_LEVER, VALUE_MODEL_LEVER, WORTH_LEVER, askedValues, leverFacts,
+  placeValueLevers, plainItem, plainNumber, startLevers, teenDigit, valueModel } from './placeValueLevers';
 
 const build = (targetNumber: number): PlaceValueItem => itemsFromChallenges([{ id: `b${targetNumber}`, targetNumber, highlightedDigitPlace: 0,
   minPlace: 0, maxPlace: String(targetNumber).length - 1 } as never], { mode: 'build', tier: 'medium' }).items.find(i => i.kind === 'build_number')!;
+/** The say_value item on `targetNumber` with the digit at `place` glowing. */
+const say = (targetNumber: number, place: number): PlaceValueItem => itemsFromChallenges([{ id: `s${targetNumber}`, targetNumber,
+  highlightedDigitPlace: place, minPlace: 0, maxPlace: String(targetNumber).length - 1 } as never], { mode: 'identify', tier: 'medium' })
+  .items.find(i => i.kind === 'say_value')!;
 const digitAt = (n: number, p: number) => Math.floor(n / 10 ** p) % 10;
 const none = new Set<number>();
 
@@ -25,10 +29,17 @@ describe('which lever answers which miss', () => {
     expect(nextLever(placeValueLevers(build(406), start, none, 'medium'), 'zero_left_empty')).toBe(MODEL_LEVER);
     expect(nextLever(placeValueLevers(build(406), [...start, MODEL_LEVER], none, 'medium'), 'zero_left_empty')).toBe(PLAIN_LEVER);
   });
-  it('only a dictated build item declares levers', () => {
+  it('find_place declares no lever; say_value declares the model and the block picture', () => {
     const printed = itemsFromChallenges([{ id: 'p', targetNumber: 45, highlightedDigitPlace: 1, minPlace: 0, maxPlace: 1 } as never],
       { mode: 'compare', tier: 'medium' }).items;
-    for (const item of printed.filter(i => i.kind !== 'build_number')) expect(placeValueLevers(item, [], none, 'medium')).toEqual([]);
+    expect(placeValueLevers(printed.find(i => i.kind === 'find_place')!, [], none, 'medium')).toEqual([]);
+    expect(placeValueLevers(printed.find(i => i.kind === 'say_value')!, [], none, 'medium').map(l => l.id)).toEqual([VALUE_MODEL_LEVER, BLOCKS_LEVER]);
+  });
+  it.each([
+    ['said_number', VALUE_MODEL_LEVER], ['said_place', VALUE_MODEL_LEVER], ['shifted_place', VALUE_MODEL_LEVER],
+    ['said_digit', BLOCKS_LEVER], ['next_digit_value', BLOCKS_LEVER],
+  ])('say_value 415 (the 4), after %s: %s', (miss, lever) => {
+    expect(nextLever(placeValueLevers(say(415, 2), [], none, 'medium'), miss)).toBe(lever);
   });
 });
 
@@ -73,5 +84,37 @@ describe('leak rules', () => {
       expect(facts).not.toContain(String(t));
       expect(item.modelNumber).not.toBe(t);
     }
+  });
+});
+
+describe('say_value leak rules', () => {
+  const sessions = Array.from({ length: 400 }, (_, i) => {
+    const n = 10 + ((i * 7919) % 9990);
+    return itemsFromChallenges([0, 1, 2].map(k => ({ id: `c${k}`, targetNumber: n + k * 37, highlightedDigitPlace: k % String(n).length,
+      minPlace: 0, maxPlace: String(n + k * 37).length - 1 })) as never, { mode: 'identify', tier: 'medium' }).items;
+  });
+  it("the model digit is not the item's, its worth is no session answer, and nothing on it names a place", () => {
+    let seen = 0;
+    for (const items of sessions) {
+      const asked = askedValues(items);
+      const answers = items.filter(i => i.kind === 'say_value').map(i => i.digit * 10 ** i.place);
+      for (const item of items.filter(i => i.kind === 'say_value')) {
+        const model = valueModel(item, asked);
+        if (!model) continue;
+        seen++;
+        expect(model.digit).not.toBe(item.digit);
+        expect(answers).not.toContain(model.worth);
+        expect(String(model.number)).toHaveLength(String(item.targetNumber).length);
+        expect(model.number).not.toBe(item.targetNumber);
+        const fact = leverFacts(item, [VALUE_MODEL_LEVER, BLOCKS_LEVER], [], asked);
+        expect(fact).not.toMatch(/ones|tens|hundreds|thousands|place value/i);
+        expect(fact.toLowerCase()).not.toContain(item.answerText.toLowerCase());
+        expect(fact).not.toMatch(new RegExp(`(?<![0-9])${item.digit * 10 ** item.place}(?![0-9])`));
+      }
+    }
+    expect(seen).toBeGreaterThan(300);
+  });
+  it('the block picture is offered only from the tens place', () => {
+    expect(placeValueLevers(say(47, 0), [], none, 'medium').map(l => l.id)).toEqual([VALUE_MODEL_LEVER]);
   });
 });

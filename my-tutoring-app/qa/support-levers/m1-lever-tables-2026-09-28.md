@@ -78,3 +78,28 @@ No contract doc.
   2. Three places say the chart checks only when full, but it commits after 4 s of stillness.
   3. `buildModelFor` caps at 3 digits and can share digits with the target.
   4. No compare or expanded_form payloads.
+
+## Spoken slice — DONE 2026-09-29 (user: "continue" on the drafted table, with the model chart for say_value)
+
+Every eval mode of the four primitives now has its misses and levers, spoken modes included. Contracts: base-ten R23,
+counting-board R16, number-bond R24, place-value R20. Report: `qa/eval-reports/levers-M1-spoken-2026-09-29.md`.
+
+| Primitive · mode | Help | Simplify | Unanswered (why) |
+|---|---|---|---|
+| counting-board count | `line_up` | `smaller_set` | — |
+| counting-board count_on | `line_up` | `small_count_on` | — |
+| counting-board take_away, add_more | `line_up` | `change_of_one` | — |
+| counting-board subitize | `five_groups` (K: a new look) | — | — |
+| counting-board group | `tag_one_group` | `fewer_groups` | — |
+| counting-board compare | `rows_apart` | — | — |
+| counting-board recount_moved | — | — | all (holding the number is the task) |
+| number-bond say turns (decompose, ten_and_ones, related_fact) | `ten_frame_part` | — | — |
+| number-bond missing_part | `open_counters` (now answers its misses) | — | — |
+| base-ten read_blocks | `block_worth`, `dim_others`, `group_fives` | `fewer_blocks` | `one_ten_off`, `digits_swapped` (keypad of a mixed payload only) |
+| base-ten regroup | `trade_model`, `asked_column_glow` | `small_start` | `no_trade`, `value_changed` (click mat of a mixed payload only) |
+| place-value say_value | `model_value`, `block_picture` | — | — |
+| place-value find_place | — | — | `said_value`, `next_place`, `other_place` (a label names the place by position) |
+
+Changes from the draft: counting-board `touch_marks` and `pair_up` were not built (tap-to-count already marks taps, and
+lines between groups would state which is bigger); `longer_look` became the K re-look inside `five_groups`;
+place-value `glowing_place_label` became `model_value`; `block_picture` replaced a drafted enlarged digit.

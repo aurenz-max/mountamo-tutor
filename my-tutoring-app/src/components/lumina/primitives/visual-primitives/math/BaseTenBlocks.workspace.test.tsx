@@ -105,8 +105,9 @@ it.each(['build_number', 'read_blocks', 'regroup', 'operate'] as const)(
     const h = mount(mode);
     expect(h.state().owner).toBe('tutor');
     expect(h.state().task!.task).not.toMatch(/Say exactly|\[BT_|unused/);
-    // build_number carries in-item levers (handoff 21 M1); the other modes offer help only.
-    expect(tutorTools(h)).toEqual(mode === 'build_number' ? ['begin_help', 'pull_lever'] : ['begin_help']);
+    // Every mode carries in-item levers (handoff 21 M1: the click mat, then the spoken mat). This operate deck's
+    // only lever, the column counts, starts pulled (one carry, no simpler operation), so nothing is left to pull.
+    expect(tutorTools(h)).toEqual(mode === 'operate' ? ['begin_help'] : ['begin_help', 'pull_lever']);
     expect(seam.send.mock.calls.flat().join(' ')).not.toMatch(/\[BT_|Say exactly|\[ACTIVITY_START|\[REGROUP_|\[BUILD_|\[ANSWER_/);
     expect(screen.queryByRole('button', { name: /next challenge|say that again/i })).toBeNull();
   });

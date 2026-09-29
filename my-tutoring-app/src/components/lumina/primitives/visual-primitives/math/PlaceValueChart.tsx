@@ -85,8 +85,8 @@ import {
   type PlaceValueMode,
   type PlaceValueTier,
 } from './placeValueScript';
-import { MODEL_LEVER, PLAIN_LEVER, READBACK_LEVER, TEEN_LEVER, WORTH_LEVER, leverFacts, placeValueLevers, plainItem,
-  startLevers, teenDigit } from './placeValueLevers';
+import { BLOCKS_LEVER, MODEL_LEVER, PLAIN_LEVER, READBACK_LEVER, TEEN_LEVER, VALUE_MODEL_LEVER, WORTH_LEVER, askedValues,
+  leverFacts, placeValueLevers, plainItem, startLevers, teenDigit, valueModel } from './placeValueLevers';
 import { placeLabel } from './spokenNumberWords';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
@@ -412,6 +412,7 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
   displayItemRef.current = currentItem;
   const leverTier: PlaceValueTier = supportTier ?? 'medium';
   const sessionNumbers = useMemo(() => new Set(items.map(i => i.targetNumber)), [items]);
+  const asked = useMemo(() => askedValues(items), [items]);
   const startPulled = startLevers(sessionItem, { showMultipliers, showExpandedForm });
   const pulledLevers = leverState.item === sessionItem?.id ? leverState.pulled : startPulled;
   // The workspace path shows its summary without an evaluation provider (the live host has none).
@@ -594,6 +595,35 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
     );
   };
 
+  /** say_value's model: another number, a digit glowing in the item's place and its worth under it. No place name. */
+  const renderValueModel = (item: PlaceValueItem) => {
+    const model = valueModel(item, asked);
+    if (!model) return null;
+    const str = String(model.number);
+    return (
+      <div data-lever="model-value" className="flex flex-col items-center gap-1 rounded-lg border border-amber-300/40 bg-amber-400/5 px-3 py-2">
+        <div className="text-2xl font-mono font-bold">
+          {str.split('').map((ch, i) => (
+            <span key={i} className={str.length - 1 - i === model.place ? 'text-amber-100 bg-amber-500/20 rounded px-1' : 'text-slate-300'}>{ch}</span>
+          ))}
+        </div>
+        <div className="text-sm text-amber-200">= {model.worth}</div>
+      </div>
+    );
+  };
+
+  /** say_value's block picture: the glowing digit as that many blocks of its place, no numeral or word. */
+  const renderBlockPicture = (item: PlaceValueItem) => {
+    const size = [[6, 6], [6, 28], [28, 28], [28, 40]][item.place] ?? [28, 40];
+    return (
+      <div data-lever="block-picture" aria-label="Blocks for the glowing digit" className="flex flex-wrap items-end justify-center gap-1 max-w-64">
+        {Array.from({ length: item.digit }, (_, i) => (
+          <span key={i} className="rounded-sm border border-indigo-200/60 bg-indigo-400/70" style={{ width: size[0], height: size[1] }} />
+        ))}
+      </div>
+    );
+  };
+
   /** A small model chart: the number's digits in labelled boxes, beside the learner's chart, never in it. */
   const renderModel = (n: number, places: number, lever: string) => (
     <div data-lever={lever} className="flex gap-1">
@@ -636,8 +666,8 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
   useLayoutEffect(() => {
     if (!tutorOwned || !currentItem) return;
     const scene = workspaceScene(currentItem, { written: writtenOf(currentItem, digitsByPlace) });
-    const onScreen = leverFacts(sessionItem, pulledLevers, startPulled);
-    const levers = practice ? [] : placeValueLevers(sessionItem, pulledLevers, sessionNumbers, leverTier);
+    const onScreen = leverFacts(sessionItem, pulledLevers, startPulled, asked);
+    const levers = practice ? [] : placeValueLevers(sessionItem, pulledLevers, sessionNumbers, leverTier, asked);
     workspace.current = {
       ...scene,
       ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
@@ -749,6 +779,13 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
                     {renderModel(10 + teenDigit(sessionItem.targetNumber), 2, 'model-teen')}
                     {renderModel(teenDigit(sessionItem.targetNumber) * 10, 2, 'model-teen')}
                   </div>}
+                </div>
+              )}
+              {!isGestureItem && sessionItem?.kind === 'say_value' && !practice
+                && (pulledLevers.includes(VALUE_MODEL_LEVER) || pulledLevers.includes(BLOCKS_LEVER)) && (
+                <div className="mb-4 flex flex-wrap items-end justify-center gap-6">
+                  {pulledLevers.includes(BLOCKS_LEVER) && renderBlockPicture(sessionItem)}
+                  {pulledLevers.includes(VALUE_MODEL_LEVER) && renderValueModel(sessionItem)}
                 </div>
               )}
             </div>

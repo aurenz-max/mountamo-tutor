@@ -162,6 +162,11 @@ Calibration channel [4] not read (403, needs auth).
 - **Compatibility:** R9 holds on graded work; the practice step shows its move instead of asking the learner to choose one, which is the simpler shape and ungraded. R12 holds (the frame is empty). R13's rule is reused, not changed.
 - **Evidence:** `numberBondEquationLevers.test.ts` (65: the miss-to-lever table, the builder over every bond from 3 to 10 and every form, a multi-bond session, the strip and text leak rules on both saved payloads); `NumberBond.levers.workspace.test.tsx` (4 new: strip pull and assisted credit, empty frame, smaller-bond practice and return with the tray holding the smaller bond, easy start not recorded; the practice-check fix is mutation-checked); sweep J1-J9 and the W1 contract green on both payloads. Text replay does not reach these levers yet: the recorder drives each payload's first item, which is a model step on both modes.
 
+### R24 — in-item levers on the spoken turns · IMPLEMENTED 2026-09-29
+- **Property:** the say turns (decompose and ten_and_ones after the split, related_fact after the move) publish `ten_frame_part`: the counters the learner is asked about in a two-by-five outline (on related_fact, the whole's counters, each in its colour). It answers each turn's spoken misses (`numberBondSpokenMisses`). missing_part's `open_counters` now answers that turn's spoken misses. Only `not_all_placed` (decompose, ten_and_ones) and build_equation `other_move` stay unanswered.
+- **Leak rules (code, `numberBondLevers.test.ts`):** the frame draws only counters already on the board and empty boxes, never fills one; no scene fact carries a digit or number word; the covered part of missing_part stays covered.
+- **Evidence:** `NumberBond.levers.workspace.test.tsx` (the ten-and-ones say turn: counts unchanged, credit assisted; the related-fact say turn frames the whole).
+
 ## Conflicts
 
 _None open._ Notes for the four M1 fixes and the lever slice:
@@ -181,6 +186,7 @@ _None open._ Notes for the four M1 fixes and the lever slice:
 
 ## Changelog
 
+- 2026-09-29 — R24 added (spoken-turn levers). Compatible: `SplitAndSayBoard`'s `frame` takes 'whole' as well as true.
 - 2026-09-28 — R23 added (levers slice 2, the equation steps). Additive: nothing is drawn until a pull, except the easy tier's empty frame. `commitEquation` now checks the shown item, which equals the session item whenever no practice step is open, so every existing probe holds (number-bond suites green).
 
 - 2026-09-28 — R22 added (levers slice 1). Additive: no lever is pulled at start, so every board renders as before; `SplitAndSayBoard` gains an optional `frame`; the related-fact move button gains a highlight when pulled; `open_counters` runs the same state the learner's own button sets. Compatible: R1-R21 probes green (math suites 149 files).

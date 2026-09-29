@@ -51,6 +51,10 @@ import {
   type BtMode,
 } from './baseTenModel';
 import { itemsFromChallenges, problemsFromChallenges, stepsOfProblem, type BaseTenItem } from './baseTenScript';
+import {
+  DIM_LEVER, FIVES_LEVER, GLOW_LEVER, MODEL_LEVER, SPOKEN_SIMPLIFY, WORTH_LEVER,
+  baseTenSpokenLevers, spokenLeverFacts, spokenPracticeItem, tradeModel, worthKey,
+} from './baseTenSpokenLevers';
 
 /** Mat colours by place — size carries the value, colour only aids scanning. */
 const PLACE_STYLE: readonly { fill: string; edge: string; w: number; h: number }[] = [
@@ -59,6 +63,18 @@ const PLACE_STYLE: readonly { fill: string; edge: string; w: number; h: number }
   { fill: 'bg-sky-400/80', edge: 'border-sky-200/70', w: 64, h: 64 },
   { fill: 'bg-amber-400/80', edge: 'border-amber-200/70', w: 64, h: 92 },
 ];
+
+/** A lever's small blocks, off the learner's mat and never tappable. */
+function MiniBlocks({ place, count }: { place: number; count: number }) {
+  const style = PLACE_STYLE[place] ?? PLACE_STYLE[0];
+  return (
+    <div className="flex max-w-40 flex-wrap items-end gap-0.5">
+      {Array.from({ length: count }, (_, i) => (
+        <span key={i} className={`rounded-sm border ${style.edge} ${style.fill}`} style={{ width: style.w / 2, height: style.h / 2 }} />
+      ))}
+    </div>
+  );
+}
 
 interface BaseTenBlocksDiProps {
   data: BaseTenBlocksData;
@@ -85,6 +101,11 @@ function BaseTenBlocksDiSurface({ data, className, runtimePlanItemId }: BaseTenB
   const [mat, setMat] = useState<number[]>(problems[0] ? [...problems[0].start] : []);
   const [feedback, setFeedback] = useState('');
   const reduceMotion = useReducedMotion();
+  // In-item levers (`baseTenSpokenLevers.ts`), keyed by the session item they were pulled on, and the easier
+  // practice item a simplify lever put on screen in its place. The ref is what the retry callback reads.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<BaseTenItem | null>(null);
+  const practiceRef = useRef<BaseTenItem | null>(null);
 
   const matFor = (item: BaseTenItem): BtColumns => mats.current[item.problem.id] ?? item.problem.start;
 
@@ -157,6 +178,7 @@ function BaseTenBlocksDiSurface({ data, className, runtimePlanItemId }: BaseTenB
     onFinished: finish,
     onItemOpened: (item, index) => {
       if (index === 0) { mats.current = {}; moves.current = {}; }
+      practiceRef.current = null; setPractice(null);
       // The mat resets at the START of a problem only: the trade the child made
       // has to still be on screen while the tutor delivers its verdict.
       if (item.step === 'count' || item.step === 'predict') {
@@ -167,7 +189,9 @@ function BaseTenBlocksDiSurface({ data, className, runtimePlanItemId }: BaseTenB
       setFeedback('');
     },
     // Try again on a checked trade starts from the untraded mat.
+    // A retry on the practice item keeps it; only endPractice gives the full item back.
     onCorrectionRetry: (item) => {
+      if (practiceRef.current) { setMat([...practiceRef.current.problem.start]); setFeedback(''); return; }
       if (item.step === 'trade') {
         mats.current[item.problem.id] = [...item.problem.start];
         (moves.current[item.problem.id] ??= []).push('put the blocks back');
@@ -180,7 +204,12 @@ function BaseTenBlocksDiSurface({ data, className, runtimePlanItemId }: BaseTenB
   // The workspace shows its finish without an evaluation provider (the live host has none).
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
-  const item = runner.currentItem;
+  const sessionItem = runner.currentItem;
+  /** What is on screen: the practice item while a simplify lever holds it, else the session item. */
+  const item = practice ?? sessionItem;
+  const pulledLevers = practice || leverState.item !== sessionItem?.id ? [] : leverState.pulled;
+  const model = pulledLevers.includes(MODEL_LEVER) && sessionItem ? tradeModel(sessionItem, problems) : null;
+  const key = pulledLevers.includes(WORTH_LEVER) && sessionItem ? worthKey(sessionItem) : null;
   const canTrade = !!item
     && item.step === 'trade'
     && runner.canAttempt
@@ -219,8 +248,38 @@ function BaseTenBlocksDiSurface({ data, className, runtimePlanItemId }: BaseTenB
   // What the tutor and the observer are shown, republished every render.
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
-    if (!item) return;
-    workspace.current = { ...diWorkspaceScene(item, { mat }) };
+    if (!item || !sessionItem) return;
+    const scene = diWorkspaceScene(item, { mat });
+    const levers = practice ? [] : baseTenSpokenLevers(sessionItem, pulledLevers, problems);
+    const onScreen = practice ? '' : spokenLeverFacts(sessionItem, pulledLevers, problems);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts,
+        ...(onScreen ? { onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice mat, ungraded. The full item comes back after it.' } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the mat changes before this returns.
+      pullLever: (id) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        const pulled = { item: sessionItem.id, pulled: [...pulledLevers, id] };
+        if (SPOKEN_SIMPLIFY.has(id)) {
+          const easier = spokenPracticeItem(sessionItem, id, problems);
+          if (!easier) return 'There is no easier mat for this item.';
+          practiceRef.current = easier;
+          setLeverState(pulled); setPractice(easier); setMat([...easier.problem.start]); setFeedback('');
+          return { practice: diWorkspaceAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => {
+        practiceRef.current = null;
+        setPractice(null);
+        setMat([...matFor(sessionItem)]);
+      },
+    };
   });
 
   if (!item) {
@@ -235,9 +294,12 @@ function BaseTenBlocksDiSurface({ data, className, runtimePlanItemId }: BaseTenB
     );
   }
 
-  const problemIndex = problems.findIndex((problem) => problem.id === item.problem.id);
+  const problemIndex = problems.findIndex((problem) => problem.id === sessionItem!.problem.id);
   const subject = item.problem.place;
   const highlightPlace = item.problem.mode === 'read_blocks' ? subject : -1;
+  const dimmed = (place: number) => pulledLevers.includes(DIM_LEVER) && place !== subject;
+  const fives = pulledLevers.includes(FIVES_LEVER) && item.problem.mode === 'read_blocks';
+  const glow = pulledLevers.includes(GLOW_LEVER) && item.step === 'predict' ? subject - 1 : -1;
 
   const column = (place: number) => {
     const count = mat[place] ?? 0;
@@ -248,11 +310,14 @@ function BaseTenBlocksDiSurface({ data, className, runtimePlanItemId }: BaseTenB
         key={place}
         aria-label={`${placeWord(place)} column`}
         data-highlighted={place === highlightPlace ? 'true' : undefined}
-        className={`flex min-h-44 flex-1 flex-col items-center justify-end gap-2 rounded-2xl border-2 p-2 ${
-          place === highlightPlace ? 'border-amber-300 bg-amber-400/10' : 'border-white/10 bg-white/[0.03]'
-        }`}
+        data-lever={place === glow ? 'already-here' : dimmed(place) ? 'dimmed' : undefined}
+        className={`flex min-h-44 flex-1 flex-col items-center justify-end gap-2 rounded-2xl border-2 p-2 transition-opacity ${
+          place === highlightPlace ? 'border-amber-300 bg-amber-400/10'
+            : place === glow ? 'border-cyan-300 bg-cyan-400/10 shadow-[0_0_18px_rgba(103,232,249,0.45)]'
+              : 'border-white/10 bg-white/[0.03]'
+        } ${dimmed(place) ? 'opacity-25' : ''}`}
       >
-        <div className="flex flex-wrap items-end justify-center gap-1">
+        <div className="flex flex-wrap items-end justify-center gap-1" data-lever={fives && place === subject ? 'group-fives' : undefined}>
           {Array.from({ length: count }, (_, index) => (
             <motion.button
               key={`${place}-${index}`}
@@ -268,7 +333,7 @@ function BaseTenBlocksDiSurface({ data, className, runtimePlanItemId }: BaseTenB
               className={`rounded-sm border ${style.edge} ${style.fill} disabled:cursor-default ${
                 tradeable ? 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-200 hover:brightness-125' : ''
               }`}
-              style={{ width: style.w, height: style.h }}
+              style={{ width: style.w, height: style.h, ...(fives && place === subject && index === 5 ? { marginLeft: 14 } : {}) }}
             />
           ))}
         </div>
@@ -308,6 +373,32 @@ function BaseTenBlocksDiSurface({ data, className, runtimePlanItemId }: BaseTenB
                 {places.map(column)}
               </div>
             </LayoutGroup>
+            {(key || model) && (
+              <div className="flex flex-wrap items-end justify-center gap-6 rounded-2xl border border-white/10 bg-white/[0.02] p-3">
+                {key && (
+                  <div data-lever="block-worth" className="flex items-end gap-2" aria-label={`One ${blockNoun(key.place, 1)} is worth ${key.worth}`}>
+                    <MiniBlocks place={key.place} count={1} />
+                    <span className="text-lg font-semibold text-slate-200">= {key.worth}</span>
+                  </div>
+                )}
+                {model && (
+                  <div data-lever="trade-model" className="flex items-end gap-3" aria-label="A model trade">
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="flex items-end gap-2">
+                        <MiniBlocks place={model.place} count={1} />
+                        <MiniBlocks place={model.place - 1} count={model.before} />
+                      </div>
+                      <span className="text-xs text-slate-400">1 {blockNoun(model.place, 1)}, {model.before} {blockNoun(model.place - 1, model.before)}</span>
+                    </div>
+                    <span className="pb-4 text-slate-400">&rarr;</span>
+                    <div className="flex flex-col items-center gap-1">
+                      <MiniBlocks place={model.place - 1} count={model.after} />
+                      <span className="text-xs text-slate-400">{model.after} {blockNounPlural(model.place - 1)}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             {item.step === 'trade' && (
               <div className="space-y-2">
                 <div className="flex justify-center">
@@ -324,8 +415,8 @@ function BaseTenBlocksDiSurface({ data, className, runtimePlanItemId }: BaseTenB
               run={runner}
               running={runner.running}
               stage={runner.stage}
-              currentItem={item}
-              steps={stepsOfProblem(items, item)}
+              currentItem={sessionItem!}
+              steps={stepsOfProblem(items, sessionItem!)}
               completedIds={affirmedIds}
               carriedIds={new Set(
                 items

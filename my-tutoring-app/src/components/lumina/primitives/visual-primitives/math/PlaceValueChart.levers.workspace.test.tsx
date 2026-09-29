@@ -93,3 +93,32 @@ it('the plainer dictation is ungraded practice, then the full number is credited
   expect(attempts.at(-1)).toMatchObject({ levers: ['plain_number'], assisted: true });
   h.close();
 });
+
+// ── say_value (spoken slice): the levers act beside the printed number; find_place has none ──
+
+const identify = () => ({ title: 'Place value', description: '', challengeType: 'identify', supportTier: 'medium',
+  challenges: [{ id: 'p1', targetNumber: 415, highlightedDigitPlace: 2, minPlace: 0, maxPlace: 2 }] });
+
+it('say_value: the block picture and the model sit beside the number in one commit; neither says the worth asked', () => {
+  const h = mountWorkspace({ primitiveId: 'place-value-chart', evalMode: 'identify', data: identify(), instanceId: 'chart' });
+  h.settle();
+  expect(h.state().task!.itemId).toMatch(/::place$/);
+  expect(levers(h)).toEqual([]);
+  h.say('the hundreds'); h.feedback('correct', 'advance'); h.confirmVisible();
+  expect(h.state().task!.itemId).toMatch(/::value$/);
+  expect(levers(h).map(l => [l.id, l.kind])).toEqual([['model_value', 'help'], ['block_picture', 'help']]);
+  h.say('four'); h.feedback('incorrect', 'retry');
+  h.dispatch('pull_lever', { lever: 'block_picture' });
+  const blocks = h.view.container.querySelectorAll('[data-lever="block-picture"] span');
+  expect(blocks).toHaveLength(4);
+  expect(h.view.container.querySelector('[data-lever="block-picture"]')!.textContent).toBe('');
+  h.dispatch('pull_lever', { lever: 'model_value' });
+  const model = h.view.container.querySelector('[data-lever="model-value"]')!.textContent!;
+  expect(model).not.toMatch(/415|400/);
+  expect(model).not.toMatch(/hundred/i);
+  const demand = JSON.stringify(h.state().task!.demand);
+  expect(demand).not.toMatch(/four hundred|\b400\b/);
+  h.say('four hundred'); h.feedback('correct');
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true, levers: ['block_picture', 'model_value'] });
+  h.close();
+});

@@ -104,3 +104,73 @@ it('two_hands takes away the far hand, keeps the matching one, and the pick afte
   expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true, levers: ['two_hands'] });
   h.close();
 });
+
+// ── The spoken kinds (M1 spoken slice) ───────────────────────────────────────
+
+const spokenData = (gradeBand: string, ...challenges: object[]) => ({ title: 'Count', gradeBand,
+  objects: { type: 'bears', count: 9, arrangement: 'scattered' },
+  showOptions: { showRunningCount: false, showLastNumber: false, showGroupCircles: false, highlightOnTap: true },
+  challenges: challenges.map((c, i) => ({ id: `s${i}`, instruction: 'How many?', arrangement: 'scattered', ...c })) });
+const drawn = (h: WorkspaceHarness) => h.view.container.querySelectorAll('[data-pip-object^="object-"]').length;
+
+it('count: line_up puts the board in one row in the same commit; the smaller board is ungraded and gives the full board back', () => {
+  const h = mountWorkspace({ primitiveId: 'counting-board', evalMode: 'count', instanceId: 'board',
+    data: spokenData('K', { type: 'count_all', count: 7, targetAnswer: 7 }, { type: 'count_all', count: 6, targetAnswer: 6 }) });
+  expect(levers(h).map(l => [l.id, l.kind])).toEqual([['line_up', 'help'], ['smaller_set', 'simplify']]);
+  h.say('six'); h.feedback('incorrect', 'retry');
+  h.dispatch('pull_lever', { lever: 'line_up' });
+  expect(objectRows(h).size).toBe(1);
+  expect(drawn(h)).toBe(7);
+  expect(h.state().task!.demand.onScreen).toMatch(/single row/);
+  const full = h.state().task!.itemId;
+  h.dispatch('pull_lever', { lever: 'smaller_set' });
+  expect(h.state().task).toMatchObject({ itemId: `${full}~simpler` });
+  expect(h.state().task!.workspace!.expectedAnswer).toBe('4');
+  expect(drawn(h)).toBe(4);
+  h.say('four'); h.feedback('correct', 'advance'); h.confirmVisible();
+  expect(h.state().task!.itemId).toBe(full);
+  expect(drawn(h)).toBe(7);
+  h.say('seven'); h.feedback('correct');
+  const attempts = h.state().task!.workspace!.attempts;
+  expect(attempts.map(a => [a.itemId, a.correct, !!(a as { practice?: boolean }).practice])).toEqual([
+    [full, false, false], [`${full}~simpler`, true, true], [full, true, false]]);
+  expect(attempts.at(-1)).toMatchObject({ assisted: true, levers: ['line_up', 'smaller_set'] });
+  h.close();
+});
+
+it('compare: rows_apart puts each group in its own row with the left edges lined up, no numeral', () => {
+  const h = mountWorkspace({ primitiveId: 'counting-board', evalMode: 'compare', instanceId: 'board',
+    data: spokenData('1', { type: 'compare', count: 9, groupSize: 5, targetAnswer: 5, arrangement: 'groups' }) });
+  h.dispatch('pull_lever', { lever: 'rows_apart' });
+  const pos = Array.from(h.view.container.querySelectorAll('[data-pip-object^="object-"] > circle:last-of-type'))
+    .map(c => [Number(c.getAttribute('cx')), Number(c.getAttribute('cy'))]);
+  const rows = Array.from(new Set(pos.map(p => p[1])));
+  expect(rows).toHaveLength(2);
+  expect(rows.map(y => pos.filter(p => p[1] === y).length).sort()).toEqual([4, 5]);
+  expect(rows.map(y => Math.min(...pos.filter(p => p[1] === y).map(p => p[0])))).toEqual(Array(2).fill(pos[0][0]));
+  expect(h.view.container.querySelector('[data-lever="group-tag"]')).toBeNull();
+  h.close();
+});
+
+it('group: tag_one_group numbers the first group only, never past its size', () => {
+  const h = mountWorkspace({ primitiveId: 'counting-board', evalMode: 'group', instanceId: 'board',
+    data: spokenData('1', { type: 'group_count', count: 15, groupSize: 5, targetAnswer: 15, arrangement: 'groups' }) });
+  expect(levers(h).map(l => l.id)).toEqual(['tag_one_group', 'fewer_groups']);
+  h.dispatch('pull_lever', { lever: 'tag_one_group' });
+  expect(Array.from(h.view.container.querySelectorAll('[data-lever="group-tag"]')).map(t => t.textContent)).toEqual(['1', '2', '3', '4', '5']);
+  expect(JSON.stringify(h.state().task!.demand)).not.toMatch(/\b15\b/);
+  h.close();
+});
+
+it('K subitize: five_groups shows the hidden set again in rows of five, for the flash only', () => {
+  const h = mountWorkspace({ primitiveId: 'counting-board', evalMode: 'subitize', instanceId: 'board',
+    data: spokenData('K', { type: 'subitize', count: 7, targetAnswer: 7 }) });
+  expect(drawn(h)).toBe(0);
+  h.dispatch('pull_lever', { lever: 'five_groups' });
+  expect(drawn(h)).toBe(7);
+  expect(objectRows(h).size).toBe(2);
+  expect(h.state().task!.demand.onScreen).toMatch(/rows of five/);
+  h.settle(5000);
+  expect(drawn(h)).toBe(0);
+  h.close();
+});

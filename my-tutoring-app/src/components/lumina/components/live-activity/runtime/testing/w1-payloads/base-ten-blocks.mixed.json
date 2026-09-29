@@ -1,0 +1,42 @@
+{
+ "source": "qa/tutor-reports/base-ten-blocks-runtime-mixed-payload-2026-09-29.json",
+ "primitiveId": "base-ten-blocks",
+ "evalMode": "mixed",
+ "data": {
+  "title": "Place Value Explorers with Base-Ten Blocks",
+  "description": "Discover how numbers are made of hundreds, tens, and ones, and learn how to build, trade, and add using base-ten blocks.",
+  "numberValue": 348,
+  "challenges": [
+   {
+    "type": "build_number",
+    "instruction": "Build the number 142 with blocks.",
+    "targetNumber": 142,
+    "hint": "Start by placing the blocks for the largest place value column first."
+   },
+   {
+    "type": "read_blocks",
+    "instruction": "Count the blocks on the mat to find the total value.",
+    "targetNumber": 215,
+    "hint": "Count the hundreds blocks, then the tens rods, and finally the ones units."
+   },
+   {
+    "type": "regroup",
+    "instruction": "Perform a trade with the blocks on your mat.",
+    "targetNumber": 321,
+    "hint": "Remember that one larger block can be traded for ten of the next smaller blocks."
+   },
+   {
+    "type": "add_with_blocks",
+    "instruction": "Add 347 + 285 using blocks.",
+    "targetNumber": 632,
+    "secondNumber": 285,
+    "hint": "Combine your blocks and remember to regroup when you have ten or more in any column."
+   }
+  ],
+  "gradeBand": "2-3",
+  "interactionMode": "build",
+  "decimalMode": false,
+  "maxPlace": "hundreds",
+  "supplyTray": true
+ }
+}

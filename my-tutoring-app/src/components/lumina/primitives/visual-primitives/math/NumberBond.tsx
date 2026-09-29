@@ -63,7 +63,7 @@ import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
 import SplitAndSayBoard from './SplitAndSayBoard';
 import { COUNTERS_LEVER, EQ_FRAME_LEVER, FRAME_LEVER, MOVE_LEVER, SMALLER_BOND_LEVER, SMALLER_LEVER, STRIP_LEVER, WAYS_LEVER,
-  equationMove, isEquationBuild, leverFacts, madeWaysOrder, moveStrip, numberBondLevers, smallerBond, smallerTeen,
+  equationMove, isEquationBuild, isRelatedSay, leverFacts, madeWaysOrder, moveStrip, numberBondLevers, smallerBond, smallerTeen,
   type StripFrame } from './numberBondLevers';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { numberBondPipPose } from '../../../pip/numberBondPipPose';
@@ -1344,7 +1344,7 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
               onPointerDownCapture={() => pip.look('board')} onFocusCapture={() => pip.look('board')}>
               {currentItem.splitPhase && <SplitAndSayBoard key={currentItem.sourceId} layoutKey={resolvedInstanceId + '-' + currentItem.sourceId}
                 whole={whole} counters={splitCounters} teen={kind === 'ten-and-ones'}
-                frame={kind === 'ten-and-ones' && currentItem.splitPhase === 'build' && pulledLevers.includes(FRAME_LEVER)}
+                frame={pulledLevers.includes(FRAME_LEVER) && (kind === 'ten-and-ones' || currentItem.splitPhase === 'say')}
                 canMove={canSplitMove}
                 onMove={moveSplitCounter}
                 answerSide={currentItem.splitPhase === 'say' ? splitQuestion(currentItem, splitCounters).answerSide : undefined} />}
@@ -1356,6 +1356,7 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
                   counters={splitCounters}
                   groups={groupsForBond(currentItem)}
                   teen={false}
+                  frame={pulledLevers.includes(FRAME_LEVER) && isRelatedSay(currentItem) ? 'whole' : undefined}
                   canMove={canModeMove}
                   onMove={moveModeCounter}
                   answerGroup={currentItem.interactionPhase === 'related-say-addend'

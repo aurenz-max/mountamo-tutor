@@ -202,3 +202,39 @@ it('easy starts with the equation frame drawn, and a starting frame is never rec
   expect(h.state().task!.workspace!.attempts.at(-1)!.levers).toBeUndefined();
   h.close();
 });
+
+// ── The spoken turns (M1 spoken slice) ───────────────────────────────────────
+
+it('a ten-and-ones say turn: the frame lays the parts out in one commit; the counters and the scene are unchanged', () => {
+  const h = mountWorkspace({ primitiveId: 'number-bond', evalMode: 'ten_and_ones', instanceId: 'bond',
+    data: bondData([{ id: 't', type: 'ten-and-ones', whole: 14 }]) });
+  h.settle();
+  split(h, 10, 4);
+  h.dispatch('advance'); h.settle();
+  expect(h.state().task!.workspace!.expectedAnswer).toBeTruthy();
+  expect(levers(h).map(l => [l.id, l.pulled])).toEqual([['ten_frame_part', false]]);
+  const before = h.state().task!.demand;
+  h.say('ten'); h.feedback('incorrect', 'retry');
+  h.dispatch('pull_lever', { lever: 'ten_frame_part' });
+  expect(h.view.container.querySelectorAll('[data-lever="ten-frame-part"]')).toHaveLength(2);
+  const after = h.state().task!.demand;
+  expect([after.countersInLeftPart, after.countersInRightPart]).toEqual([before.countersInLeftPart, before.countersInRightPart]);
+  expect(after.onScreen).toMatch(/ten-frame outline/);
+  h.say('four'); h.feedback('correct');
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true, levers: ['ten_frame_part'] });
+  h.close();
+});
+
+it('a related-fact say turn: the frame holds the whole, each counter in its colour', () => {
+  const h = mountWorkspace({ primitiveId: 'number-bond', evalMode: 'related_fact', data: payload('related_fact'), instanceId: 'bond' });
+  h.settle();
+  h.press('Join the groups'); h.settle();
+  h.dispatch('advance'); h.settle();
+  expect(h.state().task!.workspace!.expectedAnswer).toBeTruthy();
+  h.dispatch('pull_lever', { lever: 'ten_frame_part' });
+  const frame = h.view.container.querySelectorAll('[data-lever="ten-frame-part"]');
+  expect(frame).toHaveLength(1);
+  expect(frame[0].closest('section')!.getAttribute('aria-label')).toBe('whole counter tray');
+  expect(h.state().task!.demand.onScreen).toMatch(/whole's counters/);
+  h.close();
+});

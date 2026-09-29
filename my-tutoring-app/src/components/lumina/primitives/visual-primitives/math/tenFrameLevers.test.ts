@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fiveFrameLeaks, frameMiss, smallerBuild, tenFrameLevers } from './tenFrameLevers';
+import { fiveFrameIndex, fiveFrameLeaks, frameMiss, smallerBuild, tenFrameLevers } from './tenFrameLevers';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { itemsFromChallenges } from './tenFrameScript';
 
@@ -20,6 +20,26 @@ describe('ten-frame build levers', () => {
     expect(tenFrameLevers(build(5), [], 'K').map(l => l.id)).toEqual(['running_count', 'smaller_build']);
     expect(tenFrameLevers(build(7), ['running_count'], 'K').map(l => [l.id, l.pulled]))
       .toEqual([['running_count', true], ['five_frame', false], ['smaller_build', false]]);
+  });
+  it('build_teen: the easier item is a teen number with about half the ones, never the same teen', () => {
+    for (let n = 11; n <= 19; n++) {
+      const [teen] = itemsFromChallenges([{ id: `t${n}`, type: 'build_teen', targetCount: n }], { capacity: 20, band: 'K' });
+      const easier = smallerBuild(teen, 'K');
+      if (n === 11) { expect(easier).toBeNull(); continue; }
+      const ones = n - 10;
+      expect(easier).toMatchObject({ kind: 'build_teen', shown: 10, answer: Math.ceil(ones / 2), teenTotal: 10 + Math.ceil(ones / 2), capacity: 20 });
+      expect(easier!.teenTotal).not.toBe(n);
+      expect(easier!.id).not.toBe(teen.id);
+    }
+  });
+  it('build_teen: the five-frame outlines the ones frame and is never offered on fifteen', () => {
+    const teen = (n: number) => itemsFromChallenges([{ id: `t${n}`, type: 'build_teen', targetCount: n }], { capacity: 20, band: 'K' })[0];
+    expect(tenFrameLevers(teen(15), [], 'K').map(l => l.id)).toEqual(['running_count', 'smaller_build']);
+    expect(tenFrameLevers(teen(14), [], 'K').map(l => [l.id, l.pulled]))
+      .toEqual([['running_count', false], ['five_frame', false], ['smaller_build', false]]);
+    expect(tenFrameLevers(teen(11), [], 'K').map(l => l.id)).toEqual(['running_count', 'five_frame']);
+    expect(fiveFrameIndex(teen(14))).toBe(1);
+    expect(JSON.stringify(tenFrameLevers(teen(14), [], 'K'))).not.toMatch(/fourteen|\b14\b|\b4\b/);
   });
   it('declares nothing on other kinds yet', () => {
     const [makeTen] = itemsFromChallenges([{ id: 'm', type: 'make_ten', targetCount: 6 }], { capacity: 10, band: 'K' });
@@ -60,6 +80,13 @@ describe('what a wrong placement shows, and the lever that answers it (code, not
     [['running_count'], 'one_short', 'five_frame'], [[], undefined, 'running_count'],
   ] as const)('%#: pulled %j, miss %s -> %s', (pulled, miss, lever) => {
     expect(nextLever(tenFrameLevers(seven, pulled, 'K'), miss)).toBe(lever);
+  });
+
+  it.each([
+    [[], 'one_short', 'running_count'], [[], 'filled_frame', 'running_count'], [[], 'over_by_more', 'five_frame'],
+    [['five_frame'], 'short_by_more', 'smaller_build'],
+  ] as const)('build_teen %#: pulled %j, miss %s -> %s', (pulled, miss, lever) => {
+    expect(nextLever(tenFrameLevers(buildTeen, pulled, 'K'), miss)).toBe(lever);
   });
 
   it('five is the number: the five-frame is not offered, so a miss by more opens the easier build', () => {

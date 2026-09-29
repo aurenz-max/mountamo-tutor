@@ -47,6 +47,8 @@ import {
 import { boardGroups, countMiss, workspaceAssignment, workspaceScene } from './countingBoardDomain';
 import { COUNT_LEVER, HANDS_LEVER, LINE_LEVER, SMALLER_LEVER, TAGS_LEVER, countingBoardLevers, droppedHand, leverFacts,
   smallerGive, startLevers } from './countingBoardLevers';
+import { FIVES_LEVER, GROUP_TAG_LEVER, ROWS_LEVER, SPOKEN_SIMPLIFY, countingBoardSpokenLevers, spokenLeverFacts,
+  spokenPractice } from './countingBoardSpokenLevers';
 import { countingBoardEvidenceSummary, countingObservation } from './countingBoardEvidence';
 import { commitGesture, useWorkspaceRunner, type LiveRun, type WorkspaceRunOptions }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
@@ -248,6 +250,20 @@ interface GroupLayout {
   positions: Array<{ x: number; y: number }>;
   /** One ring per group, drawn around exactly the objects placed in it. */
   rings: Array<{ cx: number; cy: number; rx: number; ry: number }>;
+}
+
+/** The `rows_apart` lever: each group in its own row, left edges lined up, one ring per row. */
+function layoutRows(sizes: number[]): GroupLayout {
+  const spacing = OBJECT_SIZE + 6, rowGap = 28, left = OBJECT_PADDING + OBJECT_SIZE / 2;
+  const top = (WORKSPACE_HEIGHT - (sizes.length * OBJECT_SIZE + (sizes.length - 1) * rowGap)) / 2 + OBJECT_SIZE / 2;
+  const positions: GroupLayout['positions'] = [], rings: GroupLayout['rings'] = [];
+  sizes.forEach((n, r) => {
+    const y = top + r * (OBJECT_SIZE + rowGap);
+    for (let i = 0; i < n; i++) positions.push({ x: left + i * spacing, y });
+    const width = (n - 1) * spacing + OBJECT_SIZE;
+    rings.push({ cx: left + (n - 1) * spacing / 2, cy: y, rx: width / 2 + 10, ry: OBJECT_SIZE / 2 + 10 });
+  });
+  return { positions, rings };
 }
 
 function layoutGroups(sizes: number[], cell: number): GroupLayout {
@@ -646,8 +662,11 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
   displayItemRef.current = currentItem;
   const sessionChallenge = (sessionItem ? challengeById.get(sessionItem.id) : null) ?? null;
   // The easier ask is the same pile under its own id, so it scatters anew and is never the learner's board.
+  // A spoken simplify lever's easier board carries its own count, change, start and group size.
   const currentChallenge = practice && sessionChallenge
-    ? { ...sessionChallenge, id: practice.id, targetAnswer: practice.target } : sessionChallenge;
+    ? { ...sessionChallenge, id: practice.id, targetAnswer: practice.target, count: practice.count,
+      startFrom: practice.startFrom ?? sessionChallenge.startFrom, groupSize: practice.groupSize ?? sessionChallenge.groupSize,
+      changeBy: practice.changeBy ?? sessionChallenge.changeBy } : sessionChallenge;
   const startPulled = startLevers(sessionItem, { showRunningCount, showLastNumber });
   const pulledLevers = leverState.item === sessionItem?.id ? leverState.pulled : startPulled;
   const leverArrangement = sessionChallenge?.arrangement ?? 'scattered';
@@ -660,8 +679,10 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
   const challengeCount = currentItem?.kind === 'add_more' ? startCount + changeBy : startCount;
   const challengeArrangement = currentItem?.kind === 'recount_moved' && hasMoved
     ? 'scattered'
-    : pulledLevers.includes(LINE_LEVER) ? 'line' : (currentChallenge?.arrangement ?? 'scattered');
-  const challengeGroupSize = currentChallenge?.groupSize;
+    : pulledLevers.includes(LINE_LEVER) ? 'line' : pulledLevers.includes(FIVES_LEVER) ? 'groups'
+      : (currentChallenge?.arrangement ?? 'scattered');
+  const challengeGroupSize = pulledLevers.includes(FIVES_LEVER) ? 5 : currentChallenge?.groupSize;
+  const rowsApart = pulledLevers.includes(ROWS_LEVER) && currentItem?.kind === 'compare';
 
   const isKSubitize = gradeBand === 'K' && currentItem?.kind === 'subitize';
   /**
@@ -694,11 +715,13 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
 
   const compareGroupsKey = currentChallenge?.compareGroups?.join(',') ?? '';
   const groupLayout = useMemo<GroupLayout | null>(() => {
+    if (rowsApart) return layoutRows(boardGroups(challengeCount, challengeGroupSize,
+      compareGroupsKey ? compareGroupsKey.split(',').map(Number) : null).sizes);
     if (challengeArrangement !== 'groups') return null;
     const { sizes, cell } = boardGroups(challengeCount, challengeGroupSize,
       compareGroupsKey ? compareGroupsKey.split(',').map(Number) : null);
     return layoutGroups(sizes, cell);
-  }, [challengeCount, challengeArrangement, challengeGroupSize, compareGroupsKey]);
+  }, [challengeCount, challengeArrangement, challengeGroupSize, compareGroupsKey, rowsApart]);
 
   const positions = useMemo(() =>
     groupLayout?.positions ?? generatePositions(challengeCount, challengeArrangement, scatterSeed),
@@ -883,16 +906,29 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
     const scene = currentItem ? workspaceScene(currentItem, { counted: countedObjects, removed: removedObjects,
       added: addedExtras, moved: hasMoved, covered: coveredCount, hidden: isKSubitize && !isSubitizeFlashing })
       : { objects: [], facts: {} };
-    const onScreen = leverFacts(currentItem, pulledLevers);
+    const spoken = sessionItem?.answerKind === 'voice';
+    const onScreen = spoken ? spokenLeverFacts(currentItem, pulledLevers) : leverFacts(currentItem, pulledLevers);
+    const levers = practice ? [] : spoken ? countingBoardSpokenLevers(sessionItem, pulledLevers, leverArrangement, items)
+      : countingBoardLevers(sessionItem, pulledLevers, leverArrangement);
     workspace.current = {
       ...scene,
-      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
-      levers: practice ? [] : countingBoardLevers(sessionItem, pulledLevers, leverArrangement),
+      ...(onScreen || practice ? { facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
+        ...(practice ? { practice: 'An easier board, ungraded. The full item comes back after it.' } : {}) } } : {}),
+      levers,
       // A synchronous commit (the workspace runs it inside flushSync): the board changes before this returns.
       pullLever: (id) => {
-        const lever = countingBoardLevers(sessionItem, pulledLevers, leverArrangement).find(l => l.id === id);
+        const lever = levers.find(l => l.id === id);
         if (practice || !sessionItem || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled.`;
+        if (SPOKEN_SIMPLIFY.has(id)) {
+          const easier = spokenPractice(sessionItem, id, items);
+          if (!easier) return 'There is no easier board for this item.';
+          setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+          practiceRef.current = easier.item; setPractice(easier.item); resetBoardFor(easier.item);
+          return { practice: workspaceAssignment(easier.item) };
+        }
+        // A new look at the flash in rows of five: the objects are hidden after a K flash, so the pull shows them.
+        if (id === FIVES_LEVER && isKSubitize) presentFlash(sessionItem);
         if (id === SMALLER_LEVER) {
           const easier = smallerGive(sessionItem);
           if (!easier) return 'There is no easier ask for this item.';
@@ -1166,6 +1202,13 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
                         {emoji}
                       </text>
 
+                      {kind === 'group_count' && pulledLevers.includes(GROUP_TAG_LEVER) && index < (challengeGroupSize ?? 0) && (
+                        <g data-lever="group-tag">
+                          <circle cx={pos.x - OBJECT_SIZE / 2 + 4} cy={pos.y + OBJECT_SIZE / 2 - 4} r={10} fill="#22d3ee" />
+                          <text x={pos.x - OBJECT_SIZE / 2 + 4} y={pos.y + OBJECT_SIZE / 2 - 4} textAnchor="middle"
+                            dominantBaseline="central" fontSize={11} fill="#0f172a" fontWeight="bold">{index + 1}</text>
+                        </g>
+                      )}
                       {tagsOn && isCounted && countNum !== undefined && (
                         <g data-lever="count-tag">
                           <circle

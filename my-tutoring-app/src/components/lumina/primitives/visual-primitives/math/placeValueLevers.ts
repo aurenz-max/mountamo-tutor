@@ -1,6 +1,7 @@
 /**
- * The in-item levers on place-value-chart's dictated build items (`/add-support-tiers`, handoff 21 M1; approved table
- * qa/support-levers/m1-lever-tables-2026-09-28.md). The spoken asks (find_place, say_value) are a later slice. No
+ * The in-item levers on place-value-chart's dictated build items and say_value asks (`/add-support-tiers`, handoff 21
+ * M1; approved table qa/support-levers/m1-lever-tables-2026-09-28.md). find_place has no lever: any place label, on
+ * the item or on a model, names the answer by its column position. No
  * real-learner evidence: the misses are what `placeValueMiss` observes, plus the catalog's documented struggles
  * (an empty column, 406 written as 46, thirteen heard as thirty).
  *
@@ -16,6 +17,14 @@
  * - `plain_number` (simplify): an ungraded dictation of a number with the same places, no zero and no teen, that
  *   shares no column digit with the item and is no session number; then the full item. Answers `zero_left_empty`,
  *   `teen_ty_swap`. Offered only when the item has a zero or a teen, the two traps it takes away.
+ *
+ * say_value (spoken; the misses are what `placeValueSpokenMisses` names):
+ * - `model_value` (help, both): a model number beside the item's, a digit glowing in the SAME place with its worth
+ *   written under it. Answers the whole number said, the place name alone, and the worth one column over. Leak rule:
+ *   the model digit is not the item's, its worth is no say_value answer in the session, no place name is shown.
+ * - `block_picture` (help, shown): the glowing digit drawn as that many blocks of its place (ten-sticks, hundred-flats,
+ *   thousand-blocks), no numeral or word. Answers the bare digit and a digit one away. Tens and above only (on the
+ *   ones place the blocks would be the answer, and said_digit cannot occur there).
  */
 import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
 import { itemsFromChallenges, type PlaceValueItem, type PlaceValueTier } from './placeValueScript';
@@ -25,6 +34,8 @@ export const WORTH_LEVER = 'column_worth';
 export const READBACK_LEVER = 'expanded_readback';
 export const TEEN_LEVER = 'model_teen';
 export const PLAIN_LEVER = 'plain_number';
+export const VALUE_MODEL_LEVER = 'model_value';
+export const BLOCKS_LEVER = 'block_picture';
 
 const DIGITS = [3, 4, 6, 2, 7, 5, 8, 9];
 const digitAt = (n: number, place: number) => Math.floor(n / 10 ** place) % 10;
@@ -62,11 +73,36 @@ export function plainItem(item: PlaceValueItem, sessionNumbers: ReadonlySet<numb
   return built.find(i => i.kind === 'build_number') ?? null;
 }
 
+/** The say_value asks of a session as `digit@place`: a model worth must be none of them. */
+export const askedValues = (items: readonly PlaceValueItem[]) =>
+  new Set(items.filter(i => i.kind === 'say_value').map(i => `${i.digit}@${i.place}`));
+
+/** The `model_value` number: the item's width, a different digit glowing in the item's place; null when none is free. */
+export function valueModel(item: PlaceValueItem, asked: ReadonlySet<string>): { number: number; place: number; digit: number; worth: number } | null {
+  if (item.kind !== 'say_value') return null;
+  const width = String(item.targetNumber).length, p = item.place;
+  const digit = DIGITS.find(d => d !== item.digit && !asked.has(`${d}@${p}`));
+  if (digit === undefined) return null;
+  let number = 0;
+  for (let q = 0; q < width; q++) {
+    number += (q === p ? digit : DIGITS.find(d => d !== digitAt(item.targetNumber, q) && d !== digit && d !== item.digit)!) * 10 ** q;
+  }
+  return { number, place: p, digit, worth: digit * 10 ** p };
+}
+
 export function placeValueLevers(item: PlaceValueItem | null, pulled: readonly string[], sessionNumbers: ReadonlySet<number>,
-  tier: PlaceValueTier): WorkspaceLever[] {
-  if (item?.kind !== 'build_number') return [];
+  tier: PlaceValueTier, asked: ReadonlySet<string> = new Set()): WorkspaceLever[] {
   const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: string[], when: string,
     does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
+  if (item?.kind === 'say_value') return [
+    ...(valueModel(item, asked) ? [lever(VALUE_MODEL_LEVER, 'help', 'both', ['said_number', 'said_place', 'shifted_place'],
+      'The learner reads the whole number, names the place, or gives the worth one column over.',
+      'Shows a model number beside this one with a different digit glowing in the same place and what it is worth. Say the model; never the answer.')] : []),
+    ...(item.place >= 1 && item.place <= 3 ? [lever(BLOCKS_LEVER, 'help', 'shown', ['said_digit', 'next_digit_value'],
+      'The learner says the digit alone, or the worth of a nearby digit.',
+      'Draws the glowing digit as that many blocks of its place under the number, with no numeral or word.')] : []),
+  ];
+  if (item?.kind !== 'build_number') return [];
   return [
     lever(MODEL_LEVER, 'help', 'both', ['zero_left_empty', 'column_empty'],
       'The learner leaves a column empty, or does not know a place with nothing in it still needs a digit.',
@@ -88,7 +124,15 @@ export function placeValueLevers(item: PlaceValueItem | null, pulled: readonly s
 }
 
 /** What the pulled levers put on screen, as a scene fact. Names the model numbers (never the target), no count. */
-export function leverFacts(item: PlaceValueItem | null, pulled: readonly string[], started: readonly string[]): string {
+export function leverFacts(item: PlaceValueItem | null, pulled: readonly string[], started: readonly string[],
+  asked: ReadonlySet<string> = new Set()): string {
+  if (item?.kind === 'say_value') {
+    const model = pulled.includes(VALUE_MODEL_LEVER) ? valueModel(item, asked) : null;
+    return [
+      model && `A model beside the number shows ${model.number} with its ${model.digit} glowing, worth ${model.worth}.`,
+      pulled.includes(BLOCKS_LEVER) && 'Under the number, the glowing digit is drawn as that many blocks of its place, with no numeral.',
+    ].filter((s): s is string => !!s).join(' ');
+  }
   if (item?.kind !== 'build_number') return '';
   const live = pulled.filter(id => !started.includes(id));
   const d = teenDigit(item.targetNumber);

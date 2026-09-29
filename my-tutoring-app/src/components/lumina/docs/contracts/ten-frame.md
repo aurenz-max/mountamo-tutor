@@ -37,7 +37,7 @@
 
 ### R3 — build/count-all is a concrete construction task · OBSERVED
 
-- **Property:** The child taps frame cells to place or remove counters, then checks the constructed count against `targetCount`. The running count is a support-tier-controlled aid, not the answer key.
+- **Property:** The child taps frame cells to place or remove counters, then checks the constructed count against `targetCount`. On `build` and `build_teen` the running count is the `running_count` help lever: withdrawn at the start of every item at every tier, and shown only once pulled after a miss (user ruling 2026-09-29). Shown from the first tap, the child could tap until it reads the target without counting (on `build_teen` it reads the total, ten included). `make_ten` keeps the tier's `showCount`. `build_teen` also carries `five_frame` (the ones frame's top row; never on fifteen) and `smaller_build` (a teen number with about half the ones, ungraded, never the same teen).
 - **Demanded by:** K number sense, `build` eval mode, support tiers.
 - **Evidence:** component `handleCellClick` + `checkBuildChallenge`; generator `build` docs and support structure.
 - **Probe:** build eval-test PASS; difficulty sweep preserves the number band while withdrawing the count readout.
@@ -155,3 +155,5 @@ Item 12 is **COMPATIBLE / fork-by-band+mode**. It changes only R6's K `make_ten`
 
 - 2026-09-27 — a wrong placement names its miss (`frameMiss`, handoff 20 A1) on build, make_ten, decompose, build_teen and decompose_teen; build levers list the misses they answer. Compatible: no requirement changed, no verdict changed (the split miss reuses `judgeSplit`, the teen miss `teenTargetFor`).
 - 2026-09-27 — handoff 19 (shared runtime, `/add-live-tutor-tools`): the workspace reads the eval mode from the wrapper's lesson pin, not a mode rebuilt in this primitive (slice 1), and publishes the scene after every render, so the scene setter drops its publish call and default fields (slice 3). The scripted runtime registration keeps its mode as `scriptedEvalMode` until that path is deleted. Wiring only: no content, check, miss, verdict or tutor input changed; the sweep over saved payloads (J1-J8) and this primitive's tests pass. Compatible: no requirement changed.
+- 2026-09-29 — **R3 amended (user ruling):** `build`'s running count no longer starts pulled at easy/no tier; `showOptions.showCount` no longer affects `build`. Verified: ten-frame suites 186/186, `typecheck:lumina` 0. Not browser-checked.
+- 2026-09-29 — **R3 amended again:** `build_teen` gets the same three levers (`tenFrameLevers.ts`); its count no longer follows `showCount`. Compatible: the teen verdict, seeding and β are unchanged; the simpler item stays `build_teen` on the double frame. Verified: ten-frame + journey-sweep suites 430/430, `typecheck:lumina` 0. Not browser-checked.

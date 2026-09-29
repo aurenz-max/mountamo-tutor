@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { buildBondItems, type NumberBondItem } from './numberBondScript';
 import { expandNumberBondInteractions } from './numberBondModes';
+import { getComponentById } from '../../../service/manifest/catalog';
 import { COUNTERS_LEVER, FRAME_LEVER, MOVE_LEVER, SMALLER_LEVER, WAYS_LEVER, leverFacts, madeWaysOrder, numberBondLevers,
   smallerTeen } from './numberBondLevers';
 
@@ -31,16 +32,49 @@ describe('which lever answers which miss', () => {
     expect(numberBondLevers(decompose, [], none)).toEqual([]);
     expect(nextLever(numberBondLevers(decompose, [], { pairsMade: 1, countersOpen: false }), 'same_way_again')).toBe(WAYS_LEVER);
   });
-  it('related_fact: the move steps offer show_move; the spoken steps offer none', () => {
+  it('related_fact: the move steps offer show_move; the spoken steps offer the frame of the whole', () => {
     for (const item of related) {
       const moves = item.interactionPhase === 'related-join' || item.interactionPhase === 'related-separate';
-      expect(ids(numberBondLevers(item, [], none))).toEqual(moves ? [MOVE_LEVER] : []);
+      expect(ids(numberBondLevers(item, [], none))).toEqual(moves ? [MOVE_LEVER] : [FRAME_LEVER]);
     }
     expect(nextLever(numberBondLevers(related.find(i => i.interactionPhase === 'related-join')!, [], none), 'other_move')).toBe(MOVE_LEVER);
   });
   it('missing_part: the counters tray, only while it is closed', () => {
     expect(ids(numberBondLevers(missing, [], none))).toEqual([COUNTERS_LEVER]);
     expect(numberBondLevers(missing, [], { pairsMade: 0, countersOpen: true })).toEqual([]);
+  });
+});
+
+describe('the spoken turns (M1 spoken slice)', () => {
+  const say = (kind: string, challenge: object, band: 'K' | '1' = 'K') => items([challenge], band, 19)
+    .filter(i => i.answerKind !== 'gesture' && i.kind === kind);
+  it.each([
+    ['decompose', { id: 'd', type: 'decompose', whole: 5, allPairs: [[1, 4]] }, ['said_whole', 'one_over']],
+    ['ten-and-ones', { id: 't', type: 'ten-and-ones', whole: 14 }, ['said_ten', 'said_whole', 'short_by_more']],
+    ['related-fact', { id: 'r', type: 'related-fact', whole: 5, part1: 1, part2: 4 }, ['said_change', 'added_both', 'one_short']],
+  ])('%s say turns: the frame answers every spoken miss', (kind, challenge, misses) => {
+    const turns = say(kind, challenge);
+    expect(turns.length).toBeGreaterThan(0);
+    for (const item of turns) for (const miss of misses) expect(nextLever(numberBondLevers(item, [], none), miss)).toBe(FRAME_LEVER);
+  });
+  it.each(['said_given_part', 'said_whole', 'added_both', 'over_by_more'])('missing_part, after %s: the counters tray', miss => {
+    expect(nextLever(numberBondLevers(missing, [], none), miss)).toBe(COUNTERS_LEVER);
+  });
+  it("every lever's answers are catalog misses of its mode, and every other catalog miss is declared unanswered", () => {
+    const entry = getComponentById('number-bond')!.teachingWorkspace!;
+    const modes: Record<string, object[]> = {
+      decompose: [{ id: 'd', type: 'decompose', whole: 5, allPairs: [[0, 5], [1, 4], [2, 3]] }],
+      ten_and_ones: [{ id: 't', type: 'ten-and-ones', whole: 14 }],
+      missing_part: [{ id: 'm', type: 'missing-part', whole: 4, part1: 1 }],
+      related_fact: [{ id: 'r', type: 'related-fact', whole: 5, part1: 1, part2: 4 }],
+    };
+    for (const [mode, challenges] of Object.entries(modes)) {
+      const answered = new Set(items(challenges, 'K', 19).flatMap(i => numberBondLevers(i, [], { pairsMade: 1, countersOpen: false })
+        .flatMap(l => l.answers ?? [])));
+      const declared = entry.misses![mode];
+      answered.forEach(m => expect(declared, mode).toContain(m));
+      expect(declared.filter(m => !answered.has(m)).sort(), mode).toEqual([...(entry.unanswered?.[mode] ?? [])].sort());
+    }
   });
 });
 

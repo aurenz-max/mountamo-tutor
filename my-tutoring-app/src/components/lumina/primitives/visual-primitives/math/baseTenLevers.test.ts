@@ -32,7 +32,7 @@ describe('which lever answers which miss', () => {
     // No full column and both counting aids on: help has nothing open, so the ladder's help rung pulls nothing.
     expect(nextLever(baseTenLevers(build(24), start, { tens: 2, ones: 5 }), 'one_over', 'help')).toBeNull();
   });
-  it('the spoken-mat modes declare no levers yet', () => {
+  it("the click mat's read_blocks and regroup (a mixed payload) declare no levers; the spoken mat's are in baseTenSpokenLevers", () => {
     for (const type of ['read_blocks', 'regroup']) expect(baseTenLevers({ type, targetNumber: 24 }, [])).toEqual([]);
     expect(startLevers('regroup', {})).toEqual([]);
   });

@@ -720,7 +720,15 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
           Array.from({ length: digits[i] }, (): DriverInput => ({ type: 'choose', label: `Add one to ${column}` })));
         return [...presses, { type: 'choose', label: 'Check My Blocks' }];
       }
-      if (c.type === 'regroup') throw new Error('base-ten-blocks regroup on the click mat (a mixed payload) is not driven at W1');
+      if (c.type === 'regroup') {
+        // A mixed payload's regroup: any trade that keeps the value is right. Correct breaks one of the largest
+        // block into ten of the next size; wrong checks with no trade (`no_trade`, the documented miss).
+        const digits = String(c.targetNumber).padStart(4, '0').split('').map(Number);
+        const from = digits.findIndex((d, i) => d > 0 && i < 3);
+        if (from < 0) throw new Error(`base-ten-blocks regroup ${c.targetNumber}: no block above the ones to break`);
+        const lower = ['Thousands', 'Hundreds', 'Tens', 'Ones'][from + 1].slice(0, 4);
+        return [...(wrong ? [] : [{ type: 'choose', label: `1 → 10 ${lower}` } as DriverInput]), { type: 'choose', label: 'Check My Trade' }];
+      }
       // Wrong: the documented struggle, a lost carry or borrow (a ten off). On addition the learner first models both
       // numbers on the mat without trading, so a column holds ten or more.
       const add = c.type === 'add_with_blocks';

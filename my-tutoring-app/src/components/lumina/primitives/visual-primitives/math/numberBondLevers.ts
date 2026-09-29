@@ -15,7 +15,13 @@
  * - related_fact (join / separate): `show_move` (help) highlights the move button. Answers `other_move`. The
  *   move is the instruction, not the assessed answer; no count is shown.
  * - missing_part (spoken): `open_counters` (help) opens the counters tray for the learner. The covered part
- *   stays covered; the support is recorded as counters. No miss (spoken).
+ *   stays covered; the support is recorded as counters. Answers every spoken miss of the turn (the given part, the
+ *   whole, both added, off by one or more): each is a quantity the learner can now act out.
+ * - The spoken say turns (decompose and ten_and_ones after the split, related_fact after the move): `ten_frame_part`
+ *   (help) lays the counters the learner is asked about out in a two-by-five outline (on related_fact, the whole's
+ *   counters, whose groups stay coloured). Answers the turn's spoken misses. Leak rule: only counters already on the
+ *   board, rearranged; empty boxes drawn, never filled; no count. The turn's number is on the board by design
+ *   (the learner counts it), so the frame changes how it is counted, not what is there.
  * `not_all_placed` cannot be committed on the split path (a split commits only when the parts make the whole),
  * so the catalog lists it as unanswered.
  *
@@ -47,6 +53,16 @@ export const COUNTERS_LEVER = 'open_counters';
 export const EQ_FRAME_LEVER = 'equation_frame';
 export const STRIP_LEVER = 'move_strip';
 export const SMALLER_BOND_LEVER = 'smaller_bond';
+
+/** A related-fact say turn: the groups stay in the whole and the learner says one of them. */
+export const isRelatedSay = (item: NumberBondItem | null | undefined) =>
+  item?.interactionPhase === 'related-say-addend' || item?.interactionPhase === 'related-say-remainder';
+
+/** The spoken misses a say turn can show (`numberBondSpokenMisses`), by kind. */
+const SAY_MISSES = ['one_short', 'one_over', 'short_by_more', 'over_by_more'];
+const sayMisses = (item: NumberBondItem) => item.kind === 'ten-and-ones' ? ['said_ten', 'said_whole', ...SAY_MISSES]
+  : isRelatedSay(item) ? ['said_given_part', 'said_change', 'said_whole', 'added_both', ...SAY_MISSES]
+    : ['said_given_part', 'said_whole', ...SAY_MISSES];
 
 export const isEquationBuild = (item: NumberBondItem | null | undefined) =>
   item?.interactionPhase === 'equation-build' || item?.interactionPhase === 'family-build';
@@ -122,6 +138,10 @@ export function numberBondLevers(item: NumberBondItem | null, pulled: readonly s
     return view.pairsMade > 0 || pulled.includes(WAYS_LEVER) ? [lever(WAYS_LEVER, 'help', 'shown', ['same_way_again'],
       'The learner makes a way to split the whole that they already made.',
       'Draws the ways the learner already made as small pictures of dots, in the order made, and marks the way the board shows now.')] : [];
+  if (item.splitPhase === 'say' || isRelatedSay(item)) return [lever(FRAME_LEVER, 'help', 'both', sayMisses(item),
+    'The learner miscounts the counters they are asked about, or says another number on the board.',
+    isRelatedSay(item) ? "Lays the whole's counters out in a ten-frame outline, two rows of five, each still in its colour."
+      : "Lays each part's counters out in a ten-frame outline, two rows of five.")];
   if (item.kind === 'ten-and-ones' && item.splitPhase === 'build') return [
     lever(FRAME_LEVER, 'help', 'both', ['ten_one_off', 'no_full_ten'],
       'The learner cannot see how many make a ten while moving counters.',
@@ -147,7 +167,8 @@ export function numberBondLevers(item: NumberBondItem | null, pulled: readonly s
       'The learner does not know which move to make with the groups.',
       'Highlights the button for the move this step asks for.')];
   if (item.interactionPhase === 'missing-infer' && (!view.countersOpen || pulled.includes(COUNTERS_LEVER)))
-    return [lever(COUNTERS_LEVER, 'help', 'shown', [],
+    return [lever(COUNTERS_LEVER, 'help', 'shown',
+      ['said_given_part', 'said_whole', 'added_both', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
       'The learner cannot work out the covered part in their head.',
       'Opens the counters tray so the learner can set the known part aside and look at the rest. The covered part stays covered.')];
   return [];
@@ -158,7 +179,9 @@ export function leverFacts(item: NumberBondItem | null, pulled: readonly string[
   if (!item) return '';
   return [
     pulled.includes(WAYS_LEVER) && item.kind === 'decompose' && 'The ways already made are drawn as small dot pictures, in the order made.',
-    pulled.includes(FRAME_LEVER) && item.kind === 'ten-and-ones' && "Each part's counters sit in a ten-frame outline.",
+    pulled.includes(FRAME_LEVER) && isRelatedSay(item) && "The whole's counters sit in a ten-frame outline, each in its colour.",
+    pulled.includes(FRAME_LEVER) && !isRelatedSay(item) && (item.kind === 'ten-and-ones' || item.splitPhase === 'say')
+      && "Each part's counters sit in a ten-frame outline.",
     pulled.includes(MOVE_LEVER) && (item.kind === 'related-fact' || item.interactionPhase === 'family-model')
       && 'The move button for this step is highlighted.',
     pulled.includes(EQ_FRAME_LEVER) && isEquationBuild(item)

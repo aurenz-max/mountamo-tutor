@@ -399,19 +399,18 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
       setFeedbackType('error');
       return;
     }
-    setRegroupAnimating(place);
-    setTimeout(() => {
-      SoundManager.snap();
-      setColumns(prev => ({
-        ...prev,
-        [place]: prev[place] - 10,
-        [higherPlace]: (prev[higherPlace] || 0) + 1,
-      }));
-      setRegroupAnimating(null);
-      setRegroupCount(c => c + 1);
-      setFeedback(`10 ${PLACE_CONFIG[place].label.toLowerCase()} = 1 ${PLACE_CONFIG[higherPlace].label.toLowerCase().slice(0, -1)}!`);
-      setFeedbackType('success');
-    }, 400);
+    // The trade lands now; only the pulse waits. A check pressed during a delayed trade judged the old mat.
+    SoundManager.snap();
+    setColumns(prev => ({
+      ...prev,
+      [place]: prev[place] - 10,
+      [higherPlace]: (prev[higherPlace] || 0) + 1,
+    }));
+    setRegroupCount(c => c + 1);
+    setFeedback(`10 ${PLACE_CONFIG[place].label.toLowerCase()} = 1 ${PLACE_CONFIG[higherPlace].label.toLowerCase().slice(0, -1)}!`);
+    setFeedbackType('success');
+    setRegroupAnimating(higherPlace);
+    setTimeout(() => setRegroupAnimating(null), 400);
   }, [hasSubmittedEvaluation, activePlaces, columns]);
 
   // Regroup: break 1 larger unit into 10 smaller units
@@ -425,19 +424,17 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
       setFeedbackType('error');
       return;
     }
-    setRegroupAnimating(place);
-    setTimeout(() => {
-      SoundManager.snap();
-      setColumns(prev => ({
-        ...prev,
-        [place]: prev[place] - 1,
-        [lowerPlace]: (prev[lowerPlace] || 0) + 10,
-      }));
-      setRegroupAnimating(null);
-      setRegroupCount(c => c + 1);
-      setFeedback(`1 ${PLACE_CONFIG[place].label.toLowerCase().slice(0, -1)} = 10 ${PLACE_CONFIG[lowerPlace].label.toLowerCase()}!`);
-      setFeedbackType('success');
-    }, 400);
+    SoundManager.snap();
+    setColumns(prev => ({
+      ...prev,
+      [place]: prev[place] - 1,
+      [lowerPlace]: (prev[lowerPlace] || 0) + 10,
+    }));
+    setRegroupCount(c => c + 1);
+    setFeedback(`1 ${PLACE_CONFIG[place].label.toLowerCase().slice(0, -1)} = 10 ${PLACE_CONFIG[lowerPlace].label.toLowerCase()}!`);
+    setFeedbackType('success');
+    setRegroupAnimating(lowerPlace);
+    setTimeout(() => setRegroupAnimating(null), 400);
   }, [hasSubmittedEvaluation, activePlaces, columns]);
 
   const resetColumns = useCallback(() => {

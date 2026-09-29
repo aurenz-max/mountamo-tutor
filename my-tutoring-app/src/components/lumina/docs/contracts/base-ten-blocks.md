@@ -154,6 +154,12 @@ Not a consumer: K teen numbers. The math-k atlas routes teens to ten-frame/numbe
 - **Leak rules (code, `baseTenLevers.test.ts`):** the practice operation has the item's place count, exactly one regroup fewer, M > S, and never the item's operands (either order) or its result (400 built items); an item with one regroup offers no simplify; no lever text carries a number.
 - **Evidence:** `BaseTenBlocks.levers.workspace.test.tsx` (2 operate cases), sweep J1-J9 on the operate payload (its wrong answer is now a lost carry after modelling both numbers), replay 4 payloads x 5 clean (`qa/tutor-reports/replay/base-ten-blocks-2026-09-28.json`; operate records `one_ten_off` → `ten_bracket`).
 
+### R23 — in-item levers on the spoken mat (read_blocks, regroup) · IMPLEMENTED 2026-09-29
+- **Property:** `BaseTenBlocksDi` publishes levers from `baseTenSpokenLevers.ts` with a synchronous `pullLever` and `endPractice`. read_blocks: `block_worth` (one block of the asked size and what one is worth), `dim_others` (other sizes faded; only when another size is on the mat), `group_fives` (the asked blocks five, gap, the rest; from six), `fewer_blocks` (simplify: the same step on a mat with about half as many of the asked block). regroup: `trade_model` (a model mat with a different trade of the same sizes, before and after, with its counts; on both steps), `asked_column_glow` (predict: the receiving column glows round the blocks already there), `small_start` (simplify, predict: one or two in the receiving column; from three). Every catalog miss is answered except the click-mat ids of a mixed payload (`no_trade`, `value_changed`, `one_ten_off`, `digits_swapped`), which the catalog lists as unanswered.
+- **Leak rules (code, `baseTenSpokenLevers.test.ts`):** the worth key is refused on the worth step when one block is on the mat (it would be the answer) and is never the step's answer on any number 10-999; the model trade's starting count is no session problem's, so its result is no session prediction, and it never draws on the learner's mat; with every lever pulled, no scene fact states the step's answer; a practice mat keeps the mode, place and digit count, is never the item's number or another session number, and has a new answer.
+- **Credit:** practice items are ungraded and give the full item back on its own mat; the full item's answer carries the lever and is assisted (`BaseTenBlocksDi.levers.workspace.test.tsx`, 5).
+- **Also (2026-09-29):** the click mat's trades land on the tap (they waited 400 ms, so a check pressed in that window judged the untraded mat); the mixed payload's regroup items are driven (`liveJourneySpec.ts`).
+
 ## Conflicts
 
 _None open._ Notes for the four M1 fixes and the lever slice:
@@ -180,6 +186,7 @@ Proposed only; not applied.
 
 ## Changelog
 
+- 2026-09-29 — R23 added (spoken-mat levers). Compatible: an unpulled mat renders as before. The click mat's trade now updates the columns immediately; only the pulse animation is delayed.
 - 2026-09-28 — R22 added (operate levers). Compatible: an untiered operate deck renders as before (counts start pulled, no total); the generator draws the same operands through the moved builders (`Math.random` stays their default).
 
 - 2026-09-28 — R21 added (build_number levers). Compatible: an untiered or easy build renders as before (counts and total start pulled); catalog guidance trimmed by one clause to stay under the 2000-character cap with the lever doctrine; the W1 test's tool list gains `pull_lever` on build_number only.
