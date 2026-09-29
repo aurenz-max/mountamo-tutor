@@ -367,7 +367,8 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
 
   /** Credited: the first moment the answer may appear on screen. */
   const revealed = runner.currentSolved || practiceSolved;
-  const scanning = leverOn(SCAN_LEVER) && currentItem?.mode === 'find-it' && runner.canAttempt && !revealed;
+  // Drawn from the pull, not from Try again: the host tells the tutor it is on screen at once (LB-16).
+  const scanning = leverOn(SCAN_LEVER) && currentItem?.mode === 'find-it' && !revealed;
   // row_scan: the highlight moves on a clock, alike over every row, and never waits on the target's.
   useEffect(() => {
     if (!scanning) return;
@@ -617,7 +618,7 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
             {/* Pip outlines the grid as a whole; every cell is a choice. */}
             {pipDock}
 
-            <div ref={pip.ref('grid')} data-pip-object="grid" className={`grid ${cols} gap-2 mx-auto`}>
+            <div ref={pip.ref('grid')} data-pip-object="grid" data-lever={scanning ? 'row-scan' : undefined} className={`grid ${cols} gap-2 mx-auto`}>
               {grid.map((letter, i) => {
                 const isTarget = letter.toLowerCase() === item.targetLetter.toLowerCase();
                 const state = revealed && isTarget

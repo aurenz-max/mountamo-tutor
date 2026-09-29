@@ -432,6 +432,7 @@ const KnowledgeCheckJudged: React.FC<JudgedProps> = ({
         disabled={!runner.canAttempt || dropped}
         aria-disabled={dropped || undefined}
         data-dropped={dropped || undefined}
+        data-lever={dropped ? 'drop-far-choice' : undefined}
         aria-label={option.text}
         onClick={() => handleTapChoice(item, option.id)}
         className={`${surface} ${runner.canAttempt ? 'cursor-pointer hover:border-white/25' : 'opacity-80'}`}
@@ -439,7 +440,7 @@ const KnowledgeCheckJudged: React.FC<JudgedProps> = ({
         {inner}
       </button>
     ) : (
-      <li key={option.id} className={surface} data-dropped={dropped || undefined}>
+      <li key={option.id} className={surface} data-dropped={dropped || undefined} data-lever={dropped ? 'drop-far-choice' : undefined}>
         {inner}
       </li>
     );
@@ -462,7 +463,7 @@ const KnowledgeCheckJudged: React.FC<JudgedProps> = ({
           {prompt}
           {/* cue_picture: what the question is about, only once pulled (never a choice's picture, cueLeak). */}
           {currentLevers.pulled.includes(CUE_LEVER) && item.cue && (
-            <div className={`mt-4 text-center ${motion.pop}`} key={`${item.id}-cue`} data-lever-cue>
+            <div className={`mt-4 text-center ${motion.pop}`} key={`${item.id}-cue`} data-lever-cue data-lever="cue-picture">
               <span className="text-5xl leading-none" role="img" aria-label={item.cue.shows}>{item.cue.picture}</span>
             </div>
           )}

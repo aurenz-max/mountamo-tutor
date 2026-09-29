@@ -35,6 +35,8 @@ it('spoken choice: the cue shows in the pull; after a wrong answer a 3-choice me
 
   const receipt = h.dispatch('pull_lever', { lever: 'cue_picture' });
   expect(h.view.container.querySelector('[data-lever-cue]')?.textContent).toBe('🍯');
+  // The journey's screen probe counts [data-lever] (LB-20).
+  expect(h.view.container.querySelectorAll('[data-lever="cue-picture"]')).toHaveLength(1);
   expect(String(receipt.state.task!.demand.levers_on_screen)).toContain('a jar of honey');
   expect(String(receipt.state.task!.demand.levers_on_screen)).not.toMatch(/bee/);
 
@@ -60,6 +62,7 @@ it('touched choice: the farthest untried choice greys out, cannot be touched, an
   const receipt = h.dispatch('pull_lever', { lever: 'drop_far_choice' });
   expect(receipt.status).toBe('committed');
   expect(dropped(h)).toEqual(['3']);
+  expect(Array.from(h.view.container.querySelectorAll('[data-lever="drop-far-choice"]')).map(e => e.textContent)).toEqual(['3']);
   expect(String(receipt.state.task!.demand.levers_on_screen)).toBe('choice 4, "3", is greyed out and is not the answer');
   expect(levers(h)).toEqual([['drop_far_choice', true]]);
   expect(h.offer('pull_lever')).toBeFalsy();

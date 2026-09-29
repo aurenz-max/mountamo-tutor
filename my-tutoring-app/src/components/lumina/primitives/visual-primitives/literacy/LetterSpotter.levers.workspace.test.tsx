@@ -54,6 +54,9 @@ it('find it, row scan: a highlight sweeps every row in turn and does not wait on
   cell(h, 'A');
   expect(observerLever(h.state(), true)).toBe('row_scan');
   h.dispatch('pull_lever', { lever: 'row_scan' });
+  // On screen from the pull, before Try again: the host says so at once (LB-16).
+  expect(q(h, '[data-lever="row-scan"]')).toHaveLength(1);
+  expect(q(h, '[data-scan-row="lit"]')).toHaveLength(4);
   h.dispatch('retry');
   const litRow = () => {
     const lit = q(h, '[data-scan-row="lit"]').map(c => (q(h, '[data-pip-object^="cell-"]') as Element[]).indexOf(c));
