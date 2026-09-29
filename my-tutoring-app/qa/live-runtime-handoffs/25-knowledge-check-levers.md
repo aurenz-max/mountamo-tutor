@@ -31,3 +31,5 @@ Handoff 21's apply. The draft's open "R4" question is settled: removing a choice
 Contract, a report in `qa/eval-reports/`, handoff 21's core line, `WORKSTREAMS.md` Phase 3, one HUMAN-CHECKS row. knowledge-check is its own class for Live: one pair once every mode is levered.
 
 **DONE 2026-09-29.** Report `qa/eval-reports/knowledge-check-levers-2026-09-29.md`; contract R10-R12, `--check` COMPATIBLE; HUMAN-CHECKS #178. Finding KC-UB (`/eval-fix`) in WORKSTREAMS 3.1c.
+
+**Live gate 09-29** (handoff 26, [report](../tutor-reports/h26-live-gates-2026-09-29.md)): passed on both questions. The observer pulled `cue_picture` after "I'm stuck", and it was on screen before the tutor described it. The check reads FAIL on a missing `data-lever` mark (LB-20, fixed). Open: the 2nd-wrong ladder on a spoken choice waits on RP-2 (LB-21, handoff 27), and numeric choices keep no lever after a 2nd wrong (LB-18, `/add-support-tiers`).

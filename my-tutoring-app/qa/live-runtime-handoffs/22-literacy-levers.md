@@ -52,7 +52,7 @@ Work on the gesture modes only. The spoken modes of these primitives join L2 or 
 | ✅ `word-workout` picture_match (09-28, [report](../eval-reports/word-workout-levers-2026-09-28.md)) | `wordWorkoutMiss`: `same_start`, `same_end`, `same_vowel`, `other_word` | help `sound_dots`; simplify `two_far_pictures` | No audio of the printed word |
 | ✅ `interactive-book` find-feature (09-28, [class report](../eval-reports/levers-literacy-L1-2026-09-28.md)) | `interactiveBookMiss`: `tapped_title` ... `tapped_page_number` | help `model_page` (a page outside the book with its parts outlined); simplify `two_part_page` | Never outline the item page's own parts |
 
-**L1 closed 09-28 on the free gates** ([class report](../eval-reports/levers-literacy-L1-2026-09-28.md), HUMAN-CHECKS #172). The Live pair below is not run: `LIVE_TESTING.md` (handoff 20 Part D) sets no Live runs for a lever-set gate, which conflicts with this handoff's per-class pair. A user ruling is owed.
+**L1 closed 09-28 on the free gates** ([class report](../eval-reports/levers-literacy-L1-2026-09-28.md), HUMAN-CHECKS #172). **Live gate passed 09-29** (handoff 26, [report](../tutor-reports/h26-live-gates-2026-09-29.md)): cvc-speller spell_word, 2nd-wrong auto-pull, marks on screen before the tutor's words. Run 1 (letter-spotter) found `row_scan` undrawn until Try again (LB-16, fixed).
 
 ## L2: spoken sound work (phonemic awareness)
 
@@ -68,7 +68,7 @@ Work on the gesture modes only. The spoken modes of these primitives join L2 or 
    - production and collection: `onset_swap_model`, `onset_strip` (picture cards of single sounds that the learner combines with the rime); simplify `dense_family_item`
 4. Then `phoneme-explorer` (`push_tokens` for segment; `showBlendCue`, `showOperationDetail` and `showExampleWord` become pullable), `sound-swap`, `syllable-clapper` (the catalog's stretched-but-joined rung is help; chanted parts are an answer), and `word-flip` (a before/after card pair modelling the rule on a different word).
 
-**L2 closed 09-28 on the free gates** ([class report](../eval-reports/levers-literacy-L2-2026-09-28.md), HUMAN-CHECKS #173): ✅ rhyme-studio · ✅ phoneme-explorer · ✅ sound-swap · ✅ syllable-clapper · ✅ word-flip. Changes from the draft: `hear_pair_again` and `clap_counter` dropped, `start_picture` not built (see the report). The Live pair is not run; the L1 ruling is still owed.
+**L2 closed 09-28 on the free gates** ([class report](../eval-reports/levers-literacy-L2-2026-09-28.md), HUMAN-CHECKS #173): ✅ rhyme-studio · ✅ phoneme-explorer · ✅ sound-swap · ✅ syllable-clapper · ✅ word-flip. Changes from the draft: `hear_pair_again` and `clap_counter` dropped, `start_picture` not built (see the report). **Live gate passed 09-29** (handoff 26, [report](../tutor-reports/h26-live-gates-2026-09-29.md)): rhyme-studio identification `--audio`, the tutor pulled `contrast_model` after "I'm stuck".
 
 **Misses:** every spoken mode here names `proposed:*` ids that don't exist yet. They need `spoken_miss` (handoff 20 Part B, blocked on `runtime/`). Until it lands, a wrong answer judged by the tutor or JEV feeds the trigger ladder without a miss, and `nextLever` goes help-first. Put the proposed ids in each lever's `answers` now, so miss-driven choice works once spoken misses land, and add them to the J9 unanswered list until then.
 
@@ -91,7 +91,7 @@ Simplify levers use a shorter line, a CVC word in place of the focus word, or tw
   - read-along `picture_panels` is not built.
   - word-workout's `chunk_divider` waits for a first try.
   - `levers: true` is now set on word-workout and interactive-book, which fixes their L1 modes too.
-- The Live pair is not run; the L1 ruling is still owed.
+- **Live gate passed 09-29** (handoff 26, [report](../tutor-reports/h26-live-gates-2026-09-29.md)): word-workout sentence_reading `--audio`, observer `tracking_underline` on screen before it was described.
 
 ## L4: K-1 vocabulary and story
 

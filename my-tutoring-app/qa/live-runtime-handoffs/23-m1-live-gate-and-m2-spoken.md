@@ -33,6 +33,8 @@ Check only what Live can see: the tutor or the auto-pull acts without being aske
 
 ## Step 2: M2 spoken modes (vitest gate per primitive)
 
+**DONE 09-29.** All 12 spoken modes levered; every miss answered (J9, mutation-checked per primitive); replay clean after two real ordinal-line leaks were fixed in the levers' `does` text. Report: `qa/eval-reports/levers-M2-spoken-2026-09-29.md`. New payload `ordinal-line.identify-g1.json`.
+
 | Primitive | Modes without levers | Notes |
 |---|---|---|
 | compare-objects | identify_attribute, compare_two, non_standard | `measure_grid` replaced `baseline_align` (it already exists). A help lever may not name which is longer/heavier |

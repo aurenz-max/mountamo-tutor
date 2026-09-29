@@ -70,9 +70,9 @@ Once the gate passes and the user has seen the report, set this as the session g
 | M1c | `base-ten-blocks` | Handoff 21 M1 | **Slice 1 DONE 09-28:** build_number (column counts, total, ten bracket, plainer build); contract derived first and four leaks fixed. operate DONE 09-28 (R22); **spoken mat DONE 09-29** (R23) |
 | M1d | `place-value-chart` | Handoff 21 M1 | **Slice 1 DONE 09-28:** dictated build items (model chart, column worth, read-back, teen pair, plainer number); contract derived first and three defects fixed. **say_value DONE 09-29** (R20, model instead of a label); find_place has no lever by design |
 | M2a | `comparison-builder` | Handoff 21 M2 | **DONE 09-28:** all four modes (model match, tap count, quantity marks, slot steps, learner hops; four simplify items); leak LEV-CB-1 fixed first. Contract R9 |
-| M2b | `compare-objects` | Handoff 21 M2 | **order_three DONE 09-28:** order steps, touch slots, measure grid, far three. Spoken modes open |
-| M2c | `number-sequencer` | Handoff 21 M2 | **order_cards DONE 09-28:** train steps, card marks, three cards. Contract R11. Spoken modes open |
-| M2d | `ordinal-line` | Handoff 21 M2 | **build_sequence DONE 09-28:** front flag, place dots, three places. Spoken modes open |
+| M2b | `compare-objects` | Handoff 21 M2 | **order_three DONE 09-28:** order steps, touch slots, measure grid, far three. **Spoken modes DONE 09-29** (handoff 23): word model, far pair, choice pictures, fewer choices, tap boxes, five marks, shorter measure. Contract R2 |
+| M2c | `number-sequencer` | Handoff 21 M2 | **order_cards DONE 09-28:** train steps, card marks, three cards. Contract R11. **Spoken modes DONE 09-29** (handoff 23): step arrow, car marks, smaller numbers, model train. Contract R12 |
+| M2d | `ordinal-line` | Handoff 21 M2 | **build_sequence DONE 09-28:** front flag, place dots, three places. **Spoken modes DONE 09-29** (handoff 23): front flag, tap marks, word model, side model, place model, shorter line, short story. Contract R2 |
 | C1 | `rhyme-studio` | First literacy and first pre-reader case: every lever needs a voice carrier | Run `/primitive-contract` first; levers act on a model pair outside the item (a rime highlight answers recognition); check the stale `aiDirectives` |
 | C2 | one primitive of a different archetype, chosen with the user | Tests that the design holds outside math manipulatives | Pick from the diagnosis log (`logs/demonstrations/`) where real diagnoses recur |
 

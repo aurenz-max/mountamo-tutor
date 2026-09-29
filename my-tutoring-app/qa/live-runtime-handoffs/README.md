@@ -1,6 +1,8 @@
 # Live runtime adoption handoffs
 
-**Next sessions (2026-09-29), in parallel:** [23: M1 Live gate, then M2 spoken modes](23-m1-live-gate-and-m2-spoken.md) · [24: literacy, measure then finish](24-literacy-measure-and-finish.md) · [25: knowledge-check levers](25-knowledge-check-levers.md). Runtime lane still open: handoff 20 RP-2 build.
+**Next (2026-09-29, after 23-25 shipped):** [23 step 2: M2 spoken modes](23-m1-live-gate-and-m2-spoken.md) · [26: Live gates, literacy L1-L3 + knowledge-check](26-live-gates-literacy-and-kc.md) · [27: RP-2, verdict from the learner's words + LB-15](27-rp2-spoken-verdict-from-words.md) (done 09-29, `c7caf1db` + `50c9730b`) · [28: content defects batch](28-content-defects-batch.md).
+
+**Earlier, 09-29:** [23: M1 Live gate, then M2 spoken modes](23-m1-live-gate-and-m2-spoken.md) · [24: literacy, measure then finish](24-literacy-measure-and-finish.md) · [25: knowledge-check levers](25-knowledge-check-levers.md). Runtime lane still open: handoff 20 RP-2 build.
 
 **Before that:** the current phase in `WORKSTREAMS.md` (reset 2026-09-27): Phase 1 is handoffs [20](20-misses-and-tutor-replay.md) and [19](19-binding-consolidation.md), Phase 3 (levers, current beside Phase 1) is [21: trigger ladder, then math by class](21-lever-rollout.md) and [22: literacy levers](22-literacy-levers.md) in parallel, following [18](18-support-levers-pilot.md).
 (`/add-live-tutor-tools`; LA-13 part 2, found in rollout C6). Then the rollout continues at C7.

@@ -1,0 +1,2110 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 10,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ],
+   "observer_agrees": [
+    0,
+    20
+   ],
+   "miss_recorded": [
+    0,
+    20
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ],
+   "no_change_before_receipt": [
+    0,
+    10
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    10
+   ],
+   "no_protocol_leak": [
+    0,
+    10
+   ],
+   "no_key_before_try": [
+    0,
+    10
+   ],
+   "no_fix_before_try": [
+    0,
+    10
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    10
+   ],
+   "no_protocol_leak": [
+    0,
+    10
+   ],
+   "observer_agrees": [
+    0,
+    10
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "counting-board.count",
+   "primitiveId": "counting-board",
+   "evalMode": "count",
+   "keys": [
+    "4",
+    "1 2 3 4"
+   ],
+   "stopped": "a simplify lever opened a practice item",
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "4",
+       "1 2 3 4"
+      ],
+      "ask": "Count the butterflies. Your turn. How many butterflies?",
+      "leakTokens": [
+       "CB_",
+       "COUNT_"
+      ]
+     },
+     "samples": [
+      {
+       "text": "How many butterflies do you see on the board?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "How many butterflies do you see?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "How many butterflies do you see?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "How many butterflies do you see?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "How many butterflies do you see?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "How many butterflies do you see?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "How many butterflies do you see?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Count the butterflies on the screen. How many butterflies do you see?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "How many butterflies do you see?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "How many butterflies do you see?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "1 2 3 4 5",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "4",
+       "1 2 3 4"
+      ],
+      "ask": "Count the butterflies. Your turn. How many butterflies?",
+      "leakTokens": [
+       "CB_",
+       "COUNT_"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Let's count each butterfly carefully one at a time. Try counting them again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null,
+        "observer_agrees": true,
+        "miss_recorded": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "incorrect",
+        "transition": "retry",
+        "accepted": true,
+        "resolution": null,
+        "replyFinished": false,
+        "reason": "tutor_incorrect_reopen",
+        "creditsNothing": null
+       }
+      },
+      {
+       "text": "Almost! Touch each butterfly as you count, and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null,
+        "observer_agrees": true,
+        "miss_recorded": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "incorrect",
+        "transition": "retry",
+        "accepted": true,
+        "resolution": null,
+        "replyFinished": false,
+        "reason": "tutor_incorrect_reopen",
+        "creditsNothing": null
+       }
+      },
+      {
+       "text": "Let's point to each butterfly one at a time as we count. Try counting them once more.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null,
+        "observer_agrees": true,
+        "miss_recorded": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "incorrect",
+        "transition": "retry",
+        "accepted": true,
+        "resolution": "miss_from_words",
+        "replyFinished": false,
+        "reason": "unsupported",
+        "creditsNothing": true,
+        "wordsMiss": "one_over"
+       }
+      },
+      {
+       "text": "Let's count each butterfly one at a time. Point to each one and try again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null,
+        "observer_agrees": true,
+        "miss_recorded": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "incorrect",
+        "transition": "retry",
+        "accepted": true,
+        "resolution": null,
+        "replyFinished": false,
+        "reason": "tutor_incorrect_reopen",
+        "creditsNothing": null
+       }
+      },
+      {
+       "text": "Let's count them carefully, touching each one just once. Try counting them again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null,
+        "observer_agrees": true,
+        "miss_recorded": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "incorrect",
+        "transition": "retry",
+        "accepted": true,
+        "resolution": null,
+        "replyFinished": false,
+        "reason": "tutor_incorrect_reopen",
+        "creditsNothing": null
+       }
+      },
+      {
+       "text": "That was close! Try touching each butterfly one at a time as you count them.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null,
+        "observer_agrees": true,
+        "miss_recorded": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "incorrect",
+        "transition": "retry",
+        "accepted": true,
+        "resolution": null,
+        "replyFinished": false,
+        "reason": "tutor_incorrect_reopen",
+        "creditsNothing": null
+       }
+      },
+      {
+       "text": "Almost! Try pointing to each butterfly one at a time as you count them.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null,
+        "observer_agrees": true,
+        "miss_recorded": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "incorrect",
+        "transition": "retry",
+        "accepted": true,
+        "resolution": null,
+        "replyFinished": false,
+        "reason": "tutor_incorrect_reopen",
+        "creditsNothing": null
+       }
+      },
+      {
+       "text": "Let's touch each butterfly one at a time as we count. Try counting them again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null,
+        "observer_agrees": true,
+        "miss_recorded": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "incorrect",
+        "transition": "retry",
+        "accepted": true,
+        "resolution": null,
+        "replyFinished": false,
+        "reason": "tutor_incorrect_reopen",
+        "creditsNothing": null
+       }
+      },
+      {
+       "text": "That was close! Try counting each butterfly one at a time.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null,
+        "observer_agrees": true,
+        "miss_recorded": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "incorrect",
+        "transition": "retry",
+        "accepted": true,
+        "resolution": null,
+        "replyFinished": false,
+        "reason": "tutor_incorrect_reopen",
+        "creditsNothing": null
+       }
+      },
+      {
+       "text": "Almost! Try touching each butterfly one at a time as you count them.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null,
+        "observer_agrees": true,
+        "miss_recorded": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "incorrect",
+        "transition": "retry",
+        "accepted": true,
+        "resolution": null,
+        "replyFinished": false,
+        "reason": "tutor_incorrect_reopen",
+        "creditsNothing": null
+       }
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "4",
+       "1 2 3 4"
+      ],
+      "ask": "Count the butterflies. Your turn. How many butterflies?",
+      "leakTokens": [
+       "CB_",
+       "COUNT_"
+      ]
+     },
+     "samples": [
+      {
+       "text": "We have an easier board with fewer butterflies to practice first. How many butterflies do you see now?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "smaller_set",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now we have fewer butterflies to practice with! How many butterflies do you see now?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "smaller_set",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now there are fewer butterflies to practice with! How many butterflies do you see now?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "smaller_set"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I made the group smaller so we can practice. How many butterflies are here now?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "smaller_set"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I made the board smaller so there are fewer butterflies to count. How many do you see now?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "smaller_set",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I put fewer butterflies on the board for us to practice with first. Give this smaller group a try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "smaller_set",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now we have fewer butterflies on the board to practice with. How many butterflies do you see now?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "smaller_set"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "We have a smaller group of butterflies to practice with first. How many butterflies do you see now?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "smaller_set"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now we have fewer butterflies to practice with. How many butterflies do you see now?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "smaller_set"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I made the group smaller for us to practice with. Go ahead and try counting these butterflies now!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "smaller_set"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1~simpler",
+     "trigger": "The learner said they were stuck, so the host pulled smaller_set (simplify). It is on screen now: Opens an easier board of the same kind first. It is not graded; the full item comes back after it. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the easier item on screen.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "4",
+       "1 2 3 4"
+      ],
+      "ask": "Count the butterflies. Your turn. How many butterflies?",
+      "leakTokens": [
+       "CB_",
+       "COUNT_"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look, now there are fewer butterflies on the board to practice with! How many do you count here?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The screen changed, and now there is a smaller group of butterflies to look at. How many butterflies do you see on the board now?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Now there are just two butterflies on the screen. How many butterflies do you see?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the board\u2014now there are only a few butterflies here to practice with. How many butterflies do you see?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the board\u2014now there are only a few butterflies to count! How many do you see?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, now there is a smaller group of butterflies on the board. How many butterflies do you count here?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the board\u2014now there are only a few butterflies to count! How many butterflies do you see?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, now there is a smaller group of butterflies on the screen. How many butterflies do you see?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Now there are fewer butterflies on the board to make it easier. How many butterflies do you see now?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the screen\u2014there is a smaller group of butterflies to practice with! How many butterflies do you see now?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "ten-frame.subitize",
+   "primitiveId": "ten-frame",
+   "evalMode": "subitize",
+   "keys": [
+    "2",
+    "two"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2",
+       "two"
+      ],
+      "ask": "Eyes ready \u2014 watch the frame! Your turn. How many counters did you see?",
+      "leakTokens": [
+       "TF_"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Get your eyes ready to watch the frame! Are you ready?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Get your eyes ready to watch the ten frame! Are you ready?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Eyes ready \u2014 watch the frame! Are you ready to look?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Get your eyes ready to watch the ten frame! Are you ready?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Eyes ready \u2014 watch the frame! Are you ready to see the counters?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Get ready to look closely at the frame! Tell me when you are ready to see it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Get ready to look closely at the frame! Tell me when you are ready to see it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Get ready to look closely at the frame! Tell me when you are ready to see it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Get your eyes ready to watch the ten frame! Are you ready?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Eyes ready! Are you ready to see the ten frame?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "three",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2",
+       "two"
+      ],
+      "ask": "Eyes ready \u2014 watch the frame! Your turn. How many counters did you see?",
+      "leakTokens": [
+       "TF_"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Watch closely! How many counters did you see?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null,
+        "observer_agrees": true,
+        "miss_recorded": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "incorrect",
+        "transition": "retry",
+        "accepted": true,
+        "resolution": "miss_from_words",
+        "replyFinished": false,
+        "reason": "unsupported",
+        "creditsNothing": true,
+        "wordsMiss": "one_over"
+       }
+      },
+      {
+       "text": "Watch the frame closely! How many counters did you see?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null,
+        "observer_agrees": true,
+        "miss_recorded": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "incorrect",
+        "transition": "retry",
+        "accepted": true,
+        "resolution": "miss_from_words",
+        "replyFinished": false,
+        "reason": "uncertain_or_invalid",
+        "creditsNothing": true,
+        "wordsMiss": "one_over"
+       }
+      },
+      {
+       "text": "Watch closely! How many counters did you see?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null,
+        "observer_agrees": true,
+        "miss_recorded": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "incorrect",
+        "transition": "retry",
+        "accepted": true,
+        "resolution": "miss_from_words",
+        "replyFinished": false,
+        "reason": "unsupported",
+        "creditsNothing": true,
+        "wordsMiss": "one_over"
+       }
+      },
+      {
+       "text": "Watch closely! How many counters did you see?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null,
+        "observer_agrees": true,
+        "miss_recorded": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "incorrect",
+        "transition": "retry",
+        "accepted": true,
+        "resolution": "miss_from_words",
+        "replyFinished": false,
+        "reason": "unsupported",
+        "creditsNothing": true,
+        "wordsMiss": "one_over"
+       }
+      },
+      {
+       "text": "Watch closely! How many counters did you see?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null,
+        "observer_agrees": true,
+        "miss_recorded": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "incorrect",
+        "transition": "retry",
+        "accepted": true,
+        "resolution": "miss_from_words",
+        "replyFinished": false,
+        "reason": "unsupported",
+        "creditsNothing": true,
+        "wordsMiss": "one_over"
+       }
+      },
+      {
+       "text": "Take a quick look at the frame! How many counters did you see?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null,
+        "observer_agrees": true,
+        "miss_recorded": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "incorrect",
+        "transition": "retry",
+        "accepted": true,
+        "resolution": "miss_from_words",
+        "replyFinished": false,
+        "reason": "unsupported",
+        "creditsNothing": true,
+        "wordsMiss": "one_over"
+       }
+      },
+      {
+       "text": "Watch closely! How many counters did you see?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null,
+        "observer_agrees": true,
+        "miss_recorded": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "incorrect",
+        "transition": "retry",
+        "accepted": true,
+        "resolution": "miss_from_words",
+        "replyFinished": false,
+        "reason": "unsupported",
+        "creditsNothing": true,
+        "wordsMiss": "one_over"
+       }
+      },
+      {
+       "text": "Watch closely! How many counters did you see?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null,
+        "observer_agrees": true,
+        "miss_recorded": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "incorrect",
+        "transition": "retry",
+        "accepted": true,
+        "resolution": "miss_from_words",
+        "replyFinished": false,
+        "reason": "unsupported",
+        "creditsNothing": true,
+        "wordsMiss": "one_over"
+       }
+      },
+      {
+       "text": "Watch the frame carefully! How many counters did you see?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null,
+        "observer_agrees": true,
+        "miss_recorded": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "incorrect",
+        "transition": "retry",
+        "accepted": true,
+        "resolution": "miss_from_words",
+        "replyFinished": false,
+        "reason": "unsupported",
+        "creditsNothing": true,
+        "wordsMiss": "one_over"
+       }
+      },
+      {
+       "text": "Take another look at the frame! How many counters did you see?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null,
+        "observer_agrees": true,
+        "miss_recorded": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "incorrect",
+        "transition": "retry",
+        "accepted": true,
+        "resolution": "miss_from_words",
+        "replyFinished": false,
+        "reason": "unsupported",
+        "creditsNothing": true,
+        "wordsMiss": "one_over"
+       }
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2",
+       "two"
+      ],
+      "ask": "Eyes ready \u2014 watch the frame! Your turn. How many counters did you see?",
+      "leakTokens": [
+       "TF_"
+      ]
+     },
+     "samples": [
+      {
+       "text": "That's okay, we can look again together! Would you like another peek at the frame?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "That is okay! Let's take another quick peek together. Tell me when your eyes are ready.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "That's okay, we can look again together! Would you like another peek at the frame?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "That's okay, we can look at it again! Tell me when you are ready to see it.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "That's okay, let's take another peek together! How many counters did you see?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Let's take another peek together! How many counters did you see that time?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "That is okay, we can look again together! Tell me when you are ready to see the frame.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "That is completely okay! Would you like to take another quick look at the frame?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "That is okay, we can look again together! Tell me when you are ready to take another peek.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "That's okay, we can look again together! Would you like another peek at the frame?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "two",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2",
+       "two"
+      ],
+      "ask": "Eyes ready \u2014 watch the frame! Your turn. How many counters did you see?",
+      "leakTokens": [
+       "TF_"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You saw 2 counters on the frame.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null,
+        "observer_agrees": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "correct",
+        "transition": "advance",
+        "accepted": true,
+        "resolution": null,
+        "replyFinished": true,
+        "reason": "tutor_success_feedback_finished",
+        "creditsNothing": null
+       }
+      },
+      {
+       "text": "You got it, you saw two counters!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null,
+        "observer_agrees": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "correct",
+        "transition": "advance",
+        "accepted": true,
+        "resolution": null,
+        "replyFinished": true,
+        "reason": "tutor_success_feedback_finished",
+        "creditsNothing": null
+       }
+      },
+      {
+       "text": "You saw it\u2014there were two counters on the frame!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null,
+        "observer_agrees": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "correct",
+        "transition": "advance",
+        "accepted": true,
+        "resolution": null,
+        "replyFinished": true,
+        "reason": "tutor_success_feedback_finished",
+        "creditsNothing": null
+       }
+      },
+      {
+       "text": "You got it, you saw two counters!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null,
+        "observer_agrees": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "correct",
+        "transition": "advance",
+        "accepted": true,
+        "resolution": null,
+        "replyFinished": true,
+        "reason": "tutor_success_feedback_finished",
+        "creditsNothing": null
+       }
+      },
+      {
+       "text": "You got it! You saw 2 counters on the frame.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null,
+        "observer_agrees": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "correct",
+        "transition": "advance",
+        "accepted": true,
+        "resolution": null,
+        "replyFinished": true,
+        "reason": "tutor_success_feedback_finished",
+        "creditsNothing": null
+       }
+      },
+      {
+       "text": "You saw two counters on the frame! You got it right!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null,
+        "observer_agrees": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "correct",
+        "transition": "advance",
+        "accepted": true,
+        "resolution": null,
+        "replyFinished": true,
+        "reason": "tutor_success_feedback_finished",
+        "creditsNothing": null
+       }
+      },
+      {
+       "text": "You got it, you saw two counters!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null,
+        "observer_agrees": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "correct",
+        "transition": "advance",
+        "accepted": true,
+        "resolution": null,
+        "replyFinished": true,
+        "reason": "tutor_success_feedback_finished",
+        "creditsNothing": null
+       }
+      },
+      {
+       "text": "You got it! You saw 2 counters on the frame.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null,
+        "observer_agrees": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "correct",
+        "transition": "advance",
+        "accepted": true,
+        "resolution": null,
+        "replyFinished": true,
+        "reason": "tutor_success_feedback_finished",
+        "creditsNothing": null
+       }
+      },
+      {
+       "text": "You got it, you saw two counters!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null,
+        "observer_agrees": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "correct",
+        "transition": "advance",
+        "accepted": true,
+        "resolution": null,
+        "replyFinished": true,
+        "reason": "tutor_success_feedback_finished",
+        "creditsNothing": null
+       }
+      },
+      {
+       "text": "You got it, you saw two counters!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null,
+        "observer_agrees": true
+       },
+       "evidence": {},
+       "pulledLever": null,
+       "observer": {
+        "verdict": "correct",
+        "transition": "advance",
+        "accepted": true,
+        "resolution": null,
+        "replyFinished": true,
+        "reason": "tutor_success_feedback_finished",
+        "creditsNothing": null
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
