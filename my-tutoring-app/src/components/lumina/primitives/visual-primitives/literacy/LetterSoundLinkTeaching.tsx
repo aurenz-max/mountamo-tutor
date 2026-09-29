@@ -46,8 +46,8 @@ import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { useSpeechScope } from '../../../pip/useSpeechScope';
 import { letterSoundLinkPipPose } from '../../../pip/letterSoundLinkPipPose';
 import { PIP_DOCK_CLASS } from '../../../pip/useWorkspacePipSurface';
-import { FAR_PAIR_LEVER, KEYWORDS_LEVER, VOICE_LEVER, cardKeywords, fartherPair, laterStimuli, letterSoundLevers,
-  voiceModelFor } from './letterSoundLinkLevers';
+import { FAR_PAIR_LEVER, KEYWORDS_LEVER, LETTER_MODEL_LEVER, VOICE_LEVER, cardKeywords, fartherPair, laterStimuli,
+  letterModelFor, letterSoundLevers, voiceModelFor } from './letterSoundLinkLevers';
 import { LuminaBadge, LuminaCard, LuminaCardContent, LuminaCardDescription, LuminaCardHeader,
   LuminaCardTitle, LuminaChallengeCounter, LuminaReadAloudGlyph, answerStateClass } from '../../../ui';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
@@ -154,6 +154,8 @@ function LinkWorkspace({ data, items, className, runtimePlanItemId }:
   const leverOn = (id: string) => !practice && pulled.includes(id);
   const keywords = leverOn(KEYWORDS_LEVER) ? cardKeywords(sessionItem, laterStimuli(items, lesson.state.index)) : [];
   const voiceModel = leverOn(VOICE_LEVER) ? voiceModelFor(sessionItem) : null;
+  const letterModel = leverOn(LETTER_MODEL_LEVER) ? letterModelFor(sessionItem, items, data.letterGroup) : null;
+  const modelPicture = letterModel && sessionItem.mode === 'keyword-match';
   /** The first moment the anchor may appear: a committed correct attempt on
    *  THIS item. There is no `phase === 'affirmed'` on this path — the verdict
    *  and the advance commit together — so the reveal is keyed on the record. */
@@ -167,6 +169,8 @@ function LinkWorkspace({ data, items, className, runtimePlanItemId }:
       keywords.length ? 'a keyword picture under each of the two letter cards, alike' : '',
       voiceModel ? `a quiet sound and a buzzing sound on two pictures: a ${voiceModel.quiet.word} (${voiceModel.quiet.sound}) `
         + `and a ${voiceModel.buzz.word} (${voiceModel.buzz.sound}), with a hand on the throat` : '',
+      letterModel ? `a model on another letter, ${letterModel.letter.toUpperCase()}${modelPicture ? `, beside its picture (${letterModel.word})` : ''}: `
+        + `its sound is ${letterModel.sound}${modelPicture ? `, and ${letterModel.word} starts with it` : ''}. It is not this item's letter` : '',
     ].filter(Boolean);
     workspace.current = {
       ...scene,
@@ -266,6 +270,13 @@ function LinkWorkspace({ data, items, className, runtimePlanItemId }:
         {/* Pip's dock sits below the letter card and above every answer surface (letter buttons,
             keyword pictures), so a pointer to the letter never crosses a choice. */}
         {pipStore && <div ref={pip.dock} data-pip-dock={instance.current} className={PIP_DOCK_CLASS} />}
+
+        {/* letter_model: another letter the session never uses (with its picture on keyword-match). */}
+        {letterModel && <div data-lever="letter-model" aria-label="Letter model"
+          className="flex items-center justify-center gap-4 rounded-2xl border border-cyan-300/20 bg-cyan-950/10 px-5 py-3">
+          <span className={`text-5xl font-bold ${letterColor(letterModel.letter)}`}>{letterModel.letter}</span>
+          {modelPicture && <span role="img" aria-label={letterModel.word} className="text-4xl">{letterModel.emoji}</span>}
+        </div>}
 
         {/* voice_feel_model: a quiet and a buzzing sound on two pictures, never this item's letters. */}
         {voiceModel && <div data-lever="voice-model" className="flex items-center justify-center gap-6 rounded-2xl border border-amber-300/20 bg-amber-500/5 px-5 py-3">

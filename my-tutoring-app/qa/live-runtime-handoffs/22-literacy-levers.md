@@ -106,6 +106,8 @@ Most of these levers already exist as generation flags and only need to become p
 
 **L4 part 1 closed 09-28 on the free gates** ([report](../eval-reports/levers-literacy-L4-2026-09-28.md)): ✅ you-and-me · ✅ story-ribbon · ✅ word-sorter (help levers only; offered where the tier withdrew the aid). Changes from the draft: story-ribbon self-check ticks not built (needs the transcript in the component, a `runtime/` change); the easy order self-check is an open finding (contract R5); no simplify on any of the three. ✅ story-bridge 09-29: one help lever per tap mode from story one's material; spoken modes no lever by decision. ✅ picture-vocabulary 09-29: generator records each card's kind and a leak-checked clue; receptive_match misses named; `function_cue` + `two_cards_far`. ✅ oral-sentence-studio 09-29: generated meaning pictures, spoken misses from the judging contract, `sentence_strip` + `word_pictures`. **L4 closed 09-29 on the free gates** ([report](../eval-reports/levers-literacy-L4-2026-09-28.md), HUMAN-CHECKS #176). Not Live-ready: story-bridge's spoken modes and four picture-vocabulary modes have no misses or levers yet.
 
+**K-2 closed 09-29 (handoff 24 step 2):** every K-2 mode measured and levered or ruled out ([report](../eval-reports/levers-literacy-K2-close-2026-09-29.md)); phonics-blender built. L1's three primitives now set `levers: true`.
+
 ## Later (not this handoff)
 
 - **Grades 2-6, bound:** sentence-analyzer, word-builder, genre-explorer, text-structure-analyzer. These use the same method with spotlight help and fewer or farther choices.

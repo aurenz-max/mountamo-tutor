@@ -1,0 +1,94 @@
+{
+ "source": "qa/tutor-reports/story-bridge-runtime-main_idea_compare-payload-2026-09-29.json",
+ "primitiveId": "story-bridge",
+ "evalMode": "main_idea_compare",
+ "data": {
+  "title": "Story Bridge",
+  "description": "Compare characters, settings, events, and big ideas across two illustrated stories.",
+  "gradeLevel": "kindergarten",
+  "challengeType": "main_idea_compare",
+  "stories": [
+   {
+    "id": "story-bridge-pair-1-a",
+    "title": "Sharing At The Library",
+    "sceneEmoji": "\ud83d\udcda",
+    "setting": "a quiet library",
+    "opening": "Emma sat down at a big table in the library.",
+    "closing": "Both children smiled and read books together happily.",
+    "mainIdea": "Sharing books makes reading fun for everyone.",
+    "characters": [
+     {
+      "id": "story-bridge-pair-1-a-1",
+      "name": "Emma",
+      "emoji": "\ud83d\udc67\ud83c\udffd",
+      "eventEmoji": "\ud83d\udcd6",
+      "sentence": "Emma wanted to read a big picture book.",
+      "uniqueDetail": "wanted to read a big picture book"
+     },
+     {
+      "id": "story-bridge-pair-1-a-2",
+      "name": "Noah",
+      "emoji": "\ud83d\udc66\ud83c\udffd",
+      "eventEmoji": "\ud83e\udd2b",
+      "sentence": "Noah whispered that he forgot his reading glasses.",
+      "uniqueDetail": "forgot his reading glasses"
+     },
+     {
+      "id": "story-bridge-pair-1-a-3",
+      "name": "Zoe",
+      "emoji": "\ud83d\udc67\ud83c\udffb",
+      "eventEmoji": "\ud83e\udd1d",
+      "sentence": "Zoe offered to share her favorite storybook.",
+      "uniqueDetail": "offered to share her favorite storybook"
+     }
+    ]
+   },
+   {
+    "id": "story-bridge-pair-1-b",
+    "title": "Sharing In The Classroom",
+    "sceneEmoji": "\ud83c\udfa8",
+    "setting": "a busy classroom",
+    "opening": "Leo sat down at a small desk in the classroom.",
+    "closing": "Both children smiled and painted pictures together happily.",
+    "mainIdea": "Sharing art supplies makes painting fun for everyone.",
+    "characters": [
+     {
+      "id": "story-bridge-pair-1-b-1",
+      "name": "Leo",
+      "emoji": "\ud83d\udc66\ud83c\udffc",
+      "eventEmoji": "\ud83d\udd8d\ufe0f",
+      "sentence": "Leo wanted to use a bright blue crayon.",
+      "uniqueDetail": "wanted to use a bright blue crayon"
+     },
+     {
+      "id": "story-bridge-pair-1-b-2",
+      "name": "Mia",
+      "emoji": "\ud83d\udc67\ud83c\udffc",
+      "eventEmoji": "\ud83d\udca7",
+      "sentence": "Mia whispered that she spilled some blue paint.",
+      "uniqueDetail": "spilled some blue paint"
+     },
+     {
+      "id": "story-bridge-pair-1-b-3",
+      "name": "Sam",
+      "emoji": "\ud83d\udc66\ud83c\udffb",
+      "eventEmoji": "\ud83c\udf81",
+      "sentence": "Sam offered to share his shiny paint set.",
+      "uniqueDetail": "offered to share his shiny paint set"
+     }
+    ]
+   }
+  ],
+  "challenges": [
+   {
+    "pairId": "story-bridge-pair-1",
+    "storyAId": "story-bridge-pair-1-a",
+    "storyBId": "story-bridge-pair-1-b",
+    "type": "main_idea_compare",
+    "relation": "same",
+    "comparisonSummary": "Both stories are about sharing things to make activities more fun.",
+    "id": "story-bridge-1-1"
+   }
+  ]
+ }
+}

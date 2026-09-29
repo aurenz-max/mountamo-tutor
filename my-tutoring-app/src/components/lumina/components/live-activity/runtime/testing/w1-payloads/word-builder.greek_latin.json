@@ -1,0 +1,126 @@
+{
+ "source": "qa/tutor-reports/word-builder-runtime-greek_latin-payload-2026-09-29.json",
+ "primitiveId": "word-builder",
+ "evalMode": "greek_latin",
+ "data": {
+  "title": "Building Greek and Latin Science Words",
+  "complexityLevel": "greek_latin",
+  "availableParts": [
+   {
+    "id": "pre-tele",
+    "text": "tele",
+    "type": "prefix",
+    "meaning": "far off"
+   },
+   {
+    "id": "root-scope",
+    "text": "scope",
+    "type": "root",
+    "meaning": "see or look"
+   },
+   {
+    "id": "pre-auto",
+    "text": "auto",
+    "type": "prefix",
+    "meaning": "self"
+   },
+   {
+    "id": "root-graph",
+    "text": "graph",
+    "type": "root",
+    "meaning": "write or draw"
+   },
+   {
+    "id": "pre-thermo",
+    "text": "thermo",
+    "type": "prefix",
+    "meaning": "heat"
+   },
+   {
+    "id": "root-meter",
+    "text": "meter",
+    "type": "root",
+    "meaning": "measure"
+   },
+   {
+    "id": "pre-bio",
+    "text": "bio",
+    "type": "prefix",
+    "meaning": "life"
+   },
+   {
+    "id": "root-sphere",
+    "text": "sphere",
+    "type": "root",
+    "meaning": "globe or ball"
+   },
+   {
+    "id": "root-phone",
+    "text": "phone",
+    "type": "root",
+    "meaning": "sound"
+   },
+   {
+    "id": "pre-geo",
+    "text": "geo",
+    "type": "prefix",
+    "meaning": "earth"
+   },
+   {
+    "id": "pre-micro",
+    "text": "micro",
+    "type": "prefix",
+    "meaning": "small"
+   },
+   {
+    "id": "suf-ic",
+    "text": "ic",
+    "type": "suffix",
+    "meaning": "relating to"
+   }
+  ],
+  "targets": [
+   {
+    "word": "telescope",
+    "parts": [
+     "pre-tele",
+     "root-scope"
+    ],
+    "hint": "Name an instrument you look through to see distant planets and stars.",
+    "definition": "A tool with lenses used to see things that are far away.",
+    "sentenceContext": "We used a large ___ to see the rings around Saturn."
+   },
+   {
+    "word": "autograph",
+    "parts": [
+     "pre-auto",
+     "root-graph"
+    ],
+    "hint": "Name a famous person's handwritten signature on a book or baseball.",
+    "definition": "A person's own signature written in their own handwriting.",
+    "sentenceContext": "The baseball player signed an ___ on my cap."
+   },
+   {
+    "word": "thermometer",
+    "parts": [
+     "pre-thermo",
+     "root-meter"
+    ],
+    "hint": "Name the tool used to find out how hot or cold something is.",
+    "definition": "An instrument that measures temperature.",
+    "sentenceContext": "The nurse checked the ___ to see if I had a fever."
+   },
+   {
+    "word": "biosphere",
+    "parts": [
+     "pre-bio",
+     "root-sphere"
+    ],
+    "hint": "Name the entire zone on Earth where all living things exist.",
+    "definition": "The parts of Earth where animals, plants, and other life live.",
+    "sentenceContext": "Every living organism on our planet is part of the global ___."
+   }
+  ],
+  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

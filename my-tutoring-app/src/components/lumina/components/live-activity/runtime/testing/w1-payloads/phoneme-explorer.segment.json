@@ -1,0 +1,65 @@
+{
+ "source": "qa/tutor-reports/phoneme-explorer-runtime-segment-payload-2026-09-29.json",
+ "primitiveId": "phoneme-explorer",
+ "evalMode": "segment",
+ "data": {
+  "title": "Sound Safari: Hearing the first sound in short picture words",
+  "challenges": [
+   {
+    "targetWord": "dog",
+    "targetEmoji": "\ud83d\udc36",
+    "segments": [
+     "d",
+     "o",
+     "g"
+    ],
+    "mode": "segment",
+    "id": "c1"
+   },
+   {
+    "targetWord": "sun",
+    "targetEmoji": "\u2600\ufe0f",
+    "segments": [
+     "s",
+     "u",
+     "n"
+    ],
+    "mode": "segment",
+    "id": "c2"
+   },
+   {
+    "targetWord": "bus",
+    "targetEmoji": "\ud83d\ude8c",
+    "segments": [
+     "b",
+     "u",
+     "s"
+    ],
+    "mode": "segment",
+    "id": "c3"
+   },
+   {
+    "targetWord": "pen",
+    "targetEmoji": "\ud83d\udd8a\ufe0f",
+    "segments": [
+     "p",
+     "e",
+     "n"
+    ],
+    "mode": "segment",
+    "id": "c4"
+   },
+   {
+    "targetWord": "pig",
+    "targetEmoji": "\ud83d\udc37",
+    "segments": [
+     "p",
+     "i",
+     "g"
+    ],
+    "mode": "segment",
+    "id": "c5"
+   }
+  ]
+ }
+}

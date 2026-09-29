@@ -93,7 +93,7 @@ Real-usage channel [4]: unknown (auth), not zero.
 - **Probe:** `npm test -- gemini-cvc-speller`; eval-test with `remediationFocus` → move set, words in group.
 
 ### R12 — In-item levers on spell_word · OBSERVED
-- **Property:** `spell_word` declares four levers (`cvcSpellerLevers.ts`), none on the spoken modes: `vowel_keywords` (every group vowel with its keyword picture, at least two, none marked), `consonant_keywords` (a keyword picture under every bank consonant; no keyword pictures a word or picture of the session), `sound_tokens` (three blank tokens moved only by the learner's taps, never feeding the check), and `small_word` (simplify: an in-group picturable CVC word sharing no session word or rime and at most one box with the item, bank = its 3 letters + 1 far consonant, ungraded, out of metrics). A pull is a synchronous commit that changes the screen and the scene (`levers_on_screen`, `tokens_pushed`); the next attempt records the lever. easy starts with `vowel_keywords` up, which is not a pull.
+- **Property:** `spell_word` declares four levers (`cvcSpellerLevers.ts`); the spoken modes declare one, `middle_model` (a model word outside the item, middle box lit, its middle sound none the session asks): `vowel_keywords` (every group vowel with its keyword picture, at least two, none marked), `consonant_keywords` (a keyword picture under every bank consonant; no keyword pictures a word or picture of the session), `sound_tokens` (three blank tokens moved only by the learner's taps, never feeding the check), and `small_word` (simplify: an in-group picturable CVC word sharing no session word or rime and at most one box with the item, bank = its 3 letters + 1 far consonant, ungraded, out of metrics). A pull is a synchronous commit that changes the screen and the scene (`levers_on_screen`, `tokens_pushed`); the next attempt records the lever. easy starts with `vowel_keywords` up, which is not a pull.
 - **Demanded by:** handoff 22 L1; trigger ladder (handoff 21 S2).
 - **Evidence:** `qa/eval-reports/cvc-speller-levers-2026-09-28.md`.
 - **Probe:** `npm test -- cvcSpellerLevers CvcSpeller.levers.workspace`.
@@ -110,6 +110,8 @@ None open.
 - **tutoring.aiDirectives:** stale. All directives order `[DI_CVC_ITEM]` / `[DI_CVC_BUILD]` / `[DI_CVC_MOVE_ON]` / `[DI_CVC_COMPLETE]` / `[SAY_WORD]` turns from the retired runner; the only emitters left are unused exports in `cvcSpellerScript.ts` (exercised only by `CvcSpeller.di-script.test.ts`). Bound workspace sessions send `tutoring: null`, so they do not receive these directives (R8). Removal is an `/add-live-tutor-tools` cleanup, like rhyme-studio's in handoff 22 L2.
 
 ## Changelog
+
+- 2026-09-29 — R12 extended (handoff 24): `fill_vowel` and `word_sort` declare `middle_model` (help, both): another picture word in three boxes with the middle lit, never a session word or picture, its middle sound none the session asks (a long-vowel word such as rain when every short vowel is asked). R3 holds: the item's vowel and its keyword stay unshown before credit; `other_vowel` is unanswered by decision. Catalog `levers: true` added (the flag had been missing, so the lever doctrine never reached the tutor). `npm test -- cvcSpeller CvcSpeller` 136/136.
 
 - 2026-09-28 — R12 added (spell_word levers, handoff 22 L1). R3, R5, R8, R9 hold: levers are spell_word-only and shown; the practice bank skips the top-up by design; practice stays out of metrics.
 

@@ -1,0 +1,1794 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ],
+   "no_change_before_receipt": [
+    0,
+    15
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    2,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "letter-spotter.find_it",
+   "primitiveId": "letter-spotter",
+   "evalMode": "find_it",
+   "keys": [
+    "1"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "1"
+      ],
+      "ask": "Find the letter S. Your turn. Tap it in the boxes.",
+      "leakTokens": [
+       "LSP_ITEM",
+       "LSP_MOVE",
+       "LSP_COMPLETE",
+       "LSP_HEAR",
+       "LSP_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Find the letter S. Tap it in the boxes.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Find the letter S. Tap it in the boxes!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Find the letter S. Tap it in the boxes.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Find the letter S. Tap it in the boxes!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Find the letter S. Tap it in the boxes!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ch1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"ch1\",\"response\":\"Tapped the letter P.\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"other_letter\"}. Respond to the learner using the current task and workspace.",
+     "miss": "other_letter",
+     "scoredWith": {
+      "keys": [
+       "1"
+      ],
+      "ask": "Find the letter S. Your turn. Tap it in the boxes.",
+      "leakTokens": [
+       "LSP_ITEM",
+       "LSP_MOVE",
+       "LSP_COMPLETE",
+       "LSP_HEAR",
+       "LSP_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Watch the highlight move across each row to help you search. Try finding the letter S now.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "row_scan",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That was P. Look along each row as the highlight moves, and try finding S again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "row_scan",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A yellow highlight is sweeping across each row to help you check line by line. Try finding the letter S now.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "row_scan"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Watch the highlight move across each row to help you search. Try again and tap the letter S.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "row_scan"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Watch the line move across each row to help you search. Try finding the letter S.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "row_scan",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ch1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "1"
+      ],
+      "ask": "Find the letter S. Your turn. Tap it in the boxes.",
+      "leakTokens": [
+       "LSP_ITEM",
+       "LSP_MOVE",
+       "LSP_COMPLETE",
+       "LSP_HEAR",
+       "LSP_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at each row as the highlight sweeps across the boxes. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "row_scan"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A bright line is sweeping across each row one at a time. Look across each row as it lights up to spot the letter S.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "row_scan"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A yellow highlight is sweeping across each row one at a time. Look closely at each row as it lights up and tap the letter S!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "row_scan"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The rows are lighting up one by one to help you look row by row. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "row_scan",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the row with the bright line moving across. Look carefully at each box in that row to find the letter S!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "row_scan",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ch1",
+     "trigger": "The learner said they were stuck, so the host pulled row_scan (help). It is on screen now: A highlight sweeps the rows of the grid one at a time, over and over, so the learner can check each row in turn. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it throu",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "1"
+      ],
+      "ask": "Find the letter S. Your turn. Tap it in the boxes.",
+      "leakTokens": [
+       "LSP_ITEM",
+       "LSP_MOVE",
+       "LSP_COMPLETE",
+       "LSP_HEAR",
+       "LSP_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A yellow highlight is sweeping across the grid to show one row at a time. Watch each row as it lights up and tap the letter S!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "1"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "A line of light is sweeping across each row one at a time. Look along the light and tap the letter S when you see it.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A glowing line is sweeping across each row of boxes to help you look one row at a time. See if you can spot the letter S and tap it!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "1"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "A bright highlight is sweeping across each row of boxes to help you look row by row. See if you can spot the letter S and tap it!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, there is a line lighting up each row one at a time. Watch each row as it glows, and tap the letter S when you spot it.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"ch1\",\"response\":\"Tapped the letter S.\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"row_scan\"]}. Respond to the learner using the current task and workspace.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "1"
+      ],
+      "ask": "Find the letter S. Your turn. Tap it in the boxes.",
+      "leakTokens": [
+       "LSP_ITEM",
+       "LSP_MOVE",
+       "LSP_COMPLETE",
+       "LSP_HEAR",
+       "LSP_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You found the letter S!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found the letter S!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found the letter S!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found the letter S!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it! You tapped the letter S.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "letter-spotter.match_it",
+   "primitiveId": "letter-spotter",
+   "evalMode": "match_it",
+   "keys": [
+    "d"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "m1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "d"
+      ],
+      "ask": "Look at the big letter. Your turn. Tap the little letter that is the same letter.",
+      "leakTokens": [
+       "LSP_ITEM",
+       "LSP_MOVE",
+       "LSP_COMPLETE",
+       "LSP_HEAR",
+       "LSP_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the big letter. Tap the little letter that matches it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the big letter. Tap the little letter that matches it!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the big letter. Tap the little letter that matches it!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the big letter. Tap the little letter that matches it!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the big letter. Tap the little letter that matches it!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "m1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"m1\",\"response\":\"Tapped the letter b.\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"mirror_form\"}. Respond to the learner using the current task and workspace.",
+     "miss": "mirror_form",
+     "scoredWith": {
+      "keys": [
+       "d"
+      ],
+      "ask": "Look at the big letter. Your turn. Tap the little letter that is the same letter.",
+      "leakTokens": [
+       "LSP_ITEM",
+       "LSP_MOVE",
+       "LSP_COMPLETE",
+       "LSP_HEAR",
+       "LSP_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "That tile now shows its big letter partner, so you can see they don't match. Look closely at the big letter and try another one!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "wrong_choice_partner"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Now you can see the big partner that goes with that tile. Take another look and tap the little letter that matches our big letter.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wrong_choice_partner",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That tile now shows its big partner, and they don't quite match. Look at the big letter and try another one!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "wrong_choice_partner"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That tile now shows the big letter that goes with it. Take another look at our big letter and try tapping again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "wrong_choice_partner"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, now that tile shows the big letter that goes with it. Try tapping the little letter that matches our big letter.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "wrong_choice_partner"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "m1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "d"
+      ],
+      "ask": "Look at the big letter. Your turn. Tap the little letter that is the same letter.",
+      "leakTokens": [
+       "LSP_ITEM",
+       "LSP_MOVE",
+       "LSP_COMPLETE",
+       "LSP_HEAR",
+       "LSP_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The screen now shows which big letter goes with that choice, so you can tell them apart. Look at the shape of the big letter at the top, and give another tile a try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "wrong_choice_partner"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Let's try a quick practice with just two choices. Look at the big letter and tap the little letter that matches it.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "two_far_choices",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The tile you tapped now shows its big letter right next to it, so you can see they belong together. Take a close look at our big letter at the top, and tap the little one that matches its shape!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wrong_choice_partner",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The screen now shows the big partner on that tile so you can see it doesn't match. Look at the remaining little letters to find the one with the same shape!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wrong_choice_partner",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The screen now shows which big letter goes with the tile you tapped. Take a look at the other little letters and choose the one that matches our big letter!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "wrong_choice_partner"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "m1",
+     "trigger": "The learner said they were stuck, so the host pulled wrong_choice_partner (help). It is on screen now: Shows the big letter that goes with each little letter the learner tapped wrongly, on that tile. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through f",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "d"
+      ],
+      "ask": "Look at the big letter. Your turn. Tap the little letter that is the same letter.",
+      "leakTokens": [
+       "LSP_ITEM",
+       "LSP_MOVE",
+       "LSP_COMPLETE",
+       "LSP_HEAR",
+       "LSP_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The tile you tapped now shows its big letter partner right on it, so you can see they don't match. Look at the big letter at the top, and pick a different little letter!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "See the big letter partner that popped up right on that tile? That helps us see they don't match, so take another look at the big letter at the top and try a different tile!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That tile now shows the big letter that goes with it, so you can see it doesn't match the one at the top. Look at the big letter again and tap the little letter you think is the match.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That tile now shows the big letter that matches it, so you can see it's different. Take another look at the big letter at the top, and tap a different little letter!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the tile you tapped\u2014it now shows its big letter partner right on it, so you can see it doesn't match the big letter at the top. Take a look at the remaining tiles and tap the one that matches!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "m1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"m1\",\"response\":\"Tapped the letter d.\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"wrong_choice_partner\"]}. Respond to the learner using the current task and workspace.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "d"
+      ],
+      "ask": "Look at the big letter. Your turn. Tap the little letter that is the same letter.",
+      "leakTokens": [
+       "LSP_ITEM",
+       "LSP_MOVE",
+       "LSP_COMPLETE",
+       "LSP_HEAR",
+       "LSP_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You did it, you found the matching little d!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it! You tapped the matching little letter d.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You tapped the little letter d that matches the big letter.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You found the little letter d that matches the big letter.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You found the little letter d that matches the big D.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "letter-spotter.name_it",
+   "primitiveId": "letter-spotter",
+   "evalMode": "name_it",
+   "keys": [
+    "the letter s, the first letter of sun. its name or its sound counts; sun said back is not a letter.",
+    "s"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the letter s, the first letter of sun. its name or its sound counts; sun said back is not a letter.",
+       "s"
+      ],
+      "ask": "Listen: The sun is bright. Your turn. Say the letter that sun starts with.",
+      "leakTokens": [
+       "LSP_ITEM",
+       "LSP_MOVE",
+       "LSP_COMPLETE",
+       "LSP_HEAR",
+       "LSP_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The sun is bright. What letter does sun start with?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The sun is bright. What letter does sun start with?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: The sun is bright. Your turn! What letter does **sun** start with?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: The sun is bright. Your turn! Say the letter that \"sun\" starts with.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: The sun is bright. Your turn! Say the letter that sun starts with.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ch1",
+     "trigger": "M",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the letter s, the first letter of sun. its name or its sound counts; sun said back is not a letter.",
+       "s"
+      ],
+      "ask": "Listen: The sun is bright. Your turn. Say the letter that sun starts with.",
+      "leakTokens": [
+       "LSP_ITEM",
+       "LSP_MOVE",
+       "LSP_COMPLETE",
+       "LSP_HEAR",
+       "LSP_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look, here is the word map: map starts with the /m/ sound, letter M. Now listen to sun: what letter does sun start with?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "first_letter_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, map starts with the /m/ sound and the letter M. Now listen: sun. What letter does sun start with?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "first_letter_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the screen: map starts with the /m/ sound and the letter M. Now listen to sun\u2014what letter does sun start with?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "first_letter_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the screen: map starts with the /m/ sound, letter M. Now listen to sun\u2014what letter does sun start with?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "first_letter_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the map: map starts with the /m/ sound, letter M. Now listen to sun\u2014what letter does sun start with?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "first_letter_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ch1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the letter s, the first letter of sun. its name or its sound counts; sun said back is not a letter.",
+       "s"
+      ],
+      "ask": "Listen: The sun is bright. Your turn. Say the letter that sun starts with.",
+      "leakTokens": [
+       "LSP_ITEM",
+       "LSP_MOVE",
+       "LSP_COMPLETE",
+       "LSP_HEAR",
+       "LSP_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the picture: map starts with the /m/ sound, letter M. Now listen to sun: what letter does sun start with?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "first_letter_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "On the screen, we see the word map, and its first letter M is lit up for the /m/ sound. Now try making the very first sound you hear in sun!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "first_letter_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the picture of map: the first sound is /m/, and the first letter lit up is M. What sound does sun make at the very beginning?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "first_letter_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the new picture on screen: the word map starts with the /m/ sound, letter M. Now think about the word sun\u2014what letter does it start with?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "first_letter_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the screen: map starts with the /m/ sound, letter M. What sound does sun start with?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "first_letter_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ch1",
+     "trigger": "The learner said they were stuck, so the host pulled first_letter_model (help). It is on screen now: Shows another picture word in print with its first letter lit. Once it is on screen, say that word, its first sound, and the letter it starts with. It is not this item's word. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever o",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the letter s, the first letter of sun. its name or its sound counts; sun said back is not a letter.",
+       "s"
+      ],
+      "ask": "Listen: The sun is bright. Your turn. Say the letter that sun starts with.",
+      "leakTokens": [
+       "LSP_ITEM",
+       "LSP_MOVE",
+       "LSP_COMPLETE",
+       "LSP_HEAR",
+       "LSP_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A new picture of a map popped up on the screen with its first letter lit up. The word map starts with the /m/ sound, letter M. Now listen closely to sun: what letter does sun start with?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A picture of a map appeared with its first letter lit up: map starts with the /m/ sound, letter M! \n\nNow listen to our word, sun: what letter does sun start with?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, a picture of a map popped up on the screen! The word map starts with the /m/ sound, letter M. Now what letter does sun start with?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the screen: there is a picture of a map, and its first letter M is lit up because map starts with the /m/ sound, letter M! Now listen to sun: what letter does sun start with?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A picture of a map popped up, and its first letter M is glowing because map starts with the /m/ sound, letter M. Now listen to sun: what letter does sun start with?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch1",
+     "trigger": "S",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the letter s, the first letter of sun. its name or its sound counts; sun said back is not a letter.",
+       "s"
+      ],
+      "ask": "Listen: The sun is bright. Your turn. Say the letter that sun starts with.",
+      "leakTokens": [
+       "LSP_ITEM",
+       "LSP_MOVE",
+       "LSP_COMPLETE",
+       "LSP_HEAR",
+       "LSP_TAP"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! Sun starts with the letter S!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! Sun starts with the letter S!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! Sun starts with the letter S!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! Sun starts with the letter S!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it, sun starts with the letter S!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

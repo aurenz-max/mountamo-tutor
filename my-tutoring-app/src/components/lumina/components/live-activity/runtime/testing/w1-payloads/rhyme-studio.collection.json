@@ -1,0 +1,27 @@
+{
+ "source": "qa/tutor-reports/rhyme-studio-runtime-collection-payload-2026-09-29.json",
+ "primitiveId": "rhyme-studio",
+ "evalMode": "collection",
+ "data": {
+  "title": "Rhyme Time Collection",
+  "gradeLevel": "K",
+  "challenges": [
+   {
+    "id": "c1",
+    "mode": "collection",
+    "targetWord": "cat",
+    "targetWordImage": "a fluffy cat",
+    "rhymeFamily": "-at",
+    "targetWordEmoji": "\ud83d\udc31"
+   },
+   {
+    "id": "c2",
+    "mode": "collection",
+    "targetWord": "sun",
+    "targetWordImage": "a bright yellow sun",
+    "rhymeFamily": "-un",
+    "targetWordEmoji": "\u2600\ufe0f"
+   }
+  ]
+ }
+}

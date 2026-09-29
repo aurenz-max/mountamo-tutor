@@ -1,0 +1,53 @@
+{
+ "source": "qa/tutor-reports/picture-vocabulary-runtime-association-payload-2026-09-29.json",
+ "primitiveId": "picture-vocabulary",
+ "evalMode": "association",
+ "data": {
+  "title": "Things That Go Together at Home!",
+  "description": "Let's find the things that match and go together in our house!",
+  "challengeType": "association",
+  "challenges": [
+   {
+    "id": "pv-1",
+    "type": "association",
+    "word": "key",
+    "emoji": "\ud83d\udd11",
+    "baseWord": "lock",
+    "baseEmoji": "\ud83d\udd12"
+   },
+   {
+    "id": "pv-2",
+    "type": "association",
+    "word": "cup",
+    "emoji": "\ud83e\udd64",
+    "baseWord": "plate",
+    "baseEmoji": "\ud83c\udf7d\ufe0f"
+   },
+   {
+    "id": "pv-3",
+    "type": "association",
+    "word": "toothpaste",
+    "emoji": "\ud83e\uddf4",
+    "baseWord": "toothbrush",
+    "baseEmoji": "\ud83e\udea5"
+   },
+   {
+    "id": "pv-4",
+    "type": "association",
+    "word": "spoon",
+    "emoji": "\ud83e\udd44",
+    "baseWord": "bowl",
+    "baseEmoji": "\ud83e\udd63"
+   },
+   {
+    "id": "pv-5",
+    "type": "association",
+    "word": "paper",
+    "emoji": "\ud83d\udcc4",
+    "baseWord": "pencil",
+    "baseEmoji": "\u270f\ufe0f"
+   }
+  ],
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving."
+ }
+}

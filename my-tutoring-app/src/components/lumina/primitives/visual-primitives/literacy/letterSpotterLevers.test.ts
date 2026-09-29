@@ -7,7 +7,9 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import { LETTER_GROUPS } from '../../../service/literacy/letterGroups';
 import type { LetterSpotterItem } from './letterSpotterScript';
 import { letterSpotterMiss } from './letterSpotterWorkspace';
-import { hasOtherCaseShape, letterSpotterLevers, partnerCapitals, practiceItem, practiceLeak, referenceLeaks } from './letterSpotterLevers';
+import { firstLetterModelFor, firstLetterModelLeak, hasOtherCaseShape, letterSpotterLevers, partnerCapitals, practiceItem, practiceLeak,
+  referenceLeaks } from './letterSpotterLevers';
+import { LITERACY_CATALOG } from '../../../service/manifest/catalog/literacy';
 
 const base = { answerKind: 'gesture', responseClass: 'manipulation', tier: 'medium' } as const;
 const find = (id: string, target: string, grid: string): LetterSpotterItem => ({ ...base, id, mode: 'find-it', action: 'find-it',
@@ -77,4 +79,35 @@ describe('levers and the miss they answer', () => {
     expect(nextLever(letterSpotterLevers(items[1], ['wrong_choice_partner'], items, 3, ['b']), 'mirror_form')).toBe('two_far_choices');
     expect(nextLever(letterSpotterLevers(items[0], ['other_case_reference'], items, 3), 'same_shape_family')).toBe('small_far_grid');
   });
+});
+
+describe('first_letter_model on name_it (handoff 24)', () => {
+  const name = (id: string, target: string, word: string, sentence: string): LetterSpotterItem => ({ ...base, id, mode: 'name-it',
+    action: 'name-it', targetLetter: target, targetWord: word, spokenSentence: sentence, options: [] }) as unknown as LetterSpotterItem;
+  const session = [name('a', 's', 'sun', 'The sun is bright.'), name('b', 'm', 'map', 'I see a map.'), name('c', 'n', 'net', 'A net can catch fish.')];
+
+  it.each([1, 2, 3, 4])('group %i: the model word starts with no session target and is in no session sentence', group => {
+    for (const item of session) {
+      const m = firstLetterModelFor(item, session, group)!;
+      expect(m).toBeTruthy();
+      expect(firstLetterModelLeak(m, session)).toBe(false);
+      expect(m.word[0]).toBe(m.letter);
+      expect(['s', 'm', 'n']).not.toContain(m.letter);
+    }
+  });
+
+  it.each(['said_the_word', 'later_letter', 'letter_not_in_word'])('%s -> first_letter_model; J9 closed', miss => {
+    expect(nextLever(letterSpotterLevers(session[0], [], session, 1), miss)).toBe('first_letter_model');
+    const entry = LITERACY_CATALOG.find(c => c.id === 'letter-spotter')!.teachingWorkspace!;
+    expect(entry.levers).toBe(true);
+    expect(letterSpotterLevers(session[0], [], session, 1).flatMap(l => l.answers ?? []).sort()).toEqual([...entry.misses!.name_it].sort());
+  });
+});
+
+it('first_letter_model: its description names no model word (read before the pull, it was spoken as on screen)', () => {
+  const item = { answerKind: 'voice', responseClass: 'letter_name', tier: 'medium', id: 'a', mode: 'name-it', action: 'name-it',
+    targetLetter: 's', targetWord: 'sun', spokenSentence: 'The sun is bright.', options: [] } as unknown as LetterSpotterItem;
+  const m = firstLetterModelFor(item, [item], 1)!;
+  const [lever] = letterSpotterLevers(item, [], [item], 1);
+  expect(lever.does).not.toMatch(new RegExp(`\b${m.word}\b`, 'i'));
 });

@@ -1,0 +1,115 @@
+{
+ "source": "qa/tutor-reports/story-bridge-runtime-sequence_two-payload-2026-09-29.json",
+ "primitiveId": "story-bridge",
+ "evalMode": "sequence_two",
+ "data": {
+  "title": "Story Bridge",
+  "description": "Compare characters, settings, events, and big ideas across two illustrated stories.",
+  "gradeLevel": "kindergarten",
+  "challengeType": "sequence_two",
+  "stories": [
+   {
+    "id": "story-bridge-pair-1-a",
+    "title": "Fun At The Park",
+    "sceneEmoji": "\ud83c\udf33",
+    "setting": "a sunny green park",
+    "opening": "Lily went to the park on a warm morning.",
+    "closing": "The friends played together until lunch time.",
+    "mainIdea": "Friends can share their toys at the park.",
+    "characters": [
+     {
+      "id": "story-bridge-pair-1-a-1",
+      "name": "Lily",
+      "emoji": "\ud83d\udc67\ud83c\udffd",
+      "eventEmoji": "\u26bd",
+      "sentence": "Lily brought a bright red ball to the park.",
+      "uniqueDetail": "brought a red ball to the green grass"
+     },
+     {
+      "id": "story-bridge-pair-1-a-2",
+      "name": "Sam",
+      "emoji": "\ud83d\udc66\ud83c\udffd",
+      "eventEmoji": "\ud83d\ude97",
+      "sentence": "Sam shared a toy car with his friend.",
+      "uniqueDetail": "shared a fast car on the path"
+     },
+     {
+      "id": "story-bridge-pair-1-a-3",
+      "name": "Emma",
+      "emoji": "\ud83d\udc67\ud83c\udffe",
+      "eventEmoji": "\ud83c\udfa8",
+      "sentence": "Emma painted a pretty picture on the bench.",
+      "uniqueDetail": "painted a picture near the trees"
+     }
+    ]
+   },
+   {
+    "id": "story-bridge-pair-1-b",
+    "title": "Fun At The Beach",
+    "sceneEmoji": "\ud83c\udfd6\ufe0f",
+    "setting": "a sandy warm beach",
+    "opening": "Mia went to the beach on a bright day.",
+    "closing": "The friends smiled as they played all day.",
+    "mainIdea": "Friends can share their toys at the beach.",
+    "characters": [
+     {
+      "id": "story-bridge-pair-1-b-1",
+      "name": "Mia",
+      "emoji": "\ud83d\udc67\ud83c\udffc",
+      "eventEmoji": "\ud83c\udfc0",
+      "sentence": "Mia brought a round ball to the sandy beach.",
+      "uniqueDetail": "brought a ball to the warm sand"
+     },
+     {
+      "id": "story-bridge-pair-1-b-2",
+      "name": "Leo",
+      "emoji": "\ud83d\udc66\ud83c\udffc",
+      "eventEmoji": "\ud83e\uddf8",
+      "sentence": "Leo shared a soft bear with his friend.",
+      "uniqueDetail": "shared a soft bear by the water"
+     },
+     {
+      "id": "story-bridge-pair-1-b-3",
+      "name": "Zoe",
+      "emoji": "\ud83d\udc67\ud83c\udffb",
+      "eventEmoji": "\ud83c\udff0",
+      "sentence": "Zoe built a tall sand castle near the shore.",
+      "uniqueDetail": "built a sand castle near the ocean"
+     }
+    ]
+   }
+  ],
+  "challenges": [
+   {
+    "pairId": "story-bridge-pair-1",
+    "storyAId": "story-bridge-pair-1-a",
+    "storyBId": "story-bridge-pair-1-b",
+    "type": "sequence_two",
+    "anchorEventIndex": 0,
+    "targetEventIndex": 0,
+    "comparisonSummary": "Both events happen in the beginning of their stories.",
+    "id": "story-bridge-1-1"
+   },
+   {
+    "pairId": "story-bridge-pair-1",
+    "storyAId": "story-bridge-pair-1-a",
+    "storyBId": "story-bridge-pair-1-b",
+    "type": "sequence_two",
+    "anchorEventIndex": 1,
+    "targetEventIndex": 1,
+    "comparisonSummary": "Both events happen in the middle of their stories.",
+    "id": "story-bridge-1-2"
+   },
+   {
+    "pairId": "story-bridge-pair-1",
+    "storyAId": "story-bridge-pair-1-a",
+    "storyBId": "story-bridge-pair-1-b",
+    "type": "sequence_two",
+    "anchorEventIndex": 2,
+    "targetEventIndex": 2,
+    "comparisonSummary": "Both events happen in the ending of their stories.",
+    "id": "story-bridge-1-3"
+   }
+  ]
+ }
+}

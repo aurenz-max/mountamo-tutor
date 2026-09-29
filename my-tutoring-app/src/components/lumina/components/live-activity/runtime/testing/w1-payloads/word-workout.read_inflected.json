@@ -1,0 +1,39 @@
+{
+ "source": "qa/tutor-reports/word-workout-runtime-read_inflected-payload-2026-09-29.json",
+ "primitiveId": "word-workout",
+ "evalMode": "read_inflected",
+ "data": {
+  "title": "Word Workout: Reading short-vowel CVC words and telling real words from silly ones",
+  "mode": "inflected-word",
+  "masteredVowels": [
+   "a",
+   "e",
+   "i",
+   "o",
+   "u"
+  ],
+  "gradeLevel": "1",
+  "challenges": [
+   {
+    "id": "c1",
+    "mode": "inflected-word",
+    "targetWord": "cats"
+   },
+   {
+    "id": "c2",
+    "mode": "inflected-word",
+    "targetWord": "mixing"
+   },
+   {
+    "id": "c3",
+    "mode": "inflected-word",
+    "targetWord": "jumped"
+   },
+   {
+    "id": "c4",
+    "mode": "inflected-word",
+    "targetWord": "rested"
+   }
+  ]
+ }
+}

@@ -1,0 +1,53 @@
+{
+ "source": "qa/tutor-reports/picture-vocabulary-runtime-opposite-payload-2026-09-29.json",
+ "primitiveId": "picture-vocabulary",
+ "evalMode": "opposite",
+ "data": {
+  "title": "Opposite Words: Naming Everyday Things at Home!",
+  "description": "Let us play a fun game by finding the opposite of each item around the house.",
+  "challengeType": "opposite",
+  "challenges": [
+   {
+    "id": "pv-1",
+    "type": "opposite",
+    "word": "small",
+    "emoji": "\ud83d\udce6",
+    "baseWord": "big",
+    "baseEmoji": "\ud83d\udce6"
+   },
+   {
+    "id": "pv-2",
+    "type": "opposite",
+    "word": "off",
+    "emoji": "\ud83d\udd0c",
+    "baseWord": "on",
+    "baseEmoji": "\ud83d\udca1"
+   },
+   {
+    "id": "pv-3",
+    "type": "opposite",
+    "word": "empty",
+    "emoji": "\ud83e\uded9",
+    "baseWord": "full",
+    "baseEmoji": "\ud83e\udd5b"
+   },
+   {
+    "id": "pv-4",
+    "type": "opposite",
+    "word": "dry",
+    "emoji": "\ud83d\udcdc",
+    "baseWord": "wet",
+    "baseEmoji": "\ud83e\uddfd"
+   },
+   {
+    "id": "pv-5",
+    "type": "opposite",
+    "word": "open",
+    "emoji": "\ud83d\udeaa",
+    "baseWord": "closed",
+    "baseEmoji": "\ud83d\udeaa"
+   }
+  ],
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving."
+ }
+}

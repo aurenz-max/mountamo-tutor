@@ -1,0 +1,197 @@
+{
+ "source": "qa/tutor-reports/decodable-reader-runtime-inference-payload-2026-09-29.json",
+ "primitiveId": "decodable-reader",
+ "evalMode": "inference",
+ "data": {
+  "title": "Pam and the Cat",
+  "gradeLevel": "1",
+  "passage": {
+   "sentences": [
+    {
+     "id": "s1",
+     "words": [
+      {
+       "id": "s1_w1",
+       "text": "Pam",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s1_w2",
+       "text": "has",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s1_w3",
+       "text": "a",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s1_w4",
+       "text": "fat",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s1_w5",
+       "text": "cat.",
+       "phonicsPattern": "cvc"
+      }
+     ]
+    },
+    {
+     "id": "s2",
+     "words": [
+      {
+       "id": "s2_w1",
+       "text": "They",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s2_w2",
+       "text": "stop",
+       "phonicsPattern": "blend"
+      },
+      {
+       "id": "s2_w3",
+       "text": "by",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s2_w4",
+       "text": "the",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s2_w5",
+       "text": "lake.",
+       "phonicsPattern": "cvce"
+      }
+     ]
+    },
+    {
+     "id": "s3",
+     "words": [
+      {
+       "id": "s3_w1",
+       "text": "His",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s3_w2",
+       "text": "frog",
+       "phonicsPattern": "blend"
+      },
+      {
+       "id": "s3_w3",
+       "text": "can",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s3_w4",
+       "text": "hop",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s3_w5",
+       "text": "on",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s3_w6",
+       "text": "a",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s3_w7",
+       "text": "rug.",
+       "phonicsPattern": "cvc"
+      }
+     ]
+    },
+    {
+     "id": "s4",
+     "words": [
+      {
+       "id": "s4_w1",
+       "text": "Pam",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s4_w2",
+       "text": "said",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s4_w3",
+       "text": "with",
+       "phonicsPattern": "digraph"
+      },
+      {
+       "id": "s4_w4",
+       "text": "a",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s4_w5",
+       "text": "grin.",
+       "phonicsPattern": "blend"
+      }
+     ]
+    }
+   ],
+   "imageDescription": "Pam sitting near a lake with a fat cat and a green frog hopping on a rug"
+  },
+  "phonicsPatternsInPassage": [
+   "cvc",
+   "sight",
+   "blend",
+   "cvce",
+   "digraph"
+  ],
+  "comprehensionQuestions": [
+   {
+    "question": "How does Pam feel when she is with her pets?",
+    "options": [
+     {
+      "id": "A",
+      "text": "Pam is happy today.",
+      "emoji": "\ud83d\ude0a"
+     },
+     {
+      "id": "B",
+      "text": "Pam is sad now.",
+      "emoji": "\ud83d\ude22"
+     },
+     {
+      "id": "C",
+      "text": "Pam is mad at them.",
+      "emoji": "\ud83d\ude20"
+     }
+    ],
+    "correctOptionId": "A"
+   },
+   {
+    "question": "What will the frog likely do next?",
+    "options": [
+     {
+      "id": "A",
+      "text": "The frog will hop.",
+      "emoji": "\ud83d\udc38"
+     },
+     {
+      "id": "B",
+      "text": "The frog will bake.",
+      "emoji": "\ud83c\udf5e"
+     },
+     {
+      "id": "C",
+      "text": "The frog will sleep.",
+      "emoji": "\ud83d\ude34"
+     }
+    ],
+    "correctOptionId": "A"
+   }
+  ],
+  "comprehensionType": "inference",
+  "readingMode": "decode"
+ }
+}

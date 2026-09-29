@@ -1,0 +1,34 @@
+{
+ "source": "qa/tutor-reports/word-workout-runtime-choose_in_context-payload-2026-09-29.json",
+ "primitiveId": "word-workout",
+ "evalMode": "choose_in_context",
+ "data": {
+  "title": "Word Workout: Reading short-vowel CVC words and telling real words from silly ones",
+  "mode": "context-discrimination",
+  "masteredVowels": [
+   "a",
+   "e",
+   "i",
+   "o",
+   "u"
+  ],
+  "gradeLevel": "1",
+  "challenges": [
+   {
+    "id": "c1",
+    "mode": "context-discrimination",
+    "contextTrialId": "cat-cap"
+   },
+   {
+    "id": "c2",
+    "mode": "context-discrimination",
+    "contextTrialId": "hen-pen"
+   },
+   {
+    "id": "c3",
+    "mode": "context-discrimination",
+    "contextTrialId": "pig-pin"
+   }
+  ]
+ }
+}

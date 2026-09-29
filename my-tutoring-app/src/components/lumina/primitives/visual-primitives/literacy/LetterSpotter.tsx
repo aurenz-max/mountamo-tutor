@@ -95,8 +95,8 @@ import {
 } from './letterSpotterScript';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { CASE_LEVER, PARTNER_LEVER, SCAN_LEVER, SMALL_GRID_LEVER, TWO_CHOICES_LEVER, letterSpotterLevers, partnerCapitals,
-  practiceItem } from './letterSpotterLevers';
+import { CASE_LEVER, FIRST_LETTER_LEVER, PARTNER_LEVER, SCAN_LEVER, SMALL_GRID_LEVER, TWO_CHOICES_LEVER, firstLetterModelFor,
+  letterSpotterLevers, partnerCapitals, practiceItem } from './letterSpotterLevers';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { letterSpotterPipPose } from '../../../pip/letterSpotterPipPose';
 
@@ -375,6 +375,7 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
     return () => clearInterval(timer);
   }, [scanning]);
   const partners = leverOn(PARTNER_LEVER) && sessionItem ? partnerCapitals(sessionItem, wrongTaps) : [];
+  const firstModel = leverOn(FIRST_LETTER_LEVER) && sessionItem ? firstLetterModelFor(sessionItem, items, data.letterGroup) : null;
 
   // What the tutor and the observer are shown, republished every render.
   // W1 offers no demonstration targets and no presentation.
@@ -386,6 +387,8 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
       leverOn(CASE_LEVER) ? 'the named letter as a small letter on a card beside the grid' : '',
       leverOn(SCAN_LEVER) ? 'a highlight sweeping the rows of the grid one at a time, over and over' : '',
       partners.length ? `the big letter that goes with each little letter the learner tapped wrongly (${partners.join(', ')}), on that tile` : '',
+      firstModel ? `a model on another word, ${firstModel.word}, as a picture and in print with its first letter lit: `
+        + `${firstModel.word} starts with ${firstModel.letter.toUpperCase()}. It is not this item's word` : '',
     ].filter(Boolean);
     workspace.current = { ...scene,
       facts: { ...scene.facts, ...(shown.length ? { levers_on_screen: shown.join('; ') } : {}),
@@ -551,6 +554,17 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
                 </p>
               </div>
             </div>
+            {/* first_letter_model: another word, its first letter lit. Never a session target letter. */}
+            {firstModel && (
+              <div data-lever="first-letter-model" aria-label="First letter model"
+                className="mx-auto flex w-fit items-center gap-4 rounded-2xl border border-cyan-300/20 bg-cyan-950/10 px-5 py-3">
+                <span className="text-4xl" role="img" aria-label={firstModel.word}>{firstModel.emoji}</span>
+                <span className="text-3xl font-bold text-slate-300">
+                  <span data-lit="true" className="rounded-md bg-cyan-400/25 px-1 text-cyan-100">{firstModel.word[0]}</span>
+                  {firstModel.word.slice(1)}
+                </span>
+              </div>
+            )}
             {/* No answer tiles. The sentence IS the whole stage — the child
                 reads the star, hears the word, and says the letter. */}
             {pipDock}

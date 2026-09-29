@@ -1,0 +1,148 @@
+{
+ "source": "derived 2026-09-29 from word-sorter.match_pairs.json: same words, hard (levers offered)",
+ "primitiveId": "word-sorter",
+ "evalMode": "match_pairs",
+ "data": {
+  "title": "Fun Word Match Game",
+  "gradeLevel": "K",
+  "sortingTopic": "Words and Rhymes",
+  "challenges": [
+   {
+    "id": "match_pairs-0",
+    "type": "match_pairs",
+    "instruction": "Match each word that rhymes with the picture!",
+    "relationLabel": "rhyme",
+    "pairs": [
+     {
+      "id": "p0",
+      "term": "cat",
+      "termEmoji": "🐱",
+      "match": "hat",
+      "matchEmoji": "👒"
+     },
+     {
+      "id": "p1",
+      "term": "dog",
+      "termEmoji": "🐶",
+      "match": "log",
+      "matchEmoji": "🪵"
+     },
+     {
+      "id": "p4",
+      "term": "pen",
+      "termEmoji": "🖊️",
+      "match": "hen",
+      "matchEmoji": "🐔"
+     },
+     {
+      "id": "p3",
+      "term": "sun",
+      "termEmoji": "☀️",
+      "match": "run",
+      "matchEmoji": "🏃"
+     },
+     {
+      "id": "p2",
+      "term": "pig",
+      "termEmoji": "🐷",
+      "match": "wig",
+      "matchEmoji": " wigs"
+     }
+    ],
+    "showBucketEmojis": false,
+    "showFiledWords": false
+   },
+   {
+    "id": "match_pairs-1",
+    "type": "match_pairs",
+    "instruction": "Match each word with its opposite meaning!",
+    "relationLabel": "opposite",
+    "pairs": [
+     {
+      "id": "p0",
+      "term": "big",
+      "termEmoji": "🐘",
+      "match": "small",
+      "matchEmoji": "🐁"
+     },
+     {
+      "id": "p4",
+      "term": "fast",
+      "termEmoji": "🚀",
+      "match": "slow",
+      "matchEmoji": "🐢"
+     },
+     {
+      "id": "p2",
+      "term": "happy",
+      "termEmoji": "😀",
+      "match": "sad",
+      "matchEmoji": "😢"
+     },
+     {
+      "id": "p3",
+      "term": "up",
+      "termEmoji": "⬆️",
+      "match": "down",
+      "matchEmoji": "⬇️"
+     },
+     {
+      "id": "p1",
+      "term": "hot",
+      "termEmoji": "🔥",
+      "match": "cold",
+      "matchEmoji": "🧊"
+     }
+    ],
+    "showBucketEmojis": false,
+    "showFiledWords": false
+   },
+   {
+    "id": "match_pairs-2",
+    "type": "match_pairs",
+    "instruction": "Match the word to its matching animal or food pair!",
+    "relationLabel": "synonym",
+    "pairs": [
+     {
+      "id": "p0",
+      "term": "dog",
+      "termEmoji": "🐕",
+      "match": "pup",
+      "matchEmoji": "🐶"
+     },
+     {
+      "id": "p1",
+      "term": "cat",
+      "termEmoji": "🐈",
+      "match": "kit",
+      "matchEmoji": "🐱"
+     },
+     {
+      "id": "p4",
+      "term": "bee",
+      "termEmoji": "🐝",
+      "match": "hive",
+      "matchEmoji": "🍯"
+     },
+     {
+      "id": "p2",
+      "term": "bird",
+      "termEmoji": "🐦",
+      "match": "nest",
+      "matchEmoji": "🪺"
+     },
+     {
+      "id": "p3",
+      "term": "cow",
+      "termEmoji": "🐮",
+      "match": "milk",
+      "matchEmoji": "🥛"
+     }
+    ],
+    "showBucketEmojis": false,
+    "showFiledWords": false
+   }
+  ],
+  "supportTier": "hard"
+ }
+}

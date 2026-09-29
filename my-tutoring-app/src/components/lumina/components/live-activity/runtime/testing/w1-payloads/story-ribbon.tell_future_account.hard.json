@@ -1,0 +1,112 @@
+{
+ "source": "derived 2026-09-29 from story-ribbon.tell_future_account.json: same stories, hard tier (levers offered)",
+ "primitiveId": "story-ribbon",
+ "evalMode": "tell_future_account",
+ "data": {
+  "title": "Story Ribbon",
+  "description": "Use picture moments to tell connected stories, control story time, or explain a connection. Some familiar built-in stories were used.",
+  "gradeLevel": "kindergarten",
+  "challengeType": "tell_future_account",
+  "challenges": [
+   {
+    "id": "story-ribbon-1",
+    "type": "tell_future_account",
+    "title": "Leo Flies a Kite",
+    "characterName": "Leo",
+    "characterEmoji": "👦",
+    "setting": "the windy park",
+    "timeCue": "Tomorrow",
+    "events": [
+     {
+      "id": "story-ribbon-1-event-1",
+      "order": 0,
+      "emoji": "📦",
+      "pictureLabel": "blue box",
+      "modelSentence": "Tomorrow Leo will open his new blue box."
+     },
+     {
+      "id": "story-ribbon-1-event-2",
+      "order": 1,
+      "emoji": "🪁",
+      "pictureLabel": "paper kite",
+      "modelSentence": "Tomorrow Leo will build a colorful paper kite."
+     },
+     {
+      "id": "story-ribbon-1-event-3",
+      "order": 2,
+      "emoji": "🌳",
+      "pictureLabel": "tall tree",
+      "modelSentence": "Tomorrow Leo will fly his kite past the tall tree."
+     }
+    ],
+    "supportTier": "hard"
+   },
+   {
+    "id": "story-ribbon-3",
+    "type": "tell_future_account",
+    "title": "Fun Park Day",
+    "characterName": "Leo",
+    "characterEmoji": "👦",
+    "setting": "the sunny park",
+    "timeCue": "Tomorrow",
+    "events": [
+     {
+      "id": "story-ribbon-3-event-1",
+      "order": 0,
+      "emoji": "🎒",
+      "pictureLabel": "big blue backpack",
+      "modelSentence": "Tomorrow Leo will pack his big blue backpack."
+     },
+     {
+      "id": "story-ribbon-3-event-2",
+      "order": 1,
+      "emoji": "🪁",
+      "pictureLabel": "red flying kite",
+      "modelSentence": "Tomorrow Leo will fly his red flying kite."
+     },
+     {
+      "id": "story-ribbon-3-event-3",
+      "order": 2,
+      "emoji": "🍪",
+      "pictureLabel": "sweet chocolate cookie",
+      "modelSentence": "Tomorrow Leo will eat a sweet chocolate cookie."
+     }
+    ],
+    "supportTier": "hard"
+   },
+   {
+    "id": "story-ribbon-2",
+    "type": "tell_future_account",
+    "title": "A Tiny Garden",
+    "characterName": "Mina",
+    "characterEmoji": "👧",
+    "setting": "the garden",
+    "events": [
+     {
+      "id": "story-ribbon-2-event-1",
+      "order": 0,
+      "emoji": "🌰",
+      "pictureLabel": "Seeds and soil",
+      "modelSentence": "Mina will plant three seeds in soft soil."
+     },
+     {
+      "id": "story-ribbon-2-event-2",
+      "order": 1,
+      "emoji": "💧",
+      "pictureLabel": "Watering can",
+      "modelSentence": "Mina will water the seeds every morning."
+     },
+     {
+      "id": "story-ribbon-2-event-3",
+      "order": 2,
+      "emoji": "🌱",
+      "pictureLabel": "Green sprout",
+      "modelSentence": "A green sprout will push through the soil."
+     }
+    ],
+    "timeCue": "Tomorrow",
+    "supportTier": "hard"
+   }
+  ]
+ }
+}

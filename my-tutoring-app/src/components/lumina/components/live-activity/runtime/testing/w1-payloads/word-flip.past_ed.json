@@ -1,0 +1,47 @@
+{
+ "source": "qa/tutor-reports/word-flip-runtime-past_ed-payload-2026-09-29.json",
+ "primitiveId": "word-flip",
+ "evalMode": "past_ed",
+ "data": {
+  "title": "Fun With Past Action Words!",
+  "challengeType": "past_ed",
+  "challenges": [
+   {
+    "id": "word-flip-1",
+    "type": "past_ed",
+    "sourceWord": "kick",
+    "answer": "kicked",
+    "emoji": "\ud83e\uddb5"
+   },
+   {
+    "id": "word-flip-2",
+    "type": "past_ed",
+    "sourceWord": "wash",
+    "answer": "washed",
+    "emoji": "\ud83e\uddfc"
+   },
+   {
+    "id": "word-flip-3",
+    "type": "past_ed",
+    "sourceWord": "open",
+    "answer": "opened",
+    "emoji": "\ud83d\udeaa"
+   },
+   {
+    "id": "word-flip-4",
+    "type": "past_ed",
+    "sourceWord": "look",
+    "answer": "looked",
+    "emoji": "\ud83d\udc40"
+   },
+   {
+    "id": "word-flip-5",
+    "type": "past_ed",
+    "sourceWord": "laugh",
+    "answer": "laughed",
+    "emoji": "\ud83d\ude02"
+   }
+  ],
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving."
+ }
+}

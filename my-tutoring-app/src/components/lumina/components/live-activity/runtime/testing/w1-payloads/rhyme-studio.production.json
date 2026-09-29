@@ -1,0 +1,83 @@
+{
+ "source": "qa/tutor-reports/rhyme-studio-runtime-production-payload-2026-09-29.json",
+ "primitiveId": "rhyme-studio",
+ "evalMode": "production",
+ "data": {
+  "title": "Rhyme Time: Kindergarten Sound Match",
+  "gradeLevel": "K",
+  "challenges": [
+   {
+    "id": "c1",
+    "mode": "production",
+    "targetWord": "cat",
+    "targetWordImage": "a fluffy pet cat",
+    "rhymeFamily": "-at",
+    "targetWordEmoji": "\ud83d\udc31"
+   },
+   {
+    "id": "c2",
+    "mode": "production",
+    "targetWord": "sun",
+    "targetWordImage": "a bright yellow sun",
+    "rhymeFamily": "-un",
+    "targetWordEmoji": "\u2600\ufe0f"
+   },
+   {
+    "id": "c3",
+    "mode": "production",
+    "targetWord": "bed",
+    "targetWordImage": "a cozy small bed",
+    "rhymeFamily": "-ed",
+    "targetWordEmoji": "\ud83d\udecc"
+   },
+   {
+    "id": "c4",
+    "mode": "production",
+    "targetWord": "top",
+    "targetWordImage": "a spinning toy top",
+    "rhymeFamily": "-op",
+    "targetWordEmoji": "\ud83d\udd1d"
+   },
+   {
+    "id": "c5",
+    "mode": "production",
+    "targetWord": "pig",
+    "targetWordImage": "a pink farm pig",
+    "rhymeFamily": "-ig",
+    "targetWordEmoji": "\ud83d\udc37"
+   },
+   {
+    "id": "c6",
+    "mode": "production",
+    "targetWord": "dog",
+    "targetWordImage": "a happy brown dog",
+    "rhymeFamily": "-og",
+    "targetWordEmoji": "\ud83d\udc36"
+   },
+   {
+    "id": "c7",
+    "mode": "production",
+    "targetWord": "hot",
+    "targetWordImage": "a hot cooking pot",
+    "rhymeFamily": "-ot",
+    "targetWordEmoji": "\ud83d\udd25"
+   },
+   {
+    "id": "c8",
+    "mode": "production",
+    "targetWord": "pan",
+    "targetWordImage": "a metal frying pan",
+    "rhymeFamily": "-an",
+    "targetWordEmoji": "\ud83c\udf73"
+   },
+   {
+    "id": "c9",
+    "mode": "production",
+    "targetWord": "hen",
+    "targetWordImage": "a brown farm hen",
+    "rhymeFamily": "-en",
+    "targetWordEmoji": "\ud83d\udc14"
+   }
+  ]
+ }
+}

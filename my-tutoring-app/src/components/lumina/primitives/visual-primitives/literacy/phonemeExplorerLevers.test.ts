@@ -9,7 +9,7 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import { LITERACY_CATALOG } from '../../../service/manifest/catalog/literacy';
 import { itemFromChallenge, itemsFromChallenges, type PhonemeChallengeLike, type PhonemeExplorerItem } from './phonemeExplorerScript';
 import {
-  CVC_POOL, PHONEME_MISSES, askedSound, changedBox, phonemeExplorerLevers, phonemeSessionWords, positionModelFor,
+  CVC_POOL, LONG_MIDDLE_POOL, PHONEME_MISSES, askedSound, changedBox, phonemeExplorerLevers, phonemeSessionWords, positionModelFor,
   practiceItemFor, practiceLeak,
 } from './phonemeExplorerLevers';
 
@@ -37,7 +37,7 @@ describe('the pool', () => {
 });
 
 describe.each([...Object.keys(BY_MODE).map(m => [m, [BY_MODE[m], ...every]] as const),
-  ['saved isolate', payload('isolate')] as const, ['saved blend', payload('blend')] as const])('%s', (_label, items) => {
+  ...['isolate', 'blend', 'ending', 'medial', 'segment', 'manipulate'].map(m => [`saved ${m}`, payload(m)] as const)])('%s', (_label, items) => {
   it('every practice item keeps the mode and uses no session word or asked sound', () => {
     for (const item of items) {
       const practice = practiceItemFor(item, items);
@@ -55,12 +55,26 @@ describe.each([...Object.keys(BY_MODE).map(m => [m, [BY_MODE[m], ...every]] as c
       const model = positionModelFor(item, items)!;
       expect(used.has(model.word)).toBe(false);
       const at = { isolate: 0, medial: 1, ending: 2 }[item.kind as 'isolate'];
-      expect(asked.has(askedSound({ kind: 'isolate', phoneme: model.sounds[at] } as PhonemeExplorerItem))).toBe(false);
+      expect(asked.has(askedSound({ kind: 'isolate', phoneme: (model.phon ?? model.sounds)[at] } as PhonemeExplorerItem))).toBe(false);
     }
   });
 });
 
 describe('practice items', () => {
+  it('medial still has a model and a practice item when the session asks all five short vowels (09-29 measure)', () => {
+    const items = payload('medial');
+    expect(new Set(items.map(askedSound))).toEqual(new Set(['aaa', 'eee', 'iii', 'ooo', 'uuu']));
+    const model = positionModelFor(items[0], items)!;
+    expect(LONG_MIDDLE_POOL).toContain(model);
+    const p = practiceItemFor(items[0], items)!;
+    expect(['ay', 'ee', 'oh']).toContain(p.vowelSpoken);
+    const [a, f] = [p.answer, p.menu!.find(c => c.word !== p.answer)!.word];
+    expect(LONG_MIDDLE_POOL.find(w => w.word === p.targetWord)!.phon![1])
+      .toBe(LONG_MIDDLE_POOL.find(w => w.word === a)!.phon![1]);
+    expect(a).not.toBe(f);
+    expect(phonemeExplorerLevers(items[0], [], items).map(l => l.id)).toEqual(['position_model', 'two_cards_far']);
+  });
+
   it('isolate practises a held sound; its foil differs in every position', () => {
     const p = practiceItemFor(BY_MODE.isolate, every)!;
     expect(['m', 's', 'f', 'n', 'l', 'r']).toContain(p.phoneme);

@@ -104,3 +104,24 @@ it('find it, the practice grid is ungraded, survives Try again, and gives the fu
   expect(attempts.at(-1)).toMatchObject({ assisted: true, levers: ['small_far_grid'] });
   h.close();
 });
+
+it('name_it: first_letter_model shows another word with its first letter lit, never a session target', () => {
+  const NAME = [
+    { id: 'n1', mode: 'name-it', targetLetter: 's', targetCase: 'lowercase', sentence: 'The ⭐un is bright.', targetWord: 'sun',
+      options: [], emoji: '⭐', spokenSentence: 'The sun is bright.' },
+    { id: 'n2', mode: 'name-it', targetLetter: 'm', targetCase: 'lowercase', sentence: 'I see a ⭐ap.', targetWord: 'map',
+      options: [], emoji: '⭐', spokenSentence: 'I see a map.' }];
+  const h = mount('name_it', NAME);
+  expect(levers(h).map(l => [l.id, l.pulled])).toEqual([['first_letter_model', false]]);
+  h.say('sun'); h.feedback('incorrect', 'retry');
+  expect(q(h, '[data-lever="first-letter-model"]')).toHaveLength(0);
+  const receipt = h.dispatch('pull_lever', { lever: 'first_letter_model' });
+  expect(receipt.status).toBe('committed');
+  const lit = q(h, '[data-lever="first-letter-model"] [data-lit]').map(e => e.textContent);
+  expect(lit).toHaveLength(1);
+  expect(['s', 'm']).not.toContain(lit[0]);
+  expect(String(receipt.state.task!.demand.levers_on_screen)).toMatch(/another word/);
+  h.say('s'); h.feedback('correct');
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ itemId: 'n1', correct: true, assisted: true, levers: ['first_letter_model'] });
+  h.close();
+});

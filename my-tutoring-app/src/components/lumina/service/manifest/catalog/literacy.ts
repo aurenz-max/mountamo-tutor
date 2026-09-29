@@ -944,6 +944,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     supportsEvaluation: true,
     teachingWorkspace: {
       grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
+      levers: true,
       guidance: 'The learner sees the letters of a word and says the whole word out loud; it is judged against the word you '
         + 'are given. Sounding it out and then saying the word is a correct blend. Separate sounds with no word at the '
         + 'end, letter names, or a close but different word (cap for cat) are not yet the word. A tapped letter asks you '
@@ -2482,6 +2483,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     affordances: { representation: 'symbolic', answers: ['spoken', 'tap'], role: 'apply', minutes: 5 },
     teachingWorkspace: {
       grades: ['Kindergarten', 'Grade 1'],
+      levers: true,
       guidance: 'On name it you read the sentence and the learner says the letter the starred word starts with; it is '
         + 'judged against that letter, and its name or its sound counts. The word said back is not a letter. On find it '
         + 'you name a letter and the learner taps the one cell holding it; on match it the learner taps the little '
@@ -2702,24 +2704,25 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'letter-sound-link',
     teachingWorkspace: {
       grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'Where the learner SAYS the answer, judge the audio you hear against the assignment fact. '
-        + `A letter's NAME is not its sound. `
-        + 'Where the facts give you soundToSay, the learner answers by TAPPING one of two letters. Say that sound, '
-        + 'then stop: never say, spell or point out either letter on the screen, and judge nothing you hear — '
-        + 'the activity checks the tap and tells you what it was. '
-        + 'Where two pictures are on the stage the answer IS one of their names, so naming either picture before the '
-        + 'learner answers hands the item over: talk about the sound, or about the picture that does NOT start with '
-        + 'it. Where no picture is drawn, its keyword is withheld from you and appears only once the '
-        + 'answer is recorded. '
-        + 'Where demonstrate is offered, its targets are the ids in workspace.objects and [] clears them. '
-        + 'Marking the picture that starts with this letter\'s sound hands the '
-        + 'answer over — mark the other picture to contrast, or the printed letter. There is no other scene action: '
-        + 'you cannot change the letter, replace a picture, write, or answer for the child.',
+      levers: true,
+      // Trimmed 09-29 to fit the 2000-char cap once `levers: true` adds LEVER_DOCTRINE; every rule kept.
+      guidance: `Where the learner SAYS the answer, judge the audio you hear against the assignment fact; a letter's NAME is not its sound. `
+        + 'Where the facts give soundToSay, the learner TAPS one of two letters: say that sound, then stop. Never say, spell '
+        + 'or point out either letter, and judge nothing you hear; the activity checks the tap. '
+        + 'Where two pictures are shown, the answer IS one of their names: never name either before the learner answers; '
+        + 'talk about the sound, or the picture that does NOT start with it. Where no picture is drawn, its keyword '
+        + 'is withheld until the answer is recorded. '
+        + 'demonstrate takes ids from workspace.objects; [] clears them. Never mark the picture that starts with this '
+        + 'sound: mark the other picture to contrast, or the printed letter. '
+        + 'You cannot change the letter, replace a picture, write, or answer for the child.',
       // The tap's own check (`letterSoundMiss`). see_hear and keyword_match are spoken (handoff 20 Part B).
       // The tapped letter's kind (`letterSoundMiss`), and the spoken modes' known wrong answers (`letterSoundSpokenMisses`).
       misses: missLists<LetterSoundMiss | SpokenLetterMiss>({ hear_see: ['other_short_vowel', 'voicing_partner', 'other_letter'],
         see_hear: ['letter_name', 'keyword_word', 'added_vowel', 'other_sound'],
         keyword_match: ['other_picture', 'letter_name', 'said_the_sound'] }),
+      // The spoken modes' one lever is `letter_model` (`letterSoundLinkLevers.ts`). Another letter's sound does not
+      // separate this letter from the one said; only its own keyword does, and that is never shown before credit.
+      unanswered: { see_hear: ['other_sound'] },
     },
     misconceptionScope: 'primitive',
     description:
@@ -2986,7 +2989,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       // naming: spoken misses (`pictureVocabSpokenMisses`, handoff 20 Part B). receptive_match: the tap's own check
       // against the recorded kinds (`pictureVocabMiss`; `other_picture` when a payload records none). Levers in
       // `pictureVocabularyLevers.ts` answer all of them.
+      // Each relation mode's one lever is a worked model on other words (`pictureVocabularyLevers.ts`, handoff 24).
       misses: missLists<SpokenPictureVocabMiss | PictureVocabMiss>({ naming: ['category_word', 'other_thing'],
+        opposite: ['said_base_word', 'not_opposite'], association: ['said_base_word', 'no_link'],
+        gradable_scale: ['given_rung', 'off_scale'], sentence_frame: ['does_not_fit'],
         receptive_match: ['same_category', 'other_category', 'other_picture'] }),
     },
     // ── DI MODALITY (2026-08-11) — fifth literacy port, first literacy consumer
@@ -3428,6 +3434,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     supportsEvaluation: true,
     teachingWorkspace: {
       grades: ['Kindergarten', 'Grade 1'],
+      levers: true,
       guidance: 'Each item is a short word. On middle sound and sound groups the learner says the sound in the middle of '
         + 'the word aloud and it is judged against that sound; the whole word said back, an outside sound, or a letter '
         + 'name is not yet the answer. On spell it the learner taps a letter into each of three boxes and the activity '
@@ -3436,6 +3443,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       // The boxes' own check (`cvcMiss`), and the spoken middle sound's known wrong answers (`cvcSpokenMisses`).
       misses: missLists<CvcMiss | SpokenCvcMiss>({ spell_word: ['first_letter', 'middle_letter', 'last_letter', 'letters_out_of_order', 'two_or_more_letters'],
         ...sameMisses<SpokenCvcMiss>(['fill_vowel', 'word_sort'], ['whole_word', 'letter_name', 'first_sound', 'last_sound', 'other_vowel']) }),
+      // The spoken modes' one lever is `middle_model` (`cvcSpellerLevers.ts`). A wrong short vowel has none: any cue
+      // that separates short vowels names the item's vowel or teaches one that answers a session item.
+      unanswered: sameMisses<SpokenCvcMiss>(['fill_vowel', 'word_sort'], ['other_vowel']),
     },
   },
   {

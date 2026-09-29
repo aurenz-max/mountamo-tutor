@@ -46,13 +46,34 @@ export const PHONEME_MISSES = {
 } as const;
 export type PhonemeMiss = typeof PHONEME_MISSES[keyof typeof PHONEME_MISSES][number];
 
-/** A picturable CVC word, one letter per sound. `c` and `x` never: neither is one sayable sound. */
-export interface CvcWord { word: string; emoji: string; sounds: [string, string, string] }
+/**
+ * A picturable three-sound word. `sounds` is what the model's boxes print; `phon`, when present, is what is said
+ * (a vowel team prints `ai` and is said "ay"). `c` and `x` never: neither is one sayable sound.
+ */
+export interface CvcWord { word: string; emoji: string; sounds: [string, string, string]; phon?: [string, string, string] }
 const CVC = /^[bdfghjklmnprstvwz][aeiou][bdfgklmnprtz]$/;
 export const CVC_POOL: readonly CvcWord[] = [...K_RHYME_FAMILIES, ...PRACTICE_EXTRA_FAMILIES]
   .flatMap(f => f.words.map(([word, emoji]) => ({ word, emoji })))
   .filter(w => CVC.test(w.word))
   .map(w => ({ ...w, sounds: w.word.split('') as [string, string, string] }));
+
+/**
+ * Long-vowel words, for medial and ending (measured 09-29, handoff 24). A medial session usually asks all five short
+ * vowels, and every CVC word's middle is one of them, so medial had no model and no practice item. A saved ending
+ * session asked final n, p, t and g, which left the CVC pool no ending pair. Each pair here shares its middle sound and
+ * differs in both others; seal and mail share a final /l/, which the CVC families rarely end in.
+ */
+export const LONG_MIDDLE_POOL: readonly CvcWord[] = [
+  { word: 'rain', emoji: '🌧️', sounds: ['r', 'ai', 'n'], phon: ['r', 'ā', 'n'] },
+  { word: 'mail', emoji: '📬', sounds: ['m', 'ai', 'l'], phon: ['m', 'ā', 'l'] },
+  { word: 'feet', emoji: '🦶', sounds: ['f', 'ee', 't'], phon: ['f', 'ē', 't'] },
+  { word: 'seal', emoji: '🦭', sounds: ['s', 'ea', 'l'], phon: ['s', 'ē', 'l'] },
+  { word: 'boat', emoji: '⛵', sounds: ['b', 'oa', 't'], phon: ['b', 'ō', 't'] },
+  { word: 'soap', emoji: '🧼', sounds: ['s', 'oa', 'p'], phon: ['s', 'ō', 'p'] },
+];
+const phon = (w: CvcWord) => w.phon ?? w.sounds;
+const poolFor = (kind: PhonemeItemKind): readonly CvcWord[] =>
+  kind === 'medial' || kind === 'ending' ? [...CVC_POOL, ...LONG_MIDDLE_POOL] : CVC_POOL;
 
 /** Two-sound picture words for a segment practice item. */
 export const TWO_SOUND_POOL: ReadonlyArray<{ word: string; emoji: string; segments: [string, string] }> = [
@@ -88,7 +109,7 @@ export function positionModelFor(item: PhonemeExplorerItem, items: readonly Phon
   if (!(item.kind in POSITION)) return null;
   const at = POSITION[item.kind as keyof typeof POSITION];
   const used = phonemeSessionWords(items), sounds = new Set(items.map(askedSound).filter(Boolean));
-  return CVC_POOL.find(w => !used.has(w.word) && !sounds.has(say(w.sounds[at]))) ?? null;
+  return poolFor(item.kind).find(w => !used.has(w.word) && !sounds.has(say(phon(w)[at]))) ?? null;
 }
 
 /** The box the manipulate change lands in, when the change is one sound for one sound; else null. */
@@ -100,7 +121,7 @@ export function changedBox(item: PhonemeExplorerItem): number | null {
   return diff.length === 1 ? diff[0] : null;
 }
 
-const differsEverywhere = (a: CvcWord, b: CvcWord) => a.sounds.every((s, i) => s !== b.sounds[i]);
+const differsEverywhere = (a: CvcWord, b: CvcWord) => phon(a).every((s, i) => s !== phon(b)[i]);
 
 /**
  * The practice item for `item`, in its own mode, on pool words the session never uses and a sound it never asks.
@@ -109,7 +130,7 @@ const differsEverywhere = (a: CvcWord, b: CvcWord) => a.sounds.every((s, i) => s
 export function practiceItemFor(item: PhonemeExplorerItem, items: readonly PhonemeExplorerItem[]): PhonemeExplorerItem | null {
   const id = `${item.id}~simpler`;
   const used = phonemeSessionWords(items), asked = new Set(items.map(askedSound).filter(Boolean));
-  const free = CVC_POOL.filter(w => !used.has(w.word));
+  const free = poolFor(item.kind).filter(w => !used.has(w.word));
   const cards = (answer: CvcWord, foil: CvcWord) => {
     const both = [{ word: answer.word, emoji: answer.emoji, correct: true }, { word: foil.word, emoji: foil.emoji, correct: false }];
     return bit(item.id) === 0 ? both : both.reverse();
@@ -118,12 +139,12 @@ export function practiceItemFor(item: PhonemeExplorerItem, items: readonly Phone
   if (item.kind === 'isolate' || item.kind === 'ending' || item.kind === 'medial') {
     const at = POSITION[item.kind];
     for (const answer of free) {
-      const sound = answer.sounds[at];
+      const sound = phon(answer)[at];
       if (asked.has(say(sound)) || !say(sound) || (item.kind === 'isolate' && !CONTINUANTS.includes(sound))) continue;
       const target = item.kind === 'isolate' ? null
-        : free.find(t => t !== answer && t.sounds[at] === sound && t.sounds.every((s, i) => i === at || s !== answer.sounds[i]));
+        : free.find(t => t !== answer && phon(t)[at] === sound && phon(t).every((s, i) => i === at || s !== phon(answer)[i]));
       if (item.kind !== 'isolate' && !target) continue;
-      const foil = free.find(f => f !== answer && f !== target && differsEverywhere(f, answer) && (!target || f.sounds[at] !== target.sounds[at]));
+      const foil = free.find(f => f !== answer && f !== target && differsEverywhere(f, answer) && (!target || phon(f)[at] !== phon(target)[at]));
       if (!foil) continue;
       const built = itemFromChallenge(item.kind === 'isolate'
         ? { id, mode: 'isolate', phoneme: sound, phonemeSound: `/${sound}/`, choices: cards(answer, foil), readOptionsAloud: readAloud }
@@ -167,7 +188,7 @@ export function leversOnScreen(item: PhonemeExplorerItem, pulled: readonly strin
   if (model) {
     const at = POSITION[item.kind as keyof typeof POSITION];
     parts.push(`a model on another word, ${model.word}, in three sound boxes with the ${['first', 'middle', 'last'][at]} box lit: `
-      + `its ${['first', 'middle', 'last'][at]} sound is ${say(model.sounds[at])}. Say the model; it is not this item's sound`);
+      + `its ${['first', 'middle', 'last'][at]} sound is ${say(phon(model)[at])}. Say the model; it is not this item's sound`);
   }
   if (pulled.includes(NAME_CARDS_LEVER)) parts.push('a speaker mark on each card: read every card aloud in screen order, evenly');
   if (pulled.includes(EXAMPLE_LEVER)) parts.push(`the example card for the sound (${item.exampleWord})`);

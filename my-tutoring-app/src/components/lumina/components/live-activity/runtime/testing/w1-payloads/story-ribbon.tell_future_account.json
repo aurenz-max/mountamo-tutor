@@ -1,0 +1,109 @@
+{
+ "source": "qa/tutor-reports/story-ribbon-runtime-tell_future_account-payload-2026-09-29.json",
+ "primitiveId": "story-ribbon",
+ "evalMode": "tell_future_account",
+ "data": {
+  "title": "Story Ribbon",
+  "description": "Use picture moments to tell connected stories, control story time, or explain a connection. Some familiar built-in stories were used.",
+  "gradeLevel": "kindergarten",
+  "challengeType": "tell_future_account",
+  "challenges": [
+   {
+    "id": "story-ribbon-1",
+    "type": "tell_future_account",
+    "title": "Leo Flies a Kite",
+    "characterName": "Leo",
+    "characterEmoji": "\ud83d\udc66",
+    "setting": "the windy park",
+    "timeCue": "Tomorrow",
+    "events": [
+     {
+      "id": "story-ribbon-1-event-1",
+      "order": 0,
+      "emoji": "\ud83d\udce6",
+      "pictureLabel": "blue box",
+      "modelSentence": "Tomorrow Leo will open his new blue box."
+     },
+     {
+      "id": "story-ribbon-1-event-2",
+      "order": 1,
+      "emoji": "\ud83e\ude81",
+      "pictureLabel": "paper kite",
+      "modelSentence": "Tomorrow Leo will build a colorful paper kite."
+     },
+     {
+      "id": "story-ribbon-1-event-3",
+      "order": 2,
+      "emoji": "\ud83c\udf33",
+      "pictureLabel": "tall tree",
+      "modelSentence": "Tomorrow Leo will fly his kite past the tall tree."
+     }
+    ]
+   },
+   {
+    "id": "story-ribbon-3",
+    "type": "tell_future_account",
+    "title": "Fun Park Day",
+    "characterName": "Leo",
+    "characterEmoji": "\ud83d\udc66",
+    "setting": "the sunny park",
+    "timeCue": "Tomorrow",
+    "events": [
+     {
+      "id": "story-ribbon-3-event-1",
+      "order": 0,
+      "emoji": "\ud83c\udf92",
+      "pictureLabel": "big blue backpack",
+      "modelSentence": "Tomorrow Leo will pack his big blue backpack."
+     },
+     {
+      "id": "story-ribbon-3-event-2",
+      "order": 1,
+      "emoji": "\ud83e\ude81",
+      "pictureLabel": "red flying kite",
+      "modelSentence": "Tomorrow Leo will fly his red flying kite."
+     },
+     {
+      "id": "story-ribbon-3-event-3",
+      "order": 2,
+      "emoji": "\ud83c\udf6a",
+      "pictureLabel": "sweet chocolate cookie",
+      "modelSentence": "Tomorrow Leo will eat a sweet chocolate cookie."
+     }
+    ]
+   },
+   {
+    "id": "story-ribbon-2",
+    "type": "tell_future_account",
+    "title": "A Tiny Garden",
+    "characterName": "Mina",
+    "characterEmoji": "\ud83d\udc67",
+    "setting": "the garden",
+    "events": [
+     {
+      "id": "story-ribbon-2-event-1",
+      "order": 0,
+      "emoji": "\ud83c\udf30",
+      "pictureLabel": "Seeds and soil",
+      "modelSentence": "Mina will plant three seeds in soft soil."
+     },
+     {
+      "id": "story-ribbon-2-event-2",
+      "order": 1,
+      "emoji": "\ud83d\udca7",
+      "pictureLabel": "Watering can",
+      "modelSentence": "Mina will water the seeds every morning."
+     },
+     {
+      "id": "story-ribbon-2-event-3",
+      "order": 2,
+      "emoji": "\ud83c\udf31",
+      "pictureLabel": "Green sprout",
+      "modelSentence": "A green sprout will push through the soil."
+     }
+    ],
+    "timeCue": "Tomorrow"
+   }
+  ]
+ }
+}

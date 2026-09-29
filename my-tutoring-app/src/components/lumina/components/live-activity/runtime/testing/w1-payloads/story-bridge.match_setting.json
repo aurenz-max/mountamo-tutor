@@ -1,0 +1,95 @@
+{
+ "source": "qa/tutor-reports/story-bridge-runtime-match_setting-payload-2026-09-29.json",
+ "primitiveId": "story-bridge",
+ "evalMode": "match_setting",
+ "data": {
+  "title": "Story Bridge",
+  "description": "Compare characters, settings, events, and big ideas across two illustrated stories.",
+  "gradeLevel": "kindergarten",
+  "challengeType": "match_setting",
+  "stories": [
+   {
+    "id": "story-bridge-pair-1-a",
+    "title": "Sharing at the Park",
+    "sceneEmoji": "\ud83c\udf33",
+    "setting": "a sunny green park",
+    "opening": "Lily and Sam went to the park on a warm spring morning.",
+    "closing": "They played together happily until it was time to go home.",
+    "mainIdea": "Friends can share toys to have more fun together.",
+    "characters": [
+     {
+      "id": "story-bridge-pair-1-a-1",
+      "name": "Lily",
+      "emoji": "\ud83d\udc67\ud83c\udffd",
+      "eventEmoji": "\ud83d\ude97",
+      "sentence": "Lily shared her red toy car with her friend.",
+      "uniqueDetail": "shared a red car"
+     },
+     {
+      "id": "story-bridge-pair-1-a-2",
+      "name": "Sam",
+      "emoji": "\ud83d\udc66\ud83c\udffc",
+      "eventEmoji": "\ud83d\udedd",
+      "sentence": "Sam waited patiently for his turn on the slide.",
+      "uniqueDetail": "played on the slide"
+     },
+     {
+      "id": "story-bridge-pair-1-a-3",
+      "name": "Max",
+      "emoji": "\ud83d\udc66\ud83c\udffb",
+      "eventEmoji": "\u26bd",
+      "sentence": "Max kicked the soccer ball to the other children.",
+      "uniqueDetail": "played with a soccer ball"
+     }
+    ]
+   },
+   {
+    "id": "story-bridge-pair-1-b",
+    "title": "Sharing at the Beach",
+    "sceneEmoji": "\ud83c\udfd6\ufe0f",
+    "setting": "a sandy ocean beach",
+    "opening": "Mia and Leo went to the beach on a hot summer afternoon.",
+    "closing": "They built a huge sandcastle together until the sun went down.",
+    "mainIdea": "Friends can share tools to build cool things.",
+    "characters": [
+     {
+      "id": "story-bridge-pair-1-b-1",
+      "name": "Mia",
+      "emoji": "\ud83d\udc67\ud83c\udffc",
+      "eventEmoji": "\ud83c\udfd6\ufe0f",
+      "sentence": "Mia shared her yellow bucket with her friend.",
+      "uniqueDetail": "shared a yellow bucket"
+     },
+     {
+      "id": "story-bridge-pair-1-b-2",
+      "name": "Leo",
+      "emoji": "\ud83d\udc66\ud83c\udffd",
+      "eventEmoji": "\ud83c\udf0a",
+      "sentence": "Leo waited patiently for his turn to fill the bucket.",
+      "uniqueDetail": "played near the water"
+     },
+     {
+      "id": "story-bridge-pair-1-b-3",
+      "name": "Zoe",
+      "emoji": "\ud83d\udc67\ud83c\udffb",
+      "eventEmoji": "\ud83d\udc1a",
+      "sentence": "Zoe gave a pretty seashell to her friend.",
+      "uniqueDetail": "played with a seashell"
+     }
+    ]
+   }
+  ],
+  "challenges": [
+   {
+    "pairId": "story-bridge-pair-1",
+    "storyAId": "story-bridge-pair-1-a",
+    "storyBId": "story-bridge-pair-1-b",
+    "type": "match_setting",
+    "relation": "different",
+    "settingFocus": "place",
+    "comparisonSummary": "One story happens at a park and the other story happens at a beach.",
+    "id": "story-bridge-1-1"
+   }
+  ]
+ }
+}

@@ -1,0 +1,47 @@
+{
+ "source": "qa/tutor-reports/word-flip-runtime-past_irregular-payload-2026-09-29.json",
+ "primitiveId": "word-flip",
+ "evalMode": "past_irregular",
+ "data": {
+  "title": "Magical Past Word Adventure: Yesterday's Actions!",
+  "challengeType": "past_irregular",
+  "challenges": [
+   {
+    "id": "word-flip-1",
+    "type": "past_irregular",
+    "sourceWord": "take",
+    "answer": "took",
+    "emoji": "\ud83e\udd32"
+   },
+   {
+    "id": "word-flip-2",
+    "type": "past_irregular",
+    "sourceWord": "eat",
+    "answer": "ate",
+    "emoji": "\ud83c\udf4e"
+   },
+   {
+    "id": "word-flip-3",
+    "type": "past_irregular",
+    "sourceWord": "do",
+    "answer": "did",
+    "emoji": "\u2b50"
+   },
+   {
+    "id": "word-flip-4",
+    "type": "past_irregular",
+    "sourceWord": "make",
+    "answer": "made",
+    "emoji": "\ud83d\udee0\ufe0f"
+   },
+   {
+    "id": "word-flip-5",
+    "type": "past_irregular",
+    "sourceWord": "get",
+    "answer": "got",
+    "emoji": "\ud83c\udf81"
+   }
+  ],
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving."
+ }
+}

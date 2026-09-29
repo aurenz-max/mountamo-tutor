@@ -146,8 +146,9 @@ it.each(LETTER_SOUND_LINK_WORKSPACE_MODES)('%s is a mode the component actually 
 it('offers demonstration where there is something to point at, and none where every object is an answer', () => {
   const operations = (mode: EvalMode) => mount(mode).state().affordances.filter(a => !a.controller)
     .map(a => (a.action as any).operation ?? a.action.type).sort();
-  expect(operations('see_hear')).toEqual(['begin_help', 'demonstrate']); cleanup();
-  expect(operations('keyword_match')).toEqual(['begin_help', 'demonstrate']); cleanup();
+  // The spoken modes also offer their one lever, `letter_model` (handoff 24).
+  expect(operations('see_hear')).toEqual(['begin_help', 'demonstrate', 'pull_lever']); cleanup();
+  expect(operations('keyword_match')).toEqual(['begin_help', 'demonstrate', 'pull_lever']); cleanup();
   // hear_see: the only objects are the two letters the child chooses between, and
   // marking either one answers for them. The scene refuses the action.
   // Its in-item levers (`letterSoundLinkLevers.ts`) change the cards without marking either one.
@@ -352,8 +353,9 @@ it('sends learner signals with the packet, and counts the tutor’s own turn sep
   expect(packet().learner.signals).toMatchObject({ learnerTurns: 1, helpRequests: 1, stopRequests: 0 });
   expect(packet().learner.observations)
     .toEqual([expect.objectContaining({ kind: 'learner_intent', helpRequested: true })]);
-  // Advisory only: nothing about the item's record moved.
-  expect(h.state().task).toMatchObject({ phase: 'working', evidence: { attemptNumber: 0 }, support: { level: 0 } });
+  // No attempt is recorded. "I'm stuck" before a try pulls help only (handoff 21 S2): letter_model, recorded as help.
+  expect(h.state().task).toMatchObject({ phase: 'working', evidence: { attemptNumber: 0 }, support: { level: 2 } });
+  expect(h.state().task!.workspace!.levers!.map(l => [l.id, l.pulled])).toEqual([['letter_model', true]]);
   h.transport.close();
 });
 
@@ -417,4 +419,18 @@ it('does not mount the scripted drill, its mic panel or its cue tags inside the 
   expect(h.view.container.querySelector('[data-letter-stage]')).toBeTruthy();
   expect(h.view.container.textContent).not.toMatch(/Start the lesson|Listen, then say your answer out loud/);
   expect(JSON.stringify(runtimePacket(h.state()))).not.toMatch(/\[LSL_ITEM|\[LSL_TAP|\[LSL_MOVE|\[LSL_COMPLETE/);
+});
+
+it.each(['see_hear', 'keyword_match'] as const)('%s: letter_model shows another letter the session never uses, in one commit', mode => {
+  const h = mount(mode);
+  expect(h.state().task!.workspace!.levers!.map(l => l.id)).toEqual(['letter_model']);
+  const receipt = h.dispatch('pull_lever', { lever: 'letter_model' });
+  expect(receipt.status).toBe('committed');
+  const model = h.view.container.querySelector('[data-lever="letter-model"]')!;
+  const letter = model.firstElementChild!.textContent!;
+  const used = CHALLENGES[mode].flatMap(c => [c.targetLetter, ...(c.options ?? []).map((o: any) => o.letter ?? '')]);
+  expect(used).not.toContain(letter);
+  expect(model.querySelectorAll('[role="img"]')).toHaveLength(mode === 'keyword_match' ? 1 : 0);
+  expect(String(receipt.state.task!.demand.levers_on_screen)).toMatch(new RegExp(`another letter, ${letter.toUpperCase()}`));
+  h.transport.close();
 });

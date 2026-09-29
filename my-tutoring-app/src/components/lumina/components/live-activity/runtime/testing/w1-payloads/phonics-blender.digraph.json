@@ -1,0 +1,127 @@
+{
+ "source": "qa/tutor-reports/phonics-blender-runtime-digraph-payload-2026-09-29.json",
+ "primitiveId": "phonics-blender",
+ "evalMode": "digraph",
+ "data": {
+  "title": "Fun with Digraph Blending!",
+  "gradeLevel": "K",
+  "patternType": "digraph",
+  "words": [
+   {
+    "id": "w1",
+    "targetWord": "ship",
+    "phonemes": [
+     {
+      "id": "w1_p1",
+      "sound": "/sh/",
+      "letters": "sh"
+     },
+     {
+      "id": "w1_p2",
+      "sound": "/\u012d/",
+      "letters": "i"
+     },
+     {
+      "id": "w1_p3",
+      "sound": "/p/",
+      "letters": "p"
+     }
+    ],
+    "emoji": "\ud83d\udea2",
+    "imageDescription": "a large ship on the water"
+   },
+   {
+    "id": "w2",
+    "targetWord": "chop",
+    "phonemes": [
+     {
+      "id": "w2_p1",
+      "sound": "/ch/",
+      "letters": "ch"
+     },
+     {
+      "id": "w2_p2",
+      "sound": "/\u014f/",
+      "letters": "o"
+     },
+     {
+      "id": "w2_p3",
+      "sound": "/p/",
+      "letters": "p"
+     }
+    ],
+    "emoji": "\ud83e\ude93",
+    "imageDescription": "a sharp wood chopping axe"
+   },
+   {
+    "id": "w3",
+    "targetWord": "thin",
+    "phonemes": [
+     {
+      "id": "w3_p1",
+      "sound": "/th/",
+      "letters": "th"
+     },
+     {
+      "id": "w3_p2",
+      "sound": "/\u012d/",
+      "letters": "i"
+     },
+     {
+      "id": "w3_p3",
+      "sound": "/n/",
+      "letters": "n"
+     }
+    ],
+    "emoji": "\ud83d\udccf",
+    "imageDescription": "a thin straight ruler"
+   },
+   {
+    "id": "w4",
+    "targetWord": "fish",
+    "phonemes": [
+     {
+      "id": "w4_p1",
+      "sound": "/f/",
+      "letters": "f"
+     },
+     {
+      "id": "w4_p2",
+      "sound": "/\u012d/",
+      "letters": "i"
+     },
+     {
+      "id": "w4_p3",
+      "sound": "/sh/",
+      "letters": "sh"
+     }
+    ],
+    "emoji": "\ud83d\udc1f",
+    "imageDescription": "a small swimming fish"
+   },
+   {
+    "id": "w5",
+    "targetWord": "bath",
+    "phonemes": [
+     {
+      "id": "w5_p1",
+      "sound": "/b/",
+      "letters": "b"
+     },
+     {
+      "id": "w5_p2",
+      "sound": "/\u0103/",
+      "letters": "a"
+     },
+     {
+      "id": "w5_p3",
+      "sound": "/th/",
+      "letters": "th"
+     }
+    ],
+    "emoji": "\ud83d\udec1",
+    "imageDescription": "a clean bathtub"
+   }
+  ]
+ }
+}

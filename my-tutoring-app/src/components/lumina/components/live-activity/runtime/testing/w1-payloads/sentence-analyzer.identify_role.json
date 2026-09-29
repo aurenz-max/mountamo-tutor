@@ -1,0 +1,196 @@
+{
+ "source": "qa/tutor-reports/sentence-analyzer-runtime-identify_role-payload-2026-09-29.json",
+ "primitiveId": "sentence-analyzer",
+ "evalMode": "identify_role",
+ "data": {
+  "title": "Super Sentences: Nouns, Verbs, and Adjectives",
+  "description": "Practice identifying the grammatical jobs of words in fun fourth-grade sentences.",
+  "gradeLevel": "4",
+  "challenges": [
+   {
+    "id": "ch1",
+    "type": "identify_role",
+    "sentence": "The brown dog barked loudly.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "The",
+      "partOfSpeech": "Determiner",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "brown",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w2",
+      "text": "dog",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w3",
+      "text": "barked",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w4",
+      "text": "loudly.",
+      "partOfSpeech": "Adverb",
+      "grammaticalRole": "Modifier"
+     }
+    ],
+    "explanation": "In this sentence, the noun 'dog' is the subject because it is who the sentence is about, and 'barked' is the predicate telling us what the dog did."
+   },
+   {
+    "id": "ch2",
+    "type": "identify_role",
+    "sentence": "Sweet apples grew on trees.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Sweet",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "apples",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w2",
+      "text": "grew",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w3",
+      "text": "on",
+      "partOfSpeech": "Preposition",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w4",
+      "text": "trees.",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Object of Preposition"
+     }
+    ],
+    "explanation": "The word 'apples' is the subject noun doing the growing, while 'grew' is the predicate verb showing the action."
+   },
+   {
+    "id": "ch3",
+    "type": "identify_role",
+    "sentence": "Tall trees dropped green leaves.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Tall",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "trees",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w2",
+      "text": "dropped",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w3",
+      "text": "green",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w4",
+      "text": "leaves.",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Direct Object"
+     }
+    ],
+    "explanation": "The noun 'trees' is the subject performing the action, and the noun 'leaves' is the direct object receiving the action of being dropped."
+   },
+   {
+    "id": "ch4",
+    "type": "identify_role",
+    "sentence": "Happy children played outside.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Happy",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "children",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w2",
+      "text": "played",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w3",
+      "text": "outside.",
+      "partOfSpeech": "Adverb",
+      "grammaticalRole": "Modifier"
+     }
+    ],
+    "explanation": "Here, 'children' is the subject noun because they are the ones playing, and 'played' is the predicate verb telling us their action."
+   },
+   {
+    "id": "ch5",
+    "type": "identify_role",
+    "sentence": "Small birds caught tiny worms.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Small",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "birds",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w2",
+      "text": "caught",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w3",
+      "text": "tiny",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w4",
+      "text": "worms.",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Direct Object"
+     }
+    ],
+    "explanation": "The word 'birds' acts as the subject noun, 'caught' is the predicate verb, and 'worms' is the direct object receiving the action."
+   }
+  ]
+ }
+}

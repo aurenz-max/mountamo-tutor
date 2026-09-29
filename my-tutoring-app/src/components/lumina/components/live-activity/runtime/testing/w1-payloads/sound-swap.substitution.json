@@ -1,0 +1,200 @@
+{
+ "source": "qa/tutor-reports/sound-swap-runtime-substitution-payload-2026-09-29.json",
+ "primitiveId": "sound-swap",
+ "evalMode": "substitution",
+ "data": {
+  "title": "Sound Swap: Kindergarten Fun!",
+  "gradeLevel": "K",
+  "challenges": [
+   {
+    "id": "c1",
+    "operation": "substitution",
+    "originalWord": "cat",
+    "originalPhonemes": [
+     "/k/",
+     "/\u00e6/",
+     "/t/"
+    ],
+    "originalImage": "A cute furry pet cat",
+    "resultWord": "bat",
+    "resultPhonemes": [
+     "/b/",
+     "/\u00e6/",
+     "/t/"
+    ],
+    "resultImage": "A flying nocturnal winged animal",
+    "oldPhoneme": "/k/",
+    "newPhoneme": "/b/",
+    "substitutePosition": "beginning"
+   },
+   {
+    "id": "c2",
+    "operation": "substitution",
+    "originalWord": "bat",
+    "originalPhonemes": [
+     "/b/",
+     "/\u00e6/",
+     "/t/"
+    ],
+    "originalImage": "A flying nocturnal winged animal",
+    "resultWord": "hat",
+    "resultPhonemes": [
+     "/h/",
+     "/\u00e6/",
+     "/t/"
+    ],
+    "resultImage": "A cap worn on head",
+    "oldPhoneme": "/b/",
+    "newPhoneme": "/h/",
+    "substitutePosition": "beginning"
+   },
+   {
+    "id": "c3",
+    "operation": "substitution",
+    "originalWord": "hat",
+    "originalPhonemes": [
+     "/h/",
+     "/\u00e6/",
+     "/t/"
+    ],
+    "originalImage": "A cap worn on head",
+    "resultWord": "mat",
+    "resultPhonemes": [
+     "/m/",
+     "/\u00e6/",
+     "/t/"
+    ],
+    "resultImage": "A small rug on floor",
+    "oldPhoneme": "/h/",
+    "newPhoneme": "/m/",
+    "substitutePosition": "beginning"
+   },
+   {
+    "id": "c4",
+    "operation": "substitution",
+    "originalWord": "mat",
+    "originalPhonemes": [
+     "/m/",
+     "/\u00e6/",
+     "/t/"
+    ],
+    "originalImage": "A small rug on floor",
+    "resultWord": "rat",
+    "resultPhonemes": [
+     "/r/",
+     "/\u00e6/",
+     "/t/"
+    ],
+    "resultImage": "A small rodent with tail",
+    "oldPhoneme": "/m/",
+    "newPhoneme": "/r/",
+    "substitutePosition": "beginning"
+   },
+   {
+    "id": "c5",
+    "operation": "substitution",
+    "originalWord": "can",
+    "originalPhonemes": [
+     "/k/",
+     "/\u00e6/",
+     "/n/"
+    ],
+    "originalImage": "A metal food container",
+    "resultWord": "fan",
+    "resultPhonemes": [
+     "/f/",
+     "/\u00e6/",
+     "/n/"
+    ],
+    "resultImage": "An electric cooling device",
+    "oldPhoneme": "/k/",
+    "newPhoneme": "/f/",
+    "substitutePosition": "beginning"
+   },
+   {
+    "id": "c6",
+    "operation": "substitution",
+    "originalWord": "fan",
+    "originalPhonemes": [
+     "/f/",
+     "/\u00e6/",
+     "/n/"
+    ],
+    "originalImage": "An electric cooling device",
+    "resultWord": "pan",
+    "resultPhonemes": [
+     "/p/",
+     "/\u00e6/",
+     "/n/"
+    ],
+    "resultImage": "A skillet for cooking food",
+    "oldPhoneme": "/f/",
+    "newPhoneme": "/p/",
+    "substitutePosition": "beginning"
+   },
+   {
+    "id": "c7",
+    "operation": "substitution",
+    "originalWord": "pan",
+    "originalPhonemes": [
+     "/p/",
+     "/\u00e6/",
+     "/n/"
+    ],
+    "originalImage": "A skillet for cooking food",
+    "resultWord": "van",
+    "resultPhonemes": [
+     "/v/",
+     "/\u00e6/",
+     "/n/"
+    ],
+    "resultImage": "A large boxy motor vehicle",
+    "oldPhoneme": "/p/",
+    "newPhoneme": "/v/",
+    "substitutePosition": "beginning"
+   },
+   {
+    "id": "c8",
+    "operation": "substitution",
+    "originalWord": "pig",
+    "originalPhonemes": [
+     "/p/",
+     "/\u026a/",
+     "/\u0261/"
+    ],
+    "originalImage": "A pink farm animal",
+    "resultWord": "big",
+    "resultPhonemes": [
+     "/b/",
+     "/\u026a/",
+     "/\u0261/"
+    ],
+    "resultImage": "Something very large in size",
+    "oldPhoneme": "/p/",
+    "newPhoneme": "/b/",
+    "substitutePosition": "beginning"
+   },
+   {
+    "id": "c9",
+    "operation": "substitution",
+    "originalWord": "sit",
+    "originalPhonemes": [
+     "/s/",
+     "/\u026a/",
+     "/t/"
+    ],
+    "originalImage": "A child in a chair",
+    "resultWord": "hit",
+    "resultPhonemes": [
+     "/h/",
+     "/\u026a/",
+     "/t/"
+    ],
+    "resultImage": "A hand striking a ball",
+    "oldPhoneme": "/s/",
+    "newPhoneme": "/h/",
+    "substitutePosition": "beginning"
+   }
+  ]
+ }
+}

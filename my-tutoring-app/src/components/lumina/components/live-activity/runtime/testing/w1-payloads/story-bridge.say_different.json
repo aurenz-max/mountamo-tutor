@@ -1,0 +1,121 @@
+{
+ "source": "qa/tutor-reports/story-bridge-runtime-say_different-payload-2026-09-29.json",
+ "primitiveId": "story-bridge",
+ "evalMode": "say_different",
+ "data": {
+  "title": "Story Bridge",
+  "description": "Compare characters, settings, events, and big ideas across two illustrated stories.",
+  "gradeLevel": "kindergarten",
+  "challengeType": "say_different",
+  "stories": [
+   {
+    "id": "story-bridge-pair-1-a",
+    "title": "Sharing At The Park",
+    "sceneEmoji": "\ud83c\udf33",
+    "setting": "a sunny park",
+    "opening": "The bright afternoon sun shone down on the green grass at the park.",
+    "closing": "Both friends smiled and played happily together until it was time to go home.",
+    "mainIdea": "Sharing toys at the park makes playing fun for friends.",
+    "characters": [
+     {
+      "id": "story-bridge-pair-1-a-1",
+      "name": "Leo",
+      "emoji": "\ud83d\udc66\ud83c\udffd",
+      "eventEmoji": "\ud83d\ude97",
+      "sentence": "Leo shared a red toy car with his friend.",
+      "uniqueDetail": "shared a red car"
+     },
+     {
+      "id": "story-bridge-pair-1-a-2",
+      "name": "Mia",
+      "emoji": "\ud83d\udc67\ud83c\udffc",
+      "eventEmoji": "\u26bd",
+      "sentence": "Mia helped kick a bouncing ball back to her friend.",
+      "uniqueDetail": "played with a ball"
+     },
+     {
+      "id": "story-bridge-pair-1-a-3",
+      "name": "Ben",
+      "emoji": "\ud83d\udc66\ud83c\udffb",
+      "eventEmoji": "\ud83c\udf4e",
+      "sentence": "Ben shared a sweet red apple with his friend.",
+      "uniqueDetail": "ate a fresh apple"
+     }
+    ]
+   },
+   {
+    "id": "story-bridge-pair-1-b",
+    "title": "Sharing At The Beach",
+    "sceneEmoji": "\ud83c\udfd6\ufe0f",
+    "setting": "a sandy beach",
+    "opening": "The warm morning breeze blew across the soft sand at the beach.",
+    "closing": "Both friends smiled and built a tall castle together until the sun went down.",
+    "mainIdea": "Sharing sand tools at the beach makes building fun for friends.",
+    "characters": [
+     {
+      "id": "story-bridge-pair-1-b-1",
+      "name": "Sam",
+      "emoji": "\ud83d\udc66\ud83c\udffc",
+      "eventEmoji": "\ud83c\udfd6\ufe0f",
+      "sentence": "Sam shared a yellow bucket with his friend.",
+      "uniqueDetail": "shared a yellow bucket"
+     },
+     {
+      "id": "story-bridge-pair-1-b-2",
+      "name": "Zoe",
+      "emoji": "\ud83d\udc67\ud83c\udffd",
+      "eventEmoji": "\ud83d\udc1a",
+      "sentence": "Zoe helped find a shiny seashell with her friend.",
+      "uniqueDetail": "found a seashell"
+     },
+     {
+      "id": "story-bridge-pair-1-b-3",
+      "name": "Max",
+      "emoji": "\ud83d\udc66\ud83c\udffe",
+      "eventEmoji": "\ud83c\udf6a",
+      "sentence": "Max shared a yummy chocolate cookie with his friend.",
+      "uniqueDetail": "ate a chocolate cookie"
+     }
+    ]
+   }
+  ],
+  "challenges": [
+   {
+    "pairId": "story-bridge-pair-1",
+    "storyAId": "story-bridge-pair-1-a",
+    "storyBId": "story-bridge-pair-1-b",
+    "type": "say_different",
+    "anchorStoryId": "story-bridge-pair-1-a",
+    "anchorCharacterId": "story-bridge-pair-1-a-1",
+    "targetStoryId": "story-bridge-pair-1-b",
+    "targetCharacterId": "story-bridge-pair-1-b-1",
+    "comparisonSummary": "Leo shared a red car, but Sam shared a yellow bucket.",
+    "id": "story-bridge-1-1"
+   },
+   {
+    "pairId": "story-bridge-pair-1",
+    "storyAId": "story-bridge-pair-1-a",
+    "storyBId": "story-bridge-pair-1-b",
+    "type": "say_different",
+    "anchorStoryId": "story-bridge-pair-1-b",
+    "anchorCharacterId": "story-bridge-pair-1-b-2",
+    "targetStoryId": "story-bridge-pair-1-a",
+    "targetCharacterId": "story-bridge-pair-1-a-2",
+    "comparisonSummary": "Zoe found a seashell, but Mia played with a ball.",
+    "id": "story-bridge-1-2"
+   },
+   {
+    "pairId": "story-bridge-pair-1",
+    "storyAId": "story-bridge-pair-1-a",
+    "storyBId": "story-bridge-pair-1-b",
+    "type": "say_different",
+    "anchorStoryId": "story-bridge-pair-1-a",
+    "anchorCharacterId": "story-bridge-pair-1-a-3",
+    "targetStoryId": "story-bridge-pair-1-b",
+    "targetCharacterId": "story-bridge-pair-1-b-3",
+    "comparisonSummary": "Ben ate a fresh apple, but Max ate a chocolate cookie.",
+    "id": "story-bridge-1-3"
+   }
+  ]
+ }
+}

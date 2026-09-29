@@ -136,3 +136,27 @@ it('easy starts with the vowel strip up, and that is not a pull', () => {
   expect(h.state().task!.workspace!.attempts.at(-1)!.levers).toBeUndefined();
   h.close();
 });
+
+it.each(['fill_vowel', 'word_sort'])('%s: middle_model lights the middle of another word; its sound is none the session asks', evalMode => {
+  const taskType = evalMode === 'fill_vowel' ? 'fill-vowel' : 'word-sort';
+  const words = [['a', 'cat', '🐱'], ['b', 'bed', '🛏️'], ['c', 'pig', '🐷'], ['d', 'dog', '🐶'], ['e', 'sun', '☀️']];
+  const h = mountWorkspace({ primitiveId: 'cvc-speller', evalMode, data: { ...cvc(), gradeLevel: '1',
+    challenges: words.map(([id, word, emoji]) => ({ ...challenge(id, word, emoji), taskType })) } });
+  expect(levers(h).map(l => [l.id, l.pulled])).toEqual([['middle_model', false]]);
+  h.say('cat'); h.feedback('incorrect', 'retry');
+  expect(q(h, '[data-lever="middle-model"]')).toHaveLength(0);
+  const receipt = h.dispatch('pull_lever', { lever: 'middle_model' });
+  expect(receipt.status).toBe('committed');
+  const boxes = Array.from(q(h, '[data-lever="middle-model"] [data-box]')).map(b => b.textContent);
+  expect(Array.from(q(h, '[data-lever="middle-model"] [data-lit]')).map(b => b.getAttribute('data-box'))).toEqual(['1']);
+  // Every short vowel is asked, so the model's middle is a vowel team, never a short vowel letter.
+  expect(['ai', 'ee', 'ea', 'oa']).toContain(boxes[1]);
+  const word = q(h, '[data-lever="middle-model"] [role="img"]')[0].getAttribute('aria-label')!;
+  expect(['cat', 'bed', 'pig', 'dog', 'sun']).not.toContain(word);
+  expect(String(receipt.state.task!.demand.levers_on_screen)).toMatch(new RegExp(`another word, ${word}`));
+  // Its only lever is up, so pull_lever is no longer offered.
+  expect(h.offer('pull_lever')).toBeUndefined();
+  h.say('ah'); h.feedback('correct');
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ itemId: 'a', correct: true, assisted: true, levers: ['middle_model'] });
+  h.close();
+});

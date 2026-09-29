@@ -1,0 +1,73 @@
+{
+ "source": "qa/tutor-reports/word-workout-runtime-sentence_reading-payload-2026-09-29.json",
+ "primitiveId": "word-workout",
+ "evalMode": "sentence_reading",
+ "data": {
+  "title": "Word Workout: Reading short-vowel CVC words and telling real words from silly ones",
+  "mode": "sentence-reading",
+  "masteredVowels": [
+   "a",
+   "e",
+   "i",
+   "o",
+   "u"
+  ],
+  "gradeLevel": "1",
+  "challenges": [
+   {
+    "id": "c1",
+    "sentence": "The cat sat on the mat.",
+    "cvcWords": [
+     "cat",
+     "sat",
+     "mat"
+    ],
+    "sightWords": [
+     "The",
+     "on",
+     "the"
+    ],
+    "comprehensionQuestion": "Who sat on the mat?",
+    "comprehensionAnswer": "cat",
+    "mode": "sentence-reading"
+   },
+   {
+    "id": "c2",
+    "sentence": "I see a pig in the pen.",
+    "cvcWords": [
+     "pig",
+     "pen",
+     "see"
+    ],
+    "sightWords": [
+     "I",
+     "a",
+     "in",
+     "the"
+    ],
+    "comprehensionQuestion": "What is in the pen?",
+    "comprehensionAnswer": "pig",
+    "mode": "sentence-reading"
+   },
+   {
+    "id": "c3",
+    "sentence": "We can put a cup on the log.",
+    "cvcWords": [
+     "put",
+     "cup",
+     "log"
+    ],
+    "sightWords": [
+     "We",
+     "can",
+     "a",
+     "on",
+     "the"
+    ],
+    "comprehensionQuestion": "What can we put on the log?",
+    "comprehensionAnswer": "cup",
+    "mode": "sentence-reading"
+   }
+  ]
+ }
+}

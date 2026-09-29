@@ -1,6 +1,6 @@
 /**
- * The in-item levers on letter spotter's tap modes (`/add-support-tiers`, handoff 22 L1). name_it is spoken
- * and joins L2. Shape descriptions are banned in the tutor's voice, so every lever here is visual.
+ * The in-item levers on letter spotter (`/add-support-tiers`, handoff 22 L1; name_it handoff 24). Shape
+ * descriptions are banned in the tutor's voice, so every lever here is visual or names a sound.
  *
  * Pure: the component draws from these, the workspace publishes them, and the tests hold each leak rule.
  * find_it (the tutor names a letter; the learner taps it in a grid of capitals):
@@ -17,17 +17,24 @@
  * - `two_far_choices` (simplify): a practice item with a new capital and two lowercase choices, the foil from
  *   another shape family.
  * Every practice item is ungraded and uses no letter the session answers (the session invariant).
+ * name_it (the tutor reads a sentence; the learner says the letter the starred word starts with):
+ * - `first_letter_model` (help, both): another picture word, printed, its first letter lit; the tutor says the word,
+ *   its first sound, and that letter. Answers `said_the_word`, `later_letter`, `letter_not_in_word` (the route from
+ *   first sound to letter, on another word). Leak rule (`firstLetterModelLeak`): its first letter is no session
+ *   target and it is no word of any session sentence. No simplify: another word asks the same thing, not less.
  */
 import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
 import { LETTER_GROUPS, normalizeLetterGroup } from '../../../service/literacy/letterGroups';
 import type { LetterSpotterItem } from './letterSpotterScript';
 import { MIRRORS, SHAPE_FAMILIES } from './letterSpotterWorkspace';
+import { emojiForKeyword, keywordFor, keywordNamesItsPicture } from './letterSoundLinkDomain';
 
 export const CASE_LEVER = 'other_case_reference';
 export const SCAN_LEVER = 'row_scan';
 export const SMALL_GRID_LEVER = 'small_far_grid';
 export const PARTNER_LEVER = 'wrong_choice_partner';
 export const TWO_CHOICES_LEVER = 'two_far_choices';
+export const FIRST_LETTER_LEVER = 'first_letter_model';
 
 /** Letters whose lowercase is the capital's shape at another size: a reference in the other case is the same glyph. */
 const SAME_SHAPE_CASES = new Set('cosuvwxzkp'.split(''));
@@ -89,10 +96,41 @@ export const practiceLeak = (practice: LetterSpotterItem, items: readonly Letter
   || (practice.mode === 'find-it' ? practice.letterGrid ?? [] : practice.options)
     .filter(l => l.toLowerCase() !== practice.targetLetter).some(l => !far(l, practice.targetLetter));
 
+// -- first_letter_model: name_it --
+
+export interface FirstLetterModel { word: string; emoji: string; letter: string }
+/** Continuants first: a held first sound is the easiest to hear. */
+const MODEL_ORDER = 'msfnlrvzhbdgptcjkw'.split('');
+const sentenceWords = (items: readonly LetterSpotterItem[]) =>
+  new Set(items.flatMap(i => (i.spokenSentence ?? '').toLowerCase().match(/[a-z]+/g) ?? []));
+
+/** Leak rule for the model: true when its first letter is a session target or it is a word of a session sentence. */
+export const firstLetterModelLeak = (m: FirstLetterModel, items: readonly LetterSpotterItem[]) =>
+  sessionTargets(items).has(m.letter) || sentenceWords(items).has(m.word);
+
+/** The model for a name_it item: a keyword picture word of a group letter, else of any letter, that passes. */
+export function firstLetterModelFor(item: LetterSpotterItem, items: readonly LetterSpotterItem[], letterGroup: number | undefined): FirstLetterModel | null {
+  if (item.mode !== 'name-it') return null;
+  const group = LETTER_GROUPS[normalizeLetterGroup(letterGroup) ?? 4];
+  const ordered = [...MODEL_ORDER.filter(l => group.includes(l)), ...MODEL_ORDER.filter(l => !group.includes(l))];
+  const model = (l: string): FirstLetterModel => ({ letter: l, word: keywordFor(l), emoji: emojiForKeyword(keywordFor(l)) });
+  const letter = ordered.find(l => keywordNamesItsPicture(l) && keywordFor(l)[0] === l && !firstLetterModelLeak(model(l), items));
+  return letter ? model(letter) : null;
+}
+
 /** The levers this item declares. `wrongTaps`: the learner's wrong taps on this item so far. */
 export function letterSpotterLevers(item: LetterSpotterItem | null, pulled: readonly string[], items: readonly LetterSpotterItem[],
   letterGroup: number | undefined, wrongTaps: readonly string[] = []): WorkspaceLever[] {
-  if (!item || item.mode === 'name-it') return [];
+  if (!item) return [];
+  if (item.mode === 'name-it') {
+    const m = firstLetterModelFor(item, items, letterGroup);
+    return m ? [{ id: FIRST_LETTER_LEVER, kind: 'help', carrier: 'both', pulled: pulled.includes(FIRST_LETTER_LEVER),
+      answers: ['said_the_word', 'later_letter', 'letter_not_in_word'],
+      when: 'The learner says the word, a letter from later in it, or a letter it does not have.',
+      // The model word is named only in the scene fact once pulled: named here, the tutor spoke of it before any pull.
+      does: 'Shows another picture word in print with its first letter lit. Once it is on screen, say that word, its first '
+        + 'sound, and the letter it starts with. It is not this item\'s word.' }] : [];
+  }
   const levers: WorkspaceLever[] = [];
   const on = (id: string) => pulled.includes(id);
   if (item.mode === 'find-it') {

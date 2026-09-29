@@ -1,6 +1,5 @@
 /**
- * The in-item levers on a CVC spelling (`/add-support-tiers`, handoff 22 L1). spell_word only: on the
- * spoken modes a keyword is the answer (contract R3), and those modes join L2.
+ * The in-item levers on a CVC spelling (`/add-support-tiers`, handoff 22 L1; spoken modes handoff 24).
  *
  * Pure: the component draws from these, the workspace publishes them, and the tests hold each leak rule.
  * Four levers, one per group of `cvcMiss` patterns (qa/eval-reports/cvc-speller-levers-2026-09-28.md):
@@ -15,15 +14,29 @@
  * - `small_word` (simplify): an ungraded practice word first, a new picturable CVC word inside the letter
  *   group with a four-letter bank. Answers `two_or_more_letters`. Leak rule: never a session word, never a
  *   session word's rime, and at most one letter in the same box as the learner's item.
+ *
+ * fill_vowel and word_sort (the middle sound, said aloud). A vowel keyword is the answer there (contract R3),
+ * so the one lever acts on a word outside the item:
+ * - `middle_model` (help, both): another picture word in three boxes with the middle box lit; the tutor says the
+ *   model word and its middle sound. Answers `whole_word`, `first_sound`, `last_sound` (which part of the word is
+ *   wanted) and `letter_name` (a sound, said short, not a name). Leak rule (`middleModelLeak`): never a session word
+ *   or picture, and its middle sound is none the session asks; when every short vowel is asked, a long-vowel word
+ *   (rain, feet, boat) from phoneme-explorer's pool is the model.
+ * - `other_vowel` has no lever by decision: any cue that separates short vowels names the item's vowel, or teaches
+ *   on a practice word a vowel that answers a session item. No simplify: a practice word asks the same task with
+ *   no fewer steps, and one with the item's vowel answers the item.
  */
 import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
 import { cvcUsableLetters, groupVowels, isCvcSpelling, normalizeLetterGroup, type LetterGroup } from '../../../service/literacy/letterGroups';
 import type { CvcSpellerChallenge } from './CvcSpeller';
+import { CVC_POOL, LONG_MIDDLE_POOL, type CvcWord } from './phonemeExplorerLevers';
+import { speakablePhoneme } from './phonemeVoice';
 
 export const VOWEL_LEVER = 'vowel_keywords';
 export const KEYWORD_LEVER = 'consonant_keywords';
 export const TOKENS_LEVER = 'sound_tokens';
 export const SMALL_WORD_LEVER = 'small_word';
+export const MIDDLE_MODEL_LEVER = 'middle_model';
 
 const VOWELS = new Set(['a', 'e', 'i', 'o', 'u']);
 
@@ -55,10 +68,14 @@ const KEYWORDS: Record<string, readonly Keyword[]> = {
   x: [{ word: 'box', emoji: '📦' }, { word: 'fox', emoji: '🦊' }],
 };
 
-/** What the session shows as stimuli: its words and their pictures. A keyword or practice word must be none of them. */
-export interface SessionStimuli { words: readonly string[]; emojis: readonly string[] }
+/**
+ * What the session shows as stimuli: its words, their pictures and the middle vowels it asks. A keyword, model or
+ * practice word must be none of them.
+ */
+export interface SessionStimuli { words: readonly string[]; emojis: readonly string[]; vowels: readonly string[] }
 export const sessionStimuli = (challenges: readonly CvcSpellerChallenge[]): SessionStimuli => ({
   words: challenges.map(c => c.targetWord.toLowerCase()), emojis: challenges.map(c => c.emoji).filter(Boolean),
+  vowels: challenges.map(c => (c.targetLetters?.[1] ?? c.targetWord[1] ?? '').toLowerCase()).filter(Boolean),
 });
 
 const pictures = (k: Keyword, s: SessionStimuli) => s.words.includes(k.word) || s.emojis.includes(k.emoji);
@@ -141,13 +158,37 @@ export function smallerWord(c: CvcSpellerChallenge, letterGroup: number | undefi
 /** The practice item's bank: its own three letters and one far distractor, never topped up (contract R5). */
 export const isPracticeWord = (c: CvcSpellerChallenge) => !!c.practiceBank;
 
+// ── middle_model: the spoken modes' model word ──────────────────────────────
+
+const middleOf = (w: CvcWord) => (w.phon ?? w.sounds)[1];
+const SHORT_SAID: Record<string, string> = { a: 'ah', e: 'eh', i: 'ih', o: 'aw', u: 'uh' };
+/** The model word's middle sound as the tutor says it: a short vowel as the pack says it, a long one as its name. */
+export const modelMiddleSaid = (w: CvcWord) => SHORT_SAID[middleOf(w)] ?? speakablePhoneme(`/${middleOf(w)}/`);
+
+/** Leak rule for the model: true when it is a session word or picture, or its middle sound is one the session asks. */
+export const middleModelLeak = (w: CvcWord, s: SessionStimuli) =>
+  s.words.includes(w.word) || s.emojis.includes(w.emoji) || s.vowels.includes(middleOf(w));
+
+/** The model word for a spoken item: CVC first, then a long-vowel word when the session asks every short vowel. */
+export function middleModelFor(c: CvcSpellerChallenge, s: SessionStimuli): CvcWord | null {
+  if (c.taskType === 'spell-word') return null;
+  return [...CVC_POOL, ...LONG_MIDDLE_POOL].find(w => !middleModelLeak(w, s)) ?? null;
+}
+
 /**
  * The levers this spelling declares, with their state. Empty on the spoken modes. A lever is declared only
  * when pulling it would change the screen and pass its leak rule.
  */
 export function cvcLevers(c: CvcSpellerChallenge | null, pulled: readonly string[], letterGroup: number | undefined,
   s: SessionStimuli, bank: readonly string[], vowelFocus?: string): WorkspaceLever[] {
-  if (!c || c.taskType !== 'spell-word') return [];
+  if (!c) return [];
+  if (c.taskType !== 'spell-word') return middleModelFor(c, s) ? [{
+    id: MIDDLE_MODEL_LEVER, kind: 'help', carrier: 'both', pulled: pulled.includes(MIDDLE_MODEL_LEVER),
+    answers: ['whole_word', 'first_sound', 'last_sound', 'letter_name'],
+    when: 'The learner says the whole word, its first or last sound, or a letter name.',
+    does: 'Shows another picture word in three boxes with the middle box lit. Say that word, then its middle sound, '
+      + 'short; never this item\'s sound.',
+  }] : [];
   const levers: WorkspaceLever[] = [];
   const strip = vowelStrip(c, letterGroup, s);
   if (strip.length && !vowelStripLeak(strip)) levers.push({

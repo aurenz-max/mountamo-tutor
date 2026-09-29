@@ -1,0 +1,58 @@
+{
+ "source": "qa/tutor-reports/read-aloud-studio-runtime-expression-payload-2026-09-29.json",
+ "primitiveId": "read-aloud-studio",
+ "evalMode": "expression",
+ "data": {
+  "title": "A Day at the Pond",
+  "gradeLevel": "3",
+  "fluencyFocus": "expression",
+  "lexileLevel": "520L",
+  "lines": [
+   {
+    "text": "Golden turtles rested upon warm stones.",
+    "stressWord": "turtles",
+    "phraseGroups": [
+     "Golden turtles rested upon warm stones."
+    ]
+   },
+   {
+    "text": "In the shallow water, small fish swam.",
+    "stressWord": "fish",
+    "phraseGroups": [
+     "In the shallow water,",
+     "small fish swam."
+    ]
+   },
+   {
+    "text": "Green frogs leaped into floating lilies.",
+    "stressWord": "frogs",
+    "phraseGroups": [
+     "Green frogs leaped into floating lilies."
+    ]
+   },
+   {
+    "text": "With a sudden splash, a duck dived.",
+    "stressWord": "splash",
+    "phraseGroups": [
+     "With a sudden splash,",
+     "a duck dived."
+    ]
+   },
+   {
+    "text": "Bright dragonflies buzzed across the reeds.",
+    "stressWord": "dragonflies",
+    "phraseGroups": [
+     "Bright dragonflies buzzed across the reeds."
+    ]
+   },
+   {
+    "text": "As evening arrived, gentle shadows grew.",
+    "stressWord": "shadows",
+    "phraseGroups": [
+     "As evening arrived,",
+     "gentle shadows grew."
+    ]
+   }
+  ]
+ }
+}

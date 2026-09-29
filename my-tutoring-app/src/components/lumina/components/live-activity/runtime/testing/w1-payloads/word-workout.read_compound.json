@@ -1,0 +1,39 @@
+{
+ "source": "qa/tutor-reports/word-workout-runtime-read_compound-payload-2026-09-29.json",
+ "primitiveId": "word-workout",
+ "evalMode": "read_compound",
+ "data": {
+  "title": "Word Workout: Reading short-vowel CVC words and telling real words from silly ones",
+  "mode": "compound-word",
+  "masteredVowels": [
+   "a",
+   "e",
+   "i",
+   "o",
+   "u"
+  ],
+  "gradeLevel": "1",
+  "challenges": [
+   {
+    "id": "c1",
+    "mode": "compound-word",
+    "targetWord": "sunset"
+   },
+   {
+    "id": "c2",
+    "mode": "compound-word",
+    "targetWord": "hotdog"
+   },
+   {
+    "id": "c3",
+    "mode": "compound-word",
+    "targetWord": "catnap"
+   },
+   {
+    "id": "c4",
+    "mode": "compound-word",
+    "targetWord": "bedbug"
+   }
+  ]
+ }
+}

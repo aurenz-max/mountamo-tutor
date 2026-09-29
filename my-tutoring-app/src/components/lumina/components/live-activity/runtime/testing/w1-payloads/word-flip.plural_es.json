@@ -1,0 +1,52 @@
+{
+ "source": "qa/tutor-reports/word-flip-runtime-plural_es-payload-2026-09-29.json",
+ "primitiveId": "word-flip",
+ "evalMode": "plural_es",
+ "data": {
+  "title": "Making More Words: Add -es!",
+  "challengeType": "plural_es",
+  "challenges": [
+   {
+    "id": "word-flip-1",
+    "type": "plural_es",
+    "sourceWord": "glass",
+    "answer": "glasses",
+    "emoji": "\ud83e\udd5b",
+    "count": 3
+   },
+   {
+    "id": "word-flip-2",
+    "type": "plural_es",
+    "sourceWord": "box",
+    "answer": "boxes",
+    "emoji": "\ud83d\udce6",
+    "count": 2
+   },
+   {
+    "id": "word-flip-3",
+    "type": "plural_es",
+    "sourceWord": "bus",
+    "answer": "buses",
+    "emoji": "\ud83d\ude8c",
+    "count": 2
+   },
+   {
+    "id": "word-flip-4",
+    "type": "plural_es",
+    "sourceWord": "brush",
+    "answer": "brushes",
+    "emoji": "\ud83e\udea5",
+    "count": 5
+   },
+   {
+    "id": "word-flip-5",
+    "type": "plural_es",
+    "sourceWord": "church",
+    "answer": "churches",
+    "emoji": "\u26ea",
+    "count": 4
+   }
+  ],
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving."
+ }
+}

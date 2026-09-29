@@ -87,7 +87,7 @@ const ON_SCREEN: Record<string, string> = {
 };
 
 export function cvcScene(c: CvcSpellerChallenge, view: { boxes: ReadonlyArray<string | null>; levers?: readonly string[];
-  tokens?: number; practice?: boolean }): WorkspaceScene {
+  tokens?: number; practice?: boolean; model?: { word: string; said: string } }): WorkspaceScene {
   if (c.taskType === 'spell-word') {
     const shown = (view.levers ?? []).map(id => ON_SCREEN[id]).filter(Boolean);
     return { objects: [], facts: { task: c.taskType,
@@ -100,6 +100,8 @@ export function cvcScene(c: CvcSpellerChallenge, view: { boxes: ReadonlyArray<st
         + 'activity itself. Tapping a filled box empties it. Hear It asks you to say the word.' } };
   }
   return { objects: [], facts: { task: c.taskType,
+    ...(view.model ? { levers_on_screen: `a model on another word, ${view.model.word}, in three boxes with the middle box lit: `
+      + `its middle sound is "${view.model.said}". Say the model word and that sound; it is not this item's sound` } : {}),
     constraints: 'The learner says the middle sound aloud. The middle letter is a blank until it is credited. '
       + 'Hear It asks you to say the word.' } };
 }

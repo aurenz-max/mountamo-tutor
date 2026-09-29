@@ -73,3 +73,24 @@ it('naming: the clue card appears on the pull and the picture keeps its word hid
   expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true, levers: ['function_cue'] });
   h.close();
 });
+
+it.each([['opposite', 'opposite_model'], ['association', 'goes_with_model'], ['gradable_scale', 'scale_model'],
+  ['sentence_frame', 'frame_model']])('%s: the model appears on the pull, on words the session never uses (handoff 24)', (mode, lever) => {
+  const data = JSON.parse(readFileSync(join(__dirname,
+    '../../../components/live-activity/runtime/testing/w1-payloads', `picture-vocabulary.${mode}.json`), 'utf8')).data;
+  const items = itemsFromChallenges(data.challenges);
+  const h = mountWorkspace({ primitiveId: 'picture-vocabulary', evalMode: mode, data });
+  expect(h.state().task!.workspace!.levers?.map(l => l.id)).toEqual([lever]);
+  h.say('banana'); h.feedback('incorrect', 'retry');
+  expect(q(h, '[data-lever="vocab-model"]')).toHaveLength(0);
+  const receipt = h.dispatch('pull_lever', { lever });
+  expect(receipt.status).toBe('committed');
+  const shown = q(h, '[data-model-card]').map(e => e.getAttribute('data-model-card')!);
+  expect(shown.length).toBeGreaterThan(0);
+  const used = new Set(items.flatMap(i => [i.word, i.baseWord ?? '', ...(i.scaleWords ?? [])]).map(w => w.toLowerCase()));
+  for (const w of shown) expect(used.has(w)).toBe(false);
+  expect(String(receipt.state.task!.demand.levers_on_screen)).toMatch(new RegExp(shown[0]));
+  h.say(items[0].word); h.feedback('correct');
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true, levers: [lever] });
+  h.close();
+});

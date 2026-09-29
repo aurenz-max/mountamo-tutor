@@ -6,9 +6,10 @@ import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { cvcUsableLetters, isCvcSpelling, type LetterGroup } from '../../../service/literacy/letterGroups';
 import type { CvcSpellerChallenge } from './CvcSpeller';
-import { cvcMiss } from './cvcSpellerWorkspace';
+import { cvcMiss, cvcScene } from './cvcSpellerWorkspace';
+import { LITERACY_CATALOG } from '../../../service/manifest/catalog/literacy';
 import {
-  PRACTICE_WORDS, cvcLevers, keywordFor, keywordsLeak, practiceLeak, sessionStimuli, smallerWord, vowelStrip, vowelStripLeak,
+  PRACTICE_WORDS, cvcLevers, middleModelFor, middleModelLeak, modelMiddleSaid, keywordFor, keywordsLeak, practiceLeak, sessionStimuli, smallerWord, vowelStrip, vowelStripLeak,
 } from './cvcSpellerLevers';
 
 const spell = (word: string, emoji = '🐱', id = word): CvcSpellerChallenge => ({ id, taskType: 'spell-word', targetWord: word,
@@ -89,11 +90,12 @@ describe('levers and the miss they answer', () => {
   const s = sessionStimuli([item]);
   const levers = cvcLevers(item, [], 2, s, ['c', 'a', 't', 'm', 'e']);
 
-  it('declares four levers on a spelling and none on the spoken modes', () => {
+  it('declares four levers on a spelling and only middle_model on the spoken modes', () => {
     expect(levers.map(l => [l.id, l.kind, l.carrier])).toEqual([
       ['vowel_keywords', 'help', 'shown'], ['consonant_keywords', 'help', 'shown'],
       ['sound_tokens', 'help', 'shown'], ['small_word', 'simplify', 'shown']]);
-    expect(cvcLevers({ ...item, taskType: 'fill-vowel' }, [], 2, s, [])).toEqual([]);
+    expect(cvcLevers({ ...item, taskType: 'fill-vowel' }, [], 2, s, []).map(l => [l.id, l.kind, l.carrier]))
+      .toEqual([['middle_model', 'help', 'both']]);
     expect(JSON.stringify(levers)).not.toMatch(/\bcat\b|"c a t"/);
   });
 
@@ -116,6 +118,47 @@ describe('levers and the miss they answer', () => {
     const answered = new Set(levers.flatMap(l => l.answers ?? []));
     for (const miss of ['first_letter', 'middle_letter', 'last_letter', 'letters_out_of_order', 'two_or_more_letters']) {
       expect(answered.has(miss)).toBe(true);
+    }
+  });
+});
+
+describe('middle_model on the spoken modes (handoff 24)', () => {
+  const say = (word: string, emoji = '⭐', taskType: CvcSpellerChallenge['taskType'] = 'fill-vowel'): CvcSpellerChallenge =>
+    ({ ...spell(word, emoji), taskType });
+  const oneVowel = ['cat', 'map', 'bag'].map(w => say(w));
+  const everyVowel = ['cat', 'bed', 'pig', 'dog', 'sun'].map(w => say(w));
+
+  it.each([['one vowel asked', oneVowel], ['every short vowel asked', everyVowel]])('%s: the model passes its leak rule', (_l, items) => {
+    const s = sessionStimuli(items);
+    for (const item of items) {
+      const model = middleModelFor(item, s)!;
+      expect(model).toBeTruthy();
+      expect(middleModelLeak(model, s)).toBe(false);
+      expect(s.words).not.toContain(model.word);
+    }
+  });
+
+  it('every short vowel asked: the model is a long-vowel word, said by its name', () => {
+    const model = middleModelFor(everyVowel[0], sessionStimuli(everyVowel))!;
+    expect(['ay', 'ee', 'oh']).toContain(modelMiddleSaid(model));
+    expect(cvcScene(everyVowel[0], { boxes: [], model: { word: model.word, said: modelMiddleSaid(model) } }).facts.levers_on_screen)
+      .not.toMatch(/\b(ah|eh|ih|aw|uh)\b/);
+  });
+
+  it.each(['whole_word', 'first_sound', 'last_sound', 'letter_name'])('%s: the next lever is middle_model', miss => {
+    for (const taskType of ['fill-vowel', 'word-sort'] as const) {
+      const item = say('cat', '🐱', taskType);
+      expect(nextLever(cvcLevers(item, [], 2, sessionStimuli([item]), []), miss)).toBe('middle_model');
+    }
+  });
+
+  it('every spoken miss is answered or unanswered by decision (J9)', () => {
+    const entry = LITERACY_CATALOG.find(c => c.id === 'cvc-speller')!.teachingWorkspace!;
+    expect(entry.levers).toBe(true);
+    const item = say('cat');
+    const answered = cvcLevers(item, [], 2, sessionStimuli([item]), []).flatMap(l => l.answers ?? []);
+    for (const mode of ['fill_vowel', 'word_sort']) {
+      expect([...answered, ...entry.unanswered![mode]].sort()).toEqual([...entry.misses![mode]].sort());
     }
   });
 });

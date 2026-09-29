@@ -112,6 +112,8 @@ None of the five conflicts with R1-R9 when scoped as above; `other_case_referenc
 
 ## Changelog
 
+- 2026-09-29 — handoff 24: `name_it` declares `first_letter_model` (help, both): another picture word, printed, its first letter lit; its first letter is no session target and it is no word of any session sentence (`firstLetterModelLeak`). R3 holds (the star still covers the item's letter). All three name_it misses answered. Catalog `levers: true` set. `npm test -- letterSpotter LetterSpotter` 99/99.
+
 - 2026-09-28 — R10 added (find_it / match_it levers, handoff 22 L1). The draft's `formation_start` and `mirror_model` were replaced by `wrong_choice_partner` (user approval). C1 stays open: the tier's same-case reference is untouched.
 
 - 2026-09-28 — derived (initial), step 1 of handoff 22 L1. 9 requirements (7 OBSERVED, 2 INFERRED), 1 open conflict (C1). Channel [4] not queried (auth); channel [3] 0 rows.

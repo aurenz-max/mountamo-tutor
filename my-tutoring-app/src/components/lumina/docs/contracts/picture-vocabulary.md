@@ -31,6 +31,14 @@ Static derivation for the picture-vocabulary slice of handoff 22 L4.
 - **Demanded by:** handoff 22 L4.
 - **Probe:** `npm test -- pictureVocabularyLevers PictureVocabulary.levers`.
 
+### R6 — Relation modes: a worked model on other words · OBSERVED (09-29, handoff 24)
+- **Property:** opposite, association, gradable_scale and sentence_frame each declare one help lever (`opposite_model`, `goes_with_model`, `scale_model`, `frame_model`): a code-owned model whose words are no word, base word, scale word or frame word of the session (`modelLeak`), shown as pictures and said by the tutor. Their spoken misses are named (`said_base_word`, `not_opposite`, `no_link`, `given_rung`, `off_scale`, `does_not_fit`) and each is answered.
+- **Probe:** `npm test -- pictureVocabularyLevers PictureVocabulary.levers contentSpokenMisses`.
+
 ### R5 — No first-sound, letter or rhyme hint before a try · OBSERVED (09-29)
 - **Property:** catalog guidance bans it; a hint about what the thing does or where it is found is allowed.
 - **Probe:** tutor replay `qa/tutor-reports/replay/picture-vocabulary-2026-09-29.json` (0 sound hints in 40 miss and stuck samples).
+
+## Changelog
+
+- 2026-09-29 — R6 added (handoff 24): the four relation modes get named misses and one model lever each. R2 holds: no option list, no answer word before credit. `npm test` 64/64 on the primitive.

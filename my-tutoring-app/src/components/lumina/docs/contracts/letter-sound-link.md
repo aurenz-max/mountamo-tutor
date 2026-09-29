@@ -113,6 +113,8 @@ None open.
 
 ## Changelog
 
+- 2026-09-29 — handoff 24: `see_hear` and `keyword_match` declare `letter_model` (help, both): another letter card, one the session never asks, offers or pictures, of the item's sound kind; its keyword picture beside it on keyword_match. R3 and R4 hold: the item's anchor stays hidden before credit, and the model letter is no session letter (`letterModelLeak`). `other_sound` unanswered by decision. Catalog `levers: true` set, guidance trimmed 2212 -> under 2000 with every rule kept. "I'm stuck" before a try now pulls the model (trigger ladder); the teaching test's advisory-signal case was updated to expect it. `npm test -- letterSoundLink LetterSoundLink` 132/132.
+
 - 2026-09-28 — R12 added (hear_see levers, handoff 22 L1). R3 narrowed by user approval: symmetric keyword pictures under both cards are allowed as a pulled lever. The `LetterSoundLink.teaching.test.tsx` operations assertion now includes `pull_lever`.
 
 - 2026-09-28 — derived (initial), step 1 of handoff 22 L1. 11 requirements (all OBSERVED), 0 conflicts. Channel [4] not attempted. Lever notes for the `hear_see` slice:

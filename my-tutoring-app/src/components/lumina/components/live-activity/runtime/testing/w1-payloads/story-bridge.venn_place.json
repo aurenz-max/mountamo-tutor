@@ -1,0 +1,127 @@
+{
+ "source": "qa/tutor-reports/story-bridge-runtime-venn_place-payload-2026-09-29.json",
+ "primitiveId": "story-bridge",
+ "evalMode": "venn_place",
+ "data": {
+  "title": "Story Bridge",
+  "description": "Compare characters, settings, events, and big ideas across two illustrated stories.",
+  "gradeLevel": "kindergarten",
+  "challengeType": "venn_place",
+  "stories": [
+   {
+    "id": "story-bridge-pair-1-a",
+    "title": "Sharing At The Library",
+    "sceneEmoji": "\ud83d\udcda",
+    "setting": "a quiet room full of books",
+    "opening": "Afternoon sunlight shone through the tall library windows.",
+    "closing": "Both friends read together until the library closed.",
+    "mainIdea": "Sharing books makes reading time fun for everyone.",
+    "characters": [
+     {
+      "id": "story-bridge-pair-1-a-1",
+      "name": "Leo",
+      "emoji": "\ud83d\udc66\ud83c\udffd",
+      "eventEmoji": "\ud83d\udcd6",
+      "sentence": "Leo wanted to read a dinosaur book.",
+      "uniqueDetail": "wanted a book about fierce dinosaurs"
+     },
+     {
+      "id": "story-bridge-pair-1-a-2",
+      "name": "Sam",
+      "emoji": "\ud83d\udc66\ud83c\udffc",
+      "eventEmoji": "\ud83e\udd1d",
+      "sentence": "Sam offered to share the dinosaur book.",
+      "uniqueDetail": "offered a book to read"
+     },
+     {
+      "id": "story-bridge-pair-1-a-3",
+      "name": "Max",
+      "emoji": "\ud83d\udc66\ud83c\udfff",
+      "eventEmoji": "\ud83d\ude0a",
+      "sentence": "Max smiled because sharing was fun.",
+      "uniqueDetail": "smiled while reading stories"
+     }
+    ]
+   },
+   {
+    "id": "story-bridge-pair-1-b",
+    "title": "Sharing At School",
+    "sceneEmoji": "\ud83c\udfeb",
+    "setting": "a bright classroom with desks",
+    "opening": "Morning bells rang softly in the busy classroom.",
+    "closing": "Both friends painted together until the bell rang.",
+    "mainIdea": "Sharing supplies makes art time fun for everyone.",
+    "characters": [
+     {
+      "id": "story-bridge-pair-1-b-1",
+      "name": "Mia",
+      "emoji": "\ud83d\udc67\ud83c\udffb",
+      "eventEmoji": "\ud83d\udd8d\ufe0f",
+      "sentence": "Mia wanted to use a bright red crayon.",
+      "uniqueDetail": "wanted a tool for drawing pictures"
+     },
+     {
+      "id": "story-bridge-pair-1-b-2",
+      "name": "Zoe",
+      "emoji": "\ud83d\udc67\ud83c\udffe",
+      "eventEmoji": "\ud83c\udfa8",
+      "sentence": "Zoe offered to share the red crayon.",
+      "uniqueDetail": "offered a crayon to draw"
+     },
+     {
+      "id": "story-bridge-pair-1-b-3",
+      "name": "Lily",
+      "emoji": "\ud83d\udc67\ud83c\udffc",
+      "eventEmoji": "\u2728",
+      "sentence": "Lily smiled because sharing was kind.",
+      "uniqueDetail": "smiled while making art"
+     }
+    ]
+   }
+  ],
+  "challenges": [
+   {
+    "pairId": "story-bridge-pair-1",
+    "storyAId": "story-bridge-pair-1-a",
+    "storyBId": "story-bridge-pair-1-b",
+    "type": "venn_place",
+    "anchorStoryId": "story-bridge-pair-1-a",
+    "anchorCharacterId": "story-bridge-pair-1-a-1",
+    "targetStoryId": "story-bridge-pair-1-b",
+    "targetCharacterId": "story-bridge-pair-1-b-1",
+    "vennDetail": "wanted a book about fierce dinosaurs",
+    "vennRegion": "story_a",
+    "comparisonSummary": "Leo wanted a book about fierce dinosaurs, but Mia did not.",
+    "id": "story-bridge-1-1"
+   },
+   {
+    "pairId": "story-bridge-pair-1",
+    "storyAId": "story-bridge-pair-1-a",
+    "storyBId": "story-bridge-pair-1-b",
+    "type": "venn_place",
+    "anchorStoryId": "story-bridge-pair-1-a",
+    "anchorCharacterId": "story-bridge-pair-1-a-1",
+    "targetStoryId": "story-bridge-pair-1-b",
+    "targetCharacterId": "story-bridge-pair-1-b-1",
+    "vennDetail": "wanted to borrow a popular item",
+    "vennRegion": "both",
+    "comparisonSummary": "Leo and Mia both wanted to borrow a popular item.",
+    "id": "story-bridge-1-2"
+   },
+   {
+    "pairId": "story-bridge-pair-1",
+    "storyAId": "story-bridge-pair-1-a",
+    "storyBId": "story-bridge-pair-1-b",
+    "type": "venn_place",
+    "anchorStoryId": "story-bridge-pair-1-a",
+    "anchorCharacterId": "story-bridge-pair-1-a-1",
+    "targetStoryId": "story-bridge-pair-1-b",
+    "targetCharacterId": "story-bridge-pair-1-b-1",
+    "vennDetail": "wanted a tool for drawing pictures",
+    "vennRegion": "story_b",
+    "comparisonSummary": "Mia wanted a tool for drawing pictures, but Leo did not.",
+    "id": "story-bridge-1-3"
+   }
+  ]
+ }
+}

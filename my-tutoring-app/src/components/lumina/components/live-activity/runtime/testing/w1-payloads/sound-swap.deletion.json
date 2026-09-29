@@ -1,0 +1,182 @@
+{
+ "source": "qa/tutor-reports/sound-swap-runtime-deletion-payload-2026-09-29.json",
+ "primitiveId": "sound-swap",
+ "evalMode": "deletion",
+ "data": {
+  "title": "Sound Pop: Take Away the First Sound!",
+  "gradeLevel": "K",
+  "challenges": [
+   {
+    "id": "c1",
+    "operation": "deletion",
+    "originalWord": "cat",
+    "originalPhonemes": [
+     "/k/",
+     "/\u00e6/",
+     "/t/"
+    ],
+    "originalImage": "A furry pet cat sitting",
+    "resultWord": "at",
+    "resultPhonemes": [
+     "/\u00e6/",
+     "/t/"
+    ],
+    "resultImage": "Sitting at a school desk",
+    "deletePhoneme": "/k/",
+    "deletePosition": "beginning"
+   },
+   {
+    "id": "c2",
+    "operation": "deletion",
+    "originalWord": "bat",
+    "originalPhonemes": [
+     "/b/",
+     "/\u00e6/",
+     "/t/"
+    ],
+    "originalImage": "A black flying night bat",
+    "resultWord": "at",
+    "resultPhonemes": [
+     "/\u00e6/",
+     "/t/"
+    ],
+    "resultImage": "Sitting at a small table",
+    "deletePhoneme": "/b/",
+    "deletePosition": "beginning"
+   },
+   {
+    "id": "c3",
+    "operation": "deletion",
+    "originalWord": "hat",
+    "originalPhonemes": [
+     "/h/",
+     "/\u00e6/",
+     "/t/"
+    ],
+    "originalImage": "A warm winter wool hat",
+    "resultWord": "at",
+    "resultPhonemes": [
+     "/\u00e6/",
+     "/t/"
+    ],
+    "resultImage": "Standing at the front door",
+    "deletePhoneme": "/h/",
+    "deletePosition": "beginning"
+   },
+   {
+    "id": "c4",
+    "operation": "deletion",
+    "originalWord": "can",
+    "originalPhonemes": [
+     "/k/",
+     "/\u00e6/",
+     "/n/"
+    ],
+    "originalImage": "A metal soup tin can",
+    "resultWord": "an",
+    "resultPhonemes": [
+     "/\u00e6/",
+     "/n/"
+    ],
+    "resultImage": "An apple on a tree",
+    "deletePhoneme": "/k/",
+    "deletePosition": "beginning"
+   },
+   {
+    "id": "c5",
+    "operation": "deletion",
+    "originalWord": "fan",
+    "originalPhonemes": [
+     "/f/",
+     "/\u00e6/",
+     "/n/"
+    ],
+    "originalImage": "An electric cooling desk fan",
+    "resultWord": "an",
+    "resultPhonemes": [
+     "/\u00e6/",
+     "/n/"
+    ],
+    "resultImage": "An orange ready to peel",
+    "deletePhoneme": "/f/",
+    "deletePosition": "beginning"
+   },
+   {
+    "id": "c6",
+    "operation": "deletion",
+    "originalWord": "man",
+    "originalPhonemes": [
+     "/m/",
+     "/\u00e6/",
+     "/n/"
+    ],
+    "originalImage": "A tall adult man smiling",
+    "resultWord": "an",
+    "resultPhonemes": [
+     "/\u00e6/",
+     "/n/"
+    ],
+    "resultImage": "An open cardboard storage box",
+    "deletePhoneme": "/m/",
+    "deletePosition": "beginning"
+   },
+   {
+    "id": "c7",
+    "operation": "deletion",
+    "originalWord": "bit",
+    "originalPhonemes": [
+     "/b/",
+     "/\u026a/",
+     "/t/"
+    ],
+    "originalImage": "A small bite of apple",
+    "resultWord": "it",
+    "resultPhonemes": [
+     "/\u026a/",
+     "/t/"
+    ],
+    "resultImage": "A shiny red toy ball",
+    "deletePhoneme": "/b/",
+    "deletePosition": "beginning"
+   },
+   {
+    "id": "c8",
+    "operation": "deletion",
+    "originalWord": "hit",
+    "originalPhonemes": [
+     "/h/",
+     "/\u026a/",
+     "/t/"
+    ],
+    "originalImage": "A bat hitting a ball",
+    "resultWord": "it",
+    "resultPhonemes": [
+     "/\u026a/",
+     "/t/"
+    ],
+    "resultImage": "It is a sunny day",
+    "deletePhoneme": "/h/",
+    "deletePosition": "beginning"
+   },
+   {
+    "id": "c9",
+    "operation": "deletion",
+    "originalWord": "sit",
+    "originalPhonemes": [
+     "/s/",
+     "/\u026a/",
+     "/t/"
+    ],
+    "originalImage": "A child sitting down quietly",
+    "resultWord": "it",
+    "resultPhonemes": [
+     "/\u026a/",
+     "/t/"
+    ],
+    "resultImage": "Pointing to a picture book",
+    "deletePhoneme": "/s/",
+    "deletePosition": "beginning"
+   }
+  ]
+ }
+}

@@ -1,0 +1,196 @@
+{
+ "source": "qa/tutor-reports/decodable-reader-runtime-sequence-payload-2026-09-29.json",
+ "primitiveId": "decodable-reader",
+ "evalMode": "sequence",
+ "data": {
+  "title": "Pam and the Cat",
+  "gradeLevel": "1",
+  "passage": {
+   "sentences": [
+    {
+     "id": "s1",
+     "words": [
+      {
+       "id": "s1_w1",
+       "text": "Pam",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s1_w2",
+       "text": "had",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s1_w3",
+       "text": "a",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s1_w4",
+       "text": "fat",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s1_w5",
+       "text": "cat.",
+       "phonicsPattern": "cvc"
+      }
+     ]
+    },
+    {
+     "id": "s2",
+     "words": [
+      {
+       "id": "s2_w1",
+       "text": "They",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s2_w2",
+       "text": "ran",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s2_w3",
+       "text": "to",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s2_w4",
+       "text": "the",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s2_w5",
+       "text": "lake.",
+       "phonicsPattern": "cvce"
+      }
+     ]
+    },
+    {
+     "id": "s3",
+     "words": [
+      {
+       "id": "s3_w1",
+       "text": "The",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s3_w2",
+       "text": "cat",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s3_w3",
+       "text": "sat",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s3_w4",
+       "text": "on",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s3_w5",
+       "text": "a",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s3_w6",
+       "text": "mat.",
+       "phonicsPattern": "cvc"
+      }
+     ]
+    },
+    {
+     "id": "s4",
+     "words": [
+      {
+       "id": "s4_w1",
+       "text": "Pam",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s4_w2",
+       "text": "gave",
+       "phonicsPattern": "cvce"
+      },
+      {
+       "id": "s4_w3",
+       "text": "the",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s4_w4",
+       "text": "cat",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s4_w5",
+       "text": "a",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s4_w6",
+       "text": "fish.",
+       "phonicsPattern": "digraph"
+      }
+     ]
+    }
+   ],
+   "imageDescription": "A girl named Pam sitting with a fat cat by a lake on a mat"
+  },
+  "phonicsPatternsInPassage": [
+   "cvc",
+   "cvce",
+   "digraph",
+   "sight"
+  ],
+  "comprehensionQuestions": [
+   {
+    "question": "What happened first in the story?",
+    "options": [
+     {
+      "id": "A",
+      "text": "Pam had a fat cat.",
+      "emoji": "\ud83d\udc31"
+     },
+     {
+      "id": "B",
+      "text": "The cat sat on a mat.",
+      "emoji": "\ud83e\uddd8"
+     },
+     {
+      "id": "C",
+      "text": "Pam gave the cat a fish.",
+      "emoji": "\ud83d\udc1f"
+     }
+    ],
+    "correctOptionId": "A"
+   },
+   {
+    "question": "What happened after they ran to the lake?",
+    "options": [
+     {
+      "id": "A",
+      "text": "Pam had a fat cat.",
+      "emoji": "\ud83d\udc3e"
+     },
+     {
+      "id": "B",
+      "text": "The cat sat on a mat.",
+      "emoji": "\ud83e\uddf6"
+     },
+     {
+      "id": "C",
+      "text": "Pam gave the cat a cake.",
+      "emoji": "\ud83c\udf82"
+     }
+    ],
+    "correctOptionId": "B"
+   }
+  ],
+  "comprehensionType": "sequence",
+  "readingMode": "decode"
+ }
+}

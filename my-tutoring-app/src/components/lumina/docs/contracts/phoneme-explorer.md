@@ -67,5 +67,6 @@ None open.
 
 ## Changelog
 
+- 2026-09-29 — R6 amended (handoff 24): medial and ending also draw from `LONG_MIDDLE_POOL` (rain, mail, feet, seal, boat, soap; boxes print the vowel team, the tutor says the long vowel). Measured gap: a medial session asking all five short vowels, and an ending session asking final n/p/t/g, had no model and no practice item. R2 holds: no session word, no asked sound.
 - 2026-09-28 — R6 added (levers, handoff 22 L2). --check COMPATIBLE: R1-R5 suites pass (`PhonemeExplorer.workspace`, `.support-tiers`).
 - 2026-09-28 — derived (initial). 5 requirements (all OBSERVED), 0 conflicts.

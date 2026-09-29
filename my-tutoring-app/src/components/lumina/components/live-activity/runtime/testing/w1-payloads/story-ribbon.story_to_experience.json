@@ -1,0 +1,106 @@
+{
+ "source": "qa/tutor-reports/story-ribbon-runtime-story_to_experience-payload-2026-09-29.json",
+ "primitiveId": "story-ribbon",
+ "evalMode": "story_to_experience",
+ "data": {
+  "title": "Story Ribbon",
+  "description": "Use picture moments to tell connected stories, control story time, or explain a connection.",
+  "gradeLevel": "kindergarten",
+  "challengeType": "story_to_experience",
+  "challenges": [
+   {
+    "id": "story-ribbon-1",
+    "type": "story_to_experience",
+    "title": "Flying a Kite",
+    "characterName": "Leo",
+    "characterEmoji": "\ud83d\udc66",
+    "setting": "the windy park",
+    "events": [
+     {
+      "id": "story-ribbon-1-event-1",
+      "order": 0,
+      "emoji": "\ud83e\ude81",
+      "pictureLabel": "big kite",
+      "modelSentence": "Leo holds a big kite in the park."
+     },
+     {
+      "id": "story-ribbon-1-event-2",
+      "order": 1,
+      "emoji": "\ud83c\udf33",
+      "pictureLabel": "tall tree",
+      "modelSentence": "The kite flies up past a tall tree."
+     },
+     {
+      "id": "story-ribbon-1-event-3",
+      "order": 2,
+      "emoji": "\ud83d\udc26",
+      "pictureLabel": "little bird",
+      "modelSentence": "A little bird watches the kite fly high."
+     }
+    ]
+   },
+   {
+    "id": "story-ribbon-2",
+    "type": "story_to_experience",
+    "title": "Leo Plants Seeds",
+    "characterName": "Leo",
+    "characterEmoji": "\ud83d\udc66",
+    "setting": "sunny park",
+    "events": [
+     {
+      "id": "story-ribbon-2-event-1",
+      "order": 0,
+      "emoji": "\ud83c\udf30",
+      "pictureLabel": "tiny brown seeds",
+      "modelSentence": "Leo drops tiny brown seeds into the dirt."
+     },
+     {
+      "id": "story-ribbon-2-event-2",
+      "order": 1,
+      "emoji": "\ud83d\udca7",
+      "pictureLabel": "blue watering can",
+      "modelSentence": "Leo pours water from a blue watering can over the soil."
+     },
+     {
+      "id": "story-ribbon-2-event-3",
+      "order": 2,
+      "emoji": "\ud83c\udf3b",
+      "pictureLabel": "bright yellow flower",
+      "modelSentence": "A bright yellow flower grows up tall in the park."
+     }
+    ]
+   },
+   {
+    "id": "story-ribbon-3",
+    "type": "story_to_experience",
+    "title": "Leo Flies a Kite",
+    "characterName": "Leo",
+    "characterEmoji": "\ud83d\udc66",
+    "setting": "the windy park",
+    "events": [
+     {
+      "id": "story-ribbon-3-event-1",
+      "order": 0,
+      "emoji": "\ud83e\ude81",
+      "pictureLabel": "red kite",
+      "modelSentence": "Leo brought his red kite to the grassy park."
+     },
+     {
+      "id": "story-ribbon-3-event-2",
+      "order": 1,
+      "emoji": "\ud83c\udf33",
+      "pictureLabel": "tall tree",
+      "modelSentence": "The red kite got stuck high up in a tall tree."
+     },
+     {
+      "id": "story-ribbon-3-event-3",
+      "order": 2,
+      "emoji": "\ud83e\ude9c",
+      "pictureLabel": "safety ladder",
+      "modelSentence": "Dad used a safety ladder to reach the red kite."
+     }
+    ]
+   }
+  ]
+ }
+}

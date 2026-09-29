@@ -1,6 +1,6 @@
 /**
- * The in-item levers on letter-sound-link `hear-see` (`/add-support-tiers`, handoff 22 L1): the tutor says a
- * sound and the learner taps one of two letters. The spoken modes join L2.
+ * The in-item levers on letter-sound-link (`/add-support-tiers`). `hear-see` (handoff 22 L1): the tutor says a
+ * sound and the learner taps one of two letters. The spoken modes (handoff 24) are at the end of this header.
  *
  * Pure: the component draws from these, the workspace publishes them, and the tests hold each leak rule.
  * - `keyword_under_both` (help): a keyword picture under BOTH letter cards, alike. Answers `other_short_vowel`
@@ -12,15 +12,26 @@
  *   the session, against a foil of the other kind (vowel against consonant). Leak rule: the same sound with a
  *   far foil would hand over the answer when the full item comes back, and a session letter would be told
  *   before it is asked (R4).
+ *
+ * `see-hear` (say the letter's sound) and `keyword-match` (say the picture word that starts with it):
+ * - `letter_model` (help, both): another letter card, one the session never asks, offers or pictures, of the
+ *   item's sound kind where the group has one (held, clipped, vowel); the tutor says its sound, held or clipped
+ *   as it is. On keyword-match its keyword picture sits beside it and the tutor says the word too. Answers
+ *   `letter_name`, `keyword_word`, `added_vowel` (see-hear) and `other_picture`, `letter_name`, `said_the_sound`
+ *   (keyword-match). Leak rule (`letterModelLeak`): no session letter, keyword or picture (R3, R4).
+ * - `other_sound` (see-hear) has no lever by decision: only this letter's own keyword separates it from the one the
+ *   learner said, and the anchor is never shown before credit (R3). No simplify on the spoken modes: another
+ *   letter asks the same thing, not less.
  */
 import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
 import { LETTER_GROUPS, normalizeLetterGroup } from '../../../service/literacy/letterGroups';
-import { canProduceSound, itemFromChallenge, keywordFor, keywordNamesItsPicture, emojiForKeyword,
-  type LetterSoundItem } from './letterSoundLinkDomain';
+import { canProduceSound, itemFromChallenge, isClippedSound, keywordFor, keywordNamesItsPicture, emojiForKeyword,
+  spokenSoundFor, type LetterSoundItem } from './letterSoundLinkDomain';
 
 export const KEYWORDS_LEVER = 'keyword_under_both';
 export const VOICE_LEVER = 'voice_feel_model';
 export const FAR_PAIR_LEVER = 'far_letter_pair';
+export const LETTER_MODEL_LEVER = 'letter_model';
 
 const VOWELS = new Set(['a', 'e', 'i', 'o', 'u']);
 const VOICING = [['t', 'd'], ['p', 'b'], ['s', 'z'], ['f', 'v'], ['k', 'g'], ['c', 'g']];
@@ -98,10 +109,50 @@ export const practiceLeak = (practice: LetterSoundItem, items: readonly LetterSo
   return [practice.letter, ...optionLetters(practice)].some(l => used.has(low(l)));
 };
 
-/** The levers this item declares, with their state. Empty off `hear-see`. */
+// ── letter_model: the spoken modes ───────────────────────────────────────────
+
+export interface LetterModel { letter: string; sound: string; word: string; emoji: string }
+const soundKind = (l: string) => VOWELS.has(l) ? 'vowel' : isClippedSound(l) ? 'clipped' : 'held';
+
+/** Every word and picture the session says or shows: keywords, distractors and keyword-match cards. */
+const sessionPictures = (items: readonly LetterSoundItem[]) => new Set(items.flatMap(i =>
+  [i.keyword, i.keywordEmoji, i.distractor, ...i.options.flatMap(o => [o.value, o.emoji ?? ''])]).map(low).filter(Boolean));
+
+/** Leak rule for the model: true when its letter, keyword or picture is one the session uses. */
+export const letterModelLeak = (m: LetterModel, items: readonly LetterSoundItem[]) => {
+  const pictures = sessionPictures(items);
+  return sessionLetters(items).has(m.letter) || pictures.has(low(m.word)) || pictures.has(m.emoji);
+};
+
+/** The model for a spoken item: a group letter of the item's sound kind first, then any other that passes. */
+export function letterModelFor(item: LetterSoundItem, items: readonly LetterSoundItem[], letterGroup: number | undefined): LetterModel | null {
+  if (item.mode === 'hear-see') return null;
+  const group = LETTER_GROUPS[normalizeLetterGroup(letterGroup) ?? 4].filter(l => l.length === 1);
+  const ordered = [...EASY_FIRST.filter(l => group.includes(l)), ...EASY_FIRST.filter(l => !group.includes(l))];
+  const model = (l: string): LetterModel => ({ letter: l, sound: spokenSoundFor(l, `/${l}/`), word: keywordFor(l), emoji: emojiForKeyword(keywordFor(l)) });
+  const fits = (l: string) => canProduceSound(l) && keywordNamesItsPicture(l) && !letterModelLeak(model(l), items);
+  const letter = ordered.find(l => fits(l) && soundKind(l) === soundKind(low(item.letter))) ?? ordered.find(fits);
+  return letter ? model(letter) : null;
+}
+
+/** The levers this item declares, with their state. */
 export function letterSoundLevers(item: LetterSoundItem | null, pulled: readonly string[], items: readonly LetterSoundItem[],
   index: number, letterGroup: number | undefined): WorkspaceLever[] {
-  if (!item || item.mode !== 'hear-see') return [];
+  if (!item) return [];
+  if (item.mode !== 'hear-see') {
+    const m = letterModelFor(item, items, letterGroup);
+    const match = item.mode === 'keyword-match';
+    return m ? [{ id: LETTER_MODEL_LEVER, kind: 'help', carrier: 'both', pulled: pulled.includes(LETTER_MODEL_LEVER),
+      answers: match ? ['other_picture', 'letter_name', 'said_the_sound'] : ['letter_name', 'keyword_word', 'added_vowel'],
+      when: match ? 'The learner says the other picture, the letter name, or the sound with no picture word.'
+        : 'The learner says the letter name, a whole word, or the sound with a vowel after it.',
+      // The model letter is named only in the scene fact once pulled (letter-spotter replay 09-29: named here, the
+      // tutor spoke of the model before any pull).
+      does: match ? 'Shows another letter beside its picture. Once it is on screen, say its sound, then the picture word that '
+        + 'starts with it. It is not this item\'s letter.'
+        : 'Shows another letter. Once it is on screen, say its sound once, on its own. It is not this item\'s letter.',
+    }] : [];
+  }
   const levers: WorkspaceLever[] = [];
   if (cardKeywords(item, laterStimuli(items, index)).length) levers.push({
     id: KEYWORDS_LEVER, kind: 'help', carrier: 'shown', pulled: pulled.includes(KEYWORDS_LEVER),

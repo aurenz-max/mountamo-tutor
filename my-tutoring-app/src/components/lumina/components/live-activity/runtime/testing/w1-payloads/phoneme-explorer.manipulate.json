@@ -1,0 +1,60 @@
+{
+ "source": "qa/tutor-reports/phoneme-explorer-runtime-manipulate-payload-2026-09-29.json",
+ "primitiveId": "phoneme-explorer",
+ "evalMode": "manipulate",
+ "data": {
+  "title": "Sound Safari: Hearing the first sound in short picture words",
+  "challenges": [
+   {
+    "originalWord": "cat",
+    "originalEmoji": "\ud83d\udc31",
+    "operation": "substitute",
+    "operationDescription": "Change the /k/ sound in cat to /b/",
+    "resultWord": "bat",
+    "resultEmoji": "\ud83e\udd87",
+    "mode": "manipulate",
+    "id": "c1"
+   },
+   {
+    "originalWord": "dog",
+    "originalEmoji": "\ud83d\udc36",
+    "operation": "substitute",
+    "operationDescription": "Change the /d/ sound in dog to /f/",
+    "resultWord": "fog",
+    "resultEmoji": "\ud83c\udf01",
+    "mode": "manipulate",
+    "id": "c2"
+   },
+   {
+    "originalWord": "sun",
+    "originalEmoji": "\u2600\ufe0f",
+    "operation": "substitute",
+    "operationDescription": "Change the /s/ sound in sun to /r/",
+    "resultWord": "run",
+    "resultEmoji": "\ud83c\udfc3",
+    "mode": "manipulate",
+    "id": "c3"
+   },
+   {
+    "originalWord": "pig",
+    "originalEmoji": "\ud83d\udc37",
+    "operation": "substitute",
+    "operationDescription": "Change the /p/ sound in pig to /w/",
+    "resultWord": "wig",
+    "resultEmoji": " wigs",
+    "mode": "manipulate",
+    "id": "c4"
+   },
+   {
+    "originalWord": "pen",
+    "originalEmoji": "\ud83d\udd8a\ufe0f",
+    "operation": "substitute",
+    "operationDescription": "Change the /p/ sound in pen to /h/",
+    "resultWord": "hen",
+    "resultEmoji": "\ud83d\udc14",
+    "mode": "manipulate",
+    "id": "c5"
+   }
+  ]
+ }
+}

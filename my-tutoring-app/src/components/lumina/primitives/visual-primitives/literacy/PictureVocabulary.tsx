@@ -62,8 +62,8 @@ import { commitGesture, useWorkspaceRunner, type TeachingEvaluationResult }
 import { judgedAnswerMix } from '../../../hooks/judgedScriptContract';
 import { itemsFromChallenges, type PictureVocabItem } from './pictureVocabularyScript';
 import { describeCardTap, hearQuestionRequest, pictureVocabAssignment, pictureVocabScene } from './pictureVocabularyWorkspace';
-import { CLUE_LEVER, TWO_CARDS_LEVER, leversOnScreen, pictureVocabLevers, pictureVocabMiss, practiceItemFor }
-  from './pictureVocabularyLevers';
+import { CLUE_LEVER, MODEL_LEVER, TWO_CARDS_LEVER, leversOnScreen, modelFor, pictureVocabLevers, pictureVocabMiss,
+  practiceItemFor } from './pictureVocabularyLevers';
 import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
@@ -269,6 +269,8 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
   const currentItem = practice ?? sessionItem;
   const pulledLevers = practice || leverState.item !== sessionItem?.id ? [] : leverState.pulled;
   const clueShown = !practice && pulledLevers.includes(CLUE_LEVER) && !!currentItem?.clue;
+  const modelId = currentItem ? MODEL_LEVER[currentItem.kind] : undefined;
+  const vocabModel = !practice && currentItem && modelId && pulledLevers.includes(modelId) ? modelFor(currentItem, items) : null;
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
   /** Credited: the first moment the answer may appear on screen. */
   const revealed = runner.currentSolved || practiceSolved;
@@ -300,7 +302,7 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
     if (!currentItem || !sessionItem) return;
     const levers = practice ? [] : pictureVocabLevers(sessionItem, pulledLevers, items);
     const scene = pictureVocabScene(currentItem);
-    const onScreen = practice ? null : leversOnScreen(sessionItem, pulledLevers);
+    const onScreen = practice ? null : leversOnScreen(sessionItem, pulledLevers, items);
     workspace.current = { ...scene,
       facts: { ...scene.facts, ...(onScreen ? { levers_on_screen: onScreen } : {}),
         ...(practice ? { practice: 'An easier practice item with another word and two very different pictures, ungraded. The full item comes back after it.' } : {}) },
@@ -662,6 +664,28 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
             {clueShown && (
               <div data-lever="clue-card" className="mx-auto flex max-w-md items-center justify-center gap-2 rounded-2xl border border-cyan-300/20 bg-cyan-950/10 px-4 py-3 text-center text-sm text-slate-100">
                 <span aria-hidden>💡</span>{currentItem.clue}
+              </div>
+            )}
+            {/* Help on the relation modes: a worked model on words the session never uses. */}
+            {vocabModel && (
+              <div data-lever="vocab-model" aria-label="Model"
+                className="mx-auto flex max-w-md flex-col items-center gap-2 rounded-2xl border border-cyan-300/20 bg-cyan-950/10 px-4 py-3">
+                <div className="flex items-end justify-center gap-3">
+                  {vocabModel.cards.map((card, i) => (
+                    <React.Fragment key={card.word}>
+                      {i > 0 && vocabModel.kind === 'opposite' && <span aria-hidden className="text-2xl text-cyan-300">↔</span>}
+                      {i > 0 && vocabModel.kind === 'association' && <span aria-hidden className="text-2xl text-cyan-300">+</span>}
+                      <div data-model-card={card.word} className="flex flex-col items-center gap-1">
+                        <span className="text-4xl" role="img" aria-label={card.word}>{card.emoji}</span>
+                        {vocabModel.kind === 'gradable_scale' && (
+                          <span aria-hidden className="w-8 rounded-t bg-cyan-400/40" style={{ height: `${(i + 1) * 12}px` }} />
+                        )}
+                        <span className="text-sm text-slate-200">{card.word}</span>
+                      </div>
+                    </React.Fragment>
+                  ))}
+                </div>
+                {vocabModel.sentence && <p className="text-center text-sm text-slate-100">{vocabModel.sentence}</p>}
               </div>
             )}
           </>

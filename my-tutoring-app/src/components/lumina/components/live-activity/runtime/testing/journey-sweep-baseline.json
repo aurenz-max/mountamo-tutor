@@ -41,5 +41,17 @@
  },
  "push-pull-arena.predict": {
   "J11-recovery-record": "handoff 19 slice 9a (user ruling)"
+ },
+ "rhyme-studio.production": {
+  "J1-drivable": "handoff 24 SW-L1"
+ },
+ "rhyme-studio.collection": {
+  "J1-drivable": "handoff 24 SW-L1"
+ },
+ "read-aloud-studio.expression": {
+  "J1-drivable": "handoff 24 SW-L2"
+ },
+ "word-sorter.ternary_sort": {
+  "J9-miss-answered": "EVAL_TRACKER WS-2"
  }
 }

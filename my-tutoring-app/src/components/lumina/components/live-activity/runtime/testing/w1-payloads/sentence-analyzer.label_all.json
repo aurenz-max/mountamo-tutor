@@ -1,0 +1,164 @@
+{
+ "source": "qa/tutor-reports/sentence-analyzer-runtime-label_all-payload-2026-09-29.json",
+ "primitiveId": "sentence-analyzer",
+ "evalMode": "label_all",
+ "data": {
+  "title": "Parts of Speech Word Walk",
+  "description": "Say the part of speech and job for every single word in the sentence.",
+  "gradeLevel": "4",
+  "challenges": [
+   {
+    "id": "ch1",
+    "type": "label_all",
+    "sentence": "Four brown dogs chased cats.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Four",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "brown",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w2",
+      "text": "dogs",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w3",
+      "text": "chased",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w4",
+      "text": "cats.",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Direct Object"
+     }
+    ],
+    "explanation": "Four and brown are adjectives describing the noun dogs, which is our subject. Chased is the verb predicate, and cats is the noun receiving the action as a direct object."
+   },
+   {
+    "id": "ch2",
+    "type": "label_all",
+    "sentence": "The tired bear slept deeply.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "The",
+      "partOfSpeech": "Determiner",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "tired",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w2",
+      "text": "bear",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w3",
+      "text": "slept",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w4",
+      "text": "deeply.",
+      "partOfSpeech": "Adverb",
+      "grammaticalRole": "Modifier"
+     }
+    ],
+    "explanation": "The is a determiner and tired is an adjective describing bear, the subject noun. Slept is the verb predicate, and deeply is an adverb modifying how it slept."
+   },
+   {
+    "id": "ch3",
+    "type": "label_all",
+    "sentence": "Small birds sing sweet songs.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Small",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "birds",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w2",
+      "text": "sing",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w3",
+      "text": "sweet",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w4",
+      "text": "songs.",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Direct Object"
+     }
+    ],
+    "explanation": "Small describes the subject noun birds. Sing is the verb predicate. Sweet is an adjective describing the direct object noun songs."
+   },
+   {
+    "id": "ch4",
+    "type": "label_all",
+    "sentence": "Cold water flows down quickly.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Cold",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "water",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w2",
+      "text": "flows",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w3",
+      "text": "down",
+      "partOfSpeech": "Preposition",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w4",
+      "text": "quickly.",
+      "partOfSpeech": "Adverb",
+      "grammaticalRole": "Modifier"
+     }
+    ],
+    "explanation": "Cold is an adjective describing water, the subject noun. Flows is the verb predicate. Down is a preposition and quickly is an adverb acting as modifiers."
+   }
+  ]
+ }
+}

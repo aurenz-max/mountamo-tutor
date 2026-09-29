@@ -1,0 +1,124 @@
+{
+ "source": "qa/tutor-reports/phonics-blender-runtime-cvce_blend-payload-2026-09-29.json",
+ "primitiveId": "phonics-blender",
+ "evalMode": "cvce_blend",
+ "data": {
+  "title": "Magic E Word Blender",
+  "gradeLevel": "K",
+  "patternType": "cvce",
+  "words": [
+   {
+    "id": "w1",
+    "targetWord": "cake",
+    "phonemes": [
+     {
+      "id": "w1_p1",
+      "sound": "/k/",
+      "letters": "c"
+     },
+     {
+      "id": "w1_p2",
+      "sound": "/\u0101/",
+      "letters": "a"
+     },
+     {
+      "id": "w1_p3",
+      "sound": "/k/",
+      "letters": "k"
+     },
+     {
+      "id": "w1_p4",
+      "sound": "//",
+      "letters": "e"
+     }
+    ],
+    "emoji": "\ud83c\udf82",
+    "imageDescription": "a sweet frosted birthday cake"
+   },
+   {
+    "id": "w2",
+    "targetWord": "bike",
+    "phonemes": [
+     {
+      "id": "w2_p1",
+      "sound": "/b/",
+      "letters": "b"
+     },
+     {
+      "id": "w2_p2",
+      "sound": "/\u012b/",
+      "letters": "i"
+     },
+     {
+      "id": "w2_p3",
+      "sound": "/k/",
+      "letters": "k"
+     },
+     {
+      "id": "w2_p4",
+      "sound": "//",
+      "letters": "e"
+     }
+    ],
+    "emoji": "\ud83d\udeb2",
+    "imageDescription": "a two-wheeled bicycle"
+   },
+   {
+    "id": "w3",
+    "targetWord": "bone",
+    "phonemes": [
+     {
+      "id": "w3_p1",
+      "sound": "/b/",
+      "letters": "b"
+     },
+     {
+      "id": "w3_p2",
+      "sound": "/\u014d/",
+      "letters": "o"
+     },
+     {
+      "id": "w3_p3",
+      "sound": "/n/",
+      "letters": "n"
+     },
+     {
+      "id": "w3_p4",
+      "sound": "//",
+      "letters": "e"
+     }
+    ],
+    "emoji": "\ud83e\uddb4",
+    "imageDescription": "a white dog bone"
+   },
+   {
+    "id": "w4",
+    "targetWord": "cute",
+    "phonemes": [
+     {
+      "id": "w4_p1",
+      "sound": "/k/",
+      "letters": "c"
+     },
+     {
+      "id": "w4_p2",
+      "sound": "/\u016b/",
+      "letters": "u"
+     },
+     {
+      "id": "w4_p3",
+      "sound": "/t/",
+      "letters": "t"
+     },
+     {
+      "id": "w4_p4",
+      "sound": "//",
+      "letters": "e"
+     }
+    ],
+    "emoji": "\ud83d\udc30",
+    "imageDescription": "a cute fluffy bunny"
+   }
+  ]
+ }
+}

@@ -1,0 +1,127 @@
+{
+ "source": "qa/tutor-reports/phonics-blender-runtime-advanced-payload-2026-09-29.json",
+ "primitiveId": "phonics-blender",
+ "evalMode": "advanced",
+ "data": {
+  "title": "Fun with R-Controlled Vowel Blending!",
+  "gradeLevel": "K",
+  "patternType": "r-controlled",
+  "words": [
+   {
+    "id": "w1",
+    "targetWord": "star",
+    "phonemes": [
+     {
+      "id": "w1_p1",
+      "sound": "/s/",
+      "letters": "s"
+     },
+     {
+      "id": "w1_p2",
+      "sound": "/t/",
+      "letters": "t"
+     },
+     {
+      "id": "w1_p3",
+      "sound": "/\u00e4r/",
+      "letters": "ar"
+     }
+    ],
+    "emoji": "\u2b50",
+    "imageDescription": "a bright shining star"
+   },
+   {
+    "id": "w2",
+    "targetWord": "farm",
+    "phonemes": [
+     {
+      "id": "w2_p1",
+      "sound": "/f/",
+      "letters": "f"
+     },
+     {
+      "id": "w2_p2",
+      "sound": "/\u00e4r/",
+      "letters": "ar"
+     },
+     {
+      "id": "w2_p3",
+      "sound": "/m/",
+      "letters": "m"
+     }
+    ],
+    "emoji": "\ud83d\ude9c",
+    "imageDescription": "a tractor on a farm"
+   },
+   {
+    "id": "w3",
+    "targetWord": "bird",
+    "phonemes": [
+     {
+      "id": "w3_p1",
+      "sound": "/b/",
+      "letters": "b"
+     },
+     {
+      "id": "w3_p2",
+      "sound": "/\u00fbrd/",
+      "letters": "ir"
+     },
+     {
+      "id": "w3_p3",
+      "sound": "/d/",
+      "letters": "d"
+     }
+    ],
+    "emoji": "\ud83d\udc26",
+    "imageDescription": "a little blue bird"
+   },
+   {
+    "id": "w4",
+    "targetWord": "corn",
+    "phonemes": [
+     {
+      "id": "w4_p1",
+      "sound": "/k/",
+      "letters": "c"
+     },
+     {
+      "id": "w4_p2",
+      "sound": "/\u00f4rn/",
+      "letters": "or"
+     },
+     {
+      "id": "w4_p3",
+      "sound": "/n/",
+      "letters": "n"
+     }
+    ],
+    "emoji": "\ud83c\udf3d",
+    "imageDescription": "an ear of corn"
+   },
+   {
+    "id": "w5",
+    "targetWord": "surf",
+    "phonemes": [
+     {
+      "id": "w5_p1",
+      "sound": "/s/",
+      "letters": "s"
+     },
+     {
+      "id": "w5_p2",
+      "sound": "/\u00fbrf/",
+      "letters": "ur"
+     },
+     {
+      "id": "w5_p3",
+      "sound": "/f/",
+      "letters": "f"
+     }
+    ],
+    "emoji": "\ud83c\udfc4",
+    "imageDescription": "a person surfing on waves"
+   }
+  ]
+ }
+}

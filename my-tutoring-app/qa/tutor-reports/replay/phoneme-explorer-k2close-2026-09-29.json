@@ -1,0 +1,3282 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ],
+   "no_key_before_try": [
+    0,
+    30
+   ],
+   "no_fix_before_try": [
+    0,
+    30
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ],
+   "no_key_before_try": [
+    0,
+    30
+   ],
+   "no_fix_before_try": [
+    0,
+    30
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ],
+   "no_key_before_try": [
+    0,
+    30
+   ],
+   "no_fix_before_try": [
+    0,
+    30
+   ],
+   "no_change_before_receipt": [
+    0,
+    15
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ],
+   "no_key_before_try": [
+    0,
+    30
+   ],
+   "no_fix_before_try": [
+    0,
+    30
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "phoneme-explorer.blend",
+   "primitiveId": "phoneme-explorer",
+   "evalMode": "blend",
+   "keys": [
+    "dog. sounding it out and landing on dog counts; the sounds with no word at the end do not.",
+    "dog"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "dog. sounding it out and landing on dog counts; the sounds with no word at the end do not.",
+       "dog"
+      ],
+      "ask": "Listen: /d/ \u2026 ooo \u2026 /g/. Your turn. Say it fast. What word?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Listen: /d/ \u2026 ooo \u2026 /g/. Your turn. Say it fast: what word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: /d/ \u2026 ooo \u2026 /g/. Say it fast, what word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: /d/ \u2026 ooo \u2026 /g/. Your turn: say it fast, what word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: /d/ \u2026 ooo \u2026 /g/. Say it fast, what word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: /d/ \u2026 ooo \u2026 /g/. Say it fast, what word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "ladder",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "dog. sounding it out and landing on dog counts; the sounds with no word at the end do not.",
+       "dog"
+      ],
+      "ask": "Listen: /d/ \u2026 ooo \u2026 /g/. Your turn. Say it fast. What word?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Not quite ladder. Listen again: /d/ \u2026 ooo \u2026 /g/. What word does that make?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nice try! Listen closely to the sounds again: /d/ \u2026 ooo \u2026 /g/. Try saying them fast!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite! Let's try again. Listen closely: /d/ \u2026 ooo \u2026 /g/. Say it fast: what word?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Listen closely to the sounds again: /d/ \u2026 ooo \u2026 /g/. What word does that make?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! Listen closely to the sounds again: /d/ \u2026 ooo \u2026 /g/. What word do those sounds make when you say them fast?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "dog. sounding it out and landing on dog counts; the sounds with no word at the end do not.",
+       "dog"
+      ],
+      "ask": "Listen: /d/ \u2026 ooo \u2026 /g/. Your turn. Say it fast. What word?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "That's okay, we can do it together! Listen closely as we put them closer: /d/ \u2026 /o/ \u2026 /g/. What animal word does that sound like?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Let's say the sounds slowly together, pushing them close: /d/\u2026/o/\u2026/g/. What word do you hear?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "That is okay! Let's listen closely as we push the sounds together: /d/\u2026 /aw/\u2026 /g/. What word do you hear?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "We can do it together! Listen closely: /d/ \u2026 ooo \u2026 /g/. What word do those sounds make when you put them together?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "We can do it together! Listen closely as we put the sounds together: /d/ \u2026 ooo \u2026 /g/. What word do you hear?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1",
+     "trigger": "The learner said they were stuck, so the host pulled slide_tiles (help). It is on screen now: Slides the sound tiles together over an arrow. Say the sounds again with short gaps, each held into the next; stop before the word. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "dog. sounding it out and landing on dog counts; the sounds with no word at the end do not.",
+       "dog"
+      ],
+      "ask": "Listen: /d/ \u2026 ooo \u2026 /g/. Your turn. Say it fast. What word?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look, the sound tiles slid closer together across the arrow! Listen as they connect: /d/\u2026/o/\u2026/g/. What word is that?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, the sound tiles slid closer together along the arrow! Listen as they connect: /d/\u2026/o/\u2026/g/. Say it fast, what word?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, the sound tiles slid closer together along the arrow! Listen as they connect: /d/\u2026/o/\u2026/g/. Say it fast, what word?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, the sound tiles slid closer together along the arrow! Listen as they connect: /d/\u2026/o/\u2026/g/. Say it fast, what word?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, the sound tiles slid closer together over an arrow! \n\nListen as they connect: /d/\u2026/o/\u2026/g/. Say it fast, what word?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "dog",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "dog. sounding it out and landing on dog counts; the sounds with no word at the end do not.",
+       "dog"
+      ],
+      "ask": "Listen: /d/ \u2026 ooo \u2026 /g/. Your turn. Say it fast. What word?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You did it, you blended the sounds to make the word dog!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it, you said dog! /d/ \u2026 /o/ \u2026 /g/ blends together to make dog.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it, you said the word dog!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You blended the sounds together to make the word dog!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it, you blended the sounds to make the word dog!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "phoneme-explorer.ending",
+   "primitiveId": "phoneme-explorer",
+   "evalMode": "ending",
+   "keys": [
+    "sun, the card with the same ending sound as man. man said back is not a card."
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "sun, the card with the same ending sound as man. man said back is not a card."
+      ],
+      "ask": "Listen: man. The words are: map, mat, sun, dog. Your turn. Which word has the same ending sound as man?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Listen: man. The words are map, mat, sun, and dog. Which word has the same ending sound as man?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: **man**. The words are: **map**, **mat**, **sun**, and **dog**. Which word has the same ending sound as **man**?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: man. The words are map, mat, sun, dog. Which word has the same ending sound as man?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: man. The words are map, mat, sun, dog. Which word has the same ending sound as man?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: man. The words are map, mat, sun, dog. Which word has the same ending sound as man?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "map",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "sun, the card with the same ending sound as man. man said back is not a card."
+      ],
+      "ask": "Listen: man. The words are: map, mat, sun, dog. Your turn. Which word has the same ending sound as man?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the model: in the word bed, the last box is lit for the ending sound, /d/. We want the word that has the same ending sound as man: map, mat, sun, or dog?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "position_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the boxes for the word bed, with the last box lit up for /d/. We want the sound at the very end of man: is it map, mat, sun, or dog?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "position_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the sound boxes: for the word bed, the last box is lit for the ending sound /d/. Now think about the ending sound: which word has the same ending sound as man\u2014map, mat, sun, or dog?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "position_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the boxes for the word bed\u2014the last box is lit up for /d/, the ending sound. Which word ends with the same sound as man: map, mat, sun, or dog?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "position_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the boxes for \"bed\"\u2014the last box is lit for the ending sound, /d/. We are listening for the very last sound in man: which card has the same ending sound?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "position_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "sun, the card with the same ending sound as man. man said back is not a card."
+      ],
+      "ask": "Listen: man. The words are: map, mat, sun, dog. Your turn. Which word has the same ending sound as man?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Let's try an easier practice one with just two cards. Which word has the same ending sound as man?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "two_cards_far",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Let's try an easier practice one with just two cards!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "two_cards_far",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I made it easier with just two cards to practice. Which word ends with the same sound as man?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "two_cards_far"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Let's try a quicker practice first with just two pictures to help us practice. Which word shares that same ending sound?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "two_cards_far"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Let's try an easier practice together first.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "two_cards_far",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1",
+     "trigger": "The learner said they were stuck, so the host pulled position_model (help). It is on screen now: Shows another word in three sound boxes with the last box lit. Say the model word and that sound; never this item's sound. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do n",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "sun, the card with the same ending sound as man. man said back is not a card."
+      ],
+      "ask": "Listen: man. The words are: map, mat, sun, dog. Your turn. Which word has the same ending sound as man?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the picture that just appeared: it shows the word bed in three sound boxes, and the very last box is lit up for the ending sound, /d/. Now look back at our cards: map, mat, sun, and dog. Which word has the same ending sound as man?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the picture: there are three sound boxes for the word bed, and the last box is lit up for the ending sound, /d/. Which word has the same ending sound as man: map, mat, sun, or dog?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the boxes on the screen: for the word bed, the very last box is lit up to show the ending sound, /d/. Now it's your turn: which word has the same ending sound as man?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the screen: there is a model showing the word bed in three sound boxes, and the very last box is lit up for the ending sound, /d/. Now look back at our words: map, mat, sun, and dog. Which word has the same ending sound as man?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the new picture of bed with three sound boxes, where the last box is lit up for the ending sound, /d/. Now which word has the same ending sound as man: map, mat, sun, or dog?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "sun",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "sun, the card with the same ending sound as man. man said back is not a card."
+      ],
+      "ask": "Listen: man. The words are: map, mat, sun, dog. Your turn. Which word has the same ending sound as man?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You picked sun, which ends with the very same sound as man.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! Sun has the same ending sound as man.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You found the word sun, which has the same ending sound as man.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You picked sun, which ends with the /n/ sound just like man.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! Sun has the same ending sound as man.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "phoneme-explorer.isolate",
+   "primitiveId": "phoneme-explorer",
+   "evalMode": "isolate",
+   "keys": [
+    "cup, the card that starts with kuh. the example word cat is not a card, so it is not the answer."
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "cup, the card that starts with kuh. the example word cat is not a card, so it is not the answer."
+      ],
+      "ask": "Listen: kuh, like Cat. The words are: Bus, Pig, Cup, Sun. Your turn. Which word starts with kuh?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Listen: /k/, like cat. The words are Bus, Pig, Cup, Sun. Which word starts with /k/?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: /k/, like cat. The words are Bus, Pig, Cup, Sun. Which word starts with /k/?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: /k/, like cat. The words are bus, pig, cup, sun. Which word starts with /k/?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: kuh, like Cat. The words are Bus, Pig, Cup, Sun. Which word starts with kuh?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: /k/, like cat. Which word starts with /k/\u2014Bus, Pig, Cup, or Sun?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "Sun",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "cup, the card that starts with kuh. the example word cat is not a card, so it is not the answer."
+      ],
+      "ask": "Listen: kuh, like Cat. The words are: Bus, Pig, Cup, Sun. Your turn. Which word starts with kuh?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Sun starts with /s/. Let's try again: which word starts with /k/? Bus, Pig, or Cup?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Sun starts with /s/. Try another one: Bus, Pig, or Cup\u2014which one starts with /k/?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Sun starts with /s/. Which word starts with /k/?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Sun starts with /s/. Try another one: Bus, Pig, or Cup\u2014which one starts with /k/?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Sun starts with /s/. Which word starts with /k/? Bus, Pig, or Cup?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "cup, the card that starts with kuh. the example word cat is not a card, so it is not the answer."
+      ],
+      "ask": "Listen: kuh, like Cat. The words are: Bus, Pig, Cup, Sun. Your turn. Which word starts with kuh?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "We are listening for the very first sound: /k/. Say \"Cup\" slowly and listen to what sound comes first.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "That's okay, we can do it together! Listen to the very first sound: does Bus or Cup start with /k/?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Say each word slowly and listen to the very first sound: Bus, Pig, Cup. Which one starts with /k/?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Let's say each word slowly and listen to the very first sound: Bus, Pig, Cup. Which one begins with /k/?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "That's okay, we can do it together! Listen closely to the very first sound: does Bus, Pig, or Cup start with /k/?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1",
+     "trigger": "The learner said they were stuck, so the host pulled position_model (help). It is on screen now: Shows another word in three sound boxes with the first box lit. Say the model word and that sound; never this item's sound. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do ",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "cup, the card that starts with kuh. the example word cat is not a card, so it is not the answer."
+      ],
+      "ask": "Listen: kuh, like Cat. The words are: Bus, Pig, Cup, Sun. Your turn. Which word starts with kuh?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the boxes on your screen\u2014the word \"bat\" has its first box lit up for /b/. Now try your cards again: which word starts with /k/? Bus, Pig, or Cup?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the boxes on screen: for the word \"bat,\" the very first box is lit up for the /b/ sound. Now try our cards\u2014which word starts with /k/? Bus, Pig, or Cup?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the boxes on the screen: the first box is lit up for the word \"bat,\" where /b/ is the first sound. Now look back at our cards: which word starts with /k/?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the sound boxes: for the word \"bat\", the very first box is lit up for /b/. Now try our words\u2014which one starts with /k/? Bus, Pig, or Cup?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the boxes on the screen: the word is \"bat\", and that first box is lit up for /b/. Now look back at our cards\u2014which one starts with /k/?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "Cup",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "cup, the card that starts with kuh. the example word cat is not a card, so it is not the answer."
+      ],
+      "ask": "Listen: kuh, like Cat. The words are: Bus, Pig, Cup, Sun. Your turn. Which word starts with kuh?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! Cup starts with the /k/ sound!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! Cup starts with the /k/ sound!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! Cup starts with the /k/ sound!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! Cup starts with the /k/ sound!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! Cup starts with the /k/ sound!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "phoneme-explorer.manipulate",
+   "primitiveId": "phoneme-explorer",
+   "evalMode": "manipulate",
+   "keys": [
+    "bat. cat said back unchanged is not it.",
+    "bat"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "bat. cat said back unchanged is not it.",
+       "bat"
+      ],
+      "ask": "Listen: cat. Change the /k/ sound in cat to /b/. Your turn. What word?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Listen: cat. Change the /k/ sound in cat to /b/. What word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: **cat**. Change the /k/ sound in **cat** to /b/. What word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: cat. Change the /k/ sound in cat to /b/. What word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: cat. Change the /k/ sound in cat to /b/. What word do you get?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: cat. Change the /k/ sound in cat to /b/. What word do you get?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "ladder",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "bat. cat said back unchanged is not it.",
+       "bat"
+      ],
+      "ask": "Listen: cat. Change the /k/ sound in cat to /b/. Your turn. What word?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Not quite ladder. Take cat, take away /k/, and put /b/ at the start. What word does that make?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Start with cat, and change the first sound /k/ to /b/. Try again!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite ladder. Take the /k/ in cat and put /b/ at the beginning instead. What word does that make?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Listen closely: take \"cat\", take away the /k/ sound at the start, and put /b/ there instead. What new word does that make?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not ladder, but nice try! Start with **cat**, and put **/b/** at the beginning instead of **/k/**. What word do you get?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "bat. cat said back unchanged is not it.",
+       "bat"
+      ],
+      "ask": "Listen: cat. Change the /k/ sound in cat to /b/. Your turn. What word?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the sound boxes: the first box is empty now. Put /b/ in that empty spot with -at, and what word do you get?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "mark_position"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the sound boxes: the first box is empty now for /b/. Put /b/ with -at to make the word.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "mark_position"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the sound boxes: the first box is empty now. If we put /b/ in that first spot with -at, what word do they make together?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "mark_position"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the boxes on the screen: the first sound box is empty now. Put /b/ in that empty spot at the beginning of -at, and what word do you get?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "mark_position"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the boxes on the screen: the first sound box is empty now. Put /b/ in that empty spot with -at. What word do you get?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "mark_position"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1",
+     "trigger": "The learner said they were stuck, so the host pulled mark_position (help). It is on screen now: Shows the starting word in sound boxes and empties the box of the sound that changes. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "bat. cat said back unchanged is not it.",
+       "bat"
+      ],
+      "ask": "Listen: cat. Change the /k/ sound in cat to /b/. Your turn. What word?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the sound boxes on your screen\u2014the very first box is empty now. Put /b/ in that empty spot to replace /k/, and tell me what word it makes!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the sound boxes on your screen\u2014the very first box is empty now. If you put /b/ right into that first spot, what word do you make?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the boxes on your screen: the first sound box is empty now. Put /b/ in that first box with the rest of the word\u2014what word does it make?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the sound boxes on your screen\u2014the very first box is empty now. Put /b/ in that empty first box and say the word!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the sound boxes on your screen\u2014the very first box is empty now. Put /b/ in that empty spot with -at, and what word do you get?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "bat",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "bat. cat said back unchanged is not it.",
+       "bat"
+      ],
+      "ask": "Listen: cat. Change the /k/ sound in cat to /b/. Your turn. What word?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! Changing the /k/ in cat to /b/ makes bat.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it, bat! Changing that first sound made the new word bat.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! Changing the /k/ sound in cat to /b/ makes bat.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it, you made the word bat!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! Changing the /k/ in cat to /b/ makes the word bat.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "phoneme-explorer.medial",
+   "primitiveId": "phoneme-explorer",
+   "evalMode": "medial",
+   "keys": [
+    "hat, the card with the same middle sound as cat. cat said back is not a card."
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "hat, the card with the same middle sound as cat. cat said back is not a card."
+      ],
+      "ask": "Listen: cat. The words are: hut, net, hot, hat. Your turn. Which word has the same middle sound as cat?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Listen: cat. Which word has the same middle sound as cat: hut, net, hot, or hat?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: cat. Which word has the same middle sound as cat: hut, net, hot, or hat?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: **cat**. The words are: **hut**, **net**, **hot**, **hat**. Which word has the same middle sound as **cat**?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: cat. Which word has the same middle sound as cat: hut, net, hot, or hat?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: cat. Which word has the same middle sound as cat: hut, net, hot, or hat?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "hot",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "hat, the card with the same middle sound as cat. cat said back is not a card."
+      ],
+      "ask": "Listen: cat. The words are: hut, net, hot, hat. Your turn. Which word has the same middle sound as cat?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Not quite hot. Listen closely to the middle sound of cat, and try again with hut, net, or hat.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Let's try again: which word has the same middle sound as cat\u2014hut, net, or hat?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Listen closely to the middle of cat, and try another word.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite hot. Listen closely to the middle sound of cat, and try again!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Listen closely to the middle sound of cat, and try again!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "hat, the card with the same middle sound as cat. cat said back is not a card."
+      ],
+      "ask": "Listen: cat. The words are: hut, net, hot, hat. Your turn. Which word has the same middle sound as cat?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Say \"cat\" slowly and stretch out the middle sound. Which word shares that middle sound: hut, net, or hat?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Say the word \"cat\" slowly and listen to what sound is right in the middle. Which card word has that exact same sound inside: hut, net, or hat?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Say **cat** slowly and stretch out that center sound: c-a-a-t. Which card stretches out the same in the middle: **hut**, **net**, or **hat**?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Say \"cat\" slowly and stretch out that inside sound. Which of our words\u2014hut, net, or hat\u2014has that very same middle sound?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Say cat slowly and listen to what your voice does in the middle. Which word matches that middle sound: hut, net, or hat?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1",
+     "trigger": "The learner said they were stuck, so the host pulled position_model (help). It is on screen now: Shows another word in three sound boxes with the middle box lit. Say the model word and that sound; never this item's sound. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "hat, the card with the same middle sound as cat. cat said back is not a card."
+      ],
+      "ask": "Listen: cat. The words are: hut, net, hot, hat. Your turn. Which word has the same middle sound as cat?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the new picture of \"rain\" with three boxes, where the middle box is lit up for the middle sound, \"ay\". Now listen to \"cat\" \u2014 which word has that same middle sound: hut, net, or hat?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the new boxes on the screen: for the word \"rain,\" the middle box is lit up to show its middle sound, /ay/. \n\nNow listen to our word \"cat\"\u2014which word has that same middle sound: hut, net, or hat?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the three sound boxes for \"rain\"\u2014the middle box is lit up for the middle sound, /ay/. Now listen to the middle sound of cat, and tell me: does hut, net, or hat share that same middle sound?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the three sound boxes on the screen: for the word \"rain,\" the middle box is lit up for the middle sound, \"ay.\" Now think about \"cat,\" and see which word has that same middle sound: hut, net, or hat.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the boxes on the screen: for the word \"rain,\" the middle box is lit up for the middle sound, /ay/. Now listen to \"cat\" \u2014 which word has that same middle sound: hut, net, or hat?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "hat",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "hat, the card with the same middle sound as cat. cat said back is not a card."
+      ],
+      "ask": "Listen: cat. The words are: hut, net, hot, hat. Your turn. Which word has the same middle sound as cat?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it right! Hat has that same middle sound as cat.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! Hat shares that same middle sound with cat.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You found \"hat,\" which has that same middle sound as \"cat.\"",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! Hat shares that same middle sound with cat.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! Hat shares that same middle sound with cat.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "phoneme-explorer.segment",
+   "primitiveId": "phoneme-explorer",
+   "evalMode": "segment",
+   "keys": [
+    "three (3). counting the sounds aloud that ends on three counts; a count that runs past it does not.",
+    "three"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "three (3). counting the sounds aloud that ends on three counts; a count that runs past it does not.",
+       "three"
+      ],
+      "ask": "Listen: dog. Your turn. How many sounds in dog?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Listen: dog. Your turn. How many sounds in dog?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: dog. Your turn. How many sounds in dog?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: dog. How many sounds do you hear in dog?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: dog. How many sounds do you hear in dog?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: dog. Your turn. How many sounds in dog?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "two",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "three (3). counting the sounds aloud that ends on three counts; a count that runs past it does not.",
+       "three"
+      ],
+      "ask": "Listen: dog. Your turn. How many sounds in dog?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Let's try again with the counter pad. Push one counter for each sound you hear in dog, and tell me how many you get.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "push_tokens"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is a counter pad to help! Push one counter for each sound as you say the word dog.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "push_tokens",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, we have a counter pad now! Push one counter for each sound as you say the word dog, and tell me how many you get.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "push_tokens",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "We have a counter pad now! Push one counter for each sound as you say the word dog, and tell me how many you count.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "push_tokens"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Now you have a counter pad on your screen! Push a counter for each sound you say in \"dog,\" and see how many you get.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "push_tokens"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "three (3). counting the sounds aloud that ends on three counts; a count that runs past it does not.",
+       "three"
+      ],
+      "ask": "Listen: dog. Your turn. How many sounds in dog?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A counter pad is on your screen now. Say the word dog slowly, push one counter for each sound you say, and tell me how many you count.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "push_tokens"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A counter pad is on your screen now. Say each sound in dog and push a counter for each one you say.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "push_tokens",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now you have a counter pad on your screen! Push one counter for each sound you say in dog, and see how many there are.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "push_tokens"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A counter pad is on your screen now. Push one counter for each sound as you say it, then tell me how many you count.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "push_tokens"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A counter pad is on your screen now. Push one counter for each sound as you say it, then count your counters.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "push_tokens",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1",
+     "trigger": "The learner said they were stuck, so the host pulled push_tokens (help). It is on screen now: Shows a counter pad: the learner pushes one counter for each sound as they say it, then counts their counters. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it thro",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "three (3). counting the sounds aloud that ends on three counts; a count that runs past it does not.",
+       "three"
+      ],
+      "ask": "Listen: dog. Your turn. How many sounds in dog?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look, a counter pad has appeared! Say the word dog slowly, push a counter for each sound you hear, and tell me how many sounds you count.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, a counter pad popped up on your screen! Say the word dog slowly, push one counter for each sound you hear, and tell me how many sounds you count.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the counter pad on your screen. Push one counter for each sound as you say \"dog,\" then count how many sounds you hear.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right below\u2014a counter pad has popped up on your screen! Push one counter for each sound in dog, and tell me how many you get.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the screen\u2014there is a counter pad for you now. Push one counter for each sound as you say \"dog,\" then tell me how many sounds you count.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "three",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "three (3). counting the sounds aloud that ends on three counts; a count that runs past it does not.",
+       "three"
+      ],
+      "ask": "Listen: dog. Your turn. How many sounds in dog?",
+      "leakTokens": [
+       "PE_ITEM",
+       "PE_MOVE",
+       "PE_COMPLETE",
+       "PE_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! Dog has three sounds.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! Dog has three sounds.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! Dog has three sounds.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You found three sounds in dog.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! There are three sounds in dog.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,72 @@
+{
+ "source": "qa/tutor-reports/genre-explorer-runtime-compare_genres-payload-2026-09-29.json",
+ "primitiveId": "genre-explorer",
+ "evalMode": "compare_genres",
+ "data": {
+  "title": "Sun, Moon, and Stars",
+  "gradeLevel": "3",
+  "excerpts": [
+   {
+    "excerptId": "e1",
+    "text": "The Sun God rode his golden chariot across the sky every single day to bring warmth to the earth. When the moon maiden came out at night, she spun silver thread to weave the starry night blanket.",
+    "genre": "myth"
+   },
+   {
+    "excerptId": "e2",
+    "text": "The sun is a giant star made of hot, glowing gas at the center of our solar system. The earth travels in a path called an orbit around the sun once every 365 days.",
+    "genre": "informational"
+   }
+  ],
+  "features": [
+   {
+    "featureId": "f1",
+    "predicate": "explain scientific facts about space",
+    "presentIn": [
+     "e2"
+    ]
+   },
+   {
+    "featureId": "f2",
+    "predicate": "tell a traditional story about gods",
+    "presentIn": [
+     "e1"
+    ]
+   },
+   {
+    "featureId": "f3",
+    "predicate": "mention the sun",
+    "presentIn": [
+     "e1",
+     "e2"
+    ]
+   },
+   {
+    "featureId": "f4",
+    "predicate": "give real numbers and data",
+    "presentIn": [
+     "e2"
+    ]
+   },
+   {
+    "featureId": "f5",
+    "predicate": "feature magical characters",
+    "presentIn": [
+     "e1"
+    ]
+   },
+   {
+    "featureId": "f6",
+    "predicate": "tell about animals talking",
+    "presentIn": []
+   }
+  ],
+  "genreOptions": [
+   "myth",
+   "informational",
+   "fable",
+   "folktale",
+   "poem"
+  ],
+  "mode": "compare_genres"
+ }
+}

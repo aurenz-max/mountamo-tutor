@@ -6,8 +6,9 @@ import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { LETTER_GROUPS } from '../../../service/literacy/letterGroups';
 import { itemFromChallenge, letterSoundMiss, type LetterSoundItem } from './letterSoundLinkDomain';
+import { LITERACY_CATALOG } from '../../../service/manifest/catalog/literacy';
 import {
-  cardKeywords, cardKeywordsLeak, fartherPair, laterStimuli, letterSoundLevers, practiceLeak, voiceModelFor,
+  cardKeywords, cardKeywordsLeak, fartherPair, laterStimuli, letterModelFor, letterModelLeak, letterSoundLevers, practiceLeak, voiceModelFor,
 } from './letterSoundLinkLevers';
 
 const hear = (id: string, target: string, foil: string): LetterSoundItem => itemFromChallenge({ id, mode: 'hear-see',
@@ -87,7 +88,55 @@ describe('levers and the miss they answer', () => {
     expect(nextLever(letterSoundLevers(items[1], ['voice_feel_model'], items, 1, 3), 'voicing_partner')).toBe('far_letter_pair');
   });
 
-  it('no levers on the spoken modes', () => {
-    expect(letterSoundLevers(see('s', 'm'), [], [see('s', 'm')], 0, 3)).toEqual([]);
+  it('the spoken modes declare letter_model only', () => {
+    expect(letterSoundLevers(see('s', 'm'), [], [see('s', 'm')], 0, 3).map(l => [l.id, l.kind, l.carrier]))
+      .toEqual([['letter_model', 'help', 'both']]);
   });
+});
+
+describe('letter_model (handoff 24)', () => {
+  const match = (id: string, letter: string, foil: string) => itemFromChallenge({ id, mode: 'keyword-match', targetLetter: letter,
+    targetSound: `/${letter}/`, keywordWord: '', options: [{ sound: 'x', isCorrect: true }, { sound: foil, isCorrect: false }] });
+
+  it.each([1, 2, 3, 4])('group %i: the model is never a session letter, keyword or picture, and keeps the sound kind', group => {
+    const session = ['s', 'm', 't', 'a'].filter(l => LETTER_GROUPS[group].includes(l)).map((l, i) => see(`s${i}`, l));
+    for (const item of session) {
+      const m = letterModelFor(item, session, group)!;
+      expect(m).toBeTruthy();
+      expect(letterModelLeak(m, session)).toBe(false);
+      const kind = (l: string) => 'aeiou'.includes(l) ? 'v' : 'tpckhdgb'.includes(l) ? 'c' : 'h';
+      expect(kind(m.letter)).toBe(kind(item.letter));
+    }
+  });
+
+  it('keyword-match: the model is not the item keyword or foil picture', () => {
+    const session = [match('k1', 's', 'net'), match('k2', 'p', 'hat')];
+    const m = letterModelFor(session[0], session, 4)!;
+    expect(['s', 'p']).not.toContain(m.letter);
+    expect(['sun', 'net', 'pig', 'hat']).not.toContain(m.word);
+  });
+
+  it.each([
+    ['see', 'letter_name'], ['see', 'keyword_word'], ['see', 'added_vowel'],
+    ['match', 'other_picture'], ['match', 'letter_name'], ['match', 'said_the_sound'],
+  ])('%s: %s -> letter_model', (kind, miss) => {
+    const item = kind === 'see' ? see('s1', 's') : match('k1', 's', 'net');
+    expect(nextLever(letterSoundLevers(item, [], [item], 0, 4), miss)).toBe('letter_model');
+  });
+
+  it('every spoken miss is answered or unanswered by decision (J9)', () => {
+    const entry = LITERACY_CATALOG.find(c => c.id === 'letter-sound-link')!.teachingWorkspace!;
+    expect(entry.levers).toBe(true);
+    for (const [mode, item] of [['see_hear', see('s1', 's')], ['keyword_match', match('k1', 's', 'net')]] as const) {
+      const answered = letterSoundLevers(item, [], [item], 0, 4).flatMap(l => l.answers ?? []);
+      expect([...answered, ...(entry.unanswered?.[mode] ?? [])].sort()).toEqual([...entry.misses![mode]].sort());
+    }
+  });
+});
+
+it('letter_model: its description names no model letter or word (read before the pull)', () => {
+  const item = see('s1', 's');
+  const m = letterModelFor(item, [item], 4)!;
+  const [lever] = letterSoundLevers(item, [], [item], 0, 4);
+  expect(lever.does).not.toMatch(new RegExp(`\b(${m.letter}|${m.word}|${m.sound})\b`, 'i'));
 });

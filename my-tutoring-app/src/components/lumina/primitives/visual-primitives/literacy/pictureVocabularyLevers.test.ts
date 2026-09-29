@@ -9,7 +9,9 @@ import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { LITERACY_CATALOG } from '../../../service/manifest/catalog/literacy';
 import { clueLeak, itemsFromChallenges, type PictureVocabItem } from './pictureVocabularyScript';
-import { CLUE_LEVER, TWO_CARDS_LEVER, pictureVocabLevers, pictureVocabMiss, practiceItemFor, practiceLeak } from './pictureVocabularyLevers';
+import { CLUE_LEVER, MODEL_LEVER, TWO_CARDS_LEVER, leversOnScreen, modelFor, modelLeak, pictureVocabLevers, pictureVocabMiss, practiceItemFor,
+  practiceLeak } from './pictureVocabularyLevers';
+import { PICTURE_VOCAB_SPOKEN_MISSES, pictureVocabSpokenMisses } from './pictureVocabularyWorkspace';
 
 const load = (file: string): PictureVocabItem[] => itemsFromChallenges(JSON.parse(readFileSync(join(__dirname,
   '../../../components/live-activity/runtime/testing/w1-payloads', file), 'utf8')).data.challenges);
@@ -75,6 +77,40 @@ describe('picture-vocabulary levers', () => {
     const levers = pictureVocabLevers(tap[0], [], tap);
     expect(nextLever(levers, 'same_category')).toBe(CLUE_LEVER);
     expect(nextLever(levers.map(l => l.id === CLUE_LEVER ? { ...l, pulled: true } : l), 'same_category')).toBe(TWO_CARDS_LEVER);
-    expect(pictureVocabLevers({ ...tap[0], kind: 'opposite' }, [], tap)).toEqual([]);
+    // A relation mode gets its own model lever, never the clue or the practice cards.
+    expect(pictureVocabLevers({ ...tap[0], kind: 'opposite' }, [], tap).map(l => l.id)).toEqual(['opposite_model']);
+  });
+});
+
+describe('relation modes: a worked model on other words (handoff 24)', () => {
+  const RELATION = ['opposite', 'association', 'gradable_scale', 'sentence_frame'] as const;
+  const saved = Object.fromEntries(RELATION.map(m => [m, load(`picture-vocabulary.${m}.json`)])) as Record<typeof RELATION[number], PictureVocabItem[]>;
+
+  it.each(RELATION)('%s: every saved item gets a model that uses no session word, and one lever answering every miss', mode => {
+    for (const item of saved[mode]) {
+      const model = modelFor(item, saved[mode])!;
+      expect(model, item.id).toBeTruthy();
+      expect(modelLeak(model, saved[mode])).toBe(false);
+      const levers = pictureVocabLevers(item, [], saved[mode]);
+      expect(levers.map(l => [l.id, l.kind, l.carrier])).toEqual([[MODEL_LEVER[mode], 'help', 'both']]);
+      expect([...levers[0].answers!].sort()).toEqual([...entry.misses![mode]].sort());
+      for (const miss of entry.misses![mode]) expect(nextLever(levers, miss)).toBe(MODEL_LEVER[mode]);
+      // The scene fact names the model, never the item's answer.
+      const fact = leversOnScreen(item, [MODEL_LEVER[mode]!], saved[mode])!;
+      expect(fact.toLowerCase()).not.toMatch(new RegExp(`\\b${item.word.toLowerCase()}\\b`));
+    }
+  });
+
+  it('the spoken misses the item sends are the catalog\'s, in the catalog\'s order', () => {
+    for (const mode of [...RELATION, 'naming'] as const) {
+      expect(entry.misses![mode]).toEqual(PICTURE_VOCAB_SPOKEN_MISSES[mode]);
+      const item = mode === 'naming' ? say[0] : saved[mode][0];
+      expect(pictureVocabSpokenMisses(item).map(m => m.id)).toEqual(entry.misses![mode]);
+    }
+  });
+
+  it('a model whose word is a session word is refused: the next one in the pool is used', () => {
+    const item = { ...saved.opposite[0], word: 'cold', baseWord: 'hot' };
+    expect(modelFor(item, [item])!.cards.map(c => c.word)).toEqual(['up', 'down']);
   });
 });

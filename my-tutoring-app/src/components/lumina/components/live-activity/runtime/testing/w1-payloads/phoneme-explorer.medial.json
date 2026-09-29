@@ -1,0 +1,155 @@
+{
+ "source": "qa/tutor-reports/phoneme-explorer-runtime-medial-payload-2026-09-29.json",
+ "primitiveId": "phoneme-explorer",
+ "evalMode": "medial",
+ "data": {
+  "title": "Sound Safari: Hearing the first sound in short picture words",
+  "challenges": [
+   {
+    "targetWord": "cat",
+    "targetEmoji": "\ud83d\udc31",
+    "vowel": "a",
+    "mode": "medial",
+    "choices": [
+     {
+      "word": "hot",
+      "emoji": "\ud83d\udd25",
+      "correct": false
+     },
+     {
+      "word": "hut",
+      "emoji": "\ud83d\uded6",
+      "correct": false
+     },
+     {
+      "word": "hat",
+      "emoji": "\ud83c\udfa9",
+      "correct": true
+     },
+     {
+      "word": "net",
+      "emoji": "\ud83e\udd45",
+      "correct": false
+     }
+    ],
+    "id": "c1"
+   },
+   {
+    "targetWord": "bed",
+    "targetEmoji": "\ud83d\udecf\ufe0f",
+    "vowel": "e",
+    "mode": "medial",
+    "choices": [
+     {
+      "word": "lid",
+      "emoji": "\ud83e\uded9",
+      "correct": false
+     },
+     {
+      "word": "ten",
+      "emoji": "\ud83d\udd1f",
+      "correct": true
+     },
+     {
+      "word": "hop",
+      "emoji": "\ud83d\udc30",
+      "correct": false
+     },
+     {
+      "word": "pup",
+      "emoji": "\ud83d\udc36",
+      "correct": false
+     }
+    ],
+    "id": "c2"
+   },
+   {
+    "targetWord": "pig",
+    "targetEmoji": "\ud83d\udc37",
+    "vowel": "i",
+    "mode": "medial",
+    "choices": [
+     {
+      "word": "rug",
+      "emoji": "\ud83e\uddf6",
+      "correct": false
+     },
+     {
+      "word": "tag",
+      "emoji": "\ud83c\udff7\ufe0f",
+      "correct": false
+     },
+     {
+      "word": "leg",
+      "emoji": "\ud83e\uddb5",
+      "correct": false
+     },
+     {
+      "word": "dig",
+      "emoji": "\u26cf\ufe0f",
+      "correct": true
+     }
+    ],
+    "id": "c3"
+   },
+   {
+    "targetWord": "dog",
+    "targetEmoji": "\ud83d\udc36",
+    "vowel": "o",
+    "mode": "medial",
+    "choices": [
+     {
+      "word": "log",
+      "emoji": "\ud83e\udeb5",
+      "correct": true
+     },
+     {
+      "word": "bag",
+      "emoji": "\ud83d\udc5c",
+      "correct": false
+     },
+     {
+      "word": "leg",
+      "emoji": "\ud83e\uddb5",
+      "correct": false
+     },
+     {
+      "word": "dig",
+      "emoji": "\u26cf\ufe0f",
+      "correct": false
+     }
+    ],
+    "id": "c4"
+   },
+   {
+    "targetWord": "sun",
+    "targetEmoji": "\u2600\ufe0f",
+    "vowel": "u",
+    "mode": "medial",
+    "choices": [
+     {
+      "word": "ten",
+      "emoji": "\ud83d\udd1f",
+      "correct": false
+     },
+     {
+      "word": "bun",
+      "emoji": "\ud83c\udf5e",
+      "correct": true
+     },
+     {
+      "word": "win",
+      "emoji": "\ud83c\udfc6",
+      "correct": false
+     },
+     {
+      "word": "hop",
+      "emoji": "\ud83d\udc30",
+      "correct": false
+     }
+    ],
+    "id": "c5"
+   }
+  ]
+ }
+}

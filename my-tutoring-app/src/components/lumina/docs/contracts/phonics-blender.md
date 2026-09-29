@@ -191,6 +191,8 @@ scope per the handoff; only the sorting-station rider was authorized). Queue the
 
 ## Changelog
 
+- 2026-09-29 — handoff 24 (table from the L3 report, user OK 09-28): in-item levers on every mode, `phonicsBlenderLevers.ts`. Help is visual except one model: `blend_slide` (split rows), `sound_dots` (only on the hard tier's joined row, which it re-segments per the 09-28 ruling), `tracking_arrow`, and `name_sound_model` (a letter no session word has, name and sound side by side, voiced). Simplify `short_word`: cvc a two-letter word that is no session word's ending; other modes a CVC word with the item's vowel. R2 holds (tap-to-hear unchanged), R4 holds (the practice word is ungraded; only the full word is credited). The tier stays the starting position. Catalog `levers: true`. `npm test -- phonicsBlender PhonicsBlender` 25/25.
+
 - 2026-09-27 — handoff 19 (shared runtime, `/add-live-tutor-tools`): the workspace reads the eval mode from the wrapper's lesson pin, not a mode rebuilt in this primitive (slice 1), and publishes the scene after every render, so the scene setter drops its publish call and default fields (slice 3). Wiring only: no content, check, miss, verdict or tutor input changed; the sweep over saved payloads (J1-J8) and this primitive's tests pass. Compatible: no requirement changed.
 - 2026-09-24 — **Teaching workspace, workspace only (rollout B2). R4 RE-BASED; R2 restated; all
   other requirements hold.** R4's property "only a sentinel-classified tutor verdict advances"

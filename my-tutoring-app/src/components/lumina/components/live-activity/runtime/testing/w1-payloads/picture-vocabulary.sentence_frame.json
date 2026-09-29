@@ -1,0 +1,53 @@
+{
+ "source": "qa/tutor-reports/picture-vocabulary-runtime-sentence_frame-payload-2026-09-29.json",
+ "primitiveId": "picture-vocabulary",
+ "evalMode": "sentence_frame",
+ "data": {
+  "title": "Fun With Everyday Things At Home",
+  "description": "Let us look around the house and find the missing names together!",
+  "challengeType": "sentence_frame",
+  "challenges": [
+   {
+    "id": "pv-1",
+    "type": "sentence_frame",
+    "word": "bed",
+    "emoji": "\ud83d\udecf\ufe0f",
+    "frameDisplay": "We sleep in a ____ at night.",
+    "frameSpoken": "We sleep in a... hmm... what?"
+   },
+   {
+    "id": "pv-2",
+    "type": "sentence_frame",
+    "word": "soap",
+    "emoji": "\ud83e\uddfc",
+    "frameDisplay": "We wash our hands with water and ____.",
+    "frameSpoken": "We wash our hands with water and... hmm... what?"
+   },
+   {
+    "id": "pv-3",
+    "type": "sentence_frame",
+    "word": "lamp",
+    "emoji": "\ud83d\udca1",
+    "frameDisplay": "The ____ helps us see in the dark.",
+    "frameSpoken": "The... hmm... what helps us see in the dark?"
+   },
+   {
+    "id": "pv-4",
+    "type": "sentence_frame",
+    "word": "spoon",
+    "emoji": "\ud83e\udd44",
+    "frameDisplay": "I eat my yummy soup with a ____.",
+    "frameSpoken": "I eat my yummy soup with a... hmm... what?"
+   },
+   {
+    "id": "pv-5",
+    "type": "sentence_frame",
+    "word": "clock",
+    "emoji": "\u23f0",
+    "frameDisplay": "The ____ tells us what time it is.",
+    "frameSpoken": "The... hmm... what tells us what time it is?"
+   }
+  ],
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving."
+ }
+}

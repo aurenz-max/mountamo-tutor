@@ -53,8 +53,8 @@ import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { vowelKeyword, type CvcTask } from './cvcSpellerScript';
 import { cvcAssignment, cvcItem, cvcMiss, cvcScene, describeSpelling, hearWordRequest, spellingMatches } from './cvcSpellerWorkspace';
-import { KEYWORD_LEVER, SMALL_WORD_LEVER, TOKENS_LEVER, VOWEL_LEVER, cvcLevers, isPracticeWord, keywordFor,
-  sessionStimuli, smallerWord, vowelStrip } from './cvcSpellerLevers';
+import { KEYWORD_LEVER, MIDDLE_MODEL_LEVER, SMALL_WORD_LEVER, TOKENS_LEVER, VOWEL_LEVER, cvcLevers, isPracticeWord, keywordFor,
+  middleModelFor, modelMiddleSaid, sessionStimuli, smallerWord, vowelStrip } from './cvcSpellerLevers';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { cvcSpellerPipPose } from '../../../pip/cvcSpellerPipPose';
 
@@ -388,8 +388,10 @@ function CvcSpellerSurface({ data, className, runtimePlanItemId }: CvcSpellerPro
     if (!currentChallenge || !sessionChallenge) return;
     const levers = practice ? [] : cvcLevers(sessionChallenge, pulledLevers, data.letterGroup, stimuli, letterBank, vowelFocus);
     const onScreen = levers.filter(l => l.pulled).map(l => l.id);
+    const model = onScreen.includes(MIDDLE_MODEL_LEVER) ? middleModelFor(sessionChallenge, stimuli) : null;
     workspace.current = { ...cvcScene(currentChallenge, { boxes: slotsRef.current, levers: onScreen,
-      tokens: onScreen.includes(TOKENS_LEVER) ? tokensPushed : undefined, practice: !!practice }),
+      tokens: onScreen.includes(TOKENS_LEVER) ? tokensPushed : undefined, practice: !!practice,
+      model: model ? { word: model.word, said: modelMiddleSaid(model) } : undefined }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: id => {
@@ -459,6 +461,23 @@ function CvcSpellerSurface({ data, className, runtimePlanItemId }: CvcSpellerPro
   const credited = runner.revealHeld || practiceSolved;
   const strip = leverOn(VOWEL_LEVER) ? vowelStrip(currentChallenge, data.letterGroup, stimuli) : [];
   const tokensOn = leverOn(TOKENS_LEVER);
+  const middleModel = leverOn(MIDDLE_MODEL_LEVER) ? middleModelFor(currentChallenge, stimuli) : null;
+  /** middle_model: another word in three boxes, the middle lit. Never a session word, picture or asked vowel. */
+  const renderMiddleModel = () => middleModel && (
+    <div data-lever="middle-model" aria-label="Middle sound model"
+      className="flex items-center justify-center gap-3 rounded-2xl border border-cyan-300/20 bg-cyan-950/10 p-3">
+      <span className="text-4xl" role="img" aria-label={middleModel.word}>{middleModel.emoji}</span>
+      <div className="flex gap-1.5">
+        {middleModel.sounds.map((sound, i) => (
+          <span key={i} data-box={i} data-lit={i === 1 ? 'true' : undefined}
+            className={`flex h-10 w-10 items-center justify-center rounded-lg border-2 text-lg font-bold ${i === 1
+              ? 'border-cyan-300 bg-cyan-400/25 text-cyan-100' : 'border-white/15 bg-white/5 text-slate-400'}`}>
+            {isPreReader ? '●' : sound}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
   const showPicture = currentChallenge.showPictureCue !== false && !!currentChallenge.emoji;
   const boardFlash: 'correct' | 'incorrect' | null = item.task !== 'spell-word' ? null
     : credited ? 'correct'
@@ -707,6 +726,7 @@ function CvcSpellerSurface({ data, className, runtimePlanItemId }: CvcSpellerPro
                 className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
             )}
 
+            {item.task !== 'spell-word' && renderMiddleModel()}
             {item.task === 'fill-vowel' && renderFillVowel()}
             {item.task === 'spell-word' && renderSpellWord()}
             {item.task === 'word-sort' && renderWordSort()}

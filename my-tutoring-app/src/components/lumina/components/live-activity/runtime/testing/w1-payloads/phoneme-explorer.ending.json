@@ -1,0 +1,155 @@
+{
+ "source": "qa/tutor-reports/phoneme-explorer-runtime-ending-payload-2026-09-29.json",
+ "primitiveId": "phoneme-explorer",
+ "evalMode": "ending",
+ "data": {
+  "title": "Sound Safari: Hearing the first sound in short picture words",
+  "challenges": [
+   {
+    "targetWord": "man",
+    "targetEmoji": "\ud83d\udc68",
+    "finalPhoneme": "n",
+    "choices": [
+     {
+      "word": "sun",
+      "emoji": "\u2600\ufe0f",
+      "correct": true
+     },
+     {
+      "word": "map",
+      "emoji": "\ud83d\uddfa\ufe0f",
+      "correct": false
+     },
+     {
+      "word": "mat",
+      "emoji": "\ud83e\uddd8",
+      "correct": false
+     },
+     {
+      "word": "dog",
+      "emoji": "\ud83d\udc36",
+      "correct": false
+     }
+    ],
+    "mode": "ending",
+    "id": "c1"
+   },
+   {
+    "targetWord": "cap",
+    "targetEmoji": "\ud83e\udde2",
+    "finalPhoneme": "p",
+    "choices": [
+     {
+      "word": "cat",
+      "emoji": "\ud83d\udc31",
+      "correct": false
+     },
+     {
+      "word": "mop",
+      "emoji": "\ud83e\uddf9",
+      "correct": true
+     },
+     {
+      "word": "sun",
+      "emoji": "\u2600\ufe0f",
+      "correct": false
+     },
+     {
+      "word": "dog",
+      "emoji": "\ud83d\udc36",
+      "correct": false
+     }
+    ],
+    "mode": "ending",
+    "id": "c2"
+   },
+   {
+    "targetWord": "cat",
+    "targetEmoji": "\ud83d\udc31",
+    "finalPhoneme": "t",
+    "choices": [
+     {
+      "word": "cap",
+      "emoji": "\ud83e\udde2",
+      "correct": false
+     },
+     {
+      "word": "sun",
+      "emoji": "\u2600\ufe0f",
+      "correct": false
+     },
+     {
+      "word": "jet",
+      "emoji": "\u2708\ufe0f",
+      "correct": true
+     },
+     {
+      "word": "dog",
+      "emoji": "\ud83d\udc36",
+      "correct": false
+     }
+    ],
+    "mode": "ending",
+    "id": "c3"
+   },
+   {
+    "targetWord": "can",
+    "targetEmoji": "\ud83e\udd6b",
+    "finalPhoneme": "n",
+    "choices": [
+     {
+      "word": "cap",
+      "emoji": "\ud83e\udde2",
+      "correct": false
+     },
+     {
+      "word": "cat",
+      "emoji": "\ud83d\udc31",
+      "correct": false
+     },
+     {
+      "word": "dog",
+      "emoji": "\ud83d\udc36",
+      "correct": false
+     },
+     {
+      "word": "sun",
+      "emoji": "\u2600\ufe0f",
+      "correct": true
+     }
+    ],
+    "mode": "ending",
+    "id": "c4"
+   },
+   {
+    "targetWord": "pig",
+    "targetEmoji": "\ud83d\udc37",
+    "finalPhoneme": "g",
+    "choices": [
+     {
+      "word": "dog",
+      "emoji": "\ud83d\udc36",
+      "correct": true
+     },
+     {
+      "word": "pin",
+      "emoji": "\ud83d\udccc",
+      "correct": false
+     },
+     {
+      "word": "cat",
+      "emoji": "\ud83d\udc31",
+      "correct": false
+     },
+     {
+      "word": "cup",
+      "emoji": "\ud83e\udd64",
+      "correct": false
+     }
+    ],
+    "mode": "ending",
+    "id": "c5"
+   }
+  ]
+ }
+}

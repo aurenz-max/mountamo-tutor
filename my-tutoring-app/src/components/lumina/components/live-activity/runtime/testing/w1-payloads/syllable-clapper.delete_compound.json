@@ -1,0 +1,122 @@
+{
+ "source": "qa/tutor-reports/syllable-clapper-runtime-delete_compound-payload-2026-09-29.json",
+ "primitiveId": "syllable-clapper",
+ "evalMode": "delete_compound",
+ "data": {
+  "title": "Animal Compound Split: Take A Part Away",
+  "challenges": [
+   {
+    "id": "c1",
+    "word": "starfish",
+    "challengeType": "delete_compound",
+    "syllableCount": 2,
+    "syllables": [
+     "star",
+     "fish"
+    ],
+    "imageDescription": "an orange sea starfish",
+    "difficulty": 3,
+    "removePart": "star",
+    "residue": "fish"
+   },
+   {
+    "id": "c2",
+    "word": "ladybug",
+    "challengeType": "delete_compound",
+    "syllableCount": 2,
+    "syllables": [
+     "lady",
+     "bug"
+    ],
+    "imageDescription": "a red spotted ladybug",
+    "difficulty": 4,
+    "removePart": "lady",
+    "residue": "bug"
+   },
+   {
+    "id": "c3",
+    "word": "bluebird",
+    "challengeType": "delete_compound",
+    "syllableCount": 2,
+    "syllables": [
+     "blue",
+     "bird"
+    ],
+    "imageDescription": "a bright blue bird",
+    "difficulty": 3,
+    "removePart": "blue",
+    "residue": "bird"
+   },
+   {
+    "id": "c4",
+    "word": "dragonfly",
+    "challengeType": "delete_compound",
+    "syllableCount": 2,
+    "syllables": [
+     "dragon",
+     "fly"
+    ],
+    "imageDescription": "a green flying insect",
+    "difficulty": 5,
+    "removePart": "dragon",
+    "residue": "fly"
+   },
+   {
+    "id": "c5",
+    "word": "honeybee",
+    "challengeType": "delete_compound",
+    "syllableCount": 2,
+    "syllables": [
+     "honey",
+     "bee"
+    ],
+    "imageDescription": "a buzzing yellow bee",
+    "difficulty": 4,
+    "removePart": "honey",
+    "residue": "bee"
+   },
+   {
+    "id": "c6",
+    "word": "birdhouse",
+    "challengeType": "delete_compound",
+    "syllableCount": 2,
+    "syllables": [
+     "bird",
+     "house"
+    ],
+    "imageDescription": "a wooden small birdhouse",
+    "difficulty": 3,
+    "removePart": "bird",
+    "residue": "house"
+   },
+   {
+    "id": "c7",
+    "word": "cowboy",
+    "challengeType": "delete_compound",
+    "syllableCount": 2,
+    "syllables": [
+     "cow",
+     "boy"
+    ],
+    "imageDescription": "a friendly farm cow",
+    "difficulty": 3,
+    "removePart": "boy",
+    "residue": "cow"
+   },
+   {
+    "id": "c8",
+    "word": "bullfrog",
+    "challengeType": "delete_compound",
+    "syllableCount": 2,
+    "syllables": [
+     "bull",
+     "frog"
+    ],
+    "imageDescription": "a green sitting frog",
+    "difficulty": 4,
+    "removePart": "bull",
+    "residue": "frog"
+   }
+  ]
+ }
+}

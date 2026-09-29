@@ -1,0 +1,1796 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ],
+   "no_change_before_receipt": [
+    0,
+    15
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "cvc-speller.fill_vowel",
+   "primitiveId": "cvc-speller",
+   "evalMode": "fill_vowel",
+   "keys": [
+    "the middle sound of cat: the short a sound, \"aaa\"",
+    "aaa"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the middle sound of cat: the short a sound, \"aaa\"",
+       "aaa"
+      ],
+      "ask": "Listen to the word cat and say the sound in the middle of it.",
+      "leakTokens": [
+       "DI_CVC_ITEM",
+       "DI_CVC_MOVE_ON",
+       "DI_CVC_COMPLETE",
+       "DI_CVC_BUILD",
+       "SAY_WORD"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Listen to the word **cat**. What sound do you hear right in the middle?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to the word **cat**. What sound do you hear right in the middle?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to the word **cat**. What sound do you hear right in the middle?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to the word **cat**. What sound do you hear right in the middle?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to the word **cat**. What sound do you hear right in the middle?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "cat",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the middle sound of cat: the short a sound, \"aaa\"",
+       "aaa"
+      ],
+      "ask": "Listen to the word cat and say the sound in the middle of it.",
+      "leakTokens": [
+       "DI_CVC_ITEM",
+       "DI_CVC_MOVE_ON",
+       "DI_CVC_COMPLETE",
+       "DI_CVC_BUILD",
+       "SAY_WORD"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the boxes on the screen: in the word **rain**, the middle sound is /ay/. \n\nNow listen to **cat**\u2014what sound is in the middle of **cat**?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "middle_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the boxes on the screen: in the word **rain**, the middle sound is /ay/. \n\nNow try **cat**\u2014what sound do you hear right in the middle?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "middle_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the boxes on the screen: for **rain**, the middle sound lit up is **ay**. Now try **cat**\u2014what sound is in the middle of **cat**?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "middle_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the screen: for the word **rain**, the middle sound lit up is **ay**. Now try **cat**\u2014what sound is in the middle of **cat**?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "middle_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the three boxes: for the word **rain**, the middle box lights up with \"ay\". Now listen to **cat**\u2014what sound do you hear right in the middle?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "middle_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the middle sound of cat: the short a sound, \"aaa\"",
+       "aaa"
+      ],
+      "ask": "Listen to the word cat and say the sound in the middle of it.",
+      "leakTokens": [
+       "DI_CVC_ITEM",
+       "DI_CVC_MOVE_ON",
+       "DI_CVC_COMPLETE",
+       "DI_CVC_BUILD",
+       "SAY_WORD"
+      ]
+     },
+     "samples": [
+      {
+       "text": "See the three boxes on the screen with the word **rain**? The middle box is lit up for the middle sound, /ay/.\n\nNow let's stretch **cat**: /k/ ... /\u0103/ ... /t/. What sound is in the middle?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "middle_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the boxes on the screen: in the word **rain**, the middle sound is /ay/.\n\nNow listen to **cat**\u2014what sound do you hear right in the middle?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "middle_model",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look, three boxes popped up with the word **rain**, and the middle box is lit up with the sound /ay/. \n\nNow listen to **cat**\u2014what sound do you hear right in the middle?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "middle_model",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look, a new picture of **rain** popped up with three boxes, and the middle box is lit up! In **rain**, the middle sound is /ay/. \n\nNow listen to **cat**\u2014what sound do you hear right in the middle?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "middle_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A new picture popped up with three sound boxes, and the middle box is lit up! In the word **rain**, the middle sound is /ay/. \n\nNow give **cat** a try\u2014what sound do you hear in the middle?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "middle_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1",
+     "trigger": "The learner said they were stuck, so the host pulled middle_model (help). It is on screen now: Shows another picture word in three boxes with the middle box lit. Say that word, then its middle sound, short; never this item's sound. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the middle sound of cat: the short a sound, \"aaa\"",
+       "aaa"
+      ],
+      "ask": "Listen to the word cat and say the sound in the middle of it.",
+      "leakTokens": [
+       "DI_CVC_ITEM",
+       "DI_CVC_MOVE_ON",
+       "DI_CVC_COMPLETE",
+       "DI_CVC_BUILD",
+       "SAY_WORD"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A new picture popped up with three sound boxes, and the middle box is glowing! \n\nFor the word **rain**, that middle box has the /ay/ sound. \n\nWhat sound do you hear in the middle of **cat**?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the new picture on your screen\u2014it shows three boxes for the word **rain**, and the middle box is lit up for the middle sound, /ay/. \n\nNow listen to **cat** and tell me what sound you hear right in the middle!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new picture of **rain** popped up with three boxes, and the middle box is glowing for its middle sound, /ay/!\n\nNow listen to **cat**\u2014what sound do you hear in the middle?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, a new picture of **rain** popped up with three boxes, and the middle box is glowing! For the word **rain**, that middle sound is /ay/.\n\nNow give **cat** a try\u2014what sound do you hear right in the middle?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the new picture on the screen with three boxes\u2014the word is **rain**, and the glowing middle box shows its middle sound, /ay/.\n\nNow give **cat** a try: what sound is in the middle of **cat**?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "aaa",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the middle sound of cat: the short a sound, \"aaa\"",
+       "aaa"
+      ],
+      "ask": "Listen to the word cat and say the sound in the middle of it.",
+      "leakTokens": [
+       "DI_CVC_ITEM",
+       "DI_CVC_MOVE_ON",
+       "DI_CVC_COMPLETE",
+       "DI_CVC_BUILD",
+       "SAY_WORD"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! The middle sound in **cat** is /\u0103/.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! The middle sound in **cat** is /a/!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You found the middle sound, /\u0103/!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it! You said /\u0103/, and that is the middle sound in cat!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! The middle sound in **cat** is /\u0103/.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "cvc-speller.spell_word",
+   "primitiveId": "cvc-speller",
+   "evalMode": "spell_word",
+   "keys": [
+    "letter c"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "letter c"
+      ],
+      "ask": "Listen to the word cat and put a letter in each box to spell it.",
+      "leakTokens": [
+       "DI_CVC_ITEM",
+       "DI_CVC_MOVE_ON",
+       "DI_CVC_COMPLETE",
+       "DI_CVC_BUILD",
+       "SAY_WORD"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Listen to the word **cat**, and put a letter in each box to spell it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to the word cat and put a letter in each box to spell it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's spell the word **cat**. Put a letter in each box to spell it!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to the word **cat**, and put a letter in each box to spell it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's spell the word **cat**. Tap a letter for each box when you are ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"c1\",\"response\":\"Put letters in the boxes: p a t\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"first_letter\"}. Respond to the learner using the current task and workspace.",
+     "miss": "first_letter",
+     "scoredWith": {
+      "keys": [
+       "letter c"
+      ],
+      "ask": "Listen to the word cat and put a letter in each box to spell it.",
+      "leakTokens": [
+       "DI_CVC_ITEM",
+       "DI_CVC_MOVE_ON",
+       "DI_CVC_COMPLETE",
+       "DI_CVC_BUILD",
+       "SAY_WORD"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Pictures are under the letters to show each starting sound. Tap a box to change a letter, and try spelling **cat** again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "consonant_keywords",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the picture clues under the letters to help with that first sound. Try spelling **cat** again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "consonant_keywords"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Pictures are now under the letters to show each starting sound. Try spelling **cat** again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "consonant_keywords",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the pictures under the letters to help with each sound. Tap the first box to fix it and try again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "consonant_keywords"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Now there are pictures under the letters to show their starting sounds. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "consonant_keywords",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "letter c"
+      ],
+      "ask": "Listen to the word cat and put a letter in each box to spell it.",
+      "leakTokens": [
+       "DI_CVC_ITEM",
+       "DI_CVC_MOVE_ON",
+       "DI_CVC_COMPLETE",
+       "DI_CVC_BUILD",
+       "SAY_WORD"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the pictures under the letters to help find the right beginning sound. Tap the first box to fix it, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "consonant_keywords",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the pictures under the letters to help you find the starting sound. Tap the first box to fix it and spell **cat**!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "consonant_keywords"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now each consonant shows a picture to help you with its sound. Tap the first box to change it, and give **cat** another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "consonant_keywords"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look below the letters: there is a picture under each one to help you hear its beginning sound. What picture starts with the first sound in **cat**?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "consonant_keywords"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look below each consonant to see a picture that starts with its sound. Tap the first box to change it, and give **cat** another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "consonant_keywords"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1",
+     "trigger": "The learner said they were stuck, so the host pulled consonant_keywords (help). It is on screen now: Puts a keyword picture under every consonant in the letter bank, so each letter shows a word that starts with its sound. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "letter c"
+      ],
+      "ask": "Listen to the word cat and put a letter in each box to spell it.",
+      "leakTokens": [
+       "DI_CVC_ITEM",
+       "DI_CVC_MOVE_ON",
+       "DI_CVC_COMPLETE",
+       "DI_CVC_BUILD",
+       "SAY_WORD"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Pictures are now showing right under the letters to help you hear their sounds. Tap the first box to fix it, and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is now a little picture under each letter to show what sound it starts with. Look closely at those pictures to help spell **cat**!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is now a little picture under each letter to show what sound it makes. Look at those pictures to find the starting sound for **cat**, and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the letter bank: each letter now has a little picture under it that starts with its sound! Tap the first box to clear it, and try spelling **cat** again.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Pictures are under the letters to show each starting sound. Tap a box to change a letter, and try spelling **cat** again!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"c1\",\"response\":\"Put letters in the boxes: c a t\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"consonant_keywords\"]}. Respond to the learner using the current task and workspace.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "letter c"
+      ],
+      "ask": "Listen to the word cat and put a letter in each box to spell it.",
+      "leakTokens": [
+       "DI_CVC_ITEM",
+       "DI_CVC_MOVE_ON",
+       "DI_CVC_COMPLETE",
+       "DI_CVC_BUILD",
+       "SAY_WORD"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You did it! You spelled the word cat!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it, you spelled the word cat!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You spelled the word cat! Great job finding the right letters.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You spelled the word cat!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You put in c-a-t and spelled cat!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "cvc-speller.word_sort",
+   "primitiveId": "cvc-speller",
+   "evalMode": "word_sort",
+   "keys": [
+    "the middle sound of cat: the short a sound, \"aaa\"",
+    "aaa"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the middle sound of cat: the short a sound, \"aaa\"",
+       "aaa"
+      ],
+      "ask": "Listen to the word cat and say the sound in the middle of it.",
+      "leakTokens": [
+       "DI_CVC_ITEM",
+       "DI_CVC_MOVE_ON",
+       "DI_CVC_COMPLETE",
+       "DI_CVC_BUILD",
+       "SAY_WORD"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Listen to the word **cat**. What sound do you hear right in the middle?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to the word **cat**. What sound do you hear right in the middle?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to the word **cat**. What sound do you hear right in the middle?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to the word **cat**. What sound do you hear right in the middle?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to the word **cat**. What sound do you hear right in the middle?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "cat",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the middle sound of cat: the short a sound, \"aaa\"",
+       "aaa"
+      ],
+      "ask": "Listen to the word cat and say the sound in the middle of it.",
+      "leakTokens": [
+       "DI_CVC_ITEM",
+       "DI_CVC_MOVE_ON",
+       "DI_CVC_COMPLETE",
+       "DI_CVC_BUILD",
+       "SAY_WORD"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the new picture of **pig**: its middle sound is /ih/. Now, what sound is in the middle of **cat**?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "middle_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the word **pig**\u2014its middle sound is /ih/. \n\nNow listen to **cat** again and try just the sound in the middle.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "middle_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the picture of **pig** with the middle box lit up\u2014its middle sound is /\u012d/. Now try **cat** again and say just the middle sound!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "middle_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the boxes on the screen: in the word **pig**, the middle sound is /ih/. \n\nNow try **cat** again\u2014what sound is in the middle of **cat**?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "middle_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the boxes for **pig**\u2014the middle sound is /ih/. Now try **cat**, and say just the sound in the middle!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "middle_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the middle sound of cat: the short a sound, \"aaa\"",
+       "aaa"
+      ],
+      "ask": "Listen to the word cat and say the sound in the middle of it.",
+      "leakTokens": [
+       "DI_CVC_ITEM",
+       "DI_CVC_MOVE_ON",
+       "DI_CVC_COMPLETE",
+       "DI_CVC_BUILD",
+       "SAY_WORD"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The screen now shows **pig** in three boxes with the middle box lit up, making the /ih/ sound. \n\nWhat sound do you hear in the middle of **cat**?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "middle_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the new picture of **pig** with its middle box lit up. In **pig**, the middle sound is /ih/. Now stretch out **cat**\u2014what sound is in its middle box?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "middle_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the picture of **pig** with its middle box lit up\u2014its middle sound is /ih/. Now stretch out **cat** and tell me what sound is in the middle.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "middle_model",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the picture of **pig** with its middle box lit up\u2014its middle sound is /ih/. Now stretch out **cat**: what sound do you hear right in the middle?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "middle_model",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A new picture popped up with **pig**, and its middle box is lit up with the sound /ih/. Now stretch out **cat** and tell me what sound is in the middle.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "middle_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1",
+     "trigger": "The learner said they were stuck, so the host pulled middle_model (help). It is on screen now: Shows another picture word in three boxes with the middle box lit. Say that word, then its middle sound, short; never this item's sound. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the middle sound of cat: the short a sound, \"aaa\"",
+       "aaa"
+      ],
+      "ask": "Listen to the word cat and say the sound in the middle of it.",
+      "leakTokens": [
+       "DI_CVC_ITEM",
+       "DI_CVC_MOVE_ON",
+       "DI_CVC_COMPLETE",
+       "DI_CVC_BUILD",
+       "SAY_WORD"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the boxes on the screen: there is a picture of **pig**, and its middle box is lit up for the /ih/ sound. \n\nNow listen to **cat**\u2014what sound do you hear right in its middle box?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is a picture of **pig** in three boxes, and the middle box is lit up for the /ih/ sound. \n\nNow listen to **cat**\u2014what sound do you hear right in the middle?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "See the new picture of **pig** with three boxes? The middle box is lit up for its middle sound, /ih/. \n\nNow look at **cat**\u2014what sound is in the middle of **cat**?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the picture of **pig** with three boxes, where the middle box is lit up for the /ih/ sound. \n\nNow listen to **cat**\u2014what sound is in its middle box?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is a picture of **pig** with its middle box lit up, and its middle sound is /ih/. \n\nWhat sound do you hear right in the middle of **cat**?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "aaa",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the middle sound of cat: the short a sound, \"aaa\"",
+       "aaa"
+      ],
+      "ask": "Listen to the word cat and say the sound in the middle of it.",
+      "leakTokens": [
+       "DI_CVC_ITEM",
+       "DI_CVC_MOVE_ON",
+       "DI_CVC_COMPLETE",
+       "DI_CVC_BUILD",
+       "SAY_WORD"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You found the /a/ sound right in the middle of cat.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You found the \"aaa\" sound right in the middle of cat.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it\u2014the middle sound is /a/!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it\u2014the middle sound in cat is /a/!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it\u2014you found the /aaa/ sound in the middle of cat!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

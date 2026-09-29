@@ -1,0 +1,49 @@
+{
+ "source": "qa/tutor-reports/word-workout-runtime-word_chains-payload-2026-09-29.json",
+ "primitiveId": "word-workout",
+ "evalMode": "word_chains",
+ "data": {
+  "title": "Word Workout: Reading short-vowel CVC words and telling real words from silly ones",
+  "mode": "word-chains",
+  "masteredVowels": [
+   "a",
+   "e",
+   "i",
+   "o",
+   "u"
+  ],
+  "gradeLevel": "1",
+  "challenges": [
+   {
+    "id": "c1",
+    "chain": [
+     "cat",
+     "cot",
+     "pot",
+     "pit"
+    ],
+    "changedPositions": [
+     1,
+     0,
+     1
+    ],
+    "mode": "word-chains"
+   },
+   {
+    "id": "c2",
+    "chain": [
+     "map",
+     "mop",
+     "hop",
+     "hip"
+    ],
+    "changedPositions": [
+     1,
+     0,
+     1
+    ],
+    "mode": "word-chains"
+   }
+  ]
+ }
+}

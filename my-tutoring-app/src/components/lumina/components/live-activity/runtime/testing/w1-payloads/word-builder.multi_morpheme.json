@@ -1,0 +1,148 @@
+{
+ "source": "qa/tutor-reports/word-builder-runtime-multi_morpheme-payload-2026-09-29.json",
+ "primitiveId": "word-builder",
+ "evalMode": "multi_morpheme",
+ "data": {
+  "title": "Mastering Multi-Morpheme Words",
+  "complexityLevel": "multi_morpheme",
+  "availableParts": [
+   {
+    "id": "pre-in",
+    "text": "in",
+    "type": "prefix",
+    "meaning": "into"
+   },
+   {
+    "id": "pre-pre",
+    "text": "pre",
+    "type": "prefix",
+    "meaning": "before"
+   },
+   {
+    "id": "pre-trans",
+    "text": "trans",
+    "type": "prefix",
+    "meaning": "across"
+   },
+   {
+    "id": "pre-inter",
+    "text": "inter",
+    "type": "prefix",
+    "meaning": "between"
+   },
+   {
+    "id": "pre-anti",
+    "text": "anti",
+    "type": "prefix",
+    "meaning": "against"
+   },
+   {
+    "id": "pre-sub",
+    "text": "sub",
+    "type": "prefix",
+    "meaning": "under"
+   },
+   {
+    "id": "root-dict",
+    "text": "dict",
+    "type": "root",
+    "meaning": "speak"
+   },
+   {
+    "id": "root-struct",
+    "text": "struct",
+    "type": "root",
+    "meaning": "build"
+   },
+   {
+    "id": "root-port",
+    "text": "port",
+    "type": "root",
+    "meaning": "carry"
+   },
+   {
+    "id": "root-rupt",
+    "text": "rupt",
+    "type": "root",
+    "meaning": "break"
+   },
+   {
+    "id": "root-ject",
+    "text": "ject",
+    "type": "root",
+    "meaning": "throw"
+   },
+   {
+    "id": "suf-able",
+    "text": "able",
+    "type": "suffix",
+    "meaning": "able to be"
+   },
+   {
+    "id": "suf-ion",
+    "text": "ion",
+    "type": "suffix",
+    "meaning": "act of"
+   },
+   {
+    "id": "suf-ive",
+    "text": "ive",
+    "type": "suffix",
+    "meaning": "tending to"
+   },
+   {
+    "id": "suf-ment",
+    "text": "ment",
+    "type": "suffix",
+    "meaning": "result of"
+   }
+  ],
+  "targets": [
+   {
+    "word": "instruction",
+    "parts": [
+     "pre-in",
+     "root-struct",
+     "suf-ion"
+    ],
+    "hint": "What word means directions or teaching given to help someone learn?",
+    "definition": "Teaching or directions that explain how to do something.",
+    "sentenceContext": "The teacher gave clear ___ before we started the science experiment."
+   },
+   {
+    "word": "predictable",
+    "parts": [
+     "pre-pre",
+     "root-dict",
+     "suf-able"
+    ],
+    "hint": "What word describes something that is easy to guess before it happens?",
+    "definition": "Able to be known or declared ahead of time.",
+    "sentenceContext": "The movie ending was so ___ that everyone guessed it right away."
+   },
+   {
+    "word": "transportable",
+    "parts": [
+     "pre-trans",
+     "root-port",
+     "suf-able"
+    ],
+    "hint": "What word describes an object that can easily be carried across places?",
+    "definition": "Capable of being moved or carried from one place to another.",
+    "sentenceContext": "Foldable camping chairs are light and easily ___."
+   },
+   {
+    "word": "interruption",
+    "parts": [
+     "pre-inter",
+     "root-rupt",
+     "suf-ion"
+    ],
+    "hint": "What word means a break or stop in what someone is saying or doing?",
+    "definition": "The act of breaking into or stopping an ongoing action.",
+    "sentenceContext": "The loud bell caused an unexpected ___ during reading time."
+   }
+  ],
+  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

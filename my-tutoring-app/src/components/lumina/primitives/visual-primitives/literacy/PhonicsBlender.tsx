@@ -20,6 +20,10 @@
  *
  * DOCTRINE HELD: tap-to-hear is never withdrawn (contract R2); the K band-gate
  * presentation is kept (R3); nothing on screen commits or advances (R4).
+ *
+ * IN-ITEM LEVERS (`phonicsBlenderLevers.ts`, handoff 24): the row slides together, dots mark each sound on a joined
+ * row, an arrow shows reading order, a name/sound model on another letter, and an easier practice word. All but the
+ * model are visual only: the voice never reads this word's letters.
  */
 
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -47,6 +51,8 @@ import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import type { BlendItem } from './phonicsBlenderScript';
 import { blendAssignment, blendItems, blendScene, soundRequest } from './phonicsBlenderWorkspace';
+import { ARROW_LEVER, DOTS_LEVER, NAME_MODEL_LEVER, SHORT_WORD_LEVER, SLIDE_LEVER, leversOnScreen, nameModelFor,
+  phonicsBlenderLevers, shortWordFor } from './phonicsBlenderLevers';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { phonicsBlenderPipPose } from '../../../pip/phonicsBlenderPipPose';
 
@@ -145,6 +151,10 @@ function PhonicsBlenderSurface({ data, className, runtimePlanItemId }: PhonicsBl
   const items = useMemo(() => blendItems(words), [words]);
 
   const [activeSoundId, setActiveSoundId] = useState<string | null>(null);
+  // In-item levers, keyed by the session word they were pulled on, and the easier practice word a simplify lever
+  // put on screen in its place (ungraded; the full word comes back after it).
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<BlendItem | null>(null);
   /** Visual only: clears the tapped-letter highlight. Nothing here advances. */
   const soundTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** When each word opened, for the blending-speed metric. */
@@ -214,8 +224,13 @@ function PhonicsBlenderSurface({ data, className, runtimePlanItemId }: PhonicsBl
       if (start != null) seconds.current.set(item.id, Math.round(((performance.now() - start) / 1000) * 10) / 10);
     },
   });
-  const currentWord = runner.currentItem;
+  const sessionWord = runner.currentItem;
+  /** What is on screen: the practice word while a simplify lever holds it, else the session word. */
+  const currentWord = practice ?? sessionWord;
   const currentIndex = runner.currentIndex;
+  const pulledLevers = practice || leverState.item !== sessionWord?.id ? [] : leverState.pulled;
+  const leverOn = (id: string) => pulledLevers.includes(id);
+  const nameModel = leverOn(NAME_MODEL_LEVER) ? nameModelFor(items) : null;
   // The workspace shows its finish without an evaluation provider (the live host has none).
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
@@ -235,8 +250,30 @@ function PhonicsBlenderSurface({ data, className, runtimePlanItemId }: PhonicsBl
   // What the tutor and the observer are shown, republished every render.
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
-    if (!currentWord) return;
-    workspace.current = { ...blendScene(currentWord, { segmentation }) };
+    if (!currentWord || !sessionWord) return;
+    const levers = practice ? [] : phonicsBlenderLevers(sessionWord, patternType, segmentation, pulledLevers, items);
+    const scene = blendScene(currentWord, { segmentation: practice ? 'full' : segmentation });
+    const onScreen = practice ? null : leversOnScreen(pulledLevers, items);
+    workspace.current = { ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { levers_on_screen: onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice word, ungraded. The full word comes back after it.' } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: id => {
+        const lever = levers.find(l => l.id === id);
+        if (!lever) return `No lever ${id} on this word.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        setLeverState({ item: sessionWord.id, pulled: [...pulledLevers, id] });
+        if (id === SHORT_WORD_LEVER) {
+          const simpler = shortWordFor(sessionWord, patternType, items);
+          if (!simpler) return 'There is no easier word for this item.';
+          setPractice(simpler);
+          return { practice: blendAssignment(simpler) };
+        }
+        return true;
+      },
+      endPractice: () => setPractice(null),
+    };
   });
 
   // ── Pip shared surface ───────────────────────────────────────────
@@ -285,14 +322,18 @@ function PhonicsBlenderSurface({ data, className, runtimePlanItemId }: PhonicsBl
 
   /** The stimulus: the word's letters. Tap any one to hear its sound. At `none` the
    *  letters are joined into a solid word, so the child does the segmenting. */
+  const shownSegmentation = practice ? 'full' : segmentation;
+  const slid = leverOn(SLIDE_LEVER), dotted = leverOn(DOTS_LEVER);
   const renderLetters = () => (
-    <div ref={pip.ref('letters')} data-pip-object="letters"
-      className={`flex items-center justify-center ${segmentation === 'none' ? 'gap-0' : 'gap-3'}`}>
+    <div className="flex flex-col items-center gap-2">
+    <div ref={pip.ref('letters')} data-pip-object="letters" data-lever={slid ? 'blend-slide' : undefined}
+      className={`flex items-start justify-center transition-all duration-500 ${shownSegmentation === 'none' || slid ? 'gap-0' : 'gap-3'}`}>
       {currentWord.phonemes.map((phoneme, i) => (
         <React.Fragment key={phoneme.id}>
-          {segmentation === 'full' && i > 0 && (
+          {shownSegmentation === 'full' && !slid && i > 0 && (
             <span className="text-slate-600 text-2xl" aria-hidden="true">·</span>
           )}
+          <div className="flex flex-col items-center">
           <button
             ref={pip.ref(`letter-${phoneme.id}`)}
             data-pip-object={`letter-${phoneme.id}`}
@@ -300,10 +341,10 @@ function PhonicsBlenderSurface({ data, className, runtimePlanItemId }: PhonicsBl
             aria-label={`sound ${phoneme.sound}`}
             className={`
               rounded-xl border-2 font-bold uppercase transition-all duration-200 cursor-pointer select-none
-              ${segmentation === 'none' ? 'px-1 py-3 border-transparent' : 'px-5 py-4'}
+              ${shownSegmentation === 'none' ? 'px-1 py-3 border-transparent' : 'px-5 py-4'}
               ${activeSoundId === phoneme.id
                 ? 'bg-amber-500/30 border-amber-400/60 text-amber-200 scale-110 shadow-lg shadow-amber-500/20'
-                : segmentation === 'none'
+                : shownSegmentation === 'none'
                   ? 'text-white hover:text-amber-200'
                   : 'bg-slate-700/40 border-slate-500/30 text-white hover:scale-105 hover:bg-slate-600/40'
               }
@@ -311,8 +352,16 @@ function PhonicsBlenderSurface({ data, className, runtimePlanItemId }: PhonicsBl
           >
             <span className="text-5xl">{phoneme.letters}</span>
           </button>
+          {/* sound_dots: one dot per sound, under its letters. The hard tier's joined row, re-segmented (ruling 09-28). */}
+          {dotted && <span data-lever="sound-dot" aria-hidden="true" className="mt-1 h-2 w-2 rounded-full bg-cyan-300" />}
+          </div>
         </React.Fragment>
       ))}
+    </div>
+    {(slid || leverOn(ARROW_LEVER)) && (
+      <span data-lever={leverOn(ARROW_LEVER) ? 'tracking-arrow' : 'slide-arrow'} aria-hidden="true"
+        className="text-3xl leading-none text-cyan-300">⟶</span>
+    )}
     </div>
   );
 
@@ -347,6 +396,16 @@ function PhonicsBlenderSurface({ data, className, runtimePlanItemId }: PhonicsBl
                 appears only while the credited word is held on screen. */}
             <div className="flex min-h-56 flex-col items-center justify-center rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-8 text-center">
               {renderLetters()}
+              {/* name_sound_model: a letter no session word uses, its name beside its sound. The tutor says both. */}
+              {nameModel && (
+                <div data-lever="name-sound-model" aria-label="Letter name and sound"
+                  className="mt-4 flex items-center gap-3 rounded-2xl border border-cyan-300/20 bg-cyan-950/10 px-4 py-2">
+                  <span className="text-4xl font-bold text-white">{nameModel.letter}</span>
+                  <span className="text-sm text-slate-400">name: {nameModel.name}</span>
+                  <span aria-hidden="true" className="text-lg">🔊</span>
+                  <span className="text-sm text-cyan-200">sound: {nameModel.sound}</span>
+                </div>
+              )}
               {runner.revealHeld && currentWord.emoji && (
                 <div className="mt-4 text-5xl leading-none animate-bounce" aria-hidden="true" data-blend-reward="true">
                   {currentWord.emoji}

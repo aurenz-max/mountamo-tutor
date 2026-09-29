@@ -1,0 +1,112 @@
+{
+ "source": "derived 2026-09-29 from story-ribbon.tell_present_account.json: same stories, hard tier (levers offered)",
+ "primitiveId": "story-ribbon",
+ "evalMode": "tell_present_account",
+ "data": {
+  "title": "Story Ribbon",
+  "description": "Use picture moments to tell connected stories, control story time, or explain a connection.",
+  "gradeLevel": "kindergarten",
+  "challengeType": "tell_present_account",
+  "challenges": [
+   {
+    "id": "story-ribbon-1",
+    "type": "tell_present_account",
+    "title": "Fun At The Park",
+    "characterName": "Mia",
+    "characterEmoji": "👧",
+    "setting": "the sunny green park",
+    "timeCue": "Today",
+    "events": [
+     {
+      "id": "story-ribbon-1-event-1",
+      "order": 0,
+      "emoji": "🌰",
+      "pictureLabel": "small seeds",
+      "modelSentence": "Mia holds some small seeds in her hand."
+     },
+     {
+      "id": "story-ribbon-1-event-2",
+      "order": 1,
+      "emoji": "💧",
+      "pictureLabel": "watering can",
+      "modelSentence": "Mia pours water from a watering can onto the dirt."
+     },
+     {
+      "id": "story-ribbon-1-event-3",
+      "order": 2,
+      "emoji": "🌻",
+      "pictureLabel": "bright flower",
+      "modelSentence": "A bright flower grows tall in the sun."
+     }
+    ],
+    "supportTier": "hard"
+   },
+   {
+    "id": "story-ribbon-2",
+    "type": "tell_present_account",
+    "title": "Helping A Little Bird",
+    "characterName": "Leo",
+    "characterEmoji": "👦",
+    "setting": "green park",
+    "timeCue": "Today",
+    "events": [
+     {
+      "id": "story-ribbon-2-event-1",
+      "order": 0,
+      "emoji": "🐦",
+      "pictureLabel": "hurt little bird",
+      "modelSentence": "Leo sees a hurt little bird sitting on the grass."
+     },
+     {
+      "id": "story-ribbon-2-event-2",
+      "order": 1,
+      "emoji": "📦",
+      "pictureLabel": "soft box",
+      "modelSentence": "Leo puts the little bird safely inside a soft box."
+     },
+     {
+      "id": "story-ribbon-2-event-3",
+      "order": 2,
+      "emoji": "🍞",
+      "pictureLabel": "crusty bread",
+      "modelSentence": "Leo gives some crusty bread to the hungry little bird."
+     }
+    ],
+    "supportTier": "hard"
+   },
+   {
+    "id": "story-ribbon-3",
+    "type": "tell_present_account",
+    "title": "Building A Tall Tower",
+    "characterName": "Leo",
+    "characterEmoji": "🧒",
+    "setting": "at the park",
+    "timeCue": "Today",
+    "events": [
+     {
+      "id": "story-ribbon-3-event-1",
+      "order": 0,
+      "emoji": "🧱",
+      "pictureLabel": "wooden blocks",
+      "modelSentence": "Leo stacks colorful blocks on the table."
+     },
+     {
+      "id": "story-ribbon-3-event-2",
+      "order": 1,
+      "emoji": "🗼",
+      "pictureLabel": "tall tower",
+      "modelSentence": "He builds a tall tower with them."
+     },
+     {
+      "id": "story-ribbon-3-event-3",
+      "order": 2,
+      "emoji": "🎁",
+      "pictureLabel": "special gift",
+      "modelSentence": "He puts a toy gift on top."
+     }
+    ],
+    "supportTier": "hard"
+   }
+  ]
+ }
+}

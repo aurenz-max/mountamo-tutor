@@ -1,0 +1,75 @@
+{
+ "source": "qa/tutor-reports/picture-vocabulary-runtime-gradable_scale-payload-2026-09-29.json",
+ "primitiveId": "picture-vocabulary",
+ "evalMode": "gradable_scale",
+ "data": {
+  "title": "Home Word Scales!",
+  "description": "Let us put our favorite home words in order from smallest to biggest and quietest to loudest!",
+  "challengeType": "gradable_scale",
+  "challenges": [
+   {
+    "id": "pv-1",
+    "type": "gradable_scale",
+    "word": "heavy",
+    "emoji": "\u2696\ufe0f",
+    "scaleWords": [
+     "light",
+     "heavy",
+     "massive"
+    ],
+    "scaleTargetIndex": 1
+   },
+   {
+    "id": "pv-2",
+    "type": "gradable_scale",
+    "word": "big",
+    "emoji": "\ud83d\udccf",
+    "scaleWords": [
+     "tiny",
+     "small",
+     "big",
+     "huge"
+    ],
+    "scaleTargetIndex": 2
+   },
+   {
+    "id": "pv-3",
+    "type": "gradable_scale",
+    "word": "dim",
+    "emoji": "\ud83d\udca1",
+    "scaleWords": [
+     "dark",
+     "dim",
+     "bright"
+    ],
+    "scaleTargetIndex": 1
+   },
+   {
+    "id": "pv-4",
+    "type": "gradable_scale",
+    "word": "soft",
+    "emoji": "\ud83d\udd0a",
+    "scaleWords": [
+     "quiet",
+     "soft",
+     "loud"
+    ],
+    "scaleTargetIndex": 1
+   },
+   {
+    "id": "pv-5",
+    "type": "gradable_scale",
+    "word": "cool",
+    "emoji": "\ud83c\udf21\ufe0f",
+    "scaleWords": [
+     "cold",
+     "cool",
+     "warm",
+     "hot"
+    ],
+    "scaleTargetIndex": 1
+   }
+  ],
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving."
+ }
+}

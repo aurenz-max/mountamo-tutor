@@ -1,0 +1,109 @@
+{
+ "source": "qa/tutor-reports/oral-sentence-studio-runtime-guided_writing_rehearsal-payload-2026-09-29.json",
+ "primitiveId": "oral-sentence-studio",
+ "evalMode": "guided_writing_rehearsal",
+ "data": {
+  "title": "Oral Sentence Studio",
+  "description": "Use both new words in one complete sentence of your own.",
+  "gradeLevel": "kindergarten",
+  "challengeType": "guided_writing_rehearsal",
+  "challenges": [
+   {
+    "wordEmojis": [
+     "\u27a1\ufe0f",
+     "\ud83d\udca7"
+    ],
+    "id": "oral-sentence-studio-1",
+    "type": "guided_writing_rehearsal",
+    "sceneTitle": "Our Plant Growth Story",
+    "settingEmoji": "\ud83c\udf31",
+    "settingLabel": "small green garden",
+    "actorEmoji": "\ud83d\udc67\ud83c\udffd",
+    "actorLabel": "friendly girl",
+    "actionEmoji": "\ud83d\udebf",
+    "actionLabel": "gentle watering",
+    "objectEmoji": "\ud83e\udeb4",
+    "objectLabel": "flower pot",
+    "targetWords": [
+     "next",
+     "thirsty"
+    ],
+    "wordMeanings": [
+     "coming right after this",
+     "needing a drink of water"
+    ],
+    "sceneMeaning": "Next, the friendly girl waters the thirsty flower pot in the small green garden.",
+    "acceptedSentences": [
+     "Next, the friendly girl waters the thirsty flower pot.",
+     "The friendly girl gives water next to the thirsty plant.",
+     "Next in our garden, we help the thirsty flower grow."
+    ],
+    "priorStepLabel": "planted the small seed"
+   },
+   {
+    "wordEmojis": [
+     "\u23f1\ufe0f",
+     "\ud83d\udc41\ufe0f"
+    ],
+    "id": "oral-sentence-studio-2",
+    "type": "guided_writing_rehearsal",
+    "sceneTitle": "Making Paper Chains",
+    "settingEmoji": "\ud83c\udfeb",
+    "settingLabel": "art table",
+    "actorEmoji": "\ud83d\udc67\ud83c\udffd",
+    "actorLabel": "smiling girl",
+    "actionEmoji": "\u2702\ufe0f",
+    "actionLabel": "cutting paper",
+    "objectEmoji": "\ud83d\udcdc",
+    "objectLabel": "paper strips",
+    "targetWords": [
+     "then",
+     "careful"
+    ],
+    "wordMeanings": [
+     "next in order",
+     "paying close attention"
+    ],
+    "sceneMeaning": "Then the smiling girl is careful while cutting paper strips at the art table.",
+    "acceptedSentences": [
+     "Then the smiling girl is careful when cutting paper strips.",
+     "Our student must be careful, then she cuts the paper strips.",
+     "She is careful with her art, and then she cuts paper."
+    ],
+    "priorStepLabel": "First we paint paper"
+   },
+   {
+    "wordEmojis": [
+     "\u231b",
+     "\ud83d\ude0a"
+    ],
+    "id": "oral-sentence-studio-3",
+    "type": "guided_writing_rehearsal",
+    "sceneTitle": "Our Garden Flower Walk",
+    "settingEmoji": "\ud83c\udfe1",
+    "settingLabel": "front yard",
+    "actorEmoji": "\ud83d\udc67",
+    "actorLabel": "smiley child",
+    "actionEmoji": "\ud83d\udc4b",
+    "actionLabel": "gentle wave",
+    "objectEmoji": "\ud83c\udf38",
+    "objectLabel": "pink flower",
+    "targetWords": [
+     "last",
+     "happy"
+    ],
+    "wordMeanings": [
+     "at the very end",
+     "feeling full of joy"
+    ],
+    "sceneMeaning": "Last, the smiley child gave a happy wave by the pink flower.",
+    "acceptedSentences": [
+     "Last, the happy child waved at the flower.",
+     "The child gave a happy wave last in the yard.",
+     "Last of all, the smiley child felt happy."
+    ],
+    "priorStepLabel": "put on boots"
+   }
+  ]
+ }
+}

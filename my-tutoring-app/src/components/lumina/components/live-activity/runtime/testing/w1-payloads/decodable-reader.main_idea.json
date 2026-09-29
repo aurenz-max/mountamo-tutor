@@ -1,0 +1,180 @@
+{
+ "source": "qa/tutor-reports/decodable-reader-runtime-main_idea-payload-2026-09-29.json",
+ "primitiveId": "decodable-reader",
+ "evalMode": "main_idea",
+ "data": {
+  "title": "Sam Has a Cat",
+  "gradeLevel": "1",
+  "passage": {
+   "sentences": [
+    {
+     "id": "s1",
+     "words": [
+      {
+       "id": "s1_w1",
+       "text": "Sam",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s1_w2",
+       "text": "has",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s1_w3",
+       "text": "a",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s1_w4",
+       "text": "fat",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s1_w5",
+       "text": "cat.",
+       "phonicsPattern": "cvc"
+      }
+     ]
+    },
+    {
+     "id": "s2",
+     "words": [
+      {
+       "id": "s2_w1",
+       "text": "The",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s2_w2",
+       "text": "cat",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s2_w3",
+       "text": "can",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s2_w4",
+       "text": "nap",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s2_w5",
+       "text": "on",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s2_w6",
+       "text": "a",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s2_w7",
+       "text": "mat.",
+       "phonicsPattern": "cvc"
+      }
+     ]
+    },
+    {
+     "id": "s3",
+     "words": [
+      {
+       "id": "s3_w1",
+       "text": "They",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s3_w2",
+       "text": "sit",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s3_w3",
+       "text": "with",
+       "phonicsPattern": "digraph"
+      },
+      {
+       "id": "s3_w4",
+       "text": "a",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s3_w5",
+       "text": "hat.",
+       "phonicsPattern": "cvc"
+      }
+     ]
+    },
+    {
+     "id": "s4",
+     "words": [
+      {
+       "id": "s4_w1",
+       "text": "Sam",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s4_w2",
+       "text": "and",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s4_w3",
+       "text": "the",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s4_w4",
+       "text": "cat",
+       "phonicsPattern": "cvc"
+      },
+      {
+       "id": "s4_w5",
+       "text": "are",
+       "phonicsPattern": "sight"
+      },
+      {
+       "id": "s4_w6",
+       "text": "glad.",
+       "phonicsPattern": "blend"
+      }
+     ]
+    }
+   ],
+   "imageDescription": "A happy boy named Sam sitting with his fat cat on a mat next to a hat"
+  },
+  "phonicsPatternsInPassage": [
+   "cvc",
+   "sight",
+   "digraph",
+   "blend"
+  ],
+  "comprehensionQuestions": [
+   {
+    "question": "What is this story mostly about?",
+    "options": [
+     {
+      "id": "A",
+      "text": "Sam and his cat are happy.",
+      "emoji": "\ud83d\ude3a"
+     },
+     {
+      "id": "B",
+      "text": "The cat naps on a mat.",
+      "emoji": "\ud83d\udecc"
+     },
+     {
+      "id": "C",
+      "text": "Sam sits with a hat.",
+      "emoji": "\ud83d\udc52"
+     }
+    ],
+    "correctOptionId": "A"
+   }
+  ],
+  "comprehensionType": "main_idea",
+  "readingMode": "decode"
+ }
+}

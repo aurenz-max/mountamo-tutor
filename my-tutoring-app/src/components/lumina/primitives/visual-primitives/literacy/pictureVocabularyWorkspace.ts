@@ -32,16 +32,46 @@ export function pictureVocabAssignment(item: PictureVocabItem): TeachingAssignme
   return { id: item.id, task: askFor(item), response: 'speech', expectedAnswer: expectedFor(item), ...(misses.length ? { misses } : {}) };
 }
 
-/** What a wrong spoken answer shows (handoff 20 Part B). */
-export type SpokenPictureVocabMiss = 'category_word' | 'other_thing';
+/** What a wrong spoken answer shows (handoff 20 Part B; opposite, association, scale and frame handoff 24). */
+export type SpokenPictureVocabMiss = 'category_word' | 'other_thing' | 'said_base_word' | 'not_opposite' | 'no_link'
+  | 'given_rung' | 'off_scale' | 'does_not_fit';
 
-/**
- * A spoken item's known wrong answers, in precedence order, for the `spoken_miss` observer. Naming only: the
- * other spoken modes have open or single-rung answers the item records no wrong kinds for.
- */
+/** Per spoken mode, the misses its answers can show, in precedence order. */
+export const PICTURE_VOCAB_SPOKEN_MISSES = {
+  naming: ['category_word', 'other_thing'],
+  opposite: ['said_base_word', 'not_opposite'],
+  association: ['said_base_word', 'no_link'],
+  gradable_scale: ['given_rung', 'off_scale'],
+  sentence_frame: ['does_not_fit'],
+} as const satisfies Record<string, readonly SpokenPictureVocabMiss[]>;
+
+/** A spoken item's known wrong answers, in precedence order, for the `spoken_miss` observer. */
 export function pictureVocabSpokenMisses(item: PictureVocabItem): KnownMiss[] {
-  if (item.answerKind === 'gesture' || item.kind !== 'naming') return [];
-  const w = item.word, other = w.toLowerCase() === 'button' ? 'ladder' : 'button';
+  if (item.answerKind === 'gesture') return [];
+  const w = item.word, base = item.baseWord ?? '';
+  switch (item.kind) {
+    case 'opposite': return [
+      { id: 'said_base_word', pattern: `The word shown is "${base}". The learner says "${base}" back, or a word that means the same, instead of its opposite.`, examples: [base] },
+      { id: 'not_opposite', pattern: `The opposite of "${base}" is "${w}". The learner says a word that is neither "${w}" nor another word for it, and not "${base}".`, examples: [] },
+    ];
+    case 'association': return [
+      { id: 'said_base_word', pattern: `The word shown is "${base}". The learner says "${base}" back instead of something that goes with it.`, examples: [base] },
+      { id: 'no_link', pattern: `The learner names a real thing that does not plainly go with "${base}" (used with it, found with it, or part of it).`, examples: [] },
+    ];
+    case 'gradable_scale': {
+      const given = (item.scaleWords ?? []).filter((_, i) => i !== item.scaleTargetIndex);
+      return [
+        { id: 'given_rung', pattern: `The scale already shows ${given.map(g => `"${g}"`).join(' and ')}. The learner says one of those words instead of the missing one.`, examples: given },
+        { id: 'off_scale', pattern: `The missing word is "${w}". The learner says a word that does not fit between the words around the gap, such as one that is not about the same quality or is too far along the scale.`, examples: [] },
+      ];
+    }
+    case 'sentence_frame': return [
+      { id: 'does_not_fit', pattern: `The sentence is "${item.frameDisplay ?? ''}". The learner says a word that does not make sense in the blank.`, examples: [] },
+    ];
+    case 'naming': break;
+    default: return [];
+  }
+  const other = w.toLowerCase() === 'button' ? 'ladder' : 'button';
   return [
     { id: 'category_word', pattern: `The picture shows a ${w}. The learner's answer is a word for a whole group of things, such as "a thing", "stuff" or "toys", not the name ${w} or another name for it.`,
       examples: ['a thing', 'stuff'] },

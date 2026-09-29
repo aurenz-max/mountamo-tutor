@@ -1,0 +1,140 @@
+{
+ "source": "qa/tutor-reports/cvc-speller-runtime-word_sort-payload-2026-09-29.json",
+ "primitiveId": "cvc-speller",
+ "evalMode": "word_sort",
+ "data": {
+  "title": "Sort the Middle Sounds!",
+  "letterGroup": 3,
+  "availableLetters": [
+   "s",
+   "a",
+   "t",
+   "i",
+   "p",
+   "n",
+   "c",
+   "k",
+   "e",
+   "h",
+   "r",
+   "m",
+   "d",
+   "g",
+   "o",
+   "u",
+   "l",
+   "f",
+   "b"
+  ],
+  "challenges": [
+   {
+    "id": "c1",
+    "taskType": "word-sort",
+    "targetWord": "cat",
+    "targetLetters": [
+     "c",
+     "a",
+     "t"
+    ],
+    "targetPhonemes": [
+     "/k/",
+     "/\u00e6/",
+     "/t/"
+    ],
+    "emoji": "\ud83d\udc31",
+    "imageDescription": "A cute cat sitting",
+    "distractorLetters": []
+   },
+   {
+    "id": "c2",
+    "taskType": "word-sort",
+    "targetWord": "hen",
+    "targetLetters": [
+     "h",
+     "e",
+     "n"
+    ],
+    "targetPhonemes": [
+     "/h/",
+     "/\u025b/",
+     "/n/"
+    ],
+    "emoji": "\ud83d\udc14",
+    "imageDescription": "A brown hen",
+    "distractorLetters": []
+   },
+   {
+    "id": "c3",
+    "taskType": "word-sort",
+    "targetWord": "map",
+    "targetLetters": [
+     "m",
+     "a",
+     "p"
+    ],
+    "targetPhonemes": [
+     "/m/",
+     "/\u00e6/",
+     "/p/"
+    ],
+    "emoji": "\ud83d\uddfa\ufe0f",
+    "imageDescription": "A treasure map",
+    "distractorLetters": []
+   },
+   {
+    "id": "c4",
+    "taskType": "word-sort",
+    "targetWord": "bed",
+    "targetLetters": [
+     "b",
+     "e",
+     "d"
+    ],
+    "targetPhonemes": [
+     "/b/",
+     "/\u025b/",
+     "/d/"
+    ],
+    "emoji": "\ud83d\udecf\ufe0f",
+    "imageDescription": "A cozy bed",
+    "distractorLetters": []
+   },
+   {
+    "id": "c5",
+    "taskType": "word-sort",
+    "targetWord": "bag",
+    "targetLetters": [
+     "b",
+     "a",
+     "g"
+    ],
+    "targetPhonemes": [
+     "/b/",
+     "/\u00e6/",
+     "/g/"
+    ],
+    "emoji": "\ud83d\udc5c",
+    "imageDescription": "A small bag",
+    "distractorLetters": []
+   },
+   {
+    "id": "c6",
+    "taskType": "word-sort",
+    "targetWord": "net",
+    "targetLetters": [
+     "n",
+     "e",
+     "t"
+    ],
+    "targetPhonemes": [
+     "/n/",
+     "/\u025b/",
+     "/t/"
+    ],
+    "emoji": "\ud83e\udd45",
+    "imageDescription": "A white net",
+    "distractorLetters": []
+   }
+  ]
+ }
+}
