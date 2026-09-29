@@ -107,6 +107,13 @@ The generation tier only sets where the levers start: easy starts with some pull
 | decodable-reader and read-aloud-studio got L3 levers without a contract doc (B1 not run) | `qa/eval-reports/levers-literacy-L3-2026-09-28.md` | `/primitive-contract` |
 | phonics-blender levers: inventory and table drafted, not built; one ruling owed (may `sound_dots` re-segment the hard tier's joined row?) | same | user OK, then `/add-support-tiers` |
 | L3 levers have no starting positions from `config.difficulty` (Phase 6): all start released | same | `/add-support-tiers` |
+| story-ribbon easy tier's live order self-check turns green on the story order, so a learner can swap cards until it lights; kept as easy's starting position, never a lever (contract R5) | `contracts/story-ribbon.md` R5 | user ruling: keep, or withdraw at easy too |
+| story-bridge start replay: `no_key_before_try` flags the tutor reading story one aloud because story one contains the answer friend's name (5/10) | `qa/tutor-reports/replay/story-bridge-2026-09-29.json` | handoff 20 Part C (exempt the stories line) |
+| story-bridge say_alike stuck: with no lever, the tutor retells both friends' actions side by side, nearly stating the comparison | same | `/add-live-tutor-tools` |
+| picture-vocabulary opposite, association, gradable_scale, sentence_frame name no misses and have no lever | `contracts/picture-vocabulary.md` R4 | `/add-support-tiers` (after spoken misses for those modes) |
+| story-bridge say_alike, say_different, main_idea_compare: no misses or levers (open comparisons) | `contracts/story-bridge.md` R4 | decide: spoken misses for comparisons (handoff 20 Part B), or ruled out of the class Live gate |
+| oral-sentence-studio old story-words payload: at stuck the tutor gives word-meaning hints instead of pulling `sentence_strip` (0/5) | `qa/tutor-reports/replay/oral-sentence-studio-2026-09-29.json` | none needed now (the S2 ladder auto-pulls on the 2nd wrong); watch in the class Live pair |
+| L4 closed 09-29 | `qa/eval-reports/levers-literacy-L4-2026-09-28.md` | `/add-support-tiers` · handoff 22 L4 |
 
 ## Suggested pilot
 

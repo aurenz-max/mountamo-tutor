@@ -9,9 +9,29 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 
 ## Open — ONE list, newest first (as of 2026-09-09, K Language Arts atlas refresh)
 
-> **125 rows open.** **Newest:** #175 math M2 levers, compare and order tap modes (handoff 21); #174 literacy L3 levers, four reading primitives and the shared print overlay (handoff 22); #173 literacy L2 levers, five spoken sound-work primitives, SOUND ON (handoff 22); #172 literacy L1 levers, five phonics primitives (handoff 22); #171 jump levers on the number line (handoff 18); #170 lesson demonstration detour (LA-15 D2); #169 composed demonstrations (LA-15) in the runtime lab; #168 counting-board THE THIRD BRANCH — say "can you help me" mid-item and hear an answer, not the correction line; #167 live runtime lab (help/return; mic after adoption); #166 counting-board themed objects (first browser sighting + does the theme hold him); #165 Live transcript refusal-phrase ear check; #148 Ramp Lab investigation MIC + tablet; #147 Bar Model graph explanation MIC ? #146 Story Ribbon tablet + MIC + sound · #145 Story Bridge
+> **127 rows open.** **Newest:** #177 math M1 spoken levers, counting-board, number-bond, base-ten, place-value, MIC (handoff 21); #176 literacy L4 levers, you-and-me, story-ribbon, word-sorter, SOUND ON (handoff 22); #175 math M2 levers, compare and order tap modes (handoff 21); #174 literacy L3 levers, four reading primitives and the shared print overlay (handoff 22); #173 literacy L2 levers, five spoken sound-work primitives, SOUND ON (handoff 22); #172 literacy L1 levers, five phonics primitives (handoff 22); #171 jump levers on the number line (handoff 18); #170 lesson demonstration detour (LA-15 D2); #169 composed demonstrations (LA-15) in the runtime lab; #168 counting-board THE THIRD BRANCH — say "can you help me" mid-item and hear an answer, not the correction line; #167 live runtime lab (help/return; mic after adoption); #166 counting-board themed objects (first browser sighting + does the theme hold him); #165 Live transcript refusal-phrase ear check; #148 Ramp Lab investigation MIC + tablet; #147 Bar Model graph explanation MIC ? #146 Story Ribbon tablet + MIC + sound · #145 Story Bridge
 > tablet + MIC · #144 You & Me role-switch MIC · #143 Letter Workshop manuscript/touch/audio ·
-> #142 ten-frame teen numbers. Next free ID is **#175**.
+> #142 ten-frame teen numbers. Next free ID is **#178**.
+
+### #177 — **math M1 spoken levers: does each board help a stuck child say the number, without saying it?** (handoff 21) · MIC
+
+**Drive it:** a tutor lesson per mode, K and Grade 1, mic on. On each: say a wrong number once, then "I'm stuck."
+- counting-board count: the objects move into one row (same objects); the easier board has about half as many, then the full board comes back. subitize (K): the set shows again in rows of five, then hides. group: only the first group gets numbers, 1 up to its size. compare: each group in its own row, left edges lined up, no numbers. take_away / add_more: the easier board changes by one.
+- number-bond say turns: the counters you are asked about sit in a ten-frame outline, nothing filled in for you.
+- base-ten read_blocks: one ten-stick "= 10" beside the mat (never on the worth step when only one is on the mat); other sizes fade; the asked blocks five, a gap, the rest. regroup: a small model trade with different counts beside your mat; the ones column glows round the ones already there. Also on the click mat (mixed lesson): trade and press Check straight away; it must count the trade.
+- place-value say_value: a different number with a different digit glowing and its worth; the glowing digit as blocks under the number, no words.
+**Check:** each change appears before the tutor mentions it; nothing drawn or said gives the number before a try; the lever is gone on the next item. [Report](eval-reports/levers-M1-spoken-2026-09-29.md). Owner: user.
+
+### #176 — **literacy L4 levers: do the role, ribbon and mat aids help a stuck K-1 speaker without giving the answer?** (handoff 22)
+
+**Drive it:** a lesson per primitive at **hard** tier, tutor connected, sound on. On each: answer wrong once, then say "I'm stuck."
+- you-and-me (describe_independent_action): the speaking partner's card lights; the doer's card shows the object and "Did the action". No I, you, myself or yourself appears anywhere.
+- story-ribbon (tell_past_account): First / Next / Last appear under the three places, then arrows between them. Swap two cards: the words stay under the places, not on the pictures. story_to_experience: the three-step connection frame appears.
+- story-bridge (K, tap modes): match characters: only the first friend's card gets its action picture, never a candidate. Settings: a 📍 place label under each story picture. Venn: two empty checks, one per friend. Sequence: story one's three events in a row with the asked one lit, story two still mixed.
+- picture-vocabulary (K, a freshly generated lesson): listen and find: tap a wrong picture, then "I'm stuck": a 💡 clue card (what it does, where it is found), never its first sound; then an easier two-card item with a new word, then the same four cards again. Naming: the clue card, and the picture's word stays hidden.
+- oral-sentence-studio (Grade 1, freshly generated): say the two words as a list, then "I'm stuck": empty Who? / What happens? boxes beside the word chips, nothing filled in; a meaning picture under each word that is not one of the scene's pictures. No example sentence before credit.
+- word-sorter (binary_sort, Grade 1): a picture on every group mat, none marked. After one word is credited, "I'm stuck" on the next one shows the credited word on its mat, never the current word.
+**Check:** each change appears before the tutor mentions it; the tutor never says the pronoun, the story order or the group before a try; on the next item the aids are gone again. [Report](eval-reports/levers-literacy-L4-2026-09-28.md). Owner: user.
 
 ### #175 — **math M2 levers: do the compare-and-order levers help without showing the answer?** (handoff 21)
 

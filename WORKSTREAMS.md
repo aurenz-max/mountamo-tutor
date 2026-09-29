@@ -22,7 +22,7 @@ grep -c '^> ### ' WORKSTREAMS.md                                  # 0
 | is evidence of a run | `qa/tutor-reports/`, `qa/<lane>/` |
 | is state (phase, lane, next pull) | here, as a row |
 
-## Where we are (2026-09-28)
+## Where we are (2026-09-29)
 
 The pipeline being built: **primitive check → named miss → the tutor and JEV act on it → a
 lever → the record → the next lesson**, each link tested at the cheapest tier that can see
@@ -30,11 +30,11 @@ it. Gesture misses are named for bound families; every later link is partial.
 
 | Item | State | As of |
 |---|---|---|
-| `main` | `87ecb56d`. Branch is 70 commits ahead, plus ~340 UNCOMMITTED paths from three lanes (1.4 spoken misses, M1/M2 levers, literacy L1-L3). `/ship` before any new slice | 09-28 |
+| `main` | `87ecb56d`; branch 77 ahead, pushed to `951a23fb`. ~93 paths uncommitted 09-29: M1 spoken levers, L4, story-bridge, picture-vocabulary, oral-sentence-studio, the spoken-miss route (now `src/app/...`). `/ship` next | 09-29 |
 | Test ladder | T0 dry sweep J1-J8 (free) · T1 miss/lever `it.each` (free) · T2 JEV observer on recorded packets (NOT BUILT) · T3 text replay, harm checks only · T4 Live, weekly sample (`LIVE_TESTING.md`) | 09-27 |
 | Gates | `typecheck:lumina` 0; full tsc 773 (last measured 09-27; re-run at `/ship`) | 09-27 |
 | Human checks | 125 open, next free **#176** (`my-tutoring-app/qa/HUMAN-CHECKS.md`) | 09-28 |
-| Sessions | handoff 21 M1 done; 1.4, M2 and L3 sessions wrote to the tree 09-28. `runtime/` is no longer held for M1; commit 1.4 before another session edits it | 09-28 |
+| Sessions | M1-spoken (handoff 21) and L4 (handoff 22) lanes wrote 09-28/29; J10/J11 + RP-2 lane (handoff 19/20) | 09-29 |
 
 ## Phase 1 — A miss is one contract, detected on both channels (CURRENT)
 
@@ -46,7 +46,7 @@ Exit: every bound mode's misses are defined once as `{ id, pattern }`; gesture c
 | 1.1 | W1 binding rollout C10-C19, each with its miss function | `/add-live-tutor-tools` · `qa/workspace-rollout/ROLLOUT.md` | DELEGATED (other session) |
 | 1.2 | Gesture misses for bound families | `/add-support-tiers` · handoff 20 A | DONE 09-27 (RP-7 closed) |
 | 1.3 | Miss definitions carry their observable pattern (today only in docblocks); the packet and `spoken_miss` read them; doctrine says what to do with a miss | `/add-live-tutor-tools` · handoff 20 (new) | open; packet side needs `runtime/` |
-| 1.4 | Spoken misses wired (59 families) | `/add-live-tutor-tools` · handoff 20 Part B | DONE 09-28 (uncommitted): 0 FP in 3630; report `qa/tutor-reports/spoken-miss/wired-2026-09-28.md` |
+| 1.4 | Spoken misses wired (59 families) | `/add-live-tutor-tools` · handoff 20 Part B | DONE 09-28 (`b431d545`; route file still untracked): 0 FP in 3630; report `qa/tutor-reports/spoken-miss/wired-2026-09-28.md` |
 | 1.5 | Consolidation slices 5-7; RP-3/4/5/6 | `/add-live-tutor-tools`, `/eval-fix` · handoffs 19, 20 | slice 6 evidence merge DONE 09-27 (live-host refusal half open); rest unblocked once 1.4 is committed |
 
 ## Phase 2 — The ladder tests a passing student first, then a miss (NEXT)
@@ -57,10 +57,10 @@ the classes replay cannot see (tool narration, timing, audio).
 
 | # | Item | Executor · queue | State |
 |---|---|---|---|
-| 2.0a | J10 clean pass: every item right first time completes once, and the submission says so (passed, score, first-try count = items, no assistance). The sweep today only runs wrong-then-right and checks the submission COUNT, never its content | `/add-live-tutor-tools` · handoff 19 slice 9 | open (sweep is in `runtime/`) |
-| 2.0b | J11 honest record after a recovery: solved, not first-try, the miss in the attempts, score by the first-response gate | `/add-live-tutor-tools` · handoff 19 slice 9 | open |
+| 2.0a | J10 clean pass: every item right first time completes once, and the submission says so (passed, score, first-try count = items, no assistance). The sweep today only runs wrong-then-right and checks the submission COUNT, never its content | `/add-live-tutor-tools` · handoff 19 slice 9 | done 09-28: 228/237 payloads' records checked on a clean mount; 2 findings need a ruling (19 9a, 9b) |
+| 2.0b | J11 honest record after a recovery: solved, not first-try, the miss in the attempts, score by the first-response gate | `/add-live-tutor-tools` · handoff 19 slice 9 | done 09-28: 224/237 checked; mutation (merge keeps the primitive's score) fails 68 |
 | 2.1 | T2: recorded packets sent to the real observer; missed credit (a stall) and false credit per family | `/add-live-tutor-tools` · handoff 19 slice 8 | open |
-| 2.2 | T3 responsiveness: after a named miss, does the reply address that pattern with no answer, fix or guessed cause? A typed JEV judgment, calibrated on hand-labelled Live lines | `/add-live-tutor-tools` · handoff 20 Part C | open |
+| 2.2 | T3 responsiveness: after a named miss, does the reply address that pattern with no answer, fix or guessed cause? A typed JEV judgment, calibrated on hand-labelled Live lines | `/add-live-tutor-tools` · handoff 20 Part C | open; RP-2 ruled 09-28 (JEV knows a wrong spoken answer from the learner's words; build in handoff 20) |
 | 2.4 | One gate command per family (T0-T3, pass/fail) | `/add-live-tutor-tools` · `LIVE_TESTING.md` | open |
 
 ## Phase 3 — Levers answer misses (CURRENT beside 1; user 09-27 reorder)
@@ -72,10 +72,11 @@ its vitest gate; Live is 1-2 runs per class, never per primitive.
 |---|---|---|---|
 | 3.0 | J9 sweep rule + S2 trigger ladder in `runtime/` (2nd wrong auto-pulls help; stuck-first = help only) | `/add-support-tiers`, `/add-live-tutor-tools` · handoff 21 S1-S2 | DONE 09-27 (replay 2/30 vs 3/20 baseline) |
 | 3.0b | Measure every math mode: payloads + sweep `leverInventory` | handoff 21 S1b | DONE 09-28: 24/319 graded modes have levers; findings NL-2, BS-3 (`/eval-fix`), CO-6, SW-1..8 (`/add-live-tutor-tools`); backend session-score ruling open |
-| 3.1 | Math by class M1-M4; vitest gate per primitive · inventory `qa/support-levers/inventory-2026-09-27/` | `/add-support-tiers` · handoff 21 | M1, M2 tap modes DONE 09-28 (`levers-M2-2026-09-28.md`). Spoken modes name misses since 1.4 (ids in `unanswered`); they still lack levers, so no class is Live-ready. Next: M1 spoken levers, regroup journey fix, then M3 |
-| 3.1b | Literacy by class L1-L4; literacy files only, no `runtime/` | `/add-support-tiers` · handoff 22 | L1 DONE (#172), L2 DONE (#173), L3 DONE for 4/5 (#174) 09-28: shared print overlay `LuminaPrintSupport`; phonics-blender inventory drafted, levers wait on a user OK; Live pair per 3.3 rule; next L4 |
+| 3.1 | Math by class; vitest gate per primitive · `qa/support-levers/reinventory-2026-09-29.md` | `/add-support-tiers` · handoff 21, **23** | M1 every mode DONE 09-29, Live-ready. M2 tap modes only (12 spoken modes open). Next: handoff 23 (M1 Live pair, M2 spoken, M2 Live pair), then M3 |
+| 3.1b | Literacy by class; literacy files only | `/add-support-tiers` · handoff 22, **24** | L1-L4 closed on measured modes; 48/93 modes unmeasured. Next: handoff 24 (measure, close K-2 gaps incl. phonics-blender, Live pairs) |
+| 3.1c | knowledge-check levers (every subject; near/far tag first) | `/add-support-tiers` · handoff **25** | open |
 | 3.2 | Lever bench misses from Live runs | row executor · `qa/lever-bench/QUEUE.md` | 12 rows |
-| 3.3 | Class E2E, 2 Live runs on `--mode mixed` (text + `--audio`). Only when every eval mode of every primitive in the class has misses and levers (user 09-28); tutor pulls unprompted, receipt before narration | `/add-live-tutor-tools` · handoff 21 | no class ready |
+| 3.3 | Class E2E, 2 Live runs on `--mode mixed` (text + `--audio`). Only when every eval mode of every primitive in the class has misses and levers (user 09-28); tutor pulls unprompted, receipt before narration | `/add-live-tutor-tools` · handoff 21 | M1 ready 09-29 (handoff 23 step 1) |
 
 ## Later (proposed, user to confirm) — misses reach the next lesson
 
@@ -87,7 +88,8 @@ levers get built. Owner `/student-data-loop` §7. Human sittings: HUMAN-CHECKS.
 
 | Ruling | Where |
 |---|---|
-| RP-2: after a wrong spoken answer, must the tutor say a plain "not yet", or may a named miss ground "not credited"? | handoff 20 Part C |
+| 19-9a: push-pull-arena `success` = passed (67% recovery now records failed)? 19-9b: per-problem records keep their own score? | handoff 19 |
+| Do DI families get in-item levers, or keep "my turn" only? | `reinventory-2026-09-29.md` |
 | Pip: DECIDE (4 sims) and DESIGN rows | `qa/pip-surface/ROLLOUT.md` |
 | TypeSafe (a)-(d): quality study, retrieval gate, hypothesis verifier, shadow in traffic | `qa/typesafe/README.md` |
 | C9 content: equation-builder tiles, pattern-builder create, strategy-picker hop; balance-scale `two_step` scoring; scratch pad; spoken evidence capture | `qa/tutor-reports/workspace-rollout-*` |

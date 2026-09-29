@@ -80,7 +80,7 @@ Build **one shared print-support overlay** in the Lumina kit, used by every cold
 - ✅ `decodable-reader` (plus `story_region` on comprehension, only after a miss) (09-28)
 - ✅ `read-aloud-studio` (09-28)
 - ✅ `interactive-book` read-focus-word (09-28)
-- ⏸ `phonics-blender`, which is bound but was **not inventoried**: inventory and lever table DRAFTED 09-28 in the class report; **levers not built, waiting on a user OK** (the skill's Phase 2 confirmation, plus one ruling: may `sound_dots` re-segment the hard tier's joined row?)
+- `phonics-blender`, bound but not inventoried: inventory and lever table DRAFTED 09-28 in the class report; **user OK 09-28 to build**, and `sound_dots` MAY re-segment the hard tier's joined row into separate sounds.
 
 Simplify levers use a shorter line, a CVC word in place of the focus word, or two choices where there were three. Each simplify item is built in code from a decodable pool and never contains the item's own words (R3).
 
@@ -103,6 +103,8 @@ Most of these levers already exist as generation flags and only need to become p
 - `story-bridge`: gesture misses are already named. Help re-reads only the anchor material; action icons on the candidates would turn comprehension into picture matching.
 - `oral-sentence-studio`: meaning pictures for the target words.
 - `picture-vocabulary`: first, **record a relation between each foil and the target** (category or sound). Today the foils are random, so a wrong tap cannot name a miss. Cues that name a category or function are safe; a first-sound cue gives away part of the answer.
+
+**L4 part 1 closed 09-28 on the free gates** ([report](../eval-reports/levers-literacy-L4-2026-09-28.md)): ✅ you-and-me · ✅ story-ribbon · ✅ word-sorter (help levers only; offered where the tier withdrew the aid). Changes from the draft: story-ribbon self-check ticks not built (needs the transcript in the component, a `runtime/` change); the easy order self-check is an open finding (contract R5); no simplify on any of the three. ✅ story-bridge 09-29: one help lever per tap mode from story one's material; spoken modes no lever by decision. ✅ picture-vocabulary 09-29: generator records each card's kind and a leak-checked clue; receptive_match misses named; `function_cue` + `two_cards_far`. ✅ oral-sentence-studio 09-29: generated meaning pictures, spoken misses from the judging contract, `sentence_strip` + `word_pictures`. **L4 closed 09-29 on the free gates** ([report](../eval-reports/levers-literacy-L4-2026-09-28.md), HUMAN-CHECKS #176). Not Live-ready: story-bridge's spoken modes and four picture-vocabulary modes have no misses or levers yet.
 
 ## Later (not this handoff)
 

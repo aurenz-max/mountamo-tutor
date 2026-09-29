@@ -94,7 +94,7 @@ Work one primitive at a time, `/add-support-tiers` end to end, and never as a wo
 
 | Class | Primitives | Notes from the draft |
 |---|---|---|
-| **M1** number manipulatives | `counting-board`, `number-bond`, `base-ten-blocks`, `place-value-chart` | Reuse ten-frame's running count, which counts only placed items, never the target, plus a smaller-total simplify. base-ten gets a trade model. place-value simplify keeps the same digit count (a number with no zero), because dropping a digit breaks R2 |
+| **M1** number manipulatives (**every mode DONE 09-29**, spoken included; `qa/eval-reports/levers-M1-spoken-2026-09-29.md`; Live-ready) | `counting-board`, `number-bond`, `base-ten-blocks`, `place-value-chart` | Reuse ten-frame's running count, which counts only placed items, never the target, plus a smaller-total simplify. base-ten gets a trade model. place-value simplify keeps the same digit count (a number with no zero), because dropping a digit breaks R2 |
 | **M2** compare and order (**tap modes DONE 09-28**, `qa/eval-reports/levers-M2-2026-09-28.md`; spoken modes open) | `comparison-builder`, `compare-objects`, `number-sequencer`, `ordinal-line` | Fix the comparison-builder leak first. `match_pairs` replaces the easy tier's live correspondence. An ordering simplify never uses a subset of the item's values (R3). Spoken modes fall back to help-first |
 | **M3** operations and facts | `addition-subtraction-scene`, `equation-builder`, `math-fact-fluency`, `bar-model`, `strategy-picker` | No timer on fact fluency. speed_round has no simplify lever. strategy-picker `compare` has no lever |
 | **M4** patterns, charts, space, money | `pattern-builder`, `hundreds-chart`, `spatial-scene`, `coin-counter`, `number-tracer`, ten-frame's other modes | hundreds-chart reuses `learnerHops`, and its simpler skip shares no cells with the item's answers |
@@ -117,7 +117,7 @@ Copy the three built primitives' test files as the pattern: `NumberLine`, `TenFr
 
 **Readiness (user ruling 2026-09-28, to manage cost):** a primitive is ready for Live only when EVERY eval mode it has, spoken modes included, has its miss function and its levers, and passes the vitest gate. One mode done is not ready. A class is ready when all its primitives are. A spoken mode waiting on `spoken_miss` (handoff 20 Part B) holds the whole class.
 
-The run uses the primitive's `mixed` eval mode, so one session crosses a variety of challenge types instead of repeating one mode. The journey row must drive every challenge type in the mixed payload; a row that throws on one (today base-ten-blocks `regroup` on the click mat) is not ready either.
+The run uses the primitive's `mixed` eval mode, so one session crosses a variety of challenge types instead of repeating one mode. The journey row must drive every challenge type in the mixed payload; a row that throws on one is not ready either (base-ten-blocks `regroup` on the click mat: fixed 09-29, payload `base-ten-blocks.mixed.json`).
 
 ```
 run_live_runtime.py --primitive <id> --mode mixed --lever --lesson-entry --runs 1
