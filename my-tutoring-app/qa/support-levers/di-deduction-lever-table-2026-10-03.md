@@ -1,6 +1,6 @@
 # di-deduction: failure inventory and lever table (2026-10-03)
 
-**DRAFT — awaiting user confirmation.** `/add-support-tiers` Phases 1-2 only. Nothing is built.
+**BUILT 2026-10-03** (rulings R1-R10 as recommended): `qa/eval-reports/di-deduction-levers-2026-10-03.md`.
 Rulings carried over (2026-10-02): DI gets in-item levers; DI's correction is a parallel-item model (a
 different item, solved, beside the learner's; never the learner's item, its answer, or one step from it);
 DI is spoken-first. Pack rulings kept (memory `project_di-deduction-pack`): the `cannot_tell` subject is

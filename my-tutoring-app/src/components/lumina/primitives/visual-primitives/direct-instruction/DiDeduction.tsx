@@ -16,13 +16,19 @@
  * cards, and its verdict word lights. Nothing the child must say is printed before they say it, which is
  * why the ledger is keyed to credited item ids. A wrong answer no longer closes a case, so there is no
  * tutor-carried conclusion to draw.
+ *
+ * LEVERS (`diDeductionLevers.ts`, DI family 8): a model card with a DIFFERENT, generated spare rule worked
+ * through each answer it has (yes, no, can't tell); an answer frame with empty boxes; the shared words of
+ * the two cards lit; and an easier can't-tell case whose lookalike is printed on a third card.
  */
 
 import React, { useMemo } from 'react';
 import type { DiDeductionMetrics, PrimitiveEvaluationResult } from '../../../evaluation/types';
-import DiTeachingStage, { diStageMetrics, type DiStageView } from './DiTeachingStage';
-import type { DeductionItem, DiDeductionData } from './diDeductionScript';
+import DiTeachingStage, { diStageMetrics, type DiStageLevers, type DiStageView } from './DiTeachingStage';
+import type { DeductionItem, DeductionRuleSpec, DiDeductionData } from './diDeductionScript';
 import { deductionAssignment, deductionItems, deductionScene } from './diDeductionWorkspace';
+import { ANSWER_FRAME, MODEL_CASE, SHARED_TERM, counterexampleFact, counterexampleFor, deductionLeverFacts, deductionLevers,
+  frameText, modelCases, modelRuleFor, sharedTerms, startingLevers } from './diDeductionLevers';
 
 export type {
   DeductionChallengeType,
@@ -44,21 +50,43 @@ const COPY = {
   heading: 'Rule Work Complete!', celebration: 'You reasoned through every case yourself.',
 };
 
-/** The rule, the case and, on a verdict case, the three spoken words as a guide. */
-function stimulus(item: DeductionItem, marks: readonly string[], view: DiStageView) {
+/** A card's text with one phrase lit (`shared_term`); the words are unchanged. */
+function Lit({ text, phrase }: { text: string; phrase?: string }) {
+  const at = phrase ? text.toLowerCase().indexOf(phrase.toLowerCase()) : -1;
+  if (at < 0) return <>{text}</>;
+  return <>{text.slice(0, at)}<mark data-lever={SHARED_TERM} className="rounded bg-amber-300/30 px-1 text-amber-100">{text.slice(at, at + phrase!.length)}</mark>{text.slice(at + phrase!.length)}</>;
+}
+
+/** The model card: a different rule, every answer it has, each with its reason. */
+function ModelCard({ spare }: { spare: DeductionRuleSpec }) {
+  return <div data-lever={MODEL_CASE} data-model-rule={spare.id} aria-label="My turn: a different rule"
+    className="space-y-1 rounded-xl border-2 border-dashed border-purple-400/70 bg-purple-500/10 px-4 py-3 text-sm text-purple-100">
+    <div className="font-semibold">🗣️ All {spare.categoryPlural} {spare.propertyPlural}.</div>
+    {modelCases(spare).map(c => <div key={c.shape} data-model-shape={c.shape}>{c.caseText} <span className="text-purple-200/80">{c.reason}</span></div>)}
+  </div>;
+}
+
+function stimulus(item: DeductionItem, marks: readonly string[], view: DiStageView, spare: DeductionRuleSpec | null) {
   const lit = view.committed.has(item.id) ? item.case.verdict : null;
   const ring = (id: string) => marks.includes(id) ? 'outline outline-2 outline-dashed outline-offset-4 outline-purple-400' : '';
-  return <div className="space-y-4">
+  const terms = view.pulled.includes(SHARED_TERM) ? sharedTerms(item) : null;
+  return <div data-practice-item={view.practice || undefined} className="space-y-4">
     <div data-deduction-object="rule" data-assignment-target="true" data-tutor-demonstration={marks.includes('rule')}
       className={`rounded-xl border border-cyan-300/30 bg-cyan-400/5 px-5 py-4 ${ring('rule')}`}>
       <div className="text-[10px] uppercase tracking-[0.3em] text-cyan-300/80">Rule</div>
-      <div className="mt-1 text-2xl font-semibold text-slate-100">{item.ruleText}</div>
+      <div className="mt-1 text-2xl font-semibold text-slate-100"><Lit text={item.ruleText} phrase={terms?.rule} /></div>
     </div>
     <div data-deduction-object="case" data-tutor-demonstration={marks.includes('case')}
       className={`rounded-xl border border-white/10 bg-white/5 px-5 py-4 ${ring('case')}`}>
       <div className="text-[10px] uppercase tracking-[0.3em] text-slate-400">Case</div>
-      <div className="mt-1 text-2xl font-semibold text-slate-100">{item.case.caseText}</div>
+      <div className="mt-1 text-2xl font-semibold text-slate-100"><Lit text={item.case.caseText} phrase={terms?.case} /></div>
     </div>
+    {/* `counterexample_card`: the practice case's lookalike, printed. One step less: given, not recalled. */}
+    {view.practice && item.shape === 'cannot_tell' && <div data-lever="counterexample_card"
+      className="rounded-xl border border-amber-300/40 bg-amber-400/5 px-5 py-3">
+      <div className="text-[10px] uppercase tracking-[0.3em] text-amber-300/80">Also true</div>
+      <div className="mt-1 text-xl font-semibold text-slate-100">{counterexampleFact(item)}</div>
+    </div>}
     {item.shape !== 'conclude' && <div className="rounded-lg border border-white/10 bg-white/[0.025] px-3 py-3" aria-label="Spoken verdict choices">
       <p className="mb-2 text-center text-xs font-medium text-slate-300">Say one, then explain using the rule</p>
       <div className="flex flex-wrap justify-center gap-2">
@@ -69,6 +97,10 @@ function stimulus(item: DeductionItem, marks: readonly string[], view: DiStageVi
         </span>)}
       </div>
     </div>}
+    {view.pulled.includes(ANSWER_FRAME) && <div data-lever={ANSWER_FRAME} className="text-center text-xl font-semibold tracking-wide text-slate-200">
+      {frameText(item)}
+    </div>}
+    {spare && view.pulled.includes(MODEL_CASE) && <ModelCard spare={spare} />}
   </div>;
 }
 
@@ -101,9 +133,17 @@ export interface DiDeductionProps {
 /** PLATFORM PROP CONTRACT: registry primitives mount as `<Component data={…} index={…} />`. */
 export const DiDeduction: React.FC<DiDeductionProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
   const items = useMemo(() => deductionItems(data), [data]);
+  const spares = useMemo(() => data.spares ?? [], [data.spares]);
+  const levers = useMemo<DiStageLevers<DeductionItem>>(() => ({
+    declare: (item, pulled) => deductionLevers(item, pulled, items, spares),
+    onScreen: (item, pulled) => deductionLeverFacts(item, pulled, items, spares),
+    starting: item => startingLevers(item, items, spares),
+    simpler: item => counterexampleFor(item, items, spares),
+  }), [items, spares]);
   return <DiTeachingStage<DeductionItem, DiDeductionMetrics> primitiveId="di-deduction" data={data}
     items={items} runtimeEvalMode={runtimeEvalMode} className={className} runtimePlanItemId={runtimePlanItemId}
-    assignment={deductionAssignment} scene={deductionScene} copy={COPY} stimulus={stimulus} trail={ledger}
+    assignment={deductionAssignment} scene={deductionScene} copy={COPY} trail={ledger} levers={levers}
+    stimulus={(item, marks, view) => stimulus(item, marks, view, view.practice ? null : modelRuleFor(item, items, spares))}
     recapLabel={recapLabel} counter={ruleCounter}
     metrics={result => {
       const cannotTell = items.filter(item => item.shape === 'cannot_tell');

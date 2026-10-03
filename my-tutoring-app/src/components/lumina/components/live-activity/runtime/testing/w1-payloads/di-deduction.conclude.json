@@ -1,52 +1,60 @@
 {
- "source": "qa/tutor-reports/di-deduction-runtime-conclude-payload-2026-09-26.json",
+ "source": "qa/tutor-reports/di-deduction-runtime-conclude-payload-2026-10-03.json",
  "primitiveId": "di-deduction",
  "evalMode": "conclude",
  "data": {
-  "title": "Solve the Secret Rule",
-  "description": "Read the rule and the clue to figure out what follows and explain how you know.",
+  "title": "Follow the Clues",
+  "description": "Use the rule to state what follows and explain how you know.",
   "challengeType": "conclude",
   "rules": [
    {
     "id": "dd-1-1",
-    "category": "insect",
-    "categoryPlural": "insects",
-    "propertyPlural": "have six legs",
-    "propertySingular": "has six legs",
-    "propertyNegated": "does not have six legs",
+    "category": "bird",
+    "categoryPlural": "birds",
+    "propertyPlural": "lay eggs",
+    "propertySingular": "lays eggs",
+    "propertyNegated": "does not lay eggs",
     "kindNoun": "animal",
     "members": [
-     "beetle",
-     "ant",
-     "bee"
+     "robin",
+     "duck",
+     "penguin"
     ],
     "nonMembers": [
-     "earthworm",
-     "snail"
+     "dog",
+     "cat"
     ],
-    "lookalikes": [],
+    "lookalikes": [
+     "turtle",
+     "crocodile",
+     "snake"
+    ],
     "shapes": [
      "conclude"
     ]
    },
    {
     "id": "dd-1-2",
-    "category": "bird",
-    "categoryPlural": "birds",
-    "propertyPlural": "have feathers",
-    "propertySingular": "has feathers",
-    "propertyNegated": "does not have feathers",
+    "category": "fish",
+    "categoryPlural": "fish",
+    "propertyPlural": "live in water",
+    "propertySingular": "lives in water",
+    "propertyNegated": "does not live in water",
     "kindNoun": "animal",
     "members": [
-     "robin",
-     "duck",
-     "owl"
+     "salmon",
+     "shark",
+     "trout"
     ],
     "nonMembers": [
-     "frog",
-     "snake"
+     "horse",
+     "rabbit"
     ],
-    "lookalikes": [],
+    "lookalikes": [
+     "whale",
+     "crab",
+     "octopus"
+    ],
     "shapes": [
      "conclude"
     ]
@@ -60,17 +68,41 @@
     "propertyNegated": "does not have hair or fur",
     "kindNoun": "animal",
     "members": [
-     "dog",
-     "cat",
-     "bear"
+     "lion",
+     "bear",
+     "mouse"
     ],
     "nonMembers": [
-     "fish",
-     "turtle"
+     "frog",
+     "lizard"
     ],
     "lookalikes": [],
     "shapes": [
      "conclude"
+    ]
+   }
+  ],
+  "spares": [
+   {
+    "id": "dd-1-6",
+    "category": "marsupial",
+    "categoryPlural": "marsupials",
+    "propertyPlural": "carry young in a pouch",
+    "propertySingular": "carries young in a pouch",
+    "propertyNegated": "does not carry young in a pouch",
+    "kindNoun": "animal",
+    "members": [
+     "kangaroo",
+     "koala",
+     "opossum"
+    ],
+    "nonMembers": [
+     "wolf",
+     "deer"
+    ],
+    "lookalikes": [
+     "seahorse",
+     "pipefish"
     ]
    }
   ],

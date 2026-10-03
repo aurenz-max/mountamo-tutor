@@ -96,7 +96,11 @@ export function deductionScene(item: DeductionItem): WorkspaceScene {
       { id: 'rule', selected: false, group: 'assignment target', label: `the rule card: "${item.ruleText}"` },
       { id: 'case', selected: false, group: 'assignment target', label: `the case card: "${item.case.caseText}"` },
     ],
-    facts: { kind: item.shape, ...(item.supportTier ? { supportTier: item.supportTier } : {}),
+    facts: { kind: item.shape,
+      // DI's model is a DIFFERENT rule, never this case (ruling 2026-10-02): easy (or no tier) starts with its card.
+      support: item.supportTier === 'hard' ? 'answer it cold: model nothing before the learner answers, and never state this conclusion'
+        : item.supportTier === 'medium' ? 'the learner tries first; after a miss, model a different rule with the model_case lever, never this case'
+          : 'the model card of a different rule starts on screen: say every case of it as your turn, then ask this case. Never reason this case',
       caseOfRule: `case ${item.caseIndex + 1} of this rule`,
       constraints: item.shape === 'conclude'
         ? 'The learner says aloud what the rule tells them about the case. Only the rule counts, not what they already know.'

@@ -1,10 +1,10 @@
 {
- "source": "qa/tutor-reports/di-deduction-runtime-deny-payload-2026-09-26.json",
+ "source": "qa/tutor-reports/di-deduction-runtime-deny-payload-2026-10-03.json",
  "primitiveId": "di-deduction",
  "evalMode": "deny",
  "data": {
-  "title": "Follow the Magic Rule",
-  "description": "You will use a special rule to figure out what follows and explain how you know.",
+  "title": "Follow the Clues",
+  "description": "Use the rule to state what follows and explain how you know.",
   "challengeType": "deny",
   "rules": [
    {
@@ -17,13 +17,11 @@
     "kindNoun": "animal",
     "members": [
      "ant",
-     "bee",
-     "fly"
+     "bee"
     ],
     "nonMembers": [
-     "dog",
-     "fish",
-     "frog"
+     "worm",
+     "slug"
     ],
     "lookalikes": [],
     "shapes": [
@@ -40,13 +38,11 @@
     "kindNoun": "animal",
     "members": [
      "robin",
-     "duck",
-     "owl"
+     "hawk"
     ],
     "nonMembers": [
-     "cat",
-     "snake",
-     "frog"
+     "frog",
+     "snake"
     ],
     "lookalikes": [],
     "shapes": [
@@ -54,26 +50,47 @@
     ]
    },
    {
-    "id": "dd-1-3",
-    "category": "mammal",
-    "categoryPlural": "mammals",
-    "propertyPlural": "have hair or fur",
-    "propertySingular": "has hair or fur",
-    "propertyNegated": "does not have hair or fur",
+    "id": "dd-1-4",
+    "category": "reptile",
+    "categoryPlural": "reptiles",
+    "propertyPlural": "have dry scales",
+    "propertySingular": "has dry scales",
+    "propertyNegated": "does not have dry scales",
     "kindNoun": "animal",
     "members": [
-     "lion",
-     "bear",
-     "whale"
+     "lizard",
+     "snake"
     ],
     "nonMembers": [
-     "frog",
-     "robin",
-     "shark"
+     "mouse",
+     "robin"
     ],
     "lookalikes": [],
     "shapes": [
      "deny"
+    ]
+   }
+  ],
+  "spares": [
+   {
+    "id": "dd-1-6",
+    "category": "fish",
+    "categoryPlural": "fish",
+    "propertyPlural": "live in water",
+    "propertySingular": "lives in water",
+    "propertyNegated": "does not live in water",
+    "kindNoun": "animal",
+    "members": [
+     "shark",
+     "trout"
+    ],
+    "nonMembers": [
+     "horse",
+     "dog"
+    ],
+    "lookalikes": [
+     "whale",
+     "dolphin"
     ]
    }
   ],

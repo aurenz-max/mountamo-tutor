@@ -58,19 +58,14 @@ export const DI_CATALOG: ComponentDefinition[] = [
     id: 'di-letter-sounds',
     teachingWorkspace: {
       grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'The gold-ringed card is the stimulus for the current question; a picture of its keyword is drawn on an '
-        + 'onset item, and on a letter item only as the keyword_picture lever. '
-        + 'The child answers OUT LOUD in every mode. '
-        + `A letter's NAME is not its sound, and naming the keyword picture is a step toward a held sound rather than `
-        + 'the sound itself. A short vowel or a stop also accepts its keyword or another word starting with that sound; '
-        + 'a stop is released once, and a small "uh" after it counts. '
-        + `Never say this item's sound, or route it through its picture, before the child tries: your model is the `
+      guidance: 'The gold-ringed card is the stimulus. Its keyword picture is drawn on an onset item, and on a letter item '
+        + 'only as the keyword_picture lever. The child answers OUT LOUD. '
+        + `A letter's NAME is not its sound; naming the picture is a step toward a held sound, not the sound. A short `
+        + 'vowel or a stop also accepts its keyword or a word starting with the sound; a small "uh" after a stop counts. '
+        + `Never say this item's sound or route it through its picture before the child tries: your model is the `
         + 'model_sound lever, a DIFFERENT letter beside it. The support fact says where levers start. '
-        + 'Your completed feedback is the only record that they produced it, since a sound cannot be read off a '
-        + 'transcript. '
-        + 'Use demonstrate with the targets "stimulus" or "picture" to mark the card or the picture you are discussing, '
-        + 'and [] to clear them. There is no other scene action: you cannot change the letter, replace the picture, '
-        + 'write, or answer for the child.',
+        + 'Your feedback is the only record of the sound. demonstrate takes "stimulus" or "picture"; [] clears. '
+        + 'You cannot change the letter or the picture, write, or answer for the child.',
       // The spoken sound's known wrong answers (`diLetterSoundSpokenMisses`).
       levers: true,
       // `last_sound` needs the printed word, so it is named on first_sound_in_word only.
@@ -594,15 +589,13 @@ export const DI_CATALOG: ComponentDefinition[] = [
     supportsEvaluation: true,
     teachingWorkspace: {
       grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
-      guidance: 'The stage draws one flat shape, or a familiar object drawn in code. The child answers OUT LOUD: the '
-        + 'shape name, or on the counting modes how many sides or corners. A close but different name (square for a '
-        + 'rectangle, circle for an oval) is wrong; a named alternate you are given counts. On the counting modes '
-        + 'never say the shape name, because it gives the count away. On real objects the object is named but the '
-        + 'shape in it is the answer. Never say the answer before the child tries, and never model this shape or its '
-        + 'count: your model is the model lever, a DIFFERENT shape solved beside it. The support fact says where levers '
-        + 'start. On a naming item never describe the shape (its sides, corners, roundness) and never offer a choice of '
-        + 'names: either one hands over the answer. If the learner is stuck and the model is already on screen, say the '
-        + 'model again as your turn, then ask again. You cannot draw, rotate or resize the shape.',
+      guidance: 'The stage draws one flat shape, or a familiar object. The child answers OUT LOUD: the shape name, or '
+        + 'how many sides or corners. A close but different name (square for a rectangle) is wrong; a named alternate '
+        + 'counts. On counting items never say the shape name: it gives the count away. On real objects the shape in '
+        + 'the object is the answer. Never say the answer before the child tries or model this shape or its count: your '
+        + 'model is the model lever, a DIFFERENT shape beside it. The support fact says where levers start. On a naming '
+        + 'item never describe the shape or offer a choice of names. Stuck with the model on screen: say the model '
+        + 'again, then ask. You cannot draw, rotate or resize the shape.',
       levers: true,
       // Every item is spoken: its known wrong answers (`shapesSpokenMisses`, shape-sorter's ids), named by the `spoken_miss` observer.
       misses: missLists<SpokenShapeMiss>({
@@ -1024,15 +1017,13 @@ export const DI_CATALOG: ComponentDefinition[] = [
     supportsEvaluation: true,
     teachingWorkspace: {
       grades: ['Grade 2', 'Grade 3', 'Grade 4'],
-      guidance: 'One subtraction is printed in columns with the current column ringed. The child works it OUT LOUD one '
-        + 'step at a time: what they do in the ringed column, then after a regroup the difference. The page writes a '
-        + 'step only once it is credited, so the child reads the digits and says the numbers; the answer is never '
-        + 'printed. A regroup counts only with both new numbers; the upside-down column is the common miss. After a '
-        + 'lend the crossed-out digit is no longer the top. Never say a column\'s numbers before the child tries, and '
-        + 'never work this problem for them: your model is the model_problem lever, a DIFFERENT problem worked beside it. '
-        + 'On a decide step never read the ringed column\'s digits as a question ("can you take eight from three?"): '
-        + 'whether the top is enough IS the decision. '
-        + 'The support fact says where levers start. You cannot write on the problem or change it.',
+      guidance: 'One subtraction is printed in columns, the current column ringed. The child works it OUT LOUD one '
+        + 'step at a time: the move in the ringed column, then after a regroup the difference. The page writes a step '
+        + 'only once credited; the answer is never printed. A regroup counts only with both new numbers. After a lend '
+        + 'the crossed-out digit is no longer the top. Never say a column\'s numbers before the child tries, and never '
+        + 'work this problem: your model is the model_problem lever, a DIFFERENT problem worked beside it. On a decide '
+        + 'step never ask whether the top is enough ("can you take eight from three?"): that IS the decision. The '
+        + 'support fact says where levers start. You cannot write on the problem or change it.',
       levers: true,
       // Every step is spoken: its known wrong answers (`workedProcedureSpokenMisses`), named by the `spoken_miss` observer.
       misses: missLists<SpokenProcedureMiss>({
@@ -1154,11 +1145,13 @@ export const DI_CATALOG: ComponentDefinition[] = [
     teachingWorkspace: {
       grades: ['Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
       guidance: 'A rule card and a case card are printed. The child says aloud what the rule tells them about the case, '
-        + 'using only the rule, not what they already know. On a verdict case they say yes, no, or can\'t tell AND the '
-        + 'reason from the rule: a right verdict with no reason is not yet the answer, so ask how they know. The rule does '
-        + 'not run backwards: having the property does not make something a member, and the key names the thing that '
-        + 'shows it. Never state the conclusion before the child tries, and never reason this case for them: a model is always a '
-        + 'DIFFERENT rule. You cannot change the rule or the case.',
+        + 'using only the rule. On a verdict case they say yes, no, or can\'t tell AND the reason from the rule: a '
+        + 'right verdict with no reason is not yet the answer, so ask how they know. The rule does not run backwards. '
+        + 'Never state the conclusion before the child tries, and never reason this case: your model is the model_case '
+        + 'lever, a DIFFERENT rule worked through every answer. The support fact says where levers start. On a '
+        + 'can\'t-tell case never say what the rule does not say about THIS category ("not only birds…") or name '
+        + 'another thing with its property: that is the reason the child must give. You cannot change the cards.',
+      levers: true,
       // Every case is spoken: its known wrong answers (`deductionSpokenMisses`), named by the `spoken_miss` observer.
       misses: missLists<SpokenDeductionMiss>({
         conclude: ['said_negation', 'read_rule_back', 'read_case_back'],

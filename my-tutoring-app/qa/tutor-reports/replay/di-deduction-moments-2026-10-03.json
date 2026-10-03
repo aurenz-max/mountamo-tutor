@@ -1,0 +1,3467 @@
+{
+ "lessonEntry": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+ "records": [
+  {
+   "payload": "di-deduction.cannot_tell",
+   "primitiveId": "di-deduction",
+   "evalMode": "cannot_tell",
+   "guidance": "A rule card and a case card are printed. The child says aloud what the rule tells them about the case, using only the rule, not what they already know. On a verdict case they say yes, no, or can't tell AND the reason from the rule: a right verdict with no reason is not yet the answer, so ask how they know. The rule does not run backwards: having the property does not make something a member, and the key names the thing that shows it. Never state the conclusion before the child tries, and never reason this case for them: your model is the model_case lever, a DIFFERENT rule worked through every answer. The support fact says where levers start. You cannot change the rule or the case. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Using a rule about animal groups to decide what follows",
+   "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding.",
+   "leakTokens": [
+    "DD_ITEM",
+    "DD_MOVE_ON",
+    "DD_COMPLETE",
+    "DD_HEAR"
+   ],
+   "ask": "Is this animal a bird? Say yes, no, or can't tell—then explain using the rule.",
+   "keys": [
+    "can't tell (\"maybe\", \"not sure\", \"the rule doesn't say\"), with the reason: the rule does not say only birds lay eggs; other things do too (a turtle lays eggs and is not a bird). \"no, because other things lay eggs too\" carries that reason and counts. \"yes, because it lays eggs\" is the signature error: the rule does not run backwards. can't tell with no reason is not yet the answer.",
+    "can't tell, because the rule does not say only birds lay eggs"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dd-1-1-c0-cannot_tell",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-deduction",
+      "objectiveId": "di-deduction-practice",
+      "evalMode": "cannot_tell",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dd-1-1-c0-cannot_tell",
+       "phase": "working",
+       "task": "Is this animal a bird? Say yes, no, or can't tell—then explain using the rule.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "cannot_tell",
+        "support": "the model card of a different rule starts on screen: say every case of it as your turn, then ask this case. Never reason this case",
+        "caseOfRule": "case 1 of this rule",
+        "constraints": "The learner says yes, no, or can't tell aloud, then the reason from the rule. The three words are printed as a guide; none is lit until an answer is credited. Only the rule counts, not what they already know.",
+        "onScreen": "Beside the cards, a model card shows a different rule, \"All marsupials carry babies in pouches.\", worked through: A kangaroo is a marsupial. A kangaroo is a marsupial, and all marsupials carry babies in pouches. A duck does not carry babies in a pouch. No: all marsupials carry babies in pouches, and a duck does not carry babies in a pouch. This animal carries babies in a pouch. Can't tell: a seahorse carries babies in a pouch too, and it is not a marsupial. It is not this rule.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "rule",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the rule card: \"All birds lay eggs.\""
+         },
+         {
+          "id": "case",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the case card: \"This animal lays eggs.\""
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_case",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "backwards_yes",
+           "said_not_member",
+           "verdict_without_reason"
+          ],
+          "when": "The learner gives a wrong verdict or no reason, answers from what they know, or does not know how to start.",
+          "does": "Shows a card with a DIFFERENT rule worked through each answer it has (yes, no, and can't tell), each with its reason (onScreen gives them). Say ALL of them as your turn, in order, never only the one like the learner's case. Then ask the learner's case again. Never apply the model to their rule, and never name a lookalike of their rule."
+         },
+         {
+          "id": "answer_frame",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "verdict_without_reason"
+          ],
+          "when": "The learner gives a verdict with no reason.",
+          "does": "Prints \"___ because ___\" under the verdict words: a verdict and a reason. Read the frame; never fill a box or light a word."
+         },
+         {
+          "id": "counterexample_card",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "backwards_yes",
+           "said_not_member"
+          ],
+          "when": "The learner runs the rule backwards, or says no.",
+          "does": "Opens an easier case first, on a different rule, with a third card that prints its lookalike. It is not graded; the full case comes back after it."
+         }
+        ],
+        "expectedAnswer": "Can't tell (\"maybe\", \"not sure\", \"the rule doesn't say\"), WITH the reason: the rule does not say only birds lay eggs; other things do too (a turtle lays eggs and is not a bird). \"No, because other things lay eggs too\" carries that reason and counts. \"Yes, because it lays eggs\" is the signature error: the rule does not run backwards. Can't tell with no reason is not yet the answer.",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dd-1-1-c0-cannot_tell",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "dd-1-1-c0-cannot_tell",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-deduction",
+      "objectiveId": "di-deduction-practice",
+      "evalMode": "cannot_tell",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dd-1-1-c0-cannot_tell",
+       "phase": "working",
+       "task": "Is this animal a bird? Say yes, no, or can't tell—then explain using the rule.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "cannot_tell",
+        "support": "the model card of a different rule starts on screen: say every case of it as your turn, then ask this case. Never reason this case",
+        "caseOfRule": "case 1 of this rule",
+        "constraints": "The learner says yes, no, or can't tell aloud, then the reason from the rule. The three words are printed as a guide; none is lit until an answer is credited. Only the rule counts, not what they already know.",
+        "onScreen": "Beside the cards, a model card shows a different rule, \"All marsupials carry babies in pouches.\", worked through: A kangaroo is a marsupial. A kangaroo is a marsupial, and all marsupials carry babies in pouches. A duck does not carry babies in a pouch. No: all marsupials carry babies in pouches, and a duck does not carry babies in a pouch. This animal carries babies in a pouch. Can't tell: a seahorse carries babies in a pouch too, and it is not a marsupial. It is not this rule.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "rule",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the rule card: \"All birds lay eggs.\""
+         },
+         {
+          "id": "case",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the case card: \"This animal lays eggs.\""
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_case",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "backwards_yes",
+           "said_not_member",
+           "verdict_without_reason"
+          ],
+          "when": "The learner gives a wrong verdict or no reason, answers from what they know, or does not know how to start.",
+          "does": "Shows a card with a DIFFERENT rule worked through each answer it has (yes, no, and can't tell), each with its reason (onScreen gives them). Say ALL of them as your turn, in order, never only the one like the learner's case. Then ask the learner's case again. Never apply the model to their rule, and never name a lookalike of their rule."
+         },
+         {
+          "id": "answer_frame",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "verdict_without_reason"
+          ],
+          "when": "The learner gives a verdict with no reason.",
+          "does": "Prints \"___ because ___\" under the verdict words: a verdict and a reason. Read the frame; never fill a box or light a word."
+         },
+         {
+          "id": "counterexample_card",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "backwards_yes",
+           "said_not_member"
+          ],
+          "when": "The learner runs the rule backwards, or says no.",
+          "does": "Opens an easier case first, on a different rule, with a third card that prints its lookalike. It is not graded; the full case comes back after it."
+         }
+        ],
+        "expectedAnswer": "Can't tell (\"maybe\", \"not sure\", \"the rule doesn't say\"), WITH the reason: the rule does not say only birds lay eggs; other things do too (a turtle lays eggs and is not a bird). \"No, because other things lay eggs too\" carries that reason and counts. \"Yes, because it lays eggs\" is the signature error: the rule does not run backwards. Can't tell with no reason is not yet the answer.",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "yes, because it lays eggs"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dd-1-1-c0-cannot_tell",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "yes, because it lays eggs",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dd-1-1-c0-cannot_tell",
+       "revision": 1
+      },
+      "task": "Is this animal a bird? Say yes, no, or can't tell—then explain using the rule.",
+      "phase": "working",
+      "learner": "yes, because it lays eggs",
+      "expectedAnswer": "Can't tell (\"maybe\", \"not sure\", \"the rule doesn't say\"), WITH the reason: the rule does not say only birds lay eggs; other things do too (a turtle lays eggs and is not a bird). \"No, because other things lay eggs too\" carries that reason and counts. \"Yes, because it lays eggs\" is the signature error: the rule does not run backwards. Can't tell with no reason is not yet the answer.",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "yes, because it lays eggs"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [
+        {
+         "id": "rule",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the rule card: \"All birds lay eggs.\""
+        },
+        {
+         "id": "case",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the case card: \"This animal lays eggs.\""
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "cannot_tell",
+        "support": "the model card of a different rule starts on screen: say every case of it as your turn, then ask this case. Never reason this case",
+        "caseOfRule": "case 1 of this rule",
+        "constraints": "The learner says yes, no, or can't tell aloud, then the reason from the rule. The three words are printed as a guide; none is lit until an answer is credited. Only the rule counts, not what they already know.",
+        "onScreen": "Beside the cards, a model card shows a different rule, \"All marsupials carry babies in pouches.\", worked through: A kangaroo is a marsupial. A kangaroo is a marsupial, and all marsupials carry babies in pouches. A duck does not carry babies in a pouch. No: all marsupials carry babies in pouches, and a duck does not carry babies in a pouch. This animal carries babies in a pouch. Can't tell: a seahorse carries babies in a pouch too, and it is not a marsupial. It is not this rule.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dd-1-1-c0-cannot_tell"
+      },
+      "task": "Is this animal a bird? Say yes, no, or can't tell—then explain using the rule.",
+      "expectedAnswer": "Can't tell (\"maybe\", \"not sure\", \"the rule doesn't say\"), WITH the reason: the rule does not say only birds lay eggs; other things do too (a turtle lays eggs and is not a bird). \"No, because other things lay eggs too\" carries that reason and counts. \"Yes, because it lays eggs\" is the signature error: the rule does not run backwards. Can't tell with no reason is not yet the answer.",
+      "learner": "yes, because it lays eggs",
+      "misses": [
+       {
+        "id": "backwards_yes",
+        "pattern": "The rule is \"All birds lay eggs.\" The case is \"This animal lays eggs.\" The rule does not say only birds lay eggs. The learner's verdict is yes, that it is a bird because it lays eggs.",
+        "examples": [
+         "yes, because it lays eggs"
+        ]
+       },
+       {
+        "id": "said_not_member",
+        "pattern": "The rule is \"All birds lay eggs.\" The case is \"This animal lays eggs.\" The rule does not say only birds lay eggs. The learner's verdict is no, it is not a bird, with no reason about other things that lay eggs.",
+        "examples": [
+         "no, it is not a bird"
+        ]
+       },
+       {
+        "id": "verdict_without_reason",
+        "pattern": "The rule is \"All birds lay eggs.\" The case is \"This animal lays eggs.\" The learner says only can't tell (or maybe), with no reason from the rule.",
+        "examples": [
+         "can't tell"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dd-1-1-c0-cannot_tell",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-deduction",
+      "objectiveId": "di-deduction-practice",
+      "evalMode": "cannot_tell",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dd-1-1-c0-cannot_tell",
+       "phase": "working",
+       "task": "Is this animal a bird? Say yes, no, or can't tell—then explain using the rule.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "yes, because it lays eggs",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "cannot_tell",
+        "support": "the model card of a different rule starts on screen: say every case of it as your turn, then ask this case. Never reason this case",
+        "caseOfRule": "case 1 of this rule",
+        "constraints": "The learner says yes, no, or can't tell aloud, then the reason from the rule. The three words are printed as a guide; none is lit until an answer is credited. Only the rule counts, not what they already know.",
+        "onScreen": "Beside the cards, a model card shows a different rule, \"All marsupials carry babies in pouches.\", worked through: A kangaroo is a marsupial. A kangaroo is a marsupial, and all marsupials carry babies in pouches. A duck does not carry babies in a pouch. No: all marsupials carry babies in pouches, and a duck does not carry babies in a pouch. This animal carries babies in a pouch. Can't tell: a seahorse carries babies in a pouch too, and it is not a marsupial. It is not this rule.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "rule",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the rule card: \"All birds lay eggs.\""
+         },
+         {
+          "id": "case",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the case card: \"This animal lays eggs.\""
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_case",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "backwards_yes",
+           "said_not_member",
+           "verdict_without_reason"
+          ],
+          "when": "The learner gives a wrong verdict or no reason, answers from what they know, or does not know how to start.",
+          "does": "Shows a card with a DIFFERENT rule worked through each answer it has (yes, no, and can't tell), each with its reason (onScreen gives them). Say ALL of them as your turn, in order, never only the one like the learner's case. Then ask the learner's case again. Never apply the model to their rule, and never name a lookalike of their rule."
+         },
+         {
+          "id": "answer_frame",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "verdict_without_reason"
+          ],
+          "when": "The learner gives a verdict with no reason.",
+          "does": "Prints \"___ because ___\" under the verdict words: a verdict and a reason. Read the frame; never fill a box or light a word."
+         },
+         {
+          "id": "counterexample_card",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "backwards_yes",
+           "said_not_member"
+          ],
+          "when": "The learner runs the rule backwards, or says no.",
+          "does": "Opens an easier case first, on a different rule, with a third card that prints its lookalike. It is not graded; the full case comes back after it."
+         }
+        ],
+        "expectedAnswer": "Can't tell (\"maybe\", \"not sure\", \"the rule doesn't say\"), WITH the reason: the rule does not say only birds lay eggs; other things do too (a turtle lays eggs and is not a bird). \"No, because other things lay eggs too\" carries that reason and counts. \"Yes, because it lays eggs\" is the signature error: the rule does not run backwards. Can't tell with no reason is not yet the answer.",
+        "lastResponse": {
+         "itemId": "dd-1-1-c0-cannot_tell",
+         "response": "yes, because it lays eggs",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dd-1-1-c0-cannot_tell",
+          "response": "yes, because it lays eggs",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/2/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dd-1-1-c0-cannot_tell",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "dd-1-1-c0-cannot_tell",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-deduction",
+      "objectiveId": "di-deduction-practice",
+      "evalMode": "cannot_tell",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dd-1-1-c0-cannot_tell",
+       "phase": "working",
+       "task": "Is this animal a bird? Say yes, no, or can't tell—then explain using the rule.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "yes, because it lays eggs",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "cannot_tell",
+        "support": "the model card of a different rule starts on screen: say every case of it as your turn, then ask this case. Never reason this case",
+        "caseOfRule": "case 1 of this rule",
+        "constraints": "The learner says yes, no, or can't tell aloud, then the reason from the rule. The three words are printed as a guide; none is lit until an answer is credited. Only the rule counts, not what they already know.",
+        "onScreen": "Beside the cards, a model card shows a different rule, \"All marsupials carry babies in pouches.\", worked through: A kangaroo is a marsupial. A kangaroo is a marsupial, and all marsupials carry babies in pouches. A duck does not carry babies in a pouch. No: all marsupials carry babies in pouches, and a duck does not carry babies in a pouch. This animal carries babies in a pouch. Can't tell: a seahorse carries babies in a pouch too, and it is not a marsupial. It is not this rule. Under the cards a frame is printed: \"___ because ___\", with empty boxes.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "rule",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the rule card: \"All birds lay eggs.\""
+         },
+         {
+          "id": "case",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the case card: \"This animal lays eggs.\""
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_case",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "backwards_yes",
+           "said_not_member",
+           "verdict_without_reason"
+          ],
+          "when": "The learner gives a wrong verdict or no reason, answers from what they know, or does not know how to start.",
+          "does": "Shows a card with a DIFFERENT rule worked through each answer it has (yes, no, and can't tell), each with its reason (onScreen gives them). Say ALL of them as your turn, in order, never only the one like the learner's case. Then ask the learner's case again. Never apply the model to their rule, and never name a lookalike of their rule."
+         },
+         {
+          "id": "answer_frame",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "verdict_without_reason"
+          ],
+          "when": "The learner gives a verdict with no reason.",
+          "does": "Prints \"___ because ___\" under the verdict words: a verdict and a reason. Read the frame; never fill a box or light a word."
+         },
+         {
+          "id": "counterexample_card",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "backwards_yes",
+           "said_not_member"
+          ],
+          "when": "The learner runs the rule backwards, or says no.",
+          "does": "Opens an easier case first, on a different rule, with a third card that prints its lookalike. It is not graded; the full case comes back after it."
+         }
+        ],
+        "expectedAnswer": "Can't tell (\"maybe\", \"not sure\", \"the rule doesn't say\"), WITH the reason: the rule does not say only birds lay eggs; other things do too (a turtle lays eggs and is not a bird). \"No, because other things lay eggs too\" carries that reason and counts. \"Yes, because it lays eggs\" is the signature error: the rule does not run backwards. Can't tell with no reason is not yet the answer.",
+        "lastResponse": {
+         "itemId": "dd-1-1-c0-cannot_tell",
+         "response": "yes, because it lays eggs",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dd-1-1-c0-cannot_tell",
+          "response": "yes, because it lays eggs",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "dd-1-1-c0-cannot_tell",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "answer_frame"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dd-1-1-c0-cannot_tell",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled answer_frame (help). It is on screen now: Prints \"___ because ___\" under the verdict words: a verdict and a reason. Read the frame; never fill a box or light a word. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "answer_frame",
+      "kind": "help",
+      "does": "Prints \"___ because ___\" under the verdict words: a verdict and a reason. Read the frame; never fill a box or light a word."
+     }
+    },
+    {
+     "kind": "credit",
+     "itemId": "dd-1-1-c0-cannot_tell",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-deduction",
+      "objectiveId": "di-deduction-practice",
+      "evalMode": "cannot_tell",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dd-1-1-c0-cannot_tell",
+       "phase": "working",
+       "task": "Is this animal a bird? Say yes, no, or can't tell—then explain using the rule.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "yes, because it lays eggs",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "cannot_tell",
+        "support": "the model card of a different rule starts on screen: say every case of it as your turn, then ask this case. Never reason this case",
+        "caseOfRule": "case 1 of this rule",
+        "constraints": "The learner says yes, no, or can't tell aloud, then the reason from the rule. The three words are printed as a guide; none is lit until an answer is credited. Only the rule counts, not what they already know.",
+        "onScreen": "Beside the cards, a model card shows a different rule, \"All marsupials carry babies in pouches.\", worked through: A kangaroo is a marsupial. A kangaroo is a marsupial, and all marsupials carry babies in pouches. A duck does not carry babies in a pouch. No: all marsupials carry babies in pouches, and a duck does not carry babies in a pouch. This animal carries babies in a pouch. Can't tell: a seahorse carries babies in a pouch too, and it is not a marsupial. It is not this rule. Under the cards a frame is printed: \"___ because ___\", with empty boxes.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "rule",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the rule card: \"All birds lay eggs.\""
+         },
+         {
+          "id": "case",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the case card: \"This animal lays eggs.\""
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_case",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "backwards_yes",
+           "said_not_member",
+           "verdict_without_reason"
+          ],
+          "when": "The learner gives a wrong verdict or no reason, answers from what they know, or does not know how to start.",
+          "does": "Shows a card with a DIFFERENT rule worked through each answer it has (yes, no, and can't tell), each with its reason (onScreen gives them). Say ALL of them as your turn, in order, never only the one like the learner's case. Then ask the learner's case again. Never apply the model to their rule, and never name a lookalike of their rule."
+         },
+         {
+          "id": "answer_frame",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "verdict_without_reason"
+          ],
+          "when": "The learner gives a verdict with no reason.",
+          "does": "Prints \"___ because ___\" under the verdict words: a verdict and a reason. Read the frame; never fill a box or light a word."
+         },
+         {
+          "id": "counterexample_card",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "backwards_yes",
+           "said_not_member"
+          ],
+          "when": "The learner runs the rule backwards, or says no.",
+          "does": "Opens an easier case first, on a different rule, with a third card that prints its lookalike. It is not graded; the full case comes back after it."
+         }
+        ],
+        "expectedAnswer": "Can't tell (\"maybe\", \"not sure\", \"the rule doesn't say\"), WITH the reason: the rule does not say only birds lay eggs; other things do too (a turtle lays eggs and is not a bird). \"No, because other things lay eggs too\" carries that reason and counts. \"Yes, because it lays eggs\" is the signature error: the rule does not run backwards. Can't tell with no reason is not yet the answer.",
+        "pendingResponse": {
+         "id": "speech:1:2",
+         "text": "can't tell, because the rule does not say only birds lay eggs"
+        },
+        "lastResponse": {
+         "itemId": "dd-1-1-c0-cannot_tell",
+         "response": "yes, because it lays eggs",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dd-1-1-c0-cannot_tell",
+          "response": "yes, because it lays eggs",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "dd-1-1-c0-cannot_tell",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "answer_frame"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dd-1-1-c0-cannot_tell",
+        "secondsOnItem": 20,
+        "secondsSinceReady": 20,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "can't tell, because the rule does not say only birds lay eggs",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dd-1-1-c0-cannot_tell",
+       "revision": 3
+      },
+      "task": "Is this animal a bird? Say yes, no, or can't tell—then explain using the rule.",
+      "phase": "working",
+      "learner": "can't tell, because the rule does not say only birds lay eggs",
+      "expectedAnswer": "Can't tell (\"maybe\", \"not sure\", \"the rule doesn't say\"), WITH the reason: the rule does not say only birds lay eggs; other things do too (a turtle lays eggs and is not a bird). \"No, because other things lay eggs too\" carries that reason and counts. \"Yes, because it lays eggs\" is the signature error: the rule does not run backwards. Can't tell with no reason is not yet the answer.",
+      "pendingResponse": {
+       "id": "speech:1:2",
+       "text": "can't tell, because the rule does not say only birds lay eggs"
+      },
+      "lastResponse": {
+       "itemId": "dd-1-1-c0-cannot_tell",
+       "response": "yes, because it lays eggs",
+       "source": "speech",
+       "correct": false,
+       "tutorResponse": "Not quite.",
+       "judgment": "tutor",
+       "assisted": false,
+       "answerExposure": "none"
+      },
+      "activity": {
+       "responseSource": "speech",
+       "attemptNumber": 1,
+       "objects": [
+        {
+         "id": "rule",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the rule card: \"All birds lay eggs.\""
+        },
+        {
+         "id": "case",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the case card: \"This animal lays eggs.\""
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "cannot_tell",
+        "support": "the model card of a different rule starts on screen: say every case of it as your turn, then ask this case. Never reason this case",
+        "caseOfRule": "case 1 of this rule",
+        "constraints": "The learner says yes, no, or can't tell aloud, then the reason from the rule. The three words are printed as a guide; none is lit until an answer is credited. Only the rule counts, not what they already know.",
+        "onScreen": "Beside the cards, a model card shows a different rule, \"All marsupials carry babies in pouches.\", worked through: A kangaroo is a marsupial. A kangaroo is a marsupial, and all marsupials carry babies in pouches. A duck does not carry babies in a pouch. No: all marsupials carry babies in pouches, and a duck does not carry babies in a pouch. This animal carries babies in a pouch. Can't tell: a seahorse carries babies in a pouch too, and it is not a marsupial. It is not this rule. Under the cards a frame is printed: \"___ because ___\", with empty boxes.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 2,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dd-1-1-c0-cannot_tell"
+      },
+      "task": "Is this animal a bird? Say yes, no, or can't tell—then explain using the rule.",
+      "expectedAnswer": "Can't tell (\"maybe\", \"not sure\", \"the rule doesn't say\"), WITH the reason: the rule does not say only birds lay eggs; other things do too (a turtle lays eggs and is not a bird). \"No, because other things lay eggs too\" carries that reason and counts. \"Yes, because it lays eggs\" is the signature error: the rule does not run backwards. Can't tell with no reason is not yet the answer.",
+      "learner": "can't tell, because the rule does not say only birds lay eggs",
+      "misses": [
+       {
+        "id": "backwards_yes",
+        "pattern": "The rule is \"All birds lay eggs.\" The case is \"This animal lays eggs.\" The rule does not say only birds lay eggs. The learner's verdict is yes, that it is a bird because it lays eggs.",
+        "examples": [
+         "yes, because it lays eggs"
+        ]
+       },
+       {
+        "id": "said_not_member",
+        "pattern": "The rule is \"All birds lay eggs.\" The case is \"This animal lays eggs.\" The rule does not say only birds lay eggs. The learner's verdict is no, it is not a bird, with no reason about other things that lay eggs.",
+        "examples": [
+         "no, it is not a bird"
+        ]
+       },
+       {
+        "id": "verdict_without_reason",
+        "pattern": "The rule is \"All birds lay eggs.\" The case is \"This animal lays eggs.\" The learner says only can't tell (or maybe), with no reason from the rule.",
+        "examples": [
+         "can't tell"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    }
+   ]
+  },
+  {
+   "payload": "di-deduction.conclude",
+   "primitiveId": "di-deduction",
+   "evalMode": "conclude",
+   "guidance": "A rule card and a case card are printed. The child says aloud what the rule tells them about the case, using only the rule, not what they already know. On a verdict case they say yes, no, or can't tell AND the reason from the rule: a right verdict with no reason is not yet the answer, so ask how they know. The rule does not run backwards: having the property does not make something a member, and the key names the thing that shows it. Never state the conclusion before the child tries, and never reason this case for them: your model is the model_case lever, a DIFFERENT rule worked through every answer. The support fact says where levers start. You cannot change the rule or the case. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Using a rule about animal groups to decide what follows",
+   "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding.",
+   "leakTokens": [
+    "DD_ITEM",
+    "DD_MOVE_ON",
+    "DD_COMPLETE",
+    "DD_HEAR"
+   ],
+   "ask": "Say what the rule tells you about a robin.",
+   "keys": [
+    "that a robin lays eggs, in any words (\"it lays eggs\", or the property alone). the rule read back (\"all birds lay eggs\"), the case read back, or a fact about a robin the rule does not give is not an answer.",
+    "a robin lays eggs"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dd-1-1-c0-conclude",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-deduction",
+      "objectiveId": "di-deduction-practice",
+      "evalMode": "conclude",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dd-1-1-c0-conclude",
+       "phase": "working",
+       "task": "Say what the rule tells you about a robin.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "conclude",
+        "support": "the model card of a different rule starts on screen: say every case of it as your turn, then ask this case. Never reason this case",
+        "caseOfRule": "case 1 of this rule",
+        "constraints": "The learner says aloud what the rule tells them about the case. Only the rule counts, not what they already know.",
+        "onScreen": "Beside the cards, a model card shows a different rule, \"All marsupials carry young in a pouch.\", worked through: A kangaroo is a marsupial. A kangaroo is a marsupial, and all marsupials carry young in a pouch. A wolf does not carry young in a pouch. No: all marsupials carry young in a pouch, and a wolf does not carry young in a pouch. This animal carries young in a pouch. Can't tell: a seahorse carries young in a pouch too, and it is not a marsupial. It is not this rule.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "rule",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the rule card: \"All birds lay eggs.\""
+         },
+         {
+          "id": "case",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the case card: \"A robin is a bird.\""
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_case",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_negation",
+           "read_rule_back",
+           "read_case_back"
+          ],
+          "when": "The learner gives a wrong verdict or no reason, answers from what they know, or does not know how to start.",
+          "does": "Shows a card with a DIFFERENT rule worked through each answer it has (yes, no, and can't tell), each with its reason (onScreen gives them). Say ALL of them as your turn, in order, never only the one like the learner's case. Then ask the learner's case again. Never apply the model to their rule, and never name a lookalike of their rule."
+         },
+         {
+          "id": "answer_frame",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "read_rule_back",
+           "read_case_back"
+          ],
+          "when": "The learner reads a card back instead of saying what follows.",
+          "does": "Prints the case's subject and an empty box under the cards: the answer starts with the subject. Read the frame; never fill the box."
+         },
+         {
+          "id": "shared_term",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "said_negation"
+          ],
+          "when": "The learner's verdict does not follow from the two cards.",
+          "does": "Lights, in one colour, the words the two cards share. Draws no arrow and no verdict; say \"look at the lit words\"."
+         }
+        ],
+        "expectedAnswer": "That a robin lays eggs, in any words (\"it lays eggs\", or the property alone). The rule read back (\"all birds lay eggs\"), the case read back, or a fact about a robin the rule does not give is not an answer.",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dd-1-1-c0-conclude",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "dd-1-1-c0-conclude",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-deduction",
+      "objectiveId": "di-deduction-practice",
+      "evalMode": "conclude",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dd-1-1-c0-conclude",
+       "phase": "working",
+       "task": "Say what the rule tells you about a robin.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "conclude",
+        "support": "the model card of a different rule starts on screen: say every case of it as your turn, then ask this case. Never reason this case",
+        "caseOfRule": "case 1 of this rule",
+        "constraints": "The learner says aloud what the rule tells them about the case. Only the rule counts, not what they already know.",
+        "onScreen": "Beside the cards, a model card shows a different rule, \"All marsupials carry young in a pouch.\", worked through: A kangaroo is a marsupial. A kangaroo is a marsupial, and all marsupials carry young in a pouch. A wolf does not carry young in a pouch. No: all marsupials carry young in a pouch, and a wolf does not carry young in a pouch. This animal carries young in a pouch. Can't tell: a seahorse carries young in a pouch too, and it is not a marsupial. It is not this rule.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "rule",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the rule card: \"All birds lay eggs.\""
+         },
+         {
+          "id": "case",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the case card: \"A robin is a bird.\""
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_case",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_negation",
+           "read_rule_back",
+           "read_case_back"
+          ],
+          "when": "The learner gives a wrong verdict or no reason, answers from what they know, or does not know how to start.",
+          "does": "Shows a card with a DIFFERENT rule worked through each answer it has (yes, no, and can't tell), each with its reason (onScreen gives them). Say ALL of them as your turn, in order, never only the one like the learner's case. Then ask the learner's case again. Never apply the model to their rule, and never name a lookalike of their rule."
+         },
+         {
+          "id": "answer_frame",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "read_rule_back",
+           "read_case_back"
+          ],
+          "when": "The learner reads a card back instead of saying what follows.",
+          "does": "Prints the case's subject and an empty box under the cards: the answer starts with the subject. Read the frame; never fill the box."
+         },
+         {
+          "id": "shared_term",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "said_negation"
+          ],
+          "when": "The learner's verdict does not follow from the two cards.",
+          "does": "Lights, in one colour, the words the two cards share. Draws no arrow and no verdict; say \"look at the lit words\"."
+         }
+        ],
+        "expectedAnswer": "That a robin lays eggs, in any words (\"it lays eggs\", or the property alone). The rule read back (\"all birds lay eggs\"), the case read back, or a fact about a robin the rule does not give is not an answer.",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "a robin does not lay eggs"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dd-1-1-c0-conclude",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "a robin does not lay eggs",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dd-1-1-c0-conclude",
+       "revision": 1
+      },
+      "task": "Say what the rule tells you about a robin.",
+      "phase": "working",
+      "learner": "a robin does not lay eggs",
+      "expectedAnswer": "That a robin lays eggs, in any words (\"it lays eggs\", or the property alone). The rule read back (\"all birds lay eggs\"), the case read back, or a fact about a robin the rule does not give is not an answer.",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "a robin does not lay eggs"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [
+        {
+         "id": "rule",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the rule card: \"All birds lay eggs.\""
+        },
+        {
+         "id": "case",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the case card: \"A robin is a bird.\""
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "conclude",
+        "support": "the model card of a different rule starts on screen: say every case of it as your turn, then ask this case. Never reason this case",
+        "caseOfRule": "case 1 of this rule",
+        "constraints": "The learner says aloud what the rule tells them about the case. Only the rule counts, not what they already know.",
+        "onScreen": "Beside the cards, a model card shows a different rule, \"All marsupials carry young in a pouch.\", worked through: A kangaroo is a marsupial. A kangaroo is a marsupial, and all marsupials carry young in a pouch. A wolf does not carry young in a pouch. No: all marsupials carry young in a pouch, and a wolf does not carry young in a pouch. This animal carries young in a pouch. Can't tell: a seahorse carries young in a pouch too, and it is not a marsupial. It is not this rule.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dd-1-1-c0-conclude"
+      },
+      "task": "Say what the rule tells you about a robin.",
+      "expectedAnswer": "That a robin lays eggs, in any words (\"it lays eggs\", or the property alone). The rule read back (\"all birds lay eggs\"), the case read back, or a fact about a robin the rule does not give is not an answer.",
+      "learner": "a robin does not lay eggs",
+      "misses": [
+       {
+        "id": "said_negation",
+        "pattern": "The rule is \"All birds lay eggs.\" The case is \"A robin is a bird.\" So a robin lays eggs. The learner says the opposite: a robin does not lay eggs.",
+        "examples": [
+         "it does not lay eggs"
+        ]
+       },
+       {
+        "id": "read_rule_back",
+        "pattern": "The rule is \"All birds lay eggs.\" The case is \"A robin is a bird.\" The learner only reads the rule back (\"all birds lay eggs\") and says nothing about a robin.",
+        "examples": [
+         "all birds lay eggs"
+        ]
+       },
+       {
+        "id": "read_case_back",
+        "pattern": "The rule is \"All birds lay eggs.\" The case is \"A robin is a bird.\" The learner only reads the case back and does not say that a robin lays eggs.",
+        "examples": [
+         "A robin is a bird"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dd-1-1-c0-conclude",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-deduction",
+      "objectiveId": "di-deduction-practice",
+      "evalMode": "conclude",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dd-1-1-c0-conclude",
+       "phase": "working",
+       "task": "Say what the rule tells you about a robin.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "a robin does not lay eggs",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "conclude",
+        "support": "the model card of a different rule starts on screen: say every case of it as your turn, then ask this case. Never reason this case",
+        "caseOfRule": "case 1 of this rule",
+        "constraints": "The learner says aloud what the rule tells them about the case. Only the rule counts, not what they already know.",
+        "onScreen": "Beside the cards, a model card shows a different rule, \"All marsupials carry young in a pouch.\", worked through: A kangaroo is a marsupial. A kangaroo is a marsupial, and all marsupials carry young in a pouch. A wolf does not carry young in a pouch. No: all marsupials carry young in a pouch, and a wolf does not carry young in a pouch. This animal carries young in a pouch. Can't tell: a seahorse carries young in a pouch too, and it is not a marsupial. It is not this rule.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "rule",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the rule card: \"All birds lay eggs.\""
+         },
+         {
+          "id": "case",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the case card: \"A robin is a bird.\""
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_case",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_negation",
+           "read_rule_back",
+           "read_case_back"
+          ],
+          "when": "The learner gives a wrong verdict or no reason, answers from what they know, or does not know how to start.",
+          "does": "Shows a card with a DIFFERENT rule worked through each answer it has (yes, no, and can't tell), each with its reason (onScreen gives them). Say ALL of them as your turn, in order, never only the one like the learner's case. Then ask the learner's case again. Never apply the model to their rule, and never name a lookalike of their rule."
+         },
+         {
+          "id": "answer_frame",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "read_rule_back",
+           "read_case_back"
+          ],
+          "when": "The learner reads a card back instead of saying what follows.",
+          "does": "Prints the case's subject and an empty box under the cards: the answer starts with the subject. Read the frame; never fill the box."
+         },
+         {
+          "id": "shared_term",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "said_negation"
+          ],
+          "when": "The learner's verdict does not follow from the two cards.",
+          "does": "Lights, in one colour, the words the two cards share. Draws no arrow and no verdict; say \"look at the lit words\"."
+         }
+        ],
+        "expectedAnswer": "That a robin lays eggs, in any words (\"it lays eggs\", or the property alone). The rule read back (\"all birds lay eggs\"), the case read back, or a fact about a robin the rule does not give is not an answer.",
+        "lastResponse": {
+         "itemId": "dd-1-1-c0-conclude",
+         "response": "a robin does not lay eggs",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dd-1-1-c0-conclude",
+          "response": "a robin does not lay eggs",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/2/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dd-1-1-c0-conclude",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "dd-1-1-c0-conclude",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-deduction",
+      "objectiveId": "di-deduction-practice",
+      "evalMode": "conclude",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dd-1-1-c0-conclude",
+       "phase": "working",
+       "task": "Say what the rule tells you about a robin.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "a robin does not lay eggs",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "conclude",
+        "support": "the model card of a different rule starts on screen: say every case of it as your turn, then ask this case. Never reason this case",
+        "caseOfRule": "case 1 of this rule",
+        "constraints": "The learner says aloud what the rule tells them about the case. Only the rule counts, not what they already know.",
+        "onScreen": "Beside the cards, a model card shows a different rule, \"All marsupials carry young in a pouch.\", worked through: A kangaroo is a marsupial. A kangaroo is a marsupial, and all marsupials carry young in a pouch. A wolf does not carry young in a pouch. No: all marsupials carry young in a pouch, and a wolf does not carry young in a pouch. This animal carries young in a pouch. Can't tell: a seahorse carries young in a pouch too, and it is not a marsupial. It is not this rule. Under the cards a frame is printed: \"A robin ___.\", with empty boxes.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "rule",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the rule card: \"All birds lay eggs.\""
+         },
+         {
+          "id": "case",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the case card: \"A robin is a bird.\""
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_case",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_negation",
+           "read_rule_back",
+           "read_case_back"
+          ],
+          "when": "The learner gives a wrong verdict or no reason, answers from what they know, or does not know how to start.",
+          "does": "Shows a card with a DIFFERENT rule worked through each answer it has (yes, no, and can't tell), each with its reason (onScreen gives them). Say ALL of them as your turn, in order, never only the one like the learner's case. Then ask the learner's case again. Never apply the model to their rule, and never name a lookalike of their rule."
+         },
+         {
+          "id": "answer_frame",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "read_rule_back",
+           "read_case_back"
+          ],
+          "when": "The learner reads a card back instead of saying what follows.",
+          "does": "Prints the case's subject and an empty box under the cards: the answer starts with the subject. Read the frame; never fill the box."
+         },
+         {
+          "id": "shared_term",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "said_negation"
+          ],
+          "when": "The learner's verdict does not follow from the two cards.",
+          "does": "Lights, in one colour, the words the two cards share. Draws no arrow and no verdict; say \"look at the lit words\"."
+         }
+        ],
+        "expectedAnswer": "That a robin lays eggs, in any words (\"it lays eggs\", or the property alone). The rule read back (\"all birds lay eggs\"), the case read back, or a fact about a robin the rule does not give is not an answer.",
+        "lastResponse": {
+         "itemId": "dd-1-1-c0-conclude",
+         "response": "a robin does not lay eggs",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dd-1-1-c0-conclude",
+          "response": "a robin does not lay eggs",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "dd-1-1-c0-conclude",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "answer_frame"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dd-1-1-c0-conclude",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled answer_frame (help). It is on screen now: Prints the case's subject and an empty box under the cards: the answer starts with the subject. Read the frame; never fill the box. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "answer_frame",
+      "kind": "help",
+      "does": "Prints the case's subject and an empty box under the cards: the answer starts with the subject. Read the frame; never fill the box."
+     }
+    },
+    {
+     "kind": "credit",
+     "itemId": "dd-1-1-c0-conclude",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-deduction",
+      "objectiveId": "di-deduction-practice",
+      "evalMode": "conclude",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dd-1-1-c0-conclude",
+       "phase": "working",
+       "task": "Say what the rule tells you about a robin.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "a robin does not lay eggs",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "conclude",
+        "support": "the model card of a different rule starts on screen: say every case of it as your turn, then ask this case. Never reason this case",
+        "caseOfRule": "case 1 of this rule",
+        "constraints": "The learner says aloud what the rule tells them about the case. Only the rule counts, not what they already know.",
+        "onScreen": "Beside the cards, a model card shows a different rule, \"All marsupials carry young in a pouch.\", worked through: A kangaroo is a marsupial. A kangaroo is a marsupial, and all marsupials carry young in a pouch. A wolf does not carry young in a pouch. No: all marsupials carry young in a pouch, and a wolf does not carry young in a pouch. This animal carries young in a pouch. Can't tell: a seahorse carries young in a pouch too, and it is not a marsupial. It is not this rule. Under the cards a frame is printed: \"A robin ___.\", with empty boxes.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "rule",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the rule card: \"All birds lay eggs.\""
+         },
+         {
+          "id": "case",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the case card: \"A robin is a bird.\""
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_case",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_negation",
+           "read_rule_back",
+           "read_case_back"
+          ],
+          "when": "The learner gives a wrong verdict or no reason, answers from what they know, or does not know how to start.",
+          "does": "Shows a card with a DIFFERENT rule worked through each answer it has (yes, no, and can't tell), each with its reason (onScreen gives them). Say ALL of them as your turn, in order, never only the one like the learner's case. Then ask the learner's case again. Never apply the model to their rule, and never name a lookalike of their rule."
+         },
+         {
+          "id": "answer_frame",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "read_rule_back",
+           "read_case_back"
+          ],
+          "when": "The learner reads a card back instead of saying what follows.",
+          "does": "Prints the case's subject and an empty box under the cards: the answer starts with the subject. Read the frame; never fill the box."
+         },
+         {
+          "id": "shared_term",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "said_negation"
+          ],
+          "when": "The learner's verdict does not follow from the two cards.",
+          "does": "Lights, in one colour, the words the two cards share. Draws no arrow and no verdict; say \"look at the lit words\"."
+         }
+        ],
+        "expectedAnswer": "That a robin lays eggs, in any words (\"it lays eggs\", or the property alone). The rule read back (\"all birds lay eggs\"), the case read back, or a fact about a robin the rule does not give is not an answer.",
+        "pendingResponse": {
+         "id": "speech:1:2",
+         "text": "a robin lays eggs"
+        },
+        "lastResponse": {
+         "itemId": "dd-1-1-c0-conclude",
+         "response": "a robin does not lay eggs",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dd-1-1-c0-conclude",
+          "response": "a robin does not lay eggs",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "dd-1-1-c0-conclude",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "answer_frame"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dd-1-1-c0-conclude",
+        "secondsOnItem": 20,
+        "secondsSinceReady": 20,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "a robin lays eggs",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dd-1-1-c0-conclude",
+       "revision": 3
+      },
+      "task": "Say what the rule tells you about a robin.",
+      "phase": "working",
+      "learner": "a robin lays eggs",
+      "expectedAnswer": "That a robin lays eggs, in any words (\"it lays eggs\", or the property alone). The rule read back (\"all birds lay eggs\"), the case read back, or a fact about a robin the rule does not give is not an answer.",
+      "pendingResponse": {
+       "id": "speech:1:2",
+       "text": "a robin lays eggs"
+      },
+      "lastResponse": {
+       "itemId": "dd-1-1-c0-conclude",
+       "response": "a robin does not lay eggs",
+       "source": "speech",
+       "correct": false,
+       "tutorResponse": "Not quite.",
+       "judgment": "tutor",
+       "assisted": false,
+       "answerExposure": "none"
+      },
+      "activity": {
+       "responseSource": "speech",
+       "attemptNumber": 1,
+       "objects": [
+        {
+         "id": "rule",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the rule card: \"All birds lay eggs.\""
+        },
+        {
+         "id": "case",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the case card: \"A robin is a bird.\""
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "conclude",
+        "support": "the model card of a different rule starts on screen: say every case of it as your turn, then ask this case. Never reason this case",
+        "caseOfRule": "case 1 of this rule",
+        "constraints": "The learner says aloud what the rule tells them about the case. Only the rule counts, not what they already know.",
+        "onScreen": "Beside the cards, a model card shows a different rule, \"All marsupials carry young in a pouch.\", worked through: A kangaroo is a marsupial. A kangaroo is a marsupial, and all marsupials carry young in a pouch. A wolf does not carry young in a pouch. No: all marsupials carry young in a pouch, and a wolf does not carry young in a pouch. This animal carries young in a pouch. Can't tell: a seahorse carries young in a pouch too, and it is not a marsupial. It is not this rule. Under the cards a frame is printed: \"A robin ___.\", with empty boxes.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 2,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dd-1-1-c0-conclude"
+      },
+      "task": "Say what the rule tells you about a robin.",
+      "expectedAnswer": "That a robin lays eggs, in any words (\"it lays eggs\", or the property alone). The rule read back (\"all birds lay eggs\"), the case read back, or a fact about a robin the rule does not give is not an answer.",
+      "learner": "a robin lays eggs",
+      "misses": [
+       {
+        "id": "said_negation",
+        "pattern": "The rule is \"All birds lay eggs.\" The case is \"A robin is a bird.\" So a robin lays eggs. The learner says the opposite: a robin does not lay eggs.",
+        "examples": [
+         "it does not lay eggs"
+        ]
+       },
+       {
+        "id": "read_rule_back",
+        "pattern": "The rule is \"All birds lay eggs.\" The case is \"A robin is a bird.\" The learner only reads the rule back (\"all birds lay eggs\") and says nothing about a robin.",
+        "examples": [
+         "all birds lay eggs"
+        ]
+       },
+       {
+        "id": "read_case_back",
+        "pattern": "The rule is \"All birds lay eggs.\" The case is \"A robin is a bird.\" The learner only reads the case back and does not say that a robin lays eggs.",
+        "examples": [
+         "A robin is a bird"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    }
+   ]
+  },
+  {
+   "payload": "di-deduction.deny",
+   "primitiveId": "di-deduction",
+   "evalMode": "deny",
+   "guidance": "A rule card and a case card are printed. The child says aloud what the rule tells them about the case, using only the rule, not what they already know. On a verdict case they say yes, no, or can't tell AND the reason from the rule: a right verdict with no reason is not yet the answer, so ask how they know. The rule does not run backwards: having the property does not make something a member, and the key names the thing that shows it. Never state the conclusion before the child tries, and never reason this case for them: your model is the model_case lever, a DIFFERENT rule worked through every answer. The support fact says where levers start. You cannot change the rule or the case. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Using a rule about animal groups to decide what follows",
+   "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding.",
+   "leakTokens": [
+    "DD_ITEM",
+    "DD_MOVE_ON",
+    "DD_COMPLETE",
+    "DD_HEAR"
+   ],
+   "ask": "Is a worm an insect? Say yes, no, or can't tell—then explain using the rule.",
+   "keys": [
+    "no, a worm is not an insect, with the reason from the rule: all insects have six legs and a worm does not have six legs (\"nope, it does not have six legs\" counts). a no with no reason, or a reason that is not about whether it has six legs, has the right verdict and is not yet the answer.",
+    "no, a worm is not an insect, because all insects have six legs and a worm does not have six legs"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dd-1-1-c0-deny",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-deduction",
+      "objectiveId": "di-deduction-practice",
+      "evalMode": "deny",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dd-1-1-c0-deny",
+       "phase": "working",
+       "task": "Is a worm an insect? Say yes, no, or can't tell—then explain using the rule.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "deny",
+        "support": "the model card of a different rule starts on screen: say every case of it as your turn, then ask this case. Never reason this case",
+        "caseOfRule": "case 1 of this rule",
+        "constraints": "The learner says yes, no, or can't tell aloud, then the reason from the rule. The three words are printed as a guide; none is lit until an answer is credited. Only the rule counts, not what they already know.",
+        "onScreen": "Beside the cards, a model card shows a different rule, \"All fish live in water.\", worked through: A shark is a fish. A shark is a fish, and all fish live in water. A horse does not live in water. No: all fish live in water, and a horse does not live in water. This animal lives in water. Can't tell: a whale lives in water too, and it is not a fish. It is not this rule.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "rule",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the rule card: \"All insects have six legs.\""
+         },
+         {
+          "id": "case",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the case card: \"A worm does not have six legs.\""
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_case",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_member",
+           "said_cannot_tell",
+           "verdict_without_reason"
+          ],
+          "when": "The learner gives a wrong verdict or no reason, answers from what they know, or does not know how to start.",
+          "does": "Shows a card with a DIFFERENT rule worked through each answer it has (yes, no, and can't tell), each with its reason (onScreen gives them). Say ALL of them as your turn, in order, never only the one like the learner's case. Then ask the learner's case again. Never apply the model to their rule, and never name a lookalike of their rule."
+         },
+         {
+          "id": "answer_frame",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "verdict_without_reason"
+          ],
+          "when": "The learner gives a verdict with no reason.",
+          "does": "Prints \"___ because ___\" under the verdict words: a verdict and a reason. Read the frame; never fill a box or light a word."
+         },
+         {
+          "id": "shared_term",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "said_member",
+           "said_cannot_tell"
+          ],
+          "when": "The learner's verdict does not follow from the two cards.",
+          "does": "Lights, in one colour, the words the two cards share. Draws no arrow and no verdict; say \"look at the lit words\"."
+         }
+        ],
+        "expectedAnswer": "No, a worm is not an insect, WITH the reason from the rule: all insects have six legs and a worm does not have six legs (\"nope, it does not have six legs\" counts). A no with no reason, or a reason that is not about whether it has six legs, has the right verdict and is not yet the answer.",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dd-1-1-c0-deny",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "dd-1-1-c0-deny",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-deduction",
+      "objectiveId": "di-deduction-practice",
+      "evalMode": "deny",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dd-1-1-c0-deny",
+       "phase": "working",
+       "task": "Is a worm an insect? Say yes, no, or can't tell—then explain using the rule.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "deny",
+        "support": "the model card of a different rule starts on screen: say every case of it as your turn, then ask this case. Never reason this case",
+        "caseOfRule": "case 1 of this rule",
+        "constraints": "The learner says yes, no, or can't tell aloud, then the reason from the rule. The three words are printed as a guide; none is lit until an answer is credited. Only the rule counts, not what they already know.",
+        "onScreen": "Beside the cards, a model card shows a different rule, \"All fish live in water.\", worked through: A shark is a fish. A shark is a fish, and all fish live in water. A horse does not live in water. No: all fish live in water, and a horse does not live in water. This animal lives in water. Can't tell: a whale lives in water too, and it is not a fish. It is not this rule.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "rule",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the rule card: \"All insects have six legs.\""
+         },
+         {
+          "id": "case",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the case card: \"A worm does not have six legs.\""
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_case",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_member",
+           "said_cannot_tell",
+           "verdict_without_reason"
+          ],
+          "when": "The learner gives a wrong verdict or no reason, answers from what they know, or does not know how to start.",
+          "does": "Shows a card with a DIFFERENT rule worked through each answer it has (yes, no, and can't tell), each with its reason (onScreen gives them). Say ALL of them as your turn, in order, never only the one like the learner's case. Then ask the learner's case again. Never apply the model to their rule, and never name a lookalike of their rule."
+         },
+         {
+          "id": "answer_frame",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "verdict_without_reason"
+          ],
+          "when": "The learner gives a verdict with no reason.",
+          "does": "Prints \"___ because ___\" under the verdict words: a verdict and a reason. Read the frame; never fill a box or light a word."
+         },
+         {
+          "id": "shared_term",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "said_member",
+           "said_cannot_tell"
+          ],
+          "when": "The learner's verdict does not follow from the two cards.",
+          "does": "Lights, in one colour, the words the two cards share. Draws no arrow and no verdict; say \"look at the lit words\"."
+         }
+        ],
+        "expectedAnswer": "No, a worm is not an insect, WITH the reason from the rule: all insects have six legs and a worm does not have six legs (\"nope, it does not have six legs\" counts). A no with no reason, or a reason that is not about whether it has six legs, has the right verdict and is not yet the answer.",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "yes, a worm is an insect"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dd-1-1-c0-deny",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "yes, a worm is an insect",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dd-1-1-c0-deny",
+       "revision": 1
+      },
+      "task": "Is a worm an insect? Say yes, no, or can't tell—then explain using the rule.",
+      "phase": "working",
+      "learner": "yes, a worm is an insect",
+      "expectedAnswer": "No, a worm is not an insect, WITH the reason from the rule: all insects have six legs and a worm does not have six legs (\"nope, it does not have six legs\" counts). A no with no reason, or a reason that is not about whether it has six legs, has the right verdict and is not yet the answer.",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "yes, a worm is an insect"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [
+        {
+         "id": "rule",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the rule card: \"All insects have six legs.\""
+        },
+        {
+         "id": "case",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the case card: \"A worm does not have six legs.\""
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "deny",
+        "support": "the model card of a different rule starts on screen: say every case of it as your turn, then ask this case. Never reason this case",
+        "caseOfRule": "case 1 of this rule",
+        "constraints": "The learner says yes, no, or can't tell aloud, then the reason from the rule. The three words are printed as a guide; none is lit until an answer is credited. Only the rule counts, not what they already know.",
+        "onScreen": "Beside the cards, a model card shows a different rule, \"All fish live in water.\", worked through: A shark is a fish. A shark is a fish, and all fish live in water. A horse does not live in water. No: all fish live in water, and a horse does not live in water. This animal lives in water. Can't tell: a whale lives in water too, and it is not a fish. It is not this rule.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dd-1-1-c0-deny"
+      },
+      "task": "Is a worm an insect? Say yes, no, or can't tell—then explain using the rule.",
+      "expectedAnswer": "No, a worm is not an insect, WITH the reason from the rule: all insects have six legs and a worm does not have six legs (\"nope, it does not have six legs\" counts). A no with no reason, or a reason that is not about whether it has six legs, has the right verdict and is not yet the answer.",
+      "learner": "yes, a worm is an insect",
+      "misses": [
+       {
+        "id": "said_member",
+        "pattern": "The rule is \"All insects have six legs.\" The case is \"A worm does not have six legs.\" So a worm is not an insect. The learner's verdict is yes, that a worm is an insect.",
+        "examples": [
+         "yes, it is an insect"
+        ]
+       },
+       {
+        "id": "said_cannot_tell",
+        "pattern": "The rule is \"All insects have six legs.\" The case is \"A worm does not have six legs.\" So a worm is not an insect. The learner's verdict is can't tell.",
+        "examples": [
+         "can't tell"
+        ]
+       },
+       {
+        "id": "verdict_without_reason",
+        "pattern": "The rule is \"All insects have six legs.\" The case is \"A worm does not have six legs.\" So a worm is not an insect. The learner says only no, with no reason from the rule.",
+        "examples": [
+         "no"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dd-1-1-c0-deny",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-deduction",
+      "objectiveId": "di-deduction-practice",
+      "evalMode": "deny",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dd-1-1-c0-deny",
+       "phase": "working",
+       "task": "Is a worm an insect? Say yes, no, or can't tell—then explain using the rule.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "yes, a worm is an insect",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "deny",
+        "support": "the model card of a different rule starts on screen: say every case of it as your turn, then ask this case. Never reason this case",
+        "caseOfRule": "case 1 of this rule",
+        "constraints": "The learner says yes, no, or can't tell aloud, then the reason from the rule. The three words are printed as a guide; none is lit until an answer is credited. Only the rule counts, not what they already know.",
+        "onScreen": "Beside the cards, a model card shows a different rule, \"All fish live in water.\", worked through: A shark is a fish. A shark is a fish, and all fish live in water. A horse does not live in water. No: all fish live in water, and a horse does not live in water. This animal lives in water. Can't tell: a whale lives in water too, and it is not a fish. It is not this rule.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "rule",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the rule card: \"All insects have six legs.\""
+         },
+         {
+          "id": "case",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the case card: \"A worm does not have six legs.\""
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_case",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_member",
+           "said_cannot_tell",
+           "verdict_without_reason"
+          ],
+          "when": "The learner gives a wrong verdict or no reason, answers from what they know, or does not know how to start.",
+          "does": "Shows a card with a DIFFERENT rule worked through each answer it has (yes, no, and can't tell), each with its reason (onScreen gives them). Say ALL of them as your turn, in order, never only the one like the learner's case. Then ask the learner's case again. Never apply the model to their rule, and never name a lookalike of their rule."
+         },
+         {
+          "id": "answer_frame",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "verdict_without_reason"
+          ],
+          "when": "The learner gives a verdict with no reason.",
+          "does": "Prints \"___ because ___\" under the verdict words: a verdict and a reason. Read the frame; never fill a box or light a word."
+         },
+         {
+          "id": "shared_term",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "said_member",
+           "said_cannot_tell"
+          ],
+          "when": "The learner's verdict does not follow from the two cards.",
+          "does": "Lights, in one colour, the words the two cards share. Draws no arrow and no verdict; say \"look at the lit words\"."
+         }
+        ],
+        "expectedAnswer": "No, a worm is not an insect, WITH the reason from the rule: all insects have six legs and a worm does not have six legs (\"nope, it does not have six legs\" counts). A no with no reason, or a reason that is not about whether it has six legs, has the right verdict and is not yet the answer.",
+        "lastResponse": {
+         "itemId": "dd-1-1-c0-deny",
+         "response": "yes, a worm is an insect",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dd-1-1-c0-deny",
+          "response": "yes, a worm is an insect",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/2/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dd-1-1-c0-deny",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "dd-1-1-c0-deny",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-deduction",
+      "objectiveId": "di-deduction-practice",
+      "evalMode": "deny",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dd-1-1-c0-deny",
+       "phase": "working",
+       "task": "Is a worm an insect? Say yes, no, or can't tell—then explain using the rule.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "yes, a worm is an insect",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "deny",
+        "support": "the model card of a different rule starts on screen: say every case of it as your turn, then ask this case. Never reason this case",
+        "caseOfRule": "case 1 of this rule",
+        "constraints": "The learner says yes, no, or can't tell aloud, then the reason from the rule. The three words are printed as a guide; none is lit until an answer is credited. Only the rule counts, not what they already know.",
+        "onScreen": "Beside the cards, a model card shows a different rule, \"All fish live in water.\", worked through: A shark is a fish. A shark is a fish, and all fish live in water. A horse does not live in water. No: all fish live in water, and a horse does not live in water. This animal lives in water. Can't tell: a whale lives in water too, and it is not a fish. It is not this rule. Under the cards a frame is printed: \"___ because ___\", with empty boxes.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "rule",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the rule card: \"All insects have six legs.\""
+         },
+         {
+          "id": "case",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the case card: \"A worm does not have six legs.\""
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_case",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_member",
+           "said_cannot_tell",
+           "verdict_without_reason"
+          ],
+          "when": "The learner gives a wrong verdict or no reason, answers from what they know, or does not know how to start.",
+          "does": "Shows a card with a DIFFERENT rule worked through each answer it has (yes, no, and can't tell), each with its reason (onScreen gives them). Say ALL of them as your turn, in order, never only the one like the learner's case. Then ask the learner's case again. Never apply the model to their rule, and never name a lookalike of their rule."
+         },
+         {
+          "id": "answer_frame",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "verdict_without_reason"
+          ],
+          "when": "The learner gives a verdict with no reason.",
+          "does": "Prints \"___ because ___\" under the verdict words: a verdict and a reason. Read the frame; never fill a box or light a word."
+         },
+         {
+          "id": "shared_term",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "said_member",
+           "said_cannot_tell"
+          ],
+          "when": "The learner's verdict does not follow from the two cards.",
+          "does": "Lights, in one colour, the words the two cards share. Draws no arrow and no verdict; say \"look at the lit words\"."
+         }
+        ],
+        "expectedAnswer": "No, a worm is not an insect, WITH the reason from the rule: all insects have six legs and a worm does not have six legs (\"nope, it does not have six legs\" counts). A no with no reason, or a reason that is not about whether it has six legs, has the right verdict and is not yet the answer.",
+        "lastResponse": {
+         "itemId": "dd-1-1-c0-deny",
+         "response": "yes, a worm is an insect",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dd-1-1-c0-deny",
+          "response": "yes, a worm is an insect",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "dd-1-1-c0-deny",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "answer_frame"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dd-1-1-c0-deny",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled answer_frame (help). It is on screen now: Prints \"___ because ___\" under the verdict words: a verdict and a reason. Read the frame; never fill a box or light a word. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "answer_frame",
+      "kind": "help",
+      "does": "Prints \"___ because ___\" under the verdict words: a verdict and a reason. Read the frame; never fill a box or light a word."
+     }
+    },
+    {
+     "kind": "credit",
+     "itemId": "dd-1-1-c0-deny",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-deduction",
+      "objectiveId": "di-deduction-practice",
+      "evalMode": "deny",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dd-1-1-c0-deny",
+       "phase": "working",
+       "task": "Is a worm an insect? Say yes, no, or can't tell—then explain using the rule.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "yes, a worm is an insect",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "deny",
+        "support": "the model card of a different rule starts on screen: say every case of it as your turn, then ask this case. Never reason this case",
+        "caseOfRule": "case 1 of this rule",
+        "constraints": "The learner says yes, no, or can't tell aloud, then the reason from the rule. The three words are printed as a guide; none is lit until an answer is credited. Only the rule counts, not what they already know.",
+        "onScreen": "Beside the cards, a model card shows a different rule, \"All fish live in water.\", worked through: A shark is a fish. A shark is a fish, and all fish live in water. A horse does not live in water. No: all fish live in water, and a horse does not live in water. This animal lives in water. Can't tell: a whale lives in water too, and it is not a fish. It is not this rule. Under the cards a frame is printed: \"___ because ___\", with empty boxes.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "rule",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the rule card: \"All insects have six legs.\""
+         },
+         {
+          "id": "case",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the case card: \"A worm does not have six legs.\""
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_case",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_member",
+           "said_cannot_tell",
+           "verdict_without_reason"
+          ],
+          "when": "The learner gives a wrong verdict or no reason, answers from what they know, or does not know how to start.",
+          "does": "Shows a card with a DIFFERENT rule worked through each answer it has (yes, no, and can't tell), each with its reason (onScreen gives them). Say ALL of them as your turn, in order, never only the one like the learner's case. Then ask the learner's case again. Never apply the model to their rule, and never name a lookalike of their rule."
+         },
+         {
+          "id": "answer_frame",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "verdict_without_reason"
+          ],
+          "when": "The learner gives a verdict with no reason.",
+          "does": "Prints \"___ because ___\" under the verdict words: a verdict and a reason. Read the frame; never fill a box or light a word."
+         },
+         {
+          "id": "shared_term",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "said_member",
+           "said_cannot_tell"
+          ],
+          "when": "The learner's verdict does not follow from the two cards.",
+          "does": "Lights, in one colour, the words the two cards share. Draws no arrow and no verdict; say \"look at the lit words\"."
+         }
+        ],
+        "expectedAnswer": "No, a worm is not an insect, WITH the reason from the rule: all insects have six legs and a worm does not have six legs (\"nope, it does not have six legs\" counts). A no with no reason, or a reason that is not about whether it has six legs, has the right verdict and is not yet the answer.",
+        "pendingResponse": {
+         "id": "speech:1:2",
+         "text": "no, a worm is not an insect, because all insects have six legs and a worm does not have six legs"
+        },
+        "lastResponse": {
+         "itemId": "dd-1-1-c0-deny",
+         "response": "yes, a worm is an insect",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dd-1-1-c0-deny",
+          "response": "yes, a worm is an insect",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "dd-1-1-c0-deny",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "answer_frame"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dd-1-1-c0-deny",
+        "secondsOnItem": 20,
+        "secondsSinceReady": 20,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "no, a worm is not an insect, because all insects have six legs and a worm does not have six legs",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dd-1-1-c0-deny",
+       "revision": 3
+      },
+      "task": "Is a worm an insect? Say yes, no, or can't tell—then explain using the rule.",
+      "phase": "working",
+      "learner": "no, a worm is not an insect, because all insects have six legs and a worm does not have six legs",
+      "expectedAnswer": "No, a worm is not an insect, WITH the reason from the rule: all insects have six legs and a worm does not have six legs (\"nope, it does not have six legs\" counts). A no with no reason, or a reason that is not about whether it has six legs, has the right verdict and is not yet the answer.",
+      "pendingResponse": {
+       "id": "speech:1:2",
+       "text": "no, a worm is not an insect, because all insects have six legs and a worm does not have six legs"
+      },
+      "lastResponse": {
+       "itemId": "dd-1-1-c0-deny",
+       "response": "yes, a worm is an insect",
+       "source": "speech",
+       "correct": false,
+       "tutorResponse": "Not quite.",
+       "judgment": "tutor",
+       "assisted": false,
+       "answerExposure": "none"
+      },
+      "activity": {
+       "responseSource": "speech",
+       "attemptNumber": 1,
+       "objects": [
+        {
+         "id": "rule",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the rule card: \"All insects have six legs.\""
+        },
+        {
+         "id": "case",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the case card: \"A worm does not have six legs.\""
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "deny",
+        "support": "the model card of a different rule starts on screen: say every case of it as your turn, then ask this case. Never reason this case",
+        "caseOfRule": "case 1 of this rule",
+        "constraints": "The learner says yes, no, or can't tell aloud, then the reason from the rule. The three words are printed as a guide; none is lit until an answer is credited. Only the rule counts, not what they already know.",
+        "onScreen": "Beside the cards, a model card shows a different rule, \"All fish live in water.\", worked through: A shark is a fish. A shark is a fish, and all fish live in water. A horse does not live in water. No: all fish live in water, and a horse does not live in water. This animal lives in water. Can't tell: a whale lives in water too, and it is not a fish. It is not this rule. Under the cards a frame is printed: \"___ because ___\", with empty boxes.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 2,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dd-1-1-c0-deny"
+      },
+      "task": "Is a worm an insect? Say yes, no, or can't tell—then explain using the rule.",
+      "expectedAnswer": "No, a worm is not an insect, WITH the reason from the rule: all insects have six legs and a worm does not have six legs (\"nope, it does not have six legs\" counts). A no with no reason, or a reason that is not about whether it has six legs, has the right verdict and is not yet the answer.",
+      "learner": "no, a worm is not an insect, because all insects have six legs and a worm does not have six legs",
+      "misses": [
+       {
+        "id": "said_member",
+        "pattern": "The rule is \"All insects have six legs.\" The case is \"A worm does not have six legs.\" So a worm is not an insect. The learner's verdict is yes, that a worm is an insect.",
+        "examples": [
+         "yes, it is an insect"
+        ]
+       },
+       {
+        "id": "said_cannot_tell",
+        "pattern": "The rule is \"All insects have six legs.\" The case is \"A worm does not have six legs.\" So a worm is not an insect. The learner's verdict is can't tell.",
+        "examples": [
+         "can't tell"
+        ]
+       },
+       {
+        "id": "verdict_without_reason",
+        "pattern": "The rule is \"All insects have six legs.\" The case is \"A worm does not have six legs.\" So a worm is not an insect. The learner says only no, with no reason from the rule.",
+        "examples": [
+         "no"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    }
+   ]
+  }
+ ]
+}

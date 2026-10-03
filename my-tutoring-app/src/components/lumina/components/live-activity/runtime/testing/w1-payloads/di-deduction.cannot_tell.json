@@ -3,32 +3,102 @@
  "primitiveId": "di-deduction",
  "evalMode": "cannot_tell",
  "data": {
-  "title": "Follow the Rule",
-  "description": "Use the rule to figure out what follows and explain how you know.",
+  "title": "Follow the Clues",
+  "description": "Use a secret rule to tell what happens next and explain your thinking.",
   "challengeType": "cannot_tell",
   "rules": [
    {
-    "id": "dd-1-4",
-    "category": "square",
-    "categoryPlural": "squares",
-    "propertyPlural": "have four equal sides",
-    "propertySingular": "has four equal sides",
-    "propertyNegated": "does not have four equal sides",
-    "kindNoun": "shape",
+    "id": "dd-1-1",
+    "category": "bird",
+    "categoryPlural": "birds",
+    "propertyPlural": "lay eggs",
+    "propertySingular": "lays eggs",
+    "propertyNegated": "does not lay eggs",
+    "kindNoun": "animal",
     "members": [
-     "tile",
-     "window"
+     "robin",
+     "penguin"
     ],
     "nonMembers": [
-     "circle",
-     "triangle",
-     "oval"
+     "dog",
+     "cat"
     ],
     "lookalikes": [
-     "rhombus"
+     "turtle",
+     "crocodile"
     ],
     "shapes": [
      "cannot_tell"
+    ]
+   },
+   {
+    "id": "dd-1-4",
+    "category": "amphibian",
+    "categoryPlural": "amphibians",
+    "propertyPlural": "start life with gills",
+    "propertySingular": "starts life with gills",
+    "propertyNegated": "does not start life with gills",
+    "kindNoun": "animal",
+    "members": [
+     "frog",
+     "salamander"
+    ],
+    "nonMembers": [
+     "bird",
+     "horse"
+    ],
+    "lookalikes": [
+     "shark",
+     "crab"
+    ],
+    "shapes": [
+     "cannot_tell"
+    ]
+   },
+   {
+    "id": "dd-1-6",
+    "category": "canine",
+    "categoryPlural": "canines",
+    "propertyPlural": "have sharp canine teeth",
+    "propertySingular": "has sharp canine teeth",
+    "propertyNegated": "does not have sharp canine teeth",
+    "kindNoun": "animal",
+    "members": [
+     "wolf",
+     "fox"
+    ],
+    "nonMembers": [
+     "cow",
+     "horse"
+    ],
+    "lookalikes": [
+     "tiger",
+     "bear"
+    ],
+    "shapes": [
+     "cannot_tell"
+    ]
+   }
+  ],
+  "spares": [
+   {
+    "id": "dd-1-5",
+    "category": "marsupial",
+    "categoryPlural": "marsupials",
+    "propertyPlural": "carry babies in pouches",
+    "propertySingular": "carries babies in a pouch",
+    "propertyNegated": "does not carry babies in a pouch",
+    "kindNoun": "animal",
+    "members": [
+     "kangaroo",
+     "koala"
+    ],
+    "nonMembers": [
+     "duck",
+     "mouse"
+    ],
+    "lookalikes": [
+     "seahorse"
     ]
    }
   ],

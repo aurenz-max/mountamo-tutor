@@ -1,0 +1,4343 @@
+{
+ "lessonEntry": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+ "records": [
+  {
+   "payload": "di-letter-sounds.first_sound_in_word",
+   "primitiveId": "di-letter-sounds",
+   "evalMode": "first_sound_in_word",
+   "guidance": "The gold-ringed card is the stimulus. Its keyword picture is drawn on an onset item, and on a letter item only as the keyword_picture lever. The child answers OUT LOUD. A letter's NAME is not its sound; naming the picture is a step toward a held sound, not the sound. A short vowel or a stop also accepts its keyword or a word starting with the sound; a small \"uh\" after a stop counts. Never say this item's sound or route it through its picture before the child tries: your model is the model_sound lever, a DIFFERENT letter beside it. The support fact says where levers start. Your feedback is the only record of the sound. demonstrate takes \"stimulus\" or \"picture\"; [] clears. You cannot change the letter or the picture, write, or answer for the child. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Saying the continuous sound a printed letter makes",
+   "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+   "leakTokens": [
+    "DI_ITEM",
+    "DI_MOVE_ON",
+    "DI_COMPLETE"
+   ],
+   "ask": "What is the first sound in \"moon\"?",
+   "keys": [
+    "mmm"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dils-1-m",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-letter-sounds",
+      "objectiveId": "di-letter-sounds-practice",
+      "evalMode": "first_sound_in_word",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dils-1-m",
+       "phase": "working",
+       "task": "What is the first sound in \"moon\"?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "first_sound_in_word",
+        "assignment": "The learner must say the first sound in \"moon\": mmm. Saying the whole word \"moon\" back, or naming a letter, is a step toward the answer and is not it.",
+        "keyword": "moon",
+        "elicitation": "isolated",
+        "articulation": "held",
+        "support": "the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound",
+        "printedWord": "moon",
+        "markMeaning": "Purple dashed marks are yours. They point at the card or the picture while you teach; they are not the learner answering, and they never move the gold ring off the stimulus.",
+        "onScreen": "Beside the learner's picture, a model card shows a different picture, a leaf, with its word; its first sound is the held sound lll. It is not this word.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target (gold ring)",
+          "label": "the word \"moon\" printed on the card"
+         },
+         {
+          "id": "picture",
+          "selected": false,
+          "group": "keyword picture",
+          "label": "a picture of a moon"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_sound",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "keyword_word",
+           "letter_name",
+           "added_vowel",
+           "other_sound",
+           "last_sound"
+          ],
+          "when": "The learner says a word, a letter name, or another sound, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT picture and its word (onScreen names it). Say it as your turn: the word, then its first sound (\"My turn: leaf … lll\"). Then ask for the first sound of the learner's own word. Never say their word's first sound, and never stretch its start."
+         },
+         {
+          "id": "first_box",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "last_sound"
+          ],
+          "when": "The learner says the last sound of the word.",
+          "does": "Draws a row of empty boxes under the picture, one per sound of the word, the first one lit: the first box is the start of the word. Nothing is written in the boxes."
+         }
+        ],
+        "expectedAnswer": "mmm",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dils-1-m",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "dils-1-m",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-letter-sounds",
+      "objectiveId": "di-letter-sounds-practice",
+      "evalMode": "first_sound_in_word",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dils-1-m",
+       "phase": "working",
+       "task": "What is the first sound in \"moon\"?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "first_sound_in_word",
+        "assignment": "The learner must say the first sound in \"moon\": mmm. Saying the whole word \"moon\" back, or naming a letter, is a step toward the answer and is not it.",
+        "keyword": "moon",
+        "elicitation": "isolated",
+        "articulation": "held",
+        "support": "the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound",
+        "printedWord": "moon",
+        "markMeaning": "Purple dashed marks are yours. They point at the card or the picture while you teach; they are not the learner answering, and they never move the gold ring off the stimulus.",
+        "onScreen": "Beside the learner's picture, a model card shows a different picture, a leaf, with its word; its first sound is the held sound lll. It is not this word.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target (gold ring)",
+          "label": "the word \"moon\" printed on the card"
+         },
+         {
+          "id": "picture",
+          "selected": false,
+          "group": "keyword picture",
+          "label": "a picture of a moon"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_sound",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "keyword_word",
+           "letter_name",
+           "added_vowel",
+           "other_sound",
+           "last_sound"
+          ],
+          "when": "The learner says a word, a letter name, or another sound, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT picture and its word (onScreen names it). Say it as your turn: the word, then its first sound (\"My turn: leaf … lll\"). Then ask for the first sound of the learner's own word. Never say their word's first sound, and never stretch its start."
+         },
+         {
+          "id": "first_box",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "last_sound"
+          ],
+          "when": "The learner says the last sound of the word.",
+          "does": "Draws a row of empty boxes under the picture, one per sound of the word, the first one lit: the first box is the start of the word. Nothing is written in the boxes."
+         }
+        ],
+        "expectedAnswer": "mmm",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "sss"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dils-1-m",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "sss",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dils-1-m",
+       "revision": 1
+      },
+      "task": "What is the first sound in \"moon\"?",
+      "phase": "working",
+      "learner": "sss",
+      "expectedAnswer": "mmm",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "sss"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [
+        {
+         "id": "stimulus",
+         "selected": false,
+         "group": "assignment target (gold ring)",
+         "label": "the word \"moon\" printed on the card"
+        },
+        {
+         "id": "picture",
+         "selected": false,
+         "group": "keyword picture",
+         "label": "a picture of a moon"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "first_sound_in_word",
+        "assignment": "The learner must say the first sound in \"moon\": mmm. Saying the whole word \"moon\" back, or naming a letter, is a step toward the answer and is not it.",
+        "keyword": "moon",
+        "elicitation": "isolated",
+        "articulation": "held",
+        "support": "the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound",
+        "printedWord": "moon",
+        "markMeaning": "Purple dashed marks are yours. They point at the card or the picture while you teach; they are not the learner answering, and they never move the gold ring off the stimulus.",
+        "onScreen": "Beside the learner's picture, a model card shows a different picture, a leaf, with its word; its first sound is the held sound lll. It is not this word.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dils-1-m"
+      },
+      "task": "What is the first sound in \"moon\"?",
+      "expectedAnswer": "mmm",
+      "learner": "sss",
+      "misses": [
+       {
+        "id": "keyword_word",
+        "pattern": "The word is \"moon\" and its first sound is mmm. The learner says a whole word instead of the sound on its own: the picture word \"moon\" or any other word, even one that starts with the right sound.",
+        "examples": [
+         "moon"
+        ]
+       },
+       {
+        "id": "letter_name",
+        "pattern": "The word is \"moon\" and its first sound is mmm. The learner says the NAME of the letter, \"em\", instead of the sound.",
+        "examples": [
+         "em"
+        ]
+       },
+       {
+        "id": "added_vowel",
+        "pattern": "The word is \"moon\" and its first sound is mmm. The learner says the sound with a vowel after it, \"muh\", instead of holding the sound on its own.",
+        "examples": [
+         "muh"
+        ]
+       },
+       {
+        "id": "last_sound",
+        "pattern": "The word is \"moon\" and its first sound is mmm. The learner says the LAST sound of \"moon\", nnn, instead of the first.",
+        "examples": [
+         "nnn"
+        ]
+       },
+       {
+        "id": "other_sound",
+        "pattern": "The word is \"moon\" and its first sound is mmm. The learner says the sound of a different letter. A held consonant such as \"mmm\" or \"nnn\" is a letter sound, not filler.",
+        "examples": [
+         "fff",
+         "lll"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dils-1-m",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-letter-sounds",
+      "objectiveId": "di-letter-sounds-practice",
+      "evalMode": "first_sound_in_word",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dils-1-m",
+       "phase": "working",
+       "task": "What is the first sound in \"moon\"?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "sss",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "first_sound_in_word",
+        "assignment": "The learner must say the first sound in \"moon\": mmm. Saying the whole word \"moon\" back, or naming a letter, is a step toward the answer and is not it.",
+        "keyword": "moon",
+        "elicitation": "isolated",
+        "articulation": "held",
+        "support": "the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound",
+        "printedWord": "moon",
+        "markMeaning": "Purple dashed marks are yours. They point at the card or the picture while you teach; they are not the learner answering, and they never move the gold ring off the stimulus.",
+        "onScreen": "Beside the learner's picture, a model card shows a different picture, a leaf, with its word; its first sound is the held sound lll. It is not this word.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target (gold ring)",
+          "label": "the word \"moon\" printed on the card"
+         },
+         {
+          "id": "picture",
+          "selected": false,
+          "group": "keyword picture",
+          "label": "a picture of a moon"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_sound",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "keyword_word",
+           "letter_name",
+           "added_vowel",
+           "other_sound",
+           "last_sound"
+          ],
+          "when": "The learner says a word, a letter name, or another sound, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT picture and its word (onScreen names it). Say it as your turn: the word, then its first sound (\"My turn: leaf … lll\"). Then ask for the first sound of the learner's own word. Never say their word's first sound, and never stretch its start."
+         },
+         {
+          "id": "first_box",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "last_sound"
+          ],
+          "when": "The learner says the last sound of the word.",
+          "does": "Draws a row of empty boxes under the picture, one per sound of the word, the first one lit: the first box is the start of the word. Nothing is written in the boxes."
+         }
+        ],
+        "expectedAnswer": "mmm",
+        "lastResponse": {
+         "itemId": "dils-1-m",
+         "response": "sss",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dils-1-m",
+          "response": "sss",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/2/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dils-1-m",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "dils-1-m",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-letter-sounds",
+      "objectiveId": "di-letter-sounds-practice",
+      "evalMode": "first_sound_in_word",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dils-1-m",
+       "phase": "working",
+       "task": "What is the first sound in \"moon\"?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "sss",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "first_sound_in_word",
+        "assignment": "The learner must say the first sound in \"moon\": mmm. Saying the whole word \"moon\" back, or naming a letter, is a step toward the answer and is not it.",
+        "keyword": "moon",
+        "elicitation": "isolated",
+        "articulation": "held",
+        "support": "the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound",
+        "printedWord": "moon",
+        "markMeaning": "Purple dashed marks are yours. They point at the card or the picture while you teach; they are not the learner answering, and they never move the gold ring off the stimulus.",
+        "onScreen": "Beside the learner's picture, a model card shows a different picture, a leaf, with its word; its first sound is the held sound lll. It is not this word. A row of 3 empty boxes under the picture, one per sound of the word; the first box is lit.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target (gold ring)",
+          "label": "the word \"moon\" printed on the card"
+         },
+         {
+          "id": "picture",
+          "selected": false,
+          "group": "keyword picture",
+          "label": "a picture of a moon"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_sound",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "keyword_word",
+           "letter_name",
+           "added_vowel",
+           "other_sound",
+           "last_sound"
+          ],
+          "when": "The learner says a word, a letter name, or another sound, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT picture and its word (onScreen names it). Say it as your turn: the word, then its first sound (\"My turn: leaf … lll\"). Then ask for the first sound of the learner's own word. Never say their word's first sound, and never stretch its start."
+         },
+         {
+          "id": "first_box",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "last_sound"
+          ],
+          "when": "The learner says the last sound of the word.",
+          "does": "Draws a row of empty boxes under the picture, one per sound of the word, the first one lit: the first box is the start of the word. Nothing is written in the boxes."
+         }
+        ],
+        "expectedAnswer": "mmm",
+        "lastResponse": {
+         "itemId": "dils-1-m",
+         "response": "sss",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dils-1-m",
+          "response": "sss",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "dils-1-m",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "first_box"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dils-1-m",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled first_box (help). It is on screen now: Draws a row of empty boxes under the picture, one per sound of the word, the first one lit: the first box is the start of the word. Nothing is written in the boxes. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "first_box",
+      "kind": "help",
+      "does": "Draws a row of empty boxes under the picture, one per sound of the word, the first one lit: the first box is the start of the word. Nothing is written in the boxes."
+     }
+    },
+    {
+     "kind": "credit",
+     "itemId": "dils-1-m",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-letter-sounds",
+      "objectiveId": "di-letter-sounds-practice",
+      "evalMode": "first_sound_in_word",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dils-1-m",
+       "phase": "working",
+       "task": "What is the first sound in \"moon\"?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "sss",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "first_sound_in_word",
+        "assignment": "The learner must say the first sound in \"moon\": mmm. Saying the whole word \"moon\" back, or naming a letter, is a step toward the answer and is not it.",
+        "keyword": "moon",
+        "elicitation": "isolated",
+        "articulation": "held",
+        "support": "the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound",
+        "printedWord": "moon",
+        "markMeaning": "Purple dashed marks are yours. They point at the card or the picture while you teach; they are not the learner answering, and they never move the gold ring off the stimulus.",
+        "onScreen": "Beside the learner's picture, a model card shows a different picture, a leaf, with its word; its first sound is the held sound lll. It is not this word. A row of 3 empty boxes under the picture, one per sound of the word; the first box is lit.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target (gold ring)",
+          "label": "the word \"moon\" printed on the card"
+         },
+         {
+          "id": "picture",
+          "selected": false,
+          "group": "keyword picture",
+          "label": "a picture of a moon"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_sound",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "keyword_word",
+           "letter_name",
+           "added_vowel",
+           "other_sound",
+           "last_sound"
+          ],
+          "when": "The learner says a word, a letter name, or another sound, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT picture and its word (onScreen names it). Say it as your turn: the word, then its first sound (\"My turn: leaf … lll\"). Then ask for the first sound of the learner's own word. Never say their word's first sound, and never stretch its start."
+         },
+         {
+          "id": "first_box",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "last_sound"
+          ],
+          "when": "The learner says the last sound of the word.",
+          "does": "Draws a row of empty boxes under the picture, one per sound of the word, the first one lit: the first box is the start of the word. Nothing is written in the boxes."
+         }
+        ],
+        "expectedAnswer": "mmm",
+        "pendingResponse": {
+         "id": "speech:1:2",
+         "text": "mmm"
+        },
+        "lastResponse": {
+         "itemId": "dils-1-m",
+         "response": "sss",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dils-1-m",
+          "response": "sss",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "dils-1-m",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "first_box"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dils-1-m",
+        "secondsOnItem": 20,
+        "secondsSinceReady": 20,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "mmm",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dils-1-m",
+       "revision": 3
+      },
+      "task": "What is the first sound in \"moon\"?",
+      "phase": "working",
+      "learner": "mmm",
+      "expectedAnswer": "mmm",
+      "pendingResponse": {
+       "id": "speech:1:2",
+       "text": "mmm"
+      },
+      "lastResponse": {
+       "itemId": "dils-1-m",
+       "response": "sss",
+       "source": "speech",
+       "correct": false,
+       "tutorResponse": "Not quite.",
+       "judgment": "tutor",
+       "assisted": false,
+       "answerExposure": "none"
+      },
+      "activity": {
+       "responseSource": "speech",
+       "attemptNumber": 1,
+       "objects": [
+        {
+         "id": "stimulus",
+         "selected": false,
+         "group": "assignment target (gold ring)",
+         "label": "the word \"moon\" printed on the card"
+        },
+        {
+         "id": "picture",
+         "selected": false,
+         "group": "keyword picture",
+         "label": "a picture of a moon"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "first_sound_in_word",
+        "assignment": "The learner must say the first sound in \"moon\": mmm. Saying the whole word \"moon\" back, or naming a letter, is a step toward the answer and is not it.",
+        "keyword": "moon",
+        "elicitation": "isolated",
+        "articulation": "held",
+        "support": "the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound",
+        "printedWord": "moon",
+        "markMeaning": "Purple dashed marks are yours. They point at the card or the picture while you teach; they are not the learner answering, and they never move the gold ring off the stimulus.",
+        "onScreen": "Beside the learner's picture, a model card shows a different picture, a leaf, with its word; its first sound is the held sound lll. It is not this word. A row of 3 empty boxes under the picture, one per sound of the word; the first box is lit.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 2,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dils-1-m"
+      },
+      "task": "What is the first sound in \"moon\"?",
+      "expectedAnswer": "mmm",
+      "learner": "mmm",
+      "misses": [
+       {
+        "id": "keyword_word",
+        "pattern": "The word is \"moon\" and its first sound is mmm. The learner says a whole word instead of the sound on its own: the picture word \"moon\" or any other word, even one that starts with the right sound.",
+        "examples": [
+         "moon"
+        ]
+       },
+       {
+        "id": "letter_name",
+        "pattern": "The word is \"moon\" and its first sound is mmm. The learner says the NAME of the letter, \"em\", instead of the sound.",
+        "examples": [
+         "em"
+        ]
+       },
+       {
+        "id": "added_vowel",
+        "pattern": "The word is \"moon\" and its first sound is mmm. The learner says the sound with a vowel after it, \"muh\", instead of holding the sound on its own.",
+        "examples": [
+         "muh"
+        ]
+       },
+       {
+        "id": "last_sound",
+        "pattern": "The word is \"moon\" and its first sound is mmm. The learner says the LAST sound of \"moon\", nnn, instead of the first.",
+        "examples": [
+         "nnn"
+        ]
+       },
+       {
+        "id": "other_sound",
+        "pattern": "The word is \"moon\" and its first sound is mmm. The learner says the sound of a different letter. A held consonant such as \"mmm\" or \"nnn\" is a letter sound, not filler.",
+        "examples": [
+         "fff",
+         "lll"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    }
+   ]
+  },
+  {
+   "payload": "di-letter-sounds.letter_sound-stops",
+   "primitiveId": "di-letter-sounds",
+   "evalMode": "letter_sound",
+   "guidance": "The gold-ringed card is the stimulus. Its keyword picture is drawn on an onset item, and on a letter item only as the keyword_picture lever. The child answers OUT LOUD. A letter's NAME is not its sound; naming the picture is a step toward a held sound, not the sound. A short vowel or a stop also accepts its keyword or a word starting with the sound; a small \"uh\" after a stop counts. Never say this item's sound or route it through its picture before the child tries: your model is the model_sound lever, a DIFFERENT letter beside it. The support fact says where levers start. Your feedback is the only record of the sound. demonstrate takes \"stimulus\" or \"picture\"; [] clears. You cannot change the letter or the picture, write, or answer for the child. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Saying the continuous sound a printed letter makes",
+   "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+   "leakTokens": [
+    "DI_ITEM",
+    "DI_MOVE_ON",
+    "DI_COMPLETE"
+   ],
+   "ask": "What sound does the letter \"t\" make?",
+   "keys": [
+    "/t/ or tent",
+    "/t/"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dils-1-t",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-letter-sounds",
+      "objectiveId": "di-letter-sounds-practice",
+      "evalMode": "letter_sound",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dils-1-t",
+       "phase": "working",
+       "task": "What sound does the letter \"t\" make?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "letter_sound",
+        "assignment": "The learner must say the clipped sound /t/. A small \"uh\" after it counts, and so does \"tent\" or another word starting with that sound. The letter's name is not the answer.",
+        "keyword": "tent",
+        "elicitation": "isolated",
+        "articulation": "clipped",
+        "support": "the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound",
+        "printedLetter": "t",
+        "markMeaning": "Purple dashed marks are yours. They point at the card or the picture while you teach; they are not the learner answering, and they never move the gold ring off the stimulus.",
+        "onScreen": "Beside the learner's letter, a model card shows a different letter, c, with its picture, a cat; it says the short clipped sound /k/. It is not this letter. The letter's picture is shown above it.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target (gold ring)",
+          "label": "the letter \"t\" printed on the card"
+         },
+         {
+          "id": "picture",
+          "selected": false,
+          "group": "keyword picture",
+          "label": "a picture of a tent"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_sound",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "keyword_word",
+           "letter_name",
+           "added_vowel",
+           "other_sound"
+          ],
+          "when": "The learner says a word, a letter name, or another sound, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT letter and its picture (onScreen names it). Say its sound as your turn (\"My turn: this letter says lll, like leaf\"), held or clipped as onScreen says. After a letter name you may add \"its name is …; its sound is …\" for the MODEL letter only. Then ask the learner's letter again. Never say their letter's sound or its picture word."
+         },
+         {
+          "id": "keyword_picture",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "other_sound",
+           "letter_name"
+          ],
+          "when": "The learner says another letter's sound or the letter's name.",
+          "does": "Shows the letter's picture above it. Do not name the picture or say its first sound; let the learner use it."
+         }
+        ],
+        "expectedAnswer": "/t/ or tent",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dils-1-t",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "dils-1-t",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-letter-sounds",
+      "objectiveId": "di-letter-sounds-practice",
+      "evalMode": "letter_sound",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dils-1-t",
+       "phase": "working",
+       "task": "What sound does the letter \"t\" make?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "letter_sound",
+        "assignment": "The learner must say the clipped sound /t/. A small \"uh\" after it counts, and so does \"tent\" or another word starting with that sound. The letter's name is not the answer.",
+        "keyword": "tent",
+        "elicitation": "isolated",
+        "articulation": "clipped",
+        "support": "the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound",
+        "printedLetter": "t",
+        "markMeaning": "Purple dashed marks are yours. They point at the card or the picture while you teach; they are not the learner answering, and they never move the gold ring off the stimulus.",
+        "onScreen": "Beside the learner's letter, a model card shows a different letter, c, with its picture, a cat; it says the short clipped sound /k/. It is not this letter. The letter's picture is shown above it.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target (gold ring)",
+          "label": "the letter \"t\" printed on the card"
+         },
+         {
+          "id": "picture",
+          "selected": false,
+          "group": "keyword picture",
+          "label": "a picture of a tent"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_sound",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "keyword_word",
+           "letter_name",
+           "added_vowel",
+           "other_sound"
+          ],
+          "when": "The learner says a word, a letter name, or another sound, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT letter and its picture (onScreen names it). Say its sound as your turn (\"My turn: this letter says lll, like leaf\"), held or clipped as onScreen says. After a letter name you may add \"its name is …; its sound is …\" for the MODEL letter only. Then ask the learner's letter again. Never say their letter's sound or its picture word."
+         },
+         {
+          "id": "keyword_picture",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "other_sound",
+           "letter_name"
+          ],
+          "when": "The learner says another letter's sound or the letter's name.",
+          "does": "Shows the letter's picture above it. Do not name the picture or say its first sound; let the learner use it."
+         }
+        ],
+        "expectedAnswer": "/t/ or tent",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "sss"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dils-1-t",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "sss",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dils-1-t",
+       "revision": 1
+      },
+      "task": "What sound does the letter \"t\" make?",
+      "phase": "working",
+      "learner": "sss",
+      "expectedAnswer": "/t/ or tent",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "sss"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [
+        {
+         "id": "stimulus",
+         "selected": false,
+         "group": "assignment target (gold ring)",
+         "label": "the letter \"t\" printed on the card"
+        },
+        {
+         "id": "picture",
+         "selected": false,
+         "group": "keyword picture",
+         "label": "a picture of a tent"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "letter_sound",
+        "assignment": "The learner must say the clipped sound /t/. A small \"uh\" after it counts, and so does \"tent\" or another word starting with that sound. The letter's name is not the answer.",
+        "keyword": "tent",
+        "elicitation": "isolated",
+        "articulation": "clipped",
+        "support": "the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound",
+        "printedLetter": "t",
+        "markMeaning": "Purple dashed marks are yours. They point at the card or the picture while you teach; they are not the learner answering, and they never move the gold ring off the stimulus.",
+        "onScreen": "Beside the learner's letter, a model card shows a different letter, c, with its picture, a cat; it says the short clipped sound /k/. It is not this letter. The letter's picture is shown above it.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dils-1-t"
+      },
+      "task": "What sound does the letter \"t\" make?",
+      "expectedAnswer": "/t/ or tent",
+      "learner": "sss",
+      "misses": [
+       {
+        "id": "letter_name",
+        "pattern": "The printed letter is t and its sound is /t/. The learner says the NAME of the letter, \"tee\", instead of the sound.",
+        "examples": [
+         "tee"
+        ]
+       },
+       {
+        "id": "other_sound",
+        "pattern": "The printed letter is t and its sound is /t/. The learner says the sound of a different letter. A held consonant such as \"mmm\" or \"nnn\" is a letter sound, not filler.",
+        "examples": [
+         "mmm",
+         "fff"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dils-1-t",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-letter-sounds",
+      "objectiveId": "di-letter-sounds-practice",
+      "evalMode": "letter_sound",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dils-1-t",
+       "phase": "working",
+       "task": "What sound does the letter \"t\" make?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "sss",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "letter_sound",
+        "assignment": "The learner must say the clipped sound /t/. A small \"uh\" after it counts, and so does \"tent\" or another word starting with that sound. The letter's name is not the answer.",
+        "keyword": "tent",
+        "elicitation": "isolated",
+        "articulation": "clipped",
+        "support": "the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound",
+        "printedLetter": "t",
+        "markMeaning": "Purple dashed marks are yours. They point at the card or the picture while you teach; they are not the learner answering, and they never move the gold ring off the stimulus.",
+        "onScreen": "Beside the learner's letter, a model card shows a different letter, c, with its picture, a cat; it says the short clipped sound /k/. It is not this letter. The letter's picture is shown above it.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target (gold ring)",
+          "label": "the letter \"t\" printed on the card"
+         },
+         {
+          "id": "picture",
+          "selected": false,
+          "group": "keyword picture",
+          "label": "a picture of a tent"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_sound",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "keyword_word",
+           "letter_name",
+           "added_vowel",
+           "other_sound"
+          ],
+          "when": "The learner says a word, a letter name, or another sound, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT letter and its picture (onScreen names it). Say its sound as your turn (\"My turn: this letter says lll, like leaf\"), held or clipped as onScreen says. After a letter name you may add \"its name is …; its sound is …\" for the MODEL letter only. Then ask the learner's letter again. Never say their letter's sound or its picture word."
+         },
+         {
+          "id": "keyword_picture",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "other_sound",
+           "letter_name"
+          ],
+          "when": "The learner says another letter's sound or the letter's name.",
+          "does": "Shows the letter's picture above it. Do not name the picture or say its first sound; let the learner use it."
+         }
+        ],
+        "expectedAnswer": "/t/ or tent",
+        "lastResponse": {
+         "itemId": "dils-1-t",
+         "response": "sss",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dils-1-t",
+          "response": "sss",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/2/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dils-1-t",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "credit",
+     "itemId": "dils-1-t",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-letter-sounds",
+      "objectiveId": "di-letter-sounds-practice",
+      "evalMode": "letter_sound",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dils-1-t",
+       "phase": "working",
+       "task": "What sound does the letter \"t\" make?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "sss",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "letter_sound",
+        "assignment": "The learner must say the clipped sound /t/. A small \"uh\" after it counts, and so does \"tent\" or another word starting with that sound. The letter's name is not the answer.",
+        "keyword": "tent",
+        "elicitation": "isolated",
+        "articulation": "clipped",
+        "support": "the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound",
+        "printedLetter": "t",
+        "markMeaning": "Purple dashed marks are yours. They point at the card or the picture while you teach; they are not the learner answering, and they never move the gold ring off the stimulus.",
+        "onScreen": "Beside the learner's letter, a model card shows a different letter, c, with its picture, a cat; it says the short clipped sound /k/. It is not this letter. The letter's picture is shown above it.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target (gold ring)",
+          "label": "the letter \"t\" printed on the card"
+         },
+         {
+          "id": "picture",
+          "selected": false,
+          "group": "keyword picture",
+          "label": "a picture of a tent"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_sound",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "keyword_word",
+           "letter_name",
+           "added_vowel",
+           "other_sound"
+          ],
+          "when": "The learner says a word, a letter name, or another sound, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT letter and its picture (onScreen names it). Say its sound as your turn (\"My turn: this letter says lll, like leaf\"), held or clipped as onScreen says. After a letter name you may add \"its name is …; its sound is …\" for the MODEL letter only. Then ask the learner's letter again. Never say their letter's sound or its picture word."
+         },
+         {
+          "id": "keyword_picture",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "other_sound",
+           "letter_name"
+          ],
+          "when": "The learner says another letter's sound or the letter's name.",
+          "does": "Shows the letter's picture above it. Do not name the picture or say its first sound; let the learner use it."
+         }
+        ],
+        "expectedAnswer": "/t/ or tent",
+        "pendingResponse": {
+         "id": "speech:1:2",
+         "text": "/t/"
+        },
+        "lastResponse": {
+         "itemId": "dils-1-t",
+         "response": "sss",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dils-1-t",
+          "response": "sss",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/2/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dils-1-t",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "/t/",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dils-1-t",
+       "revision": 2
+      },
+      "task": "What sound does the letter \"t\" make?",
+      "phase": "working",
+      "learner": "/t/",
+      "expectedAnswer": "/t/ or tent",
+      "pendingResponse": {
+       "id": "speech:1:2",
+       "text": "/t/"
+      },
+      "lastResponse": {
+       "itemId": "dils-1-t",
+       "response": "sss",
+       "source": "speech",
+       "correct": false,
+       "tutorResponse": "Not quite.",
+       "judgment": "tutor",
+       "assisted": false,
+       "answerExposure": "none"
+      },
+      "activity": {
+       "responseSource": "speech",
+       "attemptNumber": 1,
+       "objects": [
+        {
+         "id": "stimulus",
+         "selected": false,
+         "group": "assignment target (gold ring)",
+         "label": "the letter \"t\" printed on the card"
+        },
+        {
+         "id": "picture",
+         "selected": false,
+         "group": "keyword picture",
+         "label": "a picture of a tent"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "letter_sound",
+        "assignment": "The learner must say the clipped sound /t/. A small \"uh\" after it counts, and so does \"tent\" or another word starting with that sound. The letter's name is not the answer.",
+        "keyword": "tent",
+        "elicitation": "isolated",
+        "articulation": "clipped",
+        "support": "the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound",
+        "printedLetter": "t",
+        "markMeaning": "Purple dashed marks are yours. They point at the card or the picture while you teach; they are not the learner answering, and they never move the gold ring off the stimulus.",
+        "onScreen": "Beside the learner's letter, a model card shows a different letter, c, with its picture, a cat; it says the short clipped sound /k/. It is not this letter. The letter's picture is shown above it.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dils-1-t"
+      },
+      "task": "What sound does the letter \"t\" make?",
+      "expectedAnswer": "/t/ or tent",
+      "learner": "/t/",
+      "misses": [
+       {
+        "id": "letter_name",
+        "pattern": "The printed letter is t and its sound is /t/. The learner says the NAME of the letter, \"tee\", instead of the sound.",
+        "examples": [
+         "tee"
+        ]
+       },
+       {
+        "id": "other_sound",
+        "pattern": "The printed letter is t and its sound is /t/. The learner says the sound of a different letter. A held consonant such as \"mmm\" or \"nnn\" is a letter sound, not filler.",
+        "examples": [
+         "mmm",
+         "fff"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    }
+   ]
+  },
+  {
+   "payload": "di-letter-sounds.letter_sound",
+   "primitiveId": "di-letter-sounds",
+   "evalMode": "letter_sound",
+   "guidance": "The gold-ringed card is the stimulus. Its keyword picture is drawn on an onset item, and on a letter item only as the keyword_picture lever. The child answers OUT LOUD. A letter's NAME is not its sound; naming the picture is a step toward a held sound, not the sound. A short vowel or a stop also accepts its keyword or a word starting with the sound; a small \"uh\" after a stop counts. Never say this item's sound or route it through its picture before the child tries: your model is the model_sound lever, a DIFFERENT letter beside it. The support fact says where levers start. Your feedback is the only record of the sound. demonstrate takes \"stimulus\" or \"picture\"; [] clears. You cannot change the letter or the picture, write, or answer for the child. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Saying the continuous sound a printed letter makes",
+   "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+   "leakTokens": [
+    "DI_ITEM",
+    "DI_MOVE_ON",
+    "DI_COMPLETE"
+   ],
+   "ask": "What sound does the letter \"m\" make?",
+   "keys": [
+    "mmm"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dils-1-m",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-letter-sounds",
+      "objectiveId": "di-letter-sounds-practice",
+      "evalMode": "letter_sound",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dils-1-m",
+       "phase": "working",
+       "task": "What sound does the letter \"m\" make?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "letter_sound",
+        "assignment": "The learner must say the continuous sound mmm. The letter's name is not the answer, and naming the picture \"moon\" is a step toward the sound rather than the sound itself.",
+        "keyword": "moon",
+        "elicitation": "isolated",
+        "articulation": "held",
+        "support": "the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound",
+        "printedLetter": "m",
+        "markMeaning": "Purple dashed marks are yours. They point at the card or the picture while you teach; they are not the learner answering, and they never move the gold ring off the stimulus.",
+        "onScreen": "Beside the learner's letter, a model card shows a different letter, r, with its picture, a ring; it says the held sound rrr. It is not this letter. The letter's picture is shown above it.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target (gold ring)",
+          "label": "the letter \"m\" printed on the card"
+         },
+         {
+          "id": "picture",
+          "selected": false,
+          "group": "keyword picture",
+          "label": "a picture of a moon"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_sound",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "keyword_word",
+           "letter_name",
+           "added_vowel",
+           "other_sound"
+          ],
+          "when": "The learner says a word, a letter name, or another sound, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT letter and its picture (onScreen names it). Say its sound as your turn (\"My turn: this letter says lll, like leaf\"), held or clipped as onScreen says. After a letter name you may add \"its name is …; its sound is …\" for the MODEL letter only. Then ask the learner's letter again. Never say their letter's sound or its picture word."
+         },
+         {
+          "id": "sound_arrow",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "added_vowel"
+          ],
+          "when": "The learner adds a vowel after the sound (\"muh\") instead of holding it.",
+          "does": "Draws a ball and a long arrow under the printed letter: hold the sound while a finger moves along it. Say \"hold it\", never the sound."
+         },
+         {
+          "id": "keyword_picture",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "other_sound",
+           "letter_name"
+          ],
+          "when": "The learner says another letter's sound or the letter's name.",
+          "does": "Shows the letter's picture above it. Do not name the picture or say its first sound; let the learner use it."
+         }
+        ],
+        "expectedAnswer": "mmm",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dils-1-m",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "dils-1-m",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-letter-sounds",
+      "objectiveId": "di-letter-sounds-practice",
+      "evalMode": "letter_sound",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dils-1-m",
+       "phase": "working",
+       "task": "What sound does the letter \"m\" make?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "letter_sound",
+        "assignment": "The learner must say the continuous sound mmm. The letter's name is not the answer, and naming the picture \"moon\" is a step toward the sound rather than the sound itself.",
+        "keyword": "moon",
+        "elicitation": "isolated",
+        "articulation": "held",
+        "support": "the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound",
+        "printedLetter": "m",
+        "markMeaning": "Purple dashed marks are yours. They point at the card or the picture while you teach; they are not the learner answering, and they never move the gold ring off the stimulus.",
+        "onScreen": "Beside the learner's letter, a model card shows a different letter, r, with its picture, a ring; it says the held sound rrr. It is not this letter. The letter's picture is shown above it.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target (gold ring)",
+          "label": "the letter \"m\" printed on the card"
+         },
+         {
+          "id": "picture",
+          "selected": false,
+          "group": "keyword picture",
+          "label": "a picture of a moon"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_sound",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "keyword_word",
+           "letter_name",
+           "added_vowel",
+           "other_sound"
+          ],
+          "when": "The learner says a word, a letter name, or another sound, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT letter and its picture (onScreen names it). Say its sound as your turn (\"My turn: this letter says lll, like leaf\"), held or clipped as onScreen says. After a letter name you may add \"its name is …; its sound is …\" for the MODEL letter only. Then ask the learner's letter again. Never say their letter's sound or its picture word."
+         },
+         {
+          "id": "sound_arrow",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "added_vowel"
+          ],
+          "when": "The learner adds a vowel after the sound (\"muh\") instead of holding it.",
+          "does": "Draws a ball and a long arrow under the printed letter: hold the sound while a finger moves along it. Say \"hold it\", never the sound."
+         },
+         {
+          "id": "keyword_picture",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "other_sound",
+           "letter_name"
+          ],
+          "when": "The learner says another letter's sound or the letter's name.",
+          "does": "Shows the letter's picture above it. Do not name the picture or say its first sound; let the learner use it."
+         }
+        ],
+        "expectedAnswer": "mmm",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "sss"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dils-1-m",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "sss",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dils-1-m",
+       "revision": 1
+      },
+      "task": "What sound does the letter \"m\" make?",
+      "phase": "working",
+      "learner": "sss",
+      "expectedAnswer": "mmm",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "sss"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [
+        {
+         "id": "stimulus",
+         "selected": false,
+         "group": "assignment target (gold ring)",
+         "label": "the letter \"m\" printed on the card"
+        },
+        {
+         "id": "picture",
+         "selected": false,
+         "group": "keyword picture",
+         "label": "a picture of a moon"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "letter_sound",
+        "assignment": "The learner must say the continuous sound mmm. The letter's name is not the answer, and naming the picture \"moon\" is a step toward the sound rather than the sound itself.",
+        "keyword": "moon",
+        "elicitation": "isolated",
+        "articulation": "held",
+        "support": "the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound",
+        "printedLetter": "m",
+        "markMeaning": "Purple dashed marks are yours. They point at the card or the picture while you teach; they are not the learner answering, and they never move the gold ring off the stimulus.",
+        "onScreen": "Beside the learner's letter, a model card shows a different letter, r, with its picture, a ring; it says the held sound rrr. It is not this letter. The letter's picture is shown above it.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dils-1-m"
+      },
+      "task": "What sound does the letter \"m\" make?",
+      "expectedAnswer": "mmm",
+      "learner": "sss",
+      "misses": [
+       {
+        "id": "keyword_word",
+        "pattern": "The printed letter is m and its sound is mmm. The learner says a whole word instead of the sound on its own: the picture word \"moon\" or any other word, even one that starts with the right sound.",
+        "examples": [
+         "moon"
+        ]
+       },
+       {
+        "id": "letter_name",
+        "pattern": "The printed letter is m and its sound is mmm. The learner says the NAME of the letter, \"em\", instead of the sound.",
+        "examples": [
+         "em"
+        ]
+       },
+       {
+        "id": "added_vowel",
+        "pattern": "The printed letter is m and its sound is mmm. The learner says the sound with a vowel after it, \"muh\", instead of holding the sound on its own.",
+        "examples": [
+         "muh"
+        ]
+       },
+       {
+        "id": "other_sound",
+        "pattern": "The printed letter is m and its sound is mmm. The learner says the sound of a different letter. A held consonant such as \"mmm\" or \"nnn\" is a letter sound, not filler.",
+        "examples": [
+         "fff",
+         "lll"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dils-1-m",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-letter-sounds",
+      "objectiveId": "di-letter-sounds-practice",
+      "evalMode": "letter_sound",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dils-1-m",
+       "phase": "working",
+       "task": "What sound does the letter \"m\" make?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "sss",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "letter_sound",
+        "assignment": "The learner must say the continuous sound mmm. The letter's name is not the answer, and naming the picture \"moon\" is a step toward the sound rather than the sound itself.",
+        "keyword": "moon",
+        "elicitation": "isolated",
+        "articulation": "held",
+        "support": "the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound",
+        "printedLetter": "m",
+        "markMeaning": "Purple dashed marks are yours. They point at the card or the picture while you teach; they are not the learner answering, and they never move the gold ring off the stimulus.",
+        "onScreen": "Beside the learner's letter, a model card shows a different letter, r, with its picture, a ring; it says the held sound rrr. It is not this letter. The letter's picture is shown above it.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target (gold ring)",
+          "label": "the letter \"m\" printed on the card"
+         },
+         {
+          "id": "picture",
+          "selected": false,
+          "group": "keyword picture",
+          "label": "a picture of a moon"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_sound",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "keyword_word",
+           "letter_name",
+           "added_vowel",
+           "other_sound"
+          ],
+          "when": "The learner says a word, a letter name, or another sound, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT letter and its picture (onScreen names it). Say its sound as your turn (\"My turn: this letter says lll, like leaf\"), held or clipped as onScreen says. After a letter name you may add \"its name is …; its sound is …\" for the MODEL letter only. Then ask the learner's letter again. Never say their letter's sound or its picture word."
+         },
+         {
+          "id": "sound_arrow",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "added_vowel"
+          ],
+          "when": "The learner adds a vowel after the sound (\"muh\") instead of holding it.",
+          "does": "Draws a ball and a long arrow under the printed letter: hold the sound while a finger moves along it. Say \"hold it\", never the sound."
+         },
+         {
+          "id": "keyword_picture",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "other_sound",
+           "letter_name"
+          ],
+          "when": "The learner says another letter's sound or the letter's name.",
+          "does": "Shows the letter's picture above it. Do not name the picture or say its first sound; let the learner use it."
+         }
+        ],
+        "expectedAnswer": "mmm",
+        "lastResponse": {
+         "itemId": "dils-1-m",
+         "response": "sss",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dils-1-m",
+          "response": "sss",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/2/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dils-1-m",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "dils-1-m",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-letter-sounds",
+      "objectiveId": "di-letter-sounds-practice",
+      "evalMode": "letter_sound",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dils-1-m",
+       "phase": "working",
+       "task": "What sound does the letter \"m\" make?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "sss",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "letter_sound",
+        "assignment": "The learner must say the continuous sound mmm. The letter's name is not the answer, and naming the picture \"moon\" is a step toward the sound rather than the sound itself.",
+        "keyword": "moon",
+        "elicitation": "isolated",
+        "articulation": "held",
+        "support": "the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound",
+        "printedLetter": "m",
+        "markMeaning": "Purple dashed marks are yours. They point at the card or the picture while you teach; they are not the learner answering, and they never move the gold ring off the stimulus.",
+        "onScreen": "Beside the learner's letter, a model card shows a different letter, r, with its picture, a ring; it says the held sound rrr. It is not this letter. A ball and a long arrow under the printed letter show the sound is held. The letter's picture is shown above it.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target (gold ring)",
+          "label": "the letter \"m\" printed on the card"
+         },
+         {
+          "id": "picture",
+          "selected": false,
+          "group": "keyword picture",
+          "label": "a picture of a moon"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_sound",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "keyword_word",
+           "letter_name",
+           "added_vowel",
+           "other_sound"
+          ],
+          "when": "The learner says a word, a letter name, or another sound, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT letter and its picture (onScreen names it). Say its sound as your turn (\"My turn: this letter says lll, like leaf\"), held or clipped as onScreen says. After a letter name you may add \"its name is …; its sound is …\" for the MODEL letter only. Then ask the learner's letter again. Never say their letter's sound or its picture word."
+         },
+         {
+          "id": "sound_arrow",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "added_vowel"
+          ],
+          "when": "The learner adds a vowel after the sound (\"muh\") instead of holding it.",
+          "does": "Draws a ball and a long arrow under the printed letter: hold the sound while a finger moves along it. Say \"hold it\", never the sound."
+         },
+         {
+          "id": "keyword_picture",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "other_sound",
+           "letter_name"
+          ],
+          "when": "The learner says another letter's sound or the letter's name.",
+          "does": "Shows the letter's picture above it. Do not name the picture or say its first sound; let the learner use it."
+         }
+        ],
+        "expectedAnswer": "mmm",
+        "lastResponse": {
+         "itemId": "dils-1-m",
+         "response": "sss",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dils-1-m",
+          "response": "sss",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "dils-1-m",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "sound_arrow"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dils-1-m",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled sound_arrow (help). It is on screen now: Draws a ball and a long arrow under the printed letter: hold the sound while a finger moves along it. Say \"hold it\", never the sound. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "sound_arrow",
+      "kind": "help",
+      "does": "Draws a ball and a long arrow under the printed letter: hold the sound while a finger moves along it. Say \"hold it\", never the sound."
+     }
+    },
+    {
+     "kind": "credit",
+     "itemId": "dils-1-m",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-letter-sounds",
+      "objectiveId": "di-letter-sounds-practice",
+      "evalMode": "letter_sound",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dils-1-m",
+       "phase": "working",
+       "task": "What sound does the letter \"m\" make?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "sss",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "letter_sound",
+        "assignment": "The learner must say the continuous sound mmm. The letter's name is not the answer, and naming the picture \"moon\" is a step toward the sound rather than the sound itself.",
+        "keyword": "moon",
+        "elicitation": "isolated",
+        "articulation": "held",
+        "support": "the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound",
+        "printedLetter": "m",
+        "markMeaning": "Purple dashed marks are yours. They point at the card or the picture while you teach; they are not the learner answering, and they never move the gold ring off the stimulus.",
+        "onScreen": "Beside the learner's letter, a model card shows a different letter, r, with its picture, a ring; it says the held sound rrr. It is not this letter. A ball and a long arrow under the printed letter show the sound is held. The letter's picture is shown above it.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target (gold ring)",
+          "label": "the letter \"m\" printed on the card"
+         },
+         {
+          "id": "picture",
+          "selected": false,
+          "group": "keyword picture",
+          "label": "a picture of a moon"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_sound",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "keyword_word",
+           "letter_name",
+           "added_vowel",
+           "other_sound"
+          ],
+          "when": "The learner says a word, a letter name, or another sound, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT letter and its picture (onScreen names it). Say its sound as your turn (\"My turn: this letter says lll, like leaf\"), held or clipped as onScreen says. After a letter name you may add \"its name is …; its sound is …\" for the MODEL letter only. Then ask the learner's letter again. Never say their letter's sound or its picture word."
+         },
+         {
+          "id": "sound_arrow",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "added_vowel"
+          ],
+          "when": "The learner adds a vowel after the sound (\"muh\") instead of holding it.",
+          "does": "Draws a ball and a long arrow under the printed letter: hold the sound while a finger moves along it. Say \"hold it\", never the sound."
+         },
+         {
+          "id": "keyword_picture",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "other_sound",
+           "letter_name"
+          ],
+          "when": "The learner says another letter's sound or the letter's name.",
+          "does": "Shows the letter's picture above it. Do not name the picture or say its first sound; let the learner use it."
+         }
+        ],
+        "expectedAnswer": "mmm",
+        "pendingResponse": {
+         "id": "speech:1:2",
+         "text": "mmm"
+        },
+        "lastResponse": {
+         "itemId": "dils-1-m",
+         "response": "sss",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dils-1-m",
+          "response": "sss",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "dils-1-m",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "sound_arrow"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dils-1-m",
+        "secondsOnItem": 20,
+        "secondsSinceReady": 20,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "mmm",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dils-1-m",
+       "revision": 3
+      },
+      "task": "What sound does the letter \"m\" make?",
+      "phase": "working",
+      "learner": "mmm",
+      "expectedAnswer": "mmm",
+      "pendingResponse": {
+       "id": "speech:1:2",
+       "text": "mmm"
+      },
+      "lastResponse": {
+       "itemId": "dils-1-m",
+       "response": "sss",
+       "source": "speech",
+       "correct": false,
+       "tutorResponse": "Not quite.",
+       "judgment": "tutor",
+       "assisted": false,
+       "answerExposure": "none"
+      },
+      "activity": {
+       "responseSource": "speech",
+       "attemptNumber": 1,
+       "objects": [
+        {
+         "id": "stimulus",
+         "selected": false,
+         "group": "assignment target (gold ring)",
+         "label": "the letter \"m\" printed on the card"
+        },
+        {
+         "id": "picture",
+         "selected": false,
+         "group": "keyword picture",
+         "label": "a picture of a moon"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "letter_sound",
+        "assignment": "The learner must say the continuous sound mmm. The letter's name is not the answer, and naming the picture \"moon\" is a step toward the sound rather than the sound itself.",
+        "keyword": "moon",
+        "elicitation": "isolated",
+        "articulation": "held",
+        "support": "the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound",
+        "printedLetter": "m",
+        "markMeaning": "Purple dashed marks are yours. They point at the card or the picture while you teach; they are not the learner answering, and they never move the gold ring off the stimulus.",
+        "onScreen": "Beside the learner's letter, a model card shows a different letter, r, with its picture, a ring; it says the held sound rrr. It is not this letter. A ball and a long arrow under the printed letter show the sound is held. The letter's picture is shown above it.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 2,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dils-1-m"
+      },
+      "task": "What sound does the letter \"m\" make?",
+      "expectedAnswer": "mmm",
+      "learner": "mmm",
+      "misses": [
+       {
+        "id": "keyword_word",
+        "pattern": "The printed letter is m and its sound is mmm. The learner says a whole word instead of the sound on its own: the picture word \"moon\" or any other word, even one that starts with the right sound.",
+        "examples": [
+         "moon"
+        ]
+       },
+       {
+        "id": "letter_name",
+        "pattern": "The printed letter is m and its sound is mmm. The learner says the NAME of the letter, \"em\", instead of the sound.",
+        "examples": [
+         "em"
+        ]
+       },
+       {
+        "id": "added_vowel",
+        "pattern": "The printed letter is m and its sound is mmm. The learner says the sound with a vowel after it, \"muh\", instead of holding the sound on its own.",
+        "examples": [
+         "muh"
+        ]
+       },
+       {
+        "id": "other_sound",
+        "pattern": "The printed letter is m and its sound is mmm. The learner says the sound of a different letter. A held consonant such as \"mmm\" or \"nnn\" is a letter sound, not filler.",
+        "examples": [
+         "fff",
+         "lll"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    }
+   ]
+  },
+  {
+   "payload": "di-letter-sounds.letter_sound_review",
+   "primitiveId": "di-letter-sounds",
+   "evalMode": "letter_sound_review",
+   "guidance": "The gold-ringed card is the stimulus. Its keyword picture is drawn on an onset item, and on a letter item only as the keyword_picture lever. The child answers OUT LOUD. A letter's NAME is not its sound; naming the picture is a step toward a held sound, not the sound. A short vowel or a stop also accepts its keyword or a word starting with the sound; a small \"uh\" after a stop counts. Never say this item's sound or route it through its picture before the child tries: your model is the model_sound lever, a DIFFERENT letter beside it. The support fact says where levers start. Your feedback is the only record of the sound. demonstrate takes \"stimulus\" or \"picture\"; [] clears. You cannot change the letter or the picture, write, or answer for the child. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Saying the continuous sound a printed letter makes",
+   "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+   "leakTokens": [
+    "DI_ITEM",
+    "DI_MOVE_ON",
+    "DI_COMPLETE"
+   ],
+   "ask": "What sound does the letter \"m\" make?",
+   "keys": [
+    "mmm"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dils-1-m",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-letter-sounds",
+      "objectiveId": "di-letter-sounds-practice",
+      "evalMode": "letter_sound_review",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dils-1-m",
+       "phase": "working",
+       "task": "What sound does the letter \"m\" make?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "letter_sound_review",
+        "assignment": "The learner must say the continuous sound mmm. The letter's name is not the answer, and naming the picture \"moon\" is a step toward the sound rather than the sound itself.",
+        "keyword": "moon",
+        "elicitation": "isolated",
+        "articulation": "held",
+        "support": "the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound",
+        "printedLetter": "m",
+        "markMeaning": "Purple dashed marks are yours. They point at the card or the picture while you teach; they are not the learner answering, and they never move the gold ring off the stimulus.",
+        "onScreen": "Beside the learner's letter, a model card shows a different letter, f, with its picture, a fish; it says the held sound fff. It is not this letter. The letter's picture is shown above it.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target (gold ring)",
+          "label": "the letter \"m\" printed on the card"
+         },
+         {
+          "id": "picture",
+          "selected": false,
+          "group": "keyword picture",
+          "label": "a picture of a moon"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_sound",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "keyword_word",
+           "letter_name",
+           "added_vowel",
+           "other_sound"
+          ],
+          "when": "The learner says a word, a letter name, or another sound, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT letter and its picture (onScreen names it). Say its sound as your turn (\"My turn: this letter says lll, like leaf\"), held or clipped as onScreen says. After a letter name you may add \"its name is …; its sound is …\" for the MODEL letter only. Then ask the learner's letter again. Never say their letter's sound or its picture word."
+         },
+         {
+          "id": "sound_arrow",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "added_vowel"
+          ],
+          "when": "The learner adds a vowel after the sound (\"muh\") instead of holding it.",
+          "does": "Draws a ball and a long arrow under the printed letter: hold the sound while a finger moves along it. Say \"hold it\", never the sound."
+         },
+         {
+          "id": "keyword_picture",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "other_sound",
+           "letter_name"
+          ],
+          "when": "The learner says another letter's sound or the letter's name.",
+          "does": "Shows the letter's picture above it. Do not name the picture or say its first sound; let the learner use it."
+         }
+        ],
+        "expectedAnswer": "mmm",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dils-1-m",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "dils-1-m",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-letter-sounds",
+      "objectiveId": "di-letter-sounds-practice",
+      "evalMode": "letter_sound_review",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dils-1-m",
+       "phase": "working",
+       "task": "What sound does the letter \"m\" make?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "letter_sound_review",
+        "assignment": "The learner must say the continuous sound mmm. The letter's name is not the answer, and naming the picture \"moon\" is a step toward the sound rather than the sound itself.",
+        "keyword": "moon",
+        "elicitation": "isolated",
+        "articulation": "held",
+        "support": "the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound",
+        "printedLetter": "m",
+        "markMeaning": "Purple dashed marks are yours. They point at the card or the picture while you teach; they are not the learner answering, and they never move the gold ring off the stimulus.",
+        "onScreen": "Beside the learner's letter, a model card shows a different letter, f, with its picture, a fish; it says the held sound fff. It is not this letter. The letter's picture is shown above it.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target (gold ring)",
+          "label": "the letter \"m\" printed on the card"
+         },
+         {
+          "id": "picture",
+          "selected": false,
+          "group": "keyword picture",
+          "label": "a picture of a moon"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_sound",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "keyword_word",
+           "letter_name",
+           "added_vowel",
+           "other_sound"
+          ],
+          "when": "The learner says a word, a letter name, or another sound, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT letter and its picture (onScreen names it). Say its sound as your turn (\"My turn: this letter says lll, like leaf\"), held or clipped as onScreen says. After a letter name you may add \"its name is …; its sound is …\" for the MODEL letter only. Then ask the learner's letter again. Never say their letter's sound or its picture word."
+         },
+         {
+          "id": "sound_arrow",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "added_vowel"
+          ],
+          "when": "The learner adds a vowel after the sound (\"muh\") instead of holding it.",
+          "does": "Draws a ball and a long arrow under the printed letter: hold the sound while a finger moves along it. Say \"hold it\", never the sound."
+         },
+         {
+          "id": "keyword_picture",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "other_sound",
+           "letter_name"
+          ],
+          "when": "The learner says another letter's sound or the letter's name.",
+          "does": "Shows the letter's picture above it. Do not name the picture or say its first sound; let the learner use it."
+         }
+        ],
+        "expectedAnswer": "mmm",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "sss"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dils-1-m",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "sss",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dils-1-m",
+       "revision": 1
+      },
+      "task": "What sound does the letter \"m\" make?",
+      "phase": "working",
+      "learner": "sss",
+      "expectedAnswer": "mmm",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "sss"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [
+        {
+         "id": "stimulus",
+         "selected": false,
+         "group": "assignment target (gold ring)",
+         "label": "the letter \"m\" printed on the card"
+        },
+        {
+         "id": "picture",
+         "selected": false,
+         "group": "keyword picture",
+         "label": "a picture of a moon"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "letter_sound_review",
+        "assignment": "The learner must say the continuous sound mmm. The letter's name is not the answer, and naming the picture \"moon\" is a step toward the sound rather than the sound itself.",
+        "keyword": "moon",
+        "elicitation": "isolated",
+        "articulation": "held",
+        "support": "the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound",
+        "printedLetter": "m",
+        "markMeaning": "Purple dashed marks are yours. They point at the card or the picture while you teach; they are not the learner answering, and they never move the gold ring off the stimulus.",
+        "onScreen": "Beside the learner's letter, a model card shows a different letter, f, with its picture, a fish; it says the held sound fff. It is not this letter. The letter's picture is shown above it.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dils-1-m"
+      },
+      "task": "What sound does the letter \"m\" make?",
+      "expectedAnswer": "mmm",
+      "learner": "sss",
+      "misses": [
+       {
+        "id": "keyword_word",
+        "pattern": "The printed letter is m and its sound is mmm. The learner says a whole word instead of the sound on its own: the picture word \"moon\" or any other word, even one that starts with the right sound.",
+        "examples": [
+         "moon"
+        ]
+       },
+       {
+        "id": "letter_name",
+        "pattern": "The printed letter is m and its sound is mmm. The learner says the NAME of the letter, \"em\", instead of the sound.",
+        "examples": [
+         "em"
+        ]
+       },
+       {
+        "id": "added_vowel",
+        "pattern": "The printed letter is m and its sound is mmm. The learner says the sound with a vowel after it, \"muh\", instead of holding the sound on its own.",
+        "examples": [
+         "muh"
+        ]
+       },
+       {
+        "id": "other_sound",
+        "pattern": "The printed letter is m and its sound is mmm. The learner says the sound of a different letter. A held consonant such as \"mmm\" or \"nnn\" is a letter sound, not filler.",
+        "examples": [
+         "fff",
+         "lll"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dils-1-m",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-letter-sounds",
+      "objectiveId": "di-letter-sounds-practice",
+      "evalMode": "letter_sound_review",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dils-1-m",
+       "phase": "working",
+       "task": "What sound does the letter \"m\" make?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "sss",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "letter_sound_review",
+        "assignment": "The learner must say the continuous sound mmm. The letter's name is not the answer, and naming the picture \"moon\" is a step toward the sound rather than the sound itself.",
+        "keyword": "moon",
+        "elicitation": "isolated",
+        "articulation": "held",
+        "support": "the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound",
+        "printedLetter": "m",
+        "markMeaning": "Purple dashed marks are yours. They point at the card or the picture while you teach; they are not the learner answering, and they never move the gold ring off the stimulus.",
+        "onScreen": "Beside the learner's letter, a model card shows a different letter, f, with its picture, a fish; it says the held sound fff. It is not this letter. The letter's picture is shown above it.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target (gold ring)",
+          "label": "the letter \"m\" printed on the card"
+         },
+         {
+          "id": "picture",
+          "selected": false,
+          "group": "keyword picture",
+          "label": "a picture of a moon"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_sound",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "keyword_word",
+           "letter_name",
+           "added_vowel",
+           "other_sound"
+          ],
+          "when": "The learner says a word, a letter name, or another sound, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT letter and its picture (onScreen names it). Say its sound as your turn (\"My turn: this letter says lll, like leaf\"), held or clipped as onScreen says. After a letter name you may add \"its name is …; its sound is …\" for the MODEL letter only. Then ask the learner's letter again. Never say their letter's sound or its picture word."
+         },
+         {
+          "id": "sound_arrow",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "added_vowel"
+          ],
+          "when": "The learner adds a vowel after the sound (\"muh\") instead of holding it.",
+          "does": "Draws a ball and a long arrow under the printed letter: hold the sound while a finger moves along it. Say \"hold it\", never the sound."
+         },
+         {
+          "id": "keyword_picture",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "other_sound",
+           "letter_name"
+          ],
+          "when": "The learner says another letter's sound or the letter's name.",
+          "does": "Shows the letter's picture above it. Do not name the picture or say its first sound; let the learner use it."
+         }
+        ],
+        "expectedAnswer": "mmm",
+        "lastResponse": {
+         "itemId": "dils-1-m",
+         "response": "sss",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dils-1-m",
+          "response": "sss",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/2/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dils-1-m",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "dils-1-m",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-letter-sounds",
+      "objectiveId": "di-letter-sounds-practice",
+      "evalMode": "letter_sound_review",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dils-1-m",
+       "phase": "working",
+       "task": "What sound does the letter \"m\" make?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "sss",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "letter_sound_review",
+        "assignment": "The learner must say the continuous sound mmm. The letter's name is not the answer, and naming the picture \"moon\" is a step toward the sound rather than the sound itself.",
+        "keyword": "moon",
+        "elicitation": "isolated",
+        "articulation": "held",
+        "support": "the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound",
+        "printedLetter": "m",
+        "markMeaning": "Purple dashed marks are yours. They point at the card or the picture while you teach; they are not the learner answering, and they never move the gold ring off the stimulus.",
+        "onScreen": "Beside the learner's letter, a model card shows a different letter, f, with its picture, a fish; it says the held sound fff. It is not this letter. A ball and a long arrow under the printed letter show the sound is held. The letter's picture is shown above it.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target (gold ring)",
+          "label": "the letter \"m\" printed on the card"
+         },
+         {
+          "id": "picture",
+          "selected": false,
+          "group": "keyword picture",
+          "label": "a picture of a moon"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_sound",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "keyword_word",
+           "letter_name",
+           "added_vowel",
+           "other_sound"
+          ],
+          "when": "The learner says a word, a letter name, or another sound, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT letter and its picture (onScreen names it). Say its sound as your turn (\"My turn: this letter says lll, like leaf\"), held or clipped as onScreen says. After a letter name you may add \"its name is …; its sound is …\" for the MODEL letter only. Then ask the learner's letter again. Never say their letter's sound or its picture word."
+         },
+         {
+          "id": "sound_arrow",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "added_vowel"
+          ],
+          "when": "The learner adds a vowel after the sound (\"muh\") instead of holding it.",
+          "does": "Draws a ball and a long arrow under the printed letter: hold the sound while a finger moves along it. Say \"hold it\", never the sound."
+         },
+         {
+          "id": "keyword_picture",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "other_sound",
+           "letter_name"
+          ],
+          "when": "The learner says another letter's sound or the letter's name.",
+          "does": "Shows the letter's picture above it. Do not name the picture or say its first sound; let the learner use it."
+         }
+        ],
+        "expectedAnswer": "mmm",
+        "lastResponse": {
+         "itemId": "dils-1-m",
+         "response": "sss",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dils-1-m",
+          "response": "sss",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "dils-1-m",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "sound_arrow"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dils-1-m",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled sound_arrow (help). It is on screen now: Draws a ball and a long arrow under the printed letter: hold the sound while a finger moves along it. Say \"hold it\", never the sound. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "sound_arrow",
+      "kind": "help",
+      "does": "Draws a ball and a long arrow under the printed letter: hold the sound while a finger moves along it. Say \"hold it\", never the sound."
+     }
+    },
+    {
+     "kind": "credit",
+     "itemId": "dils-1-m",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-letter-sounds",
+      "objectiveId": "di-letter-sounds-practice",
+      "evalMode": "letter_sound_review",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dils-1-m",
+       "phase": "working",
+       "task": "What sound does the letter \"m\" make?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "sss",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "letter_sound_review",
+        "assignment": "The learner must say the continuous sound mmm. The letter's name is not the answer, and naming the picture \"moon\" is a step toward the sound rather than the sound itself.",
+        "keyword": "moon",
+        "elicitation": "isolated",
+        "articulation": "held",
+        "support": "the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound",
+        "printedLetter": "m",
+        "markMeaning": "Purple dashed marks are yours. They point at the card or the picture while you teach; they are not the learner answering, and they never move the gold ring off the stimulus.",
+        "onScreen": "Beside the learner's letter, a model card shows a different letter, f, with its picture, a fish; it says the held sound fff. It is not this letter. A ball and a long arrow under the printed letter show the sound is held. The letter's picture is shown above it.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target (gold ring)",
+          "label": "the letter \"m\" printed on the card"
+         },
+         {
+          "id": "picture",
+          "selected": false,
+          "group": "keyword picture",
+          "label": "a picture of a moon"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_sound",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "keyword_word",
+           "letter_name",
+           "added_vowel",
+           "other_sound"
+          ],
+          "when": "The learner says a word, a letter name, or another sound, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT letter and its picture (onScreen names it). Say its sound as your turn (\"My turn: this letter says lll, like leaf\"), held or clipped as onScreen says. After a letter name you may add \"its name is …; its sound is …\" for the MODEL letter only. Then ask the learner's letter again. Never say their letter's sound or its picture word."
+         },
+         {
+          "id": "sound_arrow",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "added_vowel"
+          ],
+          "when": "The learner adds a vowel after the sound (\"muh\") instead of holding it.",
+          "does": "Draws a ball and a long arrow under the printed letter: hold the sound while a finger moves along it. Say \"hold it\", never the sound."
+         },
+         {
+          "id": "keyword_picture",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "other_sound",
+           "letter_name"
+          ],
+          "when": "The learner says another letter's sound or the letter's name.",
+          "does": "Shows the letter's picture above it. Do not name the picture or say its first sound; let the learner use it."
+         }
+        ],
+        "expectedAnswer": "mmm",
+        "pendingResponse": {
+         "id": "speech:1:2",
+         "text": "mmm"
+        },
+        "lastResponse": {
+         "itemId": "dils-1-m",
+         "response": "sss",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dils-1-m",
+          "response": "sss",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "dils-1-m",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "sound_arrow"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dils-1-m",
+        "secondsOnItem": 20,
+        "secondsSinceReady": 20,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "mmm",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dils-1-m",
+       "revision": 3
+      },
+      "task": "What sound does the letter \"m\" make?",
+      "phase": "working",
+      "learner": "mmm",
+      "expectedAnswer": "mmm",
+      "pendingResponse": {
+       "id": "speech:1:2",
+       "text": "mmm"
+      },
+      "lastResponse": {
+       "itemId": "dils-1-m",
+       "response": "sss",
+       "source": "speech",
+       "correct": false,
+       "tutorResponse": "Not quite.",
+       "judgment": "tutor",
+       "assisted": false,
+       "answerExposure": "none"
+      },
+      "activity": {
+       "responseSource": "speech",
+       "attemptNumber": 1,
+       "objects": [
+        {
+         "id": "stimulus",
+         "selected": false,
+         "group": "assignment target (gold ring)",
+         "label": "the letter \"m\" printed on the card"
+        },
+        {
+         "id": "picture",
+         "selected": false,
+         "group": "keyword picture",
+         "label": "a picture of a moon"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "letter_sound_review",
+        "assignment": "The learner must say the continuous sound mmm. The letter's name is not the answer, and naming the picture \"moon\" is a step toward the sound rather than the sound itself.",
+        "keyword": "moon",
+        "elicitation": "isolated",
+        "articulation": "held",
+        "support": "the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound",
+        "printedLetter": "m",
+        "markMeaning": "Purple dashed marks are yours. They point at the card or the picture while you teach; they are not the learner answering, and they never move the gold ring off the stimulus.",
+        "onScreen": "Beside the learner's letter, a model card shows a different letter, f, with its picture, a fish; it says the held sound fff. It is not this letter. A ball and a long arrow under the printed letter show the sound is held. The letter's picture is shown above it.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 2,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dils-1-m"
+      },
+      "task": "What sound does the letter \"m\" make?",
+      "expectedAnswer": "mmm",
+      "learner": "mmm",
+      "misses": [
+       {
+        "id": "keyword_word",
+        "pattern": "The printed letter is m and its sound is mmm. The learner says a whole word instead of the sound on its own: the picture word \"moon\" or any other word, even one that starts with the right sound.",
+        "examples": [
+         "moon"
+        ]
+       },
+       {
+        "id": "letter_name",
+        "pattern": "The printed letter is m and its sound is mmm. The learner says the NAME of the letter, \"em\", instead of the sound.",
+        "examples": [
+         "em"
+        ]
+       },
+       {
+        "id": "added_vowel",
+        "pattern": "The printed letter is m and its sound is mmm. The learner says the sound with a vowel after it, \"muh\", instead of holding the sound on its own.",
+        "examples": [
+         "muh"
+        ]
+       },
+       {
+        "id": "other_sound",
+        "pattern": "The printed letter is m and its sound is mmm. The learner says the sound of a different letter. A held consonant such as \"mmm\" or \"nnn\" is a letter sound, not filler.",
+        "examples": [
+         "fff",
+         "lll"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    }
+   ]
+  }
+ ]
+}

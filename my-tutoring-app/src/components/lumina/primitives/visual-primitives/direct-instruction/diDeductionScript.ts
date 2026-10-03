@@ -113,6 +113,9 @@ export interface DiDeductionData {
   description: string;
   challengeType: DeductionChallengeType;
   rules: DeductionRuleSpec[];
+  /** Truth-reviewed rules the session never asks, sharing no content word with it: the levers' model and practice
+   *  case (ruling R3). Never items. */
+  spares?: DeductionRuleSpec[];
   supportTier?: DeductionSupportTier;
   gradeLevel?: string;
   instanceId?: string;

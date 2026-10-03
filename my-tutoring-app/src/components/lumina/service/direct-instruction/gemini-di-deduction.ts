@@ -52,11 +52,15 @@ import {
   DI_DEDUCTION_TYPE_DOCS,
   type DeductionChallengeType,
 } from '../../primitives/visual-primitives/direct-instruction/diDeductionModes';
+import { contentWords, spareLeaks, sparesFor } from '../../primitives/visual-primitives/direct-instruction/diDeductionLevers';
 
 const DEFAULT_CASE_COUNT = 6;
 const MIN_CASE_COUNT = 3;
 const MAX_CASE_COUNT = 9;
 const MAX_RULES = 4;
+/** Spare rules for the levers (ruling R3): the model card and the counterexample practice case are worked on a rule
+ *  the session never asks, generated and truth-reviewed with the others, swapped in by code at runtime. */
+const SPARE_RULES = 2;
 
 const SUPPORT_TIERS: readonly DeductionSupportTier[] = ['easy', 'medium', 'hard'];
 const normalizeSupportTier = (raw?: unknown): DeductionSupportTier | undefined => {
@@ -102,15 +106,18 @@ const ruleSchema: Schema = {
       items: { type: Type.STRING },
       description: `2-${MAX_ENTITIES_PER_LIST} things that truly LACK the property. Bare singular nouns, no article.`,
     },
-    lookalikes: {
+    // Named for what it holds: as `lookalikes`, flash-lite listed MEMBERS (duck, owl, swan for "birds have feathers")
+    // in 14 of 18 rules on 2026-10-03, and the truth review trimmed them all. Mapped to `lookalikes` in code.
+    notCategoryButHasProperty: {
       type: Type.ARRAY,
       items: { type: Type.STRING },
       description:
-        `1-${MAX_ENTITIES_PER_LIST} things that truly HAVE the property but are NOT a <category> (a turtle lays eggs and `
-        + 'is not a bird). Bare singular nouns, no article. Empty only if none exists.',
+        `2-${MAX_ENTITIES_PER_LIST} things that are NOT a <category> at all, yet still have the property (for "all birds `
+        + 'lay eggs": turtle, crocodile; for "all insects have six legs": none). Never a member. Bare singular nouns, no article. '
+        + 'Empty only if none exists.',
     },
   },
-  required: ['category', 'categoryPlural', 'propertyPlural', 'propertySingular', 'propertyNegated', 'kindNoun', 'members', 'nonMembers', 'lookalikes'],
+  required: ['category', 'categoryPlural', 'propertyPlural', 'propertySingular', 'propertyNegated', 'kindNoun', 'members', 'nonMembers', 'notCategoryButHasProperty'],
 };
 
 const sessionSchema: Schema = {
@@ -127,7 +134,7 @@ const sessionSchema: Schema = {
     rules: {
       type: Type.ARRAY,
       items: ruleSchema,
-      description: `${MAX_RULES} rules at most.`,
+      description: `${MAX_RULES + SPARE_RULES} rules at most.`,
     },
   },
   required: ['title', 'description', 'rules'],
@@ -186,18 +193,22 @@ Return one verdict per rule id with a short reason.
 
 ${rules.map(describeForReview).join('\n')}`;
   try {
-    const response = await ai.models.generateContent({
+    // One retry of the call itself: a 504 or truncated JSON on both generation attempts shipped an empty session
+    // (2 of 9 saved payloads, 2026-10-03). A review that fails twice still keeps nothing.
+    const call = () => ai.models.generateContent({
       model: 'gemini-flash-latest',
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
         responseSchema: reviewSchema,
         temperature: 0,
-        maxOutputTokens: 8192,
+        // Six rules with reasons: 8192 truncated the JSON under thinking (probe 2026-10-03).
+        maxOutputTokens: 16384,
         httpOptions: { timeout: 45000 },
       },
     });
-    const parsed = JSON.parse(response.text || '{}') as {
+    const read = async () => JSON.parse((await call()).text || '{}');
+    const parsed = await read().catch(read) as {
       verdicts?: Array<{ id?: string; ruleTrue?: boolean; badEntities?: string[]; reason?: string }>;
     };
     const verdicts = new Map((parsed.verdicts ?? []).map((v) => [v.id, v]));
@@ -222,6 +233,35 @@ ${rules.map(describeForReview).join('\n')}`;
     return kept;
   } catch (error) {
     console.warn('[DiDeduction] truth review failed — no rule ships unreviewed:', error);
+    return [];
+  }
+}
+
+// ── Spare rules for the levers (R3) ──────────────────────────────────────────
+
+const spareSchema: Schema = { type: Type.OBJECT, properties: { rules: { type: Type.ARRAY, items: ruleSchema } }, required: ['rules'] };
+
+/** Two more rules for the model card and the practice case, sharing no word with the session, each with a lookalike.
+ *  Structure gate and truth review as for session rules; anything that leaks is dropped. Never throws. */
+async function writeSpares(session: DeductionRuleSpec[], topic: string, gradeLevel: string): Promise<DeductionRuleSpec[]> {
+  const used = Array.from(new Set(session.flatMap((r) => Array.from(contentWords(r))))).join(', ');
+  const prompt = `Write 2 rules for a ${gradeLevel} lesson on reasoning from a rule (topic: "${topic}"). Each is printed as `
+    + '"All <categoryPlural> <propertyPlural>." and must be TRUE of every member as a textbook states it. '
+    + `Use NONE of these words anywhere (category, property, or any entity): ${used}. `
+    + 'Each rule NEEDS 2 or 3 things that are NOT in its category yet still have the property (for "all birds lay eggs": '
+    + 'turtle, crocodile) — never a member. Choose properties other things share: "lay eggs", "live in water", "can fly", '
+    + '"eat plants" work; "have feathers" or "have six legs" do not (nothing else has them). Every entity is a real, concrete '
+    + 'thing a child knows by name. Return the JSON only.';
+  try {
+    const response = await ai.models.generateContent({ model: 'gemini-flash-lite-latest', contents: prompt,
+      config: { responseMimeType: 'application/json', responseSchema: spareSchema, temperature: 0.7, maxOutputTokens: 2048 } });
+    const parsed = JSON.parse(response.text ?? '{}') as { rules?: Array<Record<string, unknown>> };
+    const structural = (parsed.rules ?? []).slice(0, 2)
+      .map((raw, i) => sanitizeRule({ ...raw, lookalikes: raw.notCategoryButHasProperty ?? raw.lookalikes }, `dd-spare-${i + 1}`))
+      .filter((r): r is DeductionRuleSpec => !!r);
+    return sparesFor(session, await reviewRuleTruth(structural, gradeLevel));
+  } catch (error) {
+    console.warn('[DiDeduction] spare rules failed; the model lever is not offered:', error);
     return [];
   }
 }
@@ -302,15 +342,16 @@ export const generateDiDeduction = async (
     (resolution?.allowedTypes as DeductionChallengeType[] | undefined)?.filter((t) => ALL_TYPES.includes(t)) ?? [];
   if (modeTypes.length === 0) modeTypes = [...ALL_TYPES];
   const shapes = shapesFor(modeTypes);
-  const needsLookalikes = shapes.includes('cannot_tell');
+  // Always: the spare rules need a lookalike so the model card can show a can't-tell case (rulings R1, R3).
+  const needsLookalikes = true;
 
   const prompt = `Scope a brisk Direct Instruction DEDUCTION practice for a learner in ${gradeLevel}: the child sees a RULE ("All insects have six legs.") and a CASE ("A beetle is an insect."), and SAYS what the rule tells them, and how they know.
 
 TOPIC: "${topic}"${intent ? `\nOBJECTIVE FOCUS: "${intent}"` : ''}${config?.objectiveText ? `\nOBJECTIVE: "${config.objectiveText}"` : ''}
 
-Write ${MAX_RULES} rules that fit the topic. The code will print each rule EXACTLY as "All <categoryPlural> <propertyPlural>." — so the property must be TRUE OF EVERY member as a ${gradeLevel} textbook states it, with no exception a child would know (never "all birds fly"; yes "all birds lay eggs", "all birds have feathers", "all insects have six legs", "all squares have four equal sides"). Every entity must be a REAL, CONCRETE, NAMEABLE thing (a robin, a spider, a rectangle, a penny) — never a role or a vague noun ("a drawing", "a thing", "a window pane"), and never a made object standing in for a natural one (no pillow for feathers). Prefer generalizations from the subject the objective is about: science classification (animals, plants, matter, shapes), social studies rules (communities, government, geography), or the rules a reading passage states. Every entity is a real, concrete thing a ${gradeLevel} child knows by name.
+Write ${MAX_RULES + SPARE_RULES} rules that fit the topic, each about a DIFFERENT category with a DIFFERENT property (no word shared between two rules). The code will print each rule EXACTLY as "All <categoryPlural> <propertyPlural>." — so the property must be TRUE OF EVERY member as a ${gradeLevel} textbook states it, with no exception a child would know (never "all birds fly"; yes "all birds lay eggs", "all birds have feathers", "all insects have six legs", "all squares have four equal sides"). Every entity must be a REAL, CONCRETE, NAMEABLE thing (a robin, a spider, a rectangle, a penny) — never a role or a vague noun ("a drawing", "a thing", "a window pane"), and never a made object standing in for a natural one (no pillow for feathers). Prefer generalizations from the subject the objective is about: science classification (animals, plants, matter, shapes), social studies rules (communities, government, geography), or the rules a reading passage states. Every entity is a real, concrete thing a ${gradeLevel} child knows by name.
 ${needsLookalikes
-    ? 'Each rule NEEDS at least one true LOOKALIKE — a thing that has the property and is NOT in the category (a turtle lays eggs and is not a bird; a rectangle has four sides and is not a square). Choose rules where such a thing exists.'
+    ? 'Each rule NEEDS 2 or 3 true LOOKALIKES — things that have the property and are NOT in the category (a turtle lays eggs and is not a bird; a rectangle has four sides and is not a square). A lookalike is NEVER a member: a duck IS a bird, so it can never be a bird lookalike; a beetle IS an insect. Each lookalike is the same kind of thing the rule sorts (an animal for an animal rule). Choose rules where such things exist. GOOD: "all birds lay eggs" (turtle, crocodile lay eggs too), "all fish live in water" (whale, crab), "all insects have wings or six legs" is NOT good. BAD: "all birds have feathers" and "all insects have six legs" (nothing else has them, so no lookalike exists).'
     : 'Lookalikes may be empty when none exists.'}
 Do not put the same thing in two lists. Do not name any entity inside the property. Title and description name NO category, property, or entity.
 
@@ -331,17 +372,17 @@ Return the JSON only.`;
           responseMimeType: 'application/json',
           responseSchema: sessionSchema,
           temperature: attempt === 0 ? 0.7 : 0.9,
-          maxOutputTokens: 2048,
+          maxOutputTokens: 4096,
         },
       });
       const parsed = JSON.parse(response.text ?? '{}') as {
         title?: string; description?: string; rules?: Array<Record<string, unknown>>;
       };
-      const rawRules = Array.isArray(parsed.rules) ? parsed.rules.slice(0, MAX_RULES) : [];
+      const rawRules = Array.isArray(parsed.rules) ? parsed.rules.slice(0, MAX_RULES + SPARE_RULES) : [];
       generated = rawRules.length;
       const structural: DeductionRuleSpec[] = [];
       rawRules.forEach((raw, i) => {
-        const rule = sanitizeRule({ ...raw, shapes }, `dd-${attempt + 1}-${i + 1}`);
+        const rule = sanitizeRule({ ...raw, lookalikes: raw.notCategoryButHasProperty ?? raw.lookalikes, shapes }, `dd-${attempt + 1}-${i + 1}`);
         if (rule) structural.push(rule);
         else structurallyDropped++;
       });
@@ -353,7 +394,22 @@ Return the JSON only.`;
     }
   }
 
-  const selected = selectRules(reviewed, count, supportTier);
+  // Reserve the lever spare first (R3): the last reviewed rule with a lookalike that shares no content word with the
+  // session built without it, as long as that session still has the case floor. Then every other unused, word-disjoint rule.
+  const without = (r: DeductionRuleSpec) => selectRules(reviewed.filter((o) => o.id !== r.id), count, supportTier);
+  const reserve = [...reviewed].reverse().find((r) => {
+    if (r.lookalikes.length === 0) return false;
+    // Never at the session's expense: the rest must still build the case floor.
+    const rest = without(r);
+    return rest.cases >= Math.min(count, MIN_CASE_COUNT) && !spareLeaks(r, rest.rules);
+  });
+  const selected = reserve ? without(reserve) : selectRules(reviewed, count, supportTier);
+  let spares = sparesFor(selected.rules, reviewed);
+  // The leftovers rarely include a spare with a lookalike (animal rules share words), and the model card needs one to
+  // show a can't-tell case (R1). One more call writes spares against the session's own words; same truth review.
+  if (selected.rules.length && !spares.some((r) => r.lookalikes.length > 0)) {
+    spares = [...spares, ...await writeSpares(selected.rules, topic, gradeLevel)];
+  }
   const primaryType: DeductionChallengeType = shapes.length === 1 ? shapes[0] : modeTypes[0];
 
   console.log('DI Deduction Generated:', {
@@ -365,6 +421,7 @@ Return the JSON only.`;
     reviewPassed: reviewed.length,
     rules: selected.rules.map((r) => `${ruleTextOf(r)} [${r.members.join('/')} | ${r.nonMembers.join('/')} | ${r.lookalikes.join('/') || '-'}]`),
     cases: selected.cases,
+    spares: spares.map((r) => ruleTextOf(r)),
     requested: count,
   });
 
@@ -373,6 +430,7 @@ Return the JSON only.`;
     description,
     challengeType: primaryType,
     rules: selected.rules,
+    ...(spares.length ? { spares } : {}),
     ...(supportTier ? { supportTier } : {}),
     gradeLevel: gradeLevel || 'Grade 3',
   };

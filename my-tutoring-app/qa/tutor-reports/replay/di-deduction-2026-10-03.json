@@ -1,0 +1,1793 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ],
+   "no_change_before_receipt": [
+    0,
+    15
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "di-deduction.cannot_tell",
+   "primitiveId": "di-deduction",
+   "evalMode": "cannot_tell",
+   "keys": [
+    "can't tell (\"maybe\", \"not sure\", \"the rule doesn't say\"), with the reason: the rule does not say only birds lay eggs; other things do too (a turtle lays eggs and is not a bird). \"no, because other things lay eggs too\" carries that reason and counts. \"yes, because it lays eggs\" is the signature error: the rule does not run backwards. can't tell with no reason is not yet the answer.",
+    "can't tell, because the rule does not say only birds lay eggs"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dd-1-1-c0-cannot_tell",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "can't tell (\"maybe\", \"not sure\", \"the rule doesn't say\"), with the reason: the rule does not say only birds lay eggs; other things do too (a turtle lays eggs and is not a bird). \"no, because other things lay eggs too\" carries that reason and counts. \"yes, because it lays eggs\" is the signature error: the rule does not run backwards. can't tell with no reason is not yet the answer.",
+       "can't tell, because the rule does not say only birds lay eggs"
+      ],
+      "ask": "Is this animal a bird? Say yes, no, or can't tell\u2014then explain using the rule.",
+      "leakTokens": [
+       "DD_ITEM",
+       "DD_MOVE_ON",
+       "DD_COMPLETE",
+       "DD_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at our model rule: \"All marsupials carry babies in pouches.\" For a kangaroo, yes, because all marsupials carry babies in pouches; for a duck, no, because all marsupials carry babies in pouches and a duck does not; for an animal with a pouch, can't tell, because other animals like seahorses have pouches too.\n\nNow look at your cards: \"All birds lay eggs\" and \"This animal lays eggs.\" Is this animal a bird? Say yes, no, or can't tell, and explain using the rule.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the model rule: \"All marsupials carry babies in pouches.\" \n\nIf an animal is a kangaroo, yes, it carries babies in a pouch because all marsupials do. If a duck does not carry babies in a pouch, no, it is not a marsupial because all marsupials carry babies in pouches. If an animal carries babies in a pouch, can't tell, because other animals like a seahorse do too.\n\nNow look at your cards: the rule says \"All birds lay eggs,\" and the case says \"This animal lays eggs.\" \n\nIs this animal a bird? Say yes, no, or can't tell\u2014and explain using the rule.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is an example with a different rule: \"All marsupials carry babies in pouches.\" \n\nIf a kangaroo is a marsupial, then yes, it carries babies in a pouch. If a duck does not carry babies in a pouch, then no, it is not a marsupial. But if an animal carries babies in a pouch, we can't tell, because a seahorse carries babies in a pouch too and is not a marsupial.\n\nNow look at your cards: the rule says \"All birds lay eggs,\" and this animal lays eggs. Is this animal a bird\u2014say yes, no, or can't tell, and explain using the rule.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is an example with a different rule: \"All marsupials carry babies in pouches.\" \n\nIf a kangaroo is a marsupial, yes, it carries babies in a pouch. If a duck does not carry babies in a pouch, no, it is not a marsupial. If an animal carries babies in a pouch, we can't tell, because other animals like a seahorse do too.\n\nNow look at your cards: the rule says \"All birds lay eggs,\" and the case says \"This animal lays eggs.\" Is this animal a bird?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at our model rule: \"All marsupials carry babies in pouches.\" \n\nA kangaroo is a marsupial, so yes, it carries babies in a pouch. A duck does not carry babies in a pouch, so no, it is not a marsupial. But for an animal that carries babies in a pouch, we can't tell, because other animals like seahorses do that too!\n\nNow for your cards: the rule says \"All birds lay eggs,\" and our case is \"This animal lays eggs.\" Is this animal a bird? Say yes, no, or can't tell, and explain using the rule.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "dd-1-1-c0-cannot_tell",
+     "trigger": "yes, because it lays eggs",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "can't tell (\"maybe\", \"not sure\", \"the rule doesn't say\"), with the reason: the rule does not say only birds lay eggs; other things do too (a turtle lays eggs and is not a bird). \"no, because other things lay eggs too\" carries that reason and counts. \"yes, because it lays eggs\" is the signature error: the rule does not run backwards. can't tell with no reason is not yet the answer.",
+       "can't tell, because the rule does not say only birds lay eggs"
+      ],
+      "ask": "Is this animal a bird? Say yes, no, or can't tell\u2014then explain using the rule.",
+      "leakTokens": [
+       "DD_ITEM",
+       "DD_MOVE_ON",
+       "DD_COMPLETE",
+       "DD_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A new card appeared to show an example with another rule. Look at that example, and then try our cards again: does the rule tell us for sure if this animal is a bird?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "counterexample_card"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new example card appeared on the screen to help us think about this. \n\nRemember, our rule only says that all birds lay eggs, not that *only* birds lay eggs\u2014so do you think it's yes, no, or can't tell?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "counterexample_card",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new example card appeared on screen to help us think about this. \n\nRemember, our rule only tells us what all birds do\u2014it doesn't say that *only* birds lay eggs, so give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "counterexample_card"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's look at another example to see how rules work. \n\nA rule says: \"All marsupials carry babies in pouches,\" but seahorses carry babies in pouches too, even though they aren't marsupials. \n\nDoes having the pouch prove it must be a marsupial?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "counterexample_card",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new card appeared to help us practice with another rule first. Let's look closely at that one!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "counterexample_card",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dd-1-1-c0-cannot_tell",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "can't tell (\"maybe\", \"not sure\", \"the rule doesn't say\"), with the reason: the rule does not say only birds lay eggs; other things do too (a turtle lays eggs and is not a bird). \"no, because other things lay eggs too\" carries that reason and counts. \"yes, because it lays eggs\" is the signature error: the rule does not run backwards. can't tell with no reason is not yet the answer.",
+       "can't tell, because the rule does not say only birds lay eggs"
+      ],
+      "ask": "Is this animal a bird? Say yes, no, or can't tell\u2014then explain using the rule.",
+      "leakTokens": [
+       "DD_ITEM",
+       "DD_MOVE_ON",
+       "DD_COMPLETE",
+       "DD_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A helper card has appeared to show another example rule and a lookalike. Take a look at it, and see how that helps you decide on our bird cards!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "counterexample_card"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I pulled a card to give us an easier example to look at first. Take a look at the cards on screen and tell me what you notice!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "counterexample_card"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Let's look at another example first: \"All marsupials carry babies in pouches.\" For a kangaroo, yes, because all marsupials carry babies in pouches; for a duck, no, because a duck doesn't carry babies in a pouch; for an animal with a pouch, can't tell, because other animals like seahorses have pouches too.\n\nNow look at your cards: does knowing this animal lays eggs tell you for sure it is a bird, or can't you tell?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "counterexample_card",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A practice card popped up to help us explore this together. Take a look at it, and tell me what you think!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "counterexample_card",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look again at the model rule: \"All marsupials carry babies in pouches.\" For a kangaroo, yes, because all marsupials carry babies in pouches; for a duck, no, because all marsupials carry babies in pouches and a duck does not; for an animal with a pouch, can't tell, because other animals like seahorses carry babies in pouches too.\n\nNow look at your cards: does our rule say *only* birds lay eggs, or can't we tell?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "counterexample_card",
+          "actionId": "test/2/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "dd-1-1-c0-cannot_tell",
+     "trigger": "The learner said they were stuck, so the host pulled answer_frame (help). It is on screen now: Prints \"___ because ___\" under the verdict words: a verdict and a reason. Read the frame; never fill a box or light a word. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do no",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "can't tell (\"maybe\", \"not sure\", \"the rule doesn't say\"), with the reason: the rule does not say only birds lay eggs; other things do too (a turtle lays eggs and is not a bird). \"no, because other things lay eggs too\" carries that reason and counts. \"yes, because it lays eggs\" is the signature error: the rule does not run backwards. can't tell with no reason is not yet the answer.",
+       "can't tell, because the rule does not say only birds lay eggs"
+      ],
+      "ask": "Is this animal a bird? Say yes, no, or can't tell\u2014then explain using the rule.",
+      "leakTokens": [
+       "DD_ITEM",
+       "DD_MOVE_ON",
+       "DD_COMPLETE",
+       "DD_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look right below the verdict words\u2014there is now a sentence frame that says \"blank because blank.\" \n\nTry using that frame: tell me your verdict and the reason from the rule!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A frame has appeared under the words that says \"blank because blank,\" showing space for your answer and your reason. \n\nGive it a try with our cards: is this animal a bird?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under the verdict words, you now have a frame that says \"blank because blank\" to help you give both your answer and your reason. \n\nUsing only our rule \"All birds lay eggs,\" is this animal a bird?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under the cards, an answer frame is now printed that says \"blank because blank.\" \n\nUse the rule card to fill in the frame: is this animal a bird?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under the cards, an answer frame is now printed that says \"blank because blank.\" \n\nTry giving your answer using that sentence frame: is this animal a bird?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "dd-1-1-c0-cannot_tell",
+     "trigger": "can't tell, because the rule does not say only birds lay eggs",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "can't tell (\"maybe\", \"not sure\", \"the rule doesn't say\"), with the reason: the rule does not say only birds lay eggs; other things do too (a turtle lays eggs and is not a bird). \"no, because other things lay eggs too\" carries that reason and counts. \"yes, because it lays eggs\" is the signature error: the rule does not run backwards. can't tell with no reason is not yet the answer.",
+       "can't tell, because the rule does not say only birds lay eggs"
+      ],
+      "ask": "Is this animal a bird? Say yes, no, or can't tell\u2014then explain using the rule.",
+      "leakTokens": [
+       "DD_ITEM",
+       "DD_MOVE_ON",
+       "DD_COMPLETE",
+       "DD_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it right! You figured out that we can't tell, because the rule doesn't say only birds lay eggs.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You said can't tell, because the rule does not say only birds lay eggs.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You said can't tell, because the rule does not say only birds lay eggs.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You said \"can't tell\" and explained that the rule doesn't say only birds lay eggs.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it: can't tell, because the rule doesn't say only birds lay eggs! Exactly right.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "di-deduction.conclude",
+   "primitiveId": "di-deduction",
+   "evalMode": "conclude",
+   "keys": [
+    "that a robin lays eggs, in any words (\"it lays eggs\", or the property alone). the rule read back (\"all birds lay eggs\"), the case read back, or a fact about a robin the rule does not give is not an answer.",
+    "a robin lays eggs"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dd-1-1-c0-conclude",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "that a robin lays eggs, in any words (\"it lays eggs\", or the property alone). the rule read back (\"all birds lay eggs\"), the case read back, or a fact about a robin the rule does not give is not an answer.",
+       "a robin lays eggs"
+      ],
+      "ask": "Say what the rule tells you about a robin.",
+      "leakTokens": [
+       "DD_ITEM",
+       "DD_MOVE_ON",
+       "DD_COMPLETE",
+       "DD_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Our rule says: \"All birds lay eggs,\" and our case card says: \"A robin is a bird.\" What does the rule tell you about a robin?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the model card on the screen. For the rule \"All marsupials carry young in a pouch\": a kangaroo is a marsupial, and all marsupials carry young in a pouch; for a wolf, no, all marsupials carry young in a pouch, and a wolf does not carry young in a pouch; for an animal that carries young in a pouch, you can't tell, because a seahorse carries young in a pouch too, and it is not a marsupial. \n\nNow, using our cards, what does the rule tell you about a robin?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is how we use our rules: when the rule says \"All marsupials carry young in a pouch,\" and we have \"A kangaroo is a marsupial,\" we know a kangaroo carries young in a pouch. If a wolf does not carry young in a pouch, then no, it is not a marsupial, because all marsupials do. If an animal carries young in a pouch, we can't tell if it is a marsupial, because other animals like a seahorse do too. \n\nNow look at your cards: the rule says \"All birds lay eggs,\" and the case says \"A robin is a bird.\" What does the rule tell you about a robin?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is an example: all marsupials carry young in a pouch. A kangaroo is a marsupial, so it carries young in a pouch; a wolf does not carry young in a pouch, so it is not a marsupial; and an animal that carries young in a pouch\u2014like a seahorse\u2014might not be a marsupial, so we cannot tell.\n\nNow looking at our cards: the rule says \"All birds lay eggs,\" and the case says \"A robin is a bird.\" What does the rule tell you about a robin?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The rule card says, \"All birds lay eggs,\" and the case card says, \"A robin is a bird.\" What does the rule tell you about a robin?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "dd-1-1-c0-conclude",
+     "trigger": "a robin does not lay eggs",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "that a robin lays eggs, in any words (\"it lays eggs\", or the property alone). the rule read back (\"all birds lay eggs\"), the case read back, or a fact about a robin the rule does not give is not an answer.",
+       "a robin lays eggs"
+      ],
+      "ask": "Say what the rule tells you about a robin.",
+      "leakTokens": [
+       "DD_ITEM",
+       "DD_MOVE_ON",
+       "DD_COMPLETE",
+       "DD_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the lit words that connect our two cards. What does the rule tell you about a robin?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "shared_term",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the lit words that both cards share. What does the rule tell you about a robin?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "shared_term",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the lit words that the two cards share. Using only what the cards say, what does the rule tell you about a robin?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "shared_term"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the lit words that connect our two cards. What does the rule tell you about a robin?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "shared_term"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the lit words that the two cards share. What does the rule say about a robin?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "shared_term"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dd-1-1-c0-conclude",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "that a robin lays eggs, in any words (\"it lays eggs\", or the property alone). the rule read back (\"all birds lay eggs\"), the case read back, or a fact about a robin the rule does not give is not an answer.",
+       "a robin lays eggs"
+      ],
+      "ask": "Say what the rule tells you about a robin.",
+      "leakTokens": [
+       "DD_ITEM",
+       "DD_MOVE_ON",
+       "DD_COMPLETE",
+       "DD_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the lit words. Using our rule, what does it tell you about a robin?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "shared_term",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the model card: A kangaroo is a marsupial, and all marsupials carry young in a pouch. A wolf does not carry young in a pouch, so no: all marsupials carry young in a pouch, and a wolf does not carry young in a pouch. This animal carries young in a pouch, so can't tell: a seahorse carries young in a pouch too, and it is not a marsupial.\n\nNow, what does our rule tell you about a robin?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "shared_term"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the lit words. What does the rule tell you about a robin?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "shared_term"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the model card with our other rule: \"All marsupials carry young in a pouch.\" \n\nA kangaroo is a marsupial, so a kangaroo is a marsupial and all marsupials carry young in a pouch. A wolf does not carry young in a pouch, so no, because all marsupials carry young in a pouch and a wolf does not. For this animal carrying young in a pouch, we can't tell, because a seahorse carries young in a pouch too and it is not a marsupial.\n\nNow look at our cards: what does our rule tell you about a robin?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "shared_term"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the lit words. What does the rule tell you about a robin?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "shared_term"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "dd-1-1-c0-conclude",
+     "trigger": "The learner said they were stuck, so the host pulled answer_frame (help). It is on screen now: Prints the case's subject and an empty box under the cards: the answer starts with the subject. Read the frame; never fill the box. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question agai",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "that a robin lays eggs, in any words (\"it lays eggs\", or the property alone). the rule read back (\"all birds lay eggs\"), the case read back, or a fact about a robin the rule does not give is not an answer.",
+       "a robin lays eggs"
+      ],
+      "ask": "Say what the rule tells you about a robin.",
+      "leakTokens": [
+       "DD_ITEM",
+       "DD_MOVE_ON",
+       "DD_COMPLETE",
+       "DD_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A new sentence frame has appeared under the cards that says: \"A robin ___.\" \n\nHow would you complete that sentence using only our rule?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under our cards, a new frame appeared that says: \"A robin ___.\" \n\nUsing our rule, how would you finish that sentence?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under the cards, there is now a sentence starter that says: \"A robin...\" followed by an empty box. Using our rule, how would you finish that sentence about a robin?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under our cards, a new frame appeared that says: \"A robin ___.\" How would you finish that sentence using our rule?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new frame appeared below the cards that says \"A robin\" with an empty box next to it. How would you complete that sentence using what our rule tells us?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "dd-1-1-c0-conclude",
+     "trigger": "a robin lays eggs",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "that a robin lays eggs, in any words (\"it lays eggs\", or the property alone). the rule read back (\"all birds lay eggs\"), the case read back, or a fact about a robin the rule does not give is not an answer.",
+       "a robin lays eggs"
+      ],
+      "ask": "Say what the rule tells you about a robin.",
+      "leakTokens": [
+       "DD_ITEM",
+       "DD_MOVE_ON",
+       "DD_COMPLETE",
+       "DD_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You figured out that a robin lays eggs because all birds lay eggs and a robin is a bird.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You figured out that a robin lays eggs.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it: you figured out that a robin lays eggs!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You figured out from the rule that a robin lays eggs.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You figured out that a robin lays eggs.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "di-deduction.deny",
+   "primitiveId": "di-deduction",
+   "evalMode": "deny",
+   "keys": [
+    "no, a worm is not an insect, with the reason from the rule: all insects have six legs and a worm does not have six legs (\"nope, it does not have six legs\" counts). a no with no reason, or a reason that is not about whether it has six legs, has the right verdict and is not yet the answer.",
+    "no, a worm is not an insect, because all insects have six legs and a worm does not have six legs"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dd-1-1-c0-deny",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "no, a worm is not an insect, with the reason from the rule: all insects have six legs and a worm does not have six legs (\"nope, it does not have six legs\" counts). a no with no reason, or a reason that is not about whether it has six legs, has the right verdict and is not yet the answer.",
+       "no, a worm is not an insect, because all insects have six legs and a worm does not have six legs"
+      ],
+      "ask": "Is a worm an insect? Say yes, no, or can't tell\u2014then explain using the rule.",
+      "leakTokens": [
+       "DD_ITEM",
+       "DD_MOVE_ON",
+       "DD_COMPLETE",
+       "DD_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Here is an example with a different rule: \"All fish live in water.\" A shark is a fish, so it lives in water; a horse does not live in water, so it is not a fish; and for an animal that lives in water, we can't tell, because whales live in water too. \n\nNow look at your cards: Is a worm an insect? Say yes, no, or can't tell, and use the rule to explain why.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is an example with a different rule: \"All fish live in water.\" A shark is a fish, so a shark is a fish and all fish live in water; a horse does not live in water, so no, because all fish live in water and a horse does not; and if an animal lives in water, we can't tell, because a whale lives in water too and is not a fish. \n\nNow look at your cards: Is a worm an insect? Say yes, no, or can't tell, and explain using the rule.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "On our model card, \"All fish live in water.\" A shark is a fish, so a shark is a fish and all fish live in water. A horse does not live in water, so no, all fish live in water and a horse does not live in water. An animal lives in water, so we can't tell, because a whale lives in water too and is not a fish. \n\nNow look at your cards: Is a worm an insect?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's look at the model rule: \"All fish live in water.\" A shark is a fish, so it lives in water; a horse does not live in water, so it is not a fish; and for an animal that lives in water, we can't tell, because a whale lives in water too and is not a fish. \n\nNow look at your rule: \"All insects have six legs.\" Is a worm an insect? Say yes, no, or can't tell, and use the rule to explain why.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is how another rule works: \"All fish live in water.\" A shark is a fish, so it lives in water; a horse does not live in water, so it is not a fish; and for an animal that lives in water, we can't tell, because a whale lives in water too and is not a fish. \n\nNow look at your cards: Is a worm an insect? Say yes, no, or can't tell, and give the reason using your rule.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "dd-1-1-c0-deny",
+     "trigger": "yes, a worm is an insect",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "no, a worm is not an insect, with the reason from the rule: all insects have six legs and a worm does not have six legs (\"nope, it does not have six legs\" counts). a no with no reason, or a reason that is not about whether it has six legs, has the right verdict and is not yet the answer.",
+       "no, a worm is not an insect, because all insects have six legs and a worm does not have six legs"
+      ],
+      "ask": "Is a worm an insect? Say yes, no, or can't tell\u2014then explain using the rule.",
+      "leakTokens": [
+       "DD_ITEM",
+       "DD_MOVE_ON",
+       "DD_COMPLETE",
+       "DD_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the lit words on the cards. \n\nUsing only what the rule says, is a worm an insect?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "shared_term"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the lit words on the cards. \n\nUsing only what the rule says, is a worm an insect?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "shared_term"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the lit words on the cards. \n\nUsing only what the rule says, is a worm an insect?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "shared_term"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the lit words on the cards. \n\nUsing only what the rule card says, is a worm an insect?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "shared_term",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the lit words on the cards. \n\nUsing only what the rule says, is a worm an insect?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "shared_term",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dd-1-1-c0-deny",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "no, a worm is not an insect, with the reason from the rule: all insects have six legs and a worm does not have six legs (\"nope, it does not have six legs\" counts). a no with no reason, or a reason that is not about whether it has six legs, has the right verdict and is not yet the answer.",
+       "no, a worm is not an insect, because all insects have six legs and a worm does not have six legs"
+      ],
+      "ask": "Is a worm an insect? Say yes, no, or can't tell\u2014then explain using the rule.",
+      "leakTokens": [
+       "DD_ITEM",
+       "DD_MOVE_ON",
+       "DD_COMPLETE",
+       "DD_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the words lit up on both cards. \n\nUsing only what those words say, is a worm an insect? Say yes, no, or can't tell, and give the reason.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "shared_term",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the lit words on the cards. \n\nWhat does the rule tell you about whether a worm is an insect?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "shared_term",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the lit words on the two cards. \n\nUsing only what the cards say, what does that tell us about whether a worm is an insect?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "shared_term"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the lit words on the cards.\n\nWhat do those matching words tell you about whether a worm is an insect?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "shared_term",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the lit words on the cards.\n\nWhat do those matching words tell you about whether a worm is an insect?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "shared_term",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "dd-1-1-c0-deny",
+     "trigger": "The learner said they were stuck, so the host pulled answer_frame (help). It is on screen now: Prints \"___ because ___\" under the verdict words: a verdict and a reason. Read the frame; never fill a box or light a word. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do no",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "no, a worm is not an insect, with the reason from the rule: all insects have six legs and a worm does not have six legs (\"nope, it does not have six legs\" counts). a no with no reason, or a reason that is not about whether it has six legs, has the right verdict and is not yet the answer.",
+       "no, a worm is not an insect, because all insects have six legs and a worm does not have six legs"
+      ],
+      "ask": "Is a worm an insect? Say yes, no, or can't tell\u2014then explain using the rule.",
+      "leakTokens": [
+       "DD_ITEM",
+       "DD_MOVE_ON",
+       "DD_COMPLETE",
+       "DD_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the bottom of the screen\u2014there is a new frame that says \"___ because ___\". \n\nUse that frame to answer: is a worm an insect?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under the verdict words\u2014there is a frame that says \"___ because ___\" with empty boxes to help you. \n\nUsing the frame, is a worm an insect? Say your answer and the reason from the rule.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A frame appeared below the words showing \"___ because ___\" to help you put your verdict and reason together. \n\nUsing only what our cards say, what goes in those blanks for the worm?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under the words at the bottom: a frame appeared that says \"___ because ___\". \n\nUse that sentence frame to answer: Is a worm an insect? Say yes, no, or can't tell, and give your reason.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A frame has appeared underneath the cards that says, \"blank, because blank.\" \n\nTry using that frame: is a worm an insect? Say your answer and your reason.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "dd-1-1-c0-deny",
+     "trigger": "no, a worm is not an insect, because all insects have six legs and a worm does not have six legs",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "no, a worm is not an insect, with the reason from the rule: all insects have six legs and a worm does not have six legs (\"nope, it does not have six legs\" counts). a no with no reason, or a reason that is not about whether it has six legs, has the right verdict and is not yet the answer.",
+       "no, a worm is not an insect, because all insects have six legs and a worm does not have six legs"
+      ],
+      "ask": "Is a worm an insect? Say yes, no, or can't tell\u2014then explain using the rule.",
+      "leakTokens": [
+       "DD_ITEM",
+       "DD_MOVE_ON",
+       "DD_COMPLETE",
+       "DD_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it completely right! You said no, because all insects have six legs and a worm does not have six legs.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it completely right! You said no because all insects have six legs and a worm does not have six legs.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You figured out the answer is no, because all insects have six legs and a worm does not have six legs.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You correctly said no, because all insects have six legs and a worm does not have six legs.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You said no, because all insects have six legs and a worm does not have six legs.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
