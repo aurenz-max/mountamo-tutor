@@ -1,0 +1,85 @@
+{
+  "source": "qa/tutor-reports/addition-fact-strategies-runtime-big_facts-payload-2026-10-03.json",
+  "primitiveId": "addition-fact-strategies",
+  "evalMode": "big_facts",
+  "data": {
+    "title": "Double the Fun!",
+    "description": "Practice adding matching numbers together to build super-fast math skills.",
+    "challengeType": "recall",
+    "strategy": "facts_mixed",
+    "objectEmoji": "👯",
+    "challenges": [
+      {
+        "id": "afs-1",
+        "type": "facts_mixed",
+        "a": 5,
+        "b": 3,
+        "sum": 8
+      },
+      {
+        "id": "afs-2",
+        "type": "facts_mixed",
+        "a": 7,
+        "b": 4,
+        "sum": 11
+      },
+      {
+        "id": "afs-3",
+        "type": "facts_mixed",
+        "a": 3,
+        "b": 9,
+        "sum": 12
+      },
+      {
+        "id": "afs-4",
+        "type": "facts_mixed",
+        "a": 5,
+        "b": 6,
+        "sum": 11
+      },
+      {
+        "id": "afs-5",
+        "type": "facts_mixed",
+        "a": 7,
+        "b": 9,
+        "sum": 16
+      },
+      {
+        "id": "afs-6",
+        "type": "facts_mixed",
+        "a": 9,
+        "b": 5,
+        "sum": 14
+      },
+      {
+        "id": "afs-7",
+        "type": "facts_mixed",
+        "a": 7,
+        "b": 8,
+        "sum": 15
+      },
+      {
+        "id": "afs-8",
+        "type": "facts_mixed",
+        "a": 6,
+        "b": 5,
+        "sum": 11
+      },
+      {
+        "id": "afs-9",
+        "type": "facts_mixed",
+        "a": 7,
+        "b": 3,
+        "sum": 10
+      },
+      {
+        "id": "afs-10",
+        "type": "facts_mixed",
+        "a": 9,
+        "b": 4,
+        "sum": 13
+      }
+    ],
+    "gradeBand": "1"
+  }
+}

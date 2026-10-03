@@ -75,6 +75,7 @@ import { diWordProblemSetupLiveDomain } from './adapters/diWordProblemSetupLive'
 import { spatialSceneLiveDomain } from './adapters/spatialSceneLive';
 import { hundredsChartLiveDomain } from './adapters/hundredsChartLive';
 import { mathFactFluencyLiveDomain } from './adapters/mathFactFluencyLive';
+import { additionFactStrategiesLiveDomain } from './adapters/additionFactStrategiesLive';
 import { equationBuilderLiveDomain } from './adapters/equationBuilderLive';
 import { patternBuilderLiveDomain } from './adapters/patternBuilderLive';
 import { strategyPickerLiveDomain } from './adapters/strategyPickerLive';
@@ -158,6 +159,7 @@ export const LIVE_ADAPTERS = {
   'spatial-scene': workspaceAdapter('spatial-scene', spatialSceneLiveDomain),
   'hundreds-chart': workspaceAdapter('hundreds-chart', hundredsChartLiveDomain),
   'math-fact-fluency': workspaceAdapter('math-fact-fluency', mathFactFluencyLiveDomain),
+  'addition-fact-strategies': workspaceAdapter('addition-fact-strategies', additionFactStrategiesLiveDomain),
   'equation-builder': workspaceAdapter('equation-builder', equationBuilderLiveDomain),
   'pattern-builder': workspaceAdapter('pattern-builder', patternBuilderLiveDomain),
   'strategy-picker': workspaceAdapter('strategy-picker', strategyPickerLiveDomain),

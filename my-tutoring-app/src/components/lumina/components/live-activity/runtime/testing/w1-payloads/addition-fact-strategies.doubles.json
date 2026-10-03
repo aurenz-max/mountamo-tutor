@@ -1,0 +1,75 @@
+{
+  "source": "qa/tutor-reports/addition-fact-strategies-runtime-doubles-payload-2026-10-03.json",
+  "primitiveId": "addition-fact-strategies",
+  "evalMode": "doubles",
+  "data": {
+    "title": "Double the Fun",
+    "description": "Learn how to add matching numbers together quickly and easily using pairs of identical objects.",
+    "challengeType": "recall",
+    "strategy": "doubles",
+    "objectEmoji": "🎲",
+    "introExample": {
+      "a": 5,
+      "b": 5
+    },
+    "challenges": [
+      {
+        "id": "afs-1",
+        "type": "doubles",
+        "a": 3,
+        "b": 3,
+        "sum": 6
+      },
+      {
+        "id": "afs-2",
+        "type": "doubles",
+        "a": 8,
+        "b": 8,
+        "sum": 16
+      },
+      {
+        "id": "afs-3",
+        "type": "doubles",
+        "a": 1,
+        "b": 1,
+        "sum": 2
+      },
+      {
+        "id": "afs-4",
+        "type": "doubles",
+        "a": 2,
+        "b": 2,
+        "sum": 4
+      },
+      {
+        "id": "afs-5",
+        "type": "doubles",
+        "a": 6,
+        "b": 6,
+        "sum": 12
+      },
+      {
+        "id": "afs-6",
+        "type": "doubles",
+        "a": 9,
+        "b": 9,
+        "sum": 18
+      },
+      {
+        "id": "afs-7",
+        "type": "doubles",
+        "a": 4,
+        "b": 4,
+        "sum": 8
+      },
+      {
+        "id": "afs-8",
+        "type": "doubles",
+        "a": 7,
+        "b": 7,
+        "sum": 14
+      }
+    ],
+    "gradeBand": "1"
+  }
+}

@@ -323,6 +323,14 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "missing_number":  PriorConfig(4.5, "Transitional: find unknown operand"),
         "speed_round":     PriorConfig(5.5, "Symbolic: timed rapid recall"),
     },
+    "addition-fact-strategies": {
+        "plus_zero":  PriorConfig(3.0, "Symbolic recall: n + 0 keeps the number (help on miss)"),
+        "plus_one":   PriorConfig(3.5, "Symbolic recall: n + 1 is the next number"),
+        "doubles":    PriorConfig(4.0, "Symbolic recall: doubles 1+1 to 9+9"),
+        "turnaround": PriorConfig(4.5, "Strategy: commutativity, known flipped fact on miss"),
+        "plus_two":   PriorConfig(5.0, "Symbolic recall: count on two"),
+        "big_facts":  PriorConfig(5.5, "Symbolic recall: remaining facts, addends 3-9"),
+    },
     "3d-shape-explorer": {
         "identify_3d":      PriorConfig(1.5, "Concrete: name 3D shapes from visual display"),
         "match_real_world":  PriorConfig(2.5, "Pictorial: connect shapes to real-world objects"),

@@ -139,6 +139,8 @@ import { diWordProblemHarnessAnswers, wordProblemHarnessPlacements, wordProblemI
 import { spatialHarnessInputs } from '../../primitives/visual-primitives/math/spatialSceneWorkspace';
 import { hundredsChartHarnessInputs } from '../../primitives/visual-primitives/math/hundredsChartWorkspace';
 import { mathFactHarnessInputs } from '../../primitives/visual-primitives/math/mathFactFluencyWorkspace';
+import { additionFactHarnessInputs } from '../../primitives/visual-primitives/math/additionFactStrategiesWorkspace';
+import { smallerFact as smallerAdditionFact } from '../../primitives/visual-primitives/math/additionFactStrategiesLevers';
 import { equationBuilderHarnessInputs } from '../../primitives/visual-primitives/math/equationBuilderWorkspace';
 import { patternBuilderHarnessInputs } from '../../primitives/visual-primitives/math/patternBuilderWorkspace';
 import { strategyPickerHarnessInputs } from '../../primitives/visual-primitives/math/strategyPickerWorkspace';
@@ -1824,6 +1826,25 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return mathFactHarnessInputs(c, intent === 'wrong', ctx.data.maxNumber ?? 5);
     },
     probes: { mounted: { selector: '[data-pip-object="problem"], [data-pip-object="visual"]' } },
+  },
+  'addition-fact-strategies': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/AdditionFactStrategies.tsx',
+    instanceId: 'fact-strategies',
+    defaults: { grade: 'Grade 1', mode: 'doubles', di: false, topic: 'Doubles facts' },
+    leakTokens: ['STRATEGY_INTRO', 'NEXT_ITEM', 'COMEBACK', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through the real pad: the sum, or one away from it. Derived from the mounted fact, never from Python.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const all = ctx.data.challenges ?? [];
+      // A simplify lever's smaller fact is not a generated challenge: rebuild it with the same builder.
+      const parent = ctx.itemId?.endsWith('~simpler') ? all.find((x: { id: string }) => `${x.id}~simpler` === ctx.itemId) : null;
+      const c = parent ? smallerAdditionFact(ctx.data.strategy, parent, all) : all.find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current addition-fact-strategies fact');
+      return additionFactHarnessInputs(c, intent === 'wrong');
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
   'equation-builder': {
     execution: 'workspace',

@@ -17,6 +17,7 @@ import { generateArrayGrid } from '../../math/gemini-array-grid';
 import { generateDoubleNumberLine } from '../../math/gemini-double-number-line';
 import { generateTapeDiagram } from '../../math/gemini-tape-diagram';
 import { generateFactorTree } from '../../math/gemini-factor-tree';
+import { generateAdditionFactStrategies } from '../../math/gemini-addition-fact-strategies';
 import { generateRatioTable } from '../../math/gemini-ratio-table';
 import { generateBalanceScale } from '../../math/gemini-balance-scale';
 import { generateFunctionMachine } from '../../math/gemini-function-machine';
@@ -559,6 +560,17 @@ registerContextGenerator('percent-bar', async (ctx) => ({
   type: 'percent-bar',
   instanceId: ctx.instanceId,
   data: await generatePercentBar(ctx),
+}));
+
+// Addition Fact Strategies (strategy-sequenced facts within 20; facts built in code)
+registerContextGenerator('addition-fact-strategies', async (ctx) => ({
+  type: 'addition-fact-strategies',
+  instanceId: ctx.instanceId,
+  data: await generateAdditionFactStrategies(
+    ctx.topic,
+    ctx.grade ? `Grade ${ctx.grade}` : ctx.gradeContext,
+    { ...ctx.raw, intent: ctx.intent || ctx.title, targetEvalMode: ctx.targetEvalMode },
+  ),
 }));
 
 // ============================================================================

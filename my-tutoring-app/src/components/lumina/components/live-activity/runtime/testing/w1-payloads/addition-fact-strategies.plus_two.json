@@ -1,0 +1,75 @@
+{
+  "source": "qa/tutor-reports/addition-fact-strategies-runtime-plus_two-payload-2026-10-03.json",
+  "primitiveId": "addition-fact-strategies",
+  "evalMode": "plus_two",
+  "data": {
+    "title": "Super Skipping Starters",
+    "description": "Jump ahead by counting up by twos with fun friends!",
+    "challengeType": "recall",
+    "strategy": "plus_two",
+    "objectEmoji": "⭐",
+    "introExample": {
+      "a": 2,
+      "b": 6
+    },
+    "challenges": [
+      {
+        "id": "afs-1",
+        "type": "plus_two",
+        "a": 2,
+        "b": 9,
+        "sum": 11
+      },
+      {
+        "id": "afs-2",
+        "type": "plus_two",
+        "a": 5,
+        "b": 2,
+        "sum": 7
+      },
+      {
+        "id": "afs-3",
+        "type": "plus_two",
+        "a": 4,
+        "b": 2,
+        "sum": 6
+      },
+      {
+        "id": "afs-4",
+        "type": "plus_two",
+        "a": 8,
+        "b": 2,
+        "sum": 10
+      },
+      {
+        "id": "afs-5",
+        "type": "plus_two",
+        "a": 2,
+        "b": 5,
+        "sum": 7
+      },
+      {
+        "id": "afs-6",
+        "type": "plus_two",
+        "a": 2,
+        "b": 7,
+        "sum": 9
+      },
+      {
+        "id": "afs-7",
+        "type": "plus_two",
+        "a": 2,
+        "b": 3,
+        "sum": 5
+      },
+      {
+        "id": "afs-8",
+        "type": "plus_two",
+        "a": 7,
+        "b": 2,
+        "sum": 9
+      }
+    ],
+    "gradeBand": "1"
+  }
+}

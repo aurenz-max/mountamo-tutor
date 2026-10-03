@@ -3483,6 +3483,21 @@ export interface SpatialPathMetrics extends BasePrimitiveMetrics {
   averageAttemptsPerChallenge: number;
 }
 
+export interface AdditionFactStrategiesMetrics extends BasePrimitiveMetrics {
+  type: 'addition-fact-strategies';
+  challengeType: 'recall';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;              // facts where strategy help appeared (a miss)
+  overallAccuracy: number;          // 0-100, mean per-fact score (100 / 50 / 25 by tries)
+  averageAttemptsPerChallenge: number;
+  // Session-level fluency signals beyond the canonical nine:
+  strategy: string;                 // the fact family practised
+  averageFirstResponseMs: number;   // silent automaticity signal, never shown to the child
+}
+
 export interface ShapeComposerMetrics extends BasePrimitiveMetrics {
   type: 'shape-composer';
   accuracy: number;
@@ -4008,6 +4023,7 @@ export type PrimitiveMetrics =
   | TimeSequencerMetrics
   | SpatialSceneMetrics
   | SpatialPathMetrics
+  | AdditionFactStrategiesMetrics
   | ShapeComposerMetrics
   | NetFolderMetrics
   | DeepDiveMetrics

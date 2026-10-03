@@ -12,6 +12,7 @@ import type { FractionMiss } from '../../../primitives/visual-primitives/math/fr
 import type { TouchMiss } from '../../../primitives/visual-primitives/math/fractionCirclesWorkspace';
 import type { HundredsChartMiss } from '../../../primitives/visual-primitives/math/hundredsChartWorkspace';
 import type { MathFactMiss } from '../../../primitives/visual-primitives/math/mathFactFluencyWorkspace';
+import type { AdditionFactMiss } from '../../../primitives/visual-primitives/math/additionFactStrategiesWorkspace';
 import type { BondMiss } from '../../../primitives/visual-primitives/math/numberBondModes';
 import type { SpokenBondMiss } from '../../../primitives/visual-primitives/math/numberBondWorkspace';
 import type { JumpMiss } from '../../../primitives/visual-primitives/math/numberLineLevers';
@@ -4763,6 +4764,64 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       // The activity's own check (`mathFactMiss`), every mode.
       misses: sameMisses<MathFactMiss>(['visual_fact', 'match', 'equation_solve', 'missing_number', 'speed_round'],
         ['other_operation', 'printed_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more']),
+    },
+  },
+  {
+    id: 'addition-fact-strategies',
+    description: 'Strategy-sequenced ADDITION FACTS WITHIN 20 for Grades 1-2 math (1.OA.C.6 add within 20 using strategies; 2.OA.B.2 fluently add within 20 from memory). Single-digit addends, sums 0-18. Each session practises ONE fact family in the classic strategy order: +0 facts, +1 facts (counting on one), doubles (3+3, 7+7), turn-around / commutative facts (3+8 and 8+3), +2 facts (counting on two), then the remaining "big facts" in bands (3s and 4s, 5s and 6s, 7s and 8s, mixed). Opens with a one-card worked example of the strategy (hop strip for counting on, mirrored butterfly wings for doubles, flipped cards for turn-around) on a fact the session never asks, then 6-10 facts the student answers by typing the sum on a 0-18 number pad — production recall, no multiple choice. A miss reveals strategy help (the known flipped fact, tappable object groups to count, then the count said aloud) and the missed fact returns two facts later. Untimed; response time is measured silently for automaticity. Use for addition fact strategies and fact fluency within 20. Differs from math-fact-fluency (K-1, within 10, addition AND subtraction, five picture-to-recall challenge types) and from strategy-picker (compares several strategies on ONE equation).',
+    constraints: 'Addition only — no subtraction, no missing-addend items. Single-digit addends (0-9), sums 0-18. One strategy family per session, chosen from the lesson topic/intent (a "doubles" lesson gets doubles; a "+1" or "counting on" lesson gets +1; a "turn-around" or "commutative" lesson gets turn-around facts). The manifest must NOT supply specific facts, numbers or answers — the pool service builds the facts deterministically for the chosen family. No timer.',
+    // Modes follow the source game's strategy path (+0, +1, doubles, turn-around, +2, big facts).
+    // The big-fact bands (3s/4s, 5s/6s, 7s/8s, mixed) are one task identity at different number
+    // ranges, so they share one mode and the topic picks the band.
+    evalModes: [
+      { evalMode: 'plus_zero', label: 'Adding Zero (Step 1)', beta: 3.0, scaffoldingMode: 4, challengeTypes: ['plus_zero'], description: 'Recall n + 0 and 0 + n: adding zero keeps the number the same.' },
+      { evalMode: 'plus_one', label: 'One More (Step 1)', beta: 3.5, scaffoldingMode: 4, challengeTypes: ['plus_one'], description: 'Recall n + 1 and 1 + n by saying the next counting number.' },
+      { evalMode: 'doubles', label: 'Doubles (Step 2)', beta: 4.0, scaffoldingMode: 4, challengeTypes: ['doubles'], description: 'Recall the doubles 1 + 1 through 9 + 9 from memory.' },
+      { evalMode: 'turnaround', label: 'Turn-Around Facts (Step 3)', beta: 4.5, scaffoldingMode: 4, challengeTypes: ['turnaround'], description: 'Use commutativity: 3 + 8 has the same sum as 8 + 3; a miss shows the flipped fact as the known fact.' },
+      { evalMode: 'plus_two', label: 'Two More (Step 4)', beta: 5.0, scaffoldingMode: 4, challengeTypes: ['plus_two'], description: 'Recall n + 2 and 2 + n by counting on two from the bigger number.' },
+      { evalMode: 'big_facts', label: 'Big Facts (Step 5)', beta: 5.5, scaffoldingMode: 5, challengeTypes: ['facts_3_4', 'facts_5_6', 'facts_7_8', 'facts_mixed'], description: 'Recall the remaining facts with addends 3-9 (sums to 17), by band or mixed, toward automatic recall.' },
+    ],
+    tutoring: {
+      taskDescription: 'The child is recalling addition facts by strategy ({{strategyName}}). Fact {{currentChallenge}} of {{totalChallenges}}: {{fact}}. '
+        + 'They answer by tapping the sum on a 0-18 number pad. Help on screen so far: {{helpShown}}. Comeback of a missed fact: {{comeback}}. '
+        + 'Never say the sum of the current fact before the child has tapped it; the child must produce it.',
+      contextKeys: ['strategyName', 'fact', 'helpShown', 'comeback', 'currentChallenge', 'totalChallenges'],
+      scaffoldingLevels: {
+        level1: '"Which strategy helps here? Think about {{strategyName}}."',
+        level2: '"Which number in {{fact}} is bigger?" Ask only this one question, then start from that number. For doubles, ask instead whether they know that double; for turn-around facts, whether they know the other order.',
+        level3: '"Say the bigger number with me, then count on one step for each of the smaller number, together." Stop before the last number and let the child say it. For doubles or big facts, use a double the child knows that is NOT this fact and add or take one, without saying the sum of this fact.',
+      },
+      commonStruggles: [
+        { pattern: 'Counts all from 1 on a +1 or +2 fact', response: 'Start at the bigger number and count on. "You already have that many. Just add the one (or two) more."' },
+        { pattern: 'Answers 0 or the other addend on a +0 fact, or adds one', response: 'Adding zero adds nothing: "How many did we add? None. So how many do we have?"' },
+        { pattern: 'Misses a turn-around fact it already knows in the other order', response: 'Point to the known-fact card once it shows: "Same numbers, other order. The total does not change."' },
+        { pattern: 'Taps a number one away from the sum (off by one)', response: 'Count on again slowly from the bigger number, one finger per step.' },
+        { pattern: 'Stuck on a big fact like 7 + 8', response: 'Bridge from a double: ask "What is 7 + 7?" and let the child answer it, then "This one has one more." Never state the sum of the double or of the current fact yourself.' },
+        { pattern: 'Misses a comeback fact again', response: 'Keep it short and calm; count the objects together, then move on.' },
+      ],
+      aiDirectives: [
+        {
+          title: 'ADDITION FACT TAGS',
+          instruction: '[STRATEGY_INTRO]: say the strategy in one short sentence. [NEXT_ITEM] and [COMEBACK]: read the fact as "a plus b?" and nothing else. '
+            + '[ANSWER_INCORRECT]: one short sentence that points at the help now on screen; never the sum and never a number that narrows it ("it is more than ten"). '
+            + '[ANSWER_CORRECT]: a few words of praise; you may say the full fact. [ALL_COMPLETE]: celebrate briefly and name the strategy. '
+            + 'The child is timed silently; never mention speed or hurry them.',
+        },
+      ],
+    },
+    supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Grade 1', 'Grade 2'],
+      guidance: 'The activity checks the learner’s answer itself: the learner taps the total on a 0 to 18 number pad, and you '
+        + 'are not told the answer. Each session practises one strategy, named on screen; teach that strategy (adding zero, '
+        + 'one more, doubles, the turn-around, two more, or using a fact they know for the big facts), not counting all from '
+        + 'one. The first fact sits beside a worked example of a different fact. There is no timer: never mention speed or '
+        + 'hurry the learner. Before the learner has checked, never say the total, count the objects aloud to their end, or '
+        + 'say a number that narrows it. After a miss the screen adds help on its own (the flipped fact, then objects to '
+        + 'count); point to it in your own words. You cannot tap a number for the learner.',
+      // The activity's own check (`additionFactMiss`), every mode.
+      misses: sameMisses<AdditionFactMiss>(['plus_zero', 'plus_one', 'doubles', 'turnaround', 'plus_two', 'big_facts'],
+        ['addend', 'one_short', 'one_over', 'short_by_more', 'over_by_more']),
     },
   },
   {

@@ -60,6 +60,7 @@ import CoinCounter from '../primitives/visual-primitives/math/CoinCounter';
 import TimeSequencer from '../primitives/visual-primitives/math/TimeSequencer';
 import SpatialScene from '../primitives/visual-primitives/math/SpatialScene';
 import SpatialPath from '../primitives/visual-primitives/math/SpatialPath';
+import AdditionFactStrategies from '../primitives/visual-primitives/math/AdditionFactStrategies';
 import ShapeComposer from '../primitives/visual-primitives/math/ShapeComposer';
 import NetFolder from '../primitives/visual-primitives/math/NetFolder';
 import EquationBuilder from '../primitives/visual-primitives/math/EquationBuilder';
@@ -86,7 +87,7 @@ interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'bar-model' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'polygon-area-builder' | 'circle-explorer' | 'angle-workshop' | 'transformation-lab' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'practice-problem' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'measure-lab' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond' | 'addition-subtraction-scene' | 'ordinal-line' | 'sorting-station' | 'shape-sorter' | '3d-shape-explorer' | 'shape-tracer' | 'number-tracer' | 'math-fact-fluency' | 'strategy-picker' | 'hundreds-chart' | 'length-lab' | 'analog-clock' | 'coin-counter' | 'time-sequencer' | 'calendar-explorer' | 'spatial-scene' | 'spatial-path' | 'shape-composer' | 'net-folder' | 'equation-builder' | 'compare-objects' | 'parameter-explorer' | 'formula-lab' | 'equation-workspace' | 'function-sketch';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'bar-model' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'polygon-area-builder' | 'circle-explorer' | 'angle-workshop' | 'transformation-lab' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'practice-problem' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'measure-lab' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond' | 'addition-subtraction-scene' | 'ordinal-line' | 'sorting-station' | 'shape-sorter' | '3d-shape-explorer' | 'shape-tracer' | 'number-tracer' | 'math-fact-fluency' | 'strategy-picker' | 'hundreds-chart' | 'length-lab' | 'analog-clock' | 'coin-counter' | 'time-sequencer' | 'calendar-explorer' | 'spatial-scene' | 'spatial-path' | 'addition-fact-strategies' | 'shape-composer' | 'net-folder' | 'equation-builder' | 'compare-objects' | 'parameter-explorer' | 'formula-lab' | 'equation-workspace' | 'function-sketch';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 type PrimitiveOption = { value: PrimitiveType; label: string; icon: string; topic: string };
@@ -118,6 +119,7 @@ const PRIMITIVE_GROUPS: Array<{ label: string; grade: string; items: PrimitiveOp
       { value: 'number-line' as PrimitiveType, label: 'Number Line', icon: '📏', topic: 'Addition and subtraction on a number line' },
       { value: 'math-fact-fluency', label: 'Math Fact Fluency', icon: '⚡', topic: 'Addition facts within 5' },
       { value: 'strategy-picker', label: 'Strategy Picker', icon: '🎯', topic: 'Addition strategies within 10' },
+      { value: 'addition-fact-strategies', label: 'Addition Fact Strategies', icon: '⭐', topic: 'Doubles facts' },
       { value: 'equation-builder', label: 'Equation Builder', icon: '➕', topic: 'K-2 Equations' },
       { value: 'hundreds-chart', label: 'Hundreds Chart', icon: '⊞', topic: 'Skip counting by 5s' },
       { value: 'skip-counting-runner', label: 'Skip Counting Runner', icon: '🐸', topic: 'Skip counting, multiplication foundations, and number patterns' },
@@ -923,6 +925,20 @@ const PrimitiveRenderer: React.FC<{
           }}
         />
       );
+    case 'addition-fact-strategies':
+      return (
+        <AdditionFactStrategies
+          data={{
+            ...(data as Parameters<typeof AdditionFactStrategies>[0]['data']),
+            instanceId,
+            skillId: 'math-addition-facts',
+            subskillId: 'addition-fact-strategies',
+            objectiveId: 'fluently-add-within-20-using-strategies',
+            onEvaluationSubmit,
+          }}
+          className="w-full"
+        />
+      );
     case 'shape-composer':
       return (
         <ShapeComposer
@@ -1391,6 +1407,18 @@ const EvaluationResultsPanel: React.FC = () => {
                     <span>Avg/challenge: {result.metrics.averageAttemptsPerChallenge}</span>
                     <span>Hints viewed: {result.metrics.hintsViewed}</span>
                     <span>Accuracy: {result.metrics.overallAccuracy}%</span>
+                  </div>
+                )}
+                {/* Show AdditionFactStrategies-specific metrics */}
+                {result.metrics.type === 'addition-fact-strategies' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Strategy: {result.metrics.strategy}</span>
+                    <span>Correct: {result.metrics.correctCount} / {result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Total attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg/challenge: {result.metrics.averageAttemptsPerChallenge.toFixed(2)}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy}%</span>
+                    <span>Avg first response: {(result.metrics.averageFirstResponseMs / 1000).toFixed(1)}s</span>
                   </div>
                 )}
                 {/* Show PatternBuilder-specific metrics */}

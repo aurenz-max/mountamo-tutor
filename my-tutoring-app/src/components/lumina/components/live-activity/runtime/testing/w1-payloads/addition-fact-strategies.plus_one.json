@@ -1,0 +1,75 @@
+{
+  "source": "qa/tutor-reports/addition-fact-strategies-runtime-plus_one-payload-2026-10-03.json",
+  "primitiveId": "addition-fact-strategies",
+  "evalMode": "plus_one",
+  "data": {
+    "title": "Super Plus One Safari",
+    "description": "Practice adding one more to different numbers with fun jungle objects.",
+    "challengeType": "recall",
+    "strategy": "plus_one",
+    "objectEmoji": "🐒",
+    "introExample": {
+      "a": 7,
+      "b": 1
+    },
+    "challenges": [
+      {
+        "id": "afs-1",
+        "type": "plus_one",
+        "a": 6,
+        "b": 1,
+        "sum": 7
+      },
+      {
+        "id": "afs-2",
+        "type": "plus_one",
+        "a": 9,
+        "b": 1,
+        "sum": 10
+      },
+      {
+        "id": "afs-3",
+        "type": "plus_one",
+        "a": 1,
+        "b": 8,
+        "sum": 9
+      },
+      {
+        "id": "afs-4",
+        "type": "plus_one",
+        "a": 1,
+        "b": 1,
+        "sum": 2
+      },
+      {
+        "id": "afs-5",
+        "type": "plus_one",
+        "a": 8,
+        "b": 1,
+        "sum": 9
+      },
+      {
+        "id": "afs-6",
+        "type": "plus_one",
+        "a": 1,
+        "b": 5,
+        "sum": 6
+      },
+      {
+        "id": "afs-7",
+        "type": "plus_one",
+        "a": 1,
+        "b": 9,
+        "sum": 10
+      },
+      {
+        "id": "afs-8",
+        "type": "plus_one",
+        "a": 4,
+        "b": 1,
+        "sum": 5
+      }
+    ],
+    "gradeBand": "1"
+  }
+}

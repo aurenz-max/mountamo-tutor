@@ -71,6 +71,7 @@ import SpatialPath from '../primitives/visual-primitives/math/SpatialPath';
 import ShapeTracer from '../primitives/visual-primitives/math/ShapeTracer';
 import NumberTracer from '../primitives/visual-primitives/math/NumberTracer';
 import MathFactFluency from '../primitives/visual-primitives/math/MathFactFluency';
+import AdditionFactStrategies from '../primitives/visual-primitives/math/AdditionFactStrategies';
 import StrategyPicker from '../primitives/visual-primitives/math/StrategyPicker';
 import HundredsChart from '../primitives/visual-primitives/math/HundredsChart';
 import LengthLab from '../primitives/visual-primitives/math/LengthLab';
@@ -736,6 +737,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'math-fact-fluency': {
     component: MathFactFluency,
     sectionTitle: 'Math Fact Fluency',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'addition-fact-strategies': {
+    component: AdditionFactStrategies,
+    sectionTitle: 'Addition Fact Strategies',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

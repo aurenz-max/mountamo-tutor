@@ -121,7 +121,7 @@ primitive's own confirmed result. It never points at a single control. Surface t
 
 | Workspace primitives | Workspace region |
 | --- | --- |
-| Shape Builder, Strategy Picker, Timeline Builder, Fast Fact | the drawing grid; the strategy cards; the event lane; the fact card and answer pad |
+| Shape Builder, Strategy Picker, Timeline Builder, Fast Fact, Addition Fact Strategies | the drawing grid; the strategy cards; the event lane; the fact card and answer pad; the 0-18 answer pad (no surface on the intro card; never a number, a counted object, or the known-fact card) |
 | Base Ten Blocks (click modes), Fraction Bar, Fraction Circles (click modes), Area Model | the place columns; the step panels; the circle and its controls; the grid with its factor inputs |
 | Array Grid, Multiplication Explorer, Skip Counting Runner, Regrouping Workbench, Coin Counter | the build/answer steps; the representations; the number line and jump controls; blocks beside the written problem; the challenge's coins and inputs |
 | Measurement Tools, Percent Bar, Ratio Table, Double Number Line, Factor Tree | the measure/compare phase; the place and choice steps; the table, bars and inputs; both lines and the input row; the tree and factor panel |

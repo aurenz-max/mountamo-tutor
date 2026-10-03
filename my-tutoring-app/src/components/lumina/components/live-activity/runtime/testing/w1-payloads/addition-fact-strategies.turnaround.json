@@ -1,0 +1,107 @@
+{
+  "source": "qa/tutor-reports/addition-fact-strategies-runtime-turnaround-payload-2026-10-03.json",
+  "primitiveId": "addition-fact-strategies",
+  "evalMode": "turnaround",
+  "data": {
+    "title": "Flipping Numbers Fun",
+    "description": "Discover how switching the order of numbers gives you the exact same total every time.",
+    "challengeType": "recall",
+    "strategy": "turnaround",
+    "objectEmoji": "🔄",
+    "introExample": {
+      "a": 6,
+      "b": 8
+    },
+    "challenges": [
+      {
+        "id": "afs-1",
+        "type": "turnaround",
+        "a": 7,
+        "b": 2,
+        "sum": 9,
+        "knownFact": {
+          "a": 2,
+          "b": 7
+        }
+      },
+      {
+        "id": "afs-2",
+        "type": "turnaround",
+        "a": 8,
+        "b": 5,
+        "sum": 13,
+        "knownFact": {
+          "a": 5,
+          "b": 8
+        }
+      },
+      {
+        "id": "afs-3",
+        "type": "turnaround",
+        "a": 5,
+        "b": 4,
+        "sum": 9,
+        "knownFact": {
+          "a": 4,
+          "b": 5
+        }
+      },
+      {
+        "id": "afs-4",
+        "type": "turnaround",
+        "a": 4,
+        "b": 8,
+        "sum": 12,
+        "knownFact": {
+          "a": 8,
+          "b": 4
+        }
+      },
+      {
+        "id": "afs-5",
+        "type": "turnaround",
+        "a": 6,
+        "b": 3,
+        "sum": 9,
+        "knownFact": {
+          "a": 3,
+          "b": 6
+        }
+      },
+      {
+        "id": "afs-6",
+        "type": "turnaround",
+        "a": 3,
+        "b": 8,
+        "sum": 11,
+        "knownFact": {
+          "a": 8,
+          "b": 3
+        }
+      },
+      {
+        "id": "afs-7",
+        "type": "turnaround",
+        "a": 8,
+        "b": 9,
+        "sum": 17,
+        "knownFact": {
+          "a": 9,
+          "b": 8
+        }
+      },
+      {
+        "id": "afs-8",
+        "type": "turnaround",
+        "a": 3,
+        "b": 5,
+        "sum": 8,
+        "knownFact": {
+          "a": 5,
+          "b": 3
+        }
+      }
+    ],
+    "gradeBand": "1"
+  }
+}

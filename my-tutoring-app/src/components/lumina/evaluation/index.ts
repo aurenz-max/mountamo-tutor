@@ -209,6 +209,7 @@ export type {
   TimeSequencerMetrics,
   SpatialSceneMetrics,
   SpatialPathMetrics,
+  AdditionFactStrategiesMetrics,
   ShapeComposerMetrics,
   NetFolderMetrics,
   DeepDiveMetrics,

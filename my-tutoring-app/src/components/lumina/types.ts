@@ -1477,6 +1477,7 @@ export type ComponentId =
   | 'function-sketch'    // Interactive canvas for sketching and analyzing function graphs
   | 'distribution-explorer' // Live workbench for probability distributions: explore parameters, identify family, compute probabilities
   | 'math-fact-fluency'  // Interactive math fact fluency practice
+  | 'addition-fact-strategies' // Addition fact strategy practice
   | 'ratio-table'        // Table showing equivalent ratios
   | 'percent-bar'        // Horizontal bar model with percentage markings
   | 'balance-scale'      // Interactive balance scale for equation solving
@@ -2331,6 +2332,7 @@ export type { ShapeTracerData } from './primitives/visual-primitives/math/ShapeT
 export type { NumberTracerData } from './primitives/visual-primitives/math/NumberTracer';
 export type { ThreeDShapeExplorerData } from './primitives/visual-primitives/math/ThreeDShapeExplorer';
 export type { MathFactFluencyData } from './primitives/visual-primitives/math/MathFactFluency';
+export type { AdditionFactStrategiesData } from './primitives/visual-primitives/math/AdditionFactStrategies';
 export type { StrategyPickerData } from './primitives/visual-primitives/math/StrategyPicker';
 export type { HundredsChartData } from './primitives/visual-primitives/math/HundredsChart';
 export type { LengthLabData } from './primitives/visual-primitives/math/LengthLab';
