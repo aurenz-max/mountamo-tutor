@@ -36,6 +36,7 @@ vi.mock('../../../utils/SoundManager', () => ({ SoundManager: { playCorrect: sea
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 vi.mock('../../../components/DiActionPanel', () => ({ default: () => null }));
 import DiSentenceReading, { type DiSentenceReadingData } from './DiSentenceReading';
+import { sentenceLeverFacts, startingLevers } from './diSentenceReadingLevers';
 import { DI_SENTENCE_READING_WORKSPACE_MODES, buildSentenceReadingItems, workspaceAssignment, workspaceScene,
   type DiSentenceReadingChallenge, type DiSentenceReadingChallengeType } from './diSentenceReadingDomain';
 import { validateDiSentenceReadingData }
@@ -114,7 +115,8 @@ it.each(ALL_MODES)('%s publishes a factual ask with no scripted cue and no tutor
   expect(JSON.stringify(task)).not.toMatch(/Speak exactly|say exactly/i);
   // The model sees help and demonstration. Recording and progression are observer-only.
   expect(h.state().affordances.filter(a => !a.controller).map(a => (a.action as any).operation ?? a.action.type).sort())
-    .toEqual(['begin_help', 'demonstrate']);
+    // The underline is always a lever to pull, at every tier.
+    .toEqual(['begin_help', 'demonstrate', 'pull_lever']);
   expect(runtimePacket(h.state()).choices.some(a => ['retry', 'advance'].includes(a.action.type))).toBe(false);
   expect(task.evidence.attemptNumber).toBe(0);
   expect(task.support).toEqual({ level: 0, answerExposure: 'none' });
@@ -348,7 +350,10 @@ it('publishes exactly the domain assignment and scene that the verdict probe rep
   const item = buildSentenceReadingItems(CHALLENGES.decodable_sentence)[0];
   const { task, expectedAnswer, response } = workspaceAssignment(item), scene = workspaceScene(item);
   expect(h.state().task!.task).toBe(task);
-  expect(h.state().task!.demand).toEqual({ ...scene.facts, response, presentation: 'ready' });
+  // Plus what the tier's starting levers draw (the easy model card), which the probe adds the same way.
+  const session = buildSentenceReadingItems(CHALLENGES.decodable_sentence);
+  const onScreen = sentenceLeverFacts(item, startingLevers(item, session), session);
+  expect(h.state().task!.demand).toEqual({ ...scene.facts, onScreen, response, presentation: 'ready' });
   expect(h.state().task!.workspace).toMatchObject({ objects: scene.objects, expectedAnswer });
 });
 

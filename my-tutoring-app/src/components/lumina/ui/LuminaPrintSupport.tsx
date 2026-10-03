@@ -28,6 +28,9 @@ export interface LuminaPrintSupportProps {
   className?: string;
   /** Per-word class (a phonics tint or a reveal colour); the marks sit under it. */
   wordClassName?: (word: string, index: number) => string | undefined;
+  /** With `soundDots`: which words get dots (default every word). di-sentence-reading dots only its CVC words: a dot
+   *  under an irregular word teaches sounding out a word that cannot be sounded out. */
+  dotWord?: (word: string, index: number) => boolean;
 }
 
 function Word({ word, dots, chunkAt, changedAt, className }: {
@@ -61,7 +64,7 @@ function Word({ word, dots, chunkAt, changedAt, className }: {
 }
 
 export function LuminaPrintSupport({ text, soundDots = false, trackingUnderline = false, chunkBreak = null,
-  changedLetter = null, className, wordClassName }: LuminaPrintSupportProps) {
+  changedLetter = null, className, wordClassName, dotWord }: LuminaPrintSupportProps) {
   const words = printedWords(text);
   const single = words.length === 1;
   return (
@@ -69,7 +72,7 @@ export function LuminaPrintSupport({ text, soundDots = false, trackingUnderline 
       <span className="inline-flex flex-wrap items-start justify-center gap-x-[0.35em] gap-y-2">
         {words.map((word, i) => (
           <span key={i} className="inline-flex flex-col items-center">
-            <Word word={word} dots={soundDots} chunkAt={single ? chunkBreak : null} changedAt={single ? changedLetter : null}
+            <Word word={word} dots={soundDots && (dotWord?.(word, i) ?? true)} chunkAt={single ? chunkBreak : null} changedAt={single ? changedLetter : null}
               className={wordClassName?.(word, i)} />
             {trackingUnderline && <span data-track-segment className="mt-1 h-1 w-full rounded-full bg-cyan-300/70" />}
           </span>

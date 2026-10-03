@@ -732,13 +732,15 @@ export const DI_CATALOG: ComponentDefinition[] = [
       grades: ['Kindergarten', 'Grade 1'],
       guidance: 'The gold-ringed card shows ONE printed sentence, and reading it aloud, every word '
         + 'in order, is the whole skill. Never read this sentence, or any word of it, to the child before they read it, '
-        + 'and never re-read it after a miss: a model is always a DIFFERENT sentence. After credit you may say it back. '
+        + 'and never re-read it after a miss: your model is the model_sentence lever, a DIFFERENT sentence beside it. The '
+        + 'support fact says where levers start. After credit you may say it back. '
         + 'A word skipped, added, or read as a different word is a miss however small, but catching and fixing their '
         + 'own slip mid-read still counts as an accurate read. Judge accuracy, never speed: slow, effortful '
         + 'sounding-out that lands on the right words is correct. A different word is wrong however close it sounds. '
-        + 'Use demonstrate with the target "sentence" to point at it while you teach, and [] to clear. There is no '
-        + 'other scene action: you cannot change the sentence, add a picture, write, or answer for the child.',
+        + 'demonstrate takes "sentence"; [] clears. You cannot change the sentence, add a picture, write, or answer '
+        + 'for the child.',
       // The spoken read's known wrong answers (`diSentenceSpokenMisses`).
+      levers: true,
       misses: sameMisses<SpokenSentenceMiss>(['decodable_sentence', 'read_sentence', 'sentence_review', 'sight_phrase_sentence'],
         ['word_skip', 'word_swap']),
     },

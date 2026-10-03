@@ -33,12 +33,20 @@
  * entry per COMMITTED correct attempt — the same answer-leak shape word
  * reading uses, so a trail only ever contains sentences already read.
  *
+ * LEVERS (`diSentenceReadingLevers.ts`, DI family 6): a "my turn" card with a
+ * DIFFERENT sentence that shares no word with the child's; an underline under each
+ * word with an arrow; dots under the letters of the CVC words only (kit
+ * `LuminaPrintSupport`, `dotWord`); a shorter practice line.
+ *
  * The workspace binding, evaluation and recap are `DiTeachingStage`.
  */
 
 import React, { useMemo } from 'react';
 import type { DiSentenceReadingMetrics } from '../../../evaluation/types';
-import DiTeachingStage, { diStageMetrics } from './DiTeachingStage';
+import { LuminaPrintSupport } from '../../../ui/LuminaPrintSupport';
+import DiTeachingStage, { diStageMetrics, type DiStageLevers, type DiStageView } from './DiTeachingStage';
+import { MODEL_SENTENCE, SOUND_DOTS, TRACKING_UNDERLINE, isCvcWord, modelFor, sentenceLeverFacts, sentenceLevers,
+  simplerLine, startingLevers } from './diSentenceReadingLevers';
 import { buildSentenceReadingItems, workspaceAssignment, workspaceScene, type SentenceReadingItem }
   from './diSentenceReadingDomain';
 import type { DiSentenceReadingData } from './DiSentenceReading';
@@ -58,16 +66,25 @@ const COPY = {
 
 /** The printed sentence alone. No picture, emoji or hint joins it before the
  *  read — decoding print IS the skill. */
-function stimulus(item: SentenceReadingItem, marks: readonly string[]) {
+function stimulus(item: SentenceReadingItem, marks: readonly string[], view: DiStageView, model: string | null) {
   const sizeClass = item.wordCount <= 4 ? 'text-5xl' : item.wordCount <= 6 ? 'text-4xl' : 'text-3xl';
-  return <div className="flex justify-center">
+  const underline = view.pulled.includes(TRACKING_UNDERLINE), dots = view.pulled.includes(SOUND_DOTS);
+  return <div data-practice-item={view.practice || undefined} className="flex flex-col items-center gap-4">
     <div data-sentence-object="printed" data-assignment-target="true"
       data-tutor-demonstration={marks.includes('sentence')}
       aria-label={`The sentence ${item.text}`}
       className={`max-w-xl rounded-2xl border-2 border-amber-300 bg-amber-400/10 px-8 py-5 text-center font-bold leading-snug tracking-wide text-white ${sizeClass} ${
         marks.includes('sentence') ? 'outline outline-2 outline-dashed outline-offset-4 outline-purple-400' : ''}`}>
-      {item.text}
+      {underline || dots
+        ? <LuminaPrintSupport text={item.text} trackingUnderline={underline} soundDots={dots} dotWord={word => isCvcWord(word)} />
+        : item.text}
     </div>
+    {model && view.pulled.includes(MODEL_SENTENCE) && <div data-lever={MODEL_SENTENCE} data-model-sentence={model}
+      aria-label="My turn: a different sentence"
+      className="flex items-center gap-3 rounded-xl border-2 border-dashed border-purple-400/70 bg-purple-500/10 px-4 py-2">
+      <span aria-hidden="true" className="text-xl leading-none">🗣️</span>
+      <span className="text-2xl font-semibold text-purple-100">{model}</span>
+    </div>}
   </div>;
 }
 
@@ -85,9 +102,17 @@ function readSentences(read: SentenceReadingItem[]) {
 export default function DiSentenceReadingTeaching({ data, className, runtimePlanItemId, runtimeEvalMode }:
     DiSentenceReadingTeachingProps) {
   const items = useMemo(() => buildSentenceReadingItems(data.challenges), [data.challenges]);
+  // The levers read the whole session: a model is never a session sentence, and a practice line shares no word with it.
+  const levers = useMemo<DiStageLevers<SentenceReadingItem>>(() => ({
+    declare: (item, pulled) => sentenceLevers(item, pulled, items),
+    onScreen: (item, pulled) => sentenceLeverFacts(item, pulled, items),
+    starting: item => startingLevers(item, items),
+    simpler: (item, lever) => simplerLine(item, lever, items),
+  }), [items]);
   return <DiTeachingStage<SentenceReadingItem, DiSentenceReadingMetrics> primitiveId="di-sentence-reading" data={data}
     items={items} runtimeEvalMode={runtimeEvalMode} className={className} runtimePlanItemId={runtimePlanItemId}
-    assignment={workspaceAssignment} scene={workspaceScene} copy={COPY} stimulus={stimulus} trail={readSentences}
+    assignment={workspaceAssignment} scene={workspaceScene} copy={COPY} trail={readSentences} levers={levers}
+    stimulus={(item, marks, view) => stimulus(item, marks, view, view.practice ? null : modelFor(item, items))}
     recapLabel={item => item.text}
     metrics={result => ({ type: 'di-sentence-reading', ...diStageMetrics(result, items, data.challengeType),
       // Not tracked on the workspace path (no-timer ruling: L0 never judges latency).

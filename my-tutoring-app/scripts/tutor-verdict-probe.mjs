@@ -410,9 +410,12 @@ const LINK_CASES = [
 // ones connected text adds: one word dropped, added or swapped inside an otherwise
 // right read; praise for part of the sentence; a slow read or a self-correction that
 // must still count; and the tutor's own model standing in for the child's read.
+const sentenceLevers = await domain('direct-instruction/diSentenceReadingLevers.ts');
 const sentenceItem = challenge => {
   const item = only(sentences.buildSentenceReadingItems([challenge]), challenge.id);
-  return { assignment: sentences.workspaceAssignment(item), scene: sentences.workspaceScene(item) };
+  const scene = sentences.workspaceScene(item);
+  const onScreen = sentenceLevers.sentenceLeverFacts(item, sentenceLevers.startingLevers(item, [item]), [item]);
+  return { assignment: sentences.workspaceAssignment(item), scene: onScreen ? { ...scene, facts: { ...scene.facts, onScreen } } : scene };
 };
 const SENTENCE_ITEMS = {
   cat: sentenceItem({ id: 'cat', challengeType: 'decodable_sentence', text: 'The cat sat.', wordCount: 3 }),

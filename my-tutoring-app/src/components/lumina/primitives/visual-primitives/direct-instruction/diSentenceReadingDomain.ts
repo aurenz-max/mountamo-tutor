@@ -204,7 +204,11 @@ export const workspaceScene = (item: SentenceReadingItem): WorkspaceScene => ({
       label: `the sentence "${item.text}" printed on the card, which the learner must read aloud` },
   ],
   facts: { kind: item.challengeType, assignment: item.assignment, printedSentence: item.text,
-    wordCount: item.wordCount, supportTier: item.supportTier,
+    wordCount: item.wordCount,
+    // DI's model is a DIFFERENT sentence, never this one (ruling 2026-10-02, R2): easy starts with its card on screen.
+    support: item.supportTier === 'hard' ? 'read it cold: read nothing before the learner reads, and never read this sentence'
+      : item.supportTier === 'medium' ? 'the learner reads first; after a miss, model a different sentence with the model_sentence lever, never this one'
+        : 'the model card of a different sentence starts on screen: read it as your turn, then ask for this one. Never read this sentence',
     markMeaning: 'Purple dashed marks are yours. They point at the printed sentence while you teach; '
       + 'they are not the learner reading, and they never move the gold ring off the sentence.' },
 });
