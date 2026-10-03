@@ -41,7 +41,9 @@ export function spokenPracticeKey(item: SpokenPracticeItem): string {
 }
 
 /** What a wrong spoken answer shows on the two bounded modes (handoff 20 Part B). */
-export type SpokenPracticeMiss = OffByMiss | 'skipped_a_number' | 'other_menu_word' | 'said_same' | 'said_thing_name';
+export type SpokenPracticeMiss = OffByMiss | 'skipped_a_number' | 'other_menu_word' | 'said_same' | 'said_thing_name'
+  | 'misread' | 'sounds_not_blended' | 'letter_names' | 'word_dropped' | 'signature_error' | 'said_stimulus'
+  | 'read_back' | 'named_only' | 'bare_number' | 'opposite_idea';
 
 const bare = (thing: string) => thing.replace(/^(a|an|the)\s+/i, '').trim();
 const SAME = /^(the )?same$|^equal$/i;
@@ -58,6 +60,34 @@ export function spokenPracticeSpokenMisses(item: SpokenPracticeItem): KnownMiss[
     const n = item.stimulusCount;
     return [...(n >= 3 ? [{ id: 'skipped_a_number', pattern: 'The learner counts aloud and leaves a number out of the counting sequence, whatever number they end on.',
       examples: ['one, two, four'] }] : []), ...offByMisses(n, `the ${n} ${item.stimulusText} in the picture`)];
+  }
+  if (item.mode === 'read_aloud') {
+    const printed = item.stimulusText.trim(), numeral = /^\d+$/.test(printed), several = printed.split(/\s+/).length > 1;
+    const fact = `The printed text is "${printed}", read "${item.expectedAnswer}".`;
+    return [
+      { id: 'misread', pattern: `${fact} The learner reads it as a different ${numeral ? 'number' : 'word'}.`, examples: [] },
+      ...(numeral ? [] : [
+        { id: 'sounds_not_blended', pattern: `${fact} The learner says the separate sounds and never the whole word.`, examples: [] },
+        { id: 'letter_names', pattern: `${fact} The learner spells it with letter names instead of reading it.`, examples: [] },
+      ]),
+      ...(several ? [{ id: 'word_dropped', pattern: `${fact} The learner leaves out a printed word.`, examples: [] }] : []),
+    ];
+  }
+  if (item.mode === 'say_answer') {
+    return [
+      ...(item.signatureError.trim() ? [{ id: 'signature_error', pattern: `The answer is "${item.expectedAnswer}". ${item.signatureError.trim()}`.slice(0, 400), examples: [] }] : []),
+      ...(item.stimulusText.trim() && item.stimulusKind !== 'none'
+        ? [{ id: 'said_stimulus', pattern: `The answer is "${item.expectedAnswer}". The learner says the shown "${item.stimulusText}" back instead of answering.`, examples: [] }] : []),
+    ];
+  }
+  if (item.mode === 'explain_concept') {
+    const fact = `The idea is: "${item.conceptStatement ?? item.expectedAnswer}".`;
+    return [
+      { id: 'read_back', pattern: `${fact} The learner reads the example "${item.stimulusText}" back.`, examples: [] },
+      { id: 'named_only', pattern: `${fact} The learner only names what is shown and says no idea about it.`, examples: [] },
+      { id: 'bare_number', pattern: `${fact} The learner says only a number.`, examples: [] },
+      { id: 'opposite_idea', pattern: `${fact} The learner uses the right words inside an idea that means something else.`, examples: [] },
+    ];
   }
   if (item.mode !== 'compare_choice' || !item.choices?.length) return [];
   const a = bare(item.stimulusText), b = bare(item.stimulusText2 ?? '');
@@ -108,7 +138,11 @@ export function spokenPracticeScene(item: SpokenPracticeItem): WorkspaceScene {
   const { label, constraints } = drawn(item);
   return {
     objects: [{ id: 'stimulus', selected: false, group: 'assignment target', label }],
-    facts: { kind: item.mode, constraints },
+    facts: { kind: item.mode, constraints,
+      // DI's model is a DIFFERENT item, never this one (ruling 2026-10-02): easy (or no tier) starts with its card.
+      support: item.supportTier === 'hard' ? 'answer it cold: model nothing before the learner answers, and never say this answer'
+        : item.supportTier === 'medium' ? 'the learner tries first; after a miss, model a different item with the model lever, never this one'
+          : 'the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one' },
   };
 }
 

@@ -60,6 +60,7 @@ import {
   type SpokenPracticeMode,
 } from '../../primitives/visual-primitives/direct-instruction/diSpokenPracticeScript';
 import { DI_SPOKEN_PRACTICE_TYPE_DOCS } from '../../primitives/visual-primitives/direct-instruction/diSpokenPracticeModes';
+import { spareLeaks } from '../../primitives/visual-primitives/direct-instruction/diSpokenPracticeLevers';
 
 /** Task interpretation and review are semantic judgments (spokenPracticePlan's
  *  ruling); the explain review below is the same authority one layer down. */
@@ -176,6 +177,11 @@ const itemSchema: Schema = {
         'The re-teach, ONE or TWO short sentences, warm and never scolding. It states the right '
         + 'answer and the strategy. Do NOT begin it with "Yes" or "My turn". Do NOT end it with a '
         + 'question — the application adds the re-ask itself.',
+    },
+    easier: {
+      type: Type.BOOLEAN,
+      description: 'true on exactly ONE item: a noticeably EASIER question of the same skill (smaller numbers, a more '
+        + 'familiar word, a plainer example). false on every other item.',
     },
   },
   required: ['stimulusText', 'ask', 'expectedAnswer', 'correctionBody'],
@@ -453,7 +459,31 @@ const callModel = async (
   return JSON.parse(text) as { title?: string; description?: string; items?: unknown };
 };
 
+/**
+ * The levers (`diSpokenPracticeLevers.ts`) need two things only the generator can write for the content-generic modes
+ * (ruling R3): spare items of the same skill for the model card, and one marked easier for the practice case. They
+ * ride on `spares`, never as items, and are leak-checked against the session here and again at mount. The tier sets
+ * where the levers start, stamped per item only when a tier is present.
+ */
+type SupportTier = 'easy' | 'medium' | 'hard';
+const normalizeSupportTier = (d: unknown): SupportTier | null => {
+  const t = typeof d === 'string' ? d.toLowerCase().trim() : '';
+  return t === 'easy' || t === 'medium' || t === 'hard' ? t : null;
+};
+
 export const generateDiSpokenPractice = async (
+  topic: string,
+  gradeLevel: string,
+  config?: Parameters<typeof generateSessionContent>[2],
+): Promise<DiSpokenPracticeData> => {
+  const data = await generateSessionContent(topic, gradeLevel, config);
+  const tier = normalizeSupportTier(config?.difficulty);
+  const spares = (data.spares ?? []).filter((s) => !data.items.some((item) => spareLeaks(s, item, data.items)));
+  return { ...data, ...(tier ? { items: data.items.map((item) => ({ ...item, supportTier: tier })) } : {}),
+    ...(spares.length ? { spares } : { spares: undefined }) };
+};
+
+const generateSessionContent = async (
   topic: string,
   gradeLevel: string,
   config?: {
@@ -560,7 +590,10 @@ export const generateDiSpokenPractice = async (
   // survivors POOL across the two attempts, deduped by instance, instead of
   // each attempt replacing the last.
   const explain = mode === 'explain_concept';
-  const askCount = explain ? Math.min(MAX_ITEM_COUNT, count + 2) : count;
+  // say_answer and explain ask for spares (R3): one more of the same skill and one marked easier.
+  const sparing = mode === 'say_answer' || explain;
+  const askCount = explain ? Math.min(MAX_ITEM_COUNT + 2, count + 3) : sparing ? count + 2 : count;
+  let spares: SpokenPracticeItem[] = [];
   let pool: SpokenPracticeItem[] = [];
 
   // One retry: a truncated or leaky first pass is common enough on flash-lite
@@ -591,6 +624,12 @@ export const generateDiSpokenPractice = async (
         .filter((item): item is SpokenPracticeItem => item !== null);
       const result = gateSpokenItems(built);
       items = result.kept;
+      if (sparing && !explain) {
+        // The marked-easier item and anything past `count` are spares, never session items.
+        const plain = items.filter((i) => !i.easier);
+        spares = [...plain.slice(count), ...items.filter((i) => i.easier)].map((i, k) => ({ ...i, id: `dsp-spare-${k + 1}` }));
+        items = plain.slice(0, count);
+      }
       dropped = result.dropped;
       if (dropped.length) console.warn('[DiSpokenPractice] gate drops:', result.reasons);
       // The semantic half of the concept gate — shape passed, now meaning.
@@ -609,7 +648,9 @@ export const generateDiSpokenPractice = async (
           seen.add(key);
           pool.push(item);
         }
-        items = pool.slice(0, count).map((item, i) => ({ ...item, id: `dsp-${i + 1}` }));
+        const plain = pool.filter((i) => !i.easier);
+        items = plain.slice(0, count).map((item, i) => ({ ...item, id: `dsp-${i + 1}` }));
+        spares = [...plain.slice(count), ...pool.filter((i) => i.easier)].map((i, k) => ({ ...i, id: `dsp-spare-${k + 1}` }));
       }
       if (items.length > 0 && attempt > 0) {
         console.warn('[DiSpokenPractice] first attempt yielded no usable items; retry succeeded');
@@ -676,5 +717,6 @@ export const generateDiSpokenPractice = async (
     challengeType: mode,
     gradeLevel: gradeLevel || 'kindergarten',
     items,
+    ...(spares.length && items.length ? { spares } : {}),
   };
 };

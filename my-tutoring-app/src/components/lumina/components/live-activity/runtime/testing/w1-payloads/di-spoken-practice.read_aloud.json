@@ -1,0 +1,122 @@
+{
+ "source": "qa/tutor-reports/di-spoken-practice-runtime-read_aloud-payload-2026-10-03.json",
+ "primitiveId": "di-spoken-practice",
+ "evalMode": "read_aloud",
+ "data": {
+  "title": "Fun Word Reading Practice",
+  "description": "You will look at short printed words and say them out loud.",
+  "challengeType": "read_aloud",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "items": [
+   {
+    "id": "dsp-1",
+    "mode": "read_aloud",
+    "action": "read_aloud",
+    "answerKind": "voice",
+    "responseClass": "short_spoken_word",
+    "stimulusKind": "text",
+    "answerSource": "decode",
+    "stimulusText": "cat",
+    "stimulusEmoji": "",
+    "stimulusCount": 0,
+    "ask": "Look at this printed word. What word?",
+    "howToPlay": "I will show you a word, and you read it out loud.",
+    "expectedAnswer": "cat",
+    "alternates": [],
+    "easier": true,
+    "acceptRule": "Sounding out the letters individually and then blending them together to say the full word counts as the correct answer.",
+    "signatureError": "Stating just a random letter sound from the word instead of blending them is not the full word.",
+    "correctionBody": "The word is cat. Sound it out: c-a-t, cat.",
+    "actionContract": {
+     "id": "read_aloud",
+     "label": "Read It Aloud",
+     "icon": "Aa",
+     "answerKind": "voice",
+     "instruction": "Look at this printed word. What word?",
+     "checkingInstruction": "Listening to your reading."
+    }
+   },
+   {
+    "id": "dsp-2",
+    "mode": "read_aloud",
+    "action": "read_aloud",
+    "answerKind": "voice",
+    "responseClass": "short_spoken_word",
+    "stimulusKind": "text",
+    "answerSource": "decode",
+    "stimulusText": "dog",
+    "stimulusEmoji": "",
+    "stimulusCount": 0,
+    "ask": "Here is the next one. What word?",
+    "howToPlay": "I will show you a word, and you read it out loud.",
+    "expectedAnswer": "dog",
+    "alternates": [],
+    "acceptRule": "Sounding out the letters individually and then blending them together to say the full word counts as the correct answer.",
+    "signatureError": "Saying a completely different animal name that starts with the same letter is not the printed word.",
+    "correctionBody": "This word is dog. We blend the sounds together to read dog.",
+    "actionContract": {
+     "id": "read_aloud",
+     "label": "Read It Aloud",
+     "icon": "Aa",
+     "answerKind": "voice",
+     "instruction": "Here is the next one. What word?",
+     "checkingInstruction": "Listening to your reading."
+    }
+   },
+   {
+    "id": "dsp-3",
+    "mode": "read_aloud",
+    "action": "read_aloud",
+    "answerKind": "voice",
+    "responseClass": "short_spoken_word",
+    "stimulusKind": "text",
+    "answerSource": "decode",
+    "stimulusText": "sun",
+    "stimulusEmoji": "",
+    "stimulusCount": 0,
+    "ask": "Keep going, you are doing great. What word?",
+    "howToPlay": "I will show you a word, and you read it out loud.",
+    "expectedAnswer": "sun",
+    "alternates": [],
+    "acceptRule": "Sounding out the letters individually and then blending them together to say the full word counts as the correct answer.",
+    "signatureError": "Naming a related weather word like hot instead of reading the actual letters printed is not the answer.",
+    "correctionBody": "The word is sun. Blend the sounds: s-u-n, sun.",
+    "actionContract": {
+     "id": "read_aloud",
+     "label": "Read It Aloud",
+     "icon": "Aa",
+     "answerKind": "voice",
+     "instruction": "Keep going, you are doing great. What word?",
+     "checkingInstruction": "Listening to your reading."
+    }
+   },
+   {
+    "id": "dsp-4",
+    "mode": "read_aloud",
+    "action": "read_aloud",
+    "answerKind": "voice",
+    "responseClass": "short_spoken_word",
+    "stimulusKind": "text",
+    "answerSource": "decode",
+    "stimulusText": "hop",
+    "stimulusEmoji": "",
+    "stimulusCount": 0,
+    "ask": "Last one, read it loud and clear. What word?",
+    "howToPlay": "I will show you a word, and you read it out loud.",
+    "expectedAnswer": "hop",
+    "alternates": [],
+    "acceptRule": "Sounding out the letters individually and then blending them together to say the full word counts as the correct answer.",
+    "signatureError": "Repeating the tutor's question words back instead of reading the printed text is not the answer.",
+    "correctionBody": "This word is hop. Hear the sounds: h-o-p, hop.",
+    "actionContract": {
+     "id": "read_aloud",
+     "label": "Read It Aloud",
+     "icon": "Aa",
+     "answerKind": "voice",
+     "instruction": "Last one, read it loud and clear. What word?",
+     "checkingInstruction": "Listening to your reading."
+    }
+   }
+  ]
+ }
+}

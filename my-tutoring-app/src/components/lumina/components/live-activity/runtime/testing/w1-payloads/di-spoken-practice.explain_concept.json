@@ -1,0 +1,202 @@
+{
+ "source": "qa/tutor-reports/di-spoken-practice-runtime-explain_concept-payload-2026-10-03.json",
+ "primitiveId": "di-spoken-practice",
+ "evalMode": "explain_concept",
+ "data": {
+  "title": "Growing Number Patterns",
+  "description": "You will answer out loud to explain how number patterns grow.",
+  "challengeType": "explain_concept",
+  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding.",
+  "items": [
+   {
+    "id": "dsp-1",
+    "mode": "explain_concept",
+    "action": "explain_concept",
+    "answerKind": "voice",
+    "responseClass": "concept_statement",
+    "stimulusKind": "text",
+    "answerSource": "recall",
+    "stimulusText": "3, 6, 9, 12",
+    "stimulusEmoji": "",
+    "conceptStatement": "This pattern grows by adding three each time.",
+    "stimulusCount": 0,
+    "ask": "Three, six, nine, twelve. What is the rule of this pattern?",
+    "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+    "expectedAnswer": "plus three",
+    "alternates": [
+     "add three",
+     "counting by threes"
+    ],
+    "acceptRule": "Any words explaining that three is added each step count as correct.",
+    "signatureError": "Saying the next number, fifteen, is NOT an explanation of the rule.",
+    "correctionBody": "The rule is plus three because the numbers go up by three every time.",
+    "actionContract": {
+     "id": "explain_concept",
+     "label": "Say Why",
+     "icon": "why",
+     "answerKind": "voice",
+     "instruction": "Three, six, nine, twelve. What is the rule of this pattern?",
+     "checkingInstruction": "Listening to your explanation."
+    }
+   },
+   {
+    "id": "dsp-2",
+    "mode": "explain_concept",
+    "action": "explain_concept",
+    "answerKind": "voice",
+    "responseClass": "concept_statement",
+    "stimulusKind": "text",
+    "answerSource": "recall",
+    "stimulusText": "4, 8, 12, 16",
+    "stimulusEmoji": "",
+    "conceptStatement": "This pattern grows by adding four each time.",
+    "stimulusCount": 0,
+    "ask": "Four, eight, twelve, sixteen. What rule makes this pattern grow?",
+    "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+    "expectedAnswer": "plus four",
+    "alternates": [
+     "add four",
+     "counting by fours"
+    ],
+    "acceptRule": "Any words meaning four is added each time count.",
+    "signatureError": "Repeating the final number, sixteen, is NOT the rule.",
+    "correctionBody": "The rule is plus four because each new number is four more than the last.",
+    "actionContract": {
+     "id": "explain_concept",
+     "label": "Say Why",
+     "icon": "why",
+     "answerKind": "voice",
+     "instruction": "Four, eight, twelve, sixteen. What rule makes this pattern grow?",
+     "checkingInstruction": "Listening to your explanation."
+    }
+   },
+   {
+    "id": "dsp-3",
+    "mode": "explain_concept",
+    "action": "explain_concept",
+    "answerKind": "voice",
+    "responseClass": "concept_statement",
+    "stimulusKind": "text",
+    "answerSource": "recall",
+    "stimulusText": "10, 20, 30, 40",
+    "stimulusEmoji": "",
+    "conceptStatement": "This pattern grows by adding ten each time.",
+    "stimulusCount": 0,
+    "ask": "Ten, twenty, thirty, forty. What is the rule for this number pattern?",
+    "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+    "expectedAnswer": "plus ten",
+    "alternates": [
+     "add ten",
+     "counting by tens"
+    ],
+    "acceptRule": "Any phrase explaining that ten is added counts as right.",
+    "signatureError": "Saying the ending number, forty, is NOT an explanation.",
+    "correctionBody": "The rule is plus ten because ten is added at every single step.",
+    "actionContract": {
+     "id": "explain_concept",
+     "label": "Say Why",
+     "icon": "why",
+     "answerKind": "voice",
+     "instruction": "Ten, twenty, thirty, forty. What is the rule for this number pattern?",
+     "checkingInstruction": "Listening to your explanation."
+    }
+   },
+   {
+    "id": "dsp-4",
+    "mode": "explain_concept",
+    "action": "explain_concept",
+    "answerKind": "voice",
+    "responseClass": "concept_statement",
+    "stimulusKind": "text",
+    "answerSource": "recall",
+    "stimulusText": "2, 4, 6, 8",
+    "stimulusEmoji": "",
+    "conceptStatement": "This pattern grows by adding two each time.",
+    "stimulusCount": 0,
+    "ask": "Two, four, six, eight. How is this pattern growing?",
+    "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+    "expectedAnswer": "plus two",
+    "alternates": [
+     "add two",
+     "counting by twos"
+    ],
+    "acceptRule": "Any explanation mentioning adding two counts.",
+    "signatureError": "Saying the final number, eight, is NOT the rule.",
+    "correctionBody": "The rule is plus two because you increase by two every time.",
+    "actionContract": {
+     "id": "explain_concept",
+     "label": "Say Why",
+     "icon": "why",
+     "answerKind": "voice",
+     "instruction": "Two, four, six, eight. How is this pattern growing?",
+     "checkingInstruction": "Listening to your explanation."
+    }
+   }
+  ],
+  "spares": [
+   {
+    "id": "dsp-spare-1",
+    "mode": "explain_concept",
+    "action": "explain_concept",
+    "answerKind": "voice",
+    "responseClass": "concept_statement",
+    "stimulusKind": "text",
+    "answerSource": "recall",
+    "stimulusText": "25, 50, 75, 100",
+    "stimulusEmoji": "",
+    "conceptStatement": "This pattern grows by adding twenty-five each time.",
+    "stimulusCount": 0,
+    "ask": "Twenty-five, fifty, seventy-five, one hundred. What rule governs this pattern?",
+    "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+    "expectedAnswer": "plus twenty five",
+    "alternates": [
+     "add twenty five",
+     "counting by twenty fives"
+    ],
+    "acceptRule": "Any statement showing twenty-five is added counts.",
+    "signatureError": "Saying one hundred is NOT the rule.",
+    "correctionBody": "The rule is plus twenty-five because twenty-five is added to make each new number.",
+    "actionContract": {
+     "id": "explain_concept",
+     "label": "Say Why",
+     "icon": "why",
+     "answerKind": "voice",
+     "instruction": "Twenty-five, fifty, seventy-five, one hundred. What rule governs this pattern?",
+     "checkingInstruction": "Listening to your explanation."
+    }
+   },
+   {
+    "id": "dsp-spare-2",
+    "mode": "explain_concept",
+    "action": "explain_concept",
+    "answerKind": "voice",
+    "responseClass": "concept_statement",
+    "stimulusKind": "text",
+    "answerSource": "recall",
+    "stimulusText": "5, 10, 15, 20",
+    "stimulusEmoji": "",
+    "conceptStatement": "This pattern grows by adding five each time.",
+    "stimulusCount": 0,
+    "ask": "Five, ten, fifteen, twenty. How does this pattern grow?",
+    "howToPlay": "I will show you something, and you tell me what it means in your own words.",
+    "expectedAnswer": "plus five",
+    "alternates": [
+     "add five",
+     "counting by fives"
+    ],
+    "easier": true,
+    "acceptRule": "Any phrasing indicating counting by fives counts as the answer.",
+    "signatureError": "Saying the last number, twenty, is NOT an explanation.",
+    "correctionBody": "The rule is plus five because you add five to get the next number.",
+    "actionContract": {
+     "id": "explain_concept",
+     "label": "Say Why",
+     "icon": "why",
+     "answerKind": "voice",
+     "instruction": "Five, ten, fifteen, twenty. How does this pattern grow?",
+     "checkingInstruction": "Listening to your explanation."
+    }
+   }
+  ]
+ }
+}

@@ -1,0 +1,189 @@
+{
+ "source": "qa/tutor-reports/di-spoken-practice-runtime-say_answer-payload-2026-10-03.json",
+ "primitiveId": "di-spoken-practice",
+ "evalMode": "say_answer",
+ "data": {
+  "title": "Opposites Challenge",
+  "description": "Listen to each word and say its opposite out loud.",
+  "challengeType": "say_answer",
+  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding.",
+  "items": [
+   {
+    "id": "dsp-2",
+    "mode": "say_answer",
+    "action": "say_answer",
+    "answerKind": "voice",
+    "responseClass": "short_spoken_word",
+    "stimulusKind": "none",
+    "answerSource": "recall",
+    "stimulusText": "big",
+    "stimulusEmoji": "",
+    "stimulusCount": 0,
+    "ask": "Listen to this word: big. What is the opposite of big?",
+    "howToPlay": "I will ask, and you say the answer out loud.",
+    "expectedAnswer": "small",
+    "alternates": [
+     "tiny",
+     "little"
+    ],
+    "acceptRule": "Saying tiny or little counts as the correct opposite.",
+    "signatureError": "Repeating the starting word big is not correct.",
+    "correctionBody": "The opposite of big is small. Things that are not large are small.",
+    "actionContract": {
+     "id": "say_answer",
+     "label": "Say the Answer",
+     "icon": "A",
+     "answerKind": "voice",
+     "instruction": "Listen to this word: big. What is the opposite of big?",
+     "checkingInstruction": "Listening to your answer."
+    }
+   },
+   {
+    "id": "dsp-3",
+    "mode": "say_answer",
+    "action": "say_answer",
+    "answerKind": "voice",
+    "responseClass": "short_spoken_word",
+    "stimulusKind": "none",
+    "answerSource": "recall",
+    "stimulusText": "happy",
+    "stimulusEmoji": "",
+    "stimulusCount": 0,
+    "ask": "Listen to this word: happy. What is the opposite of happy?",
+    "howToPlay": "I will ask, and you say the answer out loud.",
+    "expectedAnswer": "sad",
+    "alternates": [
+     "unhappy",
+     "upset"
+    ],
+    "acceptRule": "Saying unhappy or upset counts as the correct opposite.",
+    "signatureError": "Repeating the starting word happy is not correct.",
+    "correctionBody": "The opposite of happy is sad. When you are not feeling happy, you feel sad.",
+    "actionContract": {
+     "id": "say_answer",
+     "label": "Say the Answer",
+     "icon": "A",
+     "answerKind": "voice",
+     "instruction": "Listen to this word: happy. What is the opposite of happy?",
+     "checkingInstruction": "Listening to your answer."
+    }
+   },
+   {
+    "id": "dsp-4",
+    "mode": "say_answer",
+    "action": "say_answer",
+    "answerKind": "voice",
+    "responseClass": "short_spoken_word",
+    "stimulusKind": "none",
+    "answerSource": "recall",
+    "stimulusText": "fast",
+    "stimulusEmoji": "",
+    "stimulusCount": 0,
+    "ask": "Listen to this word: fast. What is the opposite of fast?",
+    "howToPlay": "I will ask, and you say the answer out loud.",
+    "expectedAnswer": "slow",
+    "alternates": [
+     "sluggish"
+    ],
+    "acceptRule": "Saying sluggish counts as the correct opposite.",
+    "signatureError": "Repeating the starting word fast is not correct.",
+    "correctionBody": "The opposite of fast is slow. Something that does not move quickly is slow.",
+    "actionContract": {
+     "id": "say_answer",
+     "label": "Say the Answer",
+     "icon": "A",
+     "answerKind": "voice",
+     "instruction": "Listen to this word: fast. What is the opposite of fast?",
+     "checkingInstruction": "Listening to your answer."
+    }
+   },
+   {
+    "id": "dsp-5",
+    "mode": "say_answer",
+    "action": "say_answer",
+    "answerKind": "voice",
+    "responseClass": "short_spoken_word",
+    "stimulusKind": "none",
+    "answerSource": "recall",
+    "stimulusText": "up",
+    "stimulusEmoji": "",
+    "stimulusCount": 0,
+    "ask": "Listen to this word: up. What is the opposite of up?",
+    "howToPlay": "I will ask, and you say the answer out loud.",
+    "expectedAnswer": "down",
+    "alternates": [],
+    "acceptRule": "",
+    "signatureError": "Repeating the starting word up is not correct.",
+    "correctionBody": "The opposite of up is down. If you do not go up, you go down.",
+    "actionContract": {
+     "id": "say_answer",
+     "label": "Say the Answer",
+     "icon": "A",
+     "answerKind": "voice",
+     "instruction": "Listen to this word: up. What is the opposite of up?",
+     "checkingInstruction": "Listening to your answer."
+    }
+   }
+  ],
+  "spares": [
+   {
+    "id": "dsp-spare-1",
+    "mode": "say_answer",
+    "action": "say_answer",
+    "answerKind": "voice",
+    "responseClass": "short_spoken_word",
+    "stimulusKind": "none",
+    "answerSource": "recall",
+    "stimulusText": "day",
+    "stimulusEmoji": "",
+    "stimulusCount": 0,
+    "ask": "Listen to this word: day. What is the opposite of day?",
+    "howToPlay": "I will ask, and you say the answer out loud.",
+    "expectedAnswer": "night",
+    "alternates": [],
+    "acceptRule": "",
+    "signatureError": "Repeating the starting word day is not correct.",
+    "correctionBody": "The opposite of day is night. When the sun goes away, it is night.",
+    "actionContract": {
+     "id": "say_answer",
+     "label": "Say the Answer",
+     "icon": "A",
+     "answerKind": "voice",
+     "instruction": "Listen to this word: day. What is the opposite of day?",
+     "checkingInstruction": "Listening to your answer."
+    }
+   },
+   {
+    "id": "dsp-spare-2",
+    "mode": "say_answer",
+    "action": "say_answer",
+    "answerKind": "voice",
+    "responseClass": "short_spoken_word",
+    "stimulusKind": "none",
+    "answerSource": "recall",
+    "stimulusText": "hot",
+    "stimulusEmoji": "",
+    "stimulusCount": 0,
+    "ask": "Listen to this word: hot. What is the opposite of hot?",
+    "howToPlay": "I will ask, and you say the answer out loud.",
+    "expectedAnswer": "cold",
+    "alternates": [
+     "freezing",
+     "chilled"
+    ],
+    "easier": true,
+    "acceptRule": "Saying synonyms that mean cold like freezing or chilled counts as the answer.",
+    "signatureError": "Repeating the starting word hot back as the opposite is not correct.",
+    "correctionBody": "The opposite of hot is cold. When something is not hot, it is cold.",
+    "actionContract": {
+     "id": "say_answer",
+     "label": "Say the Answer",
+     "icon": "A",
+     "answerKind": "voice",
+     "instruction": "Listen to this word: hot. What is the opposite of hot?",
+     "checkingInstruction": "Listening to your answer."
+    }
+   }
+  ]
+ }
+}

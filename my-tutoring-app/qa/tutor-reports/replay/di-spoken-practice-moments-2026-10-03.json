@@ -1,0 +1,4338 @@
+{
+ "lessonEntry": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+ "records": [
+  {
+   "payload": "di-spoken-practice.compare_choice",
+   "primitiveId": "di-spoken-practice",
+   "evalMode": "compare_choice",
+   "guidance": "The panel shows printed text, a picture, a group of pictures, two pictures, or nothing (the question carries it). The child answers OUT LOUD, a short word or phrase, or on explain items one idea in their own words. Nothing on screen names the answer, so on a pair say both names and the whole word menu. The key names what else counts and the wrong answer that sounds right. On explain items judge the idea, not the words; the example read back or named is not an explanation. Printed text to read aloud is the answer: let them read it first. Never model this item: your model is the model lever, a DIFFERENT item (on a pair, one pair per menu word, all said). The support fact says where levers start. You cannot change the stimulus. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Comparing lengths: longer and shorter",
+   "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding.",
+   "leakTokens": [
+    "SAY_ITEM",
+    "SAY_MOVE",
+    "SAY_HEAR",
+    "SAY_COMPLETE"
+   ],
+   "ask": "Here is a train, and here is a toy car. Is the train longer or shorter?",
+   "keys": [
+    "\"longer\". the learner chooses one word from \"longer\", \"shorter\"; any other word does not answer the question. any clear spoken response that names the correct menu word. saying shorter because it is a different vehicle."
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dsp-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-spoken-practice",
+      "objectiveId": "di-spoken-practice-practice",
+      "evalMode": "compare_choice",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dsp-1",
+       "phase": "working",
+       "task": "Here is a train, and here is a toy car. Is the train longer or shorter?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "compare_choice",
+        "constraints": "The learner says one word from \"longer\", \"shorter\". The pictures have no labels, so the learner hears their names from you.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "onScreen": "Beside the pictures, a model card shows one pair for each menu word: a bus and an ant: \"longer\" fits a bus; an ant and a bus: \"shorter\" fits an ant. None is this pair.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target",
+          "label": "two unlabeled pictures side by side: a train and a toy car"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "word_model",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "other_menu_word",
+           "said_same",
+           "said_thing_name"
+          ],
+          "when": "The learner says the wrong word, a picture's name, or does not know how to start.",
+          "does": "Shows a card with one model pair for EACH menu word (onScreen names them). Say every one as your turn, in order (\"My turn: this train is longer…\"); never only one, and never point at the learner's pictures. Then ask their question again."
+         },
+         {
+          "id": "far_pair",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "other_menu_word",
+           "said_same"
+          ],
+          "when": "These two are too close to tell apart yet.",
+          "does": "Opens an easier one of the same kind first. It is not graded; the full question comes back after it."
+         }
+        ],
+        "expectedAnswer": "\"longer\". The learner chooses one word from \"longer\", \"shorter\"; any other word does not answer the question. Any clear spoken response that names the correct menu word. Saying shorter because it is a different vehicle.",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dsp-1",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "dsp-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-spoken-practice",
+      "objectiveId": "di-spoken-practice-practice",
+      "evalMode": "compare_choice",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dsp-1",
+       "phase": "working",
+       "task": "Here is a train, and here is a toy car. Is the train longer or shorter?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "compare_choice",
+        "constraints": "The learner says one word from \"longer\", \"shorter\". The pictures have no labels, so the learner hears their names from you.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "onScreen": "Beside the pictures, a model card shows one pair for each menu word: a bus and an ant: \"longer\" fits a bus; an ant and a bus: \"shorter\" fits an ant. None is this pair.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target",
+          "label": "two unlabeled pictures side by side: a train and a toy car"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "word_model",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "other_menu_word",
+           "said_same",
+           "said_thing_name"
+          ],
+          "when": "The learner says the wrong word, a picture's name, or does not know how to start.",
+          "does": "Shows a card with one model pair for EACH menu word (onScreen names them). Say every one as your turn, in order (\"My turn: this train is longer…\"); never only one, and never point at the learner's pictures. Then ask their question again."
+         },
+         {
+          "id": "far_pair",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "other_menu_word",
+           "said_same"
+          ],
+          "when": "These two are too close to tell apart yet.",
+          "does": "Opens an easier one of the same kind first. It is not graded; the full question comes back after it."
+         }
+        ],
+        "expectedAnswer": "\"longer\". The learner chooses one word from \"longer\", \"shorter\"; any other word does not answer the question. Any clear spoken response that names the correct menu word. Saying shorter because it is a different vehicle.",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "shorter"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dsp-1",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "shorter",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dsp-1",
+       "revision": 1
+      },
+      "task": "Here is a train, and here is a toy car. Is the train longer or shorter?",
+      "phase": "working",
+      "learner": "shorter",
+      "expectedAnswer": "\"longer\". The learner chooses one word from \"longer\", \"shorter\"; any other word does not answer the question. Any clear spoken response that names the correct menu word. Saying shorter because it is a different vehicle.",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "shorter"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [
+        {
+         "id": "stimulus",
+         "selected": false,
+         "group": "assignment target",
+         "label": "two unlabeled pictures side by side: a train and a toy car"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "compare_choice",
+        "constraints": "The learner says one word from \"longer\", \"shorter\". The pictures have no labels, so the learner hears their names from you.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "onScreen": "Beside the pictures, a model card shows one pair for each menu word: a bus and an ant: \"longer\" fits a bus; an ant and a bus: \"shorter\" fits an ant. None is this pair.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dsp-1"
+      },
+      "task": "Here is a train, and here is a toy car. Is the train longer or shorter?",
+      "expectedAnswer": "\"longer\". The learner chooses one word from \"longer\", \"shorter\"; any other word does not answer the question. Any clear spoken response that names the correct menu word. Saying shorter because it is a different vehicle.",
+      "learner": "shorter",
+      "misses": [
+       {
+        "id": "other_menu_word",
+        "pattern": "The pictures are a train and a toy car; the word that fits is longer. The learner's answer is shorter, another word from the menu.",
+        "examples": [
+         "shorter"
+        ]
+       },
+       {
+        "id": "said_thing_name",
+        "pattern": "The pictures are a train and a toy car; the word that fits is longer. The learner names a picture (train or toy car) and says no word from the menu.",
+        "examples": [
+         "train"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dsp-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-spoken-practice",
+      "objectiveId": "di-spoken-practice-practice",
+      "evalMode": "compare_choice",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dsp-1",
+       "phase": "working",
+       "task": "Here is a train, and here is a toy car. Is the train longer or shorter?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "shorter",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "compare_choice",
+        "constraints": "The learner says one word from \"longer\", \"shorter\". The pictures have no labels, so the learner hears their names from you.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "onScreen": "Beside the pictures, a model card shows one pair for each menu word: a bus and an ant: \"longer\" fits a bus; an ant and a bus: \"shorter\" fits an ant. None is this pair.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target",
+          "label": "two unlabeled pictures side by side: a train and a toy car"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "word_model",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "other_menu_word",
+           "said_same",
+           "said_thing_name"
+          ],
+          "when": "The learner says the wrong word, a picture's name, or does not know how to start.",
+          "does": "Shows a card with one model pair for EACH menu word (onScreen names them). Say every one as your turn, in order (\"My turn: this train is longer…\"); never only one, and never point at the learner's pictures. Then ask their question again."
+         },
+         {
+          "id": "far_pair",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "other_menu_word",
+           "said_same"
+          ],
+          "when": "These two are too close to tell apart yet.",
+          "does": "Opens an easier one of the same kind first. It is not graded; the full question comes back after it."
+         }
+        ],
+        "expectedAnswer": "\"longer\". The learner chooses one word from \"longer\", \"shorter\"; any other word does not answer the question. Any clear spoken response that names the correct menu word. Saying shorter because it is a different vehicle.",
+        "lastResponse": {
+         "itemId": "dsp-1",
+         "response": "shorter",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dsp-1",
+          "response": "shorter",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/2/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dsp-1",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "dsp-1~simpler",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-spoken-practice",
+      "objectiveId": "di-spoken-practice-practice",
+      "evalMode": "compare_choice",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dsp-1~simpler",
+       "phase": "working",
+       "task": "Here is an ant, and here is a bus. Is the ant longer or shorter?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "compare_choice",
+        "constraints": "The learner says one word from \"longer\", \"shorter\". The pictures have no labels, so the learner hears their names from you.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target",
+          "label": "two unlabeled pictures side by side: an ant and a bus"
+         }
+        ],
+        "demonstration": [],
+        "practice": {
+         "returnsTo": "dsp-1"
+        },
+        "expectedAnswer": "\"shorter\". The learner chooses one word from \"longer\", \"shorter\"; any other word does not answer the question.",
+        "lastResponse": null,
+        "attempts": [
+         {
+          "itemId": "dsp-1",
+          "response": "shorter",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "dsp-1",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "far_pair"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dsp-1~simpler",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled far_pair (simplify). It is on screen now: Opens an easier one of the same kind first. It is not graded; the full question comes back after it. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the easier item on screen."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "far_pair",
+      "kind": "simplify",
+      "does": "Opens an easier one of the same kind first. It is not graded; the full question comes back after it."
+     }
+    }
+   ],
+   "stopped": "a simplify lever opened a practice item"
+  },
+  {
+   "payload": "di-spoken-practice.count_and_say",
+   "primitiveId": "di-spoken-practice",
+   "evalMode": "count_and_say",
+   "guidance": "The panel shows printed text, a picture, a group of pictures, two pictures, or nothing (the question carries it). The child answers OUT LOUD, a short word or phrase, or on explain items one idea in their own words. Nothing on screen names the answer, so on a pair say both names and the whole word menu. The key names what else counts and the wrong answer that sounds right. On explain items judge the idea, not the words; the example read back or named is not an explanation. Printed text to read aloud is the answer: let them read it first. Never model this item: your model is the model lever, a DIFFERENT item (on a pair, one pair per menu word, all said). The support fact says where levers start. You cannot change the stimulus. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Comparing lengths: longer and shorter",
+   "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+   "leakTokens": [
+    "SAY_ITEM",
+    "SAY_MOVE",
+    "SAY_HEAR",
+    "SAY_COMPLETE"
+   ],
+   "ask": "Count the stars out loud. How many stars are there?",
+   "keys": [
+    "\"four\". counting aloud in order that ends on the number four counts as the correct answer. just naming a random number like five without counting is not the total.",
+    "four"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dsp-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-spoken-practice",
+      "objectiveId": "di-spoken-practice-practice",
+      "evalMode": "count_and_say",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dsp-1",
+       "phase": "working",
+       "task": "Count the stars out loud. How many stars are there?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "count_and_say",
+        "constraints": "The learner counts the pictures and says how many aloud. No numeral is shown.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "onScreen": "Beside the pictures, a model card shows a different group: 2 balloons, answered two. It is not this group.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target",
+          "label": "a group of identical stars pictures"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_count",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gets the count wrong or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT group of pictures (onScreen says how many). Say only its total as your turn; never count it aloud. Say it as your turn (\"My turn: …\"), then ask the learner's own question again. Never apply it to their question."
+         },
+         {
+          "id": "touch_marks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over"
+          ],
+          "when": "The learner skips a picture or counts one twice.",
+          "does": "Lets the learner tap each picture as they count it; a tapped picture gets a ring. No numbers."
+         },
+         {
+          "id": "smaller_group",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "This many is too many to count yet.",
+          "does": "Opens an easier one of the same kind first. It is not graded; the full question comes back after it."
+         }
+        ],
+        "expectedAnswer": "\"four\". Counting aloud in order that ends on the number four counts as the correct answer. Just naming a random number like five without counting is not the total.",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dsp-1",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "dsp-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-spoken-practice",
+      "objectiveId": "di-spoken-practice-practice",
+      "evalMode": "count_and_say",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dsp-1",
+       "phase": "working",
+       "task": "Count the stars out loud. How many stars are there?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "count_and_say",
+        "constraints": "The learner counts the pictures and says how many aloud. No numeral is shown.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "onScreen": "Beside the pictures, a model card shows a different group: 2 balloons, answered two. It is not this group.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target",
+          "label": "a group of identical stars pictures"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_count",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gets the count wrong or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT group of pictures (onScreen says how many). Say only its total as your turn; never count it aloud. Say it as your turn (\"My turn: …\"), then ask the learner's own question again. Never apply it to their question."
+         },
+         {
+          "id": "touch_marks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over"
+          ],
+          "when": "The learner skips a picture or counts one twice.",
+          "does": "Lets the learner tap each picture as they count it; a tapped picture gets a ring. No numbers."
+         },
+         {
+          "id": "smaller_group",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "This many is too many to count yet.",
+          "does": "Opens an easier one of the same kind first. It is not graded; the full question comes back after it."
+         }
+        ],
+        "expectedAnswer": "\"four\". Counting aloud in order that ends on the number four counts as the correct answer. Just naming a random number like five without counting is not the total.",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "three"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dsp-1",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "three",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dsp-1",
+       "revision": 1
+      },
+      "task": "Count the stars out loud. How many stars are there?",
+      "phase": "working",
+      "learner": "three",
+      "expectedAnswer": "\"four\". Counting aloud in order that ends on the number four counts as the correct answer. Just naming a random number like five without counting is not the total.",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "three"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [
+        {
+         "id": "stimulus",
+         "selected": false,
+         "group": "assignment target",
+         "label": "a group of identical stars pictures"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "count_and_say",
+        "constraints": "The learner counts the pictures and says how many aloud. No numeral is shown.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "onScreen": "Beside the pictures, a model card shows a different group: 2 balloons, answered two. It is not this group.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dsp-1"
+      },
+      "task": "Count the stars out loud. How many stars are there?",
+      "expectedAnswer": "\"four\". Counting aloud in order that ends on the number four counts as the correct answer. Just naming a random number like five without counting is not the total.",
+      "learner": "three",
+      "misses": [
+       {
+        "id": "skipped_a_number",
+        "pattern": "The learner counts aloud and leaves a number out of the counting sequence, whatever number they end on.",
+        "examples": [
+         "one, two, four"
+        ]
+       },
+       {
+        "id": "one_short",
+        "pattern": "The learner's answer is 3, one fewer than the 4 stars in the picture.",
+        "examples": [
+         "three"
+        ]
+       },
+       {
+        "id": "one_over",
+        "pattern": "The learner's answer is 5, one more than the 4 stars in the picture.",
+        "examples": [
+         "five"
+        ]
+       },
+       {
+        "id": "short_by_more",
+        "pattern": "The learner's answer is 2 or fewer (but more than zero), two or more fewer than the 4 stars in the picture.",
+        "examples": [
+         "two"
+        ]
+       },
+       {
+        "id": "over_by_more",
+        "pattern": "The learner's answer is 6 or more, two or more more than the 4 stars in the picture.",
+        "examples": [
+         "six"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dsp-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-spoken-practice",
+      "objectiveId": "di-spoken-practice-practice",
+      "evalMode": "count_and_say",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dsp-1",
+       "phase": "working",
+       "task": "Count the stars out loud. How many stars are there?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "three",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "count_and_say",
+        "constraints": "The learner counts the pictures and says how many aloud. No numeral is shown.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "onScreen": "Beside the pictures, a model card shows a different group: 2 balloons, answered two. It is not this group.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target",
+          "label": "a group of identical stars pictures"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_count",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gets the count wrong or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT group of pictures (onScreen says how many). Say only its total as your turn; never count it aloud. Say it as your turn (\"My turn: …\"), then ask the learner's own question again. Never apply it to their question."
+         },
+         {
+          "id": "touch_marks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over"
+          ],
+          "when": "The learner skips a picture or counts one twice.",
+          "does": "Lets the learner tap each picture as they count it; a tapped picture gets a ring. No numbers."
+         },
+         {
+          "id": "smaller_group",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "This many is too many to count yet.",
+          "does": "Opens an easier one of the same kind first. It is not graded; the full question comes back after it."
+         }
+        ],
+        "expectedAnswer": "\"four\". Counting aloud in order that ends on the number four counts as the correct answer. Just naming a random number like five without counting is not the total.",
+        "lastResponse": {
+         "itemId": "dsp-1",
+         "response": "three",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dsp-1",
+          "response": "three",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/2/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dsp-1",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "dsp-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-spoken-practice",
+      "objectiveId": "di-spoken-practice-practice",
+      "evalMode": "count_and_say",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dsp-1",
+       "phase": "working",
+       "task": "Count the stars out loud. How many stars are there?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "three",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "count_and_say",
+        "constraints": "The learner counts the pictures and says how many aloud. No numeral is shown.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "onScreen": "Beside the pictures, a model card shows a different group: 2 balloons, answered two. It is not this group. The learner can tap each picture; a tapped picture gets a ring.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target",
+          "label": "a group of identical stars pictures"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_count",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gets the count wrong or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT group of pictures (onScreen says how many). Say only its total as your turn; never count it aloud. Say it as your turn (\"My turn: …\"), then ask the learner's own question again. Never apply it to their question."
+         },
+         {
+          "id": "touch_marks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over"
+          ],
+          "when": "The learner skips a picture or counts one twice.",
+          "does": "Lets the learner tap each picture as they count it; a tapped picture gets a ring. No numbers."
+         },
+         {
+          "id": "smaller_group",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "This many is too many to count yet.",
+          "does": "Opens an easier one of the same kind first. It is not graded; the full question comes back after it."
+         }
+        ],
+        "expectedAnswer": "\"four\". Counting aloud in order that ends on the number four counts as the correct answer. Just naming a random number like five without counting is not the total.",
+        "lastResponse": {
+         "itemId": "dsp-1",
+         "response": "three",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dsp-1",
+          "response": "three",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "dsp-1",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "touch_marks"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dsp-1",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled touch_marks (help). It is on screen now: Lets the learner tap each picture as they count it; a tapped picture gets a ring. No numbers. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "touch_marks",
+      "kind": "help",
+      "does": "Lets the learner tap each picture as they count it; a tapped picture gets a ring. No numbers."
+     }
+    },
+    {
+     "kind": "credit",
+     "itemId": "dsp-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-spoken-practice",
+      "objectiveId": "di-spoken-practice-practice",
+      "evalMode": "count_and_say",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dsp-1",
+       "phase": "working",
+       "task": "Count the stars out loud. How many stars are there?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "three",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "count_and_say",
+        "constraints": "The learner counts the pictures and says how many aloud. No numeral is shown.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "onScreen": "Beside the pictures, a model card shows a different group: 2 balloons, answered two. It is not this group. The learner can tap each picture; a tapped picture gets a ring.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target",
+          "label": "a group of identical stars pictures"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_count",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gets the count wrong or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT group of pictures (onScreen says how many). Say only its total as your turn; never count it aloud. Say it as your turn (\"My turn: …\"), then ask the learner's own question again. Never apply it to their question."
+         },
+         {
+          "id": "touch_marks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over"
+          ],
+          "when": "The learner skips a picture or counts one twice.",
+          "does": "Lets the learner tap each picture as they count it; a tapped picture gets a ring. No numbers."
+         },
+         {
+          "id": "smaller_group",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "This many is too many to count yet.",
+          "does": "Opens an easier one of the same kind first. It is not graded; the full question comes back after it."
+         }
+        ],
+        "expectedAnswer": "\"four\". Counting aloud in order that ends on the number four counts as the correct answer. Just naming a random number like five without counting is not the total.",
+        "pendingResponse": {
+         "id": "speech:1:2",
+         "text": "four"
+        },
+        "lastResponse": {
+         "itemId": "dsp-1",
+         "response": "three",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dsp-1",
+          "response": "three",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "dsp-1",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "touch_marks"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dsp-1",
+        "secondsOnItem": 20,
+        "secondsSinceReady": 20,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "four",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dsp-1",
+       "revision": 3
+      },
+      "task": "Count the stars out loud. How many stars are there?",
+      "phase": "working",
+      "learner": "four",
+      "expectedAnswer": "\"four\". Counting aloud in order that ends on the number four counts as the correct answer. Just naming a random number like five without counting is not the total.",
+      "pendingResponse": {
+       "id": "speech:1:2",
+       "text": "four"
+      },
+      "lastResponse": {
+       "itemId": "dsp-1",
+       "response": "three",
+       "source": "speech",
+       "correct": false,
+       "tutorResponse": "Not quite.",
+       "judgment": "tutor",
+       "assisted": false,
+       "answerExposure": "none"
+      },
+      "activity": {
+       "responseSource": "speech",
+       "attemptNumber": 1,
+       "objects": [
+        {
+         "id": "stimulus",
+         "selected": false,
+         "group": "assignment target",
+         "label": "a group of identical stars pictures"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "count_and_say",
+        "constraints": "The learner counts the pictures and says how many aloud. No numeral is shown.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "onScreen": "Beside the pictures, a model card shows a different group: 2 balloons, answered two. It is not this group. The learner can tap each picture; a tapped picture gets a ring.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 2,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dsp-1"
+      },
+      "task": "Count the stars out loud. How many stars are there?",
+      "expectedAnswer": "\"four\". Counting aloud in order that ends on the number four counts as the correct answer. Just naming a random number like five without counting is not the total.",
+      "learner": "four",
+      "misses": [
+       {
+        "id": "skipped_a_number",
+        "pattern": "The learner counts aloud and leaves a number out of the counting sequence, whatever number they end on.",
+        "examples": [
+         "one, two, four"
+        ]
+       },
+       {
+        "id": "one_short",
+        "pattern": "The learner's answer is 3, one fewer than the 4 stars in the picture.",
+        "examples": [
+         "three"
+        ]
+       },
+       {
+        "id": "one_over",
+        "pattern": "The learner's answer is 5, one more than the 4 stars in the picture.",
+        "examples": [
+         "five"
+        ]
+       },
+       {
+        "id": "short_by_more",
+        "pattern": "The learner's answer is 2 or fewer (but more than zero), two or more fewer than the 4 stars in the picture.",
+        "examples": [
+         "two"
+        ]
+       },
+       {
+        "id": "over_by_more",
+        "pattern": "The learner's answer is 6 or more, two or more more than the 4 stars in the picture.",
+        "examples": [
+         "six"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    }
+   ]
+  },
+  {
+   "payload": "di-spoken-practice.explain_concept",
+   "primitiveId": "di-spoken-practice",
+   "evalMode": "explain_concept",
+   "guidance": "The panel shows printed text, a picture, a group of pictures, two pictures, or nothing (the question carries it). The child answers OUT LOUD, a short word or phrase, or on explain items one idea in their own words. Nothing on screen names the answer, so on a pair say both names and the whole word menu. The key names what else counts and the wrong answer that sounds right. On explain items judge the idea, not the words; the example read back or named is not an explanation. Printed text to read aloud is the answer: let them read it first. Never model this item: your model is the model lever, a DIFFERENT item (on a pair, one pair per menu word, all said). The support fact says where levers start. You cannot change the stimulus. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Comparing lengths: longer and shorter",
+   "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding.",
+   "leakTokens": [
+    "SAY_ITEM",
+    "SAY_MOVE",
+    "SAY_HEAR",
+    "SAY_COMPLETE"
+   ],
+   "ask": "Three, six, nine, twelve. What is the rule of this pattern?",
+   "keys": [
+    "an explanation in the learner's own words that means: \"this pattern grows by adding three each time.\" for example \"plus three\", \"add three\", \"counting by threes\", or any wording with that idea. judge the meaning, not the words: the same words inside a sentence that means the opposite or a different idea are wrong, and so are \"3, 6, 9, 12\" read back, a bare number, or just the name of what is shown. any words explaining that three is added each step count as correct. saying the next number, fifteen, is not an explanation of the rule.",
+    "this pattern grows by adding three each time."
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dsp-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-spoken-practice",
+      "objectiveId": "di-spoken-practice-practice",
+      "evalMode": "explain_concept",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dsp-1",
+       "phase": "working",
+       "task": "Three, six, nine, twelve. What is the rule of this pattern?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "explain_concept",
+        "constraints": "The learner answers aloud. The answer is not printed.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "onScreen": "Beside the example, a model card shows a different one, \"25, 50, 75, 100\", explained: \"This pattern grows by adding twenty-five each time.\". It is not this example.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the printed \"3, 6, 9, 12\""
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_explain",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "read_back",
+           "named_only",
+           "bare_number",
+           "opposite_idea"
+          ],
+          "when": "The learner reads the example back, only names it, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT example and its idea in one sentence (onScreen gives it). Say it as your turn (\"My turn: …\"), then ask the learner's own question again. Never apply it to their question."
+         },
+         {
+          "id": "easier_item",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "read_back",
+           "named_only",
+           "bare_number",
+           "opposite_idea"
+          ],
+          "when": "This question is too hard yet.",
+          "does": "Opens an easier one of the same kind first. It is not graded; the full question comes back after it."
+         }
+        ],
+        "expectedAnswer": "An explanation in the learner's own words that means: \"this pattern grows by adding three each time.\" For example \"plus three\", \"add three\", \"counting by threes\", or any wording with that idea. Judge the meaning, not the words: the same words inside a sentence that means the opposite or a different idea are wrong, and so are \"3, 6, 9, 12\" read back, a bare number, or just the name of what is shown. Any words explaining that three is added each step count as correct. Saying the next number, fifteen, is NOT an explanation of the rule.",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dsp-1",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "dsp-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-spoken-practice",
+      "objectiveId": "di-spoken-practice-practice",
+      "evalMode": "explain_concept",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dsp-1",
+       "phase": "working",
+       "task": "Three, six, nine, twelve. What is the rule of this pattern?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "explain_concept",
+        "constraints": "The learner answers aloud. The answer is not printed.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "onScreen": "Beside the example, a model card shows a different one, \"25, 50, 75, 100\", explained: \"This pattern grows by adding twenty-five each time.\". It is not this example.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the printed \"3, 6, 9, 12\""
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_explain",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "read_back",
+           "named_only",
+           "bare_number",
+           "opposite_idea"
+          ],
+          "when": "The learner reads the example back, only names it, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT example and its idea in one sentence (onScreen gives it). Say it as your turn (\"My turn: …\"), then ask the learner's own question again. Never apply it to their question."
+         },
+         {
+          "id": "easier_item",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "read_back",
+           "named_only",
+           "bare_number",
+           "opposite_idea"
+          ],
+          "when": "This question is too hard yet.",
+          "does": "Opens an easier one of the same kind first. It is not graded; the full question comes back after it."
+         }
+        ],
+        "expectedAnswer": "An explanation in the learner's own words that means: \"this pattern grows by adding three each time.\" For example \"plus three\", \"add three\", \"counting by threes\", or any wording with that idea. Judge the meaning, not the words: the same words inside a sentence that means the opposite or a different idea are wrong, and so are \"3, 6, 9, 12\" read back, a bare number, or just the name of what is shown. Any words explaining that three is added each step count as correct. Saying the next number, fifteen, is NOT an explanation of the rule.",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "I don't know"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dsp-1",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "I don't know",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dsp-1",
+       "revision": 1
+      },
+      "task": "Three, six, nine, twelve. What is the rule of this pattern?",
+      "phase": "working",
+      "learner": "I don't know",
+      "expectedAnswer": "An explanation in the learner's own words that means: \"this pattern grows by adding three each time.\" For example \"plus three\", \"add three\", \"counting by threes\", or any wording with that idea. Judge the meaning, not the words: the same words inside a sentence that means the opposite or a different idea are wrong, and so are \"3, 6, 9, 12\" read back, a bare number, or just the name of what is shown. Any words explaining that three is added each step count as correct. Saying the next number, fifteen, is NOT an explanation of the rule.",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "I don't know"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [
+        {
+         "id": "stimulus",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the printed \"3, 6, 9, 12\""
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "explain_concept",
+        "constraints": "The learner answers aloud. The answer is not printed.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "onScreen": "Beside the example, a model card shows a different one, \"25, 50, 75, 100\", explained: \"This pattern grows by adding twenty-five each time.\". It is not this example.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dsp-1"
+      },
+      "task": "Three, six, nine, twelve. What is the rule of this pattern?",
+      "expectedAnswer": "An explanation in the learner's own words that means: \"this pattern grows by adding three each time.\" For example \"plus three\", \"add three\", \"counting by threes\", or any wording with that idea. Judge the meaning, not the words: the same words inside a sentence that means the opposite or a different idea are wrong, and so are \"3, 6, 9, 12\" read back, a bare number, or just the name of what is shown. Any words explaining that three is added each step count as correct. Saying the next number, fifteen, is NOT an explanation of the rule.",
+      "learner": "I don't know",
+      "misses": [
+       {
+        "id": "read_back",
+        "pattern": "The idea is: \"This pattern grows by adding three each time.\". The learner reads the example \"3, 6, 9, 12\" back.",
+        "examples": []
+       },
+       {
+        "id": "named_only",
+        "pattern": "The idea is: \"This pattern grows by adding three each time.\". The learner only names what is shown and says no idea about it.",
+        "examples": []
+       },
+       {
+        "id": "bare_number",
+        "pattern": "The idea is: \"This pattern grows by adding three each time.\". The learner says only a number.",
+        "examples": []
+       },
+       {
+        "id": "opposite_idea",
+        "pattern": "The idea is: \"This pattern grows by adding three each time.\". The learner uses the right words inside an idea that means something else.",
+        "examples": []
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dsp-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-spoken-practice",
+      "objectiveId": "di-spoken-practice-practice",
+      "evalMode": "explain_concept",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dsp-1",
+       "phase": "working",
+       "task": "Three, six, nine, twelve. What is the rule of this pattern?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "I don't know",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "explain_concept",
+        "constraints": "The learner answers aloud. The answer is not printed.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "onScreen": "Beside the example, a model card shows a different one, \"25, 50, 75, 100\", explained: \"This pattern grows by adding twenty-five each time.\". It is not this example.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the printed \"3, 6, 9, 12\""
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_explain",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "read_back",
+           "named_only",
+           "bare_number",
+           "opposite_idea"
+          ],
+          "when": "The learner reads the example back, only names it, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT example and its idea in one sentence (onScreen gives it). Say it as your turn (\"My turn: …\"), then ask the learner's own question again. Never apply it to their question."
+         },
+         {
+          "id": "easier_item",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "read_back",
+           "named_only",
+           "bare_number",
+           "opposite_idea"
+          ],
+          "when": "This question is too hard yet.",
+          "does": "Opens an easier one of the same kind first. It is not graded; the full question comes back after it."
+         }
+        ],
+        "expectedAnswer": "An explanation in the learner's own words that means: \"this pattern grows by adding three each time.\" For example \"plus three\", \"add three\", \"counting by threes\", or any wording with that idea. Judge the meaning, not the words: the same words inside a sentence that means the opposite or a different idea are wrong, and so are \"3, 6, 9, 12\" read back, a bare number, or just the name of what is shown. Any words explaining that three is added each step count as correct. Saying the next number, fifteen, is NOT an explanation of the rule.",
+        "lastResponse": {
+         "itemId": "dsp-1",
+         "response": "I don't know",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dsp-1",
+          "response": "I don't know",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/2/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dsp-1",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "dsp-1~simpler",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-spoken-practice",
+      "objectiveId": "di-spoken-practice-practice",
+      "evalMode": "explain_concept",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dsp-1~simpler",
+       "phase": "working",
+       "task": "Five, ten, fifteen, twenty. How does this pattern grow?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "explain_concept",
+        "constraints": "The learner answers aloud. The answer is not printed.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the printed \"5, 10, 15, 20\""
+         }
+        ],
+        "demonstration": [],
+        "practice": {
+         "returnsTo": "dsp-1"
+        },
+        "expectedAnswer": "An explanation in the learner's own words that means: \"this pattern grows by adding five each time.\" For example \"plus five\", \"add five\", \"counting by fives\", or any wording with that idea. Judge the meaning, not the words: the same words inside a sentence that means the opposite or a different idea are wrong, and so are \"5, 10, 15, 20\" read back, a bare number, or just the name of what is shown. Any phrasing indicating counting by fives counts as the answer. Saying the last number, twenty, is NOT an explanation.",
+        "lastResponse": null,
+        "attempts": [
+         {
+          "itemId": "dsp-1",
+          "response": "I don't know",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "dsp-1",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "easier_item"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dsp-1~simpler",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled easier_item (simplify). It is on screen now: Opens an easier one of the same kind first. It is not graded; the full question comes back after it. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the easier item on screen."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "easier_item",
+      "kind": "simplify",
+      "does": "Opens an easier one of the same kind first. It is not graded; the full question comes back after it."
+     }
+    }
+   ],
+   "stopped": "a simplify lever opened a practice item"
+  },
+  {
+   "payload": "di-spoken-practice.read_aloud",
+   "primitiveId": "di-spoken-practice",
+   "evalMode": "read_aloud",
+   "guidance": "The panel shows printed text, a picture, a group of pictures, two pictures, or nothing (the question carries it). The child answers OUT LOUD, a short word or phrase, or on explain items one idea in their own words. Nothing on screen names the answer, so on a pair say both names and the whole word menu. The key names what else counts and the wrong answer that sounds right. On explain items judge the idea, not the words; the example read back or named is not an explanation. Printed text to read aloud is the answer: let them read it first. Never model this item: your model is the model lever, a DIFFERENT item (on a pair, one pair per menu word, all said). The support fact says where levers start. You cannot change the stimulus. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Comparing lengths: longer and shorter",
+   "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+   "leakTokens": [
+    "SAY_ITEM",
+    "SAY_MOVE",
+    "SAY_HEAR",
+    "SAY_COMPLETE"
+   ],
+   "ask": "Look at this printed word. What word?",
+   "keys": [
+    "\"cat\". sounding out the letters individually and then blending them together to say the full word counts as the correct answer. stating just a random letter sound from the word instead of blending them is not the full word.",
+    "cat"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dsp-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-spoken-practice",
+      "objectiveId": "di-spoken-practice-practice",
+      "evalMode": "read_aloud",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dsp-1",
+       "phase": "working",
+       "task": "Look at this printed word. What word?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "read_aloud",
+        "constraints": "The learner reads the printed text aloud; reading it is the whole task.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "onScreen": "Beside the print, a model card shows a different word: \"fox\". It is not this print.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the printed text \"cat\", which the learner reads aloud"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_read",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "misread",
+           "sounds_not_blended",
+           "letter_names",
+           "word_dropped"
+          ],
+          "when": "The learner misreads the print or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT word (onScreen gives it). Read it as your turn. Never read or sound out the learner's print. Say it as your turn (\"My turn: …\"), then ask the learner's own question again. Never apply it to their question."
+         },
+         {
+          "id": "sound_dots",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "sounds_not_blended",
+           "letter_names",
+           "misread"
+          ],
+          "when": "The learner sounds it out without blending, or misreads.",
+          "does": "Puts a dot under each letter (or digit) of the print. Nothing is said or played."
+         }
+        ],
+        "expectedAnswer": "\"cat\". Sounding out the letters individually and then blending them together to say the full word counts as the correct answer. Stating just a random letter sound from the word instead of blending them is not the full word.",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dsp-1",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "dsp-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-spoken-practice",
+      "objectiveId": "di-spoken-practice-practice",
+      "evalMode": "read_aloud",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dsp-1",
+       "phase": "working",
+       "task": "Look at this printed word. What word?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "read_aloud",
+        "constraints": "The learner reads the printed text aloud; reading it is the whole task.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "onScreen": "Beside the print, a model card shows a different word: \"fox\". It is not this print.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the printed text \"cat\", which the learner reads aloud"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_read",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "misread",
+           "sounds_not_blended",
+           "letter_names",
+           "word_dropped"
+          ],
+          "when": "The learner misreads the print or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT word (onScreen gives it). Read it as your turn. Never read or sound out the learner's print. Say it as your turn (\"My turn: …\"), then ask the learner's own question again. Never apply it to their question."
+         },
+         {
+          "id": "sound_dots",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "sounds_not_blended",
+           "letter_names",
+           "misread"
+          ],
+          "when": "The learner sounds it out without blending, or misreads.",
+          "does": "Puts a dot under each letter (or digit) of the print. Nothing is said or played."
+         }
+        ],
+        "expectedAnswer": "\"cat\". Sounding out the letters individually and then blending them together to say the full word counts as the correct answer. Stating just a random letter sound from the word instead of blending them is not the full word.",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "banana"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dsp-1",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "banana",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dsp-1",
+       "revision": 1
+      },
+      "task": "Look at this printed word. What word?",
+      "phase": "working",
+      "learner": "banana",
+      "expectedAnswer": "\"cat\". Sounding out the letters individually and then blending them together to say the full word counts as the correct answer. Stating just a random letter sound from the word instead of blending them is not the full word.",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "banana"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [
+        {
+         "id": "stimulus",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the printed text \"cat\", which the learner reads aloud"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "read_aloud",
+        "constraints": "The learner reads the printed text aloud; reading it is the whole task.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "onScreen": "Beside the print, a model card shows a different word: \"fox\". It is not this print.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dsp-1"
+      },
+      "task": "Look at this printed word. What word?",
+      "expectedAnswer": "\"cat\". Sounding out the letters individually and then blending them together to say the full word counts as the correct answer. Stating just a random letter sound from the word instead of blending them is not the full word.",
+      "learner": "banana",
+      "misses": [
+       {
+        "id": "misread",
+        "pattern": "The printed text is \"cat\", read \"cat\". The learner reads it as a different word.",
+        "examples": []
+       },
+       {
+        "id": "sounds_not_blended",
+        "pattern": "The printed text is \"cat\", read \"cat\". The learner says the separate sounds and never the whole word.",
+        "examples": []
+       },
+       {
+        "id": "letter_names",
+        "pattern": "The printed text is \"cat\", read \"cat\". The learner spells it with letter names instead of reading it.",
+        "examples": []
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dsp-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-spoken-practice",
+      "objectiveId": "di-spoken-practice-practice",
+      "evalMode": "read_aloud",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dsp-1",
+       "phase": "working",
+       "task": "Look at this printed word. What word?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "banana",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "read_aloud",
+        "constraints": "The learner reads the printed text aloud; reading it is the whole task.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "onScreen": "Beside the print, a model card shows a different word: \"fox\". It is not this print.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the printed text \"cat\", which the learner reads aloud"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_read",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "misread",
+           "sounds_not_blended",
+           "letter_names",
+           "word_dropped"
+          ],
+          "when": "The learner misreads the print or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT word (onScreen gives it). Read it as your turn. Never read or sound out the learner's print. Say it as your turn (\"My turn: …\"), then ask the learner's own question again. Never apply it to their question."
+         },
+         {
+          "id": "sound_dots",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "sounds_not_blended",
+           "letter_names",
+           "misread"
+          ],
+          "when": "The learner sounds it out without blending, or misreads.",
+          "does": "Puts a dot under each letter (or digit) of the print. Nothing is said or played."
+         }
+        ],
+        "expectedAnswer": "\"cat\". Sounding out the letters individually and then blending them together to say the full word counts as the correct answer. Stating just a random letter sound from the word instead of blending them is not the full word.",
+        "lastResponse": {
+         "itemId": "dsp-1",
+         "response": "banana",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dsp-1",
+          "response": "banana",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/2/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dsp-1",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "dsp-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-spoken-practice",
+      "objectiveId": "di-spoken-practice-practice",
+      "evalMode": "read_aloud",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dsp-1",
+       "phase": "working",
+       "task": "Look at this printed word. What word?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "banana",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "read_aloud",
+        "constraints": "The learner reads the printed text aloud; reading it is the whole task.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "onScreen": "Beside the print, a model card shows a different word: \"fox\". It is not this print. A dot sits under each printed letter or digit.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the printed text \"cat\", which the learner reads aloud"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_read",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "misread",
+           "sounds_not_blended",
+           "letter_names",
+           "word_dropped"
+          ],
+          "when": "The learner misreads the print or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT word (onScreen gives it). Read it as your turn. Never read or sound out the learner's print. Say it as your turn (\"My turn: …\"), then ask the learner's own question again. Never apply it to their question."
+         },
+         {
+          "id": "sound_dots",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "sounds_not_blended",
+           "letter_names",
+           "misread"
+          ],
+          "when": "The learner sounds it out without blending, or misreads.",
+          "does": "Puts a dot under each letter (or digit) of the print. Nothing is said or played."
+         }
+        ],
+        "expectedAnswer": "\"cat\". Sounding out the letters individually and then blending them together to say the full word counts as the correct answer. Stating just a random letter sound from the word instead of blending them is not the full word.",
+        "lastResponse": {
+         "itemId": "dsp-1",
+         "response": "banana",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dsp-1",
+          "response": "banana",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "dsp-1",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "sound_dots"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dsp-1",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled sound_dots (help). It is on screen now: Puts a dot under each letter (or digit) of the print. Nothing is said or played. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "sound_dots",
+      "kind": "help",
+      "does": "Puts a dot under each letter (or digit) of the print. Nothing is said or played."
+     }
+    },
+    {
+     "kind": "credit",
+     "itemId": "dsp-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-spoken-practice",
+      "objectiveId": "di-spoken-practice-practice",
+      "evalMode": "read_aloud",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dsp-1",
+       "phase": "working",
+       "task": "Look at this printed word. What word?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "banana",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "read_aloud",
+        "constraints": "The learner reads the printed text aloud; reading it is the whole task.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "onScreen": "Beside the print, a model card shows a different word: \"fox\". It is not this print. A dot sits under each printed letter or digit.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the printed text \"cat\", which the learner reads aloud"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_read",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "misread",
+           "sounds_not_blended",
+           "letter_names",
+           "word_dropped"
+          ],
+          "when": "The learner misreads the print or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT word (onScreen gives it). Read it as your turn. Never read or sound out the learner's print. Say it as your turn (\"My turn: …\"), then ask the learner's own question again. Never apply it to their question."
+         },
+         {
+          "id": "sound_dots",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "sounds_not_blended",
+           "letter_names",
+           "misread"
+          ],
+          "when": "The learner sounds it out without blending, or misreads.",
+          "does": "Puts a dot under each letter (or digit) of the print. Nothing is said or played."
+         }
+        ],
+        "expectedAnswer": "\"cat\". Sounding out the letters individually and then blending them together to say the full word counts as the correct answer. Stating just a random letter sound from the word instead of blending them is not the full word.",
+        "pendingResponse": {
+         "id": "speech:1:2",
+         "text": "cat"
+        },
+        "lastResponse": {
+         "itemId": "dsp-1",
+         "response": "banana",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dsp-1",
+          "response": "banana",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "dsp-1",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "sound_dots"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dsp-1",
+        "secondsOnItem": 20,
+        "secondsSinceReady": 20,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "cat",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dsp-1",
+       "revision": 3
+      },
+      "task": "Look at this printed word. What word?",
+      "phase": "working",
+      "learner": "cat",
+      "expectedAnswer": "\"cat\". Sounding out the letters individually and then blending them together to say the full word counts as the correct answer. Stating just a random letter sound from the word instead of blending them is not the full word.",
+      "pendingResponse": {
+       "id": "speech:1:2",
+       "text": "cat"
+      },
+      "lastResponse": {
+       "itemId": "dsp-1",
+       "response": "banana",
+       "source": "speech",
+       "correct": false,
+       "tutorResponse": "Not quite.",
+       "judgment": "tutor",
+       "assisted": false,
+       "answerExposure": "none"
+      },
+      "activity": {
+       "responseSource": "speech",
+       "attemptNumber": 1,
+       "objects": [
+        {
+         "id": "stimulus",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the printed text \"cat\", which the learner reads aloud"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "read_aloud",
+        "constraints": "The learner reads the printed text aloud; reading it is the whole task.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "onScreen": "Beside the print, a model card shows a different word: \"fox\". It is not this print. A dot sits under each printed letter or digit.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 2,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dsp-1"
+      },
+      "task": "Look at this printed word. What word?",
+      "expectedAnswer": "\"cat\". Sounding out the letters individually and then blending them together to say the full word counts as the correct answer. Stating just a random letter sound from the word instead of blending them is not the full word.",
+      "learner": "cat",
+      "misses": [
+       {
+        "id": "misread",
+        "pattern": "The printed text is \"cat\", read \"cat\". The learner reads it as a different word.",
+        "examples": []
+       },
+       {
+        "id": "sounds_not_blended",
+        "pattern": "The printed text is \"cat\", read \"cat\". The learner says the separate sounds and never the whole word.",
+        "examples": []
+       },
+       {
+        "id": "letter_names",
+        "pattern": "The printed text is \"cat\", read \"cat\". The learner spells it with letter names instead of reading it.",
+        "examples": []
+       }
+      ]
+     },
+     "missFromWords": false
+    }
+   ]
+  },
+  {
+   "payload": "di-spoken-practice.say_answer",
+   "primitiveId": "di-spoken-practice",
+   "evalMode": "say_answer",
+   "guidance": "The panel shows printed text, a picture, a group of pictures, two pictures, or nothing (the question carries it). The child answers OUT LOUD, a short word or phrase, or on explain items one idea in their own words. Nothing on screen names the answer, so on a pair say both names and the whole word menu. The key names what else counts and the wrong answer that sounds right. On explain items judge the idea, not the words; the example read back or named is not an explanation. Printed text to read aloud is the answer: let them read it first. Never model this item: your model is the model lever, a DIFFERENT item (on a pair, one pair per menu word, all said). The support fact says where levers start. You cannot change the stimulus. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Comparing lengths: longer and shorter",
+   "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding.",
+   "leakTokens": [
+    "SAY_ITEM",
+    "SAY_MOVE",
+    "SAY_HEAR",
+    "SAY_COMPLETE"
+   ],
+   "ask": "Listen to this word: big. What is the opposite of big?",
+   "keys": [
+    "\"small\" (also accept \"tiny\", \"little\"). saying tiny or little counts as the correct opposite. repeating the starting word big is not correct.",
+    "small"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dsp-2",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-spoken-practice",
+      "objectiveId": "di-spoken-practice-practice",
+      "evalMode": "say_answer",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dsp-2",
+       "phase": "working",
+       "task": "Listen to this word: big. What is the opposite of big?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "say_answer",
+        "constraints": "Nothing is printed: the learner hears the question from you and answers aloud.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "onScreen": "Beside the question, a model card shows a different one, \"Listen to this word: day. What is the opposite of day?\", answered \"night\". It is not this question.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target",
+          "label": "nothing printed"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_answer",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "signature_error",
+           "said_stimulus"
+          ],
+          "when": "The learner gives a wrong answer or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT question of the same kind, solved (onScreen gives it). Say it as your turn (\"My turn: …\"), then ask the learner's own question again. Never apply it to their question."
+         },
+         {
+          "id": "easier_item",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "signature_error",
+           "said_stimulus"
+          ],
+          "when": "This question is too hard yet.",
+          "does": "Opens an easier one of the same kind first. It is not graded; the full question comes back after it."
+         }
+        ],
+        "expectedAnswer": "\"small\" (also accept \"tiny\", \"little\"). Saying tiny or little counts as the correct opposite. Repeating the starting word big is not correct.",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dsp-2",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "dsp-2",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-spoken-practice",
+      "objectiveId": "di-spoken-practice-practice",
+      "evalMode": "say_answer",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dsp-2",
+       "phase": "working",
+       "task": "Listen to this word: big. What is the opposite of big?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "say_answer",
+        "constraints": "Nothing is printed: the learner hears the question from you and answers aloud.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "onScreen": "Beside the question, a model card shows a different one, \"Listen to this word: day. What is the opposite of day?\", answered \"night\". It is not this question.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target",
+          "label": "nothing printed"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_answer",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "signature_error",
+           "said_stimulus"
+          ],
+          "when": "The learner gives a wrong answer or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT question of the same kind, solved (onScreen gives it). Say it as your turn (\"My turn: …\"), then ask the learner's own question again. Never apply it to their question."
+         },
+         {
+          "id": "easier_item",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "signature_error",
+           "said_stimulus"
+          ],
+          "when": "This question is too hard yet.",
+          "does": "Opens an easier one of the same kind first. It is not graded; the full question comes back after it."
+         }
+        ],
+        "expectedAnswer": "\"small\" (also accept \"tiny\", \"little\"). Saying tiny or little counts as the correct opposite. Repeating the starting word big is not correct.",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "banana"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dsp-2",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "banana",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dsp-2",
+       "revision": 1
+      },
+      "task": "Listen to this word: big. What is the opposite of big?",
+      "phase": "working",
+      "learner": "banana",
+      "expectedAnswer": "\"small\" (also accept \"tiny\", \"little\"). Saying tiny or little counts as the correct opposite. Repeating the starting word big is not correct.",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "banana"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [
+        {
+         "id": "stimulus",
+         "selected": false,
+         "group": "assignment target",
+         "label": "nothing printed"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "say_answer",
+        "constraints": "Nothing is printed: the learner hears the question from you and answers aloud.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "onScreen": "Beside the question, a model card shows a different one, \"Listen to this word: day. What is the opposite of day?\", answered \"night\". It is not this question.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dsp-2"
+      },
+      "task": "Listen to this word: big. What is the opposite of big?",
+      "expectedAnswer": "\"small\" (also accept \"tiny\", \"little\"). Saying tiny or little counts as the correct opposite. Repeating the starting word big is not correct.",
+      "learner": "banana",
+      "misses": [
+       {
+        "id": "signature_error",
+        "pattern": "The answer is \"small\". Repeating the starting word big is not correct.",
+        "examples": []
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dsp-2",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-spoken-practice",
+      "objectiveId": "di-spoken-practice-practice",
+      "evalMode": "say_answer",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dsp-2",
+       "phase": "working",
+       "task": "Listen to this word: big. What is the opposite of big?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "banana",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "say_answer",
+        "constraints": "Nothing is printed: the learner hears the question from you and answers aloud.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "onScreen": "Beside the question, a model card shows a different one, \"Listen to this word: day. What is the opposite of day?\", answered \"night\". It is not this question.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target",
+          "label": "nothing printed"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_answer",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "signature_error",
+           "said_stimulus"
+          ],
+          "when": "The learner gives a wrong answer or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT question of the same kind, solved (onScreen gives it). Say it as your turn (\"My turn: …\"), then ask the learner's own question again. Never apply it to their question."
+         },
+         {
+          "id": "easier_item",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "signature_error",
+           "said_stimulus"
+          ],
+          "when": "This question is too hard yet.",
+          "does": "Opens an easier one of the same kind first. It is not graded; the full question comes back after it."
+         }
+        ],
+        "expectedAnswer": "\"small\" (also accept \"tiny\", \"little\"). Saying tiny or little counts as the correct opposite. Repeating the starting word big is not correct.",
+        "lastResponse": {
+         "itemId": "dsp-2",
+         "response": "banana",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dsp-2",
+          "response": "banana",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/2/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dsp-2",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "dsp-2~simpler",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-spoken-practice",
+      "objectiveId": "di-spoken-practice-practice",
+      "evalMode": "say_answer",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dsp-2~simpler",
+       "phase": "working",
+       "task": "Listen to this word: hot. What is the opposite of hot?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "say_answer",
+        "constraints": "Nothing is printed: the learner hears the question from you and answers aloud.",
+        "support": "the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "stimulus",
+          "selected": false,
+          "group": "assignment target",
+          "label": "nothing printed"
+         }
+        ],
+        "demonstration": [],
+        "practice": {
+         "returnsTo": "dsp-2"
+        },
+        "expectedAnswer": "\"cold\" (also accept \"freezing\", \"chilled\"). Saying synonyms that mean cold like freezing or chilled counts as the answer. Repeating the starting word hot back as the opposite is not correct.",
+        "lastResponse": null,
+        "attempts": [
+         {
+          "itemId": "dsp-2",
+          "response": "banana",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "dsp-2",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "easier_item"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dsp-2~simpler",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled easier_item (simplify). It is on screen now: Opens an easier one of the same kind first. It is not graded; the full question comes back after it. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the easier item on screen."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "easier_item",
+      "kind": "simplify",
+      "does": "Opens an easier one of the same kind first. It is not graded; the full question comes back after it."
+     }
+    }
+   ],
+   "stopped": "a simplify lever opened a practice item"
+  }
+ ]
+}

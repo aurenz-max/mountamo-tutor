@@ -1,0 +1,2612 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ],
+   "no_key_before_try": [
+    0,
+    25
+   ],
+   "no_fix_before_try": [
+    0,
+    25
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ],
+   "no_key_before_try": [
+    0,
+    25
+   ],
+   "no_fix_before_try": [
+    0,
+    25
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ],
+   "no_key_before_try": [
+    0,
+    25
+   ],
+   "no_fix_before_try": [
+    0,
+    25
+   ],
+   "no_change_before_receipt": [
+    0,
+    25
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ],
+   "no_key_before_try": [
+    0,
+    25
+   ],
+   "no_fix_before_try": [
+    0,
+    25
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    10
+   ],
+   "no_protocol_leak": [
+    0,
+    10
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "di-spoken-practice.compare_choice",
+   "primitiveId": "di-spoken-practice",
+   "evalMode": "compare_choice",
+   "keys": [
+    "\"longer\". the learner chooses one word from \"longer\", \"shorter\"; any other word does not answer the question. any clear spoken response that names the correct menu word. saying shorter because it is a different vehicle."
+   ],
+   "stopped": "a simplify lever opened a practice item",
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dsp-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"longer\". the learner chooses one word from \"longer\", \"shorter\"; any other word does not answer the question. any clear spoken response that names the correct menu word. saying shorter because it is a different vehicle."
+      ],
+      "ask": "Here is a train, and here is a toy car. Is the train longer or shorter?",
+      "leakTokens": [
+       "SAY_ITEM",
+       "SAY_MOVE",
+       "SAY_HEAR",
+       "SAY_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "My turn: looking at the example card, the bus is longer, and the ant is shorter. \n\nNow your turn: here is a train, and here is a toy car. Is the train longer or shorter?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: a bus is longer than an ant, and an ant is shorter than a bus. \n\nNow your turn: here is a train, and here is a toy car. Is the train longer or shorter?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: looking at the bus and the ant, the bus is longer, and looking at the ant and the bus, the ant is shorter. \n\nNow your turn: here is a train, and here is a toy car. Is the train longer or shorter?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: A bus is longer than an ant, and an ant is shorter than a bus. \n\nNow your turn: Here is a train, and here is a toy car. Is the train longer or shorter?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: looking at the example card, the bus is longer, and the ant is shorter. \n\nNow your turn: here is a train, and here is a toy car. Is the train longer or shorter?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "dsp-1",
+     "trigger": "shorter",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"longer\". the learner chooses one word from \"longer\", \"shorter\"; any other word does not answer the question. any clear spoken response that names the correct menu word. saying shorter because it is a different vehicle."
+      ],
+      "ask": "Here is a train, and here is a toy car. Is the train longer or shorter?",
+      "leakTokens": [
+       "SAY_ITEM",
+       "SAY_MOVE",
+       "SAY_HEAR",
+       "SAY_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Let's look at this one first: here is an ant, and here is a bus. Is the ant longer or shorter?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "far_pair",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Look at how much space each one takes from side to side. Is the train longer or shorter?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Look at how much space each one takes from side to side, and give it another try: is the train longer or shorter?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: looking at the example card, the bus is longer than the ant, and the ant is shorter than the bus.\n\nNow your turn: here is the train and the toy car\u2014is the train longer or shorter?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "word_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That's not quite it. Looking at the train and the toy car from one end to the other, is the train longer or shorter?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dsp-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"longer\". the learner chooses one word from \"longer\", \"shorter\"; any other word does not answer the question. any clear spoken response that names the correct menu word. saying shorter because it is a different vehicle."
+      ],
+      "ask": "Here is a train, and here is a toy car. Is the train longer or shorter?",
+      "leakTokens": [
+       "SAY_ITEM",
+       "SAY_MOVE",
+       "SAY_HEAR",
+       "SAY_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "We changed to a new picture to practice first! Here is an ant, and here is a bus: is the ant longer or shorter?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "far_pair",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "My turn: looking at the model card, the bus is longer, and the ant is shorter.\n\nNow your turn: here is a train, and here is a toy car. Is the train longer or shorter?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "word_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "We have a new picture to practice with: here is an ant, and here is a bus. \n\nIs the ant longer or shorter?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "far_pair",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I changed the pictures so they are easier to compare: here is a tiny ant, and here is a big bus. Is the ant longer or shorter?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "far_pair"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "My turn: looking at the card, the bus is longer, and the ant is shorter.\n\nNow your turn: here is a train, and here is a toy car. Is the train longer or shorter?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "word_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "dsp-1~simpler",
+     "trigger": "The learner said they were stuck, so the host pulled far_pair (simplify). It is on screen now: Opens an easier one of the same kind first. It is not graded; the full question comes back after it. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the easier item on screen.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"longer\". the learner chooses one word from \"longer\", \"shorter\"; any other word does not answer the question. any clear spoken response that names the correct menu word. saying shorter because it is a different vehicle."
+      ],
+      "ask": "Here is a train, and here is a toy car. Is the train longer or shorter?",
+      "leakTokens": [
+       "SAY_ITEM",
+       "SAY_MOVE",
+       "SAY_HEAR",
+       "SAY_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the new picture on screen: here is an ant, and next to it is a bus. Is the ant longer or shorter?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the screen: we have a new picture with a tiny ant and a big bus side by side. \n\nIs the ant longer or shorter?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The picture changed to show an ant and a bus side by side. Look at the little ant next to the big bus\u2014is the ant longer or shorter?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The picture changed to show an ant and a bus side by side. Look at the ant and the bus: is the ant longer or shorter?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at our screen: now we have an ant on one side and a big bus on the other! \n\nIs the ant longer or shorter?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "di-spoken-practice.count_and_say",
+   "primitiveId": "di-spoken-practice",
+   "evalMode": "count_and_say",
+   "keys": [
+    "\"four\". counting aloud in order that ends on the number four counts as the correct answer. just naming a random number like five without counting is not the total.",
+    "four"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dsp-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"four\". counting aloud in order that ends on the number four counts as the correct answer. just naming a random number like five without counting is not the total.",
+       "four"
+      ],
+      "ask": "Count the stars out loud. How many stars are there?",
+      "leakTokens": [
+       "SAY_ITEM",
+       "SAY_MOVE",
+       "SAY_HEAR",
+       "SAY_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "My turn: two. Now your turn: count the stars out loud and tell me how many there are!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: two. Now your turn: count the stars out loud and tell me how many there are!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: two. Now count the stars out loud. How many stars are there?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: two balloons! Now count the stars out loud\u2014how many stars are there?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: two. Now your turn: count the stars out loud and tell me how many there are!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "dsp-1",
+     "trigger": "three",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"four\". counting aloud in order that ends on the number four counts as the correct answer. just naming a random number like five without counting is not the total.",
+       "four"
+      ],
+      "ask": "Count the stars out loud. How many stars are there?",
+      "leakTokens": [
+       "SAY_ITEM",
+       "SAY_MOVE",
+       "SAY_HEAR",
+       "SAY_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Now you can tap each star as you count it to see a ring appear. Try counting them again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "touch_marks",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite! You can tap each star to see a ring as you count, so give it another try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "touch_marks",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Now you can tap each star as you count it. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "touch_marks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You can tap each star as you count it to see a ring appear. Try counting them again out loud!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "touch_marks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Now you can tap each star as you count it to see a ring appear. Try counting them again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "touch_marks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dsp-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"four\". counting aloud in order that ends on the number four counts as the correct answer. just naming a random number like five without counting is not the total.",
+       "four"
+      ],
+      "ask": "Count the stars out loud. How many stars are there?",
+      "leakTokens": [
+       "SAY_ITEM",
+       "SAY_MOVE",
+       "SAY_HEAR",
+       "SAY_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Now you can tap each star, and a ring will appear around it. Tap each one as you count to see how many there are!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "touch_marks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "You can tap each star as you count, and a little ring will mark it! Try counting them out loud.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "touch_marks",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now each star will get a ring when you tap it. Tap and count each one out loud!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "touch_marks",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "You can tap each star as you count it to see a ring appear. Give it a try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "touch_marks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now each star will get a ring when you tap it. Tap and count each star out loud to see how many there are!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "touch_marks",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "dsp-1",
+     "trigger": "The learner said they were stuck, so the host pulled touch_marks (help). It is on screen now: Lets the learner tap each picture as they count it; a tapped picture gets a ring. No numbers. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"four\". counting aloud in order that ends on the number four counts as the correct answer. just naming a random number like five without counting is not the total.",
+       "four"
+      ],
+      "ask": "Count the stars out loud. How many stars are there?",
+      "leakTokens": [
+       "SAY_ITEM",
+       "SAY_MOVE",
+       "SAY_HEAR",
+       "SAY_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Now you can tap each star on the screen, and a little ring will show up around it. Go ahead and tap each star as you count aloud to find out how many there are!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the stars on your screen\u2014now when you tap each star, a little ring appears around it. Try tapping each star as you count, and say how many there are!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Now when you tap a star, a ring will show up right around it. Try tapping each star as you count aloud!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You can now tap each star to put a ring around it as you go! Go ahead and count them out loud.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A ring will pop up around each star when you tap it! Tap each star one by one as you count, and tell me how many you get.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "dsp-1",
+     "trigger": "four",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"four\". counting aloud in order that ends on the number four counts as the correct answer. just naming a random number like five without counting is not the total.",
+       "four"
+      ],
+      "ask": "Count the stars out loud. How many stars are there?",
+      "leakTokens": [
+       "SAY_ITEM",
+       "SAY_MOVE",
+       "SAY_HEAR",
+       "SAY_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You counted four stars! That is exactly right!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You counted them and got four!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You counted the stars and found there are four!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You counted them and found four stars! That is exactly right.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You counted all four stars, that's four! Great job!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "di-spoken-practice.explain_concept",
+   "primitiveId": "di-spoken-practice",
+   "evalMode": "explain_concept",
+   "keys": [
+    "an explanation in the learner's own words that means: \"this pattern grows by adding three each time.\" for example \"plus three\", \"add three\", \"counting by threes\", or any wording with that idea. judge the meaning, not the words: the same words inside a sentence that means the opposite or a different idea are wrong, and so are \"3, 6, 9, 12\" read back, a bare number, or just the name of what is shown. any words explaining that three is added each step count as correct. saying the next number, fifteen, is not an explanation of the rule.",
+    "this pattern grows by adding three each time."
+   ],
+   "stopped": "a simplify lever opened a practice item",
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dsp-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "an explanation in the learner's own words that means: \"this pattern grows by adding three each time.\" for example \"plus three\", \"add three\", \"counting by threes\", or any wording with that idea. judge the meaning, not the words: the same words inside a sentence that means the opposite or a different idea are wrong, and so are \"3, 6, 9, 12\" read back, a bare number, or just the name of what is shown. any words explaining that three is added each step count as correct. saying the next number, fifteen, is not an explanation of the rule.",
+       "this pattern grows by adding three each time."
+      ],
+      "ask": "Three, six, nine, twelve. What is the rule of this pattern?",
+      "leakTokens": [
+       "SAY_ITEM",
+       "SAY_MOVE",
+       "SAY_HEAR",
+       "SAY_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "My turn: for twenty-five, fifty, seventy-five, one hundred, this pattern grows by adding twenty-five each time. Now your turn: three, six, nine, twelve\u2014what is the rule of this pattern?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: for twenty-five, fifty, seventy-five, one hundred, this pattern grows by adding twenty-five each time. Now your turn: three, six, nine, twelve\u2014what is the rule of this pattern?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: for twenty-five, fifty, seventy-five, one hundred, this pattern grows by adding twenty-five each time.\n\nNow your turn: three, six, nine, twelve\u2014what is the rule of this pattern?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: for twenty-five, fifty, seventy-five, one hundred, this pattern grows by adding twenty-five each time.\n\nNow your turn: three, six, nine, twelve. What is the rule of this pattern?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: for twenty-five, fifty, seventy-five, one hundred, this pattern grows by adding twenty-five each time. Now your turn: three, six, nine, twelve\u2014what is the rule of this pattern?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "dsp-1",
+     "trigger": "I don't know",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "an explanation in the learner's own words that means: \"this pattern grows by adding three each time.\" for example \"plus three\", \"add three\", \"counting by threes\", or any wording with that idea. judge the meaning, not the words: the same words inside a sentence that means the opposite or a different idea are wrong, and so are \"3, 6, 9, 12\" read back, a bare number, or just the name of what is shown. any words explaining that three is added each step count as correct. saying the next number, fifteen, is not an explanation of the rule.",
+       "this pattern grows by adding three each time."
+      ],
+      "ask": "Three, six, nine, twelve. What is the rule of this pattern?",
+      "leakTokens": [
+       "SAY_ITEM",
+       "SAY_MOVE",
+       "SAY_HEAR",
+       "SAY_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Let's try an easier one first: five, ten, fifteen, twenty. How does this pattern grow?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "easier_item",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's try an easier one first: five, ten, fifteen, twenty. How does this pattern grow?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "easier_item",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's try an easier one first: five, ten, fifteen, twenty. How does this pattern grow?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "easier_item",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "We have an easier practice one to try first: five, ten, fifteen, twenty. How does this pattern grow?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "easier_item"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "We have an easier practice item on the screen now. Five, ten, fifteen, twenty\u2014how does this pattern grow?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "easier_item",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dsp-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "an explanation in the learner's own words that means: \"this pattern grows by adding three each time.\" for example \"plus three\", \"add three\", \"counting by threes\", or any wording with that idea. judge the meaning, not the words: the same words inside a sentence that means the opposite or a different idea are wrong, and so are \"3, 6, 9, 12\" read back, a bare number, or just the name of what is shown. any words explaining that three is added each step count as correct. saying the next number, fifteen, is not an explanation of the rule.",
+       "this pattern grows by adding three each time."
+      ],
+      "ask": "Three, six, nine, twelve. What is the rule of this pattern?",
+      "leakTokens": [
+       "SAY_ITEM",
+       "SAY_MOVE",
+       "SAY_HEAR",
+       "SAY_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "I opened an easier practice pattern on screen: five, ten, fifteen, twenty. How does this pattern grow?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "easier_item"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I pulled up an easier practice pattern on the screen: five, ten, fifteen, twenty. How does this pattern grow?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "easier_item",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "We have a new simpler pattern on the screen: five, ten, fifteen, twenty. How does this pattern grow?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "easier_item"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "We switched to a simpler one: five, ten, fifteen, twenty. How does this pattern grow?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "easier_item",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The screen changed to show an easier pattern: five, ten, fifteen, twenty. How does this pattern grow?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "easier_item",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "dsp-1~simpler",
+     "trigger": "The learner said they were stuck, so the host pulled easier_item (simplify). It is on screen now: Opens an easier one of the same kind first. It is not graded; the full question comes back after it. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the easier item on screen.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "an explanation in the learner's own words that means: \"this pattern grows by adding three each time.\" for example \"plus three\", \"add three\", \"counting by threes\", or any wording with that idea. judge the meaning, not the words: the same words inside a sentence that means the opposite or a different idea are wrong, and so are \"3, 6, 9, 12\" read back, a bare number, or just the name of what is shown. any words explaining that three is added each step count as correct. saying the next number, fifteen, is not an explanation of the rule.",
+       "this pattern grows by adding three each time."
+      ],
+      "ask": "Three, six, nine, twelve. What is the rule of this pattern?",
+      "leakTokens": [
+       "SAY_ITEM",
+       "SAY_MOVE",
+       "SAY_HEAR",
+       "SAY_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The screen changed to show five, ten, fifteen, twenty. How does this pattern grow?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the screen: we have a new pattern that shows five, ten, fifteen, twenty. How does this pattern grow?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the new numbers on your screen: five, ten, fifteen, twenty. How does this pattern grow?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new pattern is on the screen: five, ten, fifteen, twenty. How does this pattern grow?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the screen: we now have five, ten, fifteen, twenty. How does this pattern grow?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "di-spoken-practice.read_aloud",
+   "primitiveId": "di-spoken-practice",
+   "evalMode": "read_aloud",
+   "keys": [
+    "\"cat\". sounding out the letters individually and then blending them together to say the full word counts as the correct answer. stating just a random letter sound from the word instead of blending them is not the full word.",
+    "cat"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dsp-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"cat\". sounding out the letters individually and then blending them together to say the full word counts as the correct answer. stating just a random letter sound from the word instead of blending them is not the full word.",
+       "cat"
+      ],
+      "ask": "Look at this printed word. What word?",
+      "leakTokens": [
+       "SAY_ITEM",
+       "SAY_MOVE",
+       "SAY_HEAR",
+       "SAY_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "My turn: fox. Now look at this printed word. What word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: fox. Now your turn: look at this printed word, what word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: fox. Now your turn: look at this printed word. What word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: fox. Now your turn: look at this printed word. What word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: fox. Now your turn: look at this printed word. What word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "dsp-1",
+     "trigger": "banana",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"cat\". sounding out the letters individually and then blending them together to say the full word counts as the correct answer. stating just a random letter sound from the word instead of blending them is not the full word.",
+       "cat"
+      ],
+      "ask": "Look at this printed word. What word?",
+      "leakTokens": [
+       "SAY_ITEM",
+       "SAY_MOVE",
+       "SAY_HEAR",
+       "SAY_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Not quite. Look, there is a dot under each letter now to help you sound it out\u2014give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sound_dots",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Look, there are dots under each letter now\u2014give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sound_dots",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, there are little dots under each letter now. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "sound_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is a dot under each letter now. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "sound_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I put a dot under each letter to help you sound it out. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sound_dots",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dsp-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"cat\". sounding out the letters individually and then blending them together to say the full word counts as the correct answer. stating just a random letter sound from the word instead of blending them is not the full word.",
+       "cat"
+      ],
+      "ask": "Look at this printed word. What word?",
+      "leakTokens": [
+       "SAY_ITEM",
+       "SAY_MOVE",
+       "SAY_HEAR",
+       "SAY_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look, there is now a dot under each letter to help you sound them out one by one. Can you say the sounds and tell me the word?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "sound_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A dot appeared under each letter. You can say the sound for each dot, then blend them together!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sound_dots",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A dot appeared under each letter to help you sound them out one by one. What word do those letters make?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sound_dots",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look, now there is a dot under each letter to help you sound it out. Try saying the sound for each dot, then blend them together!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "sound_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look, dots appeared under each letter! Try saying the sound for each dot, then say the word.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "sound_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "dsp-1",
+     "trigger": "The learner said they were stuck, so the host pulled sound_dots (help). It is on screen now: Puts a dot under each letter (or digit) of the print. Nothing is said or played. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"cat\". sounding out the letters individually and then blending them together to say the full word counts as the correct answer. stating just a random letter sound from the word instead of blending them is not the full word.",
+       "cat"
+      ],
+      "ask": "Look at this printed word. What word?",
+      "leakTokens": [
+       "SAY_ITEM",
+       "SAY_MOVE",
+       "SAY_HEAR",
+       "SAY_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A little dot has appeared right under each letter to guide you. Look at the letters and say the word!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under the letters\u2014now there is a little dot under each one! Touch each dot and say the sounds to read the word.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under the letters\u2014there is now a dot under each one to help you sound them out. What word is it?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, there is now a dot under each letter to help you sound them out. What word does it say?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under the word\u2014a little dot is sitting under each letter now! What word does it make when you say those sounds together?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "dsp-1",
+     "trigger": "cat",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"cat\". sounding out the letters individually and then blending them together to say the full word counts as the correct answer. stating just a random letter sound from the word instead of blending them is not the full word.",
+       "cat"
+      ],
+      "ask": "Look at this printed word. What word?",
+      "leakTokens": [
+       "SAY_ITEM",
+       "SAY_MOVE",
+       "SAY_HEAR",
+       "SAY_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You read the word cat, excellent job!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You read the word cat!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it\u2014you read the word \"cat\"! Great job!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You read it! You said the word cat!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You read the word cat, that's it!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "di-spoken-practice.say_answer",
+   "primitiveId": "di-spoken-practice",
+   "evalMode": "say_answer",
+   "keys": [
+    "\"small\" (also accept \"tiny\", \"little\"). saying tiny or little counts as the correct opposite. repeating the starting word big is not correct.",
+    "small"
+   ],
+   "stopped": "a simplify lever opened a practice item",
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dsp-2",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"small\" (also accept \"tiny\", \"little\"). saying tiny or little counts as the correct opposite. repeating the starting word big is not correct.",
+       "small"
+      ],
+      "ask": "Listen to this word: big. What is the opposite of big?",
+      "leakTokens": [
+       "SAY_ITEM",
+       "SAY_MOVE",
+       "SAY_HEAR",
+       "SAY_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "My turn: Listen to this word: day. The opposite of day is night! \n\nNow your turn: Listen to this word: big. What is the opposite of big?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: listen to this word, day\u2014the opposite of day is night! \n\nNow your turn: listen to this word: big. What is the opposite of big?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: What is the opposite of day? Night! \n\nNow your turn: Listen to this word: big. What is the opposite of big?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: Listen to this word: day. What is the opposite of day? Night.\n\nYour turn: Listen to this word: big. What is the opposite of big?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: Listen to this word: day. What is the opposite of day? Night.\n\nYour turn: Listen to this word: big. What is the opposite of big?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "dsp-2",
+     "trigger": "banana",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"small\" (also accept \"tiny\", \"little\"). saying tiny or little counts as the correct opposite. repeating the starting word big is not correct.",
+       "small"
+      ],
+      "ask": "Listen to this word: big. What is the opposite of big?",
+      "leakTokens": [
+       "SAY_ITEM",
+       "SAY_MOVE",
+       "SAY_HEAR",
+       "SAY_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Let's try an easier practice one first. Listen to this word: hot. What is the opposite of hot?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "easier_item",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That's a fruit! Give it another try: what is the opposite of big?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite banana. Let's try this one first: Listen to this word: hot. What is the opposite of hot?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "easier_item",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Let's try this one first: Listen to this word: hot. What is the opposite of hot?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "easier_item",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Let's try this one first: Listen to this word: hot. What is the opposite of hot?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "easier_item",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dsp-2",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"small\" (also accept \"tiny\", \"little\"). saying tiny or little counts as the correct opposite. repeating the starting word big is not correct.",
+       "small"
+      ],
+      "ask": "Listen to this word: big. What is the opposite of big?",
+      "leakTokens": [
+       "SAY_ITEM",
+       "SAY_MOVE",
+       "SAY_HEAR",
+       "SAY_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "We switched to an easier practice question to warm up. Listen to this word: hot. What is the opposite of hot?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "easier_item"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "We changed to an easier practice question to try first. \n\nListen to this word: hot. What is the opposite of hot?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "easier_item",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "We have a practice question on the screen to help us warm up. Listen to this word: hot. What is the opposite of hot?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "easier_item"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "We opened an easier practice question first. \n\nListen to this word: hot. What is the opposite of hot?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "easier_item"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "We brought up an easier practice question to try first. \n\nListen to this word: hot. What is the opposite of hot?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "easier_item"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "dsp-2~simpler",
+     "trigger": "The learner said they were stuck, so the host pulled easier_item (simplify). It is on screen now: Opens an easier one of the same kind first. It is not graded; the full question comes back after it. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the easier item on screen.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"small\" (also accept \"tiny\", \"little\"). saying tiny or little counts as the correct opposite. repeating the starting word big is not correct.",
+       "small"
+      ],
+      "ask": "Listen to this word: big. What is the opposite of big?",
+      "leakTokens": [
+       "SAY_ITEM",
+       "SAY_MOVE",
+       "SAY_HEAR",
+       "SAY_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "We have a new practice question on the screen to help us warm up! \n\nListen to this word: hot. What is the opposite of hot?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new practice card has appeared for us. \n\nListen to this word: hot. What is the opposite of hot?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new practice question is on the screen for us to try. \n\nListen to this word: hot. What is the opposite of hot?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new practice card is on the screen for us to try. Listen to this word: hot. What is the opposite of hot?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new practice card has appeared for us. \n\nListen to this word: hot. What is the opposite of hot?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

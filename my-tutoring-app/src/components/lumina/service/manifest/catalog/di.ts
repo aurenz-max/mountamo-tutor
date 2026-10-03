@@ -890,19 +890,22 @@ export const DI_CATALOG: ComponentDefinition[] = [
     supportsEvaluation: true,
     teachingWorkspace: {
       grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3'],
-      guidance: 'The panel shows the stimulus: printed text, one picture, a group of pictures, two pictures side by side, '
-        + 'or nothing, in which case the question itself carries it. The child answers OUT LOUD, one short word or phrase, '
-        + 'or on explain items one idea in their own words. Nothing on screen names the answer: a group has no numeral, '
-        + 'a picture has no label, and a pair is unlabeled, so say both names when you ask. On a pair item read the whole '
-        + 'word menu; the answer is one of those words. The key names what else counts and the wrong answer that sounds '
-        + 'right. On explain items judge the idea, not the words; the stimulus read back or its name alone is not an '
-        + 'explanation. Where the facts say the learner reads printed text aloud, the text is the answer: let them read '
-        + 'it first. You cannot change the stimulus or add a picture.',
-      // The two bounded modes' known wrong answers (`spokenPracticeSpokenMisses`), named by the `spoken_miss` observer.
-      // None on say_answer and read_aloud (no distractor is recorded) or explain_concept (judged on meaning).
+      guidance: 'The panel shows printed text, a picture, a group of pictures, two pictures, or nothing (the question '
+        + 'carries it). The child answers OUT LOUD, a short word or phrase, or on explain items one idea in their own '
+        + 'words. Nothing on screen names the answer, so on a pair say both names and the whole word menu. The key names '
+        + 'what else counts and the wrong answer that sounds right. On explain items judge the idea, not the words; the '
+        + 'example read back or named is not an explanation. Printed text to read aloud is the answer: let them read '
+        + 'it first. Never model this item: your model is the model lever, a DIFFERENT item (on a pair, one pair per '
+        + 'menu word, all said). The support fact says where levers start. You cannot change the stimulus.',
+      levers: true,
+      // Every mode's known wrong answers (`spokenPracticeSpokenMisses`), named by the `spoken_miss` observer. The
+      // explain ids are advisory patterns; judging stays on meaning. `signature_error` exists only where the item has one.
       misses: missLists<SpokenPracticeMiss>({
         count_and_say: ['skipped_a_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
         compare_choice: ['other_menu_word', 'said_same', 'said_thing_name'],
+        read_aloud: ['misread', 'sounds_not_blended', 'letter_names', 'word_dropped'],
+        say_answer: ['signature_error', 'said_stimulus'],
+        explain_concept: ['read_back', 'named_only', 'bare_number', 'opposite_idea'],
       }),
     },
     misconceptionScope: 'primitive',

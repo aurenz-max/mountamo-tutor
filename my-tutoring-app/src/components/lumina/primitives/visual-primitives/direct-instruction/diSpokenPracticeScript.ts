@@ -168,6 +168,11 @@ export interface SpokenPracticeItem extends JudgedScriptItem {
    *  code owns both, so a generated line cannot break sentinel discipline
    *  or end a correction on the answer. Generated. */
   correctionBody: string;
+  /** Where the levers start (`/add-support-tiers`). Absent = easy. */
+  supportTier?: 'easy' | 'medium' | 'hard';
+  /** A spare the generator marked as a noticeably easier question of the same skill: the `easier_item` practice case
+   *  (ruling R3). Spares ride on `DiSpokenPracticeData.spares`, never as session items. */
+  easier?: boolean;
 }
 
 export type ActionableSpokenPracticeItem = SpokenPracticeItem & {
@@ -778,6 +783,7 @@ export interface RawSpokenItem {
   acceptRule?: unknown;
   signatureError?: unknown;
   correctionBody?: unknown;
+  easier?: unknown;
 }
 
 const str = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
@@ -917,6 +923,7 @@ export const buildSpokenItem = (
     howToPlay: HOW_TO_PLAY[mode],
     expectedAnswer: reconciled.primary,
     alternates,
+    ...(raw.easier === true ? { easier: true } : {}),
     acceptRule: str(raw.acceptRule),
     signatureError: str(raw.signatureError),
     correctionBody: str(raw.correctionBody) || `The answer is ${expectedAnswer}.`,

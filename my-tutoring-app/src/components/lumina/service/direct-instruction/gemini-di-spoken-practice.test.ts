@@ -575,9 +575,9 @@ describe('explain_concept — the yield levers the first pilot forced (3/6 fresh
     expect(data.items).toHaveLength(4);
     expect(data.items.map(i => i.id)).toEqual(['dsp-1', 'dsp-2', 'dsp-3', 'dsp-4']);
     expect(data.items.map(i => i.expectedAnswer)).toEqual(['plus 1', 'plus 3', 'plus 4', 'plus 6']);
-    // The schema the model was handed asked for six.
+    // The schema the model was handed asked for seven: two spares for the review, one marked easier for the levers (R3).
     const draw = generateContent.mock.calls[2][0] as { config: { responseSchema: { properties: { items: { maxItems: string } } } } };
-    expect(draw.config.responseSchema.properties.items.maxItems).toBe('6');
+    expect(draw.config.responseSchema.properties.items.maxItems).toBe('7');
     expect(generateContent).toHaveBeenCalledTimes(4);
   });
 
