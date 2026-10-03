@@ -159,9 +159,15 @@ const SHAPE_CASES = [
 // The whole assignment is one produced sound, so the risks are the keyword picture
 // (a route to the sound, not the sound), the letter's NAME, and the tutor's own
 // model being mistaken for the child's answer.
+// The stage draws the tier's starting levers (easy: the model card and, on a letter item, the keyword picture) and
+// publishes them as `onScreen`, so the probe does too.
+const soundLevers = await domain('direct-instruction/diLetterSoundsLevers.ts');
 const soundItem = challenge => {
   const item = only(sounds.buildLetterSoundItems([challenge]), challenge.id);
-  return { assignment: sounds.workspaceAssignment(item), scene: sounds.workspaceScene(item) };
+  const pulled = soundLevers.startingLevers(item, [item]);
+  const scene = sounds.workspaceScene(item, { pulled });
+  const onScreen = soundLevers.letterLeverFacts(item, pulled, [item]);
+  return { assignment: sounds.workspaceAssignment(item), scene: onScreen ? { ...scene, facts: { ...scene.facts, onScreen } } : scene };
 };
 const SOUND_ITEMS = {
   grapheme: soundItem({ id: 'm', challengeType: 'letter_sound', letter: 'm', spoken: 'mmm', keyword: 'moon', emoji: '🌙', elicitation: 'isolated', articulation: 'held' }),
@@ -202,9 +208,12 @@ const SOUND_CASES = [
 // The answer IS the printed word, so the risks are the other direction from letter
 // sounds: a near neighbour affirmed as the printed word, a sound-out praised before
 // the whole word was ever said, and the tutor's own read standing in for the child's.
+const wordLevers = await domain('direct-instruction/diWordReadingLevers.ts');
 const wordItem = challenge => {
   const item = only(words.buildWordReadingItems([challenge]), challenge.id);
-  return { assignment: words.workspaceAssignment(item), scene: words.workspaceScene(item) };
+  const scene = words.workspaceScene(item);
+  const onScreen = wordLevers.wordLeverFacts(item, wordLevers.startingLevers(item, [item]), [item]);
+  return { assignment: words.workspaceAssignment(item), scene: onScreen ? { ...scene, facts: { ...scene.facts, onScreen } } : scene };
 };
 const WORD_ITEMS = {
   cvc: wordItem({ id: 'sam', challengeType: 'cvc_reading', word: 'sam', wordType: 'cvc', graphemes: ['s', 'a', 'm'] }),

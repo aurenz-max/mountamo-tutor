@@ -173,22 +173,23 @@ export const DI_CATALOG: ComponentDefinition[] = [
     id: 'di-word-reading',
     teachingWorkspace: {
       grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'The gold-ringed card shows ONE printed word, and reading it off the screen is the whole skill. '
-        + 'Never read, blend or sound out this word for the child, before or after a miss: a model is always a '
-        + 'DIFFERENT word. '
-        + 'Never name a word still to come: the facts are there so you can judge, not supply. '
-        + 'A different word is wrong however close it sounds — a rhyme or a homophone still gets a correction. '
-        + 'Blending slowly and then saying the whole word IS a correct read; separate sounds with no whole word is '
-        + 'unfinished. Spelling with letter names is not reading. '
-        + 'The facts say whether the word is decodable or an irregular sight word. A decodable word may be blended '
-        + 'from its printed letters; an irregular one is recalled whole, and sounding it out teaches the wrong '
-        + 'thing — its letters are not marking targets. '
-        + 'Use demonstrate with the target "word", or a letter target from workspace.objects on a decodable word, '
-        + 'and [] to clear. There is no other scene action: you cannot change the word, add a picture, write, or '
-        + 'answer for the child.',
+      guidance: 'The gold-ringed card shows ONE printed word; reading it is the whole skill. Never read, blend or sound '
+        + 'out this word, before or after a miss: your model is the model_word lever, a DIFFERENT word beside it. The '
+        + 'support fact says where levers start. Never name a word still to come. A different word is wrong however '
+        + 'close it sounds; a rhyme or a homophone still gets a correction. Blending and then saying the whole word IS '
+        + 'a correct read; sounds with no whole word are unfinished; letter names are not reading. A decodable word may '
+        + 'be blended from its letters; an irregular sight word is recalled whole, and its letters are not marking '
+        + 'targets. demonstrate takes "word", or a letter target on a decodable word; [] clears. You cannot change '
+        + 'the word, add a picture, write, or answer for the child.',
       // The spoken read's known wrong answers (`diWordReadingSpokenMisses`).
-      misses: sameMisses<SpokenWordReadingMiss>(['cvc_reading', 'read_word', 'sight_word', 'word_reading_review'],
-        ['letter_name', 'sounds_no_word', 'read_backwards', 'similar_word', 'first_sound_changed', 'middle_sound_changed', 'last_sound_changed']),
+      levers: true,
+      // A decodable word is never named `similar_word`, and a sight word never a position miss.
+      misses: missLists<SpokenWordReadingMiss>({
+        cvc_reading: ['letter_name', 'sounds_no_word', 'read_backwards', 'first_sound_changed', 'middle_sound_changed', 'last_sound_changed'],
+        sight_word: ['letter_name', 'sounds_no_word', 'similar_word'],
+        ...sameMisses<SpokenWordReadingMiss>(['read_word', 'word_reading_review'],
+          ['letter_name', 'sounds_no_word', 'read_backwards', 'similar_word', 'first_sound_changed', 'middle_sound_changed', 'last_sound_changed']),
+      }),
     },
     description: 'Live-judged Direct Instruction WORD READING (DISTAR "What word?"): the child sees a printed word and reads it aloud; the tutor models only a DIFFERENT word (sounding out a decodable CVC word, "sss-uuu-nnn… sun", or naming a sight word whole), never the child\'s own, and judges the spoken audio. The child SEES the printed word and READS it aloud (voice/microphone). Perfect for kindergarten and grade 1 decoding: short-vowel CVC word reading, blending, and high-frequency sight-word recognition. ESSENTIAL for K/G1 early reading — print-to-speech decoding for beginning readers.',
     constraints: 'Requires microphone + live audio tutor. SHORT-vowel CVC words and starter sight words only — NO long-vowel or silent-e / magic-e (CVCe) words like cake, ride, or hope, and NO digraphs, blends, or multisyllable words. When the objective is the silent-e rule, long vowels, or any other pattern outside short-vowel CVC, use phonics-blender (cvce_blend), cvc-speller, or decodable-reader instead — this pack cannot serve those words and will fall back to short-vowel CVC ones. The manifest must NOT supply specific words; the menu-scoped generator selects target words from the objective (phonics pattern or sight-word set) and attaches graphemes/rewards in code. The printed word is the answer: no pictures or audio pre-cues before the child reads.',

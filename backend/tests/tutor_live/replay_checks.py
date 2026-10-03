@@ -88,6 +88,21 @@ PRONOUN_ONE = re.compile(r"\b(?:this|that|next|each|every|which|another|other|la
                          r"|\bmove on\b|\bone (?:at a time|by one|more time|step)\b", re.I)
 
 
+# A sight-word key that is also an everyday function word ("and", "the", "is"): a tutor cannot avoid the word in its own
+# sentences, so it counts only when it is said AS the item's word: quoted, or after "says" / "is the word"
+# (di-word-reading replay 10-03, 19/19 false flags on "and").
+FUNCTION_WORD_KEYS = {'a', 'and', 'are', 'at', 'for', 'go', 'he', 'i', 'in', 'is', 'it', 'me', 'my', 'of', 'on', 'said', 'see',
+                      'she', 'the', 'they', 'to', 'was', 'we', 'you', 'have', 'here', 'like', 'look', 'come', 'with', 'what'}
+
+
+def said_function_word(text, word):
+    w = re.escape(word)
+    quote = '["“”‘’\']'
+    quoted = rf'{quote}{w}[.!?,]?{quote}'
+    named = rf"\b(?:says|said|word is|it is|it's|reads)\s+{quote}?{w}(?=\s*{quote}?\s*(?:[.!?,]|$))"
+    return re.search(f'{quoted}|{named}', text, re.I) is not None
+
+
 def said_key(text, keys):
     """The first key the reply says, in any spoken form, or None."""
     # The partitive names which object, not how many ("one of the hands went away", counting-board 09-28). Only here:
@@ -96,7 +111,8 @@ def said_key(text, keys):
     # "one" counting the ten itself ("fill one whole ten-frame"), which a ten-and-ones ask names ("a group of ten"),
     # is not the ones (number-bond ten_frame_part replay, 09-28).
     text = re.sub(r"\bone (?:whole |full |complete )?(?:ten[- ]frames?(?: boxe?s?)?|frames?|group of ten|ten)\b", '', text, flags=re.I)
-    return next((k for k in keys for f in forms(k) if says(text, f)), None)
+    return next((k for k in keys if (said_function_word(text, str(k)) if str(k).lower() in FUNCTION_WORD_KEYS
+                                     else any(says(text, f) for f in forms(k)))), None)
 
 
 def said_fix(text, ask):

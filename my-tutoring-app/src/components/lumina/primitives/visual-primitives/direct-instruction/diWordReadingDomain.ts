@@ -59,6 +59,8 @@ export interface DiWordReadingChallenge {
   /** Whole-token ASR aliases — passive cross-check only, never the judge.
    *  Near-neighbour homophones (son/sun) live here for reporting. */
   asrAliases?: string[];
+  /** Where the levers start (`/add-support-tiers`). Absent = easy, as in the other DI packs. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 }
 
 /** Stretched sound per grapheme for the sound-out model. Continuants and vowels
@@ -98,6 +100,7 @@ export interface WordReadingItem extends TeachingItem {
   soundOut: string;
   /** The reward picture, revealed only after a committed correct read. */
   emoji: string;
+  supportTier: 'easy' | 'medium' | 'hard';
   /** The question the child hears. It never contains the word. */
   ask: string;
   /** The accepted answer, short enough to compare a tutor's affirmation against. */
@@ -197,6 +200,7 @@ export function buildWordReadingItems(challenges: DiWordReadingChallenge[] = [])
     letters: isCvc(c) ? c.graphemes!.map(g => g.toLowerCase()) : [],
     soundOut: isCvc(c) ? soundOutFor(c) : '',
     emoji: c.emoji ?? '',
+    supportTier: c.supportTier ?? 'easy',
     ask: askFor(c),
     accepted: c.word,
     assignment: assignmentFor(c),
@@ -240,6 +244,9 @@ export const workspaceScene = (item: WordReadingItem): WorkspaceScene => ({
     wordType: item.wordType === 'cvc' ? 'decodable — blended from its printed letters'
       : 'irregular sight word — recalled whole, never sounded out',
     // No `soundOut` fact (R2, 2026-10-03): "sss-aaa-mmm" was a ready script for blending the child's own word.
+    support: item.supportTier === 'hard' ? 'read it cold: model nothing before the learner reads, and never say this word'
+      : item.supportTier === 'medium' ? 'the learner reads first; after a miss, model a different word with the model_word lever, never this one'
+        : 'the model card of a different word starts on screen: read it as your turn, then ask for this one. Never say this word',
     markMeaning: 'Purple dashed marks are yours. They point at the whole word or at one of its printed '
       + 'letters while you teach; they are not the learner reading, and they never move the gold ring off '
       + 'the word.' },

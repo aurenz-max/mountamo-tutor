@@ -371,6 +371,13 @@ const buildChallenge = (
   };
 };
 
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
 export const generateDiWordReading = async (
   topic: string,
   gradeLevel: string,
@@ -542,6 +549,11 @@ Return the wrapper JSON only.`;
   if (challenges.length === 0) {
     challenges = DEFAULT_WORDS.map((word, i) => buildChallenge(word, i, 'read_word'));
   }
+
+  // Where the levers start (`/add-support-tiers` Phase 6), stamped per challenge only when a tier is present: easy starts
+  // with the model card of a different word, medium and hard without it. The words, the mode and the ask never change.
+  const supportTier = normalizeSupportTier(typeof config?.difficulty === 'string' ? config.difficulty : undefined);
+  if (supportTier) challenges = challenges.map((c) => ({ ...c, supportTier }));
 
   const data: DiWordReadingData = {
     title,

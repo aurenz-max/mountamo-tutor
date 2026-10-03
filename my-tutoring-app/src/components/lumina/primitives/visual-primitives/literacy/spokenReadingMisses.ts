@@ -37,7 +37,7 @@ const CVC_WORDS = (
 const CVC_SET = new Set(CVC_WORDS);
 
 /** Real words close to a sight word in print or sound. */
-const SIGHT_LOOKALIKES: Readonly<Record<string, readonly string[]>> = {
+export const SIGHT_LOOKALIKES: Readonly<Record<string, readonly string[]>> = {
   the: ['they', 'then'], and: ['end', 'hand'], see: ['she', 'seed'], go: ['got', 'goat'], was: ['saw', 'as'],
   said: ['sad', 'sat'], is: ['it', 'in'], it: ['is', 'at'], of: ['off', 'on'], you: ['yes', 'yell'],
   to: ['top', 'toe'], he: ['her', 'hen'], she: ['see', 'shed'], we: ['wet', 'web'], me: ['my', 'men'],

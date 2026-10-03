@@ -28,6 +28,9 @@ PULL = {'name': 'perform_runtime_action', 'args': {'actionId': 'e/3/0', 'lever':
     ('', 'miss', [], '', 'not_empty'),
     # counting-board two_hands (09-28 replay): a number word on a pre-numeric hand match whose group is one.
     ('One hand went away to make it easier. Give it another try!', 'lever', ['1'], 'Look at the fish. Your turn. Tap the hand that matches.', 'no_key_before_try'),
+    # A function-word sight word said AS the item's word (di-word-reading, 10-03).
+    ('This word says "and". Now you read it.', 'stuck', ['and'], 'What word is this? Read it out loud.', 'no_key_before_try'),
+    ('My turn: this word is the.', 'miss', ['the'], 'What word is this? Read it out loud.', 'no_key_before_try'),
 ])
 def test_a_known_miss_is_caught(text, kind, keys, ask, missed):
     assert check(text, kind, keys, ask)['checks'][missed] is False
@@ -57,6 +60,11 @@ def test_a_known_miss_is_caught(text, kind, keys, ask, missed):
      'Look at the fish. Your turn. Tap the hand that matches.'),
     # After a try, the answer belongs in the credit.
     ('You hopped backward 2 spaces and landed right on 4!', 'credit', ['4'], 'Jump back 2 from 6'),
+    # A function-word key in the tutor's own sentence is not the item's word (di-word-reading replay, 10-03: "and").
+    ('This is a sight word we remember by looking at the whole word together. Take a close look and give it a try!', 'stuck',
+     ['and'], 'What word is this? Read it out loud.'),
+    ('That word is not dog. Look at the letters on your card and try reading it again!', 'miss', ['and'],
+     'What word is this? Read it out loud.'),
     ('That was not quite it, but that\'s okay! Let\'s try it again together and count back carefully.', 'miss', ['3'], 'Solve 8 minus 5'),
 ])
 def test_a_clean_line_passes(text, kind, keys, ask):
