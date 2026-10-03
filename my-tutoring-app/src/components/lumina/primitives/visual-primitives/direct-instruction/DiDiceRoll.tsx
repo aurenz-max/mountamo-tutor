@@ -25,7 +25,7 @@ import DiTeachingStage, { diStageMetrics, type DiStageLevers, type DiStageView }
 import { diceValuesFor, isTwoDiceChallenge, type DiDiceRollChallenge, type DiDiceRollChallengeType,
   type DieValue } from './diDiceRollScript';
 import { diceAssignment, diceScene } from './diDiceRollWorkspace';
-import { BRACKET_LEVER, MODEL_LEVER, TOUCH_LEVER, diceLeverFacts, diceLevers, modelFor, simplerRoll,
+import { BRACKET_LEVER, MODEL_LEVER, TOUCH_LEVER, compareModels, diceLeverFacts, diceLevers, modelFor, simplerRoll,
   startingLevers } from './diDiceRollLevers';
 
 export type {
@@ -177,19 +177,26 @@ const answerNumber = (item: DiDiceRollChallenge) => item.challengeType === 'sum_
 
 /** `model_roll`: a different roll, solved, small and apart from the child's dice (DI's "my turn"). */
 function ModelRoll({ item }: { item: DiDiceRollChallenge }) {
-  const model = modelFor(item);
-  if (!model) return null;
-  const faces = diceValuesFor(model);
-  const star = model.challengeType === 'compare_dice' ? (model.comparison === 'left' ? 0 : 1) : -1;
-  return <div data-lever={MODEL_LEVER} data-model-roll={faces.join('-')}
-    aria-label={`My turn: a different roll, ${model.spokenAnswer}`}
-    className="mt-5 flex items-center gap-3 rounded-xl border-2 border-dashed border-purple-400/70 bg-purple-500/10 px-4 py-2">
+  // R1: a comparison shows one pair per answer (left more, right more, same), so the card points at none of them.
+  const models = compareModels(item) ?? [modelFor(item)].filter((m): m is DiDiceRollChallenge => !!m);
+  if (!models.length) return null;
+  return <div data-lever={MODEL_LEVER} data-model-roll={models.map(m => diceValuesFor(m).join('-')).join(' ')}
+    aria-label={`My turn: ${models.length > 1 ? 'different rolls' : 'a different roll'}`}
+    className="mt-5 flex flex-wrap items-center justify-center gap-3 rounded-xl border-2 border-dashed border-purple-400/70 bg-purple-500/10 px-4 py-2">
     <span aria-hidden="true" className="text-xl leading-none">🗣️</span>
-    {faces.map((value, index) => <div key={index} className="flex flex-col items-center">
-      <span aria-hidden="true" data-model-star={index === star || undefined} className="h-5 text-base leading-none">{index === star ? '⭐' : ''}</span>
-      <Die value={value} size="sm" className="!h-12 !w-12 !p-1.5" />
-    </div>)}
-    {model.challengeType !== 'compare_dice' && <span className="text-3xl font-semibold text-purple-100">= {answerNumber(model)}</span>}
+    {models.map(model => {
+      const faces = diceValuesFor(model);
+      const relation = model.challengeType === 'compare_dice' ? model.spokenAnswer : undefined;
+      const star = relation === 'left' ? 0 : relation === 'right' ? 1 : -1;
+      return <div key={model.id} data-model-pair={relation} className="flex items-end gap-1">
+        {faces.map((value, index) => <div key={index} className="flex flex-col items-center">
+          <span aria-hidden="true" data-model-star={index === star || undefined} className="h-5 text-base leading-none">{index === star ? '⭐' : ''}</span>
+          <Die value={value} size="sm" className="!h-12 !w-12 !p-1.5" />
+        </div>)}
+        {relation === 'same' && <span aria-hidden="true" className="mb-3 text-2xl font-semibold text-purple-100">=</span>}
+        {model.challengeType !== 'compare_dice' && <span className="text-3xl font-semibold text-purple-100">= {answerNumber(model)}</span>}
+      </div>;
+    })}
   </div>;
 }
 

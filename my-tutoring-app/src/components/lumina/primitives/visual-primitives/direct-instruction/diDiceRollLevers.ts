@@ -8,8 +8,9 @@
  * Help (the screen shows more; the question is unchanged):
  * - `model_roll` (every mode): a small card with a different roll, solved. Count and sum: never the item's faces
  *   or their swap, no face the child's dice show, no total within one of the item's, the item's answer nowhere in it
- *   (faces, total, spoken words), never one step from the item. Compare: a different pair, sharing no face, whose relation is NOT the item's,
- *   because a model answered "left" hands over "left".
+ *   (faces, total, spoken words), never one step from the item. Compare (R1, 2026-10-03): THREE pairs, one per answer
+ *   (left more, right more, same), sharing no face with the child's dice. One pair would point at an answer: the same
+ *   relation hands it over, the other relation can be inverted.
  * - `touch_dots` (count_pips, sum_two_dice): the dots on the child's own dice can be tapped; a tapped dot gets a
  *   ring. Never a number or an order.
  * - `both_bracket` (sum_two_dice): one bracket under both dice. No number, no combined group.
@@ -70,7 +71,7 @@ export function modelLeaks(model: DiDiceRollChallenge, item: DiDiceRollChallenge
   if (m.join() === i.join() || (m.length === 2 && m[0] === i[1] && m[1] === i[0])) return true;
   // A model naming a face the child's dice show ("six dots and three dots" beside a 3) counts that die for them.
   if (m.some(v => i.includes(v))) return true;
-  if (item.challengeType === 'compare_dice') return model.spokenAnswer === item.spokenAnswer;
+  if (item.challengeType === 'compare_dice') return false;
   const mine = answerOf(model)!, theirs = answerOf(item)!;
   if (Math.abs(mine - theirs) <= 1) return true;
   if ([...m, mine].includes(theirs)) return true;
@@ -92,18 +93,27 @@ export function modelFor(item: DiDiceRollChallenge): DiDiceRollChallenge | null 
       .sort((p, q) => Math.abs(p.value - a) - Math.abs(q.value - a) || p.value - q.value)[0] ?? null;
   }
   const pairs = faces.flatMap(x => faces.map(y => diceItem(item.challengeType, x, y, id))).filter(pass);
-  if (item.challengeType === 'compare_dice') {
-    // A model of "more", never a tie; as far apart as the child's pair (2 for a tie), sharing no face with it.
-    const gap = Math.abs(a - b) || 2;
-    const shares = (c: DiDiceRollChallenge) => Number(diceValuesFor(c).some(v => v === a || v === b));
-    const apart = (c: DiDiceRollChallenge) => { const [x, y] = diceValuesFor(c); return Math.abs(x - y); };
-    return pairs.filter(c => apart(c) > 0)
-      .sort((p, q) => shares(p) - shares(q) || Math.abs(apart(p) - gap) - Math.abs(apart(q) - gap)
-        || q.value - p.value || diceValuesFor(p)[1] - diceValuesFor(q)[1])[0] ?? null;
-  }
+  if (item.challengeType === 'compare_dice') return compareModels(item)?.[0] ?? null;
   const total = a + b;
   return pairs.sort((p, q) => Math.abs(answerOf(p)! - total) - Math.abs(answerOf(q)! - total)
     || q.value - p.value || (diceValuesFor(p)[1] ?? 0) - (diceValuesFor(q)[1] ?? 0))[0] ?? null;
+}
+
+/**
+ * The compare model (R1): a left-more pair, its swap (right more) and a tie, in that fixed order, sharing no face with
+ * the child's dice. The pair is as far apart as the child's (2 for a tie), so it shows the same kind of difference.
+ */
+export function compareModels(item: DiDiceRollChallenge): DiDiceRollChallenge[] | null {
+  if (item.challengeType !== 'compare_dice') return null;
+  const [a, b = a] = diceValuesFor(item), gap = Math.abs(a - b) || 2;
+  const free = [1, 2, 3, 4, 5, 6].filter(v => v !== a && v !== b);
+  const pairs = free.flatMap(x => free.filter(y => y < x).map(y => [x, y] as const))
+    .sort((p, q) => Math.abs(p[0] - p[1] - gap) - Math.abs(q[0] - q[1] - gap) || q[0] - p[0]);
+  if (!pairs.length) return null;
+  const [hi, lo] = pairs[0];
+  const tie = free.find(v => v !== hi && v !== lo) ?? hi;
+  return [diceItem('compare_dice', hi, lo, `${item.id}~model-left`), diceItem('compare_dice', lo, hi, `${item.id}~model-right`),
+    diceItem('compare_dice', tie, tie, `${item.id}~model-same`)];
 }
 
 /** The easier roll a simplify lever opens, or null when the child's roll is already that simple. */
@@ -139,10 +149,13 @@ export function diceLevers(item: DiDiceRollChallenge | null, pulled: readonly st
   const out: WorkspaceLever[] = [];
   if (modelFor(item)) out.push(lever(MODEL_LEVER, 'help', 'both', MODE_MISSES[item.challengeType],
     'The learner gave a wrong answer, or does not know how to start.',
-    'Shows a small card beside the dice with a DIFFERENT roll, solved (onScreen names it). Say it as your turn ("My turn: …"), '
-      + 'then ask about the learner\'s own dice again. Never say what the model means for their dice.'
-      // Replay 10-03: the model's side was the child's wrong word, and saying it sounded like agreeing.
-      + (item.challengeType === 'compare_dice' ? ' On this model, point at the starred die and say it has more; never name its side.' : '')));
+      item.challengeType === 'compare_dice'
+        // R1: one pair per answer, so the card points at none of them; all three are voiced, in order, every time.
+        ? 'Shows a small card beside the dice with THREE different pairs, solved: the left die has more, the right die has '
+          + 'more, and the same. Say all three as your turn, in that order, pointing at each ("My turn: here the left die has '
+          + 'more…"); never only one. Then ask about the learner\'s own dice again.'
+        : 'Shows a small card beside the dice with a DIFFERENT roll, solved (onScreen names it). Say it as your turn ("My turn: …"), '
+          + 'then ask about the learner\'s own dice again. Never say what the model means for their dice.'));
   if (item.challengeType !== 'compare_dice') out.push(lever(TOUCH_LEVER, 'help', 'shown', ['skipped_a_number', 'one_short', 'one_over'],
     'The learner skips a dot or counts one twice.',
     'Lets the learner tap each dot as they count it; a tapped dot gets a ring. No numbers.'));
@@ -168,9 +181,10 @@ export function diceLeverFacts(item: DiDiceRollChallenge | null, pulled: readonl
     ? `a single die with ${dots(model.value)}, answered ${model.spokenAnswer}`
     : model.challengeType === 'sum_two_dice'
       ? `a pair of dice with ${dots(model.value)} and ${dots(model.secondValue)}, ${model.spokenAnswer} altogether`
-      : `a pair of dice with ${dots(model.value)} and ${dots(model.secondValue)}; a star marks the die with more`;
+      : 'three pairs of dice: in the first the left die has more, in the second the right die has more, in the third they '
+        + 'are the same; a star marks the die with more';
   return [
-    model && `Beside the dice, a model card shows a different roll, solved: ${shown}. It is not this roll.`,
+    model && `Beside the dice, a model card shows ${model.challengeType === 'compare_dice' ? 'different rolls' : 'a different roll'}, solved: ${shown}. It is not this roll.`,
     pulled.includes(TOUCH_LEVER) && item.challengeType !== 'compare_dice' && 'The dots on the learner\'s dice can be tapped; each tapped dot gets a ring.',
     pulled.includes(BRACKET_LEVER) && item.challengeType === 'sum_two_dice' && 'A bracket under both dice shows the question is about all their dots.',
   ].filter((s): s is string => !!s).join(' ');

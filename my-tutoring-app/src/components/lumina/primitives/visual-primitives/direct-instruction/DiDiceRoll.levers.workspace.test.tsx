@@ -64,8 +64,9 @@ it('compare_dice: the model has the other word; far_pair is an easier pair the c
   roll();
   h.say('right'); h.feedback('incorrect', 'retry');
   h.dispatch('pull_lever', { lever: 'model_roll' });
-  expect(q(h, '[data-lever="model_roll"] [data-model-star]')).toHaveLength(1);
-  expect(String(h.state().task!.demand.onScreen)).not.toMatch(/\bleft\b/);
+  // R1: three pairs, one per answer; a star on the die with more in the two unequal pairs.
+  expect(q(h, '[data-lever="model_roll"] [data-model-pair]').map(e => e.getAttribute('data-model-pair'))).toEqual(['left', 'right', 'same']);
+  expect(q(h, '[data-lever="model_roll"] [data-model-star]')).toHaveLength(2);
   h.dispatch('pull_lever', { lever: 'far_pair' });
   expect(h.state().task!.itemId).toBe(`${full}~simpler`);
   expect(h.state().task!.demand.rolled).toBe('no');

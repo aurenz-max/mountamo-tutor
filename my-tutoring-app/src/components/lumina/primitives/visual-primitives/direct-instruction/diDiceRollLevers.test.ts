@@ -3,7 +3,7 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import type { DiDiceRollChallenge, DiDiceRollChallengeType } from './diDiceRollScript';
 import { diceChallengeValid, diceSpokenMisses } from './diDiceRollWorkspace';
 import { saysWords } from './diMathFactsLevers';
-import { BRACKET_LEVER, FAR_LEVER, FEWER_LEVER, MODEL_LEVER, SMALLER_LEVER, TOUCH_LEVER, diceItem, diceLeverFacts,
+import { compareModels, BRACKET_LEVER, FAR_LEVER, FEWER_LEVER, MODEL_LEVER, SMALLER_LEVER, TOUCH_LEVER, diceItem, diceLeverFacts,
   diceLevers, modelFor, modelLeaks, simplerRoll, startingLevers } from './diDiceRollLevers';
 import compare from '../../../components/live-activity/runtime/testing/w1-payloads/di-dice-roll.compare_dice.json';
 import count from '../../../components/live-activity/runtime/testing/w1-payloads/di-dice-roll.count_pips.json';
@@ -27,8 +27,8 @@ describe('model_roll: a different roll, never a route to this answer', () => {
     ['the swapped pair', roll('sum_two_dice', 4, 2), roll('sum_two_dice', 2, 4), true],
     ['one step from the pair (2 + 3 beside 2 + 4)', roll('sum_two_dice', 2, 3), roll('sum_two_dice', 2, 4), true],
     ['the total printed on a face (6 + 1 beside 3 + 3)', roll('sum_two_dice', 6, 1), roll('sum_two_dice', 3, 3), true],
-    ['a comparison with the same word', roll('compare_dice', 5, 1), roll('compare_dice', 4, 2), true],
-    ['a comparison with the other word', roll('compare_dice', 1, 5), roll('compare_dice', 4, 2), false],
+    // R1: the card carries every relation, so a pair's own relation is no longer a leak; a shared face still is.
+    ['a comparison pair with the same word, no shared face', roll('compare_dice', 5, 1), roll('compare_dice', 4, 2), false],
     ['a face the child rolled (6 + 3 beside 3 + 4)', roll('sum_two_dice', 6, 3), roll('sum_two_dice', 3, 4), true],
     ['a comparison sharing a face', roll('compare_dice', 1, 4), roll('compare_dice', 4, 2), true],
     ['5 beside 3', roll('count_pips', 5), roll('count_pips', 3), false],
@@ -61,15 +61,23 @@ describe('levers per mode, and what they say', () => {
     expect(ids(roll('sum_two_dice', 4, 3))).toEqual([MODEL_LEVER, TOUCH_LEVER, BRACKET_LEVER, SMALLER_LEVER]);
   });
 
-  it('a comparison model is never named by its side (it would echo the child\'s wrong word)', () => {
+  it('R1: a comparison model is three pairs, one per answer, in a fixed order, sharing no face with the child\'s dice', () => {
     for (const item of ALL.filter(i => i.challengeType === 'compare_dice')) {
-      expect(diceLeverFacts(item, [MODEL_LEVER])).not.toMatch(/\b(left|right|same)\b/i);
-      expect(diceLevers(item, []).find(l => l.id === MODEL_LEVER)!.does).toMatch(/never name its side/);
+      const models = compareModels(item)!;
+      expect(models.map(m => m.spokenAnswer), faces(item).join('/')).toEqual(['left', 'right', 'same']);
+      for (const m of models) {
+        expect(diceChallengeValid(m)).toBe(true);
+        expect(faces(m).some(v => faces(item).includes(v)), `${faces(m)} beside ${faces(item)}`).toBe(false);
+      }
+      // The card and its fact say all three words, so neither points at the child's answer.
+      expect(diceLeverFacts(item, [MODEL_LEVER])).toMatch(/left die has more.*right die has more.*same/);
+      expect(diceLevers(item, []).find(l => l.id === MODEL_LEVER)!.does).toMatch(/all three/);
     }
   });
 
   it('the scene fact never says the child\'s answer', () => {
-    for (const item of [...SAVED, ...ALL]) {
+    // A comparison card says all three words by design (R1, tested above); count and sum never say the answer.
+    for (const item of [...SAVED, ...ALL].filter(i => i.challengeType !== 'compare_dice')) {
       const facts = diceLeverFacts(item, diceLevers(item, []).map(l => l.id));
       expect(saysWords(facts, item.spokenAnswer), `${faces(item).join('/')}: ${facts}`).toBe(false);
       const n = item.challengeType === 'sum_two_dice' ? item.total : item.challengeType === 'count_pips' ? item.value : null;

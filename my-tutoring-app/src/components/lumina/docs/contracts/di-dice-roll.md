@@ -44,10 +44,10 @@
 ### R7 — Credit prints the answer; a miss never does · OBSERVED
 - **Probe:** workspace test "a wrong answer reopens with the dice still rolled…".
 
-### R8 — DI's model is a different roll · OBSERVED (user ruling 2026-10-02)
-- **Property:** `model_roll` shows a different roll of the same mode, solved. `modelLeaks` holds false: not the child's dice or their swap, no shared face, and for count and sum, no total within one of the child's and the child's answer nowhere in it (faces, total, spoken words), not one step away. A comparison model has the OTHER relation, is never a tie, and is never named by its side ("point at the starred die and say it has more").
-- **Evidence:** replay 2026-10-03. Before the side rule, 1 of 2 compare model lines said "the right die has more", the child's wrong word; after, 0 of 10.
-- **Probe:** `diDiceRollLevers.test.ts`; `tutor_replay.py --primitive di-dice-roll --payload di-dice-roll.compare_dice --samples 10`.
+### R8 — DI's model is a different roll · OBSERVED (user ruling 2026-10-02; R1 2026-10-03)
+- **Property:** `model_roll` shows a different roll of the same mode, solved. For count and sum `modelLeaks` holds false: not the child's dice or their swap, no shared face, no total within one of the child's, the child's answer nowhere in it (faces, total, spoken words), not one step away. A comparison model is THREE pairs, one per answer (left more, right more, same), in that fixed order, sharing no face with the child's dice, and all three are voiced every time. One pair pointed at an answer: the item's relation handed it over, the other relation could be inverted (plan ruling R1).
+- **Evidence:** replay 2026-10-03, `di-dice-roll.compare_dice-hard` (tier hard, so the model is pulled): 15/15 lines voice all three pairs in order, 0 flags.
+- **Probe:** `diDiceRollLevers.test.ts`; `DiDiceRoll.levers.workspace.test.tsx`; `tutor_replay.py --primitive di-dice-roll --payload di-dice-roll.compare_dice-hard --samples 5`.
 
 ### R9 — Help never counts for the child · OBSERVED
 - **Property:** `touch_dots` rings only the dots the child taps (no number, no order); `both_bracket` draws no number and no combined group. compare_dice has no in-item help, because any of it would show the answer.
@@ -76,3 +76,4 @@ None open.
 ## Changelog
 
 - 2026-10-03: derived (initial, static) with the DI lever slice. 12 requirements, 0 conflicts. Check: `qa/primitive-contracts/di-dice-roll-check-2026-10-03.md`.
+- 2026-10-03: R8 rewritten for plan ruling R1 (three compare pairs, one per answer).
