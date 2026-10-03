@@ -24,6 +24,7 @@ import type { LivePrimitiveId } from './activityContract';
 import { itemsFromChallenges as shapeItems, shapeSorterHarnessAnswers } from '../../primitives/visual-primitives/math/shapeSorterScript';
 import { simplerJump } from '../../primitives/visual-primitives/math/numberLineLevers';
 import { simplerItem as simplerComparison } from '../../primitives/visual-primitives/math/comparisonBuilderLevers';
+import { simplerItem as simplerMathFact } from '../../primitives/visual-primitives/math/mathFactFluencyLevers';
 import { farThree } from '../../primitives/visual-primitives/math/compareObjectsLevers';
 import { threeCards } from '../../primitives/visual-primitives/math/numberSequencerLevers';
 import { threePlaces } from '../../primitives/visual-primitives/math/ordinalLineLevers';
@@ -1815,7 +1816,10 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // pressed up to a number and Submit. Derived from the mounted challenge, never from Python.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      const all = ctx.data.challenges ?? [];
+      // A simplify lever's easier fact is not a generated challenge: rebuild it with the same builder.
+      const parent = ctx.itemId?.endsWith('~simpler') ? all.find((x: { id: string }) => `${x.id}~simpler` === ctx.itemId) : null;
+      const c = parent ? simplerMathFact(parent, ctx.data.maxNumber ?? 5) : all.find((x: { id: string }) => x.id === ctx.itemId);
       if (!c) throw new Error('No current math-fact-fluency challenge');
       return mathFactHarnessInputs(c, intent === 'wrong', ctx.data.maxNumber ?? 5);
     },

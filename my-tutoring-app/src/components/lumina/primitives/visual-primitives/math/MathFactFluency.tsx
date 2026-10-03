@@ -26,6 +26,10 @@ import {
   describeMathFactCheck, formatMathFact, mathFactAssignment, mathFactMatches, mathFactMiss, mathFactScene,
   type MathFactResponse,
 } from './mathFactFluencyWorkspace';
+import {
+  DOTS_LEVER, MARKS_LEVER, PARTS_LEVER, WHOLE_LEVER, factModel, leverFacts, mathFactLevers, simplerItem, startLevers,
+} from './mathFactFluencyLevers';
+import type { StepSegment } from '../../../components/live-activity/runtime/contract';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -215,6 +219,42 @@ function MatchVisualOption({ type, count }: { type: string; count: number }) {
 }
 
 // ============================================================================
+// Lever dots (`mathFactFluencyLevers.ts`)
+// ============================================================================
+
+const DOT_TONE: Record<StepSegment['tone'], string> = {
+  plain: 'bg-blue-400 border-blue-300',
+  added: 'bg-amber-400 border-amber-300',
+  marked: 'bg-blue-400 border-blue-300',
+  empty: 'bg-transparent border-dashed border-slate-300',
+  crossed: 'bg-slate-500/60 border-slate-400',
+};
+
+/**
+ * A lever's dots in rows of five: the fact model (`two_parts`, `fact_dots`, `part_whole`) or the picture made
+ * tappable (`count_marks`). No numeral is drawn, except the running count on a dot the learner tapped.
+ */
+function LeverDots({ lever, segments, tapped, onTap }: {
+  lever: string; segments: StepSegment[]; tapped?: number[]; onTap?: (index: number) => void;
+}) {
+  const dots = segments.flatMap(s => Array.from({ length: Math.max(s.count, 0) }, () => s.tone));
+  return (
+    <div data-lever={lever} className="mx-auto grid w-fit grid-cols-5 gap-2 py-2">
+      {dots.map((tone, i) => {
+        const stamp = tapped ? tapped.indexOf(i) + 1 : 0;
+        const cls = `relative flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-bold text-slate-900 ${DOT_TONE[tone]}`;
+        const mark = tone === 'crossed' && <span aria-hidden className="absolute text-lg leading-none text-red-300">✕</span>;
+        return onTap ? (
+          <button key={i} type="button" data-lever-dot={tone} aria-label="dot" className={cls} onClick={() => onTap(i)}>
+            {mark}{stamp > 0 && <span data-lever="tap-number">{stamp}</span>}
+          </button>
+        ) : <span key={i} data-lever-dot={tone} className={cls}>{mark}</span>;
+      })}
+    </div>
+  );
+}
+
+// ============================================================================
 // Props
 // ============================================================================
 
@@ -282,11 +322,20 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
     phaseConfig: CHALLENGE_TYPE_CONFIG,
   });
 
-  const currentChallenge = challenges[currentChallengeIndex] ?? null;
+  const sessionChallenge = challenges[currentChallengeIndex] ?? null;
 
   // -------------------------------------------------------------------------
   // Local state
   // -------------------------------------------------------------------------
+  // In-item levers (`mathFactFluencyLevers.ts`), keyed by the session item they were pulled on; the easier fact a
+  // simplify lever put on screen in its place (ungraded); and, under `count_marks`, the dots tapped, in order.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<MathFactFluencyChallenge | null>(null);
+  const [practiceSolved, setPracticeSolved] = useState(false);
+  const [tapped, setTapped] = useState<number[]>([]);
+  /** What is on screen: the easier fact while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : startLevers(sessionChallenge);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [typedAnswer, setTypedAnswer] = useState('');
   const [selectedEquation, setSelectedEquation] = useState<string | null>(null);
@@ -306,8 +355,11 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
   const openedAt = useRef(Date.now());
   useEffect(() => { openedAt.current = Date.now(); }, [currentChallenge?.id]);
 
-  // A fresh fact starts clean; Try again clears the rejected answer.
-  reopen.current = () => {
+  // A fresh fact starts clean; Try again clears the rejected answer (an easier practice fact stays).
+  reopen.current = (retry) => {
+    if (!retry) setPractice(null);
+    setPracticeSolved(false);
+    setTapped([]);
     setSelectedAnswer(null);
     setTypedAnswer('');
     setSelectedEquation(null);
@@ -316,7 +368,8 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
     setFeedbackType('');
   };
 
-  const currentSolved = challengeResults.some(r => r.challengeId === currentChallenge?.id && r.correct);
+  const currentSolved = practice ? practiceSolved
+    : challengeResults.some(r => r.challengeId === currentChallenge?.id && r.correct);
   /** Learner input is closed while a checked answer waits for Try again, and once the fact is solved. */
   const learnerBlocked = () => !canAttempt || currentSolved || allChallengesComplete || !currentChallenge;
   /** A checked miss waiting for Try again: the rejected choice shows as wrong, never the right one. */
@@ -348,6 +401,13 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
   const check = (response: MathFactResponse) => {
     if (!currentChallenge || learnerBlocked()) return;
     const correct = mathFactMatches(currentChallenge, response);
+    if (practice) {
+      // An easier practice fact is ungraded: no streak, no metric, no result; the workspace records it as practice.
+      if (correct) { SoundManager.playCorrect(); setPracticeSolved(true); setFeedback('Correct!'); setFeedbackType('success'); }
+      else { SoundManager.playIncorrect(); setFeedback('Not quite.'); setFeedbackType('error'); }
+      progress.commitCheck(describeMathFactCheck(currentChallenge, response), correct, mathFactMiss(currentChallenge, response));
+      return;
+    }
     const responseTime = Date.now() - openedAt.current;
     const responseTimeSec = responseTime / 1000;
 
@@ -437,7 +497,31 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
   // alone, so opening an item adds no revision after the advance.
   useLayoutEffect(() => {
     if (!currentChallenge) return;
-    workspace.current = { ...mathFactScene(currentChallenge, { maxNumber }) };
+    const scene = mathFactScene(currentChallenge, { maxNumber });
+    const onScreen = leverFacts(currentChallenge, pulledLevers);
+    const levers = practice ? [] : mathFactLevers(sessionChallenge, pulledLevers, maxNumber);
+    workspace.current = {
+      ...scene,
+      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: (id) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !sessionChallenge || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = simplerItem(sessionChallenge, maxNumber);
+          if (!easier) return 'There is no easier fact for this one.';
+          setLeverState(pulled);
+          reopen.current(true); setPractice(easier);
+          return { practice: mathFactAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { reopen.current(false); },
+    };
   });
 
   // -------------------------------------------------------------------------
@@ -489,6 +573,27 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
   const choiceState = (isSelected: boolean): AnswerChoiceState => !isSelected ? 'idle'
     : currentSolved ? 'correct' : missShown ? 'incorrect' : 'selected';
   const inputClosed = currentSolved || allChallengesComplete || !canAttempt;
+
+  // The levers on screen for this fact (pulled on the session item, or its starting position).
+  const leverOn = (id: string) => pulledLevers.includes(id);
+  const modelUnderFact = !currentChallenge ? null
+    : (currentChallenge.type === 'equation-solve' || currentChallenge.type === 'match') && leverOn(DOTS_LEVER) ? 'fact-dots'
+      : currentChallenge.type === 'missing-number' && leverOn(WHOLE_LEVER) ? 'part-whole' : null;
+  /** The picture the fact is read from: as drawn, or redrawn by `two_parts` / `count_marks` (never on fingers). */
+  const renderPicture = (type: string) => {
+    const c = currentChallenge!;
+    const count = c.visualCount ?? c.correctAnswer;
+    const parts = c.type === 'visual-fact' && leverOn(PARTS_LEVER);
+    const marks = leverOn(MARKS_LEVER) && type !== 'fingers';
+    if (type === 'fingers' || (!parts && !marks)) return <VisualAid type={type} count={count} />;
+    const onTap = marks ? (i: number) => {
+      if (learnerBlocked()) return;
+      SoundManager.tick();
+      setTapped(prev => prev.includes(i) ? prev : [...prev, i]);
+    } : undefined;
+    return <LeverDots lever={parts ? 'two-parts' : 'count-marks'} segments={parts ? factModel(c) : [{ count, tone: 'plain' }]}
+      tapped={marks ? tapped : undefined} onTap={onTap} />;
+  };
 
   const renderChoiceButtons = (options: number[]) => (
     <div className="flex flex-wrap justify-center gap-3">
@@ -661,10 +766,7 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
             {/* Visual Aid (visual-fact phase) — bespoke SVG interaction surface */}
             {currentChallenge.type === 'visual-fact' && currentChallenge.visualType && (
               <div ref={pip.ref('visual')} data-pip-object="visual" className="mb-4 p-4 bg-slate-800/20 rounded-xl border border-white/5">
-                <VisualAid
-                  type={currentChallenge.visualType}
-                  count={currentChallenge.visualCount ?? currentChallenge.correctAnswer}
-                />
+                {renderPicture(currentChallenge.visualType)}
               </div>
             )}
 
@@ -674,6 +776,8 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
                 <span ref={pip.ref('problem')} data-pip-object="problem" className="text-5xl font-bold text-slate-100 font-mono tracking-wider">
                   {formatMathFact(currentChallenge)}
                 </span>
+                {/* fact_dots / part_whole levers: the printed numbers as dots under the fact; nothing for the "?". */}
+                {modelUnderFact && <LeverDots lever={modelUnderFact} segments={factModel(currentChallenge)} />}
               </div>
             )}
 
@@ -681,10 +785,7 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
             {currentChallenge.type === 'match' && currentChallenge.matchDirection === 'visual-to-equation' && (
               <div className="space-y-4">
                 <div ref={pip.ref('visual')} data-pip-object="visual" className="p-4 bg-slate-800/20 rounded-xl border border-white/5">
-                  <VisualAid
-                    type={currentChallenge.visualType || 'dot-array'}
-                    count={currentChallenge.visualCount ?? currentChallenge.correctAnswer}
-                  />
+                  {renderPicture(currentChallenge.visualType || 'dot-array')}
                 </div>
                 {pipDock}
                 {currentChallenge.equationOptions && renderMatchEquationOptions(currentChallenge.equationOptions)}
