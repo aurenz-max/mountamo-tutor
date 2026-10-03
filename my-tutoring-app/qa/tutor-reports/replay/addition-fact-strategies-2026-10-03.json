@@ -1,0 +1,3515 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ],
+   "no_key_before_try": [
+    0,
+    30
+   ],
+   "no_fix_before_try": [
+    0,
+    30
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ],
+   "no_key_before_try": [
+    0,
+    30
+   ],
+   "no_fix_before_try": [
+    0,
+    30
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ],
+   "no_key_before_try": [
+    0,
+    30
+   ],
+   "no_fix_before_try": [
+    0,
+    30
+   ],
+   "no_change_before_receipt": [
+    0,
+    30
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ],
+   "no_key_before_try": [
+    0,
+    30
+   ],
+   "no_fix_before_try": [
+    0,
+    30
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "addition-fact-strategies.big_facts",
+   "primitiveId": "addition-fact-strategies",
+   "evalMode": "big_facts",
+   "keys": [
+    "answer 8",
+    "8"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "afs-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "answer 8",
+       "8"
+      ],
+      "ask": "What is 5 + 3? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Whenever you're ready, tap the total for 5 + 3 on the number pad.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the addition problem on your screen, and tap your answer on the number pad whenever you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to doubles facts! Whenever you're ready, tap the answer on the number pad.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the addition problem on your screen, and tap your answer on the number pad whenever you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Tap your answer for 5 + 3 on the number pad whenever you are ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "afs-1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"afs-1\",\"response\":\"Tapped 9\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"one_over\"}. Respond to the learner using the current task and workspace.",
+     "miss": "one_over",
+     "scoredWith": {
+      "keys": [
+       "answer 8",
+       "8"
+      ],
+      "ask": "What is 5 + 3? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A number strip appeared showing hops from 5. Try tapping each hop to see where it lands, then give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "hop_strip",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You are very close! Look at the hops on your screen starting from 5, and try tapping your answer again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "hop_strip",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the hops starting from 5. Try tapping each hop to count on 3 more, then give it another try on the number pad!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "hop_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! Take a look at the clue on your screen and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You're very close! Look at the hop strip to count on from 5, then try tapping your answer again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "hop_strip",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "afs-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "answer 8",
+       "8"
+      ],
+      "ask": "What is 5 + 3? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "We can start at 5 and count on 3 hops. Tap the hops one by one to see where you land!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "hop_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Start at 5 and take 3 hops forward to find the total. Tap the hops on the screen to help you count.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "hop_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "We can start at 5 and count on 3 hops. Tap each hop on the screen to count them out!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "hop_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "We can count on starting from the bigger number, 5. Tap the hops one by one to count up 3 more.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "hop_strip",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Start at 5, and tap the 3 hops on the line one by one to see where you land!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "hop_strip",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "afs-1",
+     "trigger": "The learner said they were stuck, so the host pulled near_double (help). It is on screen now: Draws the double as two equal rows of dots and the extra dots set apart, captioned with the double and \"one more\" (or \"two more\"). No total is written. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "answer 8",
+       "8"
+      ],
+      "ask": "What is 5 + 3? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the screen: there are two equal rows of dots showing the double 3 + 3, with two more dots set apart. See if that double helps you find the total and tap your answer!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the new picture with two equal rows of dots and two extra dots set apart! You can use that double and the extra dots to find 5 + 3, then tap your answer.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the screen: there are two equal rows showing the double 3 + 3, plus two more dots next to them. You can use that double and add the two extra dots to find 5 + 3!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the screen: there are two equal rows of three dots to show a double, plus two extra dots next to them. You can use that double and count the two more to find your answer!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the screen: there are two equal rows of three dots, plus two extra dots next to them. You can use that double and the two extra dots to help find the total, then tap your answer!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "afs-1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"afs-1\",\"response\":\"Tapped 8\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"near_double\"]}. Respond to the learner using the current task and workspace.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "answer 8",
+       "8"
+      ],
+      "ask": "What is 5 + 3? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it right\u2014you tapped 8! Using the double plus two more worked out wonderfully.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You tapped 8, which is the total for 5 + 3.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You tapped 8, and that is just right for 5 + 3.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You tapped 8, which is the total for 5 + 3.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You tapped 8, and that is the right total for 5 + 3.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "addition-fact-strategies.doubles",
+   "primitiveId": "addition-fact-strategies",
+   "evalMode": "doubles",
+   "keys": [
+    "answer 6",
+    "6"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "afs-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "answer 6",
+       "6"
+      ],
+      "ask": "What is 3 + 3? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Today we are practicing doubles facts. Look at the problem and tap your answer on the number pad whenever you are ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Look at the double fact on your screen, and tap your answer on the number pad whenever you are ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to doubles facts! Take a look at the double on your screen and tap your answer on the number pad whenever you are ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! We are practicing our doubles facts today. Whenever you are ready, tap the answer for 3 + 3 on the number pad.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! We are practicing our doubles facts today. Whenever you are ready, tap the answer for 3 + 3 on the number pad.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "afs-1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"afs-1\",\"response\":\"Tapped 7\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"one_over\"}. Respond to the learner using the current task and workspace.",
+     "miss": "one_over",
+     "scoredWith": {
+      "keys": [
+       "answer 6",
+       "6"
+      ],
+      "ask": "What is 3 + 3? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Nice try! Look, the screen now shows two groups of objects for you to tap and count. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "count_groups"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! Now two groups of objects appeared on your screen. You can tap the objects to count them and try again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "count_groups",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the two groups of objects on the screen. Tap them to help you count, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "count_groups",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Now you can see two groups of objects on the screen to help you. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "count_groups"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! Now you can see two groups of objects on the screen to help you double 3. Give it another try on the number pad!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "count_groups",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "afs-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "answer 6",
+       "6"
+      ],
+      "ask": "What is 3 + 3? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Now you have two groups of objects on the screen. Tap each object to see its number, and then tap your total on the number pad!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "count_groups"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I brought up two groups of dots on your screen. You can tap each dot to count them all up!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "count_groups",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "You have two groups of objects on the screen. Tap each object one by one to see its number, then tap your total on the number pad!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "count_groups",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now you can see two groups of objects on the screen. Tap each object one by one to count them all together!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "count_groups"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Each object will show a number when you tap it. Tap each one to count them all, and then tap your total on the number pad!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "count_groups"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "afs-1",
+     "trigger": "The learner said they were stuck, so the host pulled count_groups (help). It is on screen now: Shows the two numbers as two groups of objects. Tapping an object numbers it; only tapped objects are numbered. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it th",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "answer 6",
+       "6"
+      ],
+      "ask": "What is 3 + 3? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the two groups of objects on your screen. You can tap each object to count them up, and then tap your total on the number pad!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right below the problem to find two groups of objects. Tap each object one by one to count them, and then tap your total on the number pad!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, two groups of objects just appeared on your screen to help you see the double. Tap each object to see its number, and then tap your total on the number pad.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the picture\u2014there are two groups of objects waiting for you! Tap each object one by one to see its number, and then tap your total on the number pad.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the picture now\u2014there are two groups of objects shown on the screen. Tap the objects to count them up, and then tap your total on the number pad!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "afs-1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"afs-1\",\"response\":\"Tapped 6\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"count_groups\"]}. Respond to the learner using the current task and workspace.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "answer 6",
+       "6"
+      ],
+      "ask": "What is 3 + 3? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it right! You found that 3 plus 3 makes 6.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You tapped 6, and double 3 makes 6!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You tapped 6, and double 3 makes 6!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You tapped 6, and double 3 makes 6!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it! You tapped 6, and double 3 is 6.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "addition-fact-strategies.plus_one",
+   "primitiveId": "addition-fact-strategies",
+   "evalMode": "plus_one",
+   "keys": [
+    "answer 7",
+    "7"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "afs-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "answer 7",
+       "7"
+      ],
+      "ask": "What is 6 + 1? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome to our math activity! Look at the problem on your screen and tap the number pad when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the addition problem on your screen, and tap your answer on the number pad whenever you are ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the addition problem on your screen and tap your answer when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Let's think about adding one more to 6. What number comes right after 6?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the addition problem on your screen, and tap your answer on the number pad whenever you are ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "afs-1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"afs-1\",\"response\":\"Tapped 8\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"one_over\"}. Respond to the learner using the current task and workspace.",
+     "miss": "one_over",
+     "scoredWith": {
+      "keys": [
+       "answer 7",
+       "7"
+      ],
+      "ask": "What is 6 + 1? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A hop line appeared on your screen starting at 6. Tap the hop to see where one more lands, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "hop_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A hop strip just appeared on your screen starting at 6. Tap the hop to see where one more takes you!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "hop_strip",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A number strip with a hop has appeared to help. Start at 6, hop forward 1, and tap your answer!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "hop_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A number line just popped up to help you hop forward from 6. Give it another try on the number pad!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "hop_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! Look at the hop line starting at 6 to take one jump forward, and try tapping your answer again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "hop_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "afs-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "answer 7",
+       "7"
+      ],
+      "ask": "What is 6 + 1? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "We have hop marks showing right from 6. Tap the hop on your screen to see what number comes right after 6!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "hop_strip",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Hops are now on your screen starting at 6. Tap the hop to see where taking one step lands!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "hop_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "We have a hop drawn right after 6 on your screen. Tap that hop to see what number comes right after 6!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "hop_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "We start at 6 and hop forward one time. Tap that hop on your screen to see where it lands!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "hop_strip",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A hop line is drawn starting at 6. Tap the hop to see what comes next, then choose that number!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "hop_strip",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "afs-1",
+     "trigger": "The learner said they were stuck, so the host pulled hop_strip (help). It is on screen now: Draws hops from the bigger number, one per unit of the smaller. A hop shows its number only when the learner taps it. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "answer 7",
+       "7"
+      ],
+      "ask": "What is 6 + 1? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A hop line is drawn right by the 6. Tap that hop to see what number is one more than 6, then tap your answer on the number pad!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right below 6 where a curved hop line is now drawn! Tap that hop to see the number, and then try tapping the answer on the number pad.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A hop line is drawn right by the 6. Tap that hop to see what number it lands on, and then tap your answer on the number pad!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A hop line is drawn right on your screen starting from 6. Tap that hop to see where it lands, and then tap your answer on the number pad!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right below the numbers: there is a curved hop line jumping forward from 6. Tap that hop to see the number it lands on, and then tap your answer on the number pad!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "afs-1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"afs-1\",\"response\":\"Tapped 7\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"hop_strip\"]}. Respond to the learner using the current task and workspace.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "answer 7",
+       "7"
+      ],
+      "ask": "What is 6 + 1? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it right\u2014you tapped 7! Six plus one more makes 7.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You tapped 7, which is one more than 6.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You tapped 7, and that is just right!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You tapped 7, which is just one more than 6.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You tapped 7, which is one more than 6.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "addition-fact-strategies.plus_two",
+   "primitiveId": "addition-fact-strategies",
+   "evalMode": "plus_two",
+   "keys": [
+    "answer 11",
+    "11"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "afs-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "answer 11",
+       "11"
+      ],
+      "ask": "What is 2 + 9? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Let's see what happens when we add 2 to 9.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! You can start with the bigger number and count on two more to find the total. Tap your answer on the number pad whenever you are ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! We are practicing adding two today. Take a look at 2 + 9 on your screen, and tap your answer on the number pad whenever you are ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the addition problem on your screen, and tap your answer when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the addition problem on your screen and tap your answer on the number pad whenever you are ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "afs-1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"afs-1\",\"response\":\"Tapped 12\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"one_over\"}. Respond to the learner using the current task and workspace.",
+     "miss": "one_over",
+     "scoredWith": {
+      "keys": [
+       "answer 11",
+       "11"
+      ],
+      "ask": "What is 2 + 9? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the number strip: you can start at 9 and hop forward 2 times to find the total. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "hop_strip",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's try that again. Now there are hops from 9 on the screen for you to count on!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "hop_strip",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Some hops appeared starting from 9 to help us add two more. Try tapping the hops to find the total!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "hop_strip",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's start at 9 and take two hops forward on the strip. Try tapping the hops to find where you land!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "hop_strip",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the hop strip starting at 9, and tap the hops to count on two more!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "hop_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "afs-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "answer 11",
+       "11"
+      ],
+      "ask": "What is 2 + 9? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "I added hops starting from 9 on your screen. Tap each hop forward to see where you land!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "hop_strip",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I added hops starting right at 9 for you. Tap the hops to count on two more, then tap your answer on the number pad!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "hop_strip",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I've put hops on your screen starting at 9. Tap the hops to count forward two and see where you land!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "hop_strip",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I added hop lines starting from 9. Tap the hops to count forward two more!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "hop_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Hops are now on your screen starting at 9. Tap the hops to count forward two spaces and see where you land!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "hop_strip",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "afs-1",
+     "trigger": "The learner said they were stuck, so the host pulled hop_strip (help). It is on screen now: Draws hops from the bigger number, one per unit of the smaller. A hop shows its number only when the learner taps it. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "answer 11",
+       "11"
+      ],
+      "ask": "What is 2 + 9? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the picture now: there are little hops starting right at 9! Tap each hop to see where they lead, and then choose your answer.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There are two hops drawn right after the 9 now. Tap each hop to count them and see what number you get!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You now have hops drawn right from 9. Tap each hop to count forward, and then tap your total on the number pad!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There are two hops drawn right above 9 now. Tap each hop to see where you land, then tap your total on the number pad.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There are hops starting at 9 right on your number line. Tap those hops to count up two, then tap your answer on the number pad!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "afs-1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"afs-1\",\"response\":\"Tapped 11\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"hop_strip\"]}. Respond to the learner using the current task and workspace.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "answer 11",
+       "11"
+      ],
+      "ask": "What is 2 + 9? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You tapped 11, and that is right! Starting at 9 and hopping forward 2 brings you right to 11.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You tapped 11, hopping two up from 9.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it\u2014you tapped 11, which is 2 more than 9!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You tapped 11, which is 2 more than 9.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You tapped 11, and that is right! Starting at 9 and hopping forward 2 brings you right to 11.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "addition-fact-strategies.plus_zero",
+   "primitiveId": "addition-fact-strategies",
+   "evalMode": "plus_zero",
+   "keys": [
+    "answer 4"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "afs-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "answer 4"
+      ],
+      "ask": "What is 0 + 4? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Look at the problem on your screen and see what happens when you add zero.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the addition problem on your screen, and tap your answer on the number pad whenever you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Let's explore adding zero today. Take a look at the problem on screen and tap your answer whenever you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to our math lesson! Take a look at the addition problem on your screen and tap your answer on the number pad whenever you are ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the addition problem on your screen. Whenever you're ready, tap your answer on the number pad!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "afs-1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"afs-1\",\"response\":\"Tapped 5\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"one_over\"}. Respond to the learner using the current task and workspace.",
+     "miss": "one_over",
+     "scoredWith": {
+      "keys": [
+       "answer 4"
+      ],
+      "ask": "What is 0 + 4? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "When you add zero, nothing gets added to your group. Take another look and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! When you add zero, you are not adding anything at all, so the number stays the same. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "When we add zero, nothing gets added to our number. Take another look and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, groups of objects appeared on your screen. You can tap the objects to count them and try again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "count_groups",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the groups of objects on your screen now. Adding zero means we do not add any more, so give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "count_groups",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "afs-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "answer 4"
+      ],
+      "ask": "What is 0 + 4? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "I brought up groups of objects on your screen so you can see them. You can tap the objects to count them and see what you have in all!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "count_groups",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now you can see the groups as objects on your screen. You can tap them to count and see what you have in all!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "count_groups"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I put two groups of objects on the screen to help you see the numbers. You can tap the objects to count them and find the total!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "count_groups"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I put the objects into two groups on your screen so you can tap to count them! See how many there are in all and tap the number.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "count_groups",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I put groups of objects on your screen so you can see each number. Tap the objects to count them and see how many you have!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "count_groups"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "afs-1",
+     "trigger": "The learner said they were stuck, so the host pulled count_groups (help). It is on screen now: Shows the two numbers as two groups of objects. Tapping an object numbers it; only tapped objects are numbered. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it th",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "answer 4"
+      ],
+      "ask": "What is 0 + 4? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the picture now\u2014you can see the objects shown in two groups! Tap on the objects to count how many there are in all, and then tap your answer.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the picture now: there are groups of objects on your screen. You can tap the objects to count them and see how many there are in all.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the screen\u2014now you can see the groups drawn out for both numbers. Tap each object to count them, and then tap your total on the number pad!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the objects that just appeared for each group. You can tap them to count, then tap your total on the number pad!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at your screen\u2014now you can see the groups drawn out! You can tap each object to count it, and then try tapping the answer on the number pad.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "afs-1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"afs-1\",\"response\":\"Tapped 4\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"count_groups\"]}. Respond to the learner using the current task and workspace.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "answer 4"
+      ],
+      "ask": "What is 0 + 4? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You tapped 4, because adding 0 leaves the 4 just as it is.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it, you tapped 4! Adding zero leaves the number just as it was.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You tapped 4, because adding 0 leaves the number just the same.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it, tapping 4 is right! Adding zero leaves the number just as it was.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it, you found that 0 plus 4 is 4! Adding zero leaves the number unchanged.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "addition-fact-strategies.turnaround",
+   "primitiveId": "addition-fact-strategies",
+   "evalMode": "turnaround",
+   "keys": [
+    "answer 9",
+    "9"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "afs-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "answer 9",
+       "9"
+      ],
+      "ask": "What is 7 + 2? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Look at the addition problem on your screen and tap your answer on the number pad whenever you are ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Look at the addition problem on your screen, and tap your answer on the number pad whenever you are ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Whenever you are ready, look at 7 + 2 and tap your answer on the number pad.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the addition problem on your screen, and tap your answer when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the addition problem on your screen, and tap your answer when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "afs-1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"afs-1\",\"response\":\"Tapped 10\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"one_over\"}. Respond to the learner using the current task and workspace.",
+     "miss": "one_over",
+     "scoredWith": {
+      "keys": [
+       "answer 9",
+       "9"
+      ],
+      "ask": "What is 7 + 2? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Close try! Look at the hop line that popped up, and try counting two hops from 7 to give it another go.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "hop_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! Take a look at the hops on your screen starting at 7, and tap your new answer when you're ready.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "hop_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That was close! You can tap the hops starting from 7 to count on 2 more and try again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "hop_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Close try! A number strip appeared showing hops from 7 to help you count on two more. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "hop_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Close try! Look at the number line hops that appeared on your screen to help you count on from 7, then try tapping your answer again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "hop_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "afs-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "answer 9",
+       "9"
+      ],
+      "ask": "What is 7 + 2? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A card just appeared showing the turned-around fact with the numbers flipped. Take a look at it to help you find the total!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "known_fact",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "You can tap the hops on the screen to count on from 7. Tap each hop to see where you land!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "hop_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Tap the hops starting from 7 to see where they land, and then tap that number on the pad!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "hop_strip",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "You can tap the hops to count forward two times starting right after 7.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "hop_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I added hop lines from 7 on your screen so you can tap them to count on by two.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "hop_strip",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "afs-1",
+     "trigger": "The learner said they were stuck, so the host pulled known_fact (help). It is on screen now: Shows the flipped fact card: the same two numbers in the other order, with its total. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "answer 9",
+       "9"
+      ],
+      "ask": "What is 7 + 2? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "There is a new card on your screen showing the same two numbers turned around with their total. Take a look at that card and tap your answer on the number pad!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the new card that appeared showing 2 + 7 and its total. You can use that matching turned-around fact to tap your answer!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right next to your problem\u2014there is a card showing the flipped fact with its total. Use what you see on that card to tap your answer on the number pad!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the new card showing the same numbers turned around with their total. Use that to try tapping the answer for 7 + 2!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the new card showing the two numbers swapped around with their total. Use that to tap your answer on the number pad.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "afs-1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"afs-1\",\"response\":\"Tapped 9\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"known_fact\"]}. Respond to the learner using the current task and workspace.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "answer 9",
+       "9"
+      ],
+      "ask": "What is 7 + 2? Tap the answer on the number pad.",
+      "leakTokens": [
+       "STRATEGY_INTRO",
+       "NEXT_ITEM",
+       "COMEBACK",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You tapped 9, and that is correct! You used the turn-around fact to find the total.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it\u2014you tapped 9, and that is just right!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You tapped 9, using the turned-around fact to find the right total.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it, you tapped 9! You used the turned-around fact to find the right total.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it, you tapped 9! Turning the numbers around gave you the right total.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

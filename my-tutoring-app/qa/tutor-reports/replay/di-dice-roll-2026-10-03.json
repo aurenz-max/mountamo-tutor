@@ -1,0 +1,1669 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ],
+   "no_change_before_receipt": [
+    0,
+    15
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    10
+   ],
+   "no_protocol_leak": [
+    0,
+    10
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "di-dice-roll.compare_dice",
+   "primitiveId": "di-dice-roll",
+   "evalMode": "compare_dice",
+   "keys": [
+    "\"left\" (also accept \"the left one\" or \"the left die\")"
+   ],
+   "stopped": "a simplify lever opened a practice item",
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "didr-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"left\" (also accept \"the left one\" or \"the left die\")"
+      ],
+      "ask": "Tap both dice to roll them. Say which has more: left, right, or same.",
+      "leakTokens": [
+       "DICE_ITEM",
+       "DICE_MOVE_ON",
+       "DICE_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Tap both dice to roll them!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Tap both dice to roll them!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Tap both dice to roll them!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Tap both dice to roll them!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Tap both dice to roll them!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "didr-1",
+     "trigger": "right",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"left\" (also accept \"the left one\" or \"the left die\")"
+      ],
+      "ask": "Tap both dice to roll them. Say which has more: left, right, or same.",
+      "leakTokens": [
+       "DICE_ITEM",
+       "DICE_MOVE_ON",
+       "DICE_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Let's count the dots on each die to be sure. How many dots do you see on the left die?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: on the helper card, four dots and six dots\u2014the right die has more! Now look at your dice: which one has more dots?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite! Try counting the dots on each die to see which one has more.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's count the dots on each die to be sure. Try counting the left one first!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's look closely and count the dots on each die. Which die has more dots?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "didr-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"left\" (also accept \"the left one\" or \"the left die\")"
+      ],
+      "ask": "Tap both dice to roll them. Say which has more: left, right, or same.",
+      "leakTokens": [
+       "DICE_ITEM",
+       "DICE_MOVE_ON",
+       "DICE_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Here is an easier practice roll to try first. Tap both dice to roll them!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "far_pair"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "My turn: on the card, four dots and six dots, and six is more, so the star marks the right die! Now on your own dice, which one has more dots: left, right, or same?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_roll",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I gave us a practice pair to try first! Tap both dice to roll them.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "far_pair"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Here are some new dice to practice with first. Tap both dice to roll them!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "far_pair"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "We have a new pair of dice to practice with first. Tap them to roll!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "far_pair",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "didr-1~simpler",
+     "trigger": "The learner said they were stuck, so the host pulled far_pair (simplify). It is on screen now: Opens an easier roll of the same kind first; the learner rolls it. It is not graded; the full roll comes back after it. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the easier item on screen.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"left\" (also accept \"the left one\" or \"the left die\")"
+      ],
+      "ask": "Tap both dice to roll them. Say which has more: left, right, or same.",
+      "leakTokens": [
+       "DICE_ITEM",
+       "DICE_MOVE_ON",
+       "DICE_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the new covered dice on your screen! Tap both dice to give them a roll.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "We have a fresh pair of covered dice on the screen to practice with. Tap both dice to give them a roll!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the screen\u2014we have a brand new pair of dice ready to roll! Tap both dice to roll them.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the new covered dice on your screen! Tap both dice to roll them and see what you get.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at your screen\u2014we have a fresh pair of covered dice ready for practice! Tap both dice to roll them.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "di-dice-roll.count_pips",
+   "primitiveId": "di-dice-roll",
+   "evalMode": "count_pips",
+   "keys": [
+    "\"three\". counting the dots aloud and ending on three is the answer.",
+    "three"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "didr-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"three\". counting the dots aloud and ending on three is the answer.",
+       "three"
+      ],
+      "ask": "Tap the die to roll it. Say how many dots you see.",
+      "leakTokens": [
+       "DICE_ITEM",
+       "DICE_MOVE_ON",
+       "DICE_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Tap the die to roll it!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Tap the die to roll it!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Tap the die to roll it!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Tap the die to roll it!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Tap the die to roll it!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "didr-1",
+     "trigger": "two",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"three\". counting the dots aloud and ending on three is the answer.",
+       "three"
+      ],
+      "ask": "Tap the die to roll it. Say how many dots you see.",
+      "leakTokens": [
+       "DICE_ITEM",
+       "DICE_MOVE_ON",
+       "DICE_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Not quite. Now you can tap each dot as you count it\u2014give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "touch_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite! Now you can tap each dot on the die as you count them.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "touch_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Now you can tap each dot on the die as you count them\u2014give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "touch_dots",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite! Now you can tap each dot to count them. How many dots do you see?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "touch_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. You can tap each dot to help you count, then try again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "touch_dots",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "didr-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"three\". counting the dots aloud and ending on three is the answer.",
+       "three"
+      ],
+      "ask": "Tap the die to roll it. Say how many dots you see.",
+      "leakTokens": [
+       "DICE_ITEM",
+       "DICE_MOVE_ON",
+       "DICE_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Now you can tap each dot on the die as you count it! How many do you count?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "touch_dots",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now you can tap each dot on the die as you count it! How many dots do you see?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "touch_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now you can tap each dot on the die as you count it! How many dots do you see?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "touch_dots",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "You can tap each dot on the die now to see a ring appear. Tap them one by one as you count!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "touch_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now you can tap each dot as you count it, and each one will get a ring! How many dots do you see?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "touch_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "didr-1",
+     "trigger": "The learner said they were stuck, so the host pulled touch_dots (help). It is on screen now: Lets the learner tap each dot as they count it; a tapped dot gets a ring. No numbers. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"three\". counting the dots aloud and ending on three is the answer.",
+       "three"
+      ],
+      "ask": "Tap the die to roll it. Say how many dots you see.",
+      "leakTokens": [
+       "DICE_ITEM",
+       "DICE_MOVE_ON",
+       "DICE_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the die\u2014now when you tap a dot, a ring appears around it to help you count. Try tapping each dot and count them out loud!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Each dot will get a ring when you touch it. Tap them one by one and tell me how many you see!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You can tap each dot on the die, and a ring will appear around it. Try tapping the dots as you count them aloud!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You can tap each dot on the die, and a ring will appear around it to help you count. How many dots do you see?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Each dot will get a ring when you tap it! Tap each dot on your die to count how many there are.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "didr-1",
+     "trigger": "three",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"three\". counting the dots aloud and ending on three is the answer.",
+       "three"
+      ],
+      "ask": "Tap the die to roll it. Say how many dots you see.",
+      "leakTokens": [
+       "DICE_ITEM",
+       "DICE_MOVE_ON",
+       "DICE_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it, there are three dots!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You counted all three dots, that's right!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You counted three dots!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You counted all the dots and got three, that's right!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You counted them all and got three! That is spot on.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "di-dice-roll.sum_two_dice",
+   "primitiveId": "di-dice-roll",
+   "evalMode": "sum_two_dice",
+   "keys": [
+    "\"eleven\". counting all the dots aloud and ending on eleven is the answer.",
+    "eleven"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "didr-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"eleven\". counting all the dots aloud and ending on eleven is the answer.",
+       "eleven"
+      ],
+      "ask": "Tap both dice to roll them. Say how many dots there are altogether.",
+      "leakTokens": [
+       "DICE_ITEM",
+       "DICE_MOVE_ON",
+       "DICE_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Tap both dice to roll them!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Tap both dice to roll them!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Tap both dice to roll them!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Tap both dice to roll them!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Tap both dice to roll them!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "didr-1",
+     "trigger": "ten",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"eleven\". counting all the dots aloud and ending on eleven is the answer.",
+       "eleven"
+      ],
+      "ask": "Tap both dice to roll them. Say how many dots there are altogether.",
+      "leakTokens": [
+       "DICE_ITEM",
+       "DICE_MOVE_ON",
+       "DICE_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Not quite ten. You can tap each dot as you count them to help keep track\u2014give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "touch_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite ten! You can tap each dot as you count to help keep track\u2014give it another try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "touch_dots",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Close try! Now you can tap each dot to ring it as you count them all together. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "touch_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite ten. You can tap each dot to ring it as you count them all together!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "touch_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Close try! You can tap each dot as you count them to help keep track. Try counting them again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "touch_dots",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "didr-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"eleven\". counting all the dots aloud and ending on eleven is the answer.",
+       "eleven"
+      ],
+      "ask": "Tap both dice to roll them. Say how many dots there are altogether.",
+      "leakTokens": [
+       "DICE_ITEM",
+       "DICE_MOVE_ON",
+       "DICE_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Now you can tap each dot as you count, and a ring will appear around it to help. Try counting all the dots aloud!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "touch_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now you can tap each dot to ring it as you count along. Try counting all the dots on both dice!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "touch_dots",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now you can tap each dot to ring it as you count along. Give it a try and say how many there are altogether!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "touch_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now each dot gets a ring when you tap it! Try tapping the dots one by one as you count them aloud.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "touch_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now you can tap each dot to ring it as you count them all together. Try tapping and counting!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "touch_dots",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "didr-1",
+     "trigger": "The learner said they were stuck, so the host pulled touch_dots (help). It is on screen now: Lets the learner tap each dot as they count it; a tapped dot gets a ring. No numbers. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"eleven\". counting all the dots aloud and ending on eleven is the answer.",
+       "eleven"
+      ],
+      "ask": "Tap both dice to roll them. Say how many dots there are altogether.",
+      "leakTokens": [
+       "DICE_ITEM",
+       "DICE_MOVE_ON",
+       "DICE_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at your dice\u2014now when you tap a dot, a ring appears right on it! Tap each dot to count them all up out loud.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You can now tap each dot on the dice, and a ring will show up around it! Tap and count all the dots aloud to see how many there are altogether.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You can now tap each dot on the dice, and a little ring will appear around each one you touch. Go ahead and tap and count all the dots aloud!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at your dice\u2014now when you tap a dot, a ring appears around it to help you count. Tap each dot on both dice and tell me how many there are altogether!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Each dot on your dice can now be tapped, and a little ring will appear around it when you touch it. Try tapping the dots one by one as you count all of them aloud!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "didr-1",
+     "trigger": "eleven",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"eleven\". counting all the dots aloud and ending on eleven is the answer.",
+       "eleven"
+      ],
+      "ask": "Tap both dice to roll them. Say how many dots there are altogether.",
+      "leakTokens": [
+       "DICE_ITEM",
+       "DICE_MOVE_ON",
+       "DICE_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it\u2014there are eleven dots altogether! Great job counting them all.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You counted them all up and found eleven dots!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You counted eleven dots altogether, that is spot on!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You counted all the dots and got eleven! That is exactly right.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You counted them all and got eleven! Fantastic job counting those dots!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

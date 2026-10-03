@@ -1,0 +1,2730 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    25
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    25
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    25
+   ],
+   "no_change_before_receipt": [
+    0,
+    20
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "di-math-facts.answer_fact",
+   "primitiveId": "di-math-facts",
+   "evalMode": "answer_fact",
+   "keys": [
+    "five"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dimf-1-4p1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "five"
+      ],
+      "ask": "What is four plus one?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "My turn: one plus two is three. Your turn: what is four plus one?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: one plus two is three. Now your turn: what is four plus one?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: one plus two is three. Now your turn: what is four plus one?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: one plus two is three. Now your turn: what is four plus one?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: one plus two is three. Now your turn: what is four plus one?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "dimf-1-4p1",
+     "trigger": "two",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "five"
+      ],
+      "ask": "What is four plus one?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look, now there are dots under the numbers to help us count! What is four plus one?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "dot_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Look, now there are dots under the numbers\u2014count all the dots to find four plus one!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "dot_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the dots under the numbers. Count all the dots to find four plus one.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "dot_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Look, now there are dots under the numbers\u2014count them all up!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "dot_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I put dots under the numbers to help count them all. What is four plus one?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "dot_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dimf-1-4p1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "five"
+      ],
+      "ask": "What is four plus one?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look, dots appeared under each number! You can count all the dots to find what four plus one makes.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "dot_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look, dots appeared under each number! Count all the dots to find four plus one.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "dot_model",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look, dots appeared under each number! Can you count all the dots to find four plus one?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "dot_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Dots appeared under each number to help. What do you get if you count all the dots?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "dot_model",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Dots just appeared under the numbers for you to count! What do you get when you count them all together?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "dot_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "dimf-1-4p1",
+     "trigger": "The learner said they were stuck, so the host pulled dot_model (help). It is on screen now: Puts dots under each printed number, one group per number. The total is never drawn: let the learner count them all. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it ",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "five"
+      ],
+      "ask": "What is four plus one?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "There are dots under the four and a dot under the one! You can count all of them together to see what four plus one makes.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under the numbers\u2014there are dots below each one! Count up all the dots, and tell me what four plus one makes.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There are dots under each number now. What does four plus one make?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There are dots right under each number on your screen! Try counting all the dots to see what four plus one makes.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There are dots under each number now. What does four plus one make?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "dimf-1-4p1",
+     "trigger": "five",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "five"
+      ],
+      "ask": "What is four plus one?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You found five!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it, four plus one is five!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You said five, and four plus one is five!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it, four plus one is five!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! Four plus one is five.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "di-math-facts.counting_next",
+   "primitiveId": "di-math-facts",
+   "evalMode": "counting_next",
+   "keys": [
+    "four"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dimf-1-n3",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "four"
+      ],
+      "ask": "What is the number after three?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "My turn: the number after one is two. Now your turn: what is the number after three?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: the number after one is two. Now your turn: what is the number after three?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: the number after one is two. Now your turn: what is the number after three?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: the number after one is two. Now your turn: what is the number after three?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: the number after one is two. Your turn: what is the number after three?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "dimf-1-n3",
+     "trigger": "one",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "four"
+      ],
+      "ask": "What is the number after three?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the number path: one, two, three... what number goes in the box?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "number_path"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the number path: one, two, three, then an empty box. What number goes in the empty box?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "number_path",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is a number path with an empty box right after three. What number goes in that empty box?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "number_path"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, now there is a number path showing the numbers before three, then three, then an empty box. What number goes right into that box?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "number_path"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Look at the numbers leading up to the empty box, and tell me what number goes in the box.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "number_path",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dimf-1-n3",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "four"
+      ],
+      "ask": "What is the number after three?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A number line just popped up to help us! When we count one, two, three... what comes next?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "number_path"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Here is a number path with the numbers before three, then three, then an empty box. What number comes next to fill the box?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "number_path",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A number path popped up showing the numbers leading up to three, followed by an empty box. What number comes right after three to fill the box?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "number_path"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A number line just popped up showing the numbers leading right up to three, with an empty box next. What number comes after three?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "number_path",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A number line popped up showing one, two, three, and an empty box. What number comes right after three?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "number_path"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "dimf-1-n3",
+     "trigger": "The learner said they were stuck, so the host pulled number_path (help). It is on screen now: Shows the numbers just before the printed one, then it, then an empty box. Let the learner say what goes in the box. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work i",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "four"
+      ],
+      "ask": "What is the number after three?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "There is a number path on your screen showing the numbers before three and an empty box right after it. What number belongs in that empty box?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is a number path on your screen now with an empty box right after three. What number goes into that box?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right next to the three: there is a number path with an empty box at the end. What number goes inside that box?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is a number path on your screen showing the numbers up to three, with an empty box right after it. What number goes in that empty box?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is a number path on your screen showing the numbers up to three and an empty box right after it. What number goes inside that empty box?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "dimf-1-n3",
+     "trigger": "four",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "four"
+      ],
+      "ask": "What is the number after three?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You said four, and four is the number after three.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! Four is the number after three.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! Four is the number after three.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it, four is the number right after three!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! Four is the number after three.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "di-math-facts.fact_review",
+   "primitiveId": "di-math-facts",
+   "evalMode": "fact_review",
+   "keys": [
+    "four"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dimf-1-1p3",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "four"
+      ],
+      "ask": "What is one plus three?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "My turn: one plus five is six. \n\nNow your turn: what is one plus three?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: one plus five is six. \n\nNow your turn: what is one plus three?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: one plus five is six. \n\nNow your turn: what is one plus three?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: one plus five is six. \n\nWhat is one plus three?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: one plus five is six. \n\nNow your turn: what is one plus three?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "dimf-1-1p3",
+     "trigger": "one",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "four"
+      ],
+      "ask": "What is one plus three?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "There are dots under the numbers now. Count all the dots to find one plus three.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "dot_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, now there are dots under the numbers to help us count them all together. Try counting all the dots to find one plus three.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "dot_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Look, now there are dots under the numbers. Count all the dots to find one plus three!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "dot_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Look, dots appeared under each number! Count all the dots together.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "dot_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I put dots under the numbers to help. \n\nCount all the dots to find what one plus three is!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "dot_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dimf-1-1p3",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "four"
+      ],
+      "ask": "What is one plus three?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the dots under each number. Count all of the dots together!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "dot_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look, dots appeared under each number! Count all the dots together to find one plus three.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "dot_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Dots just appeared under the numbers to help. Count all of the dots to see how many there are.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "dot_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Dots popped up under each number to help you count. Count all the dots together and say what you get!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "dot_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now there are dots under the numbers. Try counting all the dots to find one plus three.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "dot_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "dimf-1-1p3",
+     "trigger": "The learner said they were stuck, so the host pulled dot_model (help). It is on screen now: Puts dots under each printed number, one group per number. The total is never drawn: let the learner count them all. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it ",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "four"
+      ],
+      "ask": "What is one plus three?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look, there are dots under each number now! \n\nTry counting all the dots to find one plus three.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Dots just appeared under the numbers! Count up all the dots to find what one plus three is.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, there are dots under the numbers now! \n\nCount all the dots to find what one plus three is.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There are dots under each number now. Count all the dots to find what one plus three is!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There are now dots under each number to help. Count all of the dots to find what one plus three is!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "dimf-1-1p3",
+     "trigger": "four",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "four"
+      ],
+      "ask": "What is one plus three?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! One plus three is four.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it, four! One plus three is four.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! One plus three is four.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! One plus three is four.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right, one plus three is four!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "di-math-facts.name_numeral",
+   "primitiveId": "di-math-facts",
+   "evalMode": "name_numeral",
+   "keys": [
+    "five"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dimf-1-id5",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "five"
+      ],
+      "ask": "What is this number?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "My turn: this number is three. Now your turn: what is this number?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: this number is three. Now your turn: what is this number?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: this number is three. Now your turn: what is this number?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: this number is three. Now your turn: what is this number?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: this number is three. Now your turn: what is this number?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "dimf-1-id5",
+     "trigger": "two",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "five"
+      ],
+      "ask": "What is this number?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "That is not two. Try again: what is this number?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That is not two. Try again, what is this number?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That is not two. Try again, what is this number?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite two. Try this number again!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That is not two. Give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dimf-1-id5",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "five"
+      ],
+      "ask": "What is this number?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You can do this! Take a look at the shape of this number and give it your best guess.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "That is okay, we can do it together! Look closely at the number with the hat and the round tummy, and give it your best guess.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "You can do it! Take a look at the shape of this number and give it your best guess.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Take a look at the card. What number do you see?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "That's okay, take your time! What number do you think this is?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "dimf-1-id5",
+     "trigger": "five",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "five"
+      ],
+      "ask": "What is this number?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it, that number is five!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You named the number five.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You named the number five!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You named the number five.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You named the number five!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "di-math-facts.subtraction_fact",
+   "primitiveId": "di-math-facts",
+   "evalMode": "subtraction_fact",
+   "keys": [
+    "1"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dimf-1-2m1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "1"
+      ],
+      "ask": "What is two minus one?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "My turn: five minus two is three. Your turn: what is two minus one?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: five minus two is three. Your turn: what is two minus one?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: five minus two is three. Your turn: what is two minus one?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: five minus two is three. Now your turn: what is two minus one?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: five minus two is three. Your turn: what is two minus one?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "dimf-1-2m1",
+     "trigger": "five",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "1"
+      ],
+      "ask": "What is two minus one?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Now you can see dots showing the starting amount, with the amount taken away crossed out. Try again: what is two minus one?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "take_away_dots",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Now you can see dots with one crossed out to help. What is two minus one?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "take_away_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, dots appeared with one crossed out to show taking away. Try again: what is two minus one?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "take_away_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the dots: we have two dots and cross one out. What is two minus one?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "take_away_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the dots showing two with one crossed out. What is two minus one?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "take_away_dots",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dimf-1-2m1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "1"
+      ],
+      "ask": "What is two minus one?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the screen: there are two dots, and one dot is crossed out. How many dots are left?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "take_away_dots",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The dots are drawn with the amount taken away crossed out. How many dots are left?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "take_away_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the screen: there are two dots, and one is crossed out. How many dots are left?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "take_away_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Dots are now shown with one crossed out to help you see taking away. What is two minus one?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "take_away_dots",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the picture: the dots show the starting amount, and the crossed-out dots show taking away. How many dots are left?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "take_away_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "dimf-1-2m1",
+     "trigger": "The learner said they were stuck, so the host pulled take_away_dots (help). It is on screen now: Shows the first number as dots with the amount taken away crossed out. What is left is not counted for them. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it thr",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "1"
+      ],
+      "ask": "What is two minus one?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the dots on the screen: there are two dots to start, and one dot is crossed out. How many dots are left?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The screen now shows two dots, and one dot is crossed out. How many dots are left?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the screen: you can see two dots, and one dot is crossed out. How many dots are left?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look beside the problem: two dots are drawn, and one of them is crossed out. How many dots are left?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the screen: there are two dots, and one dot is crossed out. What is two minus one?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "dimf-1-2m1",
+     "trigger": "one",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "1"
+      ],
+      "ask": "What is two minus one?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You said one, and two minus one is one.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You said one, and two minus one is one.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You said one, and two minus one is one.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! Two minus one is one!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You said one!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

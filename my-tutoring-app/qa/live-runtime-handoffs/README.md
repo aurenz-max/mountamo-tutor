@@ -1,6 +1,8 @@
 # Live runtime adoption handoffs
 
-**Next (2026-09-29, after 23-25 shipped):** [23 step 2: M2 spoken modes](23-m1-live-gate-and-m2-spoken.md) · [26: Live gates, literacy L1-L3 + knowledge-check](26-live-gates-literacy-and-kc.md) · [27: RP-2, verdict from the learner's words + LB-15](27-rp2-spoken-verdict-from-words.md) (done 09-29, `c7caf1db` + `50c9730b`) · [28: content defects batch](28-content-defects-batch.md).
+**Next (2026-09-29, after 23-28 shipped), in parallel:** [29: J12, close past Live findings at their class](29-m2-live-and-small-closes.md) · [30: M3 operations levers](30-m3-operations-levers.md) · [32: M4 levers](32-m4-levers.md) · 31 (RP-2 pilots) PARKED.
+
+**Done 09-29:** [23 step 2: M2 spoken modes](23-m1-live-gate-and-m2-spoken.md) · [26: Live gates, literacy L1-L3 + knowledge-check](26-live-gates-literacy-and-kc.md) · [27: RP-2, verdict from the learner's words + LB-15](27-rp2-spoken-verdict-from-words.md) (done 09-29, `c7caf1db` + `50c9730b`) · [28: content defects batch](28-content-defects-batch.md).
 
 **Earlier, 09-29:** [23: M1 Live gate, then M2 spoken modes](23-m1-live-gate-and-m2-spoken.md) · [24: literacy, measure then finish](24-literacy-measure-and-finish.md) · [25: knowledge-check levers](25-knowledge-check-levers.md). Runtime lane still open: handoff 20 RP-2 build.
 

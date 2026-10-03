@@ -33,7 +33,7 @@ All modes levered: base-ten-blocks, fraction-circles, place-value-chart, compari
    them. Measure first (payloads, Flash only, as S1b did for math); some already have levers.
 3. **Three math primitives are in no class:** sorting-station (7 modes), shape-sorter (4), 3d-shape-explorer (5).
 4. **knowledge-check** (every subject, 60 misses) has none; its text options need a `near|far` tag first.
-5. **DI (10 families)** has its own correction procedure ("my turn"). Whether in-item levers apply is a user call.
+5. **DI (10 families)**: RULED 10-02, DI gets in-item levers; "my turn" (deleted in LA-14 S5) returns as a parallel-item model lever. Pilot: `di-math-facts-lever-table-2026-10-02.md`.
 
 ## Priority
 
@@ -44,4 +44,4 @@ All modes levered: base-ten-blocks, fraction-circles, place-value-chart, compari
 | P3 | knowledge-check (`near|far` tag, then `drop_far_choice`) | appears in every lesson of every subject | `/add-support-tiers` · handoff 21 core |
 | P4 | M3 operations: addition-subtraction-scene, equation-builder (RP-4 first), math-fact-fluency (no simplify on speed_round), bar-model (12 modes), strategy-picker | 32 modes, core K-2 arithmetic | `/add-support-tiers` · handoff 21 |
 | P5 | M4 + the unclassed three: pattern-builder, hundreds-chart, spatial-scene (RP-5 first), coin-counter, number-tracer, sorting-station, shape-sorter, 3d-shape-explorer; balance-scale needs a miss function first | | `/add-support-tiers` · handoff 21 |
-| — | DI family, science, history, calendar | user ruling on DI; others later | — |
+| — | DI family (ruled 10-02, pilot di-math-facts), science, history, calendar | | `/add-support-tiers` |

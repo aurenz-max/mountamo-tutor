@@ -84,6 +84,7 @@
 
 | spatial-scene | 7 | 6 | 1 | 2026-09-09 | [fixed-perspective spoken mode + seven-mode live pass](eval-reports/spatial-scene-2026-09-09.md); inherited SS-5 identify hint leak remains open. |
 | spatial-path | 1 (L0) | 1 | 0 | 2026-09-09 | [L0 choose-route eval](eval-reports/spatial-path-2026-09-09.md): five route relations, shared endpoints, geometry scoring, hidden key, and selected-path replay pass. |
+| addition-fact-strategies | 6 (L1) | 6 | 0 | 2026-10-03 | [L1 per-mode eval](eval-reports/addition-fact-strategies-2026-10-03.md): all 6 modes pass (mode beats topic, band from topic, sums/pools/leak guards correct). AF-1 HIGH (challenge `type` was `recall`, not the strategy) opened and closed 2026-10-03. |
 | planetary-explorer | 4 | 4 | 0 | 2026-04-05 | [report](eval-reports/planetary-explorer-2026-04-04.md) |
 | construction-sequence-planner | 4 | 4 | 0 | 2026-04-05 | [report](eval-reports/construction-sequence-planner-2026-04-05.md) |
 | read-aloud-studio | 0 | 0 | 0 | 2026-04-05 | [report](eval-reports/read-aloud-studio-2026-04-05.md) |

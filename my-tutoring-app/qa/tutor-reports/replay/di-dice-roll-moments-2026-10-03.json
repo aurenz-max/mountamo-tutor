@@ -1,0 +1,3019 @@
+{
+ "lessonEntry": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+ "records": [
+  {
+   "payload": "di-dice-roll.compare_dice",
+   "primitiveId": "di-dice-roll",
+   "evalMode": "compare_dice",
+   "guidance": "The dice stay covered until the child taps them to roll; the roll is theirs, and there is nothing to answer before it, so ask them to roll first. Then the child answers OUT LOUD: how many dots, which die has more (left, right, or same), or how many dots altogether. No number is printed. Counting aloud and ending on the right number is an answer. A different number is wrong however close. Never model this roll: your model is the model_roll lever, a different roll solved beside it. You cannot roll, change a die or count for the child. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Counting the dots on a die",
+   "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+   "leakTokens": [
+    "DICE_ITEM",
+    "DICE_MOVE_ON",
+    "DICE_COMPLETE"
+   ],
+   "ask": "Tap both dice to roll them. Say which has more: left, right, or same.",
+   "keys": [
+    "\"left\" (also accept \"the left one\" or \"the left die\")"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "didr-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-dice-roll",
+      "objectiveId": "di-dice-roll-practice",
+      "evalMode": "compare_dice",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "didr-1",
+       "phase": "working",
+       "task": "Tap both dice to roll them. Say which has more: left, right, or same.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "compare_dice",
+        "rolled": "no",
+        "constraints": "The dice are still covered. The learner taps them to roll; there is nothing to answer until then, and you cannot roll for them.",
+        "onScreen": "Beside the dice, a model card shows a different roll, solved: a pair of dice with four dots and six dots; a star marks the right die, which has more. It is not this roll.",
+        "response": "speech",
+        "presentation": "not ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "dice",
+          "selected": false,
+          "group": "assignment target",
+          "label": "two dice, left and right"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_roll",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "other_die",
+           "said_same",
+           "picked_a_side",
+           "said_number"
+          ],
+          "when": "The learner gave a wrong answer, or does not know how to start.",
+          "does": "Shows a small card beside the dice with a DIFFERENT roll, solved (onScreen names it). Say it as your turn (\"My turn: …\"), then ask about the learner's own dice again. Never say what the model means for their dice."
+         },
+         {
+          "id": "far_pair",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "other_die",
+           "said_same"
+          ],
+          "when": "These two are too close to tell apart yet.",
+          "does": "Opens an easier roll of the same kind first; the learner rolls it. It is not graded; the full roll comes back after it."
+         }
+        ],
+        "expectedAnswer": "\"left\" (also accept \"the left one\" or \"the left die\")",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "didr-1",
+        "secondsOnItem": 4,
+        "secondsSinceReady": null,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "didr-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-dice-roll",
+      "objectiveId": "di-dice-roll-practice",
+      "evalMode": "compare_dice",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "didr-1",
+       "phase": "working",
+       "task": "Tap both dice to roll them. Say which has more: left, right, or same.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "compare_dice",
+        "rolled": "yes",
+        "constraints": "The learner rolled the dice; the dots are showing and no number is printed. The learner answers aloud.",
+        "onScreen": "Beside the dice, a model card shows a different roll, solved: a pair of dice with four dots and six dots; a star marks the right die, which has more. It is not this roll.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "dice",
+          "selected": false,
+          "group": "assignment target",
+          "label": "two dice, left and right"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_roll",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "other_die",
+           "said_same",
+           "picked_a_side",
+           "said_number"
+          ],
+          "when": "The learner gave a wrong answer, or does not know how to start.",
+          "does": "Shows a small card beside the dice with a DIFFERENT roll, solved (onScreen names it). Say it as your turn (\"My turn: …\"), then ask about the learner's own dice again. Never say what the model means for their dice."
+         },
+         {
+          "id": "far_pair",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "other_die",
+           "said_same"
+          ],
+          "when": "These two are too close to tell apart yet.",
+          "does": "Opens an easier roll of the same kind first; the learner rolls it. It is not graded; the full roll comes back after it."
+         }
+        ],
+        "expectedAnswer": "\"left\" (also accept \"the left one\" or \"the left die\")",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "right"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/2/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "didr-1",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "right",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "didr-1",
+       "revision": 2
+      },
+      "task": "Tap both dice to roll them. Say which has more: left, right, or same.",
+      "phase": "working",
+      "learner": "right",
+      "expectedAnswer": "\"left\" (also accept \"the left one\" or \"the left die\")",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "right"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [
+        {
+         "id": "dice",
+         "selected": false,
+         "group": "assignment target",
+         "label": "two dice, left and right"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "compare_dice",
+        "rolled": "yes",
+        "constraints": "The learner rolled the dice; the dots are showing and no number is printed. The learner answers aloud.",
+        "onScreen": "Beside the dice, a model card shows a different roll, solved: a pair of dice with four dots and six dots; a star marks the right die, which has more. It is not this roll.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "didr-1"
+      },
+      "task": "Tap both dice to roll them. Say which has more: left, right, or same.",
+      "expectedAnswer": "\"left\" (also accept \"the left one\" or \"the left die\")",
+      "learner": "right",
+      "misses": [
+       {
+        "id": "other_die",
+        "pattern": "The left die shows 3 dots and the right die shows 1 dot. The learner's answer is right, the die with fewer dots.",
+        "examples": [
+         "right",
+         "the right one"
+        ]
+       },
+       {
+        "id": "said_same",
+        "pattern": "The left die shows 3 dots and the right die shows 1 dot. The learner's answer is that they are the same.",
+        "examples": [
+         "same"
+        ]
+       },
+       {
+        "id": "said_number",
+        "pattern": "The left die shows 3 dots and the right die shows 1 dot. The learner says a number (3 or 1) and not left, right or same.",
+        "examples": [
+         "three"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "didr-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-dice-roll",
+      "objectiveId": "di-dice-roll-practice",
+      "evalMode": "compare_dice",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "didr-1",
+       "phase": "working",
+       "task": "Tap both dice to roll them. Say which has more: left, right, or same.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "right",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "compare_dice",
+        "rolled": "yes",
+        "constraints": "The learner rolled the dice; the dots are showing and no number is printed. The learner answers aloud.",
+        "onScreen": "Beside the dice, a model card shows a different roll, solved: a pair of dice with four dots and six dots; a star marks the right die, which has more. It is not this roll.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "dice",
+          "selected": false,
+          "group": "assignment target",
+          "label": "two dice, left and right"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_roll",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "other_die",
+           "said_same",
+           "picked_a_side",
+           "said_number"
+          ],
+          "when": "The learner gave a wrong answer, or does not know how to start.",
+          "does": "Shows a small card beside the dice with a DIFFERENT roll, solved (onScreen names it). Say it as your turn (\"My turn: …\"), then ask about the learner's own dice again. Never say what the model means for their dice."
+         },
+         {
+          "id": "far_pair",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "other_die",
+           "said_same"
+          ],
+          "when": "These two are too close to tell apart yet.",
+          "does": "Opens an easier roll of the same kind first; the learner rolls it. It is not graded; the full roll comes back after it."
+         }
+        ],
+        "expectedAnswer": "\"left\" (also accept \"the left one\" or \"the left die\")",
+        "lastResponse": {
+         "itemId": "didr-1",
+         "response": "right",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "didr-1",
+          "response": "right",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "didr-1",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "didr-1~simpler",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 4,
+      "visibleRevision": 4,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-dice-roll",
+      "objectiveId": "di-dice-roll-practice",
+      "evalMode": "compare_dice",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "didr-1~simpler",
+       "phase": "working",
+       "task": "Tap both dice to roll them. Say which has more: left, right, or same.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "compare_dice",
+        "rolled": "no",
+        "constraints": "The dice are still covered. The learner taps them to roll; there is nothing to answer until then, and you cannot roll for them.",
+        "response": "speech",
+        "presentation": "not ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "dice",
+          "selected": false,
+          "group": "assignment target",
+          "label": "two dice, left and right"
+         }
+        ],
+        "demonstration": [],
+        "practice": {
+         "returnsTo": "didr-1"
+        },
+        "expectedAnswer": "\"right\" (also accept \"the right one\" or \"the right die\")",
+        "lastResponse": null,
+        "attempts": [
+         {
+          "itemId": "didr-1",
+          "response": "right",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "didr-1",
+        "revision": 4,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "far_pair"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/4/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/4/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "didr-1~simpler",
+        "secondsOnItem": 4,
+        "secondsSinceReady": null,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled far_pair (simplify). It is on screen now: Opens an easier roll of the same kind first; the learner rolls it. It is not graded; the full roll comes back after it. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the easier item on screen."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "far_pair",
+      "kind": "simplify",
+      "does": "Opens an easier roll of the same kind first; the learner rolls it. It is not graded; the full roll comes back after it."
+     }
+    }
+   ],
+   "stopped": "a simplify lever opened a practice item"
+  },
+  {
+   "payload": "di-dice-roll.count_pips",
+   "primitiveId": "di-dice-roll",
+   "evalMode": "count_pips",
+   "guidance": "The dice stay covered until the child taps them to roll; the roll is theirs, and there is nothing to answer before it, so ask them to roll first. Then the child answers OUT LOUD: how many dots, which die has more (left, right, or same), or how many dots altogether. No number is printed. Counting aloud and ending on the right number is an answer. A different number is wrong however close. Never model this roll: your model is the model_roll lever, a different roll solved beside it. You cannot roll, change a die or count for the child. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Counting the dots on a die",
+   "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+   "leakTokens": [
+    "DICE_ITEM",
+    "DICE_MOVE_ON",
+    "DICE_COMPLETE"
+   ],
+   "ask": "Tap the die to roll it. Say how many dots you see.",
+   "keys": [
+    "\"three\". counting the dots aloud and ending on three is the answer.",
+    "three"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "didr-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-dice-roll",
+      "objectiveId": "di-dice-roll-practice",
+      "evalMode": "count_pips",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "didr-1",
+       "phase": "working",
+       "task": "Tap the die to roll it. Say how many dots you see.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "count_pips",
+        "rolled": "no",
+        "constraints": "The die is still covered. The learner taps it to roll; there is nothing to answer until then, and you cannot roll for them.",
+        "onScreen": "Beside the dice, a model card shows a different roll, solved: a single die with one dot, answered one. It is not this roll.",
+        "response": "speech",
+        "presentation": "not ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "dice",
+          "selected": false,
+          "group": "assignment target",
+          "label": "one die"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_roll",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gave a wrong answer, or does not know how to start.",
+          "does": "Shows a small card beside the dice with a DIFFERENT roll, solved (onScreen names it). Say it as your turn (\"My turn: …\"), then ask about the learner's own dice again. Never say what the model means for their dice."
+         },
+         {
+          "id": "touch_dots",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over"
+          ],
+          "when": "The learner skips a dot or counts one twice.",
+          "does": "Lets the learner tap each dot as they count it; a tapped dot gets a ring. No numbers."
+         }
+        ],
+        "expectedAnswer": "\"three\". Counting the dots aloud and ending on three is the answer.",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "didr-1",
+        "secondsOnItem": 4,
+        "secondsSinceReady": null,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "didr-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-dice-roll",
+      "objectiveId": "di-dice-roll-practice",
+      "evalMode": "count_pips",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "didr-1",
+       "phase": "working",
+       "task": "Tap the die to roll it. Say how many dots you see.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "count_pips",
+        "rolled": "yes",
+        "constraints": "The learner rolled the die; the dots are showing and no number is printed. The learner answers aloud.",
+        "onScreen": "Beside the dice, a model card shows a different roll, solved: a single die with one dot, answered one. It is not this roll.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "dice",
+          "selected": false,
+          "group": "assignment target",
+          "label": "one die"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_roll",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gave a wrong answer, or does not know how to start.",
+          "does": "Shows a small card beside the dice with a DIFFERENT roll, solved (onScreen names it). Say it as your turn (\"My turn: …\"), then ask about the learner's own dice again. Never say what the model means for their dice."
+         },
+         {
+          "id": "touch_dots",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over"
+          ],
+          "when": "The learner skips a dot or counts one twice.",
+          "does": "Lets the learner tap each dot as they count it; a tapped dot gets a ring. No numbers."
+         }
+        ],
+        "expectedAnswer": "\"three\". Counting the dots aloud and ending on three is the answer.",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "two"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/2/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "didr-1",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "two",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "didr-1",
+       "revision": 2
+      },
+      "task": "Tap the die to roll it. Say how many dots you see.",
+      "phase": "working",
+      "learner": "two",
+      "expectedAnswer": "\"three\". Counting the dots aloud and ending on three is the answer.",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "two"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [
+        {
+         "id": "dice",
+         "selected": false,
+         "group": "assignment target",
+         "label": "one die"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "count_pips",
+        "rolled": "yes",
+        "constraints": "The learner rolled the die; the dots are showing and no number is printed. The learner answers aloud.",
+        "onScreen": "Beside the dice, a model card shows a different roll, solved: a single die with one dot, answered one. It is not this roll.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "didr-1"
+      },
+      "task": "Tap the die to roll it. Say how many dots you see.",
+      "expectedAnswer": "\"three\". Counting the dots aloud and ending on three is the answer.",
+      "learner": "two",
+      "misses": [
+       {
+        "id": "skipped_a_number",
+        "pattern": "The learner counts aloud and leaves a number out of the counting sequence, whatever number they end on.",
+        "examples": [
+         "one, two, four"
+        ]
+       },
+       {
+        "id": "one_short",
+        "pattern": "The learner's answer is 2, one fewer than the 3 dots on the die.",
+        "examples": [
+         "two"
+        ]
+       },
+       {
+        "id": "one_over",
+        "pattern": "The learner's answer is 4, one more than the 3 dots on the die.",
+        "examples": [
+         "four"
+        ]
+       },
+       {
+        "id": "short_by_more",
+        "pattern": "The learner's answer is 1 or fewer (but more than zero), two or more fewer than the 3 dots on the die.",
+        "examples": [
+         "one"
+        ]
+       },
+       {
+        "id": "over_by_more",
+        "pattern": "The learner's answer is 5 or more, two or more more than the 3 dots on the die.",
+        "examples": [
+         "five"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "didr-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-dice-roll",
+      "objectiveId": "di-dice-roll-practice",
+      "evalMode": "count_pips",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "didr-1",
+       "phase": "working",
+       "task": "Tap the die to roll it. Say how many dots you see.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "two",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "count_pips",
+        "rolled": "yes",
+        "constraints": "The learner rolled the die; the dots are showing and no number is printed. The learner answers aloud.",
+        "onScreen": "Beside the dice, a model card shows a different roll, solved: a single die with one dot, answered one. It is not this roll.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "dice",
+          "selected": false,
+          "group": "assignment target",
+          "label": "one die"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_roll",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gave a wrong answer, or does not know how to start.",
+          "does": "Shows a small card beside the dice with a DIFFERENT roll, solved (onScreen names it). Say it as your turn (\"My turn: …\"), then ask about the learner's own dice again. Never say what the model means for their dice."
+         },
+         {
+          "id": "touch_dots",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over"
+          ],
+          "when": "The learner skips a dot or counts one twice.",
+          "does": "Lets the learner tap each dot as they count it; a tapped dot gets a ring. No numbers."
+         }
+        ],
+        "expectedAnswer": "\"three\". Counting the dots aloud and ending on three is the answer.",
+        "lastResponse": {
+         "itemId": "didr-1",
+         "response": "two",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "didr-1",
+          "response": "two",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "didr-1",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "didr-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 4,
+      "visibleRevision": 4,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-dice-roll",
+      "objectiveId": "di-dice-roll-practice",
+      "evalMode": "count_pips",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "didr-1",
+       "phase": "working",
+       "task": "Tap the die to roll it. Say how many dots you see.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "two",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "count_pips",
+        "rolled": "yes",
+        "constraints": "The learner rolled the die; the dots are showing and no number is printed. The learner answers aloud.",
+        "onScreen": "Beside the dice, a model card shows a different roll, solved: a single die with one dot, answered one. It is not this roll. The dots on the learner's dice can be tapped; each tapped dot gets a ring.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "dice",
+          "selected": false,
+          "group": "assignment target",
+          "label": "one die"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_roll",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gave a wrong answer, or does not know how to start.",
+          "does": "Shows a small card beside the dice with a DIFFERENT roll, solved (onScreen names it). Say it as your turn (\"My turn: …\"), then ask about the learner's own dice again. Never say what the model means for their dice."
+         },
+         {
+          "id": "touch_dots",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over"
+          ],
+          "when": "The learner skips a dot or counts one twice.",
+          "does": "Lets the learner tap each dot as they count it; a tapped dot gets a ring. No numbers."
+         }
+        ],
+        "expectedAnswer": "\"three\". Counting the dots aloud and ending on three is the answer.",
+        "lastResponse": {
+         "itemId": "didr-1",
+         "response": "two",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "didr-1",
+          "response": "two",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "didr-1",
+        "revision": 4,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "touch_dots"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/4/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/4/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "didr-1",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled touch_dots (help). It is on screen now: Lets the learner tap each dot as they count it; a tapped dot gets a ring. No numbers. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "touch_dots",
+      "kind": "help",
+      "does": "Lets the learner tap each dot as they count it; a tapped dot gets a ring. No numbers."
+     }
+    },
+    {
+     "kind": "credit",
+     "itemId": "didr-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 4,
+      "visibleRevision": 4,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-dice-roll",
+      "objectiveId": "di-dice-roll-practice",
+      "evalMode": "count_pips",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "didr-1",
+       "phase": "working",
+       "task": "Tap the die to roll it. Say how many dots you see.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "two",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "count_pips",
+        "rolled": "yes",
+        "constraints": "The learner rolled the die; the dots are showing and no number is printed. The learner answers aloud.",
+        "onScreen": "Beside the dice, a model card shows a different roll, solved: a single die with one dot, answered one. It is not this roll. The dots on the learner's dice can be tapped; each tapped dot gets a ring.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "dice",
+          "selected": false,
+          "group": "assignment target",
+          "label": "one die"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_roll",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gave a wrong answer, or does not know how to start.",
+          "does": "Shows a small card beside the dice with a DIFFERENT roll, solved (onScreen names it). Say it as your turn (\"My turn: …\"), then ask about the learner's own dice again. Never say what the model means for their dice."
+         },
+         {
+          "id": "touch_dots",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over"
+          ],
+          "when": "The learner skips a dot or counts one twice.",
+          "does": "Lets the learner tap each dot as they count it; a tapped dot gets a ring. No numbers."
+         }
+        ],
+        "expectedAnswer": "\"three\". Counting the dots aloud and ending on three is the answer.",
+        "pendingResponse": {
+         "id": "speech:1:2",
+         "text": "three"
+        },
+        "lastResponse": {
+         "itemId": "didr-1",
+         "response": "two",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "didr-1",
+          "response": "two",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "didr-1",
+        "revision": 4,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "touch_dots"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/4/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/4/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "didr-1",
+        "secondsOnItem": 20,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "three",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "didr-1",
+       "revision": 4
+      },
+      "task": "Tap the die to roll it. Say how many dots you see.",
+      "phase": "working",
+      "learner": "three",
+      "expectedAnswer": "\"three\". Counting the dots aloud and ending on three is the answer.",
+      "pendingResponse": {
+       "id": "speech:1:2",
+       "text": "three"
+      },
+      "lastResponse": {
+       "itemId": "didr-1",
+       "response": "two",
+       "source": "speech",
+       "correct": false,
+       "tutorResponse": "Not quite.",
+       "judgment": "tutor",
+       "assisted": false,
+       "answerExposure": "none"
+      },
+      "activity": {
+       "responseSource": "speech",
+       "attemptNumber": 1,
+       "objects": [
+        {
+         "id": "dice",
+         "selected": false,
+         "group": "assignment target",
+         "label": "one die"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "count_pips",
+        "rolled": "yes",
+        "constraints": "The learner rolled the die; the dots are showing and no number is printed. The learner answers aloud.",
+        "onScreen": "Beside the dice, a model card shows a different roll, solved: a single die with one dot, answered one. It is not this roll. The dots on the learner's dice can be tapped; each tapped dot gets a ring.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 2,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "didr-1"
+      },
+      "task": "Tap the die to roll it. Say how many dots you see.",
+      "expectedAnswer": "\"three\". Counting the dots aloud and ending on three is the answer.",
+      "learner": "three",
+      "misses": [
+       {
+        "id": "skipped_a_number",
+        "pattern": "The learner counts aloud and leaves a number out of the counting sequence, whatever number they end on.",
+        "examples": [
+         "one, two, four"
+        ]
+       },
+       {
+        "id": "one_short",
+        "pattern": "The learner's answer is 2, one fewer than the 3 dots on the die.",
+        "examples": [
+         "two"
+        ]
+       },
+       {
+        "id": "one_over",
+        "pattern": "The learner's answer is 4, one more than the 3 dots on the die.",
+        "examples": [
+         "four"
+        ]
+       },
+       {
+        "id": "short_by_more",
+        "pattern": "The learner's answer is 1 or fewer (but more than zero), two or more fewer than the 3 dots on the die.",
+        "examples": [
+         "one"
+        ]
+       },
+       {
+        "id": "over_by_more",
+        "pattern": "The learner's answer is 5 or more, two or more more than the 3 dots on the die.",
+        "examples": [
+         "five"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    }
+   ]
+  },
+  {
+   "payload": "di-dice-roll.sum_two_dice",
+   "primitiveId": "di-dice-roll",
+   "evalMode": "sum_two_dice",
+   "guidance": "The dice stay covered until the child taps them to roll; the roll is theirs, and there is nothing to answer before it, so ask them to roll first. Then the child answers OUT LOUD: how many dots, which die has more (left, right, or same), or how many dots altogether. No number is printed. Counting aloud and ending on the right number is an answer. A different number is wrong however close. Never model this roll: your model is the model_roll lever, a different roll solved beside it. You cannot roll, change a die or count for the child. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Counting the dots on a die",
+   "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+   "leakTokens": [
+    "DICE_ITEM",
+    "DICE_MOVE_ON",
+    "DICE_COMPLETE"
+   ],
+   "ask": "Tap both dice to roll them. Say how many dots there are altogether.",
+   "keys": [
+    "\"eleven\". counting all the dots aloud and ending on eleven is the answer.",
+    "eleven"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "didr-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-dice-roll",
+      "objectiveId": "di-dice-roll-practice",
+      "evalMode": "sum_two_dice",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "didr-1",
+       "phase": "working",
+       "task": "Tap both dice to roll them. Say how many dots there are altogether.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "sum_two_dice",
+        "rolled": "no",
+        "constraints": "The dice are still covered. The learner taps them to roll; there is nothing to answer until then, and you cannot roll for them.",
+        "onScreen": "Beside the dice, a model card shows a different roll, solved: a pair of dice with four dots and four dots, eight altogether. It is not this roll.",
+        "response": "speech",
+        "presentation": "not ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "dice",
+          "selected": false,
+          "group": "assignment target",
+          "label": "two dice, left and right"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_roll",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_addend",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gave a wrong answer, or does not know how to start.",
+          "does": "Shows a small card beside the dice with a DIFFERENT roll, solved (onScreen names it). Say it as your turn (\"My turn: …\"), then ask about the learner's own dice again. Never say what the model means for their dice."
+         },
+         {
+          "id": "touch_dots",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over"
+          ],
+          "when": "The learner skips a dot or counts one twice.",
+          "does": "Lets the learner tap each dot as they count it; a tapped dot gets a ring. No numbers."
+         },
+         {
+          "id": "both_bracket",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "said_addend"
+          ],
+          "when": "The learner says the dots on one die only.",
+          "does": "Draws one bracket under both dice: the question is about all the dots on both."
+         },
+         {
+          "id": "smaller_dice",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "said_addend",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "Adding these two dice is too much yet.",
+          "does": "Opens an easier roll of the same kind first; the learner rolls it. It is not graded; the full roll comes back after it."
+         }
+        ],
+        "expectedAnswer": "\"eleven\". Counting all the dots aloud and ending on eleven is the answer.",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "didr-1",
+        "secondsOnItem": 4,
+        "secondsSinceReady": null,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "didr-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-dice-roll",
+      "objectiveId": "di-dice-roll-practice",
+      "evalMode": "sum_two_dice",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "didr-1",
+       "phase": "working",
+       "task": "Tap both dice to roll them. Say how many dots there are altogether.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "sum_two_dice",
+        "rolled": "yes",
+        "constraints": "The learner rolled the dice; the dots are showing and no number is printed. The learner answers aloud.",
+        "onScreen": "Beside the dice, a model card shows a different roll, solved: a pair of dice with four dots and four dots, eight altogether. It is not this roll.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "dice",
+          "selected": false,
+          "group": "assignment target",
+          "label": "two dice, left and right"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_roll",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_addend",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gave a wrong answer, or does not know how to start.",
+          "does": "Shows a small card beside the dice with a DIFFERENT roll, solved (onScreen names it). Say it as your turn (\"My turn: …\"), then ask about the learner's own dice again. Never say what the model means for their dice."
+         },
+         {
+          "id": "touch_dots",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over"
+          ],
+          "when": "The learner skips a dot or counts one twice.",
+          "does": "Lets the learner tap each dot as they count it; a tapped dot gets a ring. No numbers."
+         },
+         {
+          "id": "both_bracket",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "said_addend"
+          ],
+          "when": "The learner says the dots on one die only.",
+          "does": "Draws one bracket under both dice: the question is about all the dots on both."
+         },
+         {
+          "id": "smaller_dice",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "said_addend",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "Adding these two dice is too much yet.",
+          "does": "Opens an easier roll of the same kind first; the learner rolls it. It is not graded; the full roll comes back after it."
+         }
+        ],
+        "expectedAnswer": "\"eleven\". Counting all the dots aloud and ending on eleven is the answer.",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "ten"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/2/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "didr-1",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "ten",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "didr-1",
+       "revision": 2
+      },
+      "task": "Tap both dice to roll them. Say how many dots there are altogether.",
+      "phase": "working",
+      "learner": "ten",
+      "expectedAnswer": "\"eleven\". Counting all the dots aloud and ending on eleven is the answer.",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "ten"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [
+        {
+         "id": "dice",
+         "selected": false,
+         "group": "assignment target",
+         "label": "two dice, left and right"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "sum_two_dice",
+        "rolled": "yes",
+        "constraints": "The learner rolled the dice; the dots are showing and no number is printed. The learner answers aloud.",
+        "onScreen": "Beside the dice, a model card shows a different roll, solved: a pair of dice with four dots and four dots, eight altogether. It is not this roll.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "didr-1"
+      },
+      "task": "Tap both dice to roll them. Say how many dots there are altogether.",
+      "expectedAnswer": "\"eleven\". Counting all the dots aloud and ending on eleven is the answer.",
+      "learner": "ten",
+      "misses": [
+       {
+        "id": "said_addend",
+        "pattern": "The left die shows 5 dots and the right die shows 6 dots. The learner's answer is 5 or 6, the dots on one die, not both together.",
+        "examples": [
+         "five",
+         "six"
+        ]
+       },
+       {
+        "id": "one_short",
+        "pattern": "The learner's answer is 10, one fewer than the 11 dots on both dice together.",
+        "examples": [
+         "ten"
+        ]
+       },
+       {
+        "id": "one_over",
+        "pattern": "The learner's answer is 12, one more than the 11 dots on both dice together.",
+        "examples": [
+         "twelve"
+        ]
+       },
+       {
+        "id": "short_by_more",
+        "pattern": "The learner's answer is 9 or fewer (but more than zero), two or more fewer than the 11 dots on both dice together.",
+        "examples": [
+         "nine"
+        ]
+       },
+       {
+        "id": "over_by_more",
+        "pattern": "The learner's answer is 13 or more, two or more more than the 11 dots on both dice together.",
+        "examples": [
+         "thirteen"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "didr-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-dice-roll",
+      "objectiveId": "di-dice-roll-practice",
+      "evalMode": "sum_two_dice",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "didr-1",
+       "phase": "working",
+       "task": "Tap both dice to roll them. Say how many dots there are altogether.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "ten",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "sum_two_dice",
+        "rolled": "yes",
+        "constraints": "The learner rolled the dice; the dots are showing and no number is printed. The learner answers aloud.",
+        "onScreen": "Beside the dice, a model card shows a different roll, solved: a pair of dice with four dots and four dots, eight altogether. It is not this roll.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "dice",
+          "selected": false,
+          "group": "assignment target",
+          "label": "two dice, left and right"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_roll",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_addend",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gave a wrong answer, or does not know how to start.",
+          "does": "Shows a small card beside the dice with a DIFFERENT roll, solved (onScreen names it). Say it as your turn (\"My turn: …\"), then ask about the learner's own dice again. Never say what the model means for their dice."
+         },
+         {
+          "id": "touch_dots",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over"
+          ],
+          "when": "The learner skips a dot or counts one twice.",
+          "does": "Lets the learner tap each dot as they count it; a tapped dot gets a ring. No numbers."
+         },
+         {
+          "id": "both_bracket",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "said_addend"
+          ],
+          "when": "The learner says the dots on one die only.",
+          "does": "Draws one bracket under both dice: the question is about all the dots on both."
+         },
+         {
+          "id": "smaller_dice",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "said_addend",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "Adding these two dice is too much yet.",
+          "does": "Opens an easier roll of the same kind first; the learner rolls it. It is not graded; the full roll comes back after it."
+         }
+        ],
+        "expectedAnswer": "\"eleven\". Counting all the dots aloud and ending on eleven is the answer.",
+        "lastResponse": {
+         "itemId": "didr-1",
+         "response": "ten",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "didr-1",
+          "response": "ten",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "didr-1",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "didr-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 4,
+      "visibleRevision": 4,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-dice-roll",
+      "objectiveId": "di-dice-roll-practice",
+      "evalMode": "sum_two_dice",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "didr-1",
+       "phase": "working",
+       "task": "Tap both dice to roll them. Say how many dots there are altogether.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "ten",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "sum_two_dice",
+        "rolled": "yes",
+        "constraints": "The learner rolled the dice; the dots are showing and no number is printed. The learner answers aloud.",
+        "onScreen": "Beside the dice, a model card shows a different roll, solved: a pair of dice with four dots and four dots, eight altogether. It is not this roll. The dots on the learner's dice can be tapped; each tapped dot gets a ring.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "dice",
+          "selected": false,
+          "group": "assignment target",
+          "label": "two dice, left and right"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_roll",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_addend",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gave a wrong answer, or does not know how to start.",
+          "does": "Shows a small card beside the dice with a DIFFERENT roll, solved (onScreen names it). Say it as your turn (\"My turn: …\"), then ask about the learner's own dice again. Never say what the model means for their dice."
+         },
+         {
+          "id": "touch_dots",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over"
+          ],
+          "when": "The learner skips a dot or counts one twice.",
+          "does": "Lets the learner tap each dot as they count it; a tapped dot gets a ring. No numbers."
+         },
+         {
+          "id": "both_bracket",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "said_addend"
+          ],
+          "when": "The learner says the dots on one die only.",
+          "does": "Draws one bracket under both dice: the question is about all the dots on both."
+         },
+         {
+          "id": "smaller_dice",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "said_addend",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "Adding these two dice is too much yet.",
+          "does": "Opens an easier roll of the same kind first; the learner rolls it. It is not graded; the full roll comes back after it."
+         }
+        ],
+        "expectedAnswer": "\"eleven\". Counting all the dots aloud and ending on eleven is the answer.",
+        "lastResponse": {
+         "itemId": "didr-1",
+         "response": "ten",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "didr-1",
+          "response": "ten",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "didr-1",
+        "revision": 4,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "touch_dots"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/4/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/4/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/4/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "didr-1",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled touch_dots (help). It is on screen now: Lets the learner tap each dot as they count it; a tapped dot gets a ring. No numbers. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "touch_dots",
+      "kind": "help",
+      "does": "Lets the learner tap each dot as they count it; a tapped dot gets a ring. No numbers."
+     }
+    },
+    {
+     "kind": "credit",
+     "itemId": "didr-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 4,
+      "visibleRevision": 4,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-dice-roll",
+      "objectiveId": "di-dice-roll-practice",
+      "evalMode": "sum_two_dice",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "didr-1",
+       "phase": "working",
+       "task": "Tap both dice to roll them. Say how many dots there are altogether.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "ten",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "sum_two_dice",
+        "rolled": "yes",
+        "constraints": "The learner rolled the dice; the dots are showing and no number is printed. The learner answers aloud.",
+        "onScreen": "Beside the dice, a model card shows a different roll, solved: a pair of dice with four dots and four dots, eight altogether. It is not this roll. The dots on the learner's dice can be tapped; each tapped dot gets a ring.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "dice",
+          "selected": false,
+          "group": "assignment target",
+          "label": "two dice, left and right"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_roll",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_addend",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gave a wrong answer, or does not know how to start.",
+          "does": "Shows a small card beside the dice with a DIFFERENT roll, solved (onScreen names it). Say it as your turn (\"My turn: …\"), then ask about the learner's own dice again. Never say what the model means for their dice."
+         },
+         {
+          "id": "touch_dots",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "skipped_a_number",
+           "one_short",
+           "one_over"
+          ],
+          "when": "The learner skips a dot or counts one twice.",
+          "does": "Lets the learner tap each dot as they count it; a tapped dot gets a ring. No numbers."
+         },
+         {
+          "id": "both_bracket",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "said_addend"
+          ],
+          "when": "The learner says the dots on one die only.",
+          "does": "Draws one bracket under both dice: the question is about all the dots on both."
+         },
+         {
+          "id": "smaller_dice",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "said_addend",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "Adding these two dice is too much yet.",
+          "does": "Opens an easier roll of the same kind first; the learner rolls it. It is not graded; the full roll comes back after it."
+         }
+        ],
+        "expectedAnswer": "\"eleven\". Counting all the dots aloud and ending on eleven is the answer.",
+        "pendingResponse": {
+         "id": "speech:1:2",
+         "text": "eleven"
+        },
+        "lastResponse": {
+         "itemId": "didr-1",
+         "response": "ten",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "didr-1",
+          "response": "ten",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "didr-1",
+        "revision": 4,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "touch_dots"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/4/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/4/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/4/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "didr-1",
+        "secondsOnItem": 20,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "eleven",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "didr-1",
+       "revision": 4
+      },
+      "task": "Tap both dice to roll them. Say how many dots there are altogether.",
+      "phase": "working",
+      "learner": "eleven",
+      "expectedAnswer": "\"eleven\". Counting all the dots aloud and ending on eleven is the answer.",
+      "pendingResponse": {
+       "id": "speech:1:2",
+       "text": "eleven"
+      },
+      "lastResponse": {
+       "itemId": "didr-1",
+       "response": "ten",
+       "source": "speech",
+       "correct": false,
+       "tutorResponse": "Not quite.",
+       "judgment": "tutor",
+       "assisted": false,
+       "answerExposure": "none"
+      },
+      "activity": {
+       "responseSource": "speech",
+       "attemptNumber": 1,
+       "objects": [
+        {
+         "id": "dice",
+         "selected": false,
+         "group": "assignment target",
+         "label": "two dice, left and right"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "sum_two_dice",
+        "rolled": "yes",
+        "constraints": "The learner rolled the dice; the dots are showing and no number is printed. The learner answers aloud.",
+        "onScreen": "Beside the dice, a model card shows a different roll, solved: a pair of dice with four dots and four dots, eight altogether. It is not this roll. The dots on the learner's dice can be tapped; each tapped dot gets a ring.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 2,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "didr-1"
+      },
+      "task": "Tap both dice to roll them. Say how many dots there are altogether.",
+      "expectedAnswer": "\"eleven\". Counting all the dots aloud and ending on eleven is the answer.",
+      "learner": "eleven",
+      "misses": [
+       {
+        "id": "said_addend",
+        "pattern": "The left die shows 5 dots and the right die shows 6 dots. The learner's answer is 5 or 6, the dots on one die, not both together.",
+        "examples": [
+         "five",
+         "six"
+        ]
+       },
+       {
+        "id": "one_short",
+        "pattern": "The learner's answer is 10, one fewer than the 11 dots on both dice together.",
+        "examples": [
+         "ten"
+        ]
+       },
+       {
+        "id": "one_over",
+        "pattern": "The learner's answer is 12, one more than the 11 dots on both dice together.",
+        "examples": [
+         "twelve"
+        ]
+       },
+       {
+        "id": "short_by_more",
+        "pattern": "The learner's answer is 9 or fewer (but more than zero), two or more fewer than the 11 dots on both dice together.",
+        "examples": [
+         "nine"
+        ]
+       },
+       {
+        "id": "over_by_more",
+        "pattern": "The learner's answer is 13 or more, two or more more than the 11 dots on both dice together.",
+        "examples": [
+         "thirteen"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    }
+   ]
+  }
+ ]
+}

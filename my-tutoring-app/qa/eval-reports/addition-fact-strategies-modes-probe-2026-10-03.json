@@ -1,0 +1,90 @@
+[
+  {
+    "case": "pin plus_zero",
+    "strategy": "plus_zero",
+    "ok": true,
+    "title": "Adding Nothing New",
+    "facts": "6+0 5+0 4+0 0+3 8+0 3+0 1+0 0+4",
+    "log": "[AdditionFactStrategies] modes: plus_zero (explicit) → strategies [plus_zero] → plus_zero"
+  },
+  {
+    "case": "pin plus_one",
+    "strategy": "plus_one",
+    "ok": true,
+    "title": "The Magic Step Up",
+    "facts": "2+1 1+4 7+1 1+6 3+1 6+1 1+7 8+1",
+    "log": "[AdditionFactStrategies] modes: plus_one (explicit) → strategies [plus_one] → plus_one"
+  },
+  {
+    "case": "pin doubles",
+    "strategy": "doubles",
+    "ok": true,
+    "title": "Double the Fun",
+    "facts": "8+8 4+4 9+9 7+7 1+1 2+2 6+6 5+5",
+    "log": "[AdditionFactStrategies] modes: doubles (explicit) → strategies [doubles] → doubles"
+  },
+  {
+    "case": "pin turnaround",
+    "strategy": "turnaround",
+    "ok": true,
+    "title": "Magic Flippy Facts",
+    "facts": "8+1 2+5 4+7 4+9 3+9 6+5 5+9 0+9",
+    "log": "[AdditionFactStrategies] modes: turnaround (explicit) → strategies [turnaround] → turnaround"
+  },
+  {
+    "case": "pin plus_two",
+    "strategy": "plus_two",
+    "ok": true,
+    "title": "Hop and Count",
+    "facts": "2+9 2+4 5+2 2+3 2+6 4+2 2+2 2+5",
+    "log": "[AdditionFactStrategies] modes: plus_two (explicit) → strategies [plus_two] → plus_two"
+  },
+  {
+    "case": "pin big_facts",
+    "strategy": "facts_mixed",
+    "ok": true,
+    "title": "Super Addition Adventure",
+    "facts": "4+8 9+3 9+7 8+7 5+3 4+5 6+8 5+8 8+3 7+8",
+    "log": "[AdditionFactStrategies] modes: big_facts (explicit) → strategies [facts_3_4, facts_5_6, facts_7_8, facts_mixed]"
+  },
+  {
+    "case": "pin big_facts, 7s/8s topic",
+    "strategy": "facts_7_8",
+    "ok": true,
+    "title": "Super Seven and Eight Adventure",
+    "facts": "7+8 8+9 7+9 8+7 9+8 9+7",
+    "log": "[AdditionFactStrategies] modes: big_facts (explicit) → strategies [facts_3_4, facts_5_6, facts_7_8, facts_mixed]"
+  },
+  {
+    "case": "intent doubles",
+    "strategy": "doubles",
+    "ok": true,
+    "title": "Double Trouble Party",
+    "facts": "3+3 2+2 6+6 4+4 9+9 8+8 5+5 1+1",
+    "log": "[resolveEvalModes] addition-fact-strategies: intent → [doubles] | [AdditionFactStrategies] modes: doubles (resolved) → strategies [doubles] → doubles"
+  },
+  {
+    "case": "intent commutative",
+    "strategy": "turnaround",
+    "ok": true,
+    "title": "The Magic Flip",
+    "facts": "9+4 5+9 7+9 6+4 9+0 8+5 3+7 8+7",
+    "log": "[resolveEvalModes] addition-fact-strategies: intent → [turnaround] | [AdditionFactStrategies] modes: turnaround (resolved) → strategies [turnaround] → turnaround"
+  },
+  {
+    "case": "intent count on 2",
+    "strategy": "plus_two",
+    "ok": true,
+    "title": "Hop Over Two",
+    "facts": "2+7 5+2 2+3 2+8 6+2 2+2 2+6 9+2",
+    "log": "[resolveEvalModes] addition-fact-strategies: intent → [plus_two] | [AdditionFactStrategies] modes: plus_two (resolved) → strategies [plus_two] → plus_two"
+  },
+  {
+    "case": "intent fluency",
+    "strategy": "facts_mixed",
+    "ok": true,
+    "title": "Super Sum Speed Run",
+    "facts": "3+8 7+8 7+3 4+3 5+6 4+5 8+3 8+7 8+6 4+6",
+    "log": "[resolveEvalModes] addition-fact-strategies: intent → [big_facts] | [AdditionFactStrategies] modes: big_facts (resolved) → strategies [facts_3_4, facts_5_6, facts_7_8, facts_mixed]"
+  }
+]

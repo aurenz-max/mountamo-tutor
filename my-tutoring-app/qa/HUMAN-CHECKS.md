@@ -9,9 +9,41 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 
 ## Open — ONE list, newest first (as of 2026-09-09, K Language Arts atlas refresh)
 
-> **130 rows open.** **Newest:** #180 math M2 spoken levers, compare-objects, number-sequencer, ordinal-line, MIC (handoff 23); #179 literacy K-2 close, spoken-mode models and phonics-blender levers, SOUND ON (handoff 24); #178 knowledge-check levers, cue picture and greyed-out choice (handoff 25); #177 math M1 spoken levers, counting-board, number-bond, base-ten, place-value, MIC (handoff 21); #176 literacy L4 levers, you-and-me, story-ribbon, word-sorter, SOUND ON (handoff 22); #175 math M2 levers, compare and order tap modes (handoff 21); #174 literacy L3 levers, four reading primitives and the shared print overlay (handoff 22); #173 literacy L2 levers, five spoken sound-work primitives, SOUND ON (handoff 22); #172 literacy L1 levers, five phonics primitives (handoff 22); #171 jump levers on the number line (handoff 18); #170 lesson demonstration detour (LA-15 D2); #169 composed demonstrations (LA-15) in the runtime lab; #168 counting-board THE THIRD BRANCH — say "can you help me" mid-item and hear an answer, not the correction line; #167 live runtime lab (help/return; mic after adoption); #166 counting-board themed objects (first browser sighting + does the theme hold him); #165 Live transcript refusal-phrase ear check; #148 Ramp Lab investigation MIC + tablet; #147 Bar Model graph explanation MIC ? #146 Story Ribbon tablet + MIC + sound · #145 Story Bridge
+> **133 rows open.** **Newest:** #183 DI levers pilot, di-math-facts model card and dots, MIC (DI pilot 10-02); #182 math M3 levers, math-fact-fluency dots and easier facts (handoff 30); #181 math M4 levers, ten-frame's five remaining modes so far (handoff 32); #180 math M2 spoken levers, compare-objects, number-sequencer, ordinal-line, MIC (handoff 23); #179 literacy K-2 close, spoken-mode models and phonics-blender levers, SOUND ON (handoff 24); #178 knowledge-check levers, cue picture and greyed-out choice (handoff 25); #177 math M1 spoken levers, counting-board, number-bond, base-ten, place-value, MIC (handoff 21); #176 literacy L4 levers, you-and-me, story-ribbon, word-sorter, SOUND ON (handoff 22); #175 math M2 levers, compare and order tap modes (handoff 21); #174 literacy L3 levers, four reading primitives and the shared print overlay (handoff 22); #173 literacy L2 levers, five spoken sound-work primitives, SOUND ON (handoff 22); #172 literacy L1 levers, five phonics primitives (handoff 22); #171 jump levers on the number line (handoff 18); #170 lesson demonstration detour (LA-15 D2); #169 composed demonstrations (LA-15) in the runtime lab; #168 counting-board THE THIRD BRANCH — say "can you help me" mid-item and hear an answer, not the correction line; #167 live runtime lab (help/return; mic after adoption); #166 counting-board themed objects (first browser sighting + does the theme hold him); #165 Live transcript refusal-phrase ear check; #148 Ramp Lab investigation MIC + tablet; #147 Bar Model graph explanation MIC ? #146 Story Ribbon tablet + MIC + sound · #145 Story Bridge
 > tablet + MIC · #144 You & Me role-switch MIC · #143 Letter Workshop manuscript/touch/audio ·
-> #142 ten-frame teen numbers. Next free ID is **#180**.
+> #142 ten-frame teen numbers. Next free ID is **#184**.
+
+### #183 — **DI levers pilot (di-math-facts): does the "my turn" model card help without crowding the problem?** (user ruling 10-02) · MIC
+
+Walk one item per mode in the live runtime lab at easy and at hard, answer wrong twice, then say "I'm stuck":
+- easy: the small purple model card (a DIFFERENT fact, solved) is on screen from the start beside the problem; the tutor says it as "My turn", then asks the child's fact.
+- answer_fact / fact_review: dots under each printed number (rows of five), the smaller fact (+1).
+- subtraction_fact: the start as dots with the amount taken away crossed out, then take one away.
+- counting_next: the number path ending in an empty box; on a number ending in 9, the easier number inside the decade.
+- name_numeral: the model card only (6 and 9 model each other); a one-digit numeral for 10 and up.
+- di-dice-roll (10-03): roll, then tap the dots (each gets a ring); the model card shows a different roll (compare: a star on the die with more, never named by side); sum: the bracket under both dice; an easier roll starts covered, and the full roll comes back still rolled.
+
+**Check:** the 07-25 browser finding was that two facts on screen at once overload a K child. Is the model card small and separate enough, or should easy start without it? Nothing drawn or said gives the child's answer before a try; the easier fact returns to the full one. [Table](support-levers/di-math-facts-lever-table-2026-10-02.md). Vitest and text replay only; no Live run (DI class gate waits for all 37 modes). Owner: user.
+
+### #182 — **math M3 levers: does each lever help a stuck child without showing the answer?** (handoff 30)
+
+Walk one item per mode in the live runtime lab, answer wrong twice, then say "I'm stuck". Rows are added as each M3 primitive lands:
+- math-fact-fluency visual_fact: the picture in two colours (take-away crossed out), tap-to-count dots, the smaller fact.
+- math-fact-fluency match: tap-to-count on the picture, dots under the printed fact (equation to picture), two far-apart choices.
+- math-fact-fluency equation_solve: dots under the bare fact; missing_number: known part shaded, missing part hollow. speed_round has no lever by design.
+
+**Check:** the dots read clearly at K size and the two colours are easy to tell apart; nothing drawn gives the answer before a try; the easier fact returns to the full one. [Table](support-levers/m3-lever-tables-2026-10-02.md). Vitest only; no Live run yet. Owner: user.
+
+### #181 — **math M4 levers: does each lever help a stuck child without showing or saying the answer?** (handoff 32) · MIC
+
+Walk one item per mode in the live runtime lab, answer wrong twice, then say "I'm stuck". Rows are added as each M4 primitive lands:
+- ten-frame decompose: the model split beside the frame, the small pictures of the learner's own ways (same total twice), the smaller split.
+- ten-frame decompose_teen: the yellow count under the frames, the full model ten, the smaller teen group (still scattered).
+- ten-frame make_ten: K empty boxes pulse, the near-ten frame; Grade 1-2 the five-frame model, the five-frame outline, near-ten spoken.
+- ten-frame subitize: the empty boxes fade, the long look (about 3 s, then the counters hide), the five-frame outline above five, fewer dots.
+- ten-frame operate: the model problem beside the frame (take-away crossed out on the model only), the five-frame, smaller numbers.
+
+**Check:** each change appears before the tutor mentions it; nothing drawn or said gives the answer before a try; the easier item returns to the full one; a model frame reads as separate from the item's frame. [Table](support-levers/m4-lever-tables-2026-09-29.md). Vitest only; no Live run yet. Owner: user.
 
 ### #180 — **math M2 spoken levers: does each lever help a stuck child say the answer, without saying it?** (handoff 23) · MIC
 

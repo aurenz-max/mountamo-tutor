@@ -30,11 +30,11 @@ it. Gesture misses are named for bound families; every later link is partial.
 
 | Item | State | As of |
 |---|---|---|
-| `main` | `87ecb56d` (09-26); branch pushed; `/ship` 09-29: M2 spoken `9c7675eb`, RP-2 `c7caf1db`, LB-15 `50c9730b`, LB-16/20 `3c88645d`, reports after. Fast-forward `main` proposed | 09-29 |
+| `main` | `87ecb56d` (09-26); branch pushed through `08673c20`, tree clean. Fast-forward `main` proposed | 09-29 |
 | Test ladder | T0 dry sweep J1-J8 (free) · T1 miss/lever `it.each` (free) · T2 JEV observer on recorded packets (NOT BUILT) · T3 text replay, harm checks only · T4 Live, weekly sample (`LIVE_TESTING.md`) | 09-27 |
 | Gates | `typecheck:lumina` 0; full tsc 770 (handoff 24, 09-29) | 09-29 |
 | Human checks | 129 open, next free **#180** (`my-tutoring-app/qa/HUMAN-CHECKS.md`) | 09-29 |
-| Sessions | none running. 23 step 2, 26, 27, 28 all DONE 09-29 | 09-29 |
+| Sessions | none running. Ready 09-29: 29 (J12: past Live findings closed at their class, BS-3 cap), 30 (M3 levers), 32 (M4 levers). 31 PARKED | 09-29 |
 
 ## Phase 1 — A miss is one contract, detected on both channels (CURRENT)
 
@@ -72,9 +72,10 @@ its vitest gate; Live is 1-2 runs per class, never per primitive.
 |---|---|---|---|
 | 3.0 | J9 sweep rule + S2 trigger ladder (2nd wrong auto-pulls help) | handoff 21 S1-S2 | DONE 09-27 |
 | 3.0b | Measure every math mode | handoff 21 S1b | DONE 09-28; findings ~~NL-2~~ (`4f65635d`), BS-3 (sweep cap, runtime lane), CO-6, SW-1..8 (`/add-live-tutor-tools`) |
-| 3.1 | Math by class · `qa/support-levers/reinventory-2026-09-29.md` | `/add-support-tiers` · handoff 21, **23** | M1 all modes DONE, **Live gate PASSED 09-29** (`qa/tutor-reports/m1-live-gate-2026-09-29.md`). M2 spoken modes DONE 09-29 (`qa/eval-reports/levers-M2-spoken-2026-09-29.md`). Next: 23 step 3 (M2 Live pair, needs a mixed M2 payload), M3 |
+| 3.1 | Math by class · `qa/support-levers/reinventory-2026-09-29.md` | `/add-support-tiers` · handoff 21, **23** | M1 all modes DONE, **Live gate PASSED 09-29** (`qa/tutor-reports/m1-live-gate-2026-09-29.md`). M2 spoken modes DONE 09-29 (`qa/eval-reports/levers-M2-spoken-2026-09-29.md`). M4 (handoff 32): ten-frame all modes DONE 09-29 (`qa/support-levers/m4-lever-tables-2026-09-29.md`); next hundreds-chart. M3 (handoff 30): strategy-picker SKIPPED (user 10-02); math-fact-fluency all modes DONE 10-02, speed_round ruled out (`qa/support-levers/m3-lever-tables-2026-10-02.md`); next addition-subtraction-scene. Next: 23 step 3 (M2 Live pair, needs a mixed M2 payload) |
 | 3.1b | Literacy by class | `/add-support-tiers` · handoffs 22, 24 | All 93 modes measured; every K-2 mode levered or ruled out (`levers-literacy-K2-close-2026-09-29.md`). L1-L3 Live PASSED 09-29 (`h26-live-gates-2026-09-29.md`). L4 waits on the story-bridge ruling |
 | 3.1c | knowledge-check levers | `/add-support-tiers` · handoff 25 | DONE 09-29, all 4 modes; KC-UB fixed (`e608d16b`); Live PASSED 09-29. Open: LB-18; LB-21 re-run after RP-2 ships (1 run) |
+| 3.1d | DI by class (10 families, 37 modes). **User 10-02:** DI gets in-item levers; its correction is a parallel-item model lever (help, never the learner's item) | `/add-support-tiers` | di-math-facts DONE 10-02, all 5 modes (`qa/eval-reports/di-math-facts-levers-2026-10-02.md`); shared `DiTeachingStage` levers prop in. Replay 0 flags; browser HUMAN-CHECKS #183. di-dice-roll DONE 10-03, all 3 modes (`qa/eval-reports/di-dice-roll-levers-2026-10-03.md`). Next: di-shapes, then the other 7 packs. Class Live waits for all 37 modes |
 | 3.2 | Lever bench misses from Live runs | row executor · `qa/lever-bench/QUEUE.md` | 21 rows; open from handoff 26: LB-18, LB-21 |
 | 3.3 | Class Live pair (text + `--audio`, mixed payload), only when every mode of every primitive in the class has misses and levers (user 09-28) | `/add-live-tutor-tools` · handoff 21 | PASSED 09-29: M1, L1, L2, L3, knowledge-check. Next: M2 (23 step 3). L4 waits on a ruling |
 
@@ -90,7 +91,6 @@ levers get built. Owner `/student-data-loop` §7. Human sittings: HUMAN-CHECKS.
 |---|---|
 | story-bridge say_alike, say_different, main_idea_compare: spoken misses (Part B), or out of L4's class gate? | handoff 24 step 3 |
 | 19-9a: push-pull-arena `success` = passed (67% recovery now records failed)? 19-9b: per-problem records keep their own score? | handoff 19 |
-| Do DI families get in-item levers, or keep "my turn" only? | `reinventory-2026-09-29.md` |
 | Pip: DECIDE (4 sims) and DESIGN rows | `qa/pip-surface/ROLLOUT.md` |
 | TypeSafe (a)-(d): quality study, retrieval gate, hypothesis verifier, shadow in traffic | `qa/typesafe/README.md` |
 | C9 content: equation-builder tiles, pattern-builder create, strategy-picker hop; balance-scale `two_step` scoring; scratch pad; spoken evidence capture | `qa/tutor-reports/workspace-rollout-*` |
