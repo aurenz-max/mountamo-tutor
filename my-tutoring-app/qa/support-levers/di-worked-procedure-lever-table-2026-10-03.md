@@ -1,6 +1,6 @@
 # di-worked-procedure: failure inventory and lever table (2026-10-03)
 
-**DRAFT — awaiting user confirmation.** `/add-support-tiers` Phases 1-2, DI family (older learners). Nothing is built.
+**BUILT 2026-10-03** (rulings R1-R10 as recommended): `qa/eval-reports/di-worked-procedure-levers-2026-10-03.md`.
 Rulings carried over: DI gets in-item levers; DI's correction is a parallel-item model (2026-10-02). This pack judges
 a MOVE (`procedure_step`) and every step is spoken; no lever changes that.
 

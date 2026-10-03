@@ -1029,10 +1029,15 @@ export const DI_CATALOG: ComponentDefinition[] = [
         + 'step only once it is credited, so the child reads the digits and says the numbers; the answer is never '
         + 'printed. A regroup counts only with both new numbers; the upside-down column is the common miss. After a '
         + 'lend the crossed-out digit is no longer the top. Never say a column\'s numbers before the child tries, and '
-        + 'never work this problem for them: a model is always a DIFFERENT problem. You cannot write on the problem or change it.',
+        + 'never work this problem for them: your model is the model_problem lever, a DIFFERENT problem worked beside it. '
+        + 'On a decide step never read the ringed column\'s digits as a question ("can you take eight from three?"): '
+        + 'whether the top is enough IS the decision. '
+        + 'The support fact says where levers start. You cannot write on the problem or change it.',
+      levers: true,
       // Every step is spoken: its known wrong answers (`workedProcedureSpokenMisses`), named by the `spoken_miss` observer.
       misses: missLists<SpokenProcedureMiss>({
-        subtract_no_regroup: ['regrouped_needlessly', 'read_crossed_out', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
+        // No lend ever happens in this mode, so `read_crossed_out` cannot be named.
+        subtract_no_regroup: ['regrouped_needlessly', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
         subtract_regroup: ['upside_down_column', 'no_decrement', 'said_no_regroup', 'regrouped_needlessly', 'read_crossed_out', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
       }),
     },

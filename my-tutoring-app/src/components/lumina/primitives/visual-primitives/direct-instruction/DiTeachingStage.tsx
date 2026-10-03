@@ -72,13 +72,15 @@ export interface DiStageView {
  * practice item a simplify lever opens; the pack supplies only pure domain functions.
  */
 export interface DiStageLevers<Item> {
-  declare: (item: Item, pulled: readonly string[]) => WorkspaceLever[];
+  /** `lastMiss`: the miss id of the learner's latest attempt on this item, for a lever offered only after one miss
+   *  (di-worked-procedure's `fewer_columns` after `no_decrement`). */
+  declare: (item: Item, pulled: readonly string[], lastMiss?: string) => WorkspaceLever[];
   /** What the levers on screen show, as a scene fact. Never the item's answer. */
   onScreen: (item: Item, pulled: readonly string[]) => string;
   /** Levers the item's tier starts with on screen. Not a pull, so never recorded. */
   starting?: (item: Item) => readonly string[];
   /** The easier item a simplify lever opens, with an id of its own, or null to refuse. */
-  simpler?: (item: Item, lever: string) => Item | null;
+  simpler?: (item: Item, lever: string, lastMiss?: string) => Item | null;
 }
 
 export interface DiTeachingStageProps<Item extends { id: string }, M extends PrimitiveMetrics> {
@@ -172,7 +174,8 @@ function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>
 
   useLayoutEffect(() => {
     const drawn = scene(item, { ready, pulled: practiceItem ? [] : pulled });
-    const declared = levers && !practiceItem ? levers.declare(sessionItem, pulled) : [];
+    const lastMiss = sessionItem ? lesson.state.attempts.filter(a => a.itemId === sessionItem.id).at(-1)?.miss : undefined;
+    const declared = levers && !practiceItem ? levers.declare(sessionItem, pulled, lastMiss) : [];
     const onScreen = levers && !practiceItem ? levers.onScreen(sessionItem, pulled) : '';
     workspace.current = {
       ...drawn,
@@ -188,7 +191,7 @@ function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>
           if (lever.pulled) return `${id} is already on screen.`;
           const next = { item: sessionItem.id, pulled: [...pulled, id] };
           if (lever.kind === 'simplify') {
-            const easier = levers.simpler?.(sessionItem, id);
+            const easier = levers.simpler?.(sessionItem, id, lastMiss);
             if (!easier) return 'There is no easier one for this item.';
             setLeverState(next); setPractice({ for: sessionItem.id, item: easier }); mark([]);
             return { practice: assignment(easier) };

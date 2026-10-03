@@ -102,7 +102,13 @@ export function workedProcedureScene(item: WorkedProcedureItem): WorkspaceScene 
     objects: [{ id: 'problem', selected: false, group: 'assignment target',
       label: `the subtraction printed in columns, with the ${c.place} column ringed` }],
     facts: { kind: item.challengeType, step: item.kind === 'decide' ? 'decide what to do in this column' : 'subtract this column',
-      column: c.place, ...(item.supportTier ? { supportTier: item.supportTier } : {}),
+      column: c.place,
+      // DI's model is a DIFFERENT problem, never this one (ruling 2026-10-02): easy starts with its card on screen; no tier
+      // is medium in this pack.
+      support: item.supportTier === 'easy'
+        ? 'the model card of a different subtraction starts on screen: walk every column of it as your turn, then ask this column. Never work this problem'
+        : item.supportTier === 'hard' ? 'work it cold: model nothing before the learner tries, and never say a step answer of this problem'
+          : 'the learner tries first; after a miss, model a different subtraction with the model_problem lever, never this one',
       constraints: 'The learner says the move or the number aloud; the page writes each step only after it is credited. '
         + (c.lent ? `The top digit of the ${c.place} column is crossed out: it lent one to the ${PLACES[c.index - 1]}. ` : '')
         + (item.kind === 'subtract' ? `The ${c.place} column was just regrouped. ` : '') },

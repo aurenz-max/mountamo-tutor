@@ -1,0 +1,3485 @@
+{
+ "lessonEntry": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+ "records": [
+  {
+   "payload": "di-worked-procedure.subtract_no_regroup",
+   "primitiveId": "di-worked-procedure",
+   "evalMode": "subtract_no_regroup",
+   "guidance": "One subtraction is printed in columns with the current column ringed. The child works it OUT LOUD one step at a time: what they do in the ringed column, then after a regroup the difference. The page writes a step only once it is credited, so the child reads the digits and says the numbers; the answer is never printed. A regroup counts only with both new numbers; the upside-down column is the common miss. After a lend the crossed-out digit is no longer the top. Never say a column's numbers before the child tries, and never work this problem for them: your model is the model_problem lever, a DIFFERENT problem worked beside it. On a decide step never read the ringed column's digits as a question (\"can you take eight from three?\"): whether the top is enough IS the decision. The support fact says where levers start. You cannot write on the problem or change it. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Two-digit subtraction with regrouping",
+   "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding.",
+   "leakTokens": [
+    "WP_ITEM",
+    "WP_MOVE_ON",
+    "WP_COMPLETE",
+    "WP_HEAR"
+   ],
+   "ask": "Look at the ones column and say what you do there.",
+   "keys": [
+    "\"five\": the bare number, or the whole fact five minus zero said aloud, straight away or after counting back to it. no regrouping is needed; regrouping here (working from fifteen) is the signature error.",
+    "five minus zero is five"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "wp-1-35-10-c0-decide",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-worked-procedure",
+      "objectiveId": "di-worked-procedure-practice",
+      "evalMode": "subtract_no_regroup",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wp-1-35-10-c0-decide",
+       "phase": "working",
+       "task": "Look at the ones column and say what you do there.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "subtract_no_regroup",
+        "step": "decide what to do in this column",
+        "column": "ones",
+        "support": "the learner tries first; after a miss, model a different subtraction with the model_problem lever, never this one",
+        "constraints": "The learner says the move or the number aloud; the page writes each step only after it is credited. ",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "problem",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the subtraction printed in columns, with the ones column ringed"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_problem",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner makes a wrong move or gets a wrong number, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT subtraction, fully worked (onScreen gives its walk). Say every column of it in order as your turn, never only the one like the learner's step, then ask the ringed column again. Never apply it to their problem."
+         },
+         {
+          "id": "top_blocks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner reads the column the wrong way up, or misjudges whether the top number is enough.",
+          "does": "Draws each column's top number, as it reads now, as place-value pieces under the problem. No count, no bottom number. Point at the pieces and ask what they do in the column; never ask whether the top is enough or name the column's digits."
+         },
+         {
+          "id": "take_away_cubes",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gets the column's difference wrong.",
+          "does": "Draws the ringed column's top number as cubes with the bottom number of them crossed out. Never say how many are left."
+         }
+        ],
+        "expectedAnswer": "\"five\": the bare number, or the whole fact five minus zero said aloud, straight away or after counting back to it. No regrouping is needed; regrouping here (working from fifteen) is the signature error.",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wp-1-35-10-c0-decide",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "wp-1-35-10-c0-decide",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-worked-procedure",
+      "objectiveId": "di-worked-procedure-practice",
+      "evalMode": "subtract_no_regroup",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wp-1-35-10-c0-decide",
+       "phase": "working",
+       "task": "Look at the ones column and say what you do there.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "subtract_no_regroup",
+        "step": "decide what to do in this column",
+        "column": "ones",
+        "support": "the learner tries first; after a miss, model a different subtraction with the model_problem lever, never this one",
+        "constraints": "The learner says the move or the number aloud; the page writes each step only after it is credited. ",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "problem",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the subtraction printed in columns, with the ones column ringed"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_problem",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner makes a wrong move or gets a wrong number, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT subtraction, fully worked (onScreen gives its walk). Say every column of it in order as your turn, never only the one like the learner's step, then ask the ringed column again. Never apply it to their problem."
+         },
+         {
+          "id": "top_blocks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner reads the column the wrong way up, or misjudges whether the top number is enough.",
+          "does": "Draws each column's top number, as it reads now, as place-value pieces under the problem. No count, no bottom number. Point at the pieces and ask what they do in the column; never ask whether the top is enough or name the column's digits."
+         },
+         {
+          "id": "take_away_cubes",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gets the column's difference wrong.",
+          "does": "Draws the ringed column's top number as cubes with the bottom number of them crossed out. Never say how many are left."
+         }
+        ],
+        "expectedAnswer": "\"five\": the bare number, or the whole fact five minus zero said aloud, straight away or after counting back to it. No regrouping is needed; regrouping here (working from fifteen) is the signature error.",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "six"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wp-1-35-10-c0-decide",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "six",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "wp-1-35-10-c0-decide",
+       "revision": 1
+      },
+      "task": "Look at the ones column and say what you do there.",
+      "phase": "working",
+      "learner": "six",
+      "expectedAnswer": "\"five\": the bare number, or the whole fact five minus zero said aloud, straight away or after counting back to it. No regrouping is needed; regrouping here (working from fifteen) is the signature error.",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "six"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [
+        {
+         "id": "problem",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the subtraction printed in columns, with the ones column ringed"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "subtract_no_regroup",
+        "step": "decide what to do in this column",
+        "column": "ones",
+        "support": "the learner tries first; after a miss, model a different subtraction with the model_problem lever, never this one",
+        "constraints": "The learner says the move or the number aloud; the page writes each step only after it is credited. ",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "wp-1-35-10-c0-decide"
+      },
+      "task": "Look at the ones column and say what you do there.",
+      "expectedAnswer": "\"five\": the bare number, or the whole fact five minus zero said aloud, straight away or after counting back to it. No regrouping is needed; regrouping here (working from fifteen) is the signature error.",
+      "learner": "six",
+      "misses": [
+       {
+        "id": "regrouped_needlessly",
+        "pattern": "The ones column has 5 on top and 0 below; 5 minus 0 is 5. No regrouping is needed; the learner says to regroup or works from 15.",
+        "examples": [
+         "regroup",
+         "fifteen minus zero"
+        ]
+       },
+       {
+        "id": "one_short",
+        "pattern": "The learner's answer is 4, one fewer than the difference 5.",
+        "examples": [
+         "four"
+        ]
+       },
+       {
+        "id": "one_over",
+        "pattern": "The learner's answer is 6, one more than the difference 5.",
+        "examples": [
+         "six"
+        ]
+       },
+       {
+        "id": "short_by_more",
+        "pattern": "The learner's answer is 3 or fewer (but more than zero), two or more fewer than the difference 5.",
+        "examples": [
+         "three"
+        ]
+       },
+       {
+        "id": "over_by_more",
+        "pattern": "The learner's answer is 7 or more, two or more more than the difference 5.",
+        "examples": [
+         "seven"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "wp-1-35-10-c0-decide",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-worked-procedure",
+      "objectiveId": "di-worked-procedure-practice",
+      "evalMode": "subtract_no_regroup",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wp-1-35-10-c0-decide",
+       "phase": "working",
+       "task": "Look at the ones column and say what you do there.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "six",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "subtract_no_regroup",
+        "step": "decide what to do in this column",
+        "column": "ones",
+        "support": "the learner tries first; after a miss, model a different subtraction with the model_problem lever, never this one",
+        "constraints": "The learner says the move or the number aloud; the page writes each step only after it is credited. ",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "problem",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the subtraction printed in columns, with the ones column ringed"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_problem",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner makes a wrong move or gets a wrong number, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT subtraction, fully worked (onScreen gives its walk). Say every column of it in order as your turn, never only the one like the learner's step, then ask the ringed column again. Never apply it to their problem."
+         },
+         {
+          "id": "top_blocks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner reads the column the wrong way up, or misjudges whether the top number is enough.",
+          "does": "Draws each column's top number, as it reads now, as place-value pieces under the problem. No count, no bottom number. Point at the pieces and ask what they do in the column; never ask whether the top is enough or name the column's digits."
+         },
+         {
+          "id": "take_away_cubes",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gets the column's difference wrong.",
+          "does": "Draws the ringed column's top number as cubes with the bottom number of them crossed out. Never say how many are left."
+         }
+        ],
+        "expectedAnswer": "\"five\": the bare number, or the whole fact five minus zero said aloud, straight away or after counting back to it. No regrouping is needed; regrouping here (working from fifteen) is the signature error.",
+        "lastResponse": {
+         "itemId": "wp-1-35-10-c0-decide",
+         "response": "six",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "wp-1-35-10-c0-decide",
+          "response": "six",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/2/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wp-1-35-10-c0-decide",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "wp-1-35-10-c0-decide",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-worked-procedure",
+      "objectiveId": "di-worked-procedure-practice",
+      "evalMode": "subtract_no_regroup",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wp-1-35-10-c0-decide",
+       "phase": "working",
+       "task": "Look at the ones column and say what you do there.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "six",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "subtract_no_regroup",
+        "step": "decide what to do in this column",
+        "column": "ones",
+        "support": "the learner tries first; after a miss, model a different subtraction with the model_problem lever, never this one",
+        "constraints": "The learner says the move or the number aloud; the page writes each step only after it is credited. ",
+        "onScreen": "Beside the problem, a model card shows a different subtraction, fully worked: 52 − 11. ones: two minus one is one. tens: five minus one is four. The answer is 41. It is not this problem.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "problem",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the subtraction printed in columns, with the ones column ringed"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_problem",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner makes a wrong move or gets a wrong number, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT subtraction, fully worked (onScreen gives its walk). Say every column of it in order as your turn, never only the one like the learner's step, then ask the ringed column again. Never apply it to their problem."
+         },
+         {
+          "id": "top_blocks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner reads the column the wrong way up, or misjudges whether the top number is enough.",
+          "does": "Draws each column's top number, as it reads now, as place-value pieces under the problem. No count, no bottom number. Point at the pieces and ask what they do in the column; never ask whether the top is enough or name the column's digits."
+         },
+         {
+          "id": "take_away_cubes",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gets the column's difference wrong.",
+          "does": "Draws the ringed column's top number as cubes with the bottom number of them crossed out. Never say how many are left."
+         }
+        ],
+        "expectedAnswer": "\"five\": the bare number, or the whole fact five minus zero said aloud, straight away or after counting back to it. No regrouping is needed; regrouping here (working from fifteen) is the signature error.",
+        "lastResponse": {
+         "itemId": "wp-1-35-10-c0-decide",
+         "response": "six",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "wp-1-35-10-c0-decide",
+          "response": "six",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "wp-1-35-10-c0-decide",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "model_problem"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wp-1-35-10-c0-decide",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled model_problem (help). It is on screen now: Shows a small card with a DIFFERENT subtraction, fully worked (onScreen gives its walk). Say every column of it in order as your turn, never only the one like the learner's step, then ask the ringed column again. Never apply it to their problem. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "model_problem",
+      "kind": "help",
+      "does": "Shows a small card with a DIFFERENT subtraction, fully worked (onScreen gives its walk). Say every column of it in order as your turn, never only the one like the learner's step, then ask the ringed column again. Never apply it to their problem."
+     }
+    },
+    {
+     "kind": "credit",
+     "itemId": "wp-1-35-10-c0-decide",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-worked-procedure",
+      "objectiveId": "di-worked-procedure-practice",
+      "evalMode": "subtract_no_regroup",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wp-1-35-10-c0-decide",
+       "phase": "working",
+       "task": "Look at the ones column and say what you do there.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "six",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "subtract_no_regroup",
+        "step": "decide what to do in this column",
+        "column": "ones",
+        "support": "the learner tries first; after a miss, model a different subtraction with the model_problem lever, never this one",
+        "constraints": "The learner says the move or the number aloud; the page writes each step only after it is credited. ",
+        "onScreen": "Beside the problem, a model card shows a different subtraction, fully worked: 52 − 11. ones: two minus one is one. tens: five minus one is four. The answer is 41. It is not this problem.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "problem",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the subtraction printed in columns, with the ones column ringed"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_problem",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner makes a wrong move or gets a wrong number, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT subtraction, fully worked (onScreen gives its walk). Say every column of it in order as your turn, never only the one like the learner's step, then ask the ringed column again. Never apply it to their problem."
+         },
+         {
+          "id": "top_blocks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner reads the column the wrong way up, or misjudges whether the top number is enough.",
+          "does": "Draws each column's top number, as it reads now, as place-value pieces under the problem. No count, no bottom number. Point at the pieces and ask what they do in the column; never ask whether the top is enough or name the column's digits."
+         },
+         {
+          "id": "take_away_cubes",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gets the column's difference wrong.",
+          "does": "Draws the ringed column's top number as cubes with the bottom number of them crossed out. Never say how many are left."
+         }
+        ],
+        "expectedAnswer": "\"five\": the bare number, or the whole fact five minus zero said aloud, straight away or after counting back to it. No regrouping is needed; regrouping here (working from fifteen) is the signature error.",
+        "pendingResponse": {
+         "id": "speech:1:2",
+         "text": "five minus zero is five"
+        },
+        "lastResponse": {
+         "itemId": "wp-1-35-10-c0-decide",
+         "response": "six",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "wp-1-35-10-c0-decide",
+          "response": "six",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "wp-1-35-10-c0-decide",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "model_problem"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wp-1-35-10-c0-decide",
+        "secondsOnItem": 20,
+        "secondsSinceReady": 20,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "five minus zero is five",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "wp-1-35-10-c0-decide",
+       "revision": 3
+      },
+      "task": "Look at the ones column and say what you do there.",
+      "phase": "working",
+      "learner": "five minus zero is five",
+      "expectedAnswer": "\"five\": the bare number, or the whole fact five minus zero said aloud, straight away or after counting back to it. No regrouping is needed; regrouping here (working from fifteen) is the signature error.",
+      "pendingResponse": {
+       "id": "speech:1:2",
+       "text": "five minus zero is five"
+      },
+      "lastResponse": {
+       "itemId": "wp-1-35-10-c0-decide",
+       "response": "six",
+       "source": "speech",
+       "correct": false,
+       "tutorResponse": "Not quite.",
+       "judgment": "tutor",
+       "assisted": false,
+       "answerExposure": "none"
+      },
+      "activity": {
+       "responseSource": "speech",
+       "attemptNumber": 1,
+       "objects": [
+        {
+         "id": "problem",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the subtraction printed in columns, with the ones column ringed"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "subtract_no_regroup",
+        "step": "decide what to do in this column",
+        "column": "ones",
+        "support": "the learner tries first; after a miss, model a different subtraction with the model_problem lever, never this one",
+        "constraints": "The learner says the move or the number aloud; the page writes each step only after it is credited. ",
+        "onScreen": "Beside the problem, a model card shows a different subtraction, fully worked: 52 − 11. ones: two minus one is one. tens: five minus one is four. The answer is 41. It is not this problem.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 2,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "wp-1-35-10-c0-decide"
+      },
+      "task": "Look at the ones column and say what you do there.",
+      "expectedAnswer": "\"five\": the bare number, or the whole fact five minus zero said aloud, straight away or after counting back to it. No regrouping is needed; regrouping here (working from fifteen) is the signature error.",
+      "learner": "five minus zero is five",
+      "misses": [
+       {
+        "id": "regrouped_needlessly",
+        "pattern": "The ones column has 5 on top and 0 below; 5 minus 0 is 5. No regrouping is needed; the learner says to regroup or works from 15.",
+        "examples": [
+         "regroup",
+         "fifteen minus zero"
+        ]
+       },
+       {
+        "id": "one_short",
+        "pattern": "The learner's answer is 4, one fewer than the difference 5.",
+        "examples": [
+         "four"
+        ]
+       },
+       {
+        "id": "one_over",
+        "pattern": "The learner's answer is 6, one more than the difference 5.",
+        "examples": [
+         "six"
+        ]
+       },
+       {
+        "id": "short_by_more",
+        "pattern": "The learner's answer is 3 or fewer (but more than zero), two or more fewer than the difference 5.",
+        "examples": [
+         "three"
+        ]
+       },
+       {
+        "id": "over_by_more",
+        "pattern": "The learner's answer is 7 or more, two or more more than the difference 5.",
+        "examples": [
+         "seven"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    }
+   ]
+  },
+  {
+   "payload": "di-worked-procedure.subtract_regroup-3digit-hard",
+   "primitiveId": "di-worked-procedure",
+   "evalMode": "subtract_regroup",
+   "guidance": "One subtraction is printed in columns with the current column ringed. The child works it OUT LOUD one step at a time: what they do in the ringed column, then after a regroup the difference. The page writes a step only once it is credited, so the child reads the digits and says the numbers; the answer is never printed. A regroup counts only with both new numbers; the upside-down column is the common miss. After a lend the crossed-out digit is no longer the top. Never say a column's numbers before the child tries, and never work this problem for them: your model is the model_problem lever, a DIFFERENT problem worked beside it. On a decide step never read the ringed column's digits as a question (\"can you take eight from three?\"): whether the top is enough IS the decision. The support fact says where levers start. You cannot write on the problem or change it. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Two-digit subtraction with regrouping",
+   "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding.",
+   "leakTokens": [
+    "WP_ITEM",
+    "WP_MOVE_ON",
+    "WP_COMPLETE",
+    "WP_HEAR"
+   ],
+   "ask": "Look at the ones column and say what you do there.",
+   "keys": [
+    "regroup (borrow, trade, or take one from the tens) and both new numbers, in any order or wording: two tens and ten ones. naming the regroup and ten with nothing about two tens is not yet the answer (the tens were never changed). turning the column upside down, \"eight minus zero\", is the signature error.",
+    "i can't take eight from zero, so i regroup: two tens, ten ones"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "wp-1-630-498-c0-decide",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-worked-procedure",
+      "objectiveId": "di-worked-procedure-practice",
+      "evalMode": "subtract_regroup",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wp-1-630-498-c0-decide",
+       "phase": "working",
+       "task": "Look at the ones column and say what you do there.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "subtract_regroup",
+        "step": "decide what to do in this column",
+        "column": "ones",
+        "support": "work it cold: model nothing before the learner tries, and never say a step answer of this problem",
+        "constraints": "The learner says the move or the number aloud; the page writes each step only after it is credited. ",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "problem",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the subtraction printed in columns, with the ones column ringed"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_problem",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner makes a wrong move or gets a wrong number, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT subtraction, fully worked (onScreen gives its walk). Say every column of it in order as your turn, never only the one like the learner's step, then ask the ringed column again. Never apply it to their problem."
+         },
+         {
+          "id": "top_blocks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner reads the column the wrong way up, or misjudges whether the top number is enough.",
+          "does": "Draws each column's top number, as it reads now, as place-value pieces under the problem. No count, no bottom number. Point at the pieces and ask what they do in the column; never ask whether the top is enough or name the column's digits."
+         }
+        ],
+        "expectedAnswer": "Regroup (borrow, trade, or take one from the tens) AND both new numbers, in any order or wording: two tens and ten ones. Naming the regroup and ten with nothing about two tens is not yet the answer (the tens were never changed). Turning the column upside down, \"eight minus zero\", is the signature error.",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wp-1-630-498-c0-decide",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "wp-1-630-498-c0-decide",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-worked-procedure",
+      "objectiveId": "di-worked-procedure-practice",
+      "evalMode": "subtract_regroup",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wp-1-630-498-c0-decide",
+       "phase": "working",
+       "task": "Look at the ones column and say what you do there.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "subtract_regroup",
+        "step": "decide what to do in this column",
+        "column": "ones",
+        "support": "work it cold: model nothing before the learner tries, and never say a step answer of this problem",
+        "constraints": "The learner says the move or the number aloud; the page writes each step only after it is credited. ",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "problem",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the subtraction printed in columns, with the ones column ringed"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_problem",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner makes a wrong move or gets a wrong number, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT subtraction, fully worked (onScreen gives its walk). Say every column of it in order as your turn, never only the one like the learner's step, then ask the ringed column again. Never apply it to their problem."
+         },
+         {
+          "id": "top_blocks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner reads the column the wrong way up, or misjudges whether the top number is enough.",
+          "does": "Draws each column's top number, as it reads now, as place-value pieces under the problem. No count, no bottom number. Point at the pieces and ask what they do in the column; never ask whether the top is enough or name the column's digits."
+         }
+        ],
+        "expectedAnswer": "Regroup (borrow, trade, or take one from the tens) AND both new numbers, in any order or wording: two tens and ten ones. Naming the regroup and ten with nothing about two tens is not yet the answer (the tens were never changed). Turning the column upside down, \"eight minus zero\", is the signature error.",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "eight minus zero is eight"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wp-1-630-498-c0-decide",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "eight minus zero is eight",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "wp-1-630-498-c0-decide",
+       "revision": 1
+      },
+      "task": "Look at the ones column and say what you do there.",
+      "phase": "working",
+      "learner": "eight minus zero is eight",
+      "expectedAnswer": "Regroup (borrow, trade, or take one from the tens) AND both new numbers, in any order or wording: two tens and ten ones. Naming the regroup and ten with nothing about two tens is not yet the answer (the tens were never changed). Turning the column upside down, \"eight minus zero\", is the signature error.",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "eight minus zero is eight"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [
+        {
+         "id": "problem",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the subtraction printed in columns, with the ones column ringed"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "subtract_regroup",
+        "step": "decide what to do in this column",
+        "column": "ones",
+        "support": "work it cold: model nothing before the learner tries, and never say a step answer of this problem",
+        "constraints": "The learner says the move or the number aloud; the page writes each step only after it is credited. ",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "wp-1-630-498-c0-decide"
+      },
+      "task": "Look at the ones column and say what you do there.",
+      "expectedAnswer": "Regroup (borrow, trade, or take one from the tens) AND both new numbers, in any order or wording: two tens and ten ones. Naming the regroup and ten with nothing about two tens is not yet the answer (the tens were never changed). Turning the column upside down, \"eight minus zero\", is the signature error.",
+      "learner": "eight minus zero is eight",
+      "misses": [
+       {
+        "id": "upside_down_column",
+        "pattern": "The ones column has 0 on top and 8 below, so it must regroup: 2 tens and 10 ones. The learner subtracts the top from the bottom instead, \"eight minus zero\".",
+        "examples": [
+         "eight minus zero is eight"
+        ]
+       },
+       {
+        "id": "no_decrement",
+        "pattern": "The ones column has 0 on top and 8 below, so it must regroup: 2 tens and 10 ones. The learner says to regroup and names 10 ones, but says nothing about the tens becoming 2.",
+        "examples": [
+         "regroup, ten ones"
+        ]
+       },
+       {
+        "id": "said_no_regroup",
+        "pattern": "The ones column has 0 on top and 8 below, so it must regroup: 2 tens and 10 ones. The learner says no regrouping is needed or subtracts straight away.",
+        "examples": [
+         "no regrouping"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "wp-1-630-498-c0-decide",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-worked-procedure",
+      "objectiveId": "di-worked-procedure-practice",
+      "evalMode": "subtract_regroup",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wp-1-630-498-c0-decide",
+       "phase": "working",
+       "task": "Look at the ones column and say what you do there.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "eight minus zero is eight",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "subtract_regroup",
+        "step": "decide what to do in this column",
+        "column": "ones",
+        "support": "work it cold: model nothing before the learner tries, and never say a step answer of this problem",
+        "constraints": "The learner says the move or the number aloud; the page writes each step only after it is credited. ",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "problem",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the subtraction printed in columns, with the ones column ringed"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_problem",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner makes a wrong move or gets a wrong number, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT subtraction, fully worked (onScreen gives its walk). Say every column of it in order as your turn, never only the one like the learner's step, then ask the ringed column again. Never apply it to their problem."
+         },
+         {
+          "id": "top_blocks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner reads the column the wrong way up, or misjudges whether the top number is enough.",
+          "does": "Draws each column's top number, as it reads now, as place-value pieces under the problem. No count, no bottom number. Point at the pieces and ask what they do in the column; never ask whether the top is enough or name the column's digits."
+         }
+        ],
+        "expectedAnswer": "Regroup (borrow, trade, or take one from the tens) AND both new numbers, in any order or wording: two tens and ten ones. Naming the regroup and ten with nothing about two tens is not yet the answer (the tens were never changed). Turning the column upside down, \"eight minus zero\", is the signature error.",
+        "lastResponse": {
+         "itemId": "wp-1-630-498-c0-decide",
+         "response": "eight minus zero is eight",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "wp-1-630-498-c0-decide",
+          "response": "eight minus zero is eight",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/2/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wp-1-630-498-c0-decide",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "wp-1-630-498-c0-decide",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-worked-procedure",
+      "objectiveId": "di-worked-procedure-practice",
+      "evalMode": "subtract_regroup",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wp-1-630-498-c0-decide",
+       "phase": "working",
+       "task": "Look at the ones column and say what you do there.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "eight minus zero is eight",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "subtract_regroup",
+        "step": "decide what to do in this column",
+        "column": "ones",
+        "support": "work it cold: model nothing before the learner tries, and never say a step answer of this problem",
+        "constraints": "The learner says the move or the number aloud; the page writes each step only after it is credited. ",
+        "onScreen": "Beside the problem, a model card shows a different subtraction, fully worked: 571 − 102. ones: I can't take two from one, so I regroup: six tens, eleven ones; eleven minus two is nine. tens: six minus zero is six. hundreds: five minus one is four. The answer is 469. It is not this problem.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "problem",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the subtraction printed in columns, with the ones column ringed"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_problem",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner makes a wrong move or gets a wrong number, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT subtraction, fully worked (onScreen gives its walk). Say every column of it in order as your turn, never only the one like the learner's step, then ask the ringed column again. Never apply it to their problem."
+         },
+         {
+          "id": "top_blocks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner reads the column the wrong way up, or misjudges whether the top number is enough.",
+          "does": "Draws each column's top number, as it reads now, as place-value pieces under the problem. No count, no bottom number. Point at the pieces and ask what they do in the column; never ask whether the top is enough or name the column's digits."
+         }
+        ],
+        "expectedAnswer": "Regroup (borrow, trade, or take one from the tens) AND both new numbers, in any order or wording: two tens and ten ones. Naming the regroup and ten with nothing about two tens is not yet the answer (the tens were never changed). Turning the column upside down, \"eight minus zero\", is the signature error.",
+        "lastResponse": {
+         "itemId": "wp-1-630-498-c0-decide",
+         "response": "eight minus zero is eight",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "wp-1-630-498-c0-decide",
+          "response": "eight minus zero is eight",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "wp-1-630-498-c0-decide",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "model_problem"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wp-1-630-498-c0-decide",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled model_problem (help). It is on screen now: Shows a small card with a DIFFERENT subtraction, fully worked (onScreen gives its walk). Say every column of it in order as your turn, never only the one like the learner's step, then ask the ringed column again. Never apply it to their problem. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "model_problem",
+      "kind": "help",
+      "does": "Shows a small card with a DIFFERENT subtraction, fully worked (onScreen gives its walk). Say every column of it in order as your turn, never only the one like the learner's step, then ask the ringed column again. Never apply it to their problem."
+     }
+    },
+    {
+     "kind": "credit",
+     "itemId": "wp-1-630-498-c0-decide",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-worked-procedure",
+      "objectiveId": "di-worked-procedure-practice",
+      "evalMode": "subtract_regroup",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wp-1-630-498-c0-decide",
+       "phase": "working",
+       "task": "Look at the ones column and say what you do there.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "eight minus zero is eight",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "subtract_regroup",
+        "step": "decide what to do in this column",
+        "column": "ones",
+        "support": "work it cold: model nothing before the learner tries, and never say a step answer of this problem",
+        "constraints": "The learner says the move or the number aloud; the page writes each step only after it is credited. ",
+        "onScreen": "Beside the problem, a model card shows a different subtraction, fully worked: 571 − 102. ones: I can't take two from one, so I regroup: six tens, eleven ones; eleven minus two is nine. tens: six minus zero is six. hundreds: five minus one is four. The answer is 469. It is not this problem.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "problem",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the subtraction printed in columns, with the ones column ringed"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_problem",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner makes a wrong move or gets a wrong number, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT subtraction, fully worked (onScreen gives its walk). Say every column of it in order as your turn, never only the one like the learner's step, then ask the ringed column again. Never apply it to their problem."
+         },
+         {
+          "id": "top_blocks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner reads the column the wrong way up, or misjudges whether the top number is enough.",
+          "does": "Draws each column's top number, as it reads now, as place-value pieces under the problem. No count, no bottom number. Point at the pieces and ask what they do in the column; never ask whether the top is enough or name the column's digits."
+         }
+        ],
+        "expectedAnswer": "Regroup (borrow, trade, or take one from the tens) AND both new numbers, in any order or wording: two tens and ten ones. Naming the regroup and ten with nothing about two tens is not yet the answer (the tens were never changed). Turning the column upside down, \"eight minus zero\", is the signature error.",
+        "pendingResponse": {
+         "id": "speech:1:2",
+         "text": "I can't take eight from zero, so I regroup: two tens, ten ones"
+        },
+        "lastResponse": {
+         "itemId": "wp-1-630-498-c0-decide",
+         "response": "eight minus zero is eight",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "wp-1-630-498-c0-decide",
+          "response": "eight minus zero is eight",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "wp-1-630-498-c0-decide",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "model_problem"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wp-1-630-498-c0-decide",
+        "secondsOnItem": 20,
+        "secondsSinceReady": 20,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "I can't take eight from zero, so I regroup: two tens, ten ones",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "wp-1-630-498-c0-decide",
+       "revision": 3
+      },
+      "task": "Look at the ones column and say what you do there.",
+      "phase": "working",
+      "learner": "I can't take eight from zero, so I regroup: two tens, ten ones",
+      "expectedAnswer": "Regroup (borrow, trade, or take one from the tens) AND both new numbers, in any order or wording: two tens and ten ones. Naming the regroup and ten with nothing about two tens is not yet the answer (the tens were never changed). Turning the column upside down, \"eight minus zero\", is the signature error.",
+      "pendingResponse": {
+       "id": "speech:1:2",
+       "text": "I can't take eight from zero, so I regroup: two tens, ten ones"
+      },
+      "lastResponse": {
+       "itemId": "wp-1-630-498-c0-decide",
+       "response": "eight minus zero is eight",
+       "source": "speech",
+       "correct": false,
+       "tutorResponse": "Not quite.",
+       "judgment": "tutor",
+       "assisted": false,
+       "answerExposure": "none"
+      },
+      "activity": {
+       "responseSource": "speech",
+       "attemptNumber": 1,
+       "objects": [
+        {
+         "id": "problem",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the subtraction printed in columns, with the ones column ringed"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "subtract_regroup",
+        "step": "decide what to do in this column",
+        "column": "ones",
+        "support": "work it cold: model nothing before the learner tries, and never say a step answer of this problem",
+        "constraints": "The learner says the move or the number aloud; the page writes each step only after it is credited. ",
+        "onScreen": "Beside the problem, a model card shows a different subtraction, fully worked: 571 − 102. ones: I can't take two from one, so I regroup: six tens, eleven ones; eleven minus two is nine. tens: six minus zero is six. hundreds: five minus one is four. The answer is 469. It is not this problem.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 2,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "wp-1-630-498-c0-decide"
+      },
+      "task": "Look at the ones column and say what you do there.",
+      "expectedAnswer": "Regroup (borrow, trade, or take one from the tens) AND both new numbers, in any order or wording: two tens and ten ones. Naming the regroup and ten with nothing about two tens is not yet the answer (the tens were never changed). Turning the column upside down, \"eight minus zero\", is the signature error.",
+      "learner": "I can't take eight from zero, so I regroup: two tens, ten ones",
+      "misses": [
+       {
+        "id": "upside_down_column",
+        "pattern": "The ones column has 0 on top and 8 below, so it must regroup: 2 tens and 10 ones. The learner subtracts the top from the bottom instead, \"eight minus zero\".",
+        "examples": [
+         "eight minus zero is eight"
+        ]
+       },
+       {
+        "id": "no_decrement",
+        "pattern": "The ones column has 0 on top and 8 below, so it must regroup: 2 tens and 10 ones. The learner says to regroup and names 10 ones, but says nothing about the tens becoming 2.",
+        "examples": [
+         "regroup, ten ones"
+        ]
+       },
+       {
+        "id": "said_no_regroup",
+        "pattern": "The ones column has 0 on top and 8 below, so it must regroup: 2 tens and 10 ones. The learner says no regrouping is needed or subtracts straight away.",
+        "examples": [
+         "no regrouping"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    }
+   ]
+  },
+  {
+   "payload": "di-worked-procedure.subtract_regroup",
+   "primitiveId": "di-worked-procedure",
+   "evalMode": "subtract_regroup",
+   "guidance": "One subtraction is printed in columns with the current column ringed. The child works it OUT LOUD one step at a time: what they do in the ringed column, then after a regroup the difference. The page writes a step only once it is credited, so the child reads the digits and says the numbers; the answer is never printed. A regroup counts only with both new numbers; the upside-down column is the common miss. After a lend the crossed-out digit is no longer the top. Never say a column's numbers before the child tries, and never work this problem for them: your model is the model_problem lever, a DIFFERENT problem worked beside it. On a decide step never read the ringed column's digits as a question (\"can you take eight from three?\"): whether the top is enough IS the decision. The support fact says where levers start. You cannot write on the problem or change it. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Two-digit subtraction with regrouping",
+   "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding.",
+   "leakTokens": [
+    "WP_ITEM",
+    "WP_MOVE_ON",
+    "WP_COMPLETE",
+    "WP_HEAR"
+   ],
+   "ask": "Look at the ones column and say what you do there.",
+   "keys": [
+    "regroup (borrow, trade, or take one from the tens) and both new numbers, in any order or wording: five tens and sixteen ones. naming the regroup and sixteen with nothing about five tens is not yet the answer (the tens were never changed). turning the column upside down, \"nine minus six\", is the signature error.",
+    "i can't take nine from six, so i regroup: five tens, sixteen ones"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "wp-1-66-39-c0-decide",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-worked-procedure",
+      "objectiveId": "di-worked-procedure-practice",
+      "evalMode": "subtract_regroup",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wp-1-66-39-c0-decide",
+       "phase": "working",
+       "task": "Look at the ones column and say what you do there.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "subtract_regroup",
+        "step": "decide what to do in this column",
+        "column": "ones",
+        "support": "the learner tries first; after a miss, model a different subtraction with the model_problem lever, never this one",
+        "constraints": "The learner says the move or the number aloud; the page writes each step only after it is credited. ",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "problem",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the subtraction printed in columns, with the ones column ringed"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_problem",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner makes a wrong move or gets a wrong number, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT subtraction, fully worked (onScreen gives its walk). Say every column of it in order as your turn, never only the one like the learner's step, then ask the ringed column again. Never apply it to their problem."
+         },
+         {
+          "id": "top_blocks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner reads the column the wrong way up, or misjudges whether the top number is enough.",
+          "does": "Draws each column's top number, as it reads now, as place-value pieces under the problem. No count, no bottom number. Point at the pieces and ask what they do in the column; never ask whether the top is enough or name the column's digits."
+         }
+        ],
+        "expectedAnswer": "Regroup (borrow, trade, or take one from the tens) AND both new numbers, in any order or wording: five tens and sixteen ones. Naming the regroup and sixteen with nothing about five tens is not yet the answer (the tens were never changed). Turning the column upside down, \"nine minus six\", is the signature error.",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wp-1-66-39-c0-decide",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "wp-1-66-39-c0-decide",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-worked-procedure",
+      "objectiveId": "di-worked-procedure-practice",
+      "evalMode": "subtract_regroup",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wp-1-66-39-c0-decide",
+       "phase": "working",
+       "task": "Look at the ones column and say what you do there.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "subtract_regroup",
+        "step": "decide what to do in this column",
+        "column": "ones",
+        "support": "the learner tries first; after a miss, model a different subtraction with the model_problem lever, never this one",
+        "constraints": "The learner says the move or the number aloud; the page writes each step only after it is credited. ",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "problem",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the subtraction printed in columns, with the ones column ringed"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_problem",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner makes a wrong move or gets a wrong number, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT subtraction, fully worked (onScreen gives its walk). Say every column of it in order as your turn, never only the one like the learner's step, then ask the ringed column again. Never apply it to their problem."
+         },
+         {
+          "id": "top_blocks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner reads the column the wrong way up, or misjudges whether the top number is enough.",
+          "does": "Draws each column's top number, as it reads now, as place-value pieces under the problem. No count, no bottom number. Point at the pieces and ask what they do in the column; never ask whether the top is enough or name the column's digits."
+         }
+        ],
+        "expectedAnswer": "Regroup (borrow, trade, or take one from the tens) AND both new numbers, in any order or wording: five tens and sixteen ones. Naming the regroup and sixteen with nothing about five tens is not yet the answer (the tens were never changed). Turning the column upside down, \"nine minus six\", is the signature error.",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "nine minus six is three"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wp-1-66-39-c0-decide",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "nine minus six is three",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "wp-1-66-39-c0-decide",
+       "revision": 1
+      },
+      "task": "Look at the ones column and say what you do there.",
+      "phase": "working",
+      "learner": "nine minus six is three",
+      "expectedAnswer": "Regroup (borrow, trade, or take one from the tens) AND both new numbers, in any order or wording: five tens and sixteen ones. Naming the regroup and sixteen with nothing about five tens is not yet the answer (the tens were never changed). Turning the column upside down, \"nine minus six\", is the signature error.",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "nine minus six is three"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [
+        {
+         "id": "problem",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the subtraction printed in columns, with the ones column ringed"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "subtract_regroup",
+        "step": "decide what to do in this column",
+        "column": "ones",
+        "support": "the learner tries first; after a miss, model a different subtraction with the model_problem lever, never this one",
+        "constraints": "The learner says the move or the number aloud; the page writes each step only after it is credited. ",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "wp-1-66-39-c0-decide"
+      },
+      "task": "Look at the ones column and say what you do there.",
+      "expectedAnswer": "Regroup (borrow, trade, or take one from the tens) AND both new numbers, in any order or wording: five tens and sixteen ones. Naming the regroup and sixteen with nothing about five tens is not yet the answer (the tens were never changed). Turning the column upside down, \"nine minus six\", is the signature error.",
+      "learner": "nine minus six is three",
+      "misses": [
+       {
+        "id": "upside_down_column",
+        "pattern": "The ones column has 6 on top and 9 below, so it must regroup: 5 tens and 16 ones. The learner subtracts the top from the bottom instead, \"nine minus six\".",
+        "examples": [
+         "nine minus six is three"
+        ]
+       },
+       {
+        "id": "no_decrement",
+        "pattern": "The ones column has 6 on top and 9 below, so it must regroup: 5 tens and 16 ones. The learner says to regroup and names 16 ones, but says nothing about the tens becoming 5.",
+        "examples": [
+         "regroup, sixteen ones"
+        ]
+       },
+       {
+        "id": "said_no_regroup",
+        "pattern": "The ones column has 6 on top and 9 below, so it must regroup: 5 tens and 16 ones. The learner says no regrouping is needed or subtracts straight away.",
+        "examples": [
+         "no regrouping"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "wp-1-66-39-c0-decide",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-worked-procedure",
+      "objectiveId": "di-worked-procedure-practice",
+      "evalMode": "subtract_regroup",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wp-1-66-39-c0-decide",
+       "phase": "working",
+       "task": "Look at the ones column and say what you do there.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "nine minus six is three",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "subtract_regroup",
+        "step": "decide what to do in this column",
+        "column": "ones",
+        "support": "the learner tries first; after a miss, model a different subtraction with the model_problem lever, never this one",
+        "constraints": "The learner says the move or the number aloud; the page writes each step only after it is credited. ",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "problem",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the subtraction printed in columns, with the ones column ringed"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_problem",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner makes a wrong move or gets a wrong number, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT subtraction, fully worked (onScreen gives its walk). Say every column of it in order as your turn, never only the one like the learner's step, then ask the ringed column again. Never apply it to their problem."
+         },
+         {
+          "id": "top_blocks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner reads the column the wrong way up, or misjudges whether the top number is enough.",
+          "does": "Draws each column's top number, as it reads now, as place-value pieces under the problem. No count, no bottom number. Point at the pieces and ask what they do in the column; never ask whether the top is enough or name the column's digits."
+         }
+        ],
+        "expectedAnswer": "Regroup (borrow, trade, or take one from the tens) AND both new numbers, in any order or wording: five tens and sixteen ones. Naming the regroup and sixteen with nothing about five tens is not yet the answer (the tens were never changed). Turning the column upside down, \"nine minus six\", is the signature error.",
+        "lastResponse": {
+         "itemId": "wp-1-66-39-c0-decide",
+         "response": "nine minus six is three",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "wp-1-66-39-c0-decide",
+          "response": "nine minus six is three",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/2/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wp-1-66-39-c0-decide",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "wp-1-66-39-c0-decide",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-worked-procedure",
+      "objectiveId": "di-worked-procedure-practice",
+      "evalMode": "subtract_regroup",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wp-1-66-39-c0-decide",
+       "phase": "working",
+       "task": "Look at the ones column and say what you do there.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "nine minus six is three",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "subtract_regroup",
+        "step": "decide what to do in this column",
+        "column": "ones",
+        "support": "the learner tries first; after a miss, model a different subtraction with the model_problem lever, never this one",
+        "constraints": "The learner says the move or the number aloud; the page writes each step only after it is credited. ",
+        "onScreen": "Beside the problem, a model card shows a different subtraction, fully worked: 90 − 21. ones: I can't take one from zero, so I regroup: eight tens, ten ones; ten minus one is nine. tens: eight minus two is six. The answer is 69. It is not this problem.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "problem",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the subtraction printed in columns, with the ones column ringed"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_problem",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner makes a wrong move or gets a wrong number, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT subtraction, fully worked (onScreen gives its walk). Say every column of it in order as your turn, never only the one like the learner's step, then ask the ringed column again. Never apply it to their problem."
+         },
+         {
+          "id": "top_blocks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner reads the column the wrong way up, or misjudges whether the top number is enough.",
+          "does": "Draws each column's top number, as it reads now, as place-value pieces under the problem. No count, no bottom number. Point at the pieces and ask what they do in the column; never ask whether the top is enough or name the column's digits."
+         }
+        ],
+        "expectedAnswer": "Regroup (borrow, trade, or take one from the tens) AND both new numbers, in any order or wording: five tens and sixteen ones. Naming the regroup and sixteen with nothing about five tens is not yet the answer (the tens were never changed). Turning the column upside down, \"nine minus six\", is the signature error.",
+        "lastResponse": {
+         "itemId": "wp-1-66-39-c0-decide",
+         "response": "nine minus six is three",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "wp-1-66-39-c0-decide",
+          "response": "nine minus six is three",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "wp-1-66-39-c0-decide",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "model_problem"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wp-1-66-39-c0-decide",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled model_problem (help). It is on screen now: Shows a small card with a DIFFERENT subtraction, fully worked (onScreen gives its walk). Say every column of it in order as your turn, never only the one like the learner's step, then ask the ringed column again. Never apply it to their problem. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "model_problem",
+      "kind": "help",
+      "does": "Shows a small card with a DIFFERENT subtraction, fully worked (onScreen gives its walk). Say every column of it in order as your turn, never only the one like the learner's step, then ask the ringed column again. Never apply it to their problem."
+     }
+    },
+    {
+     "kind": "credit",
+     "itemId": "wp-1-66-39-c0-decide",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-worked-procedure",
+      "objectiveId": "di-worked-procedure-practice",
+      "evalMode": "subtract_regroup",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wp-1-66-39-c0-decide",
+       "phase": "working",
+       "task": "Look at the ones column and say what you do there.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "nine minus six is three",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "subtract_regroup",
+        "step": "decide what to do in this column",
+        "column": "ones",
+        "support": "the learner tries first; after a miss, model a different subtraction with the model_problem lever, never this one",
+        "constraints": "The learner says the move or the number aloud; the page writes each step only after it is credited. ",
+        "onScreen": "Beside the problem, a model card shows a different subtraction, fully worked: 90 − 21. ones: I can't take one from zero, so I regroup: eight tens, ten ones; ten minus one is nine. tens: eight minus two is six. The answer is 69. It is not this problem.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "problem",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the subtraction printed in columns, with the ones column ringed"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_problem",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner makes a wrong move or gets a wrong number, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT subtraction, fully worked (onScreen gives its walk). Say every column of it in order as your turn, never only the one like the learner's step, then ask the ringed column again. Never apply it to their problem."
+         },
+         {
+          "id": "top_blocks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "upside_down_column",
+           "no_decrement",
+           "said_no_regroup",
+           "regrouped_needlessly",
+           "read_crossed_out",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner reads the column the wrong way up, or misjudges whether the top number is enough.",
+          "does": "Draws each column's top number, as it reads now, as place-value pieces under the problem. No count, no bottom number. Point at the pieces and ask what they do in the column; never ask whether the top is enough or name the column's digits."
+         }
+        ],
+        "expectedAnswer": "Regroup (borrow, trade, or take one from the tens) AND both new numbers, in any order or wording: five tens and sixteen ones. Naming the regroup and sixteen with nothing about five tens is not yet the answer (the tens were never changed). Turning the column upside down, \"nine minus six\", is the signature error.",
+        "pendingResponse": {
+         "id": "speech:1:2",
+         "text": "I can't take nine from six, so I regroup: five tens, sixteen ones"
+        },
+        "lastResponse": {
+         "itemId": "wp-1-66-39-c0-decide",
+         "response": "nine minus six is three",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "wp-1-66-39-c0-decide",
+          "response": "nine minus six is three",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "wp-1-66-39-c0-decide",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "model_problem"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wp-1-66-39-c0-decide",
+        "secondsOnItem": 20,
+        "secondsSinceReady": 20,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "I can't take nine from six, so I regroup: five tens, sixteen ones",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "wp-1-66-39-c0-decide",
+       "revision": 3
+      },
+      "task": "Look at the ones column and say what you do there.",
+      "phase": "working",
+      "learner": "I can't take nine from six, so I regroup: five tens, sixteen ones",
+      "expectedAnswer": "Regroup (borrow, trade, or take one from the tens) AND both new numbers, in any order or wording: five tens and sixteen ones. Naming the regroup and sixteen with nothing about five tens is not yet the answer (the tens were never changed). Turning the column upside down, \"nine minus six\", is the signature error.",
+      "pendingResponse": {
+       "id": "speech:1:2",
+       "text": "I can't take nine from six, so I regroup: five tens, sixteen ones"
+      },
+      "lastResponse": {
+       "itemId": "wp-1-66-39-c0-decide",
+       "response": "nine minus six is three",
+       "source": "speech",
+       "correct": false,
+       "tutorResponse": "Not quite.",
+       "judgment": "tutor",
+       "assisted": false,
+       "answerExposure": "none"
+      },
+      "activity": {
+       "responseSource": "speech",
+       "attemptNumber": 1,
+       "objects": [
+        {
+         "id": "problem",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the subtraction printed in columns, with the ones column ringed"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "subtract_regroup",
+        "step": "decide what to do in this column",
+        "column": "ones",
+        "support": "the learner tries first; after a miss, model a different subtraction with the model_problem lever, never this one",
+        "constraints": "The learner says the move or the number aloud; the page writes each step only after it is credited. ",
+        "onScreen": "Beside the problem, a model card shows a different subtraction, fully worked: 90 − 21. ones: I can't take one from zero, so I regroup: eight tens, ten ones; ten minus one is nine. tens: eight minus two is six. The answer is 69. It is not this problem.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 2,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "wp-1-66-39-c0-decide"
+      },
+      "task": "Look at the ones column and say what you do there.",
+      "expectedAnswer": "Regroup (borrow, trade, or take one from the tens) AND both new numbers, in any order or wording: five tens and sixteen ones. Naming the regroup and sixteen with nothing about five tens is not yet the answer (the tens were never changed). Turning the column upside down, \"nine minus six\", is the signature error.",
+      "learner": "I can't take nine from six, so I regroup: five tens, sixteen ones",
+      "misses": [
+       {
+        "id": "upside_down_column",
+        "pattern": "The ones column has 6 on top and 9 below, so it must regroup: 5 tens and 16 ones. The learner subtracts the top from the bottom instead, \"nine minus six\".",
+        "examples": [
+         "nine minus six is three"
+        ]
+       },
+       {
+        "id": "no_decrement",
+        "pattern": "The ones column has 6 on top and 9 below, so it must regroup: 5 tens and 16 ones. The learner says to regroup and names 16 ones, but says nothing about the tens becoming 5.",
+        "examples": [
+         "regroup, sixteen ones"
+        ]
+       },
+       {
+        "id": "said_no_regroup",
+        "pattern": "The ones column has 6 on top and 9 below, so it must regroup: 5 tens and 16 ones. The learner says no regrouping is needed or subtracts straight away.",
+        "examples": [
+         "no regrouping"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    }
+   ]
+  }
+ ]
+}

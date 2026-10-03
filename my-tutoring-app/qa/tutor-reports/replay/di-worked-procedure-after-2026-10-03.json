@@ -1,0 +1,1787 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ],
+   "no_change_before_receipt": [
+    0,
+    15
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "di-worked-procedure.subtract_no_regroup",
+   "primitiveId": "di-worked-procedure",
+   "evalMode": "subtract_no_regroup",
+   "keys": [
+    "\"five\": the bare number, or the whole fact five minus zero said aloud, straight away or after counting back to it. no regrouping is needed; regrouping here (working from fifteen) is the signature error.",
+    "five minus zero is five"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "wp-1-35-10-c0-decide",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"five\": the bare number, or the whole fact five minus zero said aloud, straight away or after counting back to it. no regrouping is needed; regrouping here (working from fifteen) is the signature error.",
+       "five minus zero is five"
+      ],
+      "ask": "Look at the ones column and say what you do there.",
+      "leakTokens": [
+       "WP_ITEM",
+       "WP_MOVE_ON",
+       "WP_COMPLETE",
+       "WP_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the ringed ones column and tell me what you do there.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the ringed ones column and tell me what you do there.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the ringed ones column and tell me what you do there.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the ringed ones column and say out loud what you do there.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the ringed ones column and tell me what you do there.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "wp-1-35-10-c0-decide",
+     "trigger": "six",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"five\": the bare number, or the whole fact five minus zero said aloud, straight away or after counting back to it. no regrouping is needed; regrouping here (working from fifteen) is the signature error.",
+       "five minus zero is five"
+      ],
+      "ask": "Look at the ones column and say what you do there.",
+      "leakTokens": [
+       "WP_ITEM",
+       "WP_MOVE_ON",
+       "WP_COMPLETE",
+       "WP_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the cubes showing under the ones column. What do you get there?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "take_away_cubes",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The screen now shows cubes for the top number with cubes crossed out. Look at what is left and give it another try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "take_away_cubes",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is a model problem: for fifty-two minus eleven, in the ones column, two minus one is one, and in the tens column, five minus one is four, making forty-one. \n\nNow look at your problem: what do you do in the ringed ones column?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_problem",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the cubes showing the top number and what is taken away. What do you get in that ones column?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "take_away_cubes",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the cubes showing the top number and what is taken away. Try saying what you get in the ones column now.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "take_away_cubes"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "wp-1-35-10-c0-decide",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"five\": the bare number, or the whole fact five minus zero said aloud, straight away or after counting back to it. no regrouping is needed; regrouping here (working from fifteen) is the signature error.",
+       "five minus zero is five"
+      ],
+      "ask": "Look at the ones column and say what you do there.",
+      "leakTokens": [
+       "WP_ITEM",
+       "WP_MOVE_ON",
+       "WP_COMPLETE",
+       "WP_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Some cubes have appeared below the column to help. What do you get when you work that column?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "take_away_cubes"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the model card: for fifty-two minus eleven, in the ones column two minus one is one, and in the tens column five minus one is four, giving forty-one. Now look back at your ringed column: what do you do there?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_problem",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Some cubes just appeared to show the ringed ones column with what is being taken away crossed out. What do you see left?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "take_away_cubes",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Here is a worked example on the card: for fifty-two minus eleven, in the ones column two minus one is one, and in the tens column five minus one is four, making forty-one. Now look back at your ringed ones column and tell me what you do there.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_problem"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the card beside it: for fifty-two minus eleven, ones: two minus one is one; tens: five minus one is four. Now look back at your ringed ones column and tell me what you do there.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_problem",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "wp-1-35-10-c0-decide",
+     "trigger": "The learner said they were stuck, so the host pulled model_problem (help). It is on screen now: Shows a small card with a DIFFERENT subtraction, fully worked (onScreen gives its walk). Say every column of it in order as your turn, never only the one like the learner's step, then ask the ringed column again. Never apply it to their problem. First point the learner to it: say what is now drawn and w",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"five\": the bare number, or the whole fact five minus zero said aloud, straight away or after counting back to it. no regrouping is needed; regrouping here (working from fifteen) is the signature error.",
+       "five minus zero is five"
+      ],
+      "ask": "Look at the ones column and say what you do there.",
+      "leakTokens": [
+       "WP_ITEM",
+       "WP_MOVE_ON",
+       "WP_COMPLETE",
+       "WP_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A model card shows beside the problem with fifty-two minus eleven: ones, two minus one is one; tens, five minus one is four; the answer is forty-one. Now look back at your ringed ones column and say what you do there.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside your problem, there is a card showing 52 minus 11: in the ones column, two minus one is one, and in the tens column, five minus one is four, making 41. \n\nNow look back at the ringed ones column in your problem and say what you do there.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside our problem, a card shows fifty-two minus eleven: in the ones, two minus one is one; in the tens, five minus one is four, making forty-one. Now look back at your ringed column\u2014what do you do there?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A card appeared showing fifty-two minus eleven: in the ones, two minus one is one; in the tens, five minus one is four, making forty-one. Now look back at your ringed ones column and tell me what you do there.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card has appeared beside the problem showing fifty-two minus eleven: in the ones, two minus one is one, and in the tens, five minus one is four, making forty-one. Now look back at your ringed ones column and tell me what you do there.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "wp-1-35-10-c0-decide",
+     "trigger": "five minus zero is five",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"five\": the bare number, or the whole fact five minus zero said aloud, straight away or after counting back to it. no regrouping is needed; regrouping here (working from fifteen) is the signature error.",
+       "five minus zero is five"
+      ],
+      "ask": "Look at the ones column and say what you do there.",
+      "leakTokens": [
+       "WP_ITEM",
+       "WP_MOVE_ON",
+       "WP_COMPLETE",
+       "WP_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Spot on, you worked out that five minus zero is five!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right saying five minus zero is five.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it, five minus zero is five!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You worked the ones column and got five.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You figured out that five minus zero is five.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "di-worked-procedure.subtract_regroup-3digit-hard",
+   "primitiveId": "di-worked-procedure",
+   "evalMode": "subtract_regroup",
+   "keys": [
+    "regroup (borrow, trade, or take one from the tens) and both new numbers, in any order or wording: two tens and ten ones. naming the regroup and ten with nothing about two tens is not yet the answer (the tens were never changed). turning the column upside down, \"eight minus zero\", is the signature error.",
+    "i can't take eight from zero, so i regroup: two tens, ten ones"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "wp-1-630-498-c0-decide",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "regroup (borrow, trade, or take one from the tens) and both new numbers, in any order or wording: two tens and ten ones. naming the regroup and ten with nothing about two tens is not yet the answer (the tens were never changed). turning the column upside down, \"eight minus zero\", is the signature error.",
+       "i can't take eight from zero, so i regroup: two tens, ten ones"
+      ],
+      "ask": "Look at the ones column and say what you do there.",
+      "leakTokens": [
+       "WP_ITEM",
+       "WP_MOVE_ON",
+       "WP_COMPLETE",
+       "WP_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at the ones column ringed on the screen and say out loud what you do there.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the ringed ones column and tell me what you do there.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the ones column and say out loud what you do there.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the ringed ones column. What do you do there?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the ringed ones column. What do you do there?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "wp-1-630-498-c0-decide",
+     "trigger": "eight minus zero is eight",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "regroup (borrow, trade, or take one from the tens) and both new numbers, in any order or wording: two tens and ten ones. naming the regroup and ten with nothing about two tens is not yet the answer (the tens were never changed). turning the column upside down, \"eight minus zero\", is the signature error.",
+       "i can't take eight from zero, so i regroup: two tens, ten ones"
+      ],
+      "ask": "Look at the ones column and say what you do there.",
+      "leakTokens": [
+       "WP_ITEM",
+       "WP_MOVE_ON",
+       "WP_COMPLETE",
+       "WP_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the blocks showing our top number under the problem. What do you do in the ones column?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "top_blocks",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the blocks showing our top number under the problem. What do you do in the ones column?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "top_blocks",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Blocks are showing each column's top number below the problem. Look at those blocks and say what you do in the ones column.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "top_blocks",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the blocks drawn below each column. What do you do in the ones column now?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "top_blocks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the place-value blocks that appeared showing the top number. Look at those pieces and tell me what you do in the ones column.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "top_blocks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "wp-1-630-498-c0-decide",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "regroup (borrow, trade, or take one from the tens) and both new numbers, in any order or wording: two tens and ten ones. naming the regroup and ten with nothing about two tens is not yet the answer (the tens were never changed). turning the column upside down, \"eight minus zero\", is the signature error.",
+       "i can't take eight from zero, so i regroup: two tens, ten ones"
+      ],
+      "ask": "Look at the ones column and say what you do there.",
+      "leakTokens": [
+       "WP_ITEM",
+       "WP_MOVE_ON",
+       "WP_COMPLETE",
+       "WP_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Blocks showing the top number are now under each column. Look at the pieces and say what you do in the ringed ones column.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "top_blocks",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Blocks for our top number are showing underneath each column. Looking at those blocks, what do you do in the ringed column?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "top_blocks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Blocks showing the top number have appeared under the columns. Looking at those pieces, what do you do in the ones column?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "top_blocks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Blocks showing our top number just appeared underneath each column. Looking at those pieces, what do you do in the ringed column?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "top_blocks",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Take a look at the blocks drawn below showing our top number. What do you do in the ones column?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "top_blocks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "wp-1-630-498-c0-decide",
+     "trigger": "The learner said they were stuck, so the host pulled model_problem (help). It is on screen now: Shows a small card with a DIFFERENT subtraction, fully worked (onScreen gives its walk). Say every column of it in order as your turn, never only the one like the learner's step, then ask the ringed column again. Never apply it to their problem. First point the learner to it: say what is now drawn and w",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "regroup (borrow, trade, or take one from the tens) and both new numbers, in any order or wording: two tens and ten ones. naming the regroup and ten with nothing about two tens is not yet the answer (the tens were never changed). turning the column upside down, \"eight minus zero\", is the signature error.",
+       "i can't take eight from zero, so i regroup: two tens, ten ones"
+      ],
+      "ask": "Look at the ones column and say what you do there.",
+      "leakTokens": [
+       "WP_ITEM",
+       "WP_MOVE_ON",
+       "WP_COMPLETE",
+       "WP_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Beside your problem, there is a card showing a different worked example: 571 minus 102. \n\nIn the ones: I can't take two from one, so I regroup to six tens and eleven ones; eleven minus two is nine. \nIn the tens: six minus zero is six. \nIn the hundreds: five minus one is four. \n\nNow look at your own ringed ones column: what do you do there?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card with a different subtraction problem is now beside our problem. \n\nIn the ones column: I can't take two from one, so I regroup: six tens, eleven ones; eleven minus two is nine. \nIn the tens column: six minus zero is six. \nIn the hundreds column: five minus one is four. \n\nNow look back at your own problem: what do you do in the ringed ones column?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside your problem, there is a card showing a different worked example: five hundred seventy-one minus one hundred two. In the ones, you cannot take two from one, so you regroup to get six tens and eleven ones, and eleven minus two is nine; in the tens, six minus zero is six; in the hundreds, five minus one is four. Now look back at your own problem\u2014what do you do in the ringed ones column?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside our problem, there is a card showing a different worked example: 571 minus 102. \n\nIn the ones: I can't take two from one, so I regroup to six tens and eleven ones; eleven minus two is nine. In the tens: six minus zero is six. In the hundreds: five minus one is four. \n\nNow look at your problem: what do you do in the ringed ones column?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside your problem, there is a card showing a different worked example: 571 minus 102. \n\nIn the ones: I can't take two from one, so I regroup: six tens, eleven ones; eleven minus two is nine. \nIn the tens: six minus zero is six. \nIn the hundreds: five minus one is four. \n\nNow look back at your problem and say what you do in the ringed ones column.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "wp-1-630-498-c0-decide",
+     "trigger": "I can't take eight from zero, so I regroup: two tens, ten ones",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "regroup (borrow, trade, or take one from the tens) and both new numbers, in any order or wording: two tens and ten ones. naming the regroup and ten with nothing about two tens is not yet the answer (the tens were never changed). turning the column upside down, \"eight minus zero\", is the signature error.",
+       "i can't take eight from zero, so i regroup: two tens, ten ones"
+      ],
+      "ask": "Look at the ones column and say what you do there.",
+      "leakTokens": [
+       "WP_ITEM",
+       "WP_MOVE_ON",
+       "WP_COMPLETE",
+       "WP_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "That's it, you regrouped to get two tens and ten ones!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You regrouped to make two tens and ten ones.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You regrouped and found the new numbers: two tens and ten ones.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You regrouped and got both new numbers right: two tens and ten ones.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it\u2014you regrouped to two tens and ten ones!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "di-worked-procedure.subtract_regroup",
+   "primitiveId": "di-worked-procedure",
+   "evalMode": "subtract_regroup",
+   "keys": [
+    "regroup (borrow, trade, or take one from the tens) and both new numbers, in any order or wording: five tens and sixteen ones. naming the regroup and sixteen with nothing about five tens is not yet the answer (the tens were never changed). turning the column upside down, \"nine minus six\", is the signature error.",
+    "i can't take nine from six, so i regroup: five tens, sixteen ones"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "wp-1-66-39-c0-decide",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "regroup (borrow, trade, or take one from the tens) and both new numbers, in any order or wording: five tens and sixteen ones. naming the regroup and sixteen with nothing about five tens is not yet the answer (the tens were never changed). turning the column upside down, \"nine minus six\", is the signature error.",
+       "i can't take nine from six, so i regroup: five tens, sixteen ones"
+      ],
+      "ask": "Look at the ones column and say what you do there.",
+      "leakTokens": [
+       "WP_ITEM",
+       "WP_MOVE_ON",
+       "WP_COMPLETE",
+       "WP_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the ringed ones column and tell me what you need to do there.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Look at the ringed ones column and tell me what you need to do there.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the ringed ones column and tell me out loud what you need to do there.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the ringed ones column and tell me what you do there.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the ringed ones column and say out loud what you need to do there.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "wp-1-66-39-c0-decide",
+     "trigger": "nine minus six is three",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "regroup (borrow, trade, or take one from the tens) and both new numbers, in any order or wording: five tens and sixteen ones. naming the regroup and sixteen with nothing about five tens is not yet the answer (the tens were never changed). turning the column upside down, \"nine minus six\", is the signature error.",
+       "i can't take nine from six, so i regroup: five tens, sixteen ones"
+      ],
+      "ask": "Look at the ones column and say what you do there.",
+      "leakTokens": [
+       "WP_ITEM",
+       "WP_MOVE_ON",
+       "WP_COMPLETE",
+       "WP_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at the blocks shown under each column for our top number. Looking at those ones blocks, what do you need to do in that column?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "top_blocks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the blocks showing the top number. What do you do in the ones column?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "top_blocks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is a different problem: ninety minus twenty-one. In the ones, I cannot take one from zero, so I regroup into eight tens and ten ones, and ten minus one is nine; then in the tens, eight minus two is six, making sixty-nine. Now look at your ringed column\u2014what do you do there?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_problem",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the blocks showing the top number. What do you do in the ones column?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "top_blocks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the blocks for the top number underneath. What do you need to do in that ones column?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "top_blocks",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "wp-1-66-39-c0-decide",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "regroup (borrow, trade, or take one from the tens) and both new numbers, in any order or wording: five tens and sixteen ones. naming the regroup and sixteen with nothing about five tens is not yet the answer (the tens were never changed). turning the column upside down, \"nine minus six\", is the signature error.",
+       "i can't take nine from six, so i regroup: five tens, sixteen ones"
+      ],
+      "ask": "Look at the ones column and say what you do there.",
+      "leakTokens": [
+       "WP_ITEM",
+       "WP_MOVE_ON",
+       "WP_COMPLETE",
+       "WP_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Here is an example problem: for 90 minus 21, in the ones column I can't take 1 from 0, so I regroup into 8 tens and 10 ones, and 10 minus 1 is 9; then in the tens column, 8 minus 2 is 6, making 69. \n\nNow look back at your ringed ones column, and say what you do there.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_problem"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Here is an example: for ninety minus twenty-one, in the ones column I can't take one from zero, so I regroup to eight tens and ten ones, and ten minus one is nine; in the tens column, eight minus two is six, making sixty-nine. \n\nNow look at your problem: what do you do in the ringed ones column?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_problem"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A model card appeared showing ninety minus twenty-one: in the ones, we can't take one from zero, so we regroup to get eight tens and ten ones, and ten minus one is nine; in the tens, eight minus two is six, making sixty-nine. \n\nNow look at your problem's ringed ones column\u2014what do you do there?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_problem"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Here is a worked model showing ninety minus twenty-one: in the ones, I can't take one from zero, so I regroup into eight tens and ten ones, and ten minus one is nine; in the tens, eight minus two is six, making sixty-nine. Now look at your problem: what do you do in your ringed column?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_problem",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Here is an example beside ours: for ninety minus twenty-one, in the ones column, we can't take one from zero, so we regroup to eight tens and ten ones, then ten minus one is nine, and in the tens column, eight minus two is six, making sixty-nine. \n\nNow look back at your ringed ones column, and tell me what you need to do there.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_problem",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "wp-1-66-39-c0-decide",
+     "trigger": "The learner said they were stuck, so the host pulled model_problem (help). It is on screen now: Shows a small card with a DIFFERENT subtraction, fully worked (onScreen gives its walk). Say every column of it in order as your turn, never only the one like the learner's step, then ask the ringed column again. Never apply it to their problem. First point the learner to it: say what is now drawn and w",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "regroup (borrow, trade, or take one from the tens) and both new numbers, in any order or wording: five tens and sixteen ones. naming the regroup and sixteen with nothing about five tens is not yet the answer (the tens were never changed). turning the column upside down, \"nine minus six\", is the signature error.",
+       "i can't take nine from six, so i regroup: five tens, sixteen ones"
+      ],
+      "ask": "Look at the ones column and say what you do there.",
+      "leakTokens": [
+       "WP_ITEM",
+       "WP_MOVE_ON",
+       "WP_COMPLETE",
+       "WP_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A model card popped up beside the problem showing 90 minus 21. In the ones column: I can't take one from zero, so I regroup into eight tens and ten ones, and ten minus one is nine; in the tens column: eight minus two is six, giving 69. \n\nNow look at the ringed ones column in your problem and say what you do there.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card popped up beside our problem showing 90 minus 21. In the ones, we can't take 1 from 0, so we regroup into 8 tens and 10 ones, and 10 minus 1 is 9; then in the tens, 8 minus 2 is 6, making 69. \n\nNow look back at your own problem's ringed ones column, and tell me what you do there.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card is now showing beside your problem with a different example: 90 minus 21. In the ones column, I can't take one from zero, so I regroup into eight tens and ten ones, and ten minus one is nine; in the tens column, eight minus two is six, making 69. \n\nNow look back at the ringed ones column in your problem and say what you do there.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside your problem, a small card appeared showing 90 minus 21. \n\nIn the ones column, you can't take 1 from 0, so you regroup to get 8 tens and 10 ones, and 10 minus 1 is 9; then in the tens column, 8 minus 2 is 6, making 69. \n\nNow look at your own ringed ones column, and say what you need to do there.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A small card appeared beside our problem showing 90 minus 21. \n\nIn the ones column, you can't take 1 from 0, so you regroup to get 8 tens and 10 ones, and 10 minus 1 is 9; then in the tens, 8 minus 2 is 6. \n\nNow look at your problem: what do you do in the ringed ones column?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "wp-1-66-39-c0-decide",
+     "trigger": "I can't take nine from six, so I regroup: five tens, sixteen ones",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "regroup (borrow, trade, or take one from the tens) and both new numbers, in any order or wording: five tens and sixteen ones. naming the regroup and sixteen with nothing about five tens is not yet the answer (the tens were never changed). turning the column upside down, \"nine minus six\", is the signature error.",
+       "i can't take nine from six, so i regroup: five tens, sixteen ones"
+      ],
+      "ask": "Look at the ones column and say what you do there.",
+      "leakTokens": [
+       "WP_ITEM",
+       "WP_MOVE_ON",
+       "WP_COMPLETE",
+       "WP_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it right\u2014you regrouped into five tens and sixteen ones!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You figured out that we need to regroup, leaving five tens and sixteen ones.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You regrouped into five tens and sixteen ones.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You realized you couldn't take nine from six, so you regrouped to get five tens and sixteen ones.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That's it, you noticed you need to regroup into five tens and sixteen ones!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
