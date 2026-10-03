@@ -162,6 +162,8 @@ function normalizeSupportTier(difficulty?: string): SupportTier | null {
 
 ## Phase 7: Verify
 
+The sweep's class rules (J1-J<n>) run on every primitive; a new primitive inherits every check an earlier finding added. When this primitive's gate finds a defect, apply the class rule in `/add-live-tutor-tools` §5: one shared check over every primitive with levers, all hits fixed in the slice, not only this one.
+
 1. **Unit:** each leak rule per lever × mode; each simplify builder over many random items (exact shape, in band, solvable, never the source item).
 2. **Workspace test** (`<X>.workspace.test.tsx`, mounted through `runtime/testing/workspaceHarness.tsx`): `pull_lever` changes the screen and the scene fact in the same commit; the next attempt records the lever; a refused pull changes nothing; a simplify pull opens a new item and the full item is reachable after it.
 3. **Typecheck:** `npm run typecheck:lumina` = 0; full `tsc` not above baseline.

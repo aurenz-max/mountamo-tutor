@@ -387,6 +387,8 @@ alone does not authorize shipping or changing student-record semantics.
 
 ## 5. Verify behavior and report the boundary
 
+**A finding closes at its class, not its instance (user 09-29).** A run (Live, replay, sweep, eval) finds a defect on one primitive. Before fixing it, ask whether the same mechanism can exist in other primitives. If it can: add ONE check that runs over every primitive it could affect (a sweep rule `J<n>` in `runtime/journeySweep.test.tsx`, a shared mounted-test helper, a catalog test), run it, and fix every hit in the same slice. The finding's row closes with the check's name and its hit count. If no shared check is possible, the row says why. Harness defects are fixed once in the harness; tutor wording is fixed once in the shared doctrine or host message, never per primitive. Example: LB-14, LB-16 and LB-20 were the same defect (a lever the tutor was told is on screen drew or marked nothing), found in three paid Live runs one primitive at a time; the dry sweep already pulled those levers and could have checked all of them for free.
+
 A W1 row needs only the W1 section's checks: its workspace test, the existing tests and type gates,
 and one smoke drive. The steps below are for W2 and for new DI or framework work.
 

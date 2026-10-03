@@ -1,8 +1,9 @@
 # Lever bench queue
 
 Findings from the after-run reviewer (`backend/tests/tutor_live/lever_review.py`) on `run_live_runtime.py --lever` journeys.
-One row per distinct miss; a recurrence adds to `Seen`. Work the top open row with its executor skill, re-run the journey,
-and mark it `closed` with the commit. Environment failures (session start, reloads) are counted in each run's review, not queued.
+One row per distinct miss; a recurrence adds to `Seen`. Work the top open row with its executor skill and mark it `closed` with the commit **and its class check**: the shared check
+(sweep rule, shared test) that now covers every primitive the defect could affect, with its hit count, or why none is possible
+(`/add-live-tutor-tools` §5). Re-run Live only if the fix changes narration or timing. Environment failures (session start, reloads) are counted in each run's review, not queued.
 
 | ID | Primitive | Check | Layer | What went wrong | Proposed fix | Executor | Seen | Last run | Status |
 |---|---|---|---|---|---|---|---|---|---|

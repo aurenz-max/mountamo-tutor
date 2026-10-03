@@ -157,6 +157,7 @@ Choose a compact verification matrix from the actual risk:
 | Nearby valid case or paraphrase | Legitimate content is preserved |
 | Relevant boundary/failure path | Partial output, retries, fallback, or impossible coverage has an honest outcome |
 | Affected sibling modes/callers | Shared changes preserve distinct tasks |
+| Other primitives with the same mechanism | The finding is closed at its class (`/add-live-tutor-tools` §5): one shared check over them, every hit fixed or queued in the same slice |
 | Original runtime entry path | Fix reaches the consumer that failed |
 
 For routing changes, test automatic selection and explicit pins separately;
