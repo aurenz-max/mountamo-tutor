@@ -239,7 +239,7 @@ export const workspaceScene = (item: WordReadingItem): WorkspaceScene => ({
   facts: { kind: item.challengeType, assignment: item.assignment, printedWord: item.word,
     wordType: item.wordType === 'cvc' ? 'decodable — blended from its printed letters'
       : 'irregular sight word — recalled whole, never sounded out',
-    ...(item.soundOut ? { soundOut: item.soundOut } : {}),
+    // No `soundOut` fact (R2, 2026-10-03): "sss-aaa-mmm" was a ready script for blending the child's own word.
     markMeaning: 'Purple dashed marks are yours. They point at the whole word or at one of its printed '
       + 'letters while you teach; they are not the learner reading, and they never move the gold ring off '
       + 'the word.' },

@@ -1,0 +1,60 @@
+{
+ "source": "qa/tutor-reports/di-sentence-reading-runtime-sight_phrase_sentence-payload-2026-10-03.json",
+ "primitiveId": "di-sentence-reading",
+ "evalMode": "sight_phrase_sentence",
+ "data": {
+  "title": "Sentence Superstars",
+  "description": "Let us practice reading some great sentences out loud together today!",
+  "challengeType": "sight_phrase_sentence",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "challenges": [
+   {
+    "id": "disr-1-see-it",
+    "challengeType": "sight_phrase_sentence",
+    "text": "I can see it.",
+    "wordCount": 4,
+    "vowels": [
+     "i"
+    ],
+    "asrAliases": [
+     "i can see it"
+    ]
+   },
+   {
+    "id": "disr-2-we-go",
+    "challengeType": "sight_phrase_sentence",
+    "text": "We can go up.",
+    "wordCount": 4,
+    "vowels": [
+     "u"
+    ],
+    "asrAliases": [
+     "we can go up"
+    ]
+   },
+   {
+    "id": "disr-3-my-ball",
+    "challengeType": "sight_phrase_sentence",
+    "text": "My ball is red.",
+    "wordCount": 4,
+    "vowels": [
+     "e"
+    ],
+    "emoji": "\u26bd",
+    "asrAliases": [
+     "my ball is red"
+    ]
+   },
+   {
+    "id": "disr-4-you-and-i",
+    "challengeType": "sight_phrase_sentence",
+    "text": "You and I can go.",
+    "wordCount": 5,
+    "asrAliases": [
+     "you and i can go"
+    ]
+   }
+  ],
+  "sentences": "I can see it. | We can go up. | My ball is red. | You and I can go."
+ }
+}

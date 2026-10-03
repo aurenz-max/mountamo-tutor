@@ -162,8 +162,8 @@ const reviewSchema: Schema = {
 const describeForReview = (rule: DeductionRuleSpec): string =>
   `id ${rule.id}: RULE "${ruleTextOf(rule)}" · members (each must BE ${withArticle(rule.category)}): `
   + `${rule.members.join(', ')} · non-members (each must truly satisfy "${rule.propertyNegated}"): `
-  + `${rule.nonMembers.join(', ') || '(none)'} · lookalikes (each must truly satisfy "${rule.propertySingular}" `
-  + `AND NOT be ${withArticle(rule.category)}): ${rule.lookalikes.join(', ') || '(none)'}`;
+  + `${rule.nonMembers.join(', ') || '(none)'} · lookalikes (each must BE ${withArticle(rule.kindNoun)}, truly satisfy `
+  + `"${rule.propertySingular}" AND NOT be ${withArticle(rule.category)}): ${rule.lookalikes.join(', ') || '(none)'}`;
 
 /**
  * Keep the rules whose GENERALIZATION is true in the world, trimmed of any
@@ -181,7 +181,7 @@ export async function reviewRuleTruth(rules: DeductionRuleSpec[], gradeLevel: st
 
 For EACH rule:
 1. ruleTrue: is the RULE sentence true of every member of the category, with no exception a child would know?
-2. badEntities: list any entity that fails its list — a member that is not really one of the category; a non-member that actually HAS the property; a lookalike that does not really have the property, or that IS one of the category; any entity that is not a real, concrete, nameable thing a child that age knows. Leave the others alone.
+2. badEntities: list any entity that fails its list — a member that is not really one of the category; a non-member that actually HAS the property; a lookalike that is not itself the kind of thing named (the child hears "This animal has feathers", so a pillow fails an animal rule), that does not really have the property, or that IS one of the category; any entity that is not a real, concrete, nameable thing a child that age knows. Leave the others alone.
 Return one verdict per rule id with a short reason.
 
 ${rules.map(describeForReview).join('\n')}`;
@@ -237,7 +237,7 @@ const leaksRuleWords = (text: string, rules: DeductionRuleSpec[]): boolean => {
   return rules.some((r) => {
     const names = [r.category, r.categoryPlural, ...r.members, ...r.nonMembers, ...r.lookalikes];
     const propertyWords = r.propertyPlural.split(' ').filter((w) => w.length > 3 && !FUNCTION_WORDS.has(w));
-    return [...names, ...propertyWords].some((w) => w && new RegExp(`\b${escapeRe(w)}\b`).test(t));
+    return [...names, ...propertyWords].some((w) => w && new RegExp(`\\b${escapeRe(w)}\\b`).test(t));
   });
 };
 

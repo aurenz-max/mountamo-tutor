@@ -1,0 +1,93 @@
+{
+ "source": "qa/tutor-reports/di-shapes-runtime-count_corners-payload-2026-10-03.json",
+ "primitiveId": "di-shapes",
+ "evalMode": "count_corners",
+ "data": {
+  "title": "Shape Safari Time!",
+  "description": "Let us look at some fun flat figures on the screen and say their names out loud together!",
+  "challengeType": "count_corners",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "challenges": [
+   {
+    "id": "dish-1-rectangle",
+    "challengeType": "count_corners",
+    "shape": "rectangle",
+    "shapeWord": "rectangle",
+    "article": "a",
+    "sides": 4,
+    "corners": 4,
+    "rotationDeg": 9,
+    "asrAliases": [
+     "four",
+     "4"
+    ],
+    "countNumeral": 4,
+    "countWord": "four"
+   },
+   {
+    "id": "dish-2-square",
+    "challengeType": "count_corners",
+    "shape": "square",
+    "shapeWord": "square",
+    "article": "a",
+    "sides": 4,
+    "corners": 4,
+    "rotationDeg": 9,
+    "asrAliases": [
+     "four",
+     "4"
+    ],
+    "countNumeral": 4,
+    "countWord": "four"
+   },
+   {
+    "id": "dish-3-triangle",
+    "challengeType": "count_corners",
+    "shape": "triangle",
+    "shapeWord": "triangle",
+    "article": "a",
+    "sides": 3,
+    "corners": 3,
+    "rotationDeg": 19,
+    "asrAliases": [
+     "three",
+     "3"
+    ],
+    "countNumeral": 3,
+    "countWord": "three"
+   },
+   {
+    "id": "dish-4-rectangle",
+    "challengeType": "count_corners",
+    "shape": "rectangle",
+    "shapeWord": "rectangle",
+    "article": "a",
+    "sides": 4,
+    "corners": 4,
+    "rotationDeg": 6,
+    "asrAliases": [
+     "four",
+     "4"
+    ],
+    "countNumeral": 4,
+    "countWord": "four"
+   },
+   {
+    "id": "dish-5-triangle",
+    "challengeType": "count_corners",
+    "shape": "triangle",
+    "shapeWord": "triangle",
+    "article": "a",
+    "sides": 3,
+    "corners": 3,
+    "rotationDeg": -10,
+    "asrAliases": [
+     "three",
+     "3"
+    ],
+    "countNumeral": 3,
+    "countWord": "three"
+   }
+  ]
+ }
+}

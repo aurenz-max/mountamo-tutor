@@ -1,0 +1,88 @@
+{
+ "source": "qa/tutor-reports/di-shapes-runtime-shape_review-payload-2026-10-03.json",
+ "primitiveId": "di-shapes",
+ "evalMode": "shape_review",
+ "data": {
+  "title": "Super Shape Safari!",
+  "description": "Look closely at the pictures on the screen and say out loud what you see!",
+  "challengeType": "shape_review",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "challenges": [
+   {
+    "id": "dish-1-rectangle",
+    "challengeType": "shape_review",
+    "shape": "rectangle",
+    "shapeWord": "rectangle",
+    "article": "a",
+    "sides": 4,
+    "corners": 4,
+    "rotationDeg": -2,
+    "asrAliases": [
+     "rectangle",
+     "rectangles",
+     "wectangle"
+    ]
+   },
+   {
+    "id": "dish-2-square",
+    "challengeType": "shape_review",
+    "shape": "square",
+    "shapeWord": "square",
+    "article": "a",
+    "sides": 4,
+    "corners": 4,
+    "rotationDeg": 5,
+    "asrAliases": [
+     "square",
+     "squares",
+     "sware"
+    ]
+   },
+   {
+    "id": "dish-3-triangle",
+    "challengeType": "shape_review",
+    "shape": "triangle",
+    "shapeWord": "triangle",
+    "article": "a",
+    "sides": 3,
+    "corners": 3,
+    "rotationDeg": 15,
+    "asrAliases": [
+     "triangle",
+     "triangles",
+     "twiangle"
+    ]
+   },
+   {
+    "id": "dish-4-circle",
+    "challengeType": "shape_review",
+    "shape": "circle",
+    "shapeWord": "circle",
+    "article": "a",
+    "sides": null,
+    "corners": null,
+    "rotationDeg": 0,
+    "asrAliases": [
+     "circle",
+     "circles",
+     "surkle"
+    ]
+   },
+   {
+    "id": "dish-5-triangle",
+    "challengeType": "shape_review",
+    "shape": "triangle",
+    "shapeWord": "triangle",
+    "article": "a",
+    "sides": 3,
+    "corners": 3,
+    "rotationDeg": 6,
+    "asrAliases": [
+     "triangle",
+     "triangles",
+     "twiangle"
+    ]
+   }
+  ]
+ }
+}

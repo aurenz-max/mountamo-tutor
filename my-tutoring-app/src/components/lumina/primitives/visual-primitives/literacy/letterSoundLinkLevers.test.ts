@@ -138,5 +138,5 @@ it('letter_model: its description names no model letter or word (read before the
   const item = see('s1', 's');
   const m = letterModelFor(item, [item], 4)!;
   const [lever] = letterSoundLevers(item, [], [item], 0, 4);
-  expect(lever.does).not.toMatch(new RegExp(`\b(${m.letter}|${m.word}|${m.sound})\b`, 'i'));
+  expect(lever.does).not.toMatch(new RegExp(`\\b(${m.letter}|${m.word}|${m.sound})\\b`, 'i'));
 });

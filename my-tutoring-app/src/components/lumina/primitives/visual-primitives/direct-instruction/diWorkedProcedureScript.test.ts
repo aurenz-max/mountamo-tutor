@@ -118,11 +118,11 @@ describe('the ask never states what the child must say', () => {
     }
   });
 
-  it('at easy the ask reads the column digits — the decremented digit included', () => {
+  it('at easy the ask states no column digits either (R2: "four minus two" handed over the decrement)', () => {
     const { items } = build([{ ...SESSION[0], supportTier: 'easy' }]);
-    expect(askLine(items[0])).toBe('Fifty-two minus twenty-eight. Look at the ones column: two minus eight and say what you do there.');
-    expect(askLine(items[1])).toBe('Subtract the ones column: twelve minus eight, then say the result.');
-    expect(askLine(items[2])).toBe('Look at the tens column: four minus two and say what you do there.');
+    expect(askLine(items[0])).toBe('Fifty-two minus twenty-eight. Look at the ones column and say what you do there.');
+    expect(askLine(items[1])).toBe('Subtract the ones column, then say the result.');
+    expect(askLine(items[2])).toBe('Look at the tens column and say what you do there.');
   });
 
   it('the how-to-play rides inside the opening line only', () => {

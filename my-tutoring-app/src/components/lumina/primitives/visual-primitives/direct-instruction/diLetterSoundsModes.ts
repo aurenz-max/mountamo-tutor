@@ -21,9 +21,7 @@ export interface LetterSoundModePlanItem extends DiModeItem {
 const instructionFor = (item: LetterSoundModePlanItem): string =>
   item.challengeType === 'first_sound_in_word'
     ? `Your turn. What is the first sound in ${item.keyword}?`
-    : item.elicitation === 'keyword'
-      ? `Your turn. Say ${item.keyword}.`
-      : 'Your turn. What sound?';
+    : 'Your turn. What sound?';
 
 const mode = defineDiMode<LetterSoundModePlanItem>();
 const step = {

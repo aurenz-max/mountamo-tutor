@@ -39,6 +39,7 @@ describe('DI Worked Procedure mode definitions', () => {
       label: 'Decide in the ones',
       answerKind: 'voice',
     });
-    expect(plan.answerStep.actionContract.instruction).toContain('two minus eight');
+    // R2 (2026-10-03): no tier states the column's digits.
+    expect(plan.answerStep.actionContract.instruction).not.toMatch(/two|eight/);
   });
 });

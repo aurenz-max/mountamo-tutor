@@ -5,6 +5,7 @@ it. It used to come from the smoke drive's saved payload, a paid Live run. The g
 `/api/lumina/tutor-test` probe the Live harness calls, one generator call per mode, no Live session.
 
     python save_payload.py --primitive fraction-bar --mode identify [--mode build ...] [--topic ...] [--grade ...]
+        [--difficulty easy|medium|hard] [--name <suffix>]   (saved as <id>.<mode>-<suffix>.json)
 
 Needs the frontend on :3000. The primitive needs a `liveJourneySpec.ts` row (its defaults fill topic and grade).
 """
@@ -26,15 +27,17 @@ def main():
     parser.add_argument('--primitive', required=True)
     parser.add_argument('--mode', action='append', help='Eval mode (repeatable); default the journey row\'s mode')
     parser.add_argument('--topic'); parser.add_argument('--grade')
+    parser.add_argument('--difficulty', help='config.difficulty for the generator (the support tier)')
+    parser.add_argument('--name', help='A suffix for a second payload of the same mode')
     parser.add_argument('--frontend', default='http://localhost:3000')
     args = parser.parse_args()
     defaults = fetch_journey(args.frontend, args.primitive)['defaults']
     for mode in args.mode or [defaults['mode']]:
         live = fetch_live_context(args.frontend, args.primitive, args.topic or defaults['topic'], args.grade or defaults['grade'],
-                                  mode, di=defaults.get('di', False))
-        stem = f"{args.primitive}-runtime-{mode.replace('|', '+')}-payload-{date.today().isoformat()}.json"
+                                  mode, di=defaults.get('di', False), difficulty=args.difficulty)
+        stem = f"{args.primitive}-runtime-{mode.replace('|', '+')}{'-' + args.name if args.name else ''}-payload-{date.today().isoformat()}.json"
         (REPORTS / stem).write_text(json.dumps(live, indent=2), encoding='utf-8')
-        out = PAYLOADS / f"{args.primitive}.{mode.replace('|', '+')}.json"
+        out = PAYLOADS / f"{args.primitive}.{mode.replace('|', '+')}{'-' + args.name if args.name else ''}.json"
         out.write_text(json.dumps({'source': f'qa/tutor-reports/{stem}', 'primitiveId': args.primitive, 'evalMode': mode,
                                    'data': live['generatedData']}, indent=1), encoding='utf-8')
         print(out)

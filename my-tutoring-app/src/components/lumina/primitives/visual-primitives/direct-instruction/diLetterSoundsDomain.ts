@@ -16,9 +16,9 @@
  *     LA-14 S5; the workspace is the only teaching path.
  *
  * The DISTAR content that survives the sunset is here: the keyword route, the
- * elicitation fork (a short vowel distorts in isolation, so it is elicited
- * through its keyword), the clipped-stop ruling, and the standing block on
- * letter NAMES. What does not survive is the wording that decided progression.
+ * elicitation fork (a short vowel distorts in isolation, so its keyword, or any
+ * word starting with the sound, also counts), the clipped-stop ruling, and the
+ * standing block on letter NAMES. What does not survive is the wording that decided progression.
  */
 import type { TeachingItem } from '../../../hooks/teachingItemContract';
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
@@ -31,9 +31,8 @@ export type { DiLetterSoundChallengeType } from './diLetterSoundsModes';
 
 /**
  * The within-mode SUPPORT tier (L3). `challengeType` = WHICH sound skill,
- * `supportTier` = HOW MUCH of the DISTAR sequence precedes the attempt. The
- * tier composes the legacy lead-in; on the teaching workspace the tutor decides
- * how much to model, and the tier survives as the item fact it reads.
+ * `supportTier` = where the levers start. It once composed a lead-in that
+ * modelled the child's own sound; that was removed (R2, 2026-10-03).
  */
 export type DiLetterSoundsSupportTier = 'easy' | 'medium' | 'hard';
 
@@ -55,8 +54,10 @@ export interface DiLetterSoundChallenge {
   keyword: string;
   /** Emoji picture support for the pre-reader (attached in code by the generator). */
   emoji: string;
-  /** Vowels elicit through the keyword ("say apple"); continuants elicit the
-   *  isolated sound ("what sound?"). */
+  /** `keyword` (short vowels): the child is asked for the letter's sound, and the
+   *  keyword or any word starting with that sound also counts, because a short vowel
+   *  distorts alone. Until 2026-10-03 the ask was "Say the word apple", which put
+   *  the answer in the question (R5). `isolated`: the sound alone. */
   elicitation: 'isolated' | 'keyword';
   /**
    * How an isolated sound is made: `held` (a continuant the child stretches —
@@ -88,7 +89,7 @@ export const targetDescription = (it: DiLetterSoundChallenge) =>
   isOnset(it)
     ? `the first sound in "${it.keyword}" (the continuous sound ${it.spoken})`
     : it.elicitation === 'keyword'
-      ? `the word "${it.keyword}"`
+      ? `the short vowel sound ${it.spoken} as at the start of "${it.keyword}" — "${it.keyword}" or another word that starts with that sound also counts; the letter's NAME does not`
       : it.articulation === 'clipped'
         // A stop cannot be held: the judge hears one short release. The
         // curriculum wants it crisp ("not tuh"), but a five-year-old's schwa
@@ -156,25 +157,22 @@ export function letterSoundChallengeValid(c: DiLetterSoundChallenge): boolean {
  *  model line: the tutor decides how much to model before the child tries. */
 export function askFor(item: Pick<LetterSoundItem, 'challengeType' | 'elicitation' | 'letter' | 'keyword'>): string {
   if (isOnset(item)) return `What is the first sound in "${item.keyword}"?`;
-  return item.elicitation === 'keyword'
-    ? `Say the word "${item.keyword}".`
-    : `What sound does the letter "${item.letter}" make?`;
+  return `What sound does the letter "${item.letter}" make?`;
 }
 
 /** The accepted answer, short. The nuance lives in `assignment`, so a tutor's
  *  affirmation is compared against a token rather than a paragraph. */
 function acceptedFor(c: DiLetterSoundChallenge): string {
   if (isOnset(c)) return c.spoken;
-  if (c.elicitation === 'keyword') return c.keyword;
-  return c.articulation === 'clipped' ? `${c.spoken} or ${c.keyword}` : c.spoken;
+  return c.articulation === 'clipped' || c.elicitation === 'keyword' ? `${c.spoken} or ${c.keyword}` : c.spoken;
 }
 
 /**
  * The success condition, and what is NOT it — short, because this sentence is
  * what a tutor's feedback gets judged against. The keyword picture sits on the
- * stage at every tier, so naming it is the near miss this primitive has to
- * distinguish: for a grapheme item, saying "moon" is progress toward mmm and
- * not the answer, while for a short vowel the keyword IS the answer.
+ * stage at easy, so naming it is the near miss this primitive has to
+ * distinguish: for a held sound, saying "moon" is progress toward mmm and not
+ * the answer, while a short vowel or a stop accepts its keyword.
  *
  * Each branch states the target once. `targetDescription` already carries the
  * name block for a clipped stop, so the generic suffix is not appended there —
@@ -183,8 +181,8 @@ function acceptedFor(c: DiLetterSoundChallenge): string {
 function assignmentFor(c: DiLetterSoundChallenge): string {
   if (isOnset(c)) return `The learner must say the first sound in "${c.keyword}": ${c.spoken}. `
     + `Saying the whole word "${c.keyword}" back, or naming a letter, is a step toward the answer and is not it.`;
-  if (c.elicitation === 'keyword') return `The learner must say the word "${c.keyword}". `
-    + 'Saying that word is the whole answer for this short vowel; the isolated vowel is not asked for.';
+  if (c.elicitation === 'keyword') return `The learner must say the short vowel sound ${c.spoken}, as at the start of "${c.keyword}". `
+    + `"${c.keyword}" or another word starting with that sound counts too. The letter's name is not the answer.`;
   if (c.articulation === 'clipped') return `The learner must say the clipped sound ${c.spoken}. `
     + `A small "uh" after it counts, and so does "${c.keyword}" or another word starting with that sound. `
     + `The letter's name is not the answer.`;
@@ -231,12 +229,13 @@ export type SpokenDiLetterSoundMiss = 'keyword_word' | 'letter_name' | 'added_vo
 
 const HELD = new Set(['s', 'n', 'm', 'f', 'l', 'r', 'v', 'z']);
 const NAME_HEARD_AS_SOUND = new Set(['s', 'f', 'r']);
+const VOWELS = ['a', 'e', 'i', 'o', 'u'];
 
 /**
  * An item's known wrong answers, most specific first. A held sound: the picture word, the letter's name, the sound
  * with a vowel after it, (first sound in a word) the word's last sound, another held sound. A clipped sound accepts
- * its picture word and any word starting with it: the name and another sound only. A vowel item asks the learner
- * to repeat its keyword ("Say the word apple"): none. A name that transcribes like the held sound itself (s, f, r:
+ * its picture word and any word starting with it: the name and another sound only. A short vowel the same, its
+ * other sounds being the other short vowels. A name that transcribes like the held sound itself (s, f, r:
  * the payloads list "ess", "ef", "ar" as ASR forms of sss, fff, rrr) is never stated.
  */
 export function diLetterSoundSpokenMisses(item: LetterSoundItem): KnownMiss[] {
@@ -244,7 +243,8 @@ export function diLetterSoundSpokenMisses(item: LetterSoundItem): KnownMiss[] {
   const name = LETTER_NAME[l];
   const stimulus = item.stimulus === 'word' ? `The word is "${keyword}" and its first sound is ${item.spoken}. ` : `The printed letter is ${l} and its sound is ${item.spoken}. `;
   const nameMiss = name && !NAME_HEARD_AS_SOUND.has(l) ? [{ id: 'letter_name', pattern: `${stimulus}The learner says the NAME of the letter, "${name}", instead of the sound.`, examples: [name] }] : [];
-  if (item.elicitation === 'keyword') return [];
+  if (item.elicitation === 'keyword') return [...nameMiss, { id: 'other_sound', examples: VOWELS.filter(v => v !== l).slice(0, 2).map(childSound),
+    pattern: `${stimulus}The learner says the sound of a different vowel.` }];
   const decoys = ['mmm', 'fff', 'lll', 'sss'].filter(d => d !== item.spoken).slice(0, 2);
   const otherSound = { id: 'other_sound', pattern: `${stimulus}The learner says the sound of a different letter. A held consonant such as "mmm" or "nnn" is a letter sound, not filler.`, examples: decoys };
   if (item.articulation === 'clipped') return [...nameMiss, otherSound];

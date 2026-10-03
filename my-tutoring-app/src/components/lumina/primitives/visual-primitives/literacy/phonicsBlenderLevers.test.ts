@@ -73,5 +73,5 @@ it('name_sound_model: its description names no model letter (read before the pul
   const { items, patternType } = load('cvc');
   const m = nameModelFor(items)!;
   const lever = phonicsBlenderLevers(items[0], patternType, 'full', [], items).find(l => l.id === 'name_sound_model')!;
-  expect(lever.does).not.toMatch(new RegExp(`\b(${m.letter}|${m.name}|${m.sound})\b`, 'i'));
+  expect(lever.does).not.toMatch(new RegExp(`\\b(${m.letter}|${m.name}|${m.sound})\\b`, 'i'));
 });

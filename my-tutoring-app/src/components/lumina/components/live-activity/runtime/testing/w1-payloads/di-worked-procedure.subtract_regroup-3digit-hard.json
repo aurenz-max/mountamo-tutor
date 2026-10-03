@@ -1,0 +1,34 @@
+{
+ "source": "qa/tutor-reports/di-worked-procedure-runtime-subtract_regroup-3digit-hard-payload-2026-10-03.json",
+ "primitiveId": "di-worked-procedure",
+ "evalMode": "subtract_regroup",
+ "data": {
+  "title": "Speak and Subtract",
+  "description": "Say each step out loud, one column at a time.",
+  "challengeType": "subtract_regroup",
+  "problems": [
+   {
+    "id": "wp-1-630-498",
+    "minuend": 630,
+    "subtrahend": 498,
+    "challengeType": "subtract_regroup",
+    "supportTier": "hard"
+   },
+   {
+    "id": "wp-2-964-686",
+    "minuend": 964,
+    "subtrahend": 686,
+    "challengeType": "subtract_regroup",
+    "supportTier": "hard"
+   },
+   {
+    "id": "wp-3-856-167",
+    "minuend": 856,
+    "subtrahend": 167,
+    "challengeType": "subtract_regroup",
+    "supportTier": "hard"
+   }
+  ],
+  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

@@ -727,7 +727,7 @@ const wrongClauseFor = (item: PictureVocabItem): string => {
         + `Being the same KIND of thing does not by itself make an answer right, and it does not by itself make one wrong. `
         + `Ask only this: are the two actually used, worn, or put together in ordinary life? `
         + `⭐ A glove goes with a hand — you put one on the other, so it is RIGHT, even though dressing covers them both. `
-        + `A glove does NOT go with a scarf — both are clothes and both live in the same box, but neither is ever used on or with the other, so it is WRONG. `
+        + `A glove does NOT go with a scarf — both are things you wear and both live in the same box, but neither is ever used on or with the other, so it is WRONG. `
         + `When the only link you can find between what you heard and ${item.baseWord} is that they are the same kind of thing, `
         + `or that they sit in the same place, the answer is WRONG. `
       );

@@ -58,11 +58,9 @@ export const MIN_SENTENCE_WORDS = 3;
 
 /**
  * The within-mode SUPPORT tier (L3). `challengeType` = WHICH reading skill,
- * `supportTier` = HOW MUCH of the DISTAR sequence precedes the child's read —
- * `easy` hands over model + guide, `medium` only the model, `hard` neither. On
- * the teaching workspace the tutor decides how much to model; the tier
- * survives as the item fact it reads (never withdrawn at any tier: the printed
- * sentence itself, and a correction's re-model).
+ * `supportTier` = where the levers start. It once meant how much of the DISTAR
+ * sequence ("Listen", "Together") read the child's own sentence first; that was
+ * removed (R2, 2026-10-03). Never withdrawn at any tier: the printed sentence.
  */
 export type DiSentenceReadingSupportTier = 'easy' | 'medium' | 'hard';
 

@@ -1,0 +1,67 @@
+{
+ "source": "qa/tutor-reports/di-sentence-reading-runtime-decodable_sentence-payload-2026-10-03.json",
+ "primitiveId": "di-sentence-reading",
+ "evalMode": "decodable_sentence",
+ "data": {
+  "title": "Fun With Sentences",
+  "description": "Let us practice reading some fun sentences out loud together!",
+  "challengeType": "decodable_sentence",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "challenges": [
+   {
+    "id": "disr-1-rat-ran",
+    "challengeType": "decodable_sentence",
+    "text": "The rat ran.",
+    "wordCount": 3,
+    "vowels": [
+     "a"
+    ],
+    "emoji": "\ud83d\udc00",
+    "asrAliases": [
+     "the rat ran"
+    ]
+   },
+   {
+    "id": "disr-2-red-hen",
+    "challengeType": "decodable_sentence",
+    "text": "The red hen ran.",
+    "wordCount": 4,
+    "vowels": [
+     "e",
+     "a"
+    ],
+    "emoji": "\ud83d\udc14",
+    "asrAliases": [
+     "the red hen ran"
+    ]
+   },
+   {
+    "id": "disr-3-pig-dig",
+    "challengeType": "decodable_sentence",
+    "text": "The pig can dig.",
+    "wordCount": 4,
+    "vowels": [
+     "i"
+    ],
+    "emoji": "\ud83d\udc37",
+    "asrAliases": [
+     "the pig can dig"
+    ]
+   },
+   {
+    "id": "disr-4-dog-hot",
+    "challengeType": "decodable_sentence",
+    "text": "The dog is hot.",
+    "wordCount": 4,
+    "vowels": [
+     "o"
+    ],
+    "emoji": "\ud83d\udc36",
+    "asrAliases": [
+     "the dog is hot"
+    ]
+   }
+  ],
+  "sentences": "The rat ran. | The red hen ran. | The pig can dig. | The dog is hot."
+ }
+}

@@ -155,10 +155,10 @@ it('never states a learner response as a scene fact, and never marks the child a
 
 // ── Two word types, one act: the scene enforces the difference ──
 
-it('publishes the printed letters and the blend for a decodable word', () => {
+it('publishes the printed letters, and no blend, for a decodable word (R2)', () => {
   const h = mount('cvc_reading');
   expect(h.state().task!.workspace!.objects.map(o => o.id)).toEqual(['word', 'letter-0', 'letter-1', 'letter-2']);
-  expect(h.state().task!.demand.soundOut).toBe('sss-aaa-mmm');
+  expect(h.state().task!.demand.soundOut).toBeUndefined();
   expect(String(h.state().task!.demand.wordType)).toMatch(/decodable/);
   expect(h.view.container.querySelectorAll('[data-word-letter]')).toHaveLength(3);
 });

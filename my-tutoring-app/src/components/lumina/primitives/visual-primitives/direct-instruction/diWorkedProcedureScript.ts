@@ -73,9 +73,8 @@ export type {
   WorkedStepKind,
 } from './diWorkedProcedureModes';
 
-/** L3 lever: at `easy` the ask STATES the column's digits (reading the page is
- *  handed over); otherwise the child reads the column. `medium` and `hard` are
- *  identical in this pilot — a later /add-support-tiers pass owns the split. */
+/** L3 tier: until 2026-10-03 `easy` STATED the column's digits in the ask; that handed over the lent top (R2).
+ *  The tier now only sets where the levers start (`/add-support-tiers`). */
 
 /** What the generator emits per problem. The step chain is built HERE from the
  *  two numbers; a spec that fails the plan gates is dropped, never backfilled. */
@@ -244,7 +243,8 @@ export const problemsOf = (items: readonly WorkedProcedureItem[]): string[] =>
 
 // ── The spoken lines ─────────────────────────────────────────────────────────
 
-const statesDigits = (item: WorkedProcedureItem): boolean => item.supportTier === 'easy';
+/** No tier states the column's digits any more (R2, 2026-10-03); kept for the legacy cue surface's leak exemptions. */
+const statesDigits = (_item: WorkedProcedureItem): boolean => false;
 
 /** The column phrase at `easy` — the ONE place the ask says the digits. */
 export const columnPhrase = (item: WorkedProcedureItem): string =>

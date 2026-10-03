@@ -383,7 +383,7 @@ describe('picture-vocabulary pack · tap items', () => {
     expect(cue).toContain('a second time and it is WRONG');
     // Whole words — 'hat' is a substring of 'that', which the cue is full of.
     for (const probe of ['shirt', 'hat', 'chair', 'table', 'mug', 'bowl', 'bird']) {
-      expect(cue).not.toMatch(new RegExp(`\b${probe}\b`));
+      expect(cue).not.toMatch(new RegExp(`\\b${probe}\\b`));
     }
   });
 
@@ -412,7 +412,7 @@ describe('picture-vocabulary pack · tap items', () => {
     const named = ASSOCIATION_BENCH_STIMULI
       .flatMap((s) => s.probes.map((probe) => probe.text.toLowerCase()))
       .filter((word) => /^[a-z]+$/.test(word) && !sanctioned.has(word))
-      .filter((word) => new RegExp(`\b${word}\b`).test(cue));
+      .filter((word) => new RegExp(`\\b${word}\\b`).test(cue));
     expect(named).toEqual([]);
 
     // 2. THE ACCEPT CLAUSE NO LONGER LICENSES CO-LOCATION. "keep with it" was

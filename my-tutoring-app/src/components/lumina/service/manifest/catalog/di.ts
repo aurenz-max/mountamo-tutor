@@ -60,10 +60,11 @@ export const DI_CATALOG: ComponentDefinition[] = [
       grades: ['Kindergarten', 'Grade 1'],
       guidance: 'The gold-ringed card is the stimulus for the current question, and the picture beside it is its keyword. '
         + 'The child answers OUT LOUD in every mode. '
-        + `A letter's NAME is not its sound, and naming the keyword picture is a step toward the sound rather than `
-        + 'the sound itself — except where the facts say a short vowel is elicited through its keyword, where saying '
-        + 'that word IS the answer. A stop is released once, and a small "uh" after it counts. '
-        + `Model a sound whenever it helps, but your model is not the child's answer: wait for them to say it. `
+        + `A letter's NAME is not its sound, and naming the keyword picture is a step toward a held sound rather than `
+        + 'the sound itself. A short vowel or a stop also accepts its keyword or another word starting with that sound; '
+        + 'a stop is released once, and a small "uh" after it counts. '
+        + `Never say this item's sound, or route it through its picture, before the child tries: a model is always a `
+        + 'DIFFERENT letter. '
         + 'Your completed feedback is the only record that they produced it, since a sound cannot be read off a '
         + 'transcript. '
         + 'Use demonstrate with the targets "stimulus" or "picture" to mark the card or the picture you are discussing, '
@@ -73,8 +74,8 @@ export const DI_CATALOG: ComponentDefinition[] = [
       misses: sameMisses<SpokenDiLetterSoundMiss>(['letter_sound', 'letter_sound_review', 'first_sound_in_word'],
         ['keyword_word', 'letter_name', 'added_vowel', 'last_sound', 'other_sound']),
     },
-    description: 'Live-judged Direct Instruction for continuous letter SOUNDS (not letter names): the tutor models a sound like /mmm/ as in "moon", practices it together, then asks the child to say it and judges the spoken audio. The child SPEAKS each sound aloud (voice/microphone). Perfect for kindergarten phonemic awareness and letter-sound correspondence. ESSENTIAL for K phonics / early reading foundations — grapheme-to-phoneme mapping for pre-readers. Also drills first-sound (onset) isolation from a spoken word and cumulative spaced review of taught sounds.',
-    constraints: 'Requires microphone + live audio tutor. Continuous (stretchable) sounds and short vowels only — NOT letter names, digraphs, blends, or stop consonants. The manifest must NOT supply specific letters; the menu-scoped generator selects target letters from the objective and attaches keywords/pictures in code.',
+    description: 'Live-judged Direct Instruction for continuous letter SOUNDS (not letter names): the child sees a printed letter and says its sound; the tutor models only a DIFFERENT letter ("My turn: lll, like leaf"), never the child\'s own, and judges the spoken audio. The child SPEAKS each sound aloud (voice/microphone). Perfect for kindergarten phonemic awareness and letter-sound correspondence. ESSENTIAL for K phonics / early reading foundations — grapheme-to-phoneme mapping for pre-readers. Also drills first-sound (onset) isolation from a spoken word and cumulative spaced review of taught sounds.',
+    constraints: 'Requires microphone + live audio tutor. Continuous (stretchable) sounds, short vowels and single clipped stops (t p c k h d g b) only — NOT letter names, digraphs, or blends. The manifest must NOT supply specific letters; the menu-scoped generator selects target letters from the objective and attaches keywords/pictures in code.',
     affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
     // L1 eval modes — task identities, all within the benched continuant response
     // class (the produced audio is a held sound in every mode). β mirrors backend
@@ -115,7 +116,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
       // remediation is not scaffolding).
       scaffoldingLevels: {
         level1: 'Repeat the prompt once, slowly.',
-        level2: 'Model the requested sound, then ask for one retry.',
+        level2: 'Model a DIFFERENT letter\'s sound, then ask for this one again.',
         level3: 'Accept the attempt warmly and continue as instructed.',
       },
       commonStruggles: [
@@ -125,7 +126,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
         },
         {
           pattern: 'Says the letter NAME ("em") instead of its sound',
-          response: 'Say that letters have a name and a sound, model the sound, and ask for the sound.',
+          response: 'Say that letters have a name and a sound, model a different letter\'s sound, and ask for this one\'s sound.',
         },
         {
           pattern: 'Stays silent after "Your turn"',
@@ -142,7 +143,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
             + 'corrections must begin with "My turn", using the exact quoted lines. Never begin any other '
             + 'sentence with those words. Judge honestly from the audio: affirm a reasonable kindergarten '
             + 'production of the target; correct a wrong, missing, or different production. Every correction '
-            + 're-models the sound and begins with "My turn". Do not praise to be kind. The application decides '
+            + 'models a DIFFERENT letter, never this sound, and begins with "My turn". Do not praise to be kind. The application decides '
             + 'which item comes next; never introduce one yourself. Some items deliberately give you nothing '
             + 'to model before the ask — when the quoted text is only the "Your turn" line, the learner is '
             + 'answering cold on purpose: never say, stretch, or model the target sound before they have '
@@ -168,7 +169,8 @@ export const DI_CATALOG: ComponentDefinition[] = [
     teachingWorkspace: {
       grades: ['Kindergarten', 'Grade 1'],
       guidance: 'The gold-ringed card shows ONE printed word, and reading it off the screen is the whole skill. '
-        + 'Give the child a chance to read it first; a word you model is not their read, so hand it back and wait. '
+        + 'Never read, blend or sound out this word for the child, before or after a miss: a model is always a '
+        + 'DIFFERENT word. '
         + 'Never name a word still to come: the facts are there so you can judge, not supply. '
         + 'A different word is wrong however close it sounds — a rhyme or a homophone still gets a correction. '
         + 'Blending slowly and then saying the whole word IS a correct read; separate sounds with no whole word is '
@@ -183,11 +185,11 @@ export const DI_CATALOG: ComponentDefinition[] = [
       misses: sameMisses<SpokenWordReadingMiss>(['cvc_reading', 'read_word', 'sight_word', 'word_reading_review'],
         ['letter_name', 'sounds_no_word', 'read_backwards', 'similar_word', 'first_sound_changed', 'middle_sound_changed', 'last_sound_changed']),
     },
-    description: 'Live-judged Direct Instruction WORD READING (DISTAR "What word?"): the tutor models a printed word — sounding out a decodable CVC word ("sss-aaa-mmm… sam") or naming a sight word whole — practices it together, then asks the child to read it and judges the spoken audio. The child SEES the printed word and READS it aloud (voice/microphone). Perfect for kindergarten and grade 1 decoding: short-vowel CVC word reading, blending, and high-frequency sight-word recognition. ESSENTIAL for K/G1 early reading — print-to-speech decoding for beginning readers.',
+    description: 'Live-judged Direct Instruction WORD READING (DISTAR "What word?"): the child sees a printed word and reads it aloud; the tutor models only a DIFFERENT word (sounding out a decodable CVC word, "sss-uuu-nnn… sun", or naming a sight word whole), never the child\'s own, and judges the spoken audio. The child SEES the printed word and READS it aloud (voice/microphone). Perfect for kindergarten and grade 1 decoding: short-vowel CVC word reading, blending, and high-frequency sight-word recognition. ESSENTIAL for K/G1 early reading — print-to-speech decoding for beginning readers.',
     constraints: 'Requires microphone + live audio tutor. SHORT-vowel CVC words and starter sight words only — NO long-vowel or silent-e / magic-e (CVCe) words like cake, ride, or hope, and NO digraphs, blends, or multisyllable words. When the objective is the silent-e rule, long vowels, or any other pattern outside short-vowel CVC, use phonics-blender (cvce_blend), cvc-speller, or decodable-reader instead — this pack cannot serve those words and will fall back to short-vowel CVC ones. The manifest must NOT supply specific words; the menu-scoped generator selects target words from the objective (phonics pattern or sight-word set) and attaches graphemes/rewards in code. The printed word is the answer: no pictures or audio pre-cues before the child reads.',
-    // reader: 'none' — the printed word IS the target skill, not incidental load, and the
-    // DI script models it aloud (model → lead → test) before the child is ever asked to
-    // read it alone. Nothing on the child's path requires unaided reading to advance.
+    // reader: 'none' — the printed word IS the target skill, not incidental load: reading
+    // it is the item, not a gate in front of it. (The scripted model → lead → test that once
+    // read it first is gone; the tutor models a different word, 10-02 ruling.)
     affordances: { representation: 'symbolic', reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
     // L1 eval modes (2026-08-04): same spoken single-word response class;
     // modes differ by code-owned word pool and review identity.
@@ -240,7 +242,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
       // covers the word-modeling struggle responses below.
       scaffoldingLevels: {
         level1: 'Repeat the prompt once, slowly.',
-        level2: 'Model the word (sound it out if decodable), then ask for one retry.',
+        level2: 'Model a DIFFERENT word, then ask for this one again.',
         level3: 'Accept the attempt warmly and continue as instructed.',
       },
       // Observable behaviours only. The first is this pack's signature error
@@ -252,7 +254,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
       commonStruggles: [
         {
           pattern: 'Reads a close-sounding DIFFERENT word — "matt" for "mat", "son" for "sun", "read" for "red"',
-          response: 'A different word is a different word: correct it and re-model the target, however close it sounded.',
+          response: 'A different word is a different word: correct it, model a different word, and ask for this one again, however close it sounded.',
         },
         {
           pattern: 'Spells the word with letter NAMES ("see-ay-tee") instead of reading it',
@@ -260,7 +262,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
         },
         {
           pattern: 'Sounds the word out but stops before saying it fast — "sss-aaa-mmm" with no whole word at the end',
-          response: 'Treat the blend alone as unfinished: re-model the sound-out ending in the whole word, then ask what word it is.',
+          response: 'Treat the blend alone as unfinished: model a different word blended into a whole word, then ask what this word is.',
         },
         {
           pattern: 'Sounds it out slowly first and then says the whole word correctly',
@@ -268,7 +270,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
         },
         {
           pattern: 'Stays silent after "Your turn. What word?"',
-          response: 'Read the word together once, then hand it back to them alone.',
+          response: 'Model a DIFFERENT word, then hand this one back to them alone.',
         },
       ],
       aiDirectives: [
@@ -280,8 +282,8 @@ export const DI_CATALOG: ComponentDefinition[] = [
             + '[DI_ITEM] message includes a two-branch judging rule: affirmations must begin with "Yes" and '
             + 'corrections must begin with "My turn", using the exact quoted lines. Never begin any other '
             + 'sentence with those words. Judge honestly from the audio: affirm a real read of the target word; '
-            + 'correct a wrong, missing, or different word. EVERY correction re-models the word (sounding it '
-            + 'out when the correction line does) and begins with "My turn". Do not praise to be kind. The '
+            + 'correct a wrong, missing, or different word. EVERY correction models a DIFFERENT word, never '
+            + 'this one, and begins with "My turn". Do not praise to be kind. The '
             + 'application decides which word comes next; never introduce one yourself.',
         },
         {
@@ -372,7 +374,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
       // post-attempt (or non-attempt) remediation, i.e. correction territory.
       scaffoldingLevels: {
         level1: 'Repeat the question once, slowly.',
-        level2: 'Model the whole fact, then ask for one retry.',
+        level2: 'Model a DIFFERENT fact, then ask for this one again.',
         level3: 'Accept the attempt warmly and continue as instructed.',
       },
       commonStruggles: [
@@ -394,7 +396,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
         },
         {
           pattern: 'Stays silent after "Your turn"',
-          response: 'Say the whole fact together once, then hand it back to them alone.',
+          response: 'Model a DIFFERENT fact, then hand this one back to them alone.',
         },
       ],
       aiDirectives: [
@@ -407,7 +409,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
             + 'corrections must begin with "My turn", using the exact quoted lines. Never begin any other '
             + 'sentence with those words — even excited praise like "Yes!" outside the affirmation line is '
             + 'forbidden. Judge honestly from the audio: affirm the right number, correct a wrong or missing '
-            + 'one. EVERY correction re-models the whole fact and begins with "My turn". Do not praise to be '
+            + 'one. EVERY correction models a DIFFERENT fact, never this one, and begins with "My turn". Do not praise to be '
             + 'kind. The application decides which fact comes next; never introduce one yourself. Some items '
             + 'deliberately give you nothing to say before the question — when the quoted text is only the '
             + '"Your turn" ask, the learner is answering cold on purpose: never say the fact or its answer '
@@ -559,7 +561,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'di-shapes',
-    description: 'Live-judged Direct Instruction SHAPE PRACTICE over voice: the tutor shows one drawn 2D shape, models the answer aloud ("this shape is a triangle" / "this shape has three sides"), practices it together, then asks the child and judges the spoken answer from the audio. Two kinds of ask — NAME the shape ("What shape is this?") and COUNT its attributes ("How many sides does this shape have?", "How many corners?"). The child SEES the drawn shape and SPEAKS the answer aloud (voice/microphone); shapes appear at varied rotations so naming is orientation-independent. Perfect for kindergarten and grade 1 geometry: correctly naming circles, triangles, squares, rectangles, and hexagons regardless of orientation or size, plus ovals, pentagons, rhombuses, and trapezoids when the objective names them, and counting the sides and corners (vertices) of straight-sided shapes to confirm what they are. ESSENTIAL for K/G1 MATHEMATICS geometry — 2D shape identification, naming, and side/vertex counting for early learners.',
+    description: 'Live-judged Direct Instruction SHAPE PRACTICE over voice: the tutor shows one drawn 2D shape, asks the child, and judges the spoken answer from the audio; any model is a DIFFERENT shape ("My turn: this shape is a hexagon"), never the child\'s own. Two kinds of ask — NAME the shape ("What shape is this?") and COUNT its attributes ("How many sides does this shape have?", "How many corners?"). The child SEES the drawn shape and SPEAKS the answer aloud (voice/microphone); shapes appear at varied rotations so naming is orientation-independent. Perfect for kindergarten and grade 1 geometry: correctly naming circles, triangles, squares, rectangles, and hexagons regardless of orientation or size, plus ovals, pentagons, rhombuses, and trapezoids when the objective names them, and counting the sides and corners (vertices) of straight-sided shapes to confirm what they are. ESSENTIAL for K/G1 MATHEMATICS geometry — 2D shape identification, naming, and side/vertex counting for early learners.',
     constraints: 'Requires microphone + live audio tutor. FLAT 2D shapes only — NO 3D solids (spheres, cubes, cones, cylinders) and no composing, decomposing, or building shapes from other shapes; use a geometry primitive when composing IS the objective. Side and corner counting ARE supported (count_sides / count_corners), on straight-sided shapes only — a curved shape carries no side count, so a circles-and-ovals objective routes to naming. The manifest must NOT supply specific shapes; the menu-scoped generator selects target shapes from the objective and draws them in code at varied rotations. The drawn shape is the stimulus and the spoken answer is the answer: neither the shape name nor its side/corner count ever appears on screen (or in the title/description) before the child says it.',
     affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
     // L1 ladder (2026-08-07, /add-eval-modes). Four task identities over ONE
@@ -590,8 +592,8 @@ export const DI_CATALOG: ComponentDefinition[] = [
         + 'shape name, or on the counting modes how many sides or corners. A close but different name (square for a '
         + 'rectangle, circle for an oval) is wrong; a named alternate you are given counts. On the counting modes '
         + 'never say the shape name, because it gives the count away. On real objects the object is named but the '
-        + 'shape in it is the answer. Never say the answer before the child tries. You cannot draw, rotate or '
-        + 'resize the shape.',
+        + 'shape in it is the answer. Never say the answer before the child tries, and never model this shape or its '
+        + 'count: a model is always a DIFFERENT shape. You cannot draw, rotate or resize the shape.',
       // Every item is spoken: its known wrong answers (`shapesSpokenMisses`, shape-sorter's ids), named by the `spoken_miss` observer.
       misses: missLists<SpokenShapeMiss>({
         ...sameMisses<SpokenShapeMiss>(['name_shape', 'shape_review'], ['near_name', 'other_shape_name']),
@@ -632,7 +634,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
       // ask, so a back-reference to a model line would point at silence.
       scaffoldingLevels: {
         level1: 'Repeat the question once, slowly.',
-        level2: 'Model the answer once yourself, then ask for one retry.',
+        level2: 'Model a DIFFERENT shape once, then ask about this one again.',
         level3: 'Accept the attempt warmly and continue as instructed.',
       },
       commonStruggles: [
@@ -642,7 +644,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
         },
         {
           pattern: 'Describes the shape instead of naming it — "it\'s round", "the pointy one", a color or size word',
-          response: 'Acknowledge the description in a word, then model the name and ask for the shape\'s name.',
+          response: 'Acknowledge the description in a word, then name a DIFFERENT shape as your model and ask for this shape\'s name.',
         },
         {
           pattern: 'Says the name with young-child pronunciation — "twiangle", "wectangle"',
@@ -650,7 +652,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
         },
         {
           pattern: 'Stays silent after "Your turn"',
-          response: 'Say the answer together once, then hand it back to them alone.',
+          response: 'Model a DIFFERENT shape, then hand this one back to them alone.',
         },
         {
           pattern: 'Counting task — gives a number that is off by one, usually from double-counting a corner or skipping the side they started on',
@@ -658,7 +660,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
         },
         {
           pattern: 'Counting task — answers with the shape NAME instead of a number ("triangle" when asked how many sides)',
-          response: 'They answered a different question. Acknowledge nothing, re-model the count, and ask again for how many — the count is what this item measures.',
+          response: 'They answered a different question. Acknowledge nothing, model the count of a DIFFERENT shape, and ask again for how many — the count is what this item measures.',
         },
         {
           pattern: 'Counting task — counts aloud ("one, two, three") instead of stating the total',
@@ -674,7 +676,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
             + '[DI_ITEM] message includes a two-branch judging rule: affirmations must begin with "Yes" and '
             + 'corrections must begin with "My turn", using the exact quoted lines. Never begin any other '
             + 'sentence with those words. Judge honestly from the audio: affirm the right answer, correct '
-            + 'a wrong or missing one. EVERY correction re-models the answer and begins with "My turn". Do not '
+            + 'a wrong or missing one. EVERY correction models a DIFFERENT shape, never this answer, and begins with "My turn". Do not '
             + 'praise to be kind. The application decides which shape and which question come next; never '
             + 'introduce either yourself. Some items deliberately give you nothing to say before the '
             + 'question — when the quoted text is only the "Your turn" ask, the learner is answering cold '
@@ -719,8 +721,8 @@ export const DI_CATALOG: ComponentDefinition[] = [
     teachingWorkspace: {
       grades: ['Kindergarten', 'Grade 1'],
       guidance: 'The gold-ringed card shows ONE printed sentence, and reading it aloud, every word '
-        + 'in order, is the whole skill. Modeling it once before the child reads — "Listen: ..." — is legitimate '
-        + 'teaching, not a leak: the sentence is already on their screen. '
+        + 'in order, is the whole skill. Never read this sentence, or any word of it, to the child before they read it, '
+        + 'and never re-read it after a miss: a model is always a DIFFERENT sentence. After credit you may say it back. '
         + 'A word skipped, added, or read as a different word is a miss however small, but catching and fixing their '
         + 'own slip mid-read still counts as an accurate read. Judge accuracy, never speed: slow, effortful '
         + 'sounding-out that lands on the right words is correct. A different word is wrong however close it sounds. '
@@ -730,11 +732,12 @@ export const DI_CATALOG: ComponentDefinition[] = [
       misses: sameMisses<SpokenSentenceMiss>(['decodable_sentence', 'read_sentence', 'sentence_review', 'sight_phrase_sentence'],
         ['word_skip', 'word_swap']),
     },
-    description: 'Live-judged Direct Instruction SENTENCE READING (connected text): the tutor models a printed short sentence read fluently ("Listen: The cat sat."), reads it together with the child, then asks the child to read it alone and judges the spoken audio WORD BY WORD — a skipped, added, or swapped word is corrected, not waved through. The child SEES the printed sentence and READS it aloud (voice/microphone). Perfect for kindergarten through grade 2 reading accuracy and fluency on short decodable sentences: reading fully sound-it-out CVC sentences (blending carried into connected text), reading sentences that carry irregular high-frequency sight words which must be recognised whole, and cumulative spaced review of sentences already taught. ESSENTIAL for K/G1/G2 early reading — the rung above single-word decoding, where reading accuracy first becomes measurable.',
-    constraints: 'Requires microphone + live audio tutor. Short DECODABLE sentences of 3-8 words only — the 8-word ceiling is the benched limit for reliable one-word-error detection, and longer connected text is unverified. Short-vowel CVC vocabulary plus starter sight words; NO digraphs, blends, or multisyllable words. Use read-aloud-studio instead for CONNECTED PASSAGES at grades 1-6, or for phrasing / character-voice practice with older readers — since its own DI port (2026-08-12) that primitive is judged too, so the fork is no longer graded-vs-ungraded: this pack owns ISOLATED short sentences drawn from a phonics or sight-word menu at K-2, and read-aloud-studio owns a passage whose lines read as one continuous text. Use a single-word primitive (di-word-reading) when reading ONE word is the objective; this pack always reads connected text. The manifest must NOT supply specific sentences; the menu-scoped generator selects them from the objective (phonics pattern or sight-word focus) and attaches word counts/rewards in code. The printed sentence is the answer: no pictures or audio pre-cues beyond the scripted model line.',
-    // reader: 'none' — same derivation as di-word-reading: the tutor models the sentence,
-    // reads it WITH the child, and only then tests. The print is the objective, not a gate.
-    affordances: { representation: 'symbolic', reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
+    description: 'Live-judged Direct Instruction SENTENCE READING (connected text): the child reads a printed short sentence aloud, cold, and the tutor judges the spoken audio WORD BY WORD; any model is a DIFFERENT sentence read as "My turn", never the child\'s own — a skipped, added, or swapped word is corrected, not waved through. The child SEES the printed sentence and READS it aloud (voice/microphone). Perfect for kindergarten through grade 2 reading accuracy and fluency on short decodable sentences: reading fully sound-it-out CVC sentences (blending carried into connected text), reading sentences that carry irregular high-frequency sight words which must be recognised whole, and cumulative spaced review of sentences already taught. ESSENTIAL for K/G1/G2 early reading — the rung above single-word decoding, where reading accuracy first becomes measurable.',
+    constraints: 'Requires microphone + live audio tutor. Short DECODABLE sentences of 3-8 words only — the 8-word ceiling is the benched limit for reliable one-word-error detection, and longer connected text is unverified. Short-vowel CVC vocabulary plus starter sight words; NO digraphs, blends, or multisyllable words. Use read-aloud-studio instead for CONNECTED PASSAGES at grades 1-6, or for phrasing / character-voice practice with older readers — since its own DI port (2026-08-12) that primitive is judged too, so the fork is no longer graded-vs-ungraded: this pack owns ISOLATED short sentences drawn from a phonics or sight-word menu at K-2, and read-aloud-studio owns a passage whose lines read as one continuous text. Use a single-word primitive (di-word-reading) when reading ONE word is the objective; this pack always reads connected text. The manifest must NOT supply specific sentences; the menu-scoped generator selects them from the objective (phonics pattern or sight-word focus) and attaches word counts/rewards in code. The printed sentence is the answer: no pictures or audio pre-cues before the child reads.',
+    // reader: 'emerging' (R10, 2026-10-03). It was 'none' while the tutor read the sentence
+    // first ("Listen", "Together"); with that gone the child reads 3-8 words of connected
+    // text cold, so the pack needs an emerging reader.
+    affordances: { representation: 'symbolic', reader: 'emerging', answers: ['spoken'], role: 'apply', minutes: 5 },
     // L1 eval modes (2026-07-25) — task identities, all within the benched
     // response class (a printed 3-8 word sentence read aloud), so the ladder
     // needed no new bench sitting and every mode reads through the identical
@@ -787,7 +790,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
       // AFTER an attempt, and a correction re-models at every tier by design.
       scaffoldingLevels: {
         level1: 'Ask for one more try, unhurried.',
-        level2: 'Read the whole sentence, then ask for one retry.',
+        level2: 'Model a DIFFERENT sentence, then ask for this one again.',
         level3: 'Accept the attempt warmly and continue as instructed.',
       },
       // Observable behaviours from the standing-gate bench sitting and the two
@@ -812,7 +815,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
         },
         {
           pattern: 'Reads a near-neighbour word ("hen" for "pen", "hut" for "hat") and keeps going',
-          response: 'A different word is a different word: re-read the whole sentence and ask for it again.',
+          response: 'A different word is a different word: model a different sentence and ask for this one again.',
         },
       ],
       aiDirectives: [
@@ -824,7 +827,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
             + '[DI_ITEM] message includes a two-branch judging rule: affirmations must begin with "Yes" and '
             + 'corrections must begin with "My turn", using the exact quoted lines. Never begin any other '
             + 'sentence with those words. Judge honestly from the audio: affirm an accurate read, correct a '
-            + 'misread one. EVERY correction re-reads the whole sentence and begins with "My turn". Do not '
+            + 'misread one. EVERY correction models a DIFFERENT sentence, never this one, and begins with "My turn". Do not '
             + 'praise to be kind. The application decides which sentence comes next; never introduce one '
             + 'yourself, and never invent a sentence of your own.',
         },
@@ -1013,8 +1016,8 @@ export const DI_CATALOG: ComponentDefinition[] = [
         + 'step at a time: what they do in the ringed column, then after a regroup the difference. The page writes a '
         + 'step only once it is credited, so the child reads the digits and says the numbers; the answer is never '
         + 'printed. A regroup counts only with both new numbers; the upside-down column is the common miss. After a '
-        + 'lend the crossed-out digit is no longer the top. Never say a column\'s numbers before the child tries. You '
-        + 'cannot write on the problem or change it.',
+        + 'lend the crossed-out digit is no longer the top. Never say a column\'s numbers before the child tries, and '
+        + 'never work this problem for them: a model is always a DIFFERENT problem. You cannot write on the problem or change it.',
       // Every step is spoken: its known wrong answers (`workedProcedureSpokenMisses`), named by the `spoken_miss` observer.
       misses: missLists<SpokenProcedureMiss>({
         subtract_no_regroup: ['regrouped_needlessly', 'read_crossed_out', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
@@ -1035,13 +1038,13 @@ export const DI_CATALOG: ComponentDefinition[] = [
       contextKeys: ['challengeType', 'problem', 'column', 'supportTier'],
       scaffoldingLevels: {
         level1: 'Repeat the column ask once, slowly.',
-        level2: 'Model the column once more, then hand it back with the scripted re-ask.',
+        level2: 'Model a column of a DIFFERENT problem, then hand this column back.',
         level3: 'Accept the step warmly and continue as instructed.',
       },
       commonStruggles: [
         {
           pattern: 'Turns the column upside down — "eight minus three is five" where three is on top',
-          response: 'Run the correction branch for this step: name what they said, model the regroup, then hand the column back.',
+          response: 'Run the correction branch for this step: name what they said, model a regroup on a DIFFERENT problem, then hand the column back.',
         },
         {
           pattern: 'Regroups but never changes the digit above — says the new ones and nothing about the tens',
@@ -1137,7 +1140,8 @@ export const DI_CATALOG: ComponentDefinition[] = [
         + 'using only the rule, not what they already know. On a verdict case they say yes, no, or can\'t tell AND the '
         + 'reason from the rule: a right verdict with no reason is not yet the answer, so ask how they know. The rule does '
         + 'not run backwards: having the property does not make something a member, and the key names the thing that '
-        + 'shows it. Never state the conclusion before the child tries. You cannot change the rule or the case.',
+        + 'shows it. Never state the conclusion before the child tries, and never reason this case for them: a model is always a '
+        + 'DIFFERENT rule. You cannot change the rule or the case.',
       // Every case is spoken: its known wrong answers (`deductionSpokenMisses`), named by the `spoken_miss` observer.
       misses: missLists<SpokenDeductionMiss>({
         conclude: ['said_negation', 'read_rule_back', 'read_case_back'],
@@ -1159,17 +1163,17 @@ export const DI_CATALOG: ComponentDefinition[] = [
       contextKeys: ['challengeType', 'rule', 'case', 'supportTier'],
       scaffoldingLevels: {
         level1: 'Repeat the case ask once, slowly.',
-        level2: 'Model the reasoning once more, then hand it back with the scripted re-ask.',
+        level2: 'Model the reasoning on a DIFFERENT rule, then hand this case back.',
         level3: 'Accept the deduction warmly and continue as instructed.',
       },
       commonStruggles: [
         {
           pattern: 'Says yes on a can\'t-tell case — "yes, because it lays eggs" — running the rule backwards',
-          response: 'Run the signature-error branch for this case: the rule does not work backwards, model the reasoning with the counterexample, then hand the case back.',
+          response: 'Run the signature-error branch for this case: the rule does not work backwards, model the reasoning on a DIFFERENT rule, then hand this case back.',
         },
         {
           pattern: 'Gives the right verdict with no reason — "no", or "no, because it\'s a spider"',
-          response: 'Run the how-do-you-know branch: model the reason from the rule, then hand the case back.',
+          response: 'Run the how-do-you-know branch: model a reason on a DIFFERENT rule, then hand this case back.',
         },
         {
           pattern: 'Reads the rule back instead of answering — "all insects have six legs"',
@@ -1284,7 +1288,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
       contextKeys: ['challengeType', 'story', 'step', 'supportTier'],
       scaffoldingLevels: {
         level1: 'Repeat the step ask once, slowly.',
-        level2: 'Model the step once more, then hand it back with the scripted re-ask.',
+        level2: 'Model the step on a DIFFERENT story, then hand this step back.',
         level3: 'Accept the step warmly and continue as instructed.',
       },
       commonStruggles: [

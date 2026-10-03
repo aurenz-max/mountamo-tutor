@@ -129,12 +129,14 @@ it('never states a learner response as a scene fact, and never marks the child a
 
 // ── The task's own pedagogy survives the sunset ──
 
-it('elicits a short vowel through its keyword, and accepts a stop as clipped or as its keyword', () => {
+it('asks a short vowel for its sound and accepts its keyword (R5), and accepts a stop as clipped or as its keyword', () => {
   const vowel = mount('letter_sound');
   vowel.say('mmm'); vowel.feedback('correct', 'advance');
-  expect(vowel.state().task!.task).toBe('Say the word "apple".');
-  expect(vowel.state().task!.workspace!.expectedAnswer).toBe('apple');
-  expect(String(vowel.state().task!.demand.assignment)).toMatch(/the whole answer for this short vowel/);
+  // The ask no longer contains the answer ("Say the word apple" credited "apple").
+  expect(vowel.state().task!.task).toBe('What sound does the letter "a" make?');
+  expect(vowel.state().task!.task).not.toMatch(/apple/);
+  expect(vowel.state().task!.workspace!.expectedAnswer).toBe('aaa or apple');
+  expect(String(vowel.state().task!.demand.assignment)).toMatch(/letter's name is not the answer/);
   cleanup();
   const stop = mount('letter_sound_review');
   stop.say('sss'); stop.feedback('correct', 'advance');

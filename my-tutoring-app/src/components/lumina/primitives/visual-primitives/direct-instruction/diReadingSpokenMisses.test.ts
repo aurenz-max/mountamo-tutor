@@ -20,7 +20,7 @@ const CASES: Case[] = [
   ['held letter s: its name transcribes like the sound', () => sound({ letter: 's', spoken: 'sss', keyword: 'sun' }),
     ['keyword_word', 'added_vowel', 'other_sound'], ['sss', 's', 'ess']],
   ['clipped letter t', () => sound({ letter: 't', spoken: 't', keyword: 'top', articulation: 'clipped' }), ['letter_name', 'other_sound'], ['t', 'top']],
-  ['vowel through its keyword', () => sound({ letter: 'a', spoken: 'aaa', keyword: 'apple', elicitation: 'keyword' }), [], []],
+  ['short vowel a: its keyword counts (R5)', () => sound({ letter: 'a', spoken: 'aaa', keyword: 'apple', elicitation: 'keyword' }), ['letter_name', 'other_sound'], ['aaa', 'apple']],
   ['first sound in moon', () => sound({ challengeType: 'first_sound_in_word' }),
     ['keyword_word', 'letter_name', 'added_vowel', 'last_sound', 'other_sound'], ['mmm', 'm']],
   ['decodable cat', () => word({}), ['letter_name', 'sounds_no_word', 'first_sound_changed', 'middle_sound_changed', 'last_sound_changed'], ['cat']],

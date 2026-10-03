@@ -41,8 +41,11 @@ export const workedProcedureColumnPhrase = (item: WorkedProcedureModePlanItem): 
     ? `${numberWord(item.column.effectiveTop)} minus ${numberWord(item.column.bottom)}`
     : `${numberWord(item.column.topAfterLend)} minus ${numberWord(item.column.bottom)}`;
 
+// The ask never says the column's digits at any tier (R2, 2026-10-03): the easy phrase said the lent top, which is
+// the `read_crossed_out` answer, and on a subtract step the regrouped top. Easy support is the model lever, a
+// different problem worked beside this one.
 const instructionFor = (item: WorkedProcedureModePlanItem): string => {
-  const digits = item.supportTier === 'easy' ? `: ${workedProcedureColumnPhrase(item)}` : '';
+  const digits = '';
   if (item.kind === 'subtract') {
     return `Subtract the ${item.place} column${digits}, then say the result.`;
   }

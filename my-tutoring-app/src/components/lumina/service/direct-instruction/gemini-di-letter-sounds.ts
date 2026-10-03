@@ -88,10 +88,10 @@ const resolveSupportStructure = (
   tier,
   describe:
     tier === 'hard'
-      ? 'cold production — no model, no choral practice; the child retrieves the sound unaided'
+      ? 'cold — no lever starts on screen'
       : tier === 'medium'
-        ? 'modeled once, then produced alone — the choral "Together" step is withdrawn'
-        : 'modeled and practiced together first — the full DISTAR sequence',
+        ? 'no lever starts on screen; the tutor pulls them as needed'
+        : 'the model lever (a DIFFERENT item, solved) starts on screen; never the child\'s own item modelled (10-02 ruling)',
 });
 
 /** One curated menu entry: everything the tutor and the picture need. */

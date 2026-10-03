@@ -1,0 +1,98 @@
+{
+ "source": "qa/tutor-reports/di-shapes-runtime-find_real_object-payload-2026-10-03.json",
+ "primitiveId": "di-shapes",
+ "evalMode": "find_real_object",
+ "data": {
+  "title": "Super Shape Safari!",
+  "description": "Look closely at the pictures on the screen and say out loud what you see!",
+  "challengeType": "name_real_object",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "challenges": [
+   {
+    "id": "dish-1-square",
+    "challengeType": "name_real_object",
+    "shape": "square",
+    "shapeWord": "square",
+    "article": "a",
+    "sides": 4,
+    "corners": 4,
+    "rotationDeg": 0,
+    "asrAliases": [
+     "square",
+     "squares",
+     "sware"
+    ],
+    "realObjectId": "window",
+    "realObjectLabel": "window"
+   },
+   {
+    "id": "dish-2-triangle",
+    "challengeType": "name_real_object",
+    "shape": "triangle",
+    "shapeWord": "triangle",
+    "article": "a",
+    "sides": 3,
+    "corners": 3,
+    "rotationDeg": 0,
+    "asrAliases": [
+     "triangle",
+     "triangles",
+     "twiangle"
+    ],
+    "realObjectId": "yield-sign",
+    "realObjectLabel": "yield sign"
+   },
+   {
+    "id": "dish-3-rectangle",
+    "challengeType": "name_real_object",
+    "shape": "rectangle",
+    "shapeWord": "rectangle",
+    "article": "a",
+    "sides": 4,
+    "corners": 4,
+    "rotationDeg": 0,
+    "asrAliases": [
+     "rectangle",
+     "rectangles",
+     "wectangle"
+    ],
+    "realObjectId": "door",
+    "realObjectLabel": "door"
+   },
+   {
+    "id": "dish-4-circle",
+    "challengeType": "name_real_object",
+    "shape": "circle",
+    "shapeWord": "circle",
+    "article": "a",
+    "sides": null,
+    "corners": null,
+    "rotationDeg": 0,
+    "asrAliases": [
+     "circle",
+     "circles",
+     "surkle"
+    ],
+    "realObjectId": "clock",
+    "realObjectLabel": "clock face"
+   },
+   {
+    "id": "dish-5-circle",
+    "challengeType": "name_real_object",
+    "shape": "circle",
+    "shapeWord": "circle",
+    "article": "a",
+    "sides": null,
+    "corners": null,
+    "rotationDeg": 0,
+    "asrAliases": [
+     "circle",
+     "circles",
+     "surkle"
+    ],
+    "realObjectId": "clock",
+    "realObjectLabel": "clock face"
+   }
+  ]
+ }
+}

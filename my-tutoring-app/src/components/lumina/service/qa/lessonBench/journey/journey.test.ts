@@ -30,13 +30,13 @@ describe('actual lesson content, independent evidence and persona controls', () 
     expect(event.source).toBe('/components/0/data/challenges/0');
     expect(event.skillId).toBeUndefined();
   });
-  it('never converts modeled echo success into independent mastery', () => {
+  it('an echo-only learner gets no mastery: no tier models the learner item itself (R2), so there is nothing to echo', () => {
     const p = pkg('di-letter-sounds', { challenges: Array.from({ length: 12 }, (_, i) => challenge(letters[i % 3], i)) });
+    expect(extractLesson(p, contract()).events.every((e) => !e.modeled && !e.guided)).toBe(true);
     const r = run(p, PROFILES.find((p) => p.id === 'echo-only')!);
-    expect(r.attempts.every((a) => a.finalCorrect)).toBe(true);
-    expect(r.independentItems).toBe(0);
+    expect(r.attempts.some((a) => a.firstCorrect)).toBe(false);
     expect(r.after.every((p) => !p.correct)).toBe(true);
-    expect(r.decision).toBe('INSUFFICIENT_EVIDENCE');
+    expect(r.decision).not.toBe('ADVANCE');
   });
   it('can advance a prepared learner with independent and delayed evidence', () => {
     const prepared = { ...PROFILES[0], initial: Object.fromEntries(letters.map((l) => [`sound-production:${l}`, 1])), slip: 0, decay: 0 };
@@ -93,10 +93,10 @@ describe('actual lesson content, independent evidence and persona controls', () 
     expect(e.modeled).toBe(true); expect(e.explainsRelation).toBe(false);
     expect(e.cue).toContain('Listen: sam');
   });
-  it('keyword repetition does not count as production of the vowel sound', () => {
+  it('a short vowel is asked for its sound, and its ask does not model the keyword (R5)', () => {
     const p = pkg('di-letter-sounds', { challenges: [{ ...challenge('a', 0, 'hard'), keyword: 'apple', elicitation: 'keyword' }] });
     const e = extractLesson(p, { ...contract(), allowedGraphemes: ['a'] }).events[0];
-    expect(e.capability).toBe('keyword'); expect(e.modeled).toBe(true);
+    expect(e.capability).toBe('sound-production'); expect(e.modeled).toBe(false);
   });
   it('decoding requires known graphemes as well as blending skill', () => {
     const learner = new ContentLearner({ ...PROFILES[0], initial: { 'decode:*': 1 } }, 42);

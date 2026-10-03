@@ -7,17 +7,17 @@
  *
  * What the DI pedagogy KEEPS, because it is task structure rather than control
  * protocol: the child answers out loud in every mode; the printed stimulus stays
- * on screen at every tier; a short vowel is still elicited through its keyword;
+ * on screen at every tier; a short vowel accepts its keyword (it distorts alone);
  * a stop is still judged as a clipped release; the letter's NAME is still not
  * the answer. What it loses is the requirement that the tutor say one exact
  * sentence and that the application read progression out of those words.
  *
  * Two objects are drawn, and both are real: the stimulus card (the printed
  * grapheme, or the keyword in print for onset isolation) and the keyword
- * picture. The tutor can mark either one to point at it while teaching —
- * "this picture is a moon, and moon starts with mmm" is the keyword route, and
- * it is a genuine teaching move rather than an answer. A mark is never a
- * learner attempt, and it never moves the gold ring off the stimulus.
+ * picture. The tutor can mark either one to point at it. It never says the
+ * item's sound or its keyword route ("moon starts with mmm") before the child
+ * tries: that is the answer (R2, 2026-10-03); a model is a DIFFERENT letter. A
+ * mark is never a learner attempt, and it never moves the gold ring off the stimulus.
  *
  * The workspace binding, evaluation and recap are `DiTeachingStage`.
  */

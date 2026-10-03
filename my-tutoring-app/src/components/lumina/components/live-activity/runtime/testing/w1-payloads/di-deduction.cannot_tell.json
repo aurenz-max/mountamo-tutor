@@ -1,32 +1,31 @@
 {
- "source": "qa/tutor-reports/di-deduction-runtime-cannot_tell-payload-2026-09-26.json",
+ "source": "qa/tutor-reports/di-deduction-runtime-cannot_tell-payload-2026-10-03.json",
  "primitiveId": "di-deduction",
  "evalMode": "cannot_tell",
  "data": {
-  "title": "Follow the Clues",
-  "description": "You will use a rule to figure out what follows and explain how you know.",
+  "title": "Follow the Rule",
+  "description": "Use the rule to figure out what follows and explain how you know.",
   "challengeType": "cannot_tell",
   "rules": [
    {
-    "id": "dd-1-2",
-    "category": "bird",
-    "categoryPlural": "birds",
-    "propertyPlural": "have feathers",
-    "propertySingular": "has feathers",
-    "propertyNegated": "does not have feathers",
-    "kindNoun": "animal",
+    "id": "dd-1-4",
+    "category": "square",
+    "categoryPlural": "squares",
+    "propertyPlural": "have four equal sides",
+    "propertySingular": "has four equal sides",
+    "propertyNegated": "does not have four equal sides",
+    "kindNoun": "shape",
     "members": [
-     "robin",
-     "duck",
-     "owl"
+     "tile",
+     "window"
     ],
     "nonMembers": [
-     "frog",
-     "snake",
-     "horse"
+     "circle",
+     "triangle",
+     "oval"
     ],
     "lookalikes": [
-     "pillow"
+     "rhombus"
     ],
     "shapes": [
      "cannot_tell"

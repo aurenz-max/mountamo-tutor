@@ -79,7 +79,7 @@ def get_id_token() -> str:
 
 def fetch_live_context(frontend: str, component_id: str, topic: str, grade: str,
                        eval_mode: Optional[str] = None, di: bool = False,
-                       bench: bool = False) -> Dict[str, Any]:
+                       bench: bool = False, difficulty: Optional[str] = None) -> Dict[str, Any]:
     """Tier-2 probe with &live=1: real generated content + the raw tutoring block.
 
     Retries: the Next dev server intermittently answers mid-recompile, and
@@ -94,6 +94,8 @@ def fetch_live_context(frontend: str, component_id: str, topic: str, grade: str,
             params = {"componentId": component_id, "probe": "1", "live": "1", "topic": topic, "gradeLevel": grade}
             if eval_mode:
                 params["evalMode"] = eval_mode
+            if difficulty:
+                params["difficulty"] = difficulty
             if di:
                 # The judged loop, serialized: real items through the real build
                 # gates, real cues, and the answer material a right and a wrong

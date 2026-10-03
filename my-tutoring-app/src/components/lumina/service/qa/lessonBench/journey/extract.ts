@@ -89,18 +89,16 @@ export function extractLesson(pkg: LessonPackage, contract: LessonContract): Ext
           const it = raw as DiLetterSoundChallenge;
           if (!it.id || !it.letter || !it.spoken || !it.keyword || !['letter_sound', 'letter_sound_review', 'first_sound_in_word'].includes(it.challengeType)) throw new Error(`Malformed challenge ${i}`);
           if (!['isolated', 'keyword'].includes(it.elicitation) || !soundMatches(it.letter, it.spoken)) throw new Error(`Challenge ${i}: sound/letter contract mismatch`);
-          // Keyword elicitation asks the child to repeat the WORD, not produce a phoneme.
-          const capability = it.elicitation === 'keyword' ? 'keyword' : it.challengeType === 'first_sound_in_word' ? 'onset' : 'sound-production';
-          // The workspace tutor decides how much to model; the support tier is the fact it is
-          // given (easy: model and say together, medium: model, hard: cold). An ask that names
-          // its own answer (a keyword elicitation) is modelled at every tier.
+          // Every grapheme item asks for the letter's SOUND; a short vowel (like a stop) also accepts its keyword,
+          // but the ask no longer contains it (R5, 2026-10-03: "Say the word apple" credited "apple").
+          const capability = it.challengeType === 'first_sound_in_word' ? 'onset' : 'sound-production';
+          // No tier models the child's own item (R2, 2026-10-03): easy starts with a model of a DIFFERENT letter.
           const cue = soundAsk(it);
-          const tier = it.supportTier ?? 'easy';
           add({ itemId: it.id, evalMode: it.challengeType, capability,
-            target: lower(capability === 'keyword' ? it.keyword : it.letter), graphemes: [lower(it.letter)],
+            target: lower(it.letter), graphemes: [lower(it.letter)],
             cue, source: `${source}/challenges/${i}`,
-            modality: 'spoken', modeled: tier !== 'hard' || openingModelsAnswer(cue, it.elicitation === 'keyword' ? it.keyword : it.spoken),
-            guided: tier === 'easy', explainsRelation: it.elicitation !== 'keyword',
+            modality: 'spoken', modeled: openingModelsAnswer(cue, it.spoken) || openingModelsAnswer(cue, it.keyword),
+            guided: false, explainsRelation: true,
           });
         });
       } else if (block.componentId === 'phonics-blender') {
@@ -124,11 +122,10 @@ export function extractLesson(pkg: LessonPackage, contract: LessonContract): Ext
           const it = raw as DiWordReadingChallenge;
           if (!it.id || !it.word || it.wordType !== 'cvc' || !it.graphemes?.length) throw new Error(`Word ${i}: only explicit CVC grapheme sequences are supported by this adapter`);
           if (lower(it.graphemes.join('')) !== lower(it.word)) throw new Error(`Word ${i}: graphemes disagree with word`);
-          // Word reading has no support tier: the tutor may model and read it together on every
-          // item, as the deleted drill always did, so neither counts as independent evidence.
+          // The tutor never reads or blends the child's own word (R2, 2026-10-03): a model is a DIFFERENT word.
           add({ itemId: it.id, evalMode: it.challengeType, capability: 'decode', target: lower(it.word), graphemes: it.graphemes.map(lower),
             cue: wordAsk(it), source: `${source}/challenges/${i}`,
-            modality: 'spoken', modeled: true, guided: true, explainsRelation: true });
+            modality: 'spoken', modeled: openingModelsAnswer(wordAsk(it), it.word), guided: false, explainsRelation: true });
         });
       } else if (block.componentId === 'letter-sound-link') {
         if (!Array.isArray(data.challenges) || !data.challenges.length) throw new Error('No challenges');

@@ -1,0 +1,67 @@
+{
+ "source": "qa/tutor-reports/di-word-problem-setup-runtime-classify_and_build-payload-2026-10-03.json",
+ "primitiveId": "di-word-problem-setup",
+ "evalMode": "classify_and_build",
+ "data": {
+  "title": "Build and Solve Story Magic",
+  "description": "You will build the number family and read it before working each story.",
+  "challengeType": "classify_and_build",
+  "problems": [
+   {
+    "id": "wps-1-comparison-fewer_person",
+    "frameId": "comparison:fewer_person",
+    "theme": {
+     "nameA": "Sam",
+     "nameB": "Zoe",
+     "nounPlural": "stickers",
+     "gainPast": "bought",
+     "gainBase": "buy",
+     "losePast": "gave away",
+     "loseBase": "give away"
+    },
+    "first": 17,
+    "second": 3,
+    "adjectivePair": 1,
+    "challengeType": "classify_and_build",
+    "maxNumber": 20
+   },
+   {
+    "id": "wps-2-change-gain_end",
+    "frameId": "change:gain_end",
+    "theme": {
+     "nameA": "Max",
+     "nameB": "Lily",
+     "nounPlural": "apples",
+     "gainPast": "earned",
+     "gainBase": "earn",
+     "losePast": "ate",
+     "loseBase": "eat"
+    },
+    "first": 10,
+    "second": 5,
+    "adjectivePair": 1,
+    "challengeType": "classify_and_build",
+    "maxNumber": 20
+   },
+   {
+    "id": "wps-3-part_whole-whole",
+    "frameId": "part_whole:whole",
+    "theme": {
+     "nameA": "Ben",
+     "nameB": "Ava",
+     "nounPlural": "shells",
+     "gainPast": "picked",
+     "gainBase": "pick",
+     "losePast": "dropped",
+     "loseBase": "drop"
+    },
+    "first": 8,
+    "second": 4,
+    "adjectivePair": 2,
+    "challengeType": "classify_and_build",
+    "maxNumber": 20
+   }
+  ],
+  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

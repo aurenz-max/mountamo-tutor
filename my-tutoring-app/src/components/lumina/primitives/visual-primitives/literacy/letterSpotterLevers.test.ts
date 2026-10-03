@@ -109,5 +109,5 @@ it('first_letter_model: its description names no model word (read before the pul
     targetLetter: 's', targetWord: 'sun', spokenSentence: 'The sun is bright.', options: [] } as unknown as LetterSpotterItem;
   const m = firstLetterModelFor(item, [item], 1)!;
   const [lever] = letterSpotterLevers(item, [], [item], 1);
-  expect(lever.does).not.toMatch(new RegExp(`\b${m.word}\b`, 'i'));
+  expect(lever.does).not.toMatch(new RegExp(`\\b${m.word}\\b`, 'i'));
 });

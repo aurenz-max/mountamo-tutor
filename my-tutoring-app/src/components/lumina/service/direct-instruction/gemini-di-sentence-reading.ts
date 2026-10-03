@@ -105,10 +105,10 @@ const resolveSupportStructure = (
   tier,
   describe:
     tier === 'hard'
-      ? 'cold read — no model, no choral reading; the child decodes the print unaided'
+      ? 'cold — no lever starts on screen'
       : tier === 'medium'
-        ? 'modeled once, then read alone — the choral "Together" step is withdrawn'
-        : 'modeled and read together first — the full DISTAR sequence',
+        ? 'no lever starts on screen; the tutor pulls them as needed'
+        : 'the model lever (a DIFFERENT item, solved) starts on screen; never the child\'s own item modelled (10-02 ruling)',
 });
 
 // ── Structural difficulty (L4) ──────────────────────────────────────

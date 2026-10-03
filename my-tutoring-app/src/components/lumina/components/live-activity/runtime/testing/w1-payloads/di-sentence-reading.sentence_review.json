@@ -1,0 +1,65 @@
+{
+ "source": "qa/tutor-reports/di-sentence-reading-runtime-sentence_review-payload-2026-10-03.json",
+ "primitiveId": "di-sentence-reading",
+ "evalMode": "sentence_review",
+ "data": {
+  "title": "Sentence Magic!",
+  "description": "Let us practice reading some fun sentences out loud together!",
+  "challengeType": "sentence_review",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "challenges": [
+   {
+    "id": "disr-1-cat-nap",
+    "challengeType": "sentence_review",
+    "text": "Can the cat nap?",
+    "wordCount": 4,
+    "vowels": [
+     "a"
+    ],
+    "emoji": "\ud83d\ude34",
+    "asrAliases": [
+     "can the cat nap"
+    ]
+   },
+   {
+    "id": "disr-2-my-ball",
+    "challengeType": "sentence_review",
+    "text": "My ball is red.",
+    "wordCount": 4,
+    "vowels": [
+     "e"
+    ],
+    "emoji": "\u26bd",
+    "asrAliases": [
+     "my ball is red"
+    ]
+   },
+   {
+    "id": "disr-3-we-go",
+    "challengeType": "sentence_review",
+    "text": "We can go up.",
+    "wordCount": 4,
+    "vowels": [
+     "u"
+    ],
+    "asrAliases": [
+     "we can go up"
+    ]
+   },
+   {
+    "id": "disr-4-mom-pot",
+    "challengeType": "sentence_review",
+    "text": "Mom got a pot.",
+    "wordCount": 4,
+    "vowels": [
+     "o"
+    ],
+    "emoji": "\ud83c\udf72",
+    "asrAliases": [
+     "mom got a pot"
+    ]
+   }
+  ],
+  "sentences": "Can the cat nap? | My ball is red. | We can go up. | Mom got a pot."
+ }
+}

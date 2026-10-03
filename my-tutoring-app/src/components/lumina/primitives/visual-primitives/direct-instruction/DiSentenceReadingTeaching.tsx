@@ -18,10 +18,9 @@
  *
  * Unlike word reading, there is nothing to withhold from the tutor or the ask:
  * the printed sentence is the target, and it is already on the child's screen.
- * The tutor legitimately MODELS it aloud before the read at `easy`/`medium`
- * support — that is real DI instruction, not a leak. `askFor` still never
- * repeats the sentence text in the task string, matching the sibling packs'
- * shape even though the reason here is consistency rather than a real leak.
+ * The tutor never reads it aloud before the child does, and never re-reads it after
+ * a miss (R2, 2026-10-03): the read would become repetition. A model is a DIFFERENT
+ * sentence. `askFor` never repeats the sentence text in the task string.
  *
  * Connected text has no discrete sound-out sub-units the way a single
  * decodable word does, so there is only ONE demonstrable object — the whole
