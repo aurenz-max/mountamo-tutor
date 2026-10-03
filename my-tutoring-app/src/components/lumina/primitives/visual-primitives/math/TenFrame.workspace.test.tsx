@@ -94,9 +94,8 @@ it.each([
   const h = mount(mode, [...challenges], band);
   expect(h.state().owner).toBe('tutor');
   expect(h.state().task!.task).not.toMatch(/Say exactly|\[TF_/);
-  // build and build_teen items declare in-item levers (tenFrameLevers.ts); the other kinds have none yet.
-  expect(tutorTools(h)).toEqual(mode === 'subitize' ? ['begin_help', 'present']
-    : mode === 'build' || mode === 'build_teen' ? ['begin_help', 'pull_lever'] : ['begin_help']);
+  // Every kind declares in-item levers (tenFrameLevers.ts).
+  expect(tutorTools(h)).toEqual(mode === 'subitize' ? ['begin_help', 'present', 'pull_lever'] : ['begin_help', 'pull_lever']);
   expect(seam.send.mock.calls.flat().join(' ')).not.toMatch(/\[TF_|Say exactly/);
 });
 
@@ -205,14 +204,14 @@ it.each(['mixed', 'build|subitize|decompose'])('a %s pin binds, and each item ke
   // subitize: the frame from build is gone, the counters are hidden, and only now is present offered
   expect(h.state().task!.itemId).toBe('s1');
   expect(h.counters()).toBe(0);
-  expect(tutorTools(h)).toEqual(['begin_help', 'present']);
+  expect(tutorTools(h)).toEqual(['begin_help', 'present', 'pull_lever']);
   expect(h.state().task!.workspace!.expectedAnswer).toBe('3');
   h.dispatch('present'); act(() => { vi.advanceTimersByTime(1000); });
   h.say('three'); h.feedback('correct', 'advance');
   // split: the whole group arrives, taps flip, and no spoken key is published
   expect(h.state().task!.itemId).toBe('d1');
   expect(h.counters()).toBe(4);
-  expect(tutorTools(h)).toEqual(['begin_help']);
+  expect(tutorTools(h)).toEqual(['begin_help', 'pull_lever']);
   expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
   h.tap(0); h.settle();
   expect(h.state().task!.evidence.correctness).toBe('correct');

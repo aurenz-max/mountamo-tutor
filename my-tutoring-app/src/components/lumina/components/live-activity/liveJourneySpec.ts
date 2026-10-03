@@ -36,7 +36,7 @@ const twoPictureFraction = (parent: any) => {
   const easier = twoPictureItem(buildFractionTouchItems([parent])[0]);
   return easier ? { numerator: easier.numerator, denominator: easier.denominator } : {};
 };
-import { smallerBuild } from '../../primitives/visual-primitives/math/tenFrameLevers';
+import { practiceItem } from '../../primitives/visual-primitives/math/tenFrameLevers';
 import { buildSequencerItems as sequencerItems, sequencerHarnessAnswers }
   from '../../primitives/visual-primitives/math/numberSequencerDomain';
 import { buildLetterSoundItems, letterSoundHarnessAnswers }
@@ -316,9 +316,9 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       if (intent === 'warmup') return [];
       const d = ctx.data;
       const all = frameItems(d.challenges ?? [], { capacity: d.mode === 'double' ? 20 : 10, band: d.gradeBand ?? 'K' });
-      // The easier build (simplify lever) is not a generated challenge: rebuild it with the component's builder.
+      // An easier item (any simplify lever) is not a generated challenge: rebuild it with the component's builder.
       const parent = ctx.itemId?.endsWith('~smaller') ? all.find(i => `${i.id}~smaller` === ctx.itemId) : undefined;
-      const item = parent ? smallerBuild(parent, d.gradeBand ?? 'K') ?? undefined : all.find(i => i.id === ctx.itemId);
+      const item = parent ? practiceItem(parent, d.gradeBand ?? 'K', all) ?? undefined : all.find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current ten-frame assignment');
       const answers = tenFrameHarnessAnswers(item);
       // A quick look not yet shown is the learner's to start: they press Show me, then answer.

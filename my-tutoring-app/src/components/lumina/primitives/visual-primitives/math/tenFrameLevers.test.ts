@@ -41,10 +41,6 @@ describe('ten-frame build levers', () => {
     expect(fiveFrameIndex(teen(14))).toBe(1);
     expect(JSON.stringify(tenFrameLevers(teen(14), [], 'K'))).not.toMatch(/fourteen|\b14\b|\b4\b/);
   });
-  it('declares nothing on other kinds yet', () => {
-    const [makeTen] = itemsFromChallenges([{ id: 'm', type: 'make_ten', targetCount: 6 }], { capacity: 10, band: 'K' });
-    expect(tenFrameLevers(makeTen, [], 'K')).toEqual([]);
-  });
 });
 
 describe('what a wrong placement shows, and the lever that answers it (code, not a Live run)', () => {

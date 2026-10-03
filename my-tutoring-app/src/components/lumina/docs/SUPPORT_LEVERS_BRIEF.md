@@ -129,6 +129,8 @@ Fix the range defect first (B2).
 
 ## Appendix: ten-frame lever draft (2026-09-27 skill dry run, not confirmed with the user)
 
+**Superseded 09-29:** every ten-frame mode now has levers; the built table and what changed from this draft are in `qa/support-levers/m4-lever-tables-2026-09-29.md` (contract R12).
+
 No real-learner evidence exists for ten-frame (`qa/misconception/ten-frame-2026-09-14.md:4` is fictional). The misses come from `tenFrameScript.ts` scripted wrong answers and catalog `commonStruggles`.
 
 | Mode | Failure (class) | Lever | Kind | Carrier | Leak rule | Exists today? |

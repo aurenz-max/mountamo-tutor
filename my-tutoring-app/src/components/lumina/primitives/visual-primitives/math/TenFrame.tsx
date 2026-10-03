@@ -123,7 +123,8 @@ import {
   type TenFrameItem,
 } from './tenFrameScript';
 import { tenFrameEvidenceSummary, tenFrameObservation } from './tenFrameEvidence';
-import { COUNT_LEVER, FIVE_LEVER, SMALLER_LEVER, fiveFrameIndex, frameMiss, smallerBuild, tenFrameLevers } from './tenFrameLevers';
+import { COUNT_LEVER, SIMPLIFY_LEVERS, frameMiss, leverFacts, leverView, practiceItem, tenFrameLevers, type LeverContext,
+  type ModelFrame } from './tenFrameLevers';
 import { numberWordFor } from './countingBoardScript';
 import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
@@ -356,6 +357,8 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<TenFrameItem | null>(null);
   const practiceRef = useRef<TenFrameItem | null>(null);
+  /** The `longer_look` lever: the next quick look lasts twice as long. Read by the flash, set from the lever view. */
+  const longLookRef = useRef(false);
   const displayItemRef = useRef<TenFrameItem | null>(null);
 
   const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -481,7 +484,7 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
     setFlashAnswerReady(false);
     setCountersVisible(true);
     setIsFlashing(true);
-    const duration = challengeById.get(item.id)?.flashDuration || SUBITIZE_FLASH_MS;
+    const duration = (challengeById.get(item.id)?.flashDuration || SUBITIZE_FLASH_MS) * (longLookRef.current ? 2 : 1);
     flashTimeoutRef.current = setTimeout(() => {
       setCountersVisible(false);
       setIsFlashing(false);
@@ -615,7 +618,13 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
   // lets the child tap until it reads the target, which skips the counting the item measures.
   const pulledLevers = leverState.item === sessionItem?.id ? leverState.pulled : [];
   const leverKind = currentItem?.kind === 'build' || currentItem?.kind === 'build_teen';
-  const fiveOnFrame = pulledLevers.includes(FIVE_LEVER) && leverKind && currentItem ? fiveFrameIndex(currentItem) : -1;
+  // What a lever reads beyond the item: the session (numbers still ahead stay out of models and practice) and,
+  // on a split, the ways already shown for its total.
+  const leverCtx: LeverContext = { session: items,
+    shownWays: sessionItem?.kind === 'split' ? shownSplitsRef.current.get(sessionItem.answer) : undefined };
+  const view = leverView(sessionItem, pulledLevers, gradeBand, leverCtx);
+  longLookRef.current = view.longLook;
+  const fiveOnFrame = view.five;
   const fiveOn = fiveOnFrame >= 0;
   const startRunnerRef = useRef(runner.start); startRunnerRef.current = runner.start;
   useEffect(() => {
@@ -650,7 +659,8 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
       const shown = shownSplitsRef.current.get(item.answer) ?? new Set<string>();
       const alreadyShown = new Set(shown);
       splitVerdictRef.current = judgeSplit(item, { a: item.answer - onFrame, b: onFrame }, alreadyShown);
-      if (onFrame > 0 && onFrame < item.answer) {
+      // An easier practice split is ungraded: its ways never enter the session's ledger.
+      if (onFrame > 0 && onFrame < item.answer && !practiceRef.current) {
         shown.add(splitKey({ a: item.answer - onFrame, b: onFrame }));
         shownSplitsRef.current.set(item.answer, shown);
       }
@@ -763,20 +773,23 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
   // W1 offers no demonstration targets; `present` runs the subitize flash.
   useLayoutEffect(() => {
     if (!tutorOwned || !currentItem) return;
+    const scene = workspaceScene(currentItem, { onFrame: filledCells.size, yellow: countsFlips(currentItem) ? flippedCells.size : 0,
+      hidden: isSubitize && !countersVisible });
+    const onScreen = leverFacts(sessionItem, pulledLevers, gradeBand, leverCtx);
     workspace.current = {
-      ...workspaceScene(currentItem, { onFrame: filledCells.size, yellow: countsFlips(currentItem) ? flippedCells.size : 0,
-        hidden: isSubitize && !countersVisible }),
+      ...scene,
+      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
       canPresent: isSubitize,
       readyForResponse: !isSubitize || flashAnswerReady,
-      levers: practice ? [] : tenFrameLevers(sessionItem, pulledLevers, gradeBand),
+      levers: practice ? [] : tenFrameLevers(sessionItem, pulledLevers, gradeBand, leverCtx),
       // A synchronous commit (the workspace runs it inside flushSync): the frame changes before this returns.
       pullLever: (id) => {
-        const lever = tenFrameLevers(sessionItem, pulledLevers, gradeBand).find(l => l.id === id);
+        const lever = tenFrameLevers(sessionItem, pulledLevers, gradeBand, leverCtx).find(l => l.id === id);
         if (practice || !sessionItem || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled.`;
-        if (id === SMALLER_LEVER) {
-          const easier = smallerBuild(sessionItem, gradeBand);
-          if (!easier) return 'There is no easier build for this item.';
+        if (SIMPLIFY_LEVERS.has(id)) {
+          const easier = practiceItem(sessionItem, gradeBand, items);
+          if (!easier) return 'There is no easier item for this one.';
           setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
           practiceRef.current = easier; setPractice(easier); resetFrameFor(easier);
           return { practice: workspaceAssignment(easier) };
@@ -859,6 +872,9 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
         const y = FRAME_PADDING + row * (CELL_SIZE + CELL_GAP);
         const isFilled = filledCells.has(cellIndex);
         const shouldShowCounter = isFilled && countersVisible;
+        // Levers on the empty boxes: `empty_glow` pulses them (K make-ten), `hide_empty` fades them (quick look).
+        const glow = view.emptyGlow && !isFilled;
+        const faded = view.hideEmpty && !shouldShowCounter;
 
         cells.push(
           <g key={cellIndex}>
@@ -871,10 +887,12 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
               height={CELL_SIZE}
               rx={CELL_RADIUS}
               ry={CELL_RADIUS}
-              className="cursor-pointer transition-colors duration-150"
-              fill={shouldShowCounter ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)'}
-              stroke="rgba(255,255,255,0.15)"
-              strokeWidth={1.5}
+              className={`cursor-pointer transition-colors duration-150${glow ? ' animate-pulse' : ''}`}
+              data-lever={glow ? 'empty-glow' : faded ? 'hide-empty' : undefined}
+              fill={shouldShowCounter ? 'rgba(255,255,255,0.08)' : glow ? 'rgba(250,204,21,0.12)' : 'rgba(255,255,255,0.03)'}
+              stroke={glow ? 'rgba(250,204,21,0.7)' : 'rgba(255,255,255,0.15)'}
+              strokeWidth={glow ? 2.5 : 1.5}
+              opacity={faded ? 0.2 : 1}
               onClick={() => { pip.look(`cell-${cellIndex}`); handleCellClick(cellIndex); }}
             />
             {shouldShowCounter && (
@@ -923,7 +941,7 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
         )}
       </g>
     );
-  }, [filledCells, countersVisible, colorForCell, handleCellClick, pip, fiveOnFrame]);
+  }, [filledCells, countersVisible, colorForCell, handleCellClick, pip, fiveOnFrame, view.emptyGlow, view.hideEmpty]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   /** `build` runs never speak an answer and `subitize` runs never place one —
@@ -1074,6 +1092,26 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
               </div>
             )}
 
+            {/* decompose_teen's running-count lever: the yellow counters only; the leftover is never shown. */}
+            {view.yellowCount && (
+              <div className="flex items-center justify-center text-sm" data-lever="running-count">
+                <span className="text-slate-300">
+                  Yellow: <span className="text-yellow-300 font-bold text-lg">{flippedCells.size}</span>
+                </span>
+              </div>
+            )}
+
+            {/* Model levers: a small frame BESIDE the item, never on it; and on a split, the learner's own ways. */}
+            {(view.models.length > 0 || view.ways.length > 0) && (
+              <div className="flex flex-wrap items-end justify-center gap-4">
+                {view.models.map((m, i) => <ModelFrameView key={`m${i}`} model={m} lever="model-frame" />)}
+                {view.ways.map(w => (
+                  <ModelFrameView key={`${w.a}+${w.b}`} lever="ways-shown"
+                    model={{ whole: 10, red: w.a, yellow: w.b, crossed: 0, says: '' }} />
+                ))}
+              </div>
+            )}
+
             {/* The FACT, for readers — the same thing the tutor says aloud. It
                 is the question side; the answer stays off the screen. */}
             {showEquation && !isPreReader && kind === 'add' && (
@@ -1092,6 +1130,9 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
                 tap-to-hear re-asks the QUESTION and never narrates the count. */}
             {isSubitize && (
               <div className="flex flex-col items-center gap-2">
+                {view.longLook && (
+                  <span className="text-cyan-300 text-xs font-medium" data-lever="longer-look">🐢 Long look</span>
+                )}
                 {!flashAnswerReady && (
                   <span className="text-orange-300 text-sm font-medium">
                     👀 {isFlashing ? 'Look quick!' : 'Get ready to look…'}
@@ -1172,6 +1213,34 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
     </LuminaCard>
   );
 };
+
+/** A lever's small model frame, drawn beside the item: red counters, then yellow, then red ones crossed out. */
+function ModelFrameView({ model, lever }: { model: ModelFrame; lever: string }) {
+  const size = 22, gap = 3, cols = 5, rows = model.whole === 5 ? 1 : 2;
+  const colours = [
+    ...Array<string>(model.red).fill(COUNTER_COLORS.red), ...Array<string>(model.yellow).fill(COUNTER_COLORS.yellow),
+    ...Array<string>(model.crossed).fill('crossed'),
+  ];
+  return (
+    <div className="flex flex-col items-center gap-1" data-lever={lever}>
+      <svg width={cols * (size + gap) + gap} height={rows * (size + gap) + gap} aria-hidden="true">
+        {Array.from({ length: cols * rows }, (_, i) => {
+          const x = gap + (i % cols) * (size + gap), y = gap + Math.floor(i / cols) * (size + gap), c = colours[i];
+          return (
+            <g key={i}>
+              <rect x={x} y={y} width={size} height={size} rx={4} fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.25)" />
+              {c && <circle cx={x + size / 2} cy={y + size / 2} r={7} fill={c === 'crossed' ? COUNTER_COLORS.red : c}
+                opacity={c === 'crossed' ? 0.45 : 1} />}
+              {c === 'crossed' && <path d={`M${x + 4} ${y + 4} L${x + size - 4} ${y + size - 4} M${x + size - 4} ${y + 4} L${x + 4} ${y + size - 4}`}
+                stroke="rgba(248,250,252,0.9)" strokeWidth={2} />}
+            </g>
+          );
+        })}
+      </svg>
+      {model.says && <span className="text-xs text-slate-400">{model.says}</span>}
+    </div>
+  );
+}
 
 // The workspace path never mounts the runner, whose context push and cue loop would run beside the tutor.
 const TenFrame = withWorkspaceController<TenFrameProps, TenFrameControllerOptions, LiveRun<TenFrameItem>>(
