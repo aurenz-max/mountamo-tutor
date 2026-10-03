@@ -169,8 +169,8 @@ function acceptedFor(c: DiLetterSoundChallenge): string {
 
 /**
  * The success condition, and what is NOT it — short, because this sentence is
- * what a tutor's feedback gets judged against. The keyword picture sits on the
- * stage at easy, so naming it is the near miss this primitive has to
+ * what a tutor's feedback gets judged against. The keyword picture is on the
+ * stage at easy (or as a lever), so naming it is the near miss this primitive has to
  * distinguish: for a held sound, saying "moon" is progress toward mmm and not
  * the answer, while a short vowel or a stop accepts its keyword.
  *
@@ -259,23 +259,30 @@ export function diLetterSoundSpokenMisses(item: LetterSoundItem): KnownMiss[] {
   ];
 }
 
-/** The drawn stage: the stimulus card and the keyword picture, both markable. */
-export const workspaceScene = (item: LetterSoundItem): WorkspaceScene => ({
-  objects: [
-    { id: 'stimulus', selected: false, group: 'assignment target (gold ring)',
-      label: item.stimulus === 'word'
-        ? `the word "${item.keyword}" printed on the card`
-        : `the letter "${item.letter}" printed on the card` },
-    { id: 'picture', selected: false, group: 'keyword picture',
-      label: `a picture of a ${item.keyword}` },
-  ],
-  facts: { kind: item.challengeType, assignment: item.assignment,
-    keyword: item.keyword, elicitation: item.elicitation, articulation: item.articulation,
-    supportTier: item.supportTier,
-    ...(item.stimulus === 'letter' ? { printedLetter: item.letter } : { printedWord: item.keyword }),
-    markMeaning: 'Purple dashed marks are yours. They point at the card or the picture while you teach; '
-      + 'they are not the learner answering, and they never move the gold ring off the stimulus.' },
-});
+/** The drawn stage: the stimulus card, and the keyword picture where it is drawn (always on an onset item; on a
+ *  grapheme item only as the `keyword_picture` lever, ruling R4), both markable. */
+export const workspaceScene = (item: LetterSoundItem, view?: { pulled: readonly string[] }): WorkspaceScene => {
+  const picture = item.stimulus === 'word' || !!view?.pulled.includes('keyword_picture');
+  return {
+    objects: [
+      { id: 'stimulus', selected: false, group: 'assignment target (gold ring)',
+        label: item.stimulus === 'word'
+          ? `the word "${item.keyword}" printed on the card`
+          : `the letter "${item.letter}" printed on the card` },
+      ...(picture ? [{ id: 'picture', selected: false, group: 'keyword picture', label: `a picture of a ${item.keyword}` }] : []),
+    ],
+    facts: { kind: item.challengeType, assignment: item.assignment,
+      keyword: item.keyword, elicitation: item.elicitation, articulation: item.articulation,
+      // DI's model is a PARALLEL letter, never this one (user ruling 2026-10-02): easy starts with the model card (and
+      // the keyword picture) on screen, medium and hard without them.
+      support: item.supportTier === 'hard' ? 'answer it cold: model nothing before the learner answers, and never say this sound'
+        : item.supportTier === 'medium' ? 'the learner tries first; after a miss, model a different letter with the model_sound lever, never this one'
+          : 'the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound',
+      ...(item.stimulus === 'letter' ? { printedLetter: item.letter } : { printedWord: item.keyword }),
+      markMeaning: 'Purple dashed marks are yours. They point at the card or the picture while you teach; '
+        + 'they are not the learner answering, and they never move the gold ring off the stimulus.' },
+  };
+};
 
 /** What the mounted journey driver SAYS for this item. The wrong answer is a
  *  different held sound rather than the letter name: the name is a real

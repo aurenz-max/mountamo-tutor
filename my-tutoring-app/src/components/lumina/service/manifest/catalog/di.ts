@@ -58,21 +58,26 @@ export const DI_CATALOG: ComponentDefinition[] = [
     id: 'di-letter-sounds',
     teachingWorkspace: {
       grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'The gold-ringed card is the stimulus for the current question, and the picture beside it is its keyword. '
+      guidance: 'The gold-ringed card is the stimulus for the current question; a picture of its keyword is drawn on an '
+        + 'onset item, and on a letter item only as the keyword_picture lever. '
         + 'The child answers OUT LOUD in every mode. '
         + `A letter's NAME is not its sound, and naming the keyword picture is a step toward a held sound rather than `
         + 'the sound itself. A short vowel or a stop also accepts its keyword or another word starting with that sound; '
         + 'a stop is released once, and a small "uh" after it counts. '
-        + `Never say this item's sound, or route it through its picture, before the child tries: a model is always a `
-        + 'DIFFERENT letter. '
+        + `Never say this item's sound, or route it through its picture, before the child tries: your model is the `
+        + 'model_sound lever, a DIFFERENT letter beside it. The support fact says where levers start. '
         + 'Your completed feedback is the only record that they produced it, since a sound cannot be read off a '
         + 'transcript. '
         + 'Use demonstrate with the targets "stimulus" or "picture" to mark the card or the picture you are discussing, '
         + 'and [] to clear them. There is no other scene action: you cannot change the letter, replace the picture, '
         + 'write, or answer for the child.',
       // The spoken sound's known wrong answers (`diLetterSoundSpokenMisses`).
-      misses: sameMisses<SpokenDiLetterSoundMiss>(['letter_sound', 'letter_sound_review', 'first_sound_in_word'],
-        ['keyword_word', 'letter_name', 'added_vowel', 'last_sound', 'other_sound']),
+      levers: true,
+      // `last_sound` needs the printed word, so it is named on first_sound_in_word only.
+      misses: missLists<SpokenDiLetterSoundMiss>({
+        ...sameMisses<SpokenDiLetterSoundMiss>(['letter_sound', 'letter_sound_review'], ['keyword_word', 'letter_name', 'added_vowel', 'other_sound']),
+        first_sound_in_word: ['keyword_word', 'letter_name', 'added_vowel', 'last_sound', 'other_sound'],
+      }),
     },
     description: 'Live-judged Direct Instruction for continuous letter SOUNDS (not letter names): the child sees a printed letter and says its sound; the tutor models only a DIFFERENT letter ("My turn: lll, like leaf"), never the child\'s own, and judges the spoken audio. The child SPEAKS each sound aloud (voice/microphone). Perfect for kindergarten phonemic awareness and letter-sound correspondence. ESSENTIAL for K phonics / early reading foundations — grapheme-to-phoneme mapping for pre-readers. Also drills first-sound (onset) isolation from a spoken word and cumulative spaced review of taught sounds.',
     constraints: 'Requires microphone + live audio tutor. Continuous (stretchable) sounds, short vowels and single clipped stops (t p c k h d g b) only — NOT letter names, digraphs, or blends. The manifest must NOT supply specific letters; the menu-scoped generator selects target letters from the objective and attaches keywords/pictures in code.',

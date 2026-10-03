@@ -102,7 +102,7 @@ it.each(ALL_MODES)('%s publishes a factual ask with no scripted cue and no tutor
   expect(JSON.stringify(task)).not.toMatch(/Speak exactly|say exactly/i);
   // The model sees help and demonstration. Recording and progression are observer-only.
   expect(h.state().affordances.filter(a => !a.controller).map(a => (a.action as any).operation ?? a.action.type).sort())
-    .toEqual(['begin_help', 'demonstrate']);
+    .toEqual(['begin_help', 'demonstrate', 'pull_lever']);
   expect(runtimePacket(h.state()).choices.some(a => ['retry', 'advance'].includes(a.action.type))).toBe(false);
   expect(task.evidence.attemptNumber).toBe(0);
   expect(task.support).toEqual({ level: 0, answerExposure: 'none' });

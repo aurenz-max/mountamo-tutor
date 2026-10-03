@@ -90,7 +90,8 @@ export interface DiTeachingStageProps<Item extends { id: string }, M extends Pri
   className?: string;
   runtimePlanItemId?: string;
   assignment: (item: Item) => TeachingAssignment;
-  scene: (item: Item, view: { ready: boolean }) => WorkspaceScene;
+  /** `pulled`: the levers on screen for this item (none on a practice item), so a lever-drawn object is a target only while drawn. */
+  scene: (item: Item, view: { ready: boolean; pulled: readonly string[] }) => WorkspaceScene;
   metrics: (result: TeachingEvaluationResult) => M;
   copy: { empty: string; title: string; badge: string; prompt: string; heading: string; celebration: string };
   /** The recap row for one item. `solved` is false for a missed item, whose recap must not
@@ -170,7 +171,7 @@ function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>
   const ready = !awaitsStimulus || (!!item && readyIds.has(item.id));
 
   useLayoutEffect(() => {
-    const drawn = scene(item, { ready });
+    const drawn = scene(item, { ready, pulled: practiceItem ? [] : pulled });
     const declared = levers && !practiceItem ? levers.declare(sessionItem, pulled) : [];
     const onScreen = levers && !practiceItem ? levers.onScreen(sessionItem, pulled) : '';
     workspace.current = {

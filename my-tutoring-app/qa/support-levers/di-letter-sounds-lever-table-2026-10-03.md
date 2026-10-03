@@ -1,6 +1,6 @@
 # di-letter-sounds: failure inventory and lever table (2026-10-03)
 
-**DRAFT — awaiting user confirmation.** Nothing here is built.
+**BUILT 2026-10-03** (rulings R1-R10 as recommended): `qa/eval-reports/di-letter-sounds-levers-2026-10-03.md`.
 
 `/add-support-tiers` Phases 1-2, DI family (literacy). Rulings carried over: DI gets in-item levers (2026-10-02);
 DI's correction is a parallel-item model, never the learner's own item (2026-10-02); DI is spoken-first; stops
