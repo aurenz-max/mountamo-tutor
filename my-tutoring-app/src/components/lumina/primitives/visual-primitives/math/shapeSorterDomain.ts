@@ -828,7 +828,8 @@ export const leakExemptSpanFor = (item: ShapeSorterItem): string | undefined =>
   item.mode === 'sort' && item.namesChoices ? choicesPhrase(item) : undefined;
 
 /** What a wrong spoken answer about a flat shape shows (handoff 20 Part B); di-shapes names the same ids. */
-export type SpokenShapeMiss = OffByMiss | 'said_object' | 'near_name' | 'other_shape_name' | 'said_shape_name' | 'other_group';
+export type SpokenShapeMiss = OffByMiss | 'said_object' | 'near_name' | 'other_shape_name' | 'said_shape_name' | 'other_group'
+  | 'described_shape';
 
 /**
  * The name misses of a flat-shape answer, after `fact` (what is on screen): the look-alike name first

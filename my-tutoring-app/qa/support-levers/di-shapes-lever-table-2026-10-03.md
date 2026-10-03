@@ -1,6 +1,6 @@
 # di-shapes: failure inventory and lever table (2026-10-03)
 
-**DRAFT — awaiting user confirmation.** `/add-support-tiers` Phases 1-2, DI family 3 of 10. Nothing is built.
+**BUILT 2026-10-03** (rulings R1-R10 as recommended): `qa/eval-reports/di-shapes-levers-2026-10-03.md`. `/add-support-tiers` Phases 1-2, DI family 3 of 10.
 Rulings carried over (2026-10-02): DI gets in-item levers; DI's correction is a parallel-item model (a different
 shape, solved, beside the child's; "My turn" on the model, then back to the child's shape). The child answers out
 loud; no lever turns the answer into a tap.

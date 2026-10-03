@@ -593,11 +593,15 @@ export const DI_CATALOG: ComponentDefinition[] = [
         + 'rectangle, circle for an oval) is wrong; a named alternate you are given counts. On the counting modes '
         + 'never say the shape name, because it gives the count away. On real objects the object is named but the '
         + 'shape in it is the answer. Never say the answer before the child tries, and never model this shape or its '
-        + 'count: a model is always a DIFFERENT shape. You cannot draw, rotate or resize the shape.',
+        + 'count: your model is the model lever, a DIFFERENT shape solved beside it. The support fact says where levers '
+        + 'start. On a naming item never describe the shape (its sides, corners, roundness) and never offer a choice of '
+        + 'names: either one hands over the answer. If the learner is stuck and the model is already on screen, say the '
+        + 'model again as your turn, then ask again. You cannot draw, rotate or resize the shape.',
+      levers: true,
       // Every item is spoken: its known wrong answers (`shapesSpokenMisses`, shape-sorter's ids), named by the `spoken_miss` observer.
       misses: missLists<SpokenShapeMiss>({
-        ...sameMisses<SpokenShapeMiss>(['name_shape', 'shape_review'], ['near_name', 'other_shape_name']),
-        find_real_object: ['said_object', 'near_name', 'other_shape_name'],
+        ...sameMisses<SpokenShapeMiss>(['name_shape', 'shape_review'], ['near_name', 'other_shape_name', 'described_shape']),
+        find_real_object: ['said_object', 'near_name', 'other_shape_name', 'described_shape'],
         ...sameMisses<SpokenShapeMiss>(['count_sides', 'count_corners'], ['said_shape_name', 'one_short', 'one_over', 'short_by_more', 'over_by_more']),
       }),
     },

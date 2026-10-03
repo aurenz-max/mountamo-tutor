@@ -1,0 +1,4634 @@
+{
+ "lessonEntry": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+ "records": [
+  {
+   "payload": "di-shapes.count_corners",
+   "primitiveId": "di-shapes",
+   "evalMode": "count_corners",
+   "guidance": "The stage draws one flat shape, or a familiar object drawn in code. The child answers OUT LOUD: the shape name, or on the counting modes how many sides or corners. A close but different name (square for a rectangle, circle for an oval) is wrong; a named alternate you are given counts. On the counting modes never say the shape name, because it gives the count away. On real objects the object is named but the shape in it is the answer. Never say the answer before the child tries, and never model this shape or its count: your model is the model lever, a DIFFERENT shape solved beside it. The support fact says where levers start. You cannot draw, rotate or resize the shape. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Naming flat shapes: circle, square, triangle, rectangle",
+   "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+   "leakTokens": [
+    "DI_ITEM",
+    "DI_MOVE_ON",
+    "DI_COMPLETE"
+   ],
+   "ask": "How many corners does this shape have?",
+   "keys": [
+    "four"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dish-1-rectangle",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-shapes",
+      "objectiveId": "di-shapes-practice",
+      "evalMode": "count_corners",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dish-1-rectangle",
+       "phase": "working",
+       "task": "How many corners does this shape have?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "count_corners",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says how many corners aloud. The shape's name is not shown or said: it gives the count away.",
+        "onScreen": "Beside the learner's shape, a model card shows a different one, solved: a different shape with a mark on each of its corners, answered six corners. It is not this one.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "shape",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the drawn shape whose corners the learner counts"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_count",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_shape_name",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gives a wrong number of corners, says a shape name, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT shape, a mark on each of its corners (onScreen says how many). Say only its total as your turn (\"My turn: this shape has … corners\"); never count it aloud and never name either shape. Then ask about the learner's shape again."
+         },
+         {
+          "id": "start_mark",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "one_short",
+           "one_over"
+          ],
+          "when": "The learner counts one corner twice or misses the one they started on.",
+          "does": "Puts one dot on one corner of the learner's shape: start there and stop when you are back. No number."
+         },
+         {
+          "id": "touch_marks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner loses track while counting the corners.",
+          "does": "Lets the learner tap each corner as they count it; a tapped one is marked. No numbers."
+         },
+         {
+          "id": "fewer_sides",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "This many corners is too many to count yet.",
+          "does": "Opens an easier one of the same kind first. It is not graded; the full shape comes back after it."
+         }
+        ],
+        "expectedAnswer": "four",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dish-1-rectangle",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "dish-1-rectangle",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-shapes",
+      "objectiveId": "di-shapes-practice",
+      "evalMode": "count_corners",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dish-1-rectangle",
+       "phase": "working",
+       "task": "How many corners does this shape have?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "count_corners",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says how many corners aloud. The shape's name is not shown or said: it gives the count away.",
+        "onScreen": "Beside the learner's shape, a model card shows a different one, solved: a different shape with a mark on each of its corners, answered six corners. It is not this one.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "shape",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the drawn shape whose corners the learner counts"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_count",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_shape_name",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gives a wrong number of corners, says a shape name, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT shape, a mark on each of its corners (onScreen says how many). Say only its total as your turn (\"My turn: this shape has … corners\"); never count it aloud and never name either shape. Then ask about the learner's shape again."
+         },
+         {
+          "id": "start_mark",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "one_short",
+           "one_over"
+          ],
+          "when": "The learner counts one corner twice or misses the one they started on.",
+          "does": "Puts one dot on one corner of the learner's shape: start there and stop when you are back. No number."
+         },
+         {
+          "id": "touch_marks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner loses track while counting the corners.",
+          "does": "Lets the learner tap each corner as they count it; a tapped one is marked. No numbers."
+         },
+         {
+          "id": "fewer_sides",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "This many corners is too many to count yet.",
+          "does": "Opens an easier one of the same kind first. It is not graded; the full shape comes back after it."
+         }
+        ],
+        "expectedAnswer": "four",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "ten"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dish-1-rectangle",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "ten",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dish-1-rectangle",
+       "revision": 1
+      },
+      "task": "How many corners does this shape have?",
+      "phase": "working",
+      "learner": "ten",
+      "expectedAnswer": "four",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "ten"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [
+        {
+         "id": "shape",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the drawn shape whose corners the learner counts"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "count_corners",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says how many corners aloud. The shape's name is not shown or said: it gives the count away.",
+        "onScreen": "Beside the learner's shape, a model card shows a different one, solved: a different shape with a mark on each of its corners, answered six corners. It is not this one.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dish-1-rectangle"
+      },
+      "task": "How many corners does this shape have?",
+      "expectedAnswer": "four",
+      "learner": "ten",
+      "misses": [
+       {
+        "id": "said_shape_name",
+        "pattern": "The shape drawn is a rectangle. The learner's answer is \"rectangle\", the shape's name and no number.",
+        "examples": [
+         "rectangle"
+        ]
+       },
+       {
+        "id": "one_short",
+        "pattern": "The learner's answer is 3, one fewer than the 4 corners of the rectangle.",
+        "examples": [
+         "three"
+        ]
+       },
+       {
+        "id": "one_over",
+        "pattern": "The learner's answer is 5, one more than the 4 corners of the rectangle.",
+        "examples": [
+         "five"
+        ]
+       },
+       {
+        "id": "short_by_more",
+        "pattern": "The learner's answer is 2 or fewer (but more than zero), two or more fewer than the 4 corners of the rectangle.",
+        "examples": [
+         "two"
+        ]
+       },
+       {
+        "id": "over_by_more",
+        "pattern": "The learner's answer is 6 or more, two or more more than the 4 corners of the rectangle.",
+        "examples": [
+         "six"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dish-1-rectangle",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-shapes",
+      "objectiveId": "di-shapes-practice",
+      "evalMode": "count_corners",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dish-1-rectangle",
+       "phase": "working",
+       "task": "How many corners does this shape have?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "ten",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "count_corners",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says how many corners aloud. The shape's name is not shown or said: it gives the count away.",
+        "onScreen": "Beside the learner's shape, a model card shows a different one, solved: a different shape with a mark on each of its corners, answered six corners. It is not this one.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "shape",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the drawn shape whose corners the learner counts"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_count",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_shape_name",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gives a wrong number of corners, says a shape name, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT shape, a mark on each of its corners (onScreen says how many). Say only its total as your turn (\"My turn: this shape has … corners\"); never count it aloud and never name either shape. Then ask about the learner's shape again."
+         },
+         {
+          "id": "start_mark",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "one_short",
+           "one_over"
+          ],
+          "when": "The learner counts one corner twice or misses the one they started on.",
+          "does": "Puts one dot on one corner of the learner's shape: start there and stop when you are back. No number."
+         },
+         {
+          "id": "touch_marks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner loses track while counting the corners.",
+          "does": "Lets the learner tap each corner as they count it; a tapped one is marked. No numbers."
+         },
+         {
+          "id": "fewer_sides",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "This many corners is too many to count yet.",
+          "does": "Opens an easier one of the same kind first. It is not graded; the full shape comes back after it."
+         }
+        ],
+        "expectedAnswer": "four",
+        "lastResponse": {
+         "itemId": "dish-1-rectangle",
+         "response": "ten",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dish-1-rectangle",
+          "response": "ten",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/2/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dish-1-rectangle",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "dish-1-rectangle",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-shapes",
+      "objectiveId": "di-shapes-practice",
+      "evalMode": "count_corners",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dish-1-rectangle",
+       "phase": "working",
+       "task": "How many corners does this shape have?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "ten",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "count_corners",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says how many corners aloud. The shape's name is not shown or said: it gives the count away.",
+        "onScreen": "Beside the learner's shape, a model card shows a different one, solved: a different shape with a mark on each of its corners, answered six corners. It is not this one. One dot marks a starting corner on the learner's shape. No number.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "shape",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the drawn shape whose corners the learner counts"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_count",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_shape_name",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gives a wrong number of corners, says a shape name, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT shape, a mark on each of its corners (onScreen says how many). Say only its total as your turn (\"My turn: this shape has … corners\"); never count it aloud and never name either shape. Then ask about the learner's shape again."
+         },
+         {
+          "id": "start_mark",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "one_short",
+           "one_over"
+          ],
+          "when": "The learner counts one corner twice or misses the one they started on.",
+          "does": "Puts one dot on one corner of the learner's shape: start there and stop when you are back. No number."
+         },
+         {
+          "id": "touch_marks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner loses track while counting the corners.",
+          "does": "Lets the learner tap each corner as they count it; a tapped one is marked. No numbers."
+         },
+         {
+          "id": "fewer_sides",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "This many corners is too many to count yet.",
+          "does": "Opens an easier one of the same kind first. It is not graded; the full shape comes back after it."
+         }
+        ],
+        "expectedAnswer": "four",
+        "lastResponse": {
+         "itemId": "dish-1-rectangle",
+         "response": "ten",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dish-1-rectangle",
+          "response": "ten",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "dish-1-rectangle",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "start_mark"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dish-1-rectangle",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled start_mark (help). It is on screen now: Puts one dot on one corner of the learner's shape: start there and stop when you are back. No number. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "start_mark",
+      "kind": "help",
+      "does": "Puts one dot on one corner of the learner's shape: start there and stop when you are back. No number."
+     }
+    },
+    {
+     "kind": "credit",
+     "itemId": "dish-1-rectangle",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-shapes",
+      "objectiveId": "di-shapes-practice",
+      "evalMode": "count_corners",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dish-1-rectangle",
+       "phase": "working",
+       "task": "How many corners does this shape have?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "ten",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "count_corners",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says how many corners aloud. The shape's name is not shown or said: it gives the count away.",
+        "onScreen": "Beside the learner's shape, a model card shows a different one, solved: a different shape with a mark on each of its corners, answered six corners. It is not this one. One dot marks a starting corner on the learner's shape. No number.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "shape",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the drawn shape whose corners the learner counts"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_count",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_shape_name",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gives a wrong number of corners, says a shape name, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT shape, a mark on each of its corners (onScreen says how many). Say only its total as your turn (\"My turn: this shape has … corners\"); never count it aloud and never name either shape. Then ask about the learner's shape again."
+         },
+         {
+          "id": "start_mark",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "one_short",
+           "one_over"
+          ],
+          "when": "The learner counts one corner twice or misses the one they started on.",
+          "does": "Puts one dot on one corner of the learner's shape: start there and stop when you are back. No number."
+         },
+         {
+          "id": "touch_marks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner loses track while counting the corners.",
+          "does": "Lets the learner tap each corner as they count it; a tapped one is marked. No numbers."
+         },
+         {
+          "id": "fewer_sides",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "This many corners is too many to count yet.",
+          "does": "Opens an easier one of the same kind first. It is not graded; the full shape comes back after it."
+         }
+        ],
+        "expectedAnswer": "four",
+        "pendingResponse": {
+         "id": "speech:1:2",
+         "text": "four"
+        },
+        "lastResponse": {
+         "itemId": "dish-1-rectangle",
+         "response": "ten",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dish-1-rectangle",
+          "response": "ten",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "dish-1-rectangle",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "start_mark"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dish-1-rectangle",
+        "secondsOnItem": 20,
+        "secondsSinceReady": 20,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "four",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dish-1-rectangle",
+       "revision": 3
+      },
+      "task": "How many corners does this shape have?",
+      "phase": "working",
+      "learner": "four",
+      "expectedAnswer": "four",
+      "pendingResponse": {
+       "id": "speech:1:2",
+       "text": "four"
+      },
+      "lastResponse": {
+       "itemId": "dish-1-rectangle",
+       "response": "ten",
+       "source": "speech",
+       "correct": false,
+       "tutorResponse": "Not quite.",
+       "judgment": "tutor",
+       "assisted": false,
+       "answerExposure": "none"
+      },
+      "activity": {
+       "responseSource": "speech",
+       "attemptNumber": 1,
+       "objects": [
+        {
+         "id": "shape",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the drawn shape whose corners the learner counts"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "count_corners",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says how many corners aloud. The shape's name is not shown or said: it gives the count away.",
+        "onScreen": "Beside the learner's shape, a model card shows a different one, solved: a different shape with a mark on each of its corners, answered six corners. It is not this one. One dot marks a starting corner on the learner's shape. No number.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 2,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dish-1-rectangle"
+      },
+      "task": "How many corners does this shape have?",
+      "expectedAnswer": "four",
+      "learner": "four",
+      "misses": [
+       {
+        "id": "said_shape_name",
+        "pattern": "The shape drawn is a rectangle. The learner's answer is \"rectangle\", the shape's name and no number.",
+        "examples": [
+         "rectangle"
+        ]
+       },
+       {
+        "id": "one_short",
+        "pattern": "The learner's answer is 3, one fewer than the 4 corners of the rectangle.",
+        "examples": [
+         "three"
+        ]
+       },
+       {
+        "id": "one_over",
+        "pattern": "The learner's answer is 5, one more than the 4 corners of the rectangle.",
+        "examples": [
+         "five"
+        ]
+       },
+       {
+        "id": "short_by_more",
+        "pattern": "The learner's answer is 2 or fewer (but more than zero), two or more fewer than the 4 corners of the rectangle.",
+        "examples": [
+         "two"
+        ]
+       },
+       {
+        "id": "over_by_more",
+        "pattern": "The learner's answer is 6 or more, two or more more than the 4 corners of the rectangle.",
+        "examples": [
+         "six"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    }
+   ]
+  },
+  {
+   "payload": "di-shapes.count_sides",
+   "primitiveId": "di-shapes",
+   "evalMode": "count_sides",
+   "guidance": "The stage draws one flat shape, or a familiar object drawn in code. The child answers OUT LOUD: the shape name, or on the counting modes how many sides or corners. A close but different name (square for a rectangle, circle for an oval) is wrong; a named alternate you are given counts. On the counting modes never say the shape name, because it gives the count away. On real objects the object is named but the shape in it is the answer. Never say the answer before the child tries, and never model this shape or its count: your model is the model lever, a DIFFERENT shape solved beside it. The support fact says where levers start. You cannot draw, rotate or resize the shape. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Naming flat shapes: circle, square, triangle, rectangle",
+   "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+   "leakTokens": [
+    "DI_ITEM",
+    "DI_MOVE_ON",
+    "DI_COMPLETE"
+   ],
+   "ask": "How many sides does this shape have?",
+   "keys": [
+    "three"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dish-1-triangle",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-shapes",
+      "objectiveId": "di-shapes-practice",
+      "evalMode": "count_sides",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dish-1-triangle",
+       "phase": "working",
+       "task": "How many sides does this shape have?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "count_sides",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says how many sides aloud. The shape's name is not shown or said: it gives the count away.",
+        "onScreen": "Beside the learner's shape, a model card shows a different one, solved: a different shape with a mark on each of its sides, answered five sides. It is not this one.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "shape",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the drawn shape whose sides the learner counts"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_count",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_shape_name",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gives a wrong number of sides, says a shape name, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT shape, a mark on each of its sides (onScreen says how many). Say only its total as your turn (\"My turn: this shape has … sides\"); never count it aloud and never name either shape. Then ask about the learner's shape again."
+         },
+         {
+          "id": "start_mark",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "one_short",
+           "one_over"
+          ],
+          "when": "The learner counts one side twice or misses the one they started on.",
+          "does": "Puts one dot on one side of the learner's shape: start there and stop when you are back. No number."
+         },
+         {
+          "id": "touch_marks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner loses track while counting the sides.",
+          "does": "Lets the learner tap each side as they count it; a tapped one is marked. No numbers."
+         }
+        ],
+        "expectedAnswer": "three",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dish-1-triangle",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "dish-1-triangle",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-shapes",
+      "objectiveId": "di-shapes-practice",
+      "evalMode": "count_sides",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dish-1-triangle",
+       "phase": "working",
+       "task": "How many sides does this shape have?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "count_sides",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says how many sides aloud. The shape's name is not shown or said: it gives the count away.",
+        "onScreen": "Beside the learner's shape, a model card shows a different one, solved: a different shape with a mark on each of its sides, answered five sides. It is not this one.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "shape",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the drawn shape whose sides the learner counts"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_count",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_shape_name",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gives a wrong number of sides, says a shape name, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT shape, a mark on each of its sides (onScreen says how many). Say only its total as your turn (\"My turn: this shape has … sides\"); never count it aloud and never name either shape. Then ask about the learner's shape again."
+         },
+         {
+          "id": "start_mark",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "one_short",
+           "one_over"
+          ],
+          "when": "The learner counts one side twice or misses the one they started on.",
+          "does": "Puts one dot on one side of the learner's shape: start there and stop when you are back. No number."
+         },
+         {
+          "id": "touch_marks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner loses track while counting the sides.",
+          "does": "Lets the learner tap each side as they count it; a tapped one is marked. No numbers."
+         }
+        ],
+        "expectedAnswer": "three",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "ten"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dish-1-triangle",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "ten",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dish-1-triangle",
+       "revision": 1
+      },
+      "task": "How many sides does this shape have?",
+      "phase": "working",
+      "learner": "ten",
+      "expectedAnswer": "three",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "ten"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [
+        {
+         "id": "shape",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the drawn shape whose sides the learner counts"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "count_sides",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says how many sides aloud. The shape's name is not shown or said: it gives the count away.",
+        "onScreen": "Beside the learner's shape, a model card shows a different one, solved: a different shape with a mark on each of its sides, answered five sides. It is not this one.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dish-1-triangle"
+      },
+      "task": "How many sides does this shape have?",
+      "expectedAnswer": "three",
+      "learner": "ten",
+      "misses": [
+       {
+        "id": "said_shape_name",
+        "pattern": "The shape drawn is a triangle. The learner's answer is \"triangle\", the shape's name and no number.",
+        "examples": [
+         "triangle"
+        ]
+       },
+       {
+        "id": "one_short",
+        "pattern": "The learner's answer is 2, one fewer than the 3 sides of the triangle.",
+        "examples": [
+         "two"
+        ]
+       },
+       {
+        "id": "one_over",
+        "pattern": "The learner's answer is 4, one more than the 3 sides of the triangle.",
+        "examples": [
+         "four"
+        ]
+       },
+       {
+        "id": "short_by_more",
+        "pattern": "The learner's answer is 1 or fewer (but more than zero), two or more fewer than the 3 sides of the triangle.",
+        "examples": [
+         "one"
+        ]
+       },
+       {
+        "id": "over_by_more",
+        "pattern": "The learner's answer is 5 or more, two or more more than the 3 sides of the triangle.",
+        "examples": [
+         "five"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dish-1-triangle",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-shapes",
+      "objectiveId": "di-shapes-practice",
+      "evalMode": "count_sides",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dish-1-triangle",
+       "phase": "working",
+       "task": "How many sides does this shape have?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "ten",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "count_sides",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says how many sides aloud. The shape's name is not shown or said: it gives the count away.",
+        "onScreen": "Beside the learner's shape, a model card shows a different one, solved: a different shape with a mark on each of its sides, answered five sides. It is not this one.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "shape",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the drawn shape whose sides the learner counts"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_count",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_shape_name",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gives a wrong number of sides, says a shape name, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT shape, a mark on each of its sides (onScreen says how many). Say only its total as your turn (\"My turn: this shape has … sides\"); never count it aloud and never name either shape. Then ask about the learner's shape again."
+         },
+         {
+          "id": "start_mark",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "one_short",
+           "one_over"
+          ],
+          "when": "The learner counts one side twice or misses the one they started on.",
+          "does": "Puts one dot on one side of the learner's shape: start there and stop when you are back. No number."
+         },
+         {
+          "id": "touch_marks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner loses track while counting the sides.",
+          "does": "Lets the learner tap each side as they count it; a tapped one is marked. No numbers."
+         }
+        ],
+        "expectedAnswer": "three",
+        "lastResponse": {
+         "itemId": "dish-1-triangle",
+         "response": "ten",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dish-1-triangle",
+          "response": "ten",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/2/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dish-1-triangle",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "dish-1-triangle",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-shapes",
+      "objectiveId": "di-shapes-practice",
+      "evalMode": "count_sides",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dish-1-triangle",
+       "phase": "working",
+       "task": "How many sides does this shape have?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "ten",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "count_sides",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says how many sides aloud. The shape's name is not shown or said: it gives the count away.",
+        "onScreen": "Beside the learner's shape, a model card shows a different one, solved: a different shape with a mark on each of its sides, answered five sides. It is not this one. One dot marks a starting side on the learner's shape. No number.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "shape",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the drawn shape whose sides the learner counts"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_count",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_shape_name",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gives a wrong number of sides, says a shape name, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT shape, a mark on each of its sides (onScreen says how many). Say only its total as your turn (\"My turn: this shape has … sides\"); never count it aloud and never name either shape. Then ask about the learner's shape again."
+         },
+         {
+          "id": "start_mark",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "one_short",
+           "one_over"
+          ],
+          "when": "The learner counts one side twice or misses the one they started on.",
+          "does": "Puts one dot on one side of the learner's shape: start there and stop when you are back. No number."
+         },
+         {
+          "id": "touch_marks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner loses track while counting the sides.",
+          "does": "Lets the learner tap each side as they count it; a tapped one is marked. No numbers."
+         }
+        ],
+        "expectedAnswer": "three",
+        "lastResponse": {
+         "itemId": "dish-1-triangle",
+         "response": "ten",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dish-1-triangle",
+          "response": "ten",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "dish-1-triangle",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "start_mark"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dish-1-triangle",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled start_mark (help). It is on screen now: Puts one dot on one side of the learner's shape: start there and stop when you are back. No number. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "start_mark",
+      "kind": "help",
+      "does": "Puts one dot on one side of the learner's shape: start there and stop when you are back. No number."
+     }
+    },
+    {
+     "kind": "credit",
+     "itemId": "dish-1-triangle",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-shapes",
+      "objectiveId": "di-shapes-practice",
+      "evalMode": "count_sides",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dish-1-triangle",
+       "phase": "working",
+       "task": "How many sides does this shape have?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "ten",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "count_sides",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says how many sides aloud. The shape's name is not shown or said: it gives the count away.",
+        "onScreen": "Beside the learner's shape, a model card shows a different one, solved: a different shape with a mark on each of its sides, answered five sides. It is not this one. One dot marks a starting side on the learner's shape. No number.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "shape",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the drawn shape whose sides the learner counts"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_count",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_shape_name",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner gives a wrong number of sides, says a shape name, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT shape, a mark on each of its sides (onScreen says how many). Say only its total as your turn (\"My turn: this shape has … sides\"); never count it aloud and never name either shape. Then ask about the learner's shape again."
+         },
+         {
+          "id": "start_mark",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "one_short",
+           "one_over"
+          ],
+          "when": "The learner counts one side twice or misses the one they started on.",
+          "does": "Puts one dot on one side of the learner's shape: start there and stop when you are back. No number."
+         },
+         {
+          "id": "touch_marks",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner loses track while counting the sides.",
+          "does": "Lets the learner tap each side as they count it; a tapped one is marked. No numbers."
+         }
+        ],
+        "expectedAnswer": "three",
+        "pendingResponse": {
+         "id": "speech:1:2",
+         "text": "three"
+        },
+        "lastResponse": {
+         "itemId": "dish-1-triangle",
+         "response": "ten",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dish-1-triangle",
+          "response": "ten",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "dish-1-triangle",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "start_mark"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/3/2"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dish-1-triangle",
+        "secondsOnItem": 20,
+        "secondsSinceReady": 20,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "three",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dish-1-triangle",
+       "revision": 3
+      },
+      "task": "How many sides does this shape have?",
+      "phase": "working",
+      "learner": "three",
+      "expectedAnswer": "three",
+      "pendingResponse": {
+       "id": "speech:1:2",
+       "text": "three"
+      },
+      "lastResponse": {
+       "itemId": "dish-1-triangle",
+       "response": "ten",
+       "source": "speech",
+       "correct": false,
+       "tutorResponse": "Not quite.",
+       "judgment": "tutor",
+       "assisted": false,
+       "answerExposure": "none"
+      },
+      "activity": {
+       "responseSource": "speech",
+       "attemptNumber": 1,
+       "objects": [
+        {
+         "id": "shape",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the drawn shape whose sides the learner counts"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "count_sides",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says how many sides aloud. The shape's name is not shown or said: it gives the count away.",
+        "onScreen": "Beside the learner's shape, a model card shows a different one, solved: a different shape with a mark on each of its sides, answered five sides. It is not this one. One dot marks a starting side on the learner's shape. No number.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 2,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dish-1-triangle"
+      },
+      "task": "How many sides does this shape have?",
+      "expectedAnswer": "three",
+      "learner": "three",
+      "misses": [
+       {
+        "id": "said_shape_name",
+        "pattern": "The shape drawn is a triangle. The learner's answer is \"triangle\", the shape's name and no number.",
+        "examples": [
+         "triangle"
+        ]
+       },
+       {
+        "id": "one_short",
+        "pattern": "The learner's answer is 2, one fewer than the 3 sides of the triangle.",
+        "examples": [
+         "two"
+        ]
+       },
+       {
+        "id": "one_over",
+        "pattern": "The learner's answer is 4, one more than the 3 sides of the triangle.",
+        "examples": [
+         "four"
+        ]
+       },
+       {
+        "id": "short_by_more",
+        "pattern": "The learner's answer is 1 or fewer (but more than zero), two or more fewer than the 3 sides of the triangle.",
+        "examples": [
+         "one"
+        ]
+       },
+       {
+        "id": "over_by_more",
+        "pattern": "The learner's answer is 5 or more, two or more more than the 3 sides of the triangle.",
+        "examples": [
+         "five"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    }
+   ]
+  },
+  {
+   "payload": "di-shapes.find_real_object",
+   "primitiveId": "di-shapes",
+   "evalMode": "find_real_object",
+   "guidance": "The stage draws one flat shape, or a familiar object drawn in code. The child answers OUT LOUD: the shape name, or on the counting modes how many sides or corners. A close but different name (square for a rectangle, circle for an oval) is wrong; a named alternate you are given counts. On the counting modes never say the shape name, because it gives the count away. On real objects the object is named but the shape in it is the answer. Never say the answer before the child tries, and never model this shape or its count: your model is the model lever, a DIFFERENT shape solved beside it. The support fact says where levers start. You cannot draw, rotate or resize the shape. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Naming flat shapes: circle, square, triangle, rectangle",
+   "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+   "leakTokens": [
+    "DI_ITEM",
+    "DI_MOVE_ON",
+    "DI_COMPLETE"
+   ],
+   "ask": "What shape do you see in this window?",
+   "keys": [
+    "square"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dish-1-square",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-shapes",
+      "objectiveId": "di-shapes-practice",
+      "evalMode": "find_real_object",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dish-1-square",
+       "phase": "working",
+       "task": "What shape do you see in this window?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "name_real_object",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says the shape name aloud. No name is printed until it is credited.",
+        "onScreen": "Beside the learner's object, a model card shows a different one, solved: a egg beside the outline of its shape, answered an oval. It is not this one.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "shape",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the drawn window"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_object",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_object",
+           "near_name",
+           "other_shape_name",
+           "described_shape"
+          ],
+          "when": "The learner names the object, names a wrong shape, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT object beside the outline of its shape (onScreen names it). Say it as your turn (\"My turn: the … is a …\"), then ask about the learner's own object again. Never say what the model means for their object."
+         }
+        ],
+        "expectedAnswer": "square",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dish-1-square",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "dish-1-square",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-shapes",
+      "objectiveId": "di-shapes-practice",
+      "evalMode": "find_real_object",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dish-1-square",
+       "phase": "working",
+       "task": "What shape do you see in this window?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "name_real_object",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says the shape name aloud. No name is printed until it is credited.",
+        "onScreen": "Beside the learner's object, a model card shows a different one, solved: a egg beside the outline of its shape, answered an oval. It is not this one.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "shape",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the drawn window"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_object",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_object",
+           "near_name",
+           "other_shape_name",
+           "described_shape"
+          ],
+          "when": "The learner names the object, names a wrong shape, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT object beside the outline of its shape (onScreen names it). Say it as your turn (\"My turn: the … is a …\"), then ask about the learner's own object again. Never say what the model means for their object."
+         }
+        ],
+        "expectedAnswer": "square",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "circle"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dish-1-square",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "circle",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dish-1-square",
+       "revision": 1
+      },
+      "task": "What shape do you see in this window?",
+      "phase": "working",
+      "learner": "circle",
+      "expectedAnswer": "square",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "circle"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [
+        {
+         "id": "shape",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the drawn window"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "name_real_object",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says the shape name aloud. No name is printed until it is credited.",
+        "onScreen": "Beside the learner's object, a model card shows a different one, solved: a egg beside the outline of its shape, answered an oval. It is not this one.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dish-1-square"
+      },
+      "task": "What shape do you see in this window?",
+      "expectedAnswer": "square",
+      "learner": "circle",
+      "misses": [
+       {
+        "id": "said_object",
+        "pattern": "The window is drawn as a square. The learner's answer is window, the object's own name, not a shape name.",
+        "examples": [
+         "window"
+        ]
+       },
+       {
+        "id": "near_name",
+        "pattern": "The window is drawn as a square. The learner's answer is rectangle, the shape name that looks most like a square.",
+        "examples": [
+         "rectangle"
+        ]
+       },
+       {
+        "id": "other_shape_name",
+        "pattern": "The window is drawn as a square. The learner names a different shape: circle, triangle, hexagon, oval, pentagon, rhombus or trapezoid.",
+        "examples": [
+         "circle"
+        ]
+       },
+       {
+        "id": "described_shape",
+        "pattern": "The window is drawn as a square. The learner's answer describes the drawing (round, pointy, a colour or a size word) and names no shape.",
+        "examples": [
+         "it is round",
+         "the pointy one"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dish-1-square",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-shapes",
+      "objectiveId": "di-shapes-practice",
+      "evalMode": "find_real_object",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dish-1-square",
+       "phase": "working",
+       "task": "What shape do you see in this window?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "circle",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "name_real_object",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says the shape name aloud. No name is printed until it is credited.",
+        "onScreen": "Beside the learner's object, a model card shows a different one, solved: a egg beside the outline of its shape, answered an oval. It is not this one.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "shape",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the drawn window"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_object",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_object",
+           "near_name",
+           "other_shape_name",
+           "described_shape"
+          ],
+          "when": "The learner names the object, names a wrong shape, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT object beside the outline of its shape (onScreen names it). Say it as your turn (\"My turn: the … is a …\"), then ask about the learner's own object again. Never say what the model means for their object."
+         }
+        ],
+        "expectedAnswer": "square",
+        "lastResponse": {
+         "itemId": "dish-1-square",
+         "response": "circle",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dish-1-square",
+          "response": "circle",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/2/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dish-1-square",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "credit",
+     "itemId": "dish-1-square",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-shapes",
+      "objectiveId": "di-shapes-practice",
+      "evalMode": "find_real_object",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dish-1-square",
+       "phase": "working",
+       "task": "What shape do you see in this window?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "circle",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "name_real_object",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says the shape name aloud. No name is printed until it is credited.",
+        "onScreen": "Beside the learner's object, a model card shows a different one, solved: a egg beside the outline of its shape, answered an oval. It is not this one.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "shape",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the drawn window"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_object",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "said_object",
+           "near_name",
+           "other_shape_name",
+           "described_shape"
+          ],
+          "when": "The learner names the object, names a wrong shape, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT object beside the outline of its shape (onScreen names it). Say it as your turn (\"My turn: the … is a …\"), then ask about the learner's own object again. Never say what the model means for their object."
+         }
+        ],
+        "expectedAnswer": "square",
+        "pendingResponse": {
+         "id": "speech:1:2",
+         "text": "square"
+        },
+        "lastResponse": {
+         "itemId": "dish-1-square",
+         "response": "circle",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dish-1-square",
+          "response": "circle",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/2/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dish-1-square",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "square",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dish-1-square",
+       "revision": 2
+      },
+      "task": "What shape do you see in this window?",
+      "phase": "working",
+      "learner": "square",
+      "expectedAnswer": "square",
+      "pendingResponse": {
+       "id": "speech:1:2",
+       "text": "square"
+      },
+      "lastResponse": {
+       "itemId": "dish-1-square",
+       "response": "circle",
+       "source": "speech",
+       "correct": false,
+       "tutorResponse": "Not quite.",
+       "judgment": "tutor",
+       "assisted": false,
+       "answerExposure": "none"
+      },
+      "activity": {
+       "responseSource": "speech",
+       "attemptNumber": 1,
+       "objects": [
+        {
+         "id": "shape",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the drawn window"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "name_real_object",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says the shape name aloud. No name is printed until it is credited.",
+        "onScreen": "Beside the learner's object, a model card shows a different one, solved: a egg beside the outline of its shape, answered an oval. It is not this one.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dish-1-square"
+      },
+      "task": "What shape do you see in this window?",
+      "expectedAnswer": "square",
+      "learner": "square",
+      "misses": [
+       {
+        "id": "said_object",
+        "pattern": "The window is drawn as a square. The learner's answer is window, the object's own name, not a shape name.",
+        "examples": [
+         "window"
+        ]
+       },
+       {
+        "id": "near_name",
+        "pattern": "The window is drawn as a square. The learner's answer is rectangle, the shape name that looks most like a square.",
+        "examples": [
+         "rectangle"
+        ]
+       },
+       {
+        "id": "other_shape_name",
+        "pattern": "The window is drawn as a square. The learner names a different shape: circle, triangle, hexagon, oval, pentagon, rhombus or trapezoid.",
+        "examples": [
+         "circle"
+        ]
+       },
+       {
+        "id": "described_shape",
+        "pattern": "The window is drawn as a square. The learner's answer describes the drawing (round, pointy, a colour or a size word) and names no shape.",
+        "examples": [
+         "it is round",
+         "the pointy one"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    }
+   ]
+  },
+  {
+   "payload": "di-shapes.name_shape",
+   "primitiveId": "di-shapes",
+   "evalMode": "name_shape",
+   "guidance": "The stage draws one flat shape, or a familiar object drawn in code. The child answers OUT LOUD: the shape name, or on the counting modes how many sides or corners. A close but different name (square for a rectangle, circle for an oval) is wrong; a named alternate you are given counts. On the counting modes never say the shape name, because it gives the count away. On real objects the object is named but the shape in it is the answer. Never say the answer before the child tries, and never model this shape or its count: your model is the model lever, a DIFFERENT shape solved beside it. The support fact says where levers start. You cannot draw, rotate or resize the shape. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Naming flat shapes: circle, square, triangle, rectangle",
+   "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+   "leakTokens": [
+    "DI_ITEM",
+    "DI_MOVE_ON",
+    "DI_COMPLETE"
+   ],
+   "ask": "What shape is this?",
+   "keys": [
+    "square"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dish-1-square",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-shapes",
+      "objectiveId": "di-shapes-practice",
+      "evalMode": "name_shape",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dish-1-square",
+       "phase": "working",
+       "task": "What shape is this?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "name_shape",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says the shape name aloud. No name is printed until it is credited.",
+        "onScreen": "Beside the learner's shape, a model card shows a different one, solved: a hexagon. It is not this one.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "shape",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the drawn shape"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_shape",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "near_name",
+           "other_shape_name",
+           "described_shape"
+          ],
+          "when": "The learner names a wrong shape, describes it instead of naming it, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT shape (onScreen names it). Say it as your turn (\"My turn: this shape is a …\"), then ask about the learner's own shape again. Never say what the model means for their shape."
+         }
+        ],
+        "expectedAnswer": "square",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dish-1-square",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "dish-1-square",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-shapes",
+      "objectiveId": "di-shapes-practice",
+      "evalMode": "name_shape",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dish-1-square",
+       "phase": "working",
+       "task": "What shape is this?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "name_shape",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says the shape name aloud. No name is printed until it is credited.",
+        "onScreen": "Beside the learner's shape, a model card shows a different one, solved: a hexagon. It is not this one.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "shape",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the drawn shape"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_shape",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "near_name",
+           "other_shape_name",
+           "described_shape"
+          ],
+          "when": "The learner names a wrong shape, describes it instead of naming it, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT shape (onScreen names it). Say it as your turn (\"My turn: this shape is a …\"), then ask about the learner's own shape again. Never say what the model means for their shape."
+         }
+        ],
+        "expectedAnswer": "square",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "circle"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dish-1-square",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "circle",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dish-1-square",
+       "revision": 1
+      },
+      "task": "What shape is this?",
+      "phase": "working",
+      "learner": "circle",
+      "expectedAnswer": "square",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "circle"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [
+        {
+         "id": "shape",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the drawn shape"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "name_shape",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says the shape name aloud. No name is printed until it is credited.",
+        "onScreen": "Beside the learner's shape, a model card shows a different one, solved: a hexagon. It is not this one.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dish-1-square"
+      },
+      "task": "What shape is this?",
+      "expectedAnswer": "square",
+      "learner": "circle",
+      "misses": [
+       {
+        "id": "near_name",
+        "pattern": "The shape drawn is a square. The learner's answer is rectangle, the shape name that looks most like a square.",
+        "examples": [
+         "rectangle"
+        ]
+       },
+       {
+        "id": "other_shape_name",
+        "pattern": "The shape drawn is a square. The learner names a different shape: circle, triangle, hexagon, oval, pentagon, rhombus or trapezoid.",
+        "examples": [
+         "circle"
+        ]
+       },
+       {
+        "id": "described_shape",
+        "pattern": "The shape drawn is a square. The learner's answer describes the drawing (round, pointy, a colour or a size word) and names no shape.",
+        "examples": [
+         "it is round",
+         "the pointy one"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dish-1-square",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-shapes",
+      "objectiveId": "di-shapes-practice",
+      "evalMode": "name_shape",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dish-1-square",
+       "phase": "working",
+       "task": "What shape is this?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "circle",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "name_shape",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says the shape name aloud. No name is printed until it is credited.",
+        "onScreen": "Beside the learner's shape, a model card shows a different one, solved: a hexagon. It is not this one.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "shape",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the drawn shape"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_shape",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "near_name",
+           "other_shape_name",
+           "described_shape"
+          ],
+          "when": "The learner names a wrong shape, describes it instead of naming it, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT shape (onScreen names it). Say it as your turn (\"My turn: this shape is a …\"), then ask about the learner's own shape again. Never say what the model means for their shape."
+         }
+        ],
+        "expectedAnswer": "square",
+        "lastResponse": {
+         "itemId": "dish-1-square",
+         "response": "circle",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dish-1-square",
+          "response": "circle",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/2/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dish-1-square",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "credit",
+     "itemId": "dish-1-square",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-shapes",
+      "objectiveId": "di-shapes-practice",
+      "evalMode": "name_shape",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dish-1-square",
+       "phase": "working",
+       "task": "What shape is this?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "circle",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "name_shape",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says the shape name aloud. No name is printed until it is credited.",
+        "onScreen": "Beside the learner's shape, a model card shows a different one, solved: a hexagon. It is not this one.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "shape",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the drawn shape"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_shape",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "near_name",
+           "other_shape_name",
+           "described_shape"
+          ],
+          "when": "The learner names a wrong shape, describes it instead of naming it, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT shape (onScreen names it). Say it as your turn (\"My turn: this shape is a …\"), then ask about the learner's own shape again. Never say what the model means for their shape."
+         }
+        ],
+        "expectedAnswer": "square",
+        "pendingResponse": {
+         "id": "speech:1:2",
+         "text": "square"
+        },
+        "lastResponse": {
+         "itemId": "dish-1-square",
+         "response": "circle",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dish-1-square",
+          "response": "circle",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/2/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dish-1-square",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "square",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dish-1-square",
+       "revision": 2
+      },
+      "task": "What shape is this?",
+      "phase": "working",
+      "learner": "square",
+      "expectedAnswer": "square",
+      "pendingResponse": {
+       "id": "speech:1:2",
+       "text": "square"
+      },
+      "lastResponse": {
+       "itemId": "dish-1-square",
+       "response": "circle",
+       "source": "speech",
+       "correct": false,
+       "tutorResponse": "Not quite.",
+       "judgment": "tutor",
+       "assisted": false,
+       "answerExposure": "none"
+      },
+      "activity": {
+       "responseSource": "speech",
+       "attemptNumber": 1,
+       "objects": [
+        {
+         "id": "shape",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the drawn shape"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "name_shape",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says the shape name aloud. No name is printed until it is credited.",
+        "onScreen": "Beside the learner's shape, a model card shows a different one, solved: a hexagon. It is not this one.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dish-1-square"
+      },
+      "task": "What shape is this?",
+      "expectedAnswer": "square",
+      "learner": "square",
+      "misses": [
+       {
+        "id": "near_name",
+        "pattern": "The shape drawn is a square. The learner's answer is rectangle, the shape name that looks most like a square.",
+        "examples": [
+         "rectangle"
+        ]
+       },
+       {
+        "id": "other_shape_name",
+        "pattern": "The shape drawn is a square. The learner names a different shape: circle, triangle, hexagon, oval, pentagon, rhombus or trapezoid.",
+        "examples": [
+         "circle"
+        ]
+       },
+       {
+        "id": "described_shape",
+        "pattern": "The shape drawn is a square. The learner's answer describes the drawing (round, pointy, a colour or a size word) and names no shape.",
+        "examples": [
+         "it is round",
+         "the pointy one"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    }
+   ]
+  },
+  {
+   "payload": "di-shapes.shape_review",
+   "primitiveId": "di-shapes",
+   "evalMode": "shape_review",
+   "guidance": "The stage draws one flat shape, or a familiar object drawn in code. The child answers OUT LOUD: the shape name, or on the counting modes how many sides or corners. A close but different name (square for a rectangle, circle for an oval) is wrong; a named alternate you are given counts. On the counting modes never say the shape name, because it gives the count away. On real objects the object is named but the shape in it is the answer. Never say the answer before the child tries, and never model this shape or its count: your model is the model lever, a DIFFERENT shape solved beside it. The support fact says where levers start. You cannot draw, rotate or resize the shape. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Naming flat shapes: circle, square, triangle, rectangle",
+   "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+   "leakTokens": [
+    "DI_ITEM",
+    "DI_MOVE_ON",
+    "DI_COMPLETE"
+   ],
+   "ask": "What shape is this?",
+   "keys": [
+    "rectangle"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dish-1-rectangle",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-shapes",
+      "objectiveId": "di-shapes-practice",
+      "evalMode": "shape_review",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dish-1-rectangle",
+       "phase": "working",
+       "task": "What shape is this?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "shape_review",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says the shape name aloud. No name is printed until it is credited.",
+        "onScreen": "Beside the learner's shape, a model card shows a different one, solved: a hexagon. It is not this one.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "shape",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the drawn shape"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_shape",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "near_name",
+           "other_shape_name",
+           "described_shape"
+          ],
+          "when": "The learner names a wrong shape, describes it instead of naming it, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT shape (onScreen names it). Say it as your turn (\"My turn: this shape is a …\"), then ask about the learner's own shape again. Never say what the model means for their shape."
+         }
+        ],
+        "expectedAnswer": "rectangle",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dish-1-rectangle",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "dish-1-rectangle",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-shapes",
+      "objectiveId": "di-shapes-practice",
+      "evalMode": "shape_review",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dish-1-rectangle",
+       "phase": "working",
+       "task": "What shape is this?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "shape_review",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says the shape name aloud. No name is printed until it is credited.",
+        "onScreen": "Beside the learner's shape, a model card shows a different one, solved: a hexagon. It is not this one.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "shape",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the drawn shape"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_shape",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "near_name",
+           "other_shape_name",
+           "described_shape"
+          ],
+          "when": "The learner names a wrong shape, describes it instead of naming it, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT shape (onScreen names it). Say it as your turn (\"My turn: this shape is a …\"), then ask about the learner's own shape again. Never say what the model means for their shape."
+         }
+        ],
+        "expectedAnswer": "rectangle",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "circle"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/1/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dish-1-rectangle",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "circle",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dish-1-rectangle",
+       "revision": 1
+      },
+      "task": "What shape is this?",
+      "phase": "working",
+      "learner": "circle",
+      "expectedAnswer": "rectangle",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "circle"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [
+        {
+         "id": "shape",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the drawn shape"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "shape_review",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says the shape name aloud. No name is printed until it is credited.",
+        "onScreen": "Beside the learner's shape, a model card shows a different one, solved: a hexagon. It is not this one.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dish-1-rectangle"
+      },
+      "task": "What shape is this?",
+      "expectedAnswer": "rectangle",
+      "learner": "circle",
+      "misses": [
+       {
+        "id": "near_name",
+        "pattern": "The shape drawn is a rectangle. The learner's answer is square, the shape name that looks most like a rectangle.",
+        "examples": [
+         "square"
+        ]
+       },
+       {
+        "id": "other_shape_name",
+        "pattern": "The shape drawn is a rectangle. The learner names a different shape: circle, triangle, hexagon, oval, pentagon, rhombus or trapezoid.",
+        "examples": [
+         "circle"
+        ]
+       },
+       {
+        "id": "described_shape",
+        "pattern": "The shape drawn is a rectangle. The learner's answer describes the drawing (round, pointy, a colour or a size word) and names no shape.",
+        "examples": [
+         "it is round",
+         "the pointy one"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dish-1-rectangle",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-shapes",
+      "objectiveId": "di-shapes-practice",
+      "evalMode": "shape_review",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dish-1-rectangle",
+       "phase": "working",
+       "task": "What shape is this?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "circle",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "shape_review",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says the shape name aloud. No name is printed until it is credited.",
+        "onScreen": "Beside the learner's shape, a model card shows a different one, solved: a hexagon. It is not this one.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "shape",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the drawn shape"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_shape",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "near_name",
+           "other_shape_name",
+           "described_shape"
+          ],
+          "when": "The learner names a wrong shape, describes it instead of naming it, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT shape (onScreen names it). Say it as your turn (\"My turn: this shape is a …\"), then ask about the learner's own shape again. Never say what the model means for their shape."
+         }
+        ],
+        "expectedAnswer": "rectangle",
+        "lastResponse": {
+         "itemId": "dish-1-rectangle",
+         "response": "circle",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dish-1-rectangle",
+          "response": "circle",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/2/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dish-1-rectangle",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "credit",
+     "itemId": "dish-1-rectangle",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-shapes",
+      "objectiveId": "di-shapes-practice",
+      "evalMode": "shape_review",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dish-1-rectangle",
+       "phase": "working",
+       "task": "What shape is this?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "circle",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "shape_review",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says the shape name aloud. No name is printed until it is credited.",
+        "onScreen": "Beside the learner's shape, a model card shows a different one, solved: a hexagon. It is not this one.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "shape",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the drawn shape"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_shape",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "near_name",
+           "other_shape_name",
+           "described_shape"
+          ],
+          "when": "The learner names a wrong shape, describes it instead of naming it, or does not know how to start.",
+          "does": "Shows a small card with a DIFFERENT shape (onScreen names it). Say it as your turn (\"My turn: this shape is a …\"), then ask about the learner's own shape again. Never say what the model means for their shape."
+         }
+        ],
+        "expectedAnswer": "rectangle",
+        "pendingResponse": {
+         "id": "speech:1:2",
+         "text": "rectangle"
+        },
+        "lastResponse": {
+         "itemId": "dish-1-rectangle",
+         "response": "circle",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dish-1-rectangle",
+          "response": "circle",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "demonstrate"
+        },
+        "description": "Mark whole visible objects for a tutor demonstration. Supply targets from workspace.objects; [] clears it. These marks are NOT learner responses and do not change the assignment target. Only describe the marked objects; this action does not mark individual sides, corners, or other unregistered parts. Explain, then let the learner try.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "full"
+        },
+        "actionId": "test/2/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dish-1-rectangle",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "rectangle",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dish-1-rectangle",
+       "revision": 2
+      },
+      "task": "What shape is this?",
+      "phase": "working",
+      "learner": "rectangle",
+      "expectedAnswer": "rectangle",
+      "pendingResponse": {
+       "id": "speech:1:2",
+       "text": "rectangle"
+      },
+      "lastResponse": {
+       "itemId": "dish-1-rectangle",
+       "response": "circle",
+       "source": "speech",
+       "correct": false,
+       "tutorResponse": "Not quite.",
+       "judgment": "tutor",
+       "assisted": false,
+       "answerExposure": "none"
+      },
+      "activity": {
+       "responseSource": "speech",
+       "attemptNumber": 1,
+       "objects": [
+        {
+         "id": "shape",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the drawn shape"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "shape_review",
+        "support": "the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one",
+        "constraints": "The learner says the shape name aloud. No name is printed until it is credited.",
+        "onScreen": "Beside the learner's shape, a model card shows a different one, solved: a hexagon. It is not this one.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dish-1-rectangle"
+      },
+      "task": "What shape is this?",
+      "expectedAnswer": "rectangle",
+      "learner": "rectangle",
+      "misses": [
+       {
+        "id": "near_name",
+        "pattern": "The shape drawn is a rectangle. The learner's answer is square, the shape name that looks most like a rectangle.",
+        "examples": [
+         "square"
+        ]
+       },
+       {
+        "id": "other_shape_name",
+        "pattern": "The shape drawn is a rectangle. The learner names a different shape: circle, triangle, hexagon, oval, pentagon, rhombus or trapezoid.",
+        "examples": [
+         "circle"
+        ]
+       },
+       {
+        "id": "described_shape",
+        "pattern": "The shape drawn is a rectangle. The learner's answer describes the drawing (round, pointy, a colour or a size word) and names no shape.",
+        "examples": [
+         "it is round",
+         "the pointy one"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    }
+   ]
+  }
+ ]
+}

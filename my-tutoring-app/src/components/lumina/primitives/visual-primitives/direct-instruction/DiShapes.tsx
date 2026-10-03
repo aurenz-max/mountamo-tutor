@@ -16,18 +16,27 @@
  * non-circular, so each drawing has exactly ONE defensible name. Rotation, exemplar and scale are
  * stamped per challenge by the generator (K.G.2: regardless of orientation and size).
  *
+ * LEVERS (`diShapesLevers.ts`, DI family 3). A small "my turn" card with a DIFFERENT shape, solved
+ * (a shape, an object beside its outline, or a polygon with a mark on each side or corner); on the
+ * counting modes one start dot and tappable sides or corners on the child's own shape. Every mark
+ * sits inside the shape's own rotate/scale transform, and the tap handlers are on the <line> and
+ * <circle> elements, never on the <g> (jsdom does not dispatch clicks to <g>).
+ *
  * What the drill also shipped and this path does not report yet: silent per-item response
  * timing (`meanResponseMs` is null) and the Tier-A misconception packet (queued with the other
- * DI packs for /add-misconception-loop), and Pip (queued for /add-pip-surface on DiTeachingStage).
+ * DI packs for /add-misconception-loop).
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import type { PrimitiveEvaluationResult, DiShapesMetrics } from '../../../evaluation/types';
-import DiTeachingStage, { diStageMetrics } from './DiTeachingStage';
+import { SoundManager } from '../../../utils/SoundManager';
+import DiTeachingStage, { diStageMetrics, type DiStageLevers, type DiStageView } from './DiTeachingStage';
 import { answerWordFor, countNoun, isCountingType, type DiShapesChallenge, type DiShapesChallengeType,
   type DiShapeName, type ShapeExemplar } from './diShapesScript';
 import { shapesAssignment, shapesScene } from './diShapesWorkspace';
 import { geometryFor, pointsAttr } from './diShapesGeometry';
+import { MODEL_COUNT, MODEL_OBJECT, MODEL_SHAPE, START_MARK, TOUCH_MARKS, modelFor, shapeLeverFacts, shapeLevers,
+  simplerShape, startingLevers } from './diShapesLevers';
 import RealWorldShapeObject from '../shared/RealWorldShapeObject';
 
 export type {
@@ -80,6 +89,58 @@ const ShapeDrawing: React.FC<{ shape: DiShapeName; exemplar?: ShapeExemplar }> =
   return <polygon points={pointsAttr(g.points)} />;
 };
 
+/** Marks drawn on a polygon, inside its transform. Never a numeral, never an order. */
+export interface ShapeMarks {
+  /** A tick across the middle of every side (the model's sides, counted for the child). */
+  ticks?: boolean;
+  /** A dot on every corner (the model's corners). */
+  cornerDots?: boolean;
+  /** `start_mark`: one dot on the first side or corner. */
+  start?: 'side' | 'corner';
+  /** `touch_marks`: each side or corner is a tap target; a tapped one is marked. */
+  tap?: { kind: 'side' | 'corner'; marked: ReadonlySet<number>; onTap: (index: number) => void };
+}
+
+const sidesOf = (points: ReadonlyArray<readonly [number, number]>) =>
+  points.map((p, i) => [p, points[(i + 1) % points.length]] as const);
+const midpoint = ([a, b]: readonly [readonly [number, number], readonly [number, number]]) =>
+  [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] as const;
+
+const ShapeMarksLayer: React.FC<{ shape: DiShapeName; exemplar?: ShapeExemplar; marks: ShapeMarks; scale: number }> = ({
+  shape, exemplar, marks, scale }) => {
+  const g = geometryFor(shape, exemplar ?? 'prototype');
+  if (g.kind !== 'polygon') return null;
+  const sides = sidesOf(g.points);
+  const s = (n: number) => n / scale;
+  return <>
+    {marks.ticks && sides.map((side, i) => {
+      const [[x1, y1], [x2, y2]] = side, [mx, my] = midpoint(side);
+      const len = Math.hypot(x2 - x1, y2 - y1), nx = -(y2 - y1) / len, ny = (x2 - x1) / len;
+      return <line key={`t${i}`} data-shape-tick={i} x1={mx - nx * s(14)} y1={my - ny * s(14)} x2={mx + nx * s(14)} y2={my + ny * s(14)}
+        stroke="#fbbf24" strokeWidth={s(6)} strokeLinecap="round" />;
+    })}
+    {marks.cornerDots && g.points.map(([x, y], i) => <circle key={`c${i}`} data-shape-corner-dot={i} cx={x} cy={y} r={s(9)}
+      fill="#fbbf24" stroke="none" />)}
+    {marks.tap?.kind === 'side' && sides.map((side, i) => {
+      const [[x1, y1], [x2, y2]] = side, on = marks.tap!.marked.has(i);
+      return <line key={`s${i}`} data-shape-tap="side" data-tap-index={i} data-marked={on} role="button" aria-label="A side"
+        x1={x1} y1={y1} x2={x2} y2={y2} stroke={on ? '#fbbf24' : 'rgba(0,0,0,0)'} strokeWidth={on ? s(12) : s(30)}
+        strokeLinecap="round" style={{ cursor: 'pointer', pointerEvents: 'stroke' }} onClick={() => marks.tap!.onTap(i)} />;
+    })}
+    {marks.tap?.kind === 'corner' && g.points.map(([x, y], i) => {
+      const on = marks.tap!.marked.has(i);
+      return <circle key={`k${i}`} data-shape-tap="corner" data-tap-index={i} data-marked={on} role="button" aria-label="A corner"
+        cx={x} cy={y} r={s(16)} fill="rgba(0,0,0,0)" stroke={on ? '#fbbf24' : 'none'} strokeWidth={s(5)}
+        style={{ cursor: 'pointer', pointerEvents: 'all' }} onClick={() => marks.tap!.onTap(i)} />;
+    })}
+    {marks.start && (() => {
+      const [x, y] = marks.start === 'side' ? midpoint(sides[0]) : g.points[0];
+      return <circle data-shape-start={marks.start} cx={x} cy={y} r={s(10)} fill="#f472b6" stroke="#fdf2f8" strokeWidth={s(3)}
+        style={{ pointerEvents: 'none' }} />;
+    })()}
+  </>;
+};
+
 export const ShapeStage: React.FC<{
   shape: DiShapeName;
   rotationDeg: number;
@@ -87,10 +148,12 @@ export const ShapeStage: React.FC<{
   scalePct?: number;
   className?: string;
   strokeWidth?: number;
-}> = ({ shape, rotationDeg, exemplar, scalePct, className = 'h-44 w-44', strokeWidth = 6 }) => {
+  marks?: ShapeMarks;
+  ariaLabel?: string;
+}> = ({ shape, rotationDeg, exemplar, scalePct, className = 'h-44 w-44', strokeWidth = 6, marks, ariaLabel = 'shape to name' }) => {
   const scale = (scalePct ?? 100) / 100;
   return (
-    <svg viewBox="0 0 200 200" className={className} role="img" aria-label="shape to name">
+    <svg viewBox="0 0 200 200" className={className} role="img" aria-label={ariaLabel}>
       <g
         // Rotate AND scale about the stage centre, so a small shape stays centred and a rotated one never clips.
         transform={`rotate(${rotationDeg} 100 100) translate(100 100) scale(${scale}) translate(-100 -100)`}
@@ -102,6 +165,7 @@ export const ShapeStage: React.FC<{
         strokeLinejoin="round"
       >
         <ShapeDrawing shape={shape} exemplar={exemplar} />
+        {marks && <ShapeMarksLayer shape={shape} exemplar={exemplar} marks={marks} scale={scale} />}
       </g>
     </svg>
   );
@@ -113,18 +177,48 @@ const COPY = {
   heading: 'Great shape work!', celebration: 'You answered every shape!',
 };
 
-/** The drawing alone: no name, no count. A tutor mark outlines it. */
-function stimulus(item: DiShapesChallenge, marks: readonly string[]) {
-  const marked = marks.includes('shape');
-  return <div className="flex min-h-56 items-center justify-center rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-8">
+/** The model card: a DIFFERENT shape (or object), solved, small and apart from the child's (DI's "my turn"). */
+function ModelCard({ model }: { model: DiShapesChallenge }) {
+  const counting = isCountingType(model.challengeType);
+  const lever = model.challengeType === 'name_real_object' ? MODEL_OBJECT : counting ? MODEL_COUNT : MODEL_SHAPE;
+  return <div data-lever={lever} data-model-shape={model.shape}
+    aria-label={`My turn: a different ${model.challengeType === 'name_real_object' ? 'object' : 'shape'}`}
+    className="flex items-center gap-3 rounded-xl border-2 border-dashed border-purple-400/70 bg-purple-500/10 px-3 py-2">
+    <span aria-hidden="true" className="text-xl leading-none">🗣️</span>
+    {model.challengeType === 'name_real_object' && model.realObjectId && <>
+      <RealWorldShapeObject objectId={model.realObjectId} className="h-20 w-20" showLabel={false} />
+      <span aria-hidden="true" className="text-xl text-purple-200">→</span>
+    </>}
+    <ShapeStage shape={model.shape} rotationDeg={0} className="h-20 w-20" strokeWidth={8} ariaLabel="the model shape"
+      marks={counting ? model.challengeType === 'count_corners' ? { cornerDots: true } : { ticks: true } : undefined} />
+  </div>;
+}
+
+/** The child's drawing, any lever marks on it, and the model card beside it. Keyed by item. */
+const ShapeTask: React.FC<{ item: DiShapesChallenge; marked: boolean; view: DiStageView; model: DiShapesChallenge | null }> = ({
+  item, marked, view, model }) => {
+  const [tapped, setTapped] = useState<ReadonlySet<number>>(new Set());
+  const counting = isCountingType(item.challengeType);
+  const kind = item.challengeType === 'count_corners' ? 'corner' as const : 'side' as const;
+  const marks: ShapeMarks | undefined = !counting ? undefined : {
+    ...(view.pulled.includes(START_MARK) ? { start: kind } : {}),
+    ...(view.pulled.includes(TOUCH_MARKS) ? { tap: { kind, marked: tapped, onTap: (i: number) => {
+      SoundManager.tap();
+      setTapped(prev => { const next = new Set(prev); if (next.has(i)) next.delete(i); else next.add(i); return next; });
+    } } } : {}),
+  };
+  const showModel = !!model && view.pulled.some(p => p.startsWith('model_'));
+  return <div data-practice-item={view.practice || undefined}
+    className="flex min-h-56 flex-wrap items-center justify-center gap-6 rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-8">
     <div data-shape-object="shape" data-assignment-target="true" data-tutor-demonstration={marked}
       className={marked ? 'rounded-2xl outline outline-2 outline-dashed outline-offset-4 outline-purple-400' : ''}>
       {item.challengeType === 'name_real_object' && item.realObjectId
         ? <RealWorldShapeObject objectId={item.realObjectId} />
-        : <ShapeStage shape={item.shape} rotationDeg={item.rotationDeg} exemplar={item.exemplar} scalePct={item.scalePct} />}
+        : <ShapeStage shape={item.shape} rotationDeg={item.rotationDeg} exemplar={item.exemplar} scalePct={item.scalePct} marks={marks} />}
     </div>
+    {showModel && <ModelCard model={model!} />}
   </div>;
-}
+};
 
 /** The reward trail: only answers the observer has credited, each drawn small with its label. */
 function creditedShapes(done: DiShapesChallenge[]) {
@@ -143,10 +237,18 @@ const recapLabel = (item: DiShapesChallenge, solved: boolean) => solved ? reward
 /** PLATFORM PROP CONTRACT: registry primitives mount as `<Component data={…} index={…} />`. */
 export const DiShapes: React.FC<DiShapesProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
   const items = useMemo(() => data.challenges ?? [], [data.challenges]);
+  // The levers read the whole session: a model never shows a shape (or count) a later item asks.
+  const levers = useMemo<DiStageLevers<DiShapesChallenge>>(() => ({
+    declare: (item, pulled) => shapeLevers(item, pulled, items),
+    onScreen: (item, pulled) => shapeLeverFacts(item, pulled, items),
+    starting: item => startingLevers(item, items),
+    simpler: (item, lever) => simplerShape(item, lever, items),
+  }), [items]);
   return <DiTeachingStage<DiShapesChallenge, DiShapesMetrics> primitiveId="di-shapes" data={data}
     items={items} runtimeEvalMode={runtimeEvalMode} className={className} runtimePlanItemId={runtimePlanItemId}
-    assignment={shapesAssignment} scene={shapesScene} copy={COPY} stimulus={stimulus} trail={creditedShapes}
-    recapLabel={recapLabel}
+    assignment={shapesAssignment} scene={shapesScene} copy={COPY} trail={creditedShapes} recapLabel={recapLabel} levers={levers}
+    stimulus={(item, marks, view) => <ShapeTask key={item.id} item={item} marked={marks.includes('shape')} view={view}
+      model={view.practice ? null : modelFor(item, items)} />}
     metrics={result => ({ type: 'di-shapes', ...diStageMetrics(result, items, data.challengeType), meanResponseMs: null })} />;
 };
 

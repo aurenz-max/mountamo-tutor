@@ -77,7 +77,7 @@ describe('diceSpokenMisses', () => {
 describe('shapesSpokenMisses and spokenPracticeSpokenMisses', () => {
   it.each([
     ['di-shapes.count_sides', ['said_shape_name', ...OFF]],
-    ['di-shapes.name_shape', ['near_name', 'other_shape_name']],
+    ['di-shapes.name_shape', ['near_name', 'other_shape_name', 'described_shape']],
   ] as const)('%s: every item', (file, expected) => {
     for (const item of payload(file).challenges) {
       const misses = shapesSpokenMisses(item);

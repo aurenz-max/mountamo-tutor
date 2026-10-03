@@ -35,6 +35,9 @@ export function shapesSpokenMisses(it: DiShapesChallenge): KnownMiss[] {
   return [
     ...(object ? [{ id: 'said_object', pattern: `${fact} The learner's answer is ${object}, the object's own name, not a shape name.`, examples: [object] }] : []),
     ...flatShapeNameMisses(it.shapeWord, it.spokenAlternates ?? [], NEAR_SHAPE[it.shapeWord], DRAWABLE, fact),
+    // The documented struggle no name miss covered: a description in place of a name (`model_shape` answers it).
+    { id: 'described_shape', pattern: `${fact} The learner's answer describes the drawing (round, pointy, a colour or a size word) and names no shape.`,
+      examples: ['it is round', 'the pointy one'] },
   ];
 }
 
@@ -52,7 +55,12 @@ export function shapesScene(it: DiShapesChallenge): WorkspaceScene {
     objects: [{ id: 'shape', selected: false, group: 'assignment target',
       label: it.challengeType === 'name_real_object' && it.realObjectLabel ? `the drawn ${it.realObjectLabel}`
         : counting ? `the drawn shape whose ${countNoun(it.challengeType)} the learner counts` : 'the drawn shape' }],
-    facts: { kind: it.challengeType, ...(it.supportTier ? { supportTier: it.supportTier } : {}),
+    facts: { kind: it.challengeType,
+      // DI's model is a PARALLEL shape, never this one (user ruling 2026-10-02): easy (or no tier) starts with the
+      // model card on screen, medium and hard without it.
+      support: it.supportTier === 'hard' ? 'answer it cold: model nothing before the learner answers, and never say this answer'
+        : it.supportTier === 'medium' ? 'the learner tries first; after a miss, model a different shape with the model lever, never this one'
+          : 'the model card of a different shape starts on screen: say it as your turn, then ask about this one. Never model this one',
       constraints: counting
         ? `The learner says how many ${countNoun(it.challengeType)} aloud. The shape's name is not shown or said: it gives the count away.`
         : 'The learner says the shape name aloud. No name is printed until it is credited.' },

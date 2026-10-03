@@ -22,6 +22,7 @@ Walk one item per mode in the live runtime lab at easy and at hard, answer wrong
 - counting_next: the number path ending in an empty box; on a number ending in 9, the easier number inside the decade.
 - name_numeral: the model card only (6 and 9 model each other); a one-digit numeral for 10 and up.
 - di-dice-roll (10-03): roll, then tap the dots (each gets a ring); the model card shows a different roll (compare: a star on the die with more, never named by side); sum: the bracket under both dice; an easier roll starts covered, and the full roll comes back still rolled.
+- di-shapes (10-03): the model card (a different shape; on find_real_object a different object beside its outline; on counting a different polygon with a tick on each side or a dot on each corner); counting: the pink start dot, then tap each side or corner (it turns amber, no number); a turned or small shape opens a plain upright different shape; 4-6 sides opens a triangle (or a square). Are tap targets big enough for a child's finger after a shape is shrunk?
 
 **Check:** the 07-25 browser finding was that two facts on screen at once overload a K child. Is the model card small and separate enough, or should easy start without it? Nothing drawn or said gives the child's answer before a try; the easier fact returns to the full one. [Table](support-levers/di-math-facts-lever-table-2026-10-02.md). Vitest and text replay only; no Live run (DI class gate waits for all 37 modes). Owner: user.
 
