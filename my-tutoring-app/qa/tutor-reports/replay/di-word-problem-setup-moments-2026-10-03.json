@@ -1,0 +1,2888 @@
+{
+ "lessonEntry": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+ "records": [
+  {
+   "payload": "di-word-problem-setup.build_family",
+   "primitiveId": "di-word-problem-setup",
+   "evalMode": "build_family",
+   "guidance": "One story is printed; read it aloud to the child when they need it. They set it up one step at a time. Naming the story kind, reading the number family, choosing add or subtract, and solving are said OUT LOUD. Placing the big amount, or building small + small = big, is done with their hands on the story-part cards, and the activity checks it: you cannot place a card, and never say which part is the big amount or where a part belongs before they try. The family decides the operation, not the story's words. Nothing they must say is printed before it is credited. Never do a step of this story for them: your model is the model_story lever, different stories solved (an add and a subtract, or one of each kind), all said. The support fact says where levers start. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Addition and subtraction word problems within 20",
+   "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding.",
+   "leakTokens": [
+    "WPS_ITEM",
+    "WPS_MOVE_ON",
+    "WPS_COMPLETE",
+    "WPS_HEAR",
+    "WPS_BIG"
+   ],
+   "ask": "Drag all three story-part cards into small plus small equals big.",
+   "keys": [],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "wps-1-part_whole-part-big_number",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-word-problem-setup",
+      "objectiveId": "di-word-problem-setup-practice",
+      "evalMode": "build_family",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wps-1-part_whole-part-big_number",
+       "phase": "working",
+       "task": "Drag all three story-part cards into small plus small equals big.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "big_number",
+        "printedStory": "There are 7 shells. 5 of them are striped. The rest are spotted. How many shells are spotted?",
+        "support": "the learner tries first; after a miss, model different stories with the model_story lever, never this one",
+        "constraints": "The learner puts all three story-part cards into small + small = big; the activity checks the big slot. You cannot place a card.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "story",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the printed story"
+         },
+         {
+          "id": "q-all",
+          "selected": false,
+          "group": "story-part card",
+          "label": "all the shells"
+         },
+         {
+          "id": "q-part1",
+          "selected": false,
+          "group": "story-part card",
+          "label": "striped shells"
+         },
+         {
+          "id": "q-part2",
+          "selected": false,
+          "group": "story-part card",
+          "label": "spotted shells"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_story",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "box_in_big",
+           "printed_small_in_big",
+           "big_in_small_slot",
+           "subtraction_sentence",
+           "opposite_operation",
+           "wrong_way",
+           "said_story_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner makes a wrong move on this step, or does not know how to start.",
+          "does": "Shows a card with TWO different stories, one to add and one to subtract, each solved (onScreen gives them). Say ALL of them as your turn, in order, each with its big amount and why; never only the one like the learner's story, and never say which of the learner's cards is big. Then hand back their step."
+         },
+         {
+          "id": "story_links",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "box_in_big",
+           "printed_small_in_big"
+          ],
+          "when": "The learner puts the wrong card in the big slot.",
+          "does": "When the learner taps a story-part card, the sentence it comes from is underlined. Say \"tap a card to see where it comes from\"."
+         }
+        ],
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wps-1-part_whole-part-big_number",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "wps-1-part_whole-part-big_number",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": null,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-word-problem-setup",
+      "objectiveId": "di-word-problem-setup-practice",
+      "evalMode": "build_family",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wps-1-part_whole-part-big_number",
+       "phase": "checked",
+       "task": "Drag all three story-part cards into small plus small equals big.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Built the family with \"all the shells\" and \"spotted shells\" as the small amounts and \"striped shells\" as the big amount.",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "big_number",
+        "printedStory": "There are 7 shells. 5 of them are striped. The rest are spotted. How many shells are spotted?",
+        "support": "the learner tries first; after a miss, model different stories with the model_story lever, never this one",
+        "constraints": "The learner puts all three story-part cards into small + small = big; the activity checks the big slot. You cannot place a card.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "story",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the printed story"
+         },
+         {
+          "id": "q-all",
+          "selected": false,
+          "group": "story-part card",
+          "label": "all the shells"
+         },
+         {
+          "id": "q-part1",
+          "selected": false,
+          "group": "story-part card",
+          "label": "striped shells"
+         },
+         {
+          "id": "q-part2",
+          "selected": false,
+          "group": "story-part card",
+          "label": "spotted shells"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_story",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "box_in_big",
+           "printed_small_in_big",
+           "big_in_small_slot",
+           "subtraction_sentence",
+           "opposite_operation",
+           "wrong_way",
+           "said_story_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner makes a wrong move on this step, or does not know how to start.",
+          "does": "Shows a card with TWO different stories, one to add and one to subtract, each solved (onScreen gives them). Say ALL of them as your turn, in order, each with its big amount and why; never only the one like the learner's story, and never say which of the learner's cards is big. Then hand back their step."
+         },
+         {
+          "id": "story_links",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "box_in_big",
+           "printed_small_in_big"
+          ],
+          "when": "The learner puts the wrong card in the big slot.",
+          "does": "When the learner taps a story-part card, the sentence it comes from is underlined. Say \"tap a card to see where it comes from\"."
+         }
+        ],
+        "lastResponse": {
+         "itemId": "wps-1-part_whole-part-big_number",
+         "response": "Built the family with \"all the shells\" and \"spotted shells\" as the small amounts and \"striped shells\" as the big amount.",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "printed_small_in_big"
+        },
+        "attempts": [
+         {
+          "itemId": "wps-1-part_whole-part-big_number",
+          "response": "Built the family with \"all the shells\" and \"spotted shells\" as the small amounts and \"striped shells\" as the big amount.",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "printed_small_in_big"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wps-1-part_whole-part-big_number",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner submitted their selection. Current workspace response: {\"itemId\":\"wps-1-part_whole-part-big_number\",\"response\":\"Built the family with \\\"all the shells\\\" and \\\"spotted shells\\\" as the small amounts and \\\"striped shells\\\" as the big amount.\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"printed_small_in_big\"}. Respond to the learner using the current task and workspace."
+     ],
+     "spoken": false,
+     "miss": "printed_small_in_big"
+    },
+    {
+     "kind": "stuck",
+     "itemId": "wps-1-part_whole-part-big_number",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": null,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-word-problem-setup",
+      "objectiveId": "di-word-problem-setup-practice",
+      "evalMode": "build_family",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wps-1-part_whole-part-big_number",
+       "phase": "checked",
+       "task": "Drag all three story-part cards into small plus small equals big.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Built the family with \"all the shells\" and \"spotted shells\" as the small amounts and \"striped shells\" as the big amount.",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "big_number",
+        "printedStory": "There are 7 shells. 5 of them are striped. The rest are spotted. How many shells are spotted?",
+        "support": "the learner tries first; after a miss, model different stories with the model_story lever, never this one",
+        "constraints": "The learner puts all three story-part cards into small + small = big; the activity checks the big slot. You cannot place a card.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "story",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the printed story"
+         },
+         {
+          "id": "q-all",
+          "selected": false,
+          "group": "story-part card",
+          "label": "all the shells"
+         },
+         {
+          "id": "q-part1",
+          "selected": false,
+          "group": "story-part card",
+          "label": "striped shells"
+         },
+         {
+          "id": "q-part2",
+          "selected": false,
+          "group": "story-part card",
+          "label": "spotted shells"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_story",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "box_in_big",
+           "printed_small_in_big",
+           "big_in_small_slot",
+           "subtraction_sentence",
+           "opposite_operation",
+           "wrong_way",
+           "said_story_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner makes a wrong move on this step, or does not know how to start.",
+          "does": "Shows a card with TWO different stories, one to add and one to subtract, each solved (onScreen gives them). Say ALL of them as your turn, in order, each with its big amount and why; never only the one like the learner's story, and never say which of the learner's cards is big. Then hand back their step."
+         },
+         {
+          "id": "story_links",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "box_in_big",
+           "printed_small_in_big"
+          ],
+          "when": "The learner puts the wrong card in the big slot.",
+          "does": "When the learner taps a story-part card, the sentence it comes from is underlined. Say \"tap a card to see where it comes from\"."
+         }
+        ],
+        "lastResponse": {
+         "itemId": "wps-1-part_whole-part-big_number",
+         "response": "Built the family with \"all the shells\" and \"spotted shells\" as the small amounts and \"striped shells\" as the big amount.",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "printed_small_in_big"
+        },
+        "attempts": [
+         {
+          "itemId": "wps-1-part_whole-part-big_number",
+          "response": "Built the family with \"all the shells\" and \"spotted shells\" as the small amounts and \"striped shells\" as the big amount.",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "printed_small_in_big"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wps-1-part_whole-part-big_number",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "wps-1-part_whole-part-big_number",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-word-problem-setup",
+      "objectiveId": "di-word-problem-setup-practice",
+      "evalMode": "build_family",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wps-1-part_whole-part-big_number",
+       "phase": "checked",
+       "task": "Drag all three story-part cards into small plus small equals big.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Built the family with \"all the shells\" and \"spotted shells\" as the small amounts and \"striped shells\" as the big amount.",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "big_number",
+        "printedStory": "There are 7 shells. 5 of them are striped. The rest are spotted. How many shells are spotted?",
+        "support": "the learner tries first; after a miss, model different stories with the model_story lever, never this one",
+        "constraints": "The learner puts all three story-part cards into small + small = big; the activity checks the big slot. You cannot place a card.",
+        "onScreen": "Beside the story, a model card shows 2 different stories, solved: comparison: \"Omar has 3 marbles. Ruby has 6 more marbles than Omar. How many marbles does Ruby have?\" Big amount: Ruby's marbles (Ruby has more than Omar, so Ruby's marbles is the whole amount). Family: three plus six equals box. Add: nine. comparison: \"Omar has 9 marbles. Ruby has 3 marbles. How many more marbles does Omar have than Ruby?\" Big amount: Omar's marbles (Omar has more than Ruby, so Omar's marbles is the whole amount). Family: three plus box equals nine. Subtract: six. None is this story.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "story",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the printed story"
+         },
+         {
+          "id": "q-all",
+          "selected": false,
+          "group": "story-part card",
+          "label": "all the shells"
+         },
+         {
+          "id": "q-part1",
+          "selected": false,
+          "group": "story-part card",
+          "label": "striped shells"
+         },
+         {
+          "id": "q-part2",
+          "selected": false,
+          "group": "story-part card",
+          "label": "spotted shells"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_story",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "box_in_big",
+           "printed_small_in_big",
+           "big_in_small_slot",
+           "subtraction_sentence",
+           "opposite_operation",
+           "wrong_way",
+           "said_story_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner makes a wrong move on this step, or does not know how to start.",
+          "does": "Shows a card with TWO different stories, one to add and one to subtract, each solved (onScreen gives them). Say ALL of them as your turn, in order, each with its big amount and why; never only the one like the learner's story, and never say which of the learner's cards is big. Then hand back their step."
+         },
+         {
+          "id": "story_links",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "box_in_big",
+           "printed_small_in_big"
+          ],
+          "when": "The learner puts the wrong card in the big slot.",
+          "does": "When the learner taps a story-part card, the sentence it comes from is underlined. Say \"tap a card to see where it comes from\"."
+         }
+        ],
+        "lastResponse": {
+         "itemId": "wps-1-part_whole-part-big_number",
+         "response": "Built the family with \"all the shells\" and \"spotted shells\" as the small amounts and \"striped shells\" as the big amount.",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "printed_small_in_big"
+        },
+        "attempts": [
+         {
+          "itemId": "wps-1-part_whole-part-big_number",
+          "response": "Built the family with \"all the shells\" and \"spotted shells\" as the small amounts and \"striped shells\" as the big amount.",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "printed_small_in_big"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "wps-1-part_whole-part-big_number",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "model_story"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wps-1-part_whole-part-big_number",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled model_story (help). It is on screen now: Shows a card with TWO different stories, one to add and one to subtract, each solved (onScreen gives them). Say ALL of them as your turn, in order, each with its big amount and why; never only the one like the learner's story, and never say which of the learner's cards is big. Then hand back their step. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "model_story",
+      "kind": "help",
+      "does": "Shows a card with TWO different stories, one to add and one to subtract, each solved (onScreen gives them). Say ALL of them as your turn, in order, each with its big amount and why; never only the one like the learner's story, and never say which of the learner's cards is big. Then hand back their step."
+     }
+    },
+    {
+     "kind": "credit",
+     "itemId": "wps-1-part_whole-part-big_number",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 5,
+      "visibleRevision": null,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-word-problem-setup",
+      "objectiveId": "di-word-problem-setup-practice",
+      "evalMode": "build_family",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wps-1-part_whole-part-big_number",
+       "phase": "checked",
+       "task": "Drag all three story-part cards into small plus small equals big.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 2,
+        "correctness": "correct",
+        "recentResponses": [
+         {
+          "response": "Built the family with \"striped shells\" and \"spotted shells\" as the small amounts and \"all the shells\" as the big amount.",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "big_number",
+        "printedStory": "There are 7 shells. 5 of them are striped. The rest are spotted. How many shells are spotted?",
+        "support": "the learner tries first; after a miss, model different stories with the model_story lever, never this one",
+        "constraints": "The learner puts all three story-part cards into small + small = big; the activity checks the big slot. You cannot place a card.",
+        "onScreen": "Beside the story, a model card shows 2 different stories, solved: comparison: \"Omar has 3 marbles. Ruby has 6 more marbles than Omar. How many marbles does Ruby have?\" Big amount: Ruby's marbles (Ruby has more than Omar, so Ruby's marbles is the whole amount). Family: three plus six equals box. Add: nine. comparison: \"Omar has 9 marbles. Ruby has 3 marbles. How many more marbles does Omar have than Ruby?\" Big amount: Omar's marbles (Omar has more than Ruby, so Omar's marbles is the whole amount). Family: three plus box equals nine. Subtract: six. None is this story.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "story",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the printed story"
+         },
+         {
+          "id": "q-all",
+          "selected": false,
+          "group": "story-part card",
+          "label": "all the shells"
+         },
+         {
+          "id": "q-part1",
+          "selected": false,
+          "group": "story-part card",
+          "label": "striped shells"
+         },
+         {
+          "id": "q-part2",
+          "selected": false,
+          "group": "story-part card",
+          "label": "spotted shells"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_story",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "box_in_big",
+           "printed_small_in_big",
+           "big_in_small_slot",
+           "subtraction_sentence",
+           "opposite_operation",
+           "wrong_way",
+           "said_story_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner makes a wrong move on this step, or does not know how to start.",
+          "does": "Shows a card with TWO different stories, one to add and one to subtract, each solved (onScreen gives them). Say ALL of them as your turn, in order, each with its big amount and why; never only the one like the learner's story, and never say which of the learner's cards is big. Then hand back their step."
+         },
+         {
+          "id": "story_links",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "box_in_big",
+           "printed_small_in_big"
+          ],
+          "when": "The learner puts the wrong card in the big slot.",
+          "does": "When the learner taps a story-part card, the sentence it comes from is underlined. Say \"tap a card to see where it comes from\"."
+         }
+        ],
+        "lastResponse": {
+         "itemId": "wps-1-part_whole-part-big_number",
+         "response": "Built the family with \"striped shells\" and \"spotted shells\" as the small amounts and \"all the shells\" as the big amount.",
+         "source": "gesture",
+         "correct": true,
+         "assisted": true,
+         "answerExposure": "none",
+         "levers": [
+          "model_story"
+         ]
+        },
+        "attempts": [
+         {
+          "itemId": "wps-1-part_whole-part-big_number",
+          "response": "Built the family with \"all the shells\" and \"spotted shells\" as the small amounts and \"striped shells\" as the big amount.",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "printed_small_in_big"
+         },
+         {
+          "itemId": "wps-1-part_whole-part-big_number",
+          "response": "Built the family with \"striped shells\" and \"spotted shells\" as the small amounts and \"all the shells\" as the big amount.",
+          "source": "gesture",
+          "correct": true,
+          "assisted": true,
+          "answerExposure": "none",
+          "levers": [
+           "model_story"
+          ]
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "wps-1-part_whole-part-big_number",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "model_story"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/5/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wps-1-part_whole-part-big_number",
+        "secondsOnItem": 20,
+        "secondsSinceReady": 20,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 2,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner submitted their selection. Current workspace response: {\"itemId\":\"wps-1-part_whole-part-big_number\",\"response\":\"Built the family with \\\"striped shells\\\" and \\\"spotted shells\\\" as the small amounts and \\\"all the shells\\\" as the big amount.\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"model_story\"]}. Respond to the learner using the current task and workspace."
+     ],
+     "spoken": false
+    }
+   ]
+  },
+  {
+   "payload": "di-word-problem-setup.classify_and_build",
+   "primitiveId": "di-word-problem-setup",
+   "evalMode": "classify_and_build",
+   "guidance": "One story is printed; read it aloud to the child when they need it. They set it up one step at a time. Naming the story kind, reading the number family, choosing add or subtract, and solving are said OUT LOUD. Placing the big amount, or building small + small = big, is done with their hands on the story-part cards, and the activity checks it: you cannot place a card, and never say which part is the big amount or where a part belongs before they try. The family decides the operation, not the story's words. Nothing they must say is printed before it is credited. Never do a step of this story for them: your model is the model_story lever, different stories solved (an add and a subtract, or one of each kind), all said. The support fact says where levers start. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Addition and subtraction word problems within 20",
+   "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding.",
+   "leakTokens": [
+    "WPS_ITEM",
+    "WPS_MOVE_ON",
+    "WPS_COMPLETE",
+    "WPS_HEAR",
+    "WPS_BIG"
+   ],
+   "ask": "Say whether this is a comparison problem, a change problem, or a part-whole problem.",
+   "keys": [
+    "\"comparison\" (\"comparison\", \"compare\", \"a compare problem\", alone or in a sentence), because it compares two amounts. \"change\" or \"part-whole\" is wrong. calling it a change problem because a sentence says \"has\" is the signature error: nothing changes."
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "wps-1-comparison-fewer_person-classify",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-word-problem-setup",
+      "objectiveId": "di-word-problem-setup-practice",
+      "evalMode": "classify_and_build",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wps-1-comparison-fewer_person-classify",
+       "phase": "working",
+       "task": "Say whether this is a comparison problem, a change problem, or a part-whole problem.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "classify",
+        "printedStory": "Sam has 17 stickers. Zoe has 3 fewer stickers than Sam. How many stickers does Zoe have?",
+        "support": "the learner tries first; after a miss, model different stories with the model_story lever, never this one",
+        "constraints": "The learner answers aloud. Nothing the learner must say is printed before it is credited.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "story",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the printed story"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_story",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "box_in_big",
+           "printed_small_in_big",
+           "big_in_small_slot",
+           "subtraction_sentence",
+           "opposite_operation",
+           "wrong_way",
+           "said_story_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more",
+           "signature_kind",
+           "other_kind"
+          ],
+          "when": "The learner makes a wrong move on this step, or does not know how to start.",
+          "does": "Shows a card with THREE different stories, one of each kind, each solved (onScreen gives them). Say ALL of them as your turn, in order, each with its big amount and why; never only the one like the learner's story, and never say which of the learner's cards is big. Then hand back their step."
+         }
+        ],
+        "expectedAnswer": "\"comparison\" (\"comparison\", \"compare\", \"a compare problem\", alone or in a sentence), because it compares two amounts. \"change\" or \"part-whole\" is wrong. Calling it a change problem because a sentence says \"has\" is the signature error: nothing changes.",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wps-1-comparison-fewer_person-classify",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "wps-1-comparison-fewer_person-classify",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-word-problem-setup",
+      "objectiveId": "di-word-problem-setup-practice",
+      "evalMode": "classify_and_build",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wps-1-comparison-fewer_person-classify",
+       "phase": "working",
+       "task": "Say whether this is a comparison problem, a change problem, or a part-whole problem.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "classify",
+        "printedStory": "Sam has 17 stickers. Zoe has 3 fewer stickers than Sam. How many stickers does Zoe have?",
+        "support": "the learner tries first; after a miss, model different stories with the model_story lever, never this one",
+        "constraints": "The learner answers aloud. Nothing the learner must say is printed before it is credited.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "story",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the printed story"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_story",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "box_in_big",
+           "printed_small_in_big",
+           "big_in_small_slot",
+           "subtraction_sentence",
+           "opposite_operation",
+           "wrong_way",
+           "said_story_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more",
+           "signature_kind",
+           "other_kind"
+          ],
+          "when": "The learner makes a wrong move on this step, or does not know how to start.",
+          "does": "Shows a card with THREE different stories, one of each kind, each solved (onScreen gives them). Say ALL of them as your turn, in order, each with its big amount and why; never only the one like the learner's story, and never say which of the learner's cards is big. Then hand back their step."
+         }
+        ],
+        "expectedAnswer": "\"comparison\" (\"comparison\", \"compare\", \"a compare problem\", alone or in a sentence), because it compares two amounts. \"change\" or \"part-whole\" is wrong. Calling it a change problem because a sentence says \"has\" is the signature error: nothing changes.",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "change"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wps-1-comparison-fewer_person-classify",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "change",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "wps-1-comparison-fewer_person-classify",
+       "revision": 1
+      },
+      "task": "Say whether this is a comparison problem, a change problem, or a part-whole problem.",
+      "phase": "working",
+      "learner": "change",
+      "expectedAnswer": "\"comparison\" (\"comparison\", \"compare\", \"a compare problem\", alone or in a sentence), because it compares two amounts. \"change\" or \"part-whole\" is wrong. Calling it a change problem because a sentence says \"has\" is the signature error: nothing changes.",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "change"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [
+        {
+         "id": "story",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the printed story"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "classify",
+        "printedStory": "Sam has 17 stickers. Zoe has 3 fewer stickers than Sam. How many stickers does Zoe have?",
+        "support": "the learner tries first; after a miss, model different stories with the model_story lever, never this one",
+        "constraints": "The learner answers aloud. Nothing the learner must say is printed before it is credited.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "wps-1-comparison-fewer_person-classify"
+      },
+      "task": "Say whether this is a comparison problem, a change problem, or a part-whole problem.",
+      "expectedAnswer": "\"comparison\" (\"comparison\", \"compare\", \"a compare problem\", alone or in a sentence), because it compares two amounts. \"change\" or \"part-whole\" is wrong. Calling it a change problem because a sentence says \"has\" is the signature error: nothing changes.",
+      "learner": "change",
+      "misses": [
+       {
+        "id": "signature_kind",
+        "pattern": "This story is a comparison story. The learner's answer is change.",
+        "examples": [
+         "change"
+        ]
+       },
+       {
+        "id": "other_kind",
+        "pattern": "This story is a comparison story. The learner's answer is part-whole.",
+        "examples": [
+         "part-whole"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "wps-1-comparison-fewer_person-classify",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-word-problem-setup",
+      "objectiveId": "di-word-problem-setup-practice",
+      "evalMode": "classify_and_build",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wps-1-comparison-fewer_person-classify",
+       "phase": "working",
+       "task": "Say whether this is a comparison problem, a change problem, or a part-whole problem.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "change",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "classify",
+        "printedStory": "Sam has 17 stickers. Zoe has 3 fewer stickers than Sam. How many stickers does Zoe have?",
+        "support": "the learner tries first; after a miss, model different stories with the model_story lever, never this one",
+        "constraints": "The learner answers aloud. Nothing the learner must say is printed before it is credited.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "story",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the printed story"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_story",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "box_in_big",
+           "printed_small_in_big",
+           "big_in_small_slot",
+           "subtraction_sentence",
+           "opposite_operation",
+           "wrong_way",
+           "said_story_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more",
+           "signature_kind",
+           "other_kind"
+          ],
+          "when": "The learner makes a wrong move on this step, or does not know how to start.",
+          "does": "Shows a card with THREE different stories, one of each kind, each solved (onScreen gives them). Say ALL of them as your turn, in order, each with its big amount and why; never only the one like the learner's story, and never say which of the learner's cards is big. Then hand back their step."
+         }
+        ],
+        "expectedAnswer": "\"comparison\" (\"comparison\", \"compare\", \"a compare problem\", alone or in a sentence), because it compares two amounts. \"change\" or \"part-whole\" is wrong. Calling it a change problem because a sentence says \"has\" is the signature error: nothing changes.",
+        "lastResponse": {
+         "itemId": "wps-1-comparison-fewer_person-classify",
+         "response": "change",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "wps-1-comparison-fewer_person-classify",
+          "response": "change",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wps-1-comparison-fewer_person-classify",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "wps-1-comparison-fewer_person-classify",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-word-problem-setup",
+      "objectiveId": "di-word-problem-setup-practice",
+      "evalMode": "classify_and_build",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wps-1-comparison-fewer_person-classify",
+       "phase": "working",
+       "task": "Say whether this is a comparison problem, a change problem, or a part-whole problem.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "change",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "classify",
+        "printedStory": "Sam has 17 stickers. Zoe has 3 fewer stickers than Sam. How many stickers does Zoe have?",
+        "support": "the learner tries first; after a miss, model different stories with the model_story lever, never this one",
+        "constraints": "The learner answers aloud. Nothing the learner must say is printed before it is credited.",
+        "onScreen": "Beside the story, a model card shows 3 different stories, solved: comparison: \"Maya has 2 shells. Leo has 4 more shells than Maya. How many shells does Leo have?\" Big amount: Leo's shells (Leo has more than Maya, so Leo's shells is the whole amount). Family: two plus four equals box. Add: six. change: \"Maya had 2 shells. Then Maya found 4 more. How many shells does Maya have now?\" Big amount: what Maya has now (Maya found more, so what Maya has now is the whole amount). Family: two plus four equals box. Add: six. part-whole: \"There are 6 shells. 2 of them are red. The rest are blue. How many shells are blue?\" Big amount: all the shells (all the shells together is the whole amount). Family: two plus box equals six. Subtract: four. None is this story.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "story",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the printed story"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_story",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "box_in_big",
+           "printed_small_in_big",
+           "big_in_small_slot",
+           "subtraction_sentence",
+           "opposite_operation",
+           "wrong_way",
+           "said_story_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more",
+           "signature_kind",
+           "other_kind"
+          ],
+          "when": "The learner makes a wrong move on this step, or does not know how to start.",
+          "does": "Shows a card with THREE different stories, one of each kind, each solved (onScreen gives them). Say ALL of them as your turn, in order, each with its big amount and why; never only the one like the learner's story, and never say which of the learner's cards is big. Then hand back their step."
+         }
+        ],
+        "expectedAnswer": "\"comparison\" (\"comparison\", \"compare\", \"a compare problem\", alone or in a sentence), because it compares two amounts. \"change\" or \"part-whole\" is wrong. Calling it a change problem because a sentence says \"has\" is the signature error: nothing changes.",
+        "lastResponse": {
+         "itemId": "wps-1-comparison-fewer_person-classify",
+         "response": "change",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "wps-1-comparison-fewer_person-classify",
+          "response": "change",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "wps-1-comparison-fewer_person-classify",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "model_story"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wps-1-comparison-fewer_person-classify",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled model_story (help). It is on screen now: Shows a card with THREE different stories, one of each kind, each solved (onScreen gives them). Say ALL of them as your turn, in order, each with its big amount and why; never only the one like the learner's story, and never say which of the learner's cards is big. Then hand back their step. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "model_story",
+      "kind": "help",
+      "does": "Shows a card with THREE different stories, one of each kind, each solved (onScreen gives them). Say ALL of them as your turn, in order, each with its big amount and why; never only the one like the learner's story, and never say which of the learner's cards is big. Then hand back their step."
+     }
+    },
+    {
+     "kind": "credit",
+     "itemId": "wps-1-comparison-fewer_person-classify",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-word-problem-setup",
+      "objectiveId": "di-word-problem-setup-practice",
+      "evalMode": "classify_and_build",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wps-1-comparison-fewer_person-classify",
+       "phase": "working",
+       "task": "Say whether this is a comparison problem, a change problem, or a part-whole problem.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "change",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "classify",
+        "printedStory": "Sam has 17 stickers. Zoe has 3 fewer stickers than Sam. How many stickers does Zoe have?",
+        "support": "the learner tries first; after a miss, model different stories with the model_story lever, never this one",
+        "constraints": "The learner answers aloud. Nothing the learner must say is printed before it is credited.",
+        "onScreen": "Beside the story, a model card shows 3 different stories, solved: comparison: \"Maya has 2 shells. Leo has 4 more shells than Maya. How many shells does Leo have?\" Big amount: Leo's shells (Leo has more than Maya, so Leo's shells is the whole amount). Family: two plus four equals box. Add: six. change: \"Maya had 2 shells. Then Maya found 4 more. How many shells does Maya have now?\" Big amount: what Maya has now (Maya found more, so what Maya has now is the whole amount). Family: two plus four equals box. Add: six. part-whole: \"There are 6 shells. 2 of them are red. The rest are blue. How many shells are blue?\" Big amount: all the shells (all the shells together is the whole amount). Family: two plus box equals six. Subtract: four. None is this story.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "story",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the printed story"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_story",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "box_in_big",
+           "printed_small_in_big",
+           "big_in_small_slot",
+           "subtraction_sentence",
+           "opposite_operation",
+           "wrong_way",
+           "said_story_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more",
+           "signature_kind",
+           "other_kind"
+          ],
+          "when": "The learner makes a wrong move on this step, or does not know how to start.",
+          "does": "Shows a card with THREE different stories, one of each kind, each solved (onScreen gives them). Say ALL of them as your turn, in order, each with its big amount and why; never only the one like the learner's story, and never say which of the learner's cards is big. Then hand back their step."
+         }
+        ],
+        "expectedAnswer": "\"comparison\" (\"comparison\", \"compare\", \"a compare problem\", alone or in a sentence), because it compares two amounts. \"change\" or \"part-whole\" is wrong. Calling it a change problem because a sentence says \"has\" is the signature error: nothing changes.",
+        "pendingResponse": {
+         "id": "speech:1:2",
+         "text": "comparison"
+        },
+        "lastResponse": {
+         "itemId": "wps-1-comparison-fewer_person-classify",
+         "response": "change",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "wps-1-comparison-fewer_person-classify",
+          "response": "change",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "wps-1-comparison-fewer_person-classify",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "model_story"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wps-1-comparison-fewer_person-classify",
+        "secondsOnItem": 20,
+        "secondsSinceReady": 20,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "comparison",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "wps-1-comparison-fewer_person-classify",
+       "revision": 3
+      },
+      "task": "Say whether this is a comparison problem, a change problem, or a part-whole problem.",
+      "phase": "working",
+      "learner": "comparison",
+      "expectedAnswer": "\"comparison\" (\"comparison\", \"compare\", \"a compare problem\", alone or in a sentence), because it compares two amounts. \"change\" or \"part-whole\" is wrong. Calling it a change problem because a sentence says \"has\" is the signature error: nothing changes.",
+      "pendingResponse": {
+       "id": "speech:1:2",
+       "text": "comparison"
+      },
+      "lastResponse": {
+       "itemId": "wps-1-comparison-fewer_person-classify",
+       "response": "change",
+       "source": "speech",
+       "correct": false,
+       "tutorResponse": "Not quite.",
+       "judgment": "tutor",
+       "assisted": false,
+       "answerExposure": "none"
+      },
+      "activity": {
+       "responseSource": "speech",
+       "attemptNumber": 1,
+       "objects": [
+        {
+         "id": "story",
+         "selected": false,
+         "group": "assignment target",
+         "label": "the printed story"
+        }
+       ],
+       "demonstration": [],
+       "facts": {
+        "kind": "classify",
+        "printedStory": "Sam has 17 stickers. Zoe has 3 fewer stickers than Sam. How many stickers does Zoe have?",
+        "support": "the learner tries first; after a miss, model different stories with the model_story lever, never this one",
+        "constraints": "The learner answers aloud. Nothing the learner must say is printed before it is credited.",
+        "onScreen": "Beside the story, a model card shows 3 different stories, solved: comparison: \"Maya has 2 shells. Leo has 4 more shells than Maya. How many shells does Leo have?\" Big amount: Leo's shells (Leo has more than Maya, so Leo's shells is the whole amount). Family: two plus four equals box. Add: six. change: \"Maya had 2 shells. Then Maya found 4 more. How many shells does Maya have now?\" Big amount: what Maya has now (Maya found more, so what Maya has now is the whole amount). Family: two plus four equals box. Add: six. part-whole: \"There are 6 shells. 2 of them are red. The rest are blue. How many shells are blue?\" Big amount: all the shells (all the shells together is the whole amount). Family: two plus box equals six. Subtract: four. None is this story.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 2,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "wps-1-comparison-fewer_person-classify"
+      },
+      "task": "Say whether this is a comparison problem, a change problem, or a part-whole problem.",
+      "expectedAnswer": "\"comparison\" (\"comparison\", \"compare\", \"a compare problem\", alone or in a sentence), because it compares two amounts. \"change\" or \"part-whole\" is wrong. Calling it a change problem because a sentence says \"has\" is the signature error: nothing changes.",
+      "learner": "comparison",
+      "misses": [
+       {
+        "id": "signature_kind",
+        "pattern": "This story is a comparison story. The learner's answer is change.",
+        "examples": [
+         "change"
+        ]
+       },
+       {
+        "id": "other_kind",
+        "pattern": "This story is a comparison story. The learner's answer is part-whole.",
+        "examples": [
+         "part-whole"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    }
+   ]
+  },
+  {
+   "payload": "di-word-problem-setup.find_big_number",
+   "primitiveId": "di-word-problem-setup",
+   "evalMode": "find_big_number",
+   "guidance": "One story is printed; read it aloud to the child when they need it. They set it up one step at a time. Naming the story kind, reading the number family, choosing add or subtract, and solving are said OUT LOUD. Placing the big amount, or building small + small = big, is done with their hands on the story-part cards, and the activity checks it: you cannot place a card, and never say which part is the big amount or where a part belongs before they try. The family decides the operation, not the story's words. Nothing they must say is printed before it is credited. Never do a step of this story for them: your model is the model_story lever, different stories solved (an add and a subtract, or one of each kind), all said. The support fact says where levers start. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Addition and subtraction word problems within 20",
+   "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding.",
+   "leakTokens": [
+    "WPS_ITEM",
+    "WPS_MOVE_ON",
+    "WPS_COMPLETE",
+    "WPS_HEAR",
+    "WPS_BIG"
+   ],
+   "ask": "Drag the story part that names the big amount into the big amount box.",
+   "keys": [
+    "select what sam has now"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "wps-1-change-gain_end-big_number",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-word-problem-setup",
+      "objectiveId": "di-word-problem-setup-practice",
+      "evalMode": "find_big_number",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wps-1-change-gain_end-big_number",
+       "phase": "working",
+       "task": "Drag the story part that names the big amount into the big amount box.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "kind": "big_number",
+        "printedStory": "Sam had 12 shells. Then Sam picked 3 more. How many shells does Sam have now?",
+        "support": "the learner tries first; after a miss, model different stories with the model_story lever, never this one",
+        "constraints": "The learner drags or taps a story-part card into the big-amount box; the activity checks it. You cannot place a card.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "story",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the printed story"
+         },
+         {
+          "id": "q-start",
+          "selected": false,
+          "group": "story-part card",
+          "label": "what Sam started with"
+         },
+         {
+          "id": "q-change",
+          "selected": false,
+          "group": "story-part card",
+          "label": "what Sam picked"
+         },
+         {
+          "id": "q-now",
+          "selected": false,
+          "group": "story-part card",
+          "label": "what Sam has now"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_story",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "box_in_big",
+           "printed_small_in_big",
+           "big_in_small_slot",
+           "subtraction_sentence",
+           "opposite_operation",
+           "wrong_way",
+           "said_story_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner makes a wrong move on this step, or does not know how to start.",
+          "does": "Shows a card with TWO different stories, one to add and one to subtract, each solved (onScreen gives them). Say ALL of them as your turn, in order, each with its big amount and why; never only the one like the learner's story, and never say which of the learner's cards is big. Then hand back their step."
+         },
+         {
+          "id": "story_links",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "box_in_big",
+           "printed_small_in_big"
+          ],
+          "when": "The learner puts the wrong card in the big slot.",
+          "does": "When the learner taps a story-part card, the sentence it comes from is underlined. Say \"tap a card to see where it comes from\"."
+         }
+        ],
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wps-1-change-gain_end-big_number",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "wps-1-change-gain_end-big_number",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": null,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-word-problem-setup",
+      "objectiveId": "di-word-problem-setup-practice",
+      "evalMode": "find_big_number",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wps-1-change-gain_end-big_number",
+       "phase": "checked",
+       "task": "Drag the story part that names the big amount into the big amount box.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Placed \"what Sam started with\" in the big-amount box.",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "big_number",
+        "printedStory": "Sam had 12 shells. Then Sam picked 3 more. How many shells does Sam have now?",
+        "support": "the learner tries first; after a miss, model different stories with the model_story lever, never this one",
+        "constraints": "The learner drags or taps a story-part card into the big-amount box; the activity checks it. You cannot place a card.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "story",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the printed story"
+         },
+         {
+          "id": "q-start",
+          "selected": false,
+          "group": "story-part card",
+          "label": "what Sam started with"
+         },
+         {
+          "id": "q-change",
+          "selected": false,
+          "group": "story-part card",
+          "label": "what Sam picked"
+         },
+         {
+          "id": "q-now",
+          "selected": false,
+          "group": "story-part card",
+          "label": "what Sam has now"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_story",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "box_in_big",
+           "printed_small_in_big",
+           "big_in_small_slot",
+           "subtraction_sentence",
+           "opposite_operation",
+           "wrong_way",
+           "said_story_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner makes a wrong move on this step, or does not know how to start.",
+          "does": "Shows a card with TWO different stories, one to add and one to subtract, each solved (onScreen gives them). Say ALL of them as your turn, in order, each with its big amount and why; never only the one like the learner's story, and never say which of the learner's cards is big. Then hand back their step."
+         },
+         {
+          "id": "story_links",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "box_in_big",
+           "printed_small_in_big"
+          ],
+          "when": "The learner puts the wrong card in the big slot.",
+          "does": "When the learner taps a story-part card, the sentence it comes from is underlined. Say \"tap a card to see where it comes from\"."
+         }
+        ],
+        "lastResponse": {
+         "itemId": "wps-1-change-gain_end-big_number",
+         "response": "Placed \"what Sam started with\" in the big-amount box.",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "printed_small_in_big"
+        },
+        "attempts": [
+         {
+          "itemId": "wps-1-change-gain_end-big_number",
+          "response": "Placed \"what Sam started with\" in the big-amount box.",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "printed_small_in_big"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wps-1-change-gain_end-big_number",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner submitted their selection. Current workspace response: {\"itemId\":\"wps-1-change-gain_end-big_number\",\"response\":\"Placed \\\"what Sam started with\\\" in the big-amount box.\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"printed_small_in_big\"}. Respond to the learner using the current task and workspace."
+     ],
+     "spoken": false,
+     "miss": "printed_small_in_big"
+    },
+    {
+     "kind": "stuck",
+     "itemId": "wps-1-change-gain_end-big_number",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": null,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-word-problem-setup",
+      "objectiveId": "di-word-problem-setup-practice",
+      "evalMode": "find_big_number",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wps-1-change-gain_end-big_number",
+       "phase": "checked",
+       "task": "Drag the story part that names the big amount into the big amount box.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Placed \"what Sam started with\" in the big-amount box.",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "big_number",
+        "printedStory": "Sam had 12 shells. Then Sam picked 3 more. How many shells does Sam have now?",
+        "support": "the learner tries first; after a miss, model different stories with the model_story lever, never this one",
+        "constraints": "The learner drags or taps a story-part card into the big-amount box; the activity checks it. You cannot place a card.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "story",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the printed story"
+         },
+         {
+          "id": "q-start",
+          "selected": false,
+          "group": "story-part card",
+          "label": "what Sam started with"
+         },
+         {
+          "id": "q-change",
+          "selected": false,
+          "group": "story-part card",
+          "label": "what Sam picked"
+         },
+         {
+          "id": "q-now",
+          "selected": false,
+          "group": "story-part card",
+          "label": "what Sam has now"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_story",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "box_in_big",
+           "printed_small_in_big",
+           "big_in_small_slot",
+           "subtraction_sentence",
+           "opposite_operation",
+           "wrong_way",
+           "said_story_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner makes a wrong move on this step, or does not know how to start.",
+          "does": "Shows a card with TWO different stories, one to add and one to subtract, each solved (onScreen gives them). Say ALL of them as your turn, in order, each with its big amount and why; never only the one like the learner's story, and never say which of the learner's cards is big. Then hand back their step."
+         },
+         {
+          "id": "story_links",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "box_in_big",
+           "printed_small_in_big"
+          ],
+          "when": "The learner puts the wrong card in the big slot.",
+          "does": "When the learner taps a story-part card, the sentence it comes from is underlined. Say \"tap a card to see where it comes from\"."
+         }
+        ],
+        "lastResponse": {
+         "itemId": "wps-1-change-gain_end-big_number",
+         "response": "Placed \"what Sam started with\" in the big-amount box.",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "printed_small_in_big"
+        },
+        "attempts": [
+         {
+          "itemId": "wps-1-change-gain_end-big_number",
+          "response": "Placed \"what Sam started with\" in the big-amount box.",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "printed_small_in_big"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wps-1-change-gain_end-big_number",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "wps-1-change-gain_end-big_number",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-word-problem-setup",
+      "objectiveId": "di-word-problem-setup-practice",
+      "evalMode": "find_big_number",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wps-1-change-gain_end-big_number",
+       "phase": "checked",
+       "task": "Drag the story part that names the big amount into the big amount box.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Placed \"what Sam started with\" in the big-amount box.",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "big_number",
+        "printedStory": "Sam had 12 shells. Then Sam picked 3 more. How many shells does Sam have now?",
+        "support": "the learner tries first; after a miss, model different stories with the model_story lever, never this one",
+        "constraints": "The learner drags or taps a story-part card into the big-amount box; the activity checks it. You cannot place a card.",
+        "onScreen": "Beside the story, a model card shows 2 different stories, solved: comparison: \"Omar has 2 marbles. Ruby has 4 more marbles than Omar. How many marbles does Ruby have?\" Big amount: Ruby's marbles (Ruby has more than Omar, so Ruby's marbles is the whole amount). Family: two plus four equals box. Add: six. comparison: \"Omar has 6 marbles. Ruby has 2 marbles. How many more marbles does Omar have than Ruby?\" Big amount: Omar's marbles (Omar has more than Ruby, so Omar's marbles is the whole amount). Family: two plus box equals six. Subtract: four. None is this story.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "story",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the printed story"
+         },
+         {
+          "id": "q-start",
+          "selected": false,
+          "group": "story-part card",
+          "label": "what Sam started with"
+         },
+         {
+          "id": "q-change",
+          "selected": false,
+          "group": "story-part card",
+          "label": "what Sam picked"
+         },
+         {
+          "id": "q-now",
+          "selected": false,
+          "group": "story-part card",
+          "label": "what Sam has now"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_story",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "box_in_big",
+           "printed_small_in_big",
+           "big_in_small_slot",
+           "subtraction_sentence",
+           "opposite_operation",
+           "wrong_way",
+           "said_story_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner makes a wrong move on this step, or does not know how to start.",
+          "does": "Shows a card with TWO different stories, one to add and one to subtract, each solved (onScreen gives them). Say ALL of them as your turn, in order, each with its big amount and why; never only the one like the learner's story, and never say which of the learner's cards is big. Then hand back their step."
+         },
+         {
+          "id": "story_links",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "box_in_big",
+           "printed_small_in_big"
+          ],
+          "when": "The learner puts the wrong card in the big slot.",
+          "does": "When the learner taps a story-part card, the sentence it comes from is underlined. Say \"tap a card to see where it comes from\"."
+         }
+        ],
+        "lastResponse": {
+         "itemId": "wps-1-change-gain_end-big_number",
+         "response": "Placed \"what Sam started with\" in the big-amount box.",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "printed_small_in_big"
+        },
+        "attempts": [
+         {
+          "itemId": "wps-1-change-gain_end-big_number",
+          "response": "Placed \"what Sam started with\" in the big-amount box.",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "printed_small_in_big"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "wps-1-change-gain_end-big_number",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "model_story"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wps-1-change-gain_end-big_number",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled model_story (help). It is on screen now: Shows a card with TWO different stories, one to add and one to subtract, each solved (onScreen gives them). Say ALL of them as your turn, in order, each with its big amount and why; never only the one like the learner's story, and never say which of the learner's cards is big. Then hand back their step. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "model_story",
+      "kind": "help",
+      "does": "Shows a card with TWO different stories, one to add and one to subtract, each solved (onScreen gives them). Say ALL of them as your turn, in order, each with its big amount and why; never only the one like the learner's story, and never say which of the learner's cards is big. Then hand back their step."
+     }
+    },
+    {
+     "kind": "credit",
+     "itemId": "wps-1-change-gain_end-big_number",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 5,
+      "visibleRevision": null,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "di-word-problem-setup",
+      "objectiveId": "di-word-problem-setup-practice",
+      "evalMode": "find_big_number",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "wps-1-change-gain_end-big_number",
+       "phase": "checked",
+       "task": "Drag the story part that names the big amount into the big amount box.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 2,
+        "correctness": "correct",
+        "recentResponses": [
+         {
+          "response": "Placed \"what Sam has now\" in the big-amount box.",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "kind": "big_number",
+        "printedStory": "Sam had 12 shells. Then Sam picked 3 more. How many shells does Sam have now?",
+        "support": "the learner tries first; after a miss, model different stories with the model_story lever, never this one",
+        "constraints": "The learner drags or taps a story-part card into the big-amount box; the activity checks it. You cannot place a card.",
+        "onScreen": "Beside the story, a model card shows 2 different stories, solved: comparison: \"Omar has 2 marbles. Ruby has 4 more marbles than Omar. How many marbles does Ruby have?\" Big amount: Ruby's marbles (Ruby has more than Omar, so Ruby's marbles is the whole amount). Family: two plus four equals box. Add: six. comparison: \"Omar has 6 marbles. Ruby has 2 marbles. How many more marbles does Omar have than Ruby?\" Big amount: Omar's marbles (Omar has more than Ruby, so Omar's marbles is the whole amount). Family: two plus box equals six. Subtract: four. None is this story.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [
+         {
+          "id": "story",
+          "selected": false,
+          "group": "assignment target",
+          "label": "the printed story"
+         },
+         {
+          "id": "q-start",
+          "selected": false,
+          "group": "story-part card",
+          "label": "what Sam started with"
+         },
+         {
+          "id": "q-change",
+          "selected": false,
+          "group": "story-part card",
+          "label": "what Sam picked"
+         },
+         {
+          "id": "q-now",
+          "selected": false,
+          "group": "story-part card",
+          "label": "what Sam has now"
+         }
+        ],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_story",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "box_in_big",
+           "printed_small_in_big",
+           "big_in_small_slot",
+           "subtraction_sentence",
+           "opposite_operation",
+           "wrong_way",
+           "said_story_number",
+           "one_short",
+           "one_over",
+           "short_by_more",
+           "over_by_more"
+          ],
+          "when": "The learner makes a wrong move on this step, or does not know how to start.",
+          "does": "Shows a card with TWO different stories, one to add and one to subtract, each solved (onScreen gives them). Say ALL of them as your turn, in order, each with its big amount and why; never only the one like the learner's story, and never say which of the learner's cards is big. Then hand back their step."
+         },
+         {
+          "id": "story_links",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "box_in_big",
+           "printed_small_in_big"
+          ],
+          "when": "The learner puts the wrong card in the big slot.",
+          "does": "When the learner taps a story-part card, the sentence it comes from is underlined. Say \"tap a card to see where it comes from\"."
+         }
+        ],
+        "lastResponse": {
+         "itemId": "wps-1-change-gain_end-big_number",
+         "response": "Placed \"what Sam has now\" in the big-amount box.",
+         "source": "gesture",
+         "correct": true,
+         "assisted": true,
+         "answerExposure": "none",
+         "levers": [
+          "model_story"
+         ]
+        },
+        "attempts": [
+         {
+          "itemId": "wps-1-change-gain_end-big_number",
+          "response": "Placed \"what Sam started with\" in the big-amount box.",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "printed_small_in_big"
+         },
+         {
+          "itemId": "wps-1-change-gain_end-big_number",
+          "response": "Placed \"what Sam has now\" in the big-amount box.",
+          "source": "gesture",
+          "correct": true,
+          "assisted": true,
+          "answerExposure": "none",
+          "levers": [
+           "model_story"
+          ]
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "wps-1-change-gain_end-big_number",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "model_story"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/5/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "wps-1-change-gain_end-big_number",
+        "secondsOnItem": 20,
+        "secondsSinceReady": 20,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 2,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner submitted their selection. Current workspace response: {\"itemId\":\"wps-1-change-gain_end-big_number\",\"response\":\"Placed \\\"what Sam has now\\\" in the big-amount box.\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"model_story\"]}. Respond to the learner using the current task and workspace."
+     ],
+     "spoken": false
+    }
+   ]
+  }
+ ]
+}

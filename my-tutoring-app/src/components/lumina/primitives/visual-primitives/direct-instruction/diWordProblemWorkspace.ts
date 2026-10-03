@@ -166,7 +166,13 @@ export function wordProblemScene(item: WordProblemItem, view: { familyShown: boo
       { id: 'story', selected: false, group: 'assignment target', label: 'the printed story' },
       ...(hands ? item.plan.quantities.map(q => ({ id: q.id, selected: false, group: 'story-part card', label: q.label })) : []),
     ],
-    facts: { kind: item.kind, printedStory: item.plan.story, ...(item.supportTier ? { supportTier: item.supportTier } : {}),
+    facts: { kind: item.kind, printedStory: item.plan.story,
+      // DI's model is a DIFFERENT story, never this one (ruling 2026-10-02): easy starts with the model card; no tier is
+      // medium in this pack.
+      support: item.supportTier === 'easy'
+        ? 'the model card of different stories starts on screen: say every one as your turn, then hand this step back. Never do this step'
+        : item.supportTier === 'hard' ? 'work it cold: model nothing before the learner tries'
+          : 'the learner tries first; after a miss, model different stories with the model_story lever, never this one',
       constraints: hands
         ? (item.challengeType === 'find_big_number'
           ? 'The learner drags or taps a story-part card into the big-amount box; the activity checks it. You cannot place a card.'

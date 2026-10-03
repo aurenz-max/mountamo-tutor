@@ -1275,7 +1275,10 @@ export const DI_CATALOG: ComponentDefinition[] = [
         + 'Placing the big amount, or building small + small = big, is done with their hands on the story-part cards, '
         + 'and the activity checks it: you cannot place a card, and never say which part is the big amount or where a '
         + 'part belongs before they try. The family decides the operation, not the story\'s words. Nothing they must '
-        + 'say is printed before it is credited.',
+        + 'say is printed before it is credited. Never do a step of this story for them: your model is the model_story '
+        + 'lever, different stories solved (an add and a subtract, or one of each kind), all said. The support fact says '
+        + 'where levers start.',
+      levers: true,
       // The activity's own check of the big slot (`wordProblemMiss`), then the spoken steps' known wrong answers
       // (`wordProblemSpokenMisses`), named by the `spoken_miss` observer.
       misses: missLists<WordProblemMiss | SpokenWordProblemMiss>({

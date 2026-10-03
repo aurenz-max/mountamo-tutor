@@ -1,0 +1,1772 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    10
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    10
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ],
+   "no_change_before_receipt": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    10
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    10
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "di-word-problem-setup.build_family",
+   "primitiveId": "di-word-problem-setup",
+   "evalMode": "build_family",
+   "keys": [],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "wps-1-part_whole-part-big_number",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Drag all three story-part cards into small plus small equals big.",
+      "leakTokens": [
+       "WPS_ITEM",
+       "WPS_MOVE_ON",
+       "WPS_COMPLETE",
+       "WPS_HEAR",
+       "WPS_BIG"
+      ]
+     },
+     "samples": [
+      {
+       "text": "There are 7 shells. 5 of them are striped. The rest are spotted. How many shells are spotted?\n\nDrag all three cards to build small plus small equals big.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Here is our story: \"There are 7 shells. 5 of them are striped. The rest are spotted. How many shells are spotted?\" Drag the cards into small plus small equals big to set it up.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is our story: \"There are 7 shells. 5 of them are striped. The rest are spotted. How many shells are spotted?\" \n\nDrag the cards into small plus small equals big.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There are 7 shells. 5 of them are striped, and the rest are spotted. Drag the cards into small plus small equals big.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is our story: \"There are 7 shells. 5 of them are striped. The rest are spotted. How many shells are spotted?\" \n\nDrag the cards into small plus small equals big.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "wps-1-part_whole-part-big_number",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"wps-1-part_whole-part-big_number\",\"response\":\"Built the family with \\\"all the shells\\\" and \\\"spotted shells\\\" as the small amounts and \\\"striped shells\\\" as the big amount.\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"printed_small_in_big\"}. Respond to the learner using the current",
+     "miss": "printed_small_in_big",
+     "scoredWith": {
+      "keys": [],
+      "ask": "Drag all three story-part cards into small plus small equals big.",
+      "leakTokens": [
+       "WPS_ITEM",
+       "WPS_MOVE_ON",
+       "WPS_COMPLETE",
+       "WPS_HEAR",
+       "WPS_BIG"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Here are two model stories to look at. \n\nIn the first story, Omar has 3 marbles and Ruby has 6 more, so Ruby's marbles is the big amount because she has more than Omar, making three plus six equals box. In the second story, Omar has 9 marbles and Ruby has 3 marbles, so Omar's marbles is the big amount because he has more than Ruby, making three plus box equals nine. \n\nNow, give your story another try and build small plus small equals big!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_story"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at these two model stories! In the first story, Ruby has more than Omar, so Ruby's marbles is the big amount, making three plus six equals nine. In the second story, Omar has more than Ruby, so Omar's marbles is the big amount, making three plus box equals nine. \n\nNow try your story again: drag all three cards into small plus small equals big!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_story",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the model card: in \"Omar has 3 marbles, Ruby has 6 more marbles than Omar,\" Ruby's marbles is the big amount because Ruby has more than Omar, so three plus six equals nine. In \"Omar has 9 marbles, Ruby has 3 marbles,\" Omar's marbles is the big amount because Omar has more than Ruby, so three plus box equals nine. \n\nNow give your shells story another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_story"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the model card with two different stories:\n\nIn the first story, Omar has 3 marbles and Ruby has 6 more marbles than Omar, so Ruby's marbles is the big amount because Ruby has more than Omar, making the family three plus six equals box.\n\nIn the second story, Omar has 9 marbles and Ruby has 3 marbles, so Omar's marbles is the big amount because Omar has more than Ruby, making the family three plus box equals nine.\n\nNow try your story again: drag all three cards into small plus small equals big!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_story",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the two example stories on the card. In the first story, Ruby has more than Omar, so Ruby's marbles is the big amount, making three plus six equals box. In the second story, Omar has more than Ruby, so Omar's marbles is the big amount, making three plus box equals nine. Now try arranging your shell cards into small plus small equals big again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_story",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "wps-1-part_whole-part-big_number",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Drag all three story-part cards into small plus small equals big.",
+      "leakTokens": [
+       "WPS_ITEM",
+       "WPS_MOVE_ON",
+       "WPS_COMPLETE",
+       "WPS_HEAR",
+       "WPS_BIG"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A model card is on the screen with two solved stories.\n\nIn the first story, Ruby's marbles is the big amount because she has more than Omar, making three plus six equals box. In the second story, Omar's marbles is the big amount because he has more than Ruby, making three plus box equals nine.\n\nNow try dragging the cards into small plus small equals big for your shell story!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_story"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Tap a card to see where it comes from. Give it a try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "story_links",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A card popped up with two solved stories to help! \n\nIn the first story, Omar has 3 marbles and Ruby has 6 more marbles than Omar, so Ruby's marbles is the big amount because she has more than Omar, making the family three plus six equals box. In the second story, Omar has 9 marbles and Ruby has 3 marbles, so Omar's marbles is the big amount because he has more than Ruby, making the family three plus box equals nine. \n\nNow, look at your shell story cards and try placing them in small plus small equals big!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_story",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Tap a card to see where it comes from in the story, and then give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "story_links"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Tap a card to see where it comes from in the story, then try putting them in small plus small equals big!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "story_links"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "wps-1-part_whole-part-big_number",
+     "trigger": "The learner said they were stuck, so the host pulled model_story (help). It is on screen now: Shows a card with TWO different stories, one to add and one to subtract, each solved (onScreen gives them). Say ALL of them as your turn, in order, each with its big amount and why; never only the one like the learner's story, and never say which of the learner's cards is big. Then hand back their step. F",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Drag all three story-part cards into small plus small equals big.",
+      "leakTokens": [
+       "WPS_ITEM",
+       "WPS_MOVE_ON",
+       "WPS_COMPLETE",
+       "WPS_HEAR",
+       "WPS_BIG"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Beside your story, a model card has appeared showing two solved stories. \n\nIn the first story, Ruby has more marbles than Omar, so Ruby's marbles is the big amount, making three plus six equals box. In the second story, Omar has more marbles than Ruby, so Omar's marbles is the big amount, making three plus box equals nine.\n\nNow look at your shell story and try dragging the cards into small plus small equals big!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside the story, a model card is now showing two different solved stories. \n\nIn the first story, Ruby has more marbles than Omar, so Ruby's marbles is the big amount, making three plus six equals box. In the second story, Omar has more marbles than Ruby, so Omar's marbles is the big amount, making three plus box equals nine.\n\nNow look at your shell story and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside our story, a model card has appeared showing two solved stories!\n\nIn the first story, Omar has 3 marbles and Ruby has 6 more marbles than Omar, so Ruby's marbles is the big amount because Ruby has more than Omar, making three plus six equals box. In the second story, Omar has 9 marbles and Ruby has 3 marbles, so Omar's marbles is the big amount because Omar has more than Ruby, making three plus box equals nine.\n\nNow, give your story a try by dragging all three cards into small plus small equals big!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card has appeared beside the story showing two different solved examples! \n\nIn the first story, Ruby has more marbles than Omar, so Ruby's marbles is the big amount, giving three plus six equals box. In the second story, Omar has more marbles than Ruby, so Omar's marbles is the big amount, giving three plus box equals nine. \n\nNow take another look at your shell story and place the three cards into small plus small equals big!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside your story, a model card has appeared showing two solved stories. \n\nIn the first story, Omar has 3 marbles and Ruby has 6 more, so Ruby's marbles is the big amount because she has more than Omar, making three plus six equals box. In the second story, Omar has 9 marbles and Ruby has 3 marbles, so Omar's marbles is the big amount because he has more than Ruby, making three plus box equals nine. \n\nNow give your shell story another try and drag the cards into small plus small equals big!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "wps-1-part_whole-part-big_number",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"wps-1-part_whole-part-big_number\",\"response\":\"Built the family with \\\"striped shells\\\" and \\\"spotted shells\\\" as the small amounts and \\\"all the shells\\\" as the big amount.\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"model_story\"]}. Respond to the learner using the current task a",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Drag all three story-part cards into small plus small equals big.",
+      "leakTokens": [
+       "WPS_ITEM",
+       "WPS_MOVE_ON",
+       "WPS_COMPLETE",
+       "WPS_HEAR",
+       "WPS_BIG"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it right! You put \"all the shells\" in the big spot, and \"striped shells\" and \"spotted shells\" as the small amounts.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You placed \"all the shells\" as the big amount, with \"striped shells\" and \"spotted shells\" as the small amounts.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You put \"striped shells\" and \"spotted shells\" as the small amounts and \"all the shells\" as the big amount.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You placed \"all the shells\" as the big amount, with \"striped shells\" and \"spotted shells\" as the small amounts.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You put striped shells and spotted shells as the small amounts, and all the shells as the big amount.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "di-word-problem-setup.classify_and_build",
+   "primitiveId": "di-word-problem-setup",
+   "evalMode": "classify_and_build",
+   "keys": [
+    "\"comparison\" (\"comparison\", \"compare\", \"a compare problem\", alone or in a sentence), because it compares two amounts. \"change\" or \"part-whole\" is wrong. calling it a change problem because a sentence says \"has\" is the signature error: nothing changes."
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "wps-1-comparison-fewer_person-classify",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"comparison\" (\"comparison\", \"compare\", \"a compare problem\", alone or in a sentence), because it compares two amounts. \"change\" or \"part-whole\" is wrong. calling it a change problem because a sentence says \"has\" is the signature error: nothing changes."
+      ],
+      "ask": "Say whether this is a comparison problem, a change problem, or a part-whole problem.",
+      "leakTokens": [
+       "WPS_ITEM",
+       "WPS_MOVE_ON",
+       "WPS_COMPLETE",
+       "WPS_HEAR",
+       "WPS_BIG"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Here is our story: \"Sam has 17 stickers. Zoe has 3 fewer stickers than Sam. How many stickers does Zoe have?\"\n\nIs this a comparison problem, a change problem, or a part-whole problem?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is our story: \"Sam has 17 stickers. Zoe has 3 fewer stickers than Sam. How many stickers does Zoe have?\"\n\nIs this a comparison problem, a change problem, or a part-whole problem?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is our story: \"Sam has 17 stickers. Zoe has 3 fewer stickers than Sam. How many stickers does Zoe have?\"\n\nIs this a comparison problem, a change problem, or a part-whole problem?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is our story: \"Sam has 17 stickers. Zoe has 3 fewer stickers than Sam. How many stickers does Zoe have?\"\n\nIs this a comparison problem, a change problem, or a part-whole problem?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is our story: \"Sam has 17 stickers. Zoe has 3 fewer stickers than Sam. How many stickers does Zoe have?\"\n\nIs this a comparison problem, a change problem, or a part-whole problem?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "wps-1-comparison-fewer_person-classify",
+     "trigger": "change",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"comparison\" (\"comparison\", \"compare\", \"a compare problem\", alone or in a sentence), because it compares two amounts. \"change\" or \"part-whole\" is wrong. calling it a change problem because a sentence says \"has\" is the signature error: nothing changes."
+      ],
+      "ask": "Say whether this is a comparison problem, a change problem, or a part-whole problem.",
+      "leakTokens": [
+       "WPS_ITEM",
+       "WPS_MOVE_ON",
+       "WPS_COMPLETE",
+       "WPS_HEAR",
+       "WPS_BIG"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A card opened showing three different stories. \n\nFirst, comparison: \"Maya has 2 shells. Leo has 4 more shells than Maya. How many shells does Leo have?\" The big amount is Leo's shells because Leo has more than Maya. \n\nSecond, change: \"Maya had 2 shells. Then Maya found 4 more. How many shells does Maya have now?\" The big amount is what Maya has now because Maya found more over time. \n\nThird, part-whole: \"There are 6 shells. 2 of them are red. The rest are blue. How many shells are blue?\" The big amount is all the shells because all the shells together make the whole amount.\n\nLooking back at our story about Sam and Zoe, is it a comparison problem, a change problem, or a part-whole problem?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_story",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's look at three different types of stories:\n\nIn a comparison story, like \"Maya has 2 shells, Leo has 4 more shells than Maya, how many shells does Leo have?\", the big amount is Leo's shells because Leo has more than Maya.\nIn a change story, like \"Maya had 2 shells, then Maya found 4 more, how many shells does Maya have now?\", the big amount is what Maya has now because Maya found more over time.\nIn a part-whole story, like \"There are 6 shells, 2 are red, the rest are blue, how many shells are blue?\", the big amount is all the shells together.\n\nNow looking back at our story about Sam and Zoe, what kind of problem is it?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_story",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's look at three different solved stories on the card. \n\nFirst, comparison: \"Maya has 2 shells. Leo has 4 more shells than Maya. How many shells does Leo have?\" The big amount is Leo's shells because Leo has more than Maya, so Leo's shells is the whole amount.\n\nNext, change: \"Maya had 2 shells. Then Maya found 4 more. How many shells does Maya have now?\" The big amount is what Maya has now because Maya found more, so what she has now is the whole amount.\n\nLast, part-whole: \"There are 6 shells. 2 of them are red. The rest are blue. How many shells are blue?\" The big amount is all the shells because all the shells together is the whole amount.\n\nNow look back at our story about Sam and Zoe\u2014which kind of problem is it?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "model_story"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the three models on the screen. \n\nFirst, a comparison story: \"Maya has 2 shells. Leo has 4 more shells than Maya. How many shells does Leo have?\" The big amount is Leo's shells because Leo has more than Maya. \n\nNext, a change story: \"Maya had 2 shells. Then Maya found 4 more. How many shells does Maya have now?\" The big amount is what Maya has now because Maya found more over time. \n\nFinally, a part-whole story: \"There are 6 shells. 2 of them are red. The rest are blue. How many shells are blue?\" The big amount is all the shells together because they make the whole group.\n\nNow look back at your story about Sam and Zoe. Is this a comparison problem, a change problem, or a part-whole problem?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "model_story"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's look at the three kinds on the card:\n\nIn a comparison story, \"Maya has 2 shells, and Leo has 4 more shells than Maya,\" Leo's shells is the big amount because Leo has more than Maya.\nIn a change story, \"Maya had 2 shells, then Maya found 4 more,\" what Maya has now is the big amount because she found more.\nIn a part-whole story, \"There are 6 shells, 2 are red, and the rest are blue,\" all the shells together is the big amount.\n\nNow look back at our story about Sam and Zoe. Is it a comparison problem, a change problem, or a part-whole problem?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_story",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "wps-1-comparison-fewer_person-classify",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"comparison\" (\"comparison\", \"compare\", \"a compare problem\", alone or in a sentence), because it compares two amounts. \"change\" or \"part-whole\" is wrong. calling it a change problem because a sentence says \"has\" is the signature error: nothing changes."
+      ],
+      "ask": "Say whether this is a comparison problem, a change problem, or a part-whole problem.",
+      "leakTokens": [
+       "WPS_ITEM",
+       "WPS_MOVE_ON",
+       "WPS_COMPLETE",
+       "WPS_HEAR",
+       "WPS_BIG"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A model card appeared with three different stories.\n\nFor comparison: \"Maya has 2 shells. Leo has 4 more shells than Maya. How many shells does Leo have?\" The big amount is Leo's shells because Leo has more than Maya.\n\nFor change: \"Maya had 2 shells. Then Maya found 4 more. How many shells does Maya have now?\" The big amount is what Maya has now because Maya found more over time.\n\nFor part-whole: \"There are 6 shells. 2 of them are red. The rest are blue. How many shells are blue?\" The big amount is all the shells because all the shells together make the whole amount.\n\nNow give our story about Sam and Zoe another try: which kind of problem is it?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_story",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A model card appeared with three different stories.\n\nFor comparison: \"Maya has 2 shells. Leo has 4 more shells than Maya. How many shells does Leo have?\" Leo's shells is the big amount because Leo has more than Maya.\n\nFor change: \"Maya had 2 shells. Then Maya found 4 more. How many shells does Maya have now?\" What Maya has now is the big amount because Maya found more over time.\n\nFor part-whole: \"There are 6 shells. 2 of them are red. The rest are blue. How many shells are blue?\" All the shells is the big amount because all the shells together make the whole amount.\n\nNow give our story a try: is it comparison, change, or part-whole?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_story",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A model card just appeared showing three solved stories. \n\nFirst, comparison: \"Maya has 2 shells. Leo has 4 more shells than Maya. How many shells does Leo have?\" The big amount is Leo's shells because Leo has more than Maya.\n\nSecond, change: \"Maya had 2 shells. Then Maya found 4 more. How many shells does Maya have now?\" The big amount is what Maya has now because Maya found more over time.\n\nThird, part-whole: \"There are 6 shells. 2 of them are red. The rest are blue. How many shells are blue?\" The big amount is all the shells because all the shells together make the whole amount.\n\nNow give our sticker story another try: is it comparison, change, or part-whole?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_story",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A model card just appeared beside the story showing three solved examples.\n\nFirst, comparison: \"Maya has 2 shells. Leo has 4 more shells than Maya. How many shells does Leo have?\" The big amount is Leo's shells because Leo has more than Maya.\n\nSecond, change: \"Maya had 2 shells. Then Maya found 4 more. How many shells does Maya have now?\" The big amount is what Maya has now because Maya found more over time.\n\nThird, part-whole: \"There are 6 shells. 2 of them are red. The rest are blue. How many shells are blue?\" The big amount is all the shells because all the shells together make the whole amount.\n\nNow give it another try: is Sam and Zoe's story a comparison problem, a change problem, or a part-whole problem?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_story"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A model card appeared with three different stories. \n\nFirst, comparison: \"Maya has 2 shells. Leo has 4 more shells than Maya. How many shells does Leo have?\" The big amount is Leo's shells because Leo has more than Maya. \n\nSecond, change: \"Maya had 2 shells. Then Maya found 4 more. How many shells does Maya have now?\" The big amount is what Maya has now because Maya found more over time. \n\nThird, part-whole: \"There are 6 shells. 2 of them are red. The rest are blue. How many shells are blue?\" The big amount is all the shells because all the shells together make the whole amount.\n\nNow, take another look at Sam and Zoe's story: is it comparison, change, or part-whole?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_story"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "wps-1-comparison-fewer_person-classify",
+     "trigger": "The learner said they were stuck, so the host pulled model_story (help). It is on screen now: Shows a card with THREE different stories, one of each kind, each solved (onScreen gives them). Say ALL of them as your turn, in order, each with its big amount and why; never only the one like the learner's story, and never say which of the learner's cards is big. Then hand back their step. First point t",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"comparison\" (\"comparison\", \"compare\", \"a compare problem\", alone or in a sentence), because it compares two amounts. \"change\" or \"part-whole\" is wrong. calling it a change problem because a sentence says \"has\" is the signature error: nothing changes."
+      ],
+      "ask": "Say whether this is a comparison problem, a change problem, or a part-whole problem.",
+      "leakTokens": [
+       "WPS_ITEM",
+       "WPS_MOVE_ON",
+       "WPS_COMPLETE",
+       "WPS_HEAR",
+       "WPS_BIG"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Beside our story, a model card has appeared with three solved stories to look at.\n\nFirst, comparison: \"Maya has 2 shells. Leo has 4 more shells than Maya. How many shells does Leo have?\" The big amount is Leo's shells because Leo has more than Maya, so Leo's shells is the whole amount.\n\nSecond, change: \"Maya had 2 shells. Then Maya found 4 more. How many shells does Maya have now?\" The big amount is what Maya has now because Maya found more, so what Maya has now is the whole amount.\n\nThird, part-whole: \"There are 6 shells. 2 of them are red. The rest are blue. How many shells are blue?\" The big amount is all the shells because all the shells together is the whole amount.\n\nNow take a look at our story about Sam and Zoe, and tell me: is it a comparison problem, a change problem, or a part-whole problem?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside our story, a card appeared showing three solved examples.\n\nFirst, comparison: \"Maya has 2 shells. Leo has 4 more shells than Maya. How many shells does Leo have?\" The big amount is Leo's shells because Leo has more than Maya, so Leo's shells is the whole amount.\n\nSecond, change: \"Maya had 2 shells. Then Maya found 4 more. How many shells does Maya have now?\" The big amount is what Maya has now because Maya found more over time.\n\nThird, part-whole: \"There are 6 shells. 2 of them are red. The rest are blue. How many shells are blue?\" The big amount is all the shells because all the shells together make the whole amount.\n\nNow looking back at Sam and Zoe, is our story a comparison problem, a change problem, or a part-whole problem?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside our story, a model card has appeared showing three solved stories to look at.\n\nFirst, comparison: \"Maya has 2 shells. Leo has 4 more shells than Maya. How many shells does Leo have?\" Leo's shells is the big amount because Leo has more than Maya, so Leo's shells is the whole amount.\n\nSecond, change: \"Maya had 2 shells. Then Maya found 4 more. How many shells does Maya have now?\" What Maya has now is the big amount because Maya found more, so what Maya has now is the whole amount.\n\nThird, part-whole: \"There are 6 shells. 2 of them are red. The rest are blue. How many shells are blue?\" All the shells is the big amount because all the shells together is the whole amount.\n\nNow look at our story about Sam and Zoe\u2014is it a comparison, change, or part-whole problem?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside our story, a card has appeared showing three different solved stories.\n\nFirst, comparison: \"Maya has 2 shells. Leo has 4 more shells than Maya. How many shells does Leo have?\" The big amount is Leo's shells because Leo has more than Maya, so Leo's shells is the whole amount.\n\nSecond, change: \"Maya had 2 shells. Then Maya found 4 more. How many shells does Maya have now?\" The big amount is what Maya has now because Maya found more, so what Maya has now is the whole amount.\n\nThird, part-whole: \"There are 6 shells. 2 of them are red. The rest are blue. How many shells are blue?\" The big amount is all the shells because all the shells together is the whole amount.\n\nNow, take another look at Sam and Zoe's story and tell me which kind it is!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside the story, a model card is now showing three solved stories to look at. \n\nFirst, comparison: \"Maya has 2 shells. Leo has 4 more shells than Maya. How many shells does Leo have?\" The big amount is Leo's shells because Leo has more than Maya, so Leo's shells is the whole amount.\n\nSecond, change: \"Maya had 2 shells. Then Maya found 4 more. How many shells does Maya have now?\" The big amount is what Maya has now because Maya found more over time, so what Maya has now is the whole amount.\n\nThird, part-whole: \"There are 6 shells. 2 of them are red. The rest are blue. How many shells are blue?\" The big amount is all the shells because all the shells together make the whole amount.\n\nNow give our story about Sam and Zoe another try: is it a comparison problem, a change problem, or a part-whole problem?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "wps-1-comparison-fewer_person-classify",
+     "trigger": "comparison",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"comparison\" (\"comparison\", \"compare\", \"a compare problem\", alone or in a sentence), because it compares two amounts. \"change\" or \"part-whole\" is wrong. calling it a change problem because a sentence says \"has\" is the signature error: nothing changes."
+      ],
+      "ask": "Say whether this is a comparison problem, a change problem, or a part-whole problem.",
+      "leakTokens": [
+       "WPS_ITEM",
+       "WPS_MOVE_ON",
+       "WPS_COMPLETE",
+       "WPS_HEAR",
+       "WPS_BIG"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it right! You named that it is a comparison problem, comparing Sam's stickers and Zoe's stickers.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That's right, you called it a comparison problem! It compares Sam's stickers and Zoe's stickers.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on, you correctly identified that this is a comparison problem because it compares Sam's stickers and Zoe's stickers.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right\u2014it is a comparison problem because it compares how many stickers Sam and Zoe have.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right\u2014it is a comparison problem because it compares how many stickers Sam and Zoe have.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "di-word-problem-setup.find_big_number",
+   "primitiveId": "di-word-problem-setup",
+   "evalMode": "find_big_number",
+   "keys": [
+    "select what sam has now"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "wps-1-change-gain_end-big_number",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "select what sam has now"
+      ],
+      "ask": "Drag the story part that names the big amount into the big amount box.",
+      "leakTokens": [
+       "WPS_ITEM",
+       "WPS_MOVE_ON",
+       "WPS_COMPLETE",
+       "WPS_HEAR",
+       "WPS_BIG"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Here is our story: \"Sam had 12 shells. Then Sam picked 3 more. How many shells does Sam have now?\" Which story part names the big amount?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is our story: \"Sam had 12 shells. Then Sam picked 3 more. How many shells does Sam have now?\" Which story part names the big amount?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is our story: \"Sam had 12 shells. Then Sam picked 3 more. How many shells does Sam have now?\" Which story part names the big amount?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Let's read the story together: \"Sam had 12 shells. Then Sam picked 3 more. How many shells does Sam have now?\"",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is our story: \"Sam had 12 shells. Then Sam picked 3 more. How many shells does Sam have now?\" Which story part names the big amount?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "wps-1-change-gain_end-big_number",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"wps-1-change-gain_end-big_number\",\"response\":\"Placed \\\"what Sam started with\\\" in the big-amount box.\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"printed_small_in_big\"}. Respond to the learner using the current task and workspace.",
+     "miss": "printed_small_in_big",
+     "scoredWith": {
+      "keys": [
+       "select what sam has now"
+      ],
+      "ask": "Drag the story part that names the big amount into the big amount box.",
+      "leakTokens": [
+       "WPS_ITEM",
+       "WPS_MOVE_ON",
+       "WPS_COMPLETE",
+       "WPS_HEAR",
+       "WPS_BIG"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Tap a card to see where it comes from. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "story_links"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at these two model stories! In the first story, Omar has 2 marbles and Ruby has 4 more, so Ruby's marbles is the big amount because Ruby has more than Omar. In the second story, Omar has 6 marbles and Ruby has 2 marbles, so Omar's marbles is the big amount because Omar has more than Ruby. Now try yours again: drag the card that names the big amount into the big amount box.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_story",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the two example stories on the card. In the first one, Omar has 2 marbles, Ruby has 4 more marbles than Omar, and Ruby's marbles is the big amount because Ruby has more than Omar, so Ruby's marbles is the whole amount. In the second story, Omar has 6 marbles, Ruby has 2 marbles, and Omar's marbles is the big amount because Omar has more than Ruby, so Omar's marbles is the whole amount. Now give your story another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_story",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Tap a card to see where it comes from. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "story_links",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Tap a card to see where it comes from. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "story_links"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "wps-1-change-gain_end-big_number",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "select what sam has now"
+      ],
+      "ask": "Drag the story part that names the big amount into the big amount box.",
+      "leakTokens": [
+       "WPS_ITEM",
+       "WPS_MOVE_ON",
+       "WPS_COMPLETE",
+       "WPS_HEAR",
+       "WPS_BIG"
+      ]
+     },
+     "samples": [
+      {
+       "text": "In the first story, Omar has 2 marbles and Ruby has 4 more, so Ruby's marbles is the big amount because she has more. In the second story, Omar has 6 marbles and Ruby has 2, so Omar's marbles is the big amount because he has more. Now think about Sam's story and see which card names the big amount!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_story",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "In the first model story, Omar has 2 marbles and Ruby has 4 more, so Ruby's marbles is the big amount because she has more. In the second story, Omar has 6 marbles and Ruby has 2, so Omar's marbles is the big amount because he has more. Now take another look at Sam's shells and try placing the card that names the big amount.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_story"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "In the first example, \"Omar has 2 marbles, Ruby has 4 more marbles than Omar,\" Ruby has more than Omar, so Ruby's marbles is the big amount. In the second example, \"Omar has 6 marbles, Ruby has 2 marbles,\" Omar has more than Ruby, so Omar's marbles is the big amount. Now try dragging the big amount for Sam's story!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_story",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "In the first story, Ruby has more than Omar, so Ruby's marbles is the big amount. In the second story, Omar has more than Ruby, so Omar's marbles is the big amount. Now try your story!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_story"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "In the first story, Omar has 2 marbles and Ruby has 4 more, so Ruby's marbles is the big amount because she has more. In the second story, Omar has 6 marbles and Ruby has 2, so Omar's marbles is the big amount because he has more. Now think about Sam's shells, and drag the part that names the big amount into the box.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_story",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "wps-1-change-gain_end-big_number",
+     "trigger": "The learner said they were stuck, so the host pulled model_story (help). It is on screen now: Shows a card with TWO different stories, one to add and one to subtract, each solved (onScreen gives them). Say ALL of them as your turn, in order, each with its big amount and why; never only the one like the learner's story, and never say which of the learner's cards is big. Then hand back their step. F",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "select what sam has now"
+      ],
+      "ask": "Drag the story part that names the big amount into the big amount box.",
+      "leakTokens": [
+       "WPS_ITEM",
+       "WPS_MOVE_ON",
+       "WPS_COMPLETE",
+       "WPS_HEAR",
+       "WPS_BIG"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the model card that appeared beside our story! In the first story, Omar has 2 marbles and Ruby has 4 more, so Ruby's marbles is the big amount because she has more than Omar. In the second story, Omar has 6 marbles and Ruby has 2, so Omar's marbles is the big amount because he has more than Ruby. Now look back at Sam's story and try dragging the big amount card into the box.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card has appeared beside our story showing two different solved examples! \n\nIn the first story, Omar has 2 marbles and Ruby has 4 more, so Ruby's marbles is the big amount because she has more than Omar. In the second story, Omar has 6 marbles and Ruby has 2, so Omar's marbles is the big amount because he has more than Ruby. \n\nNow look back at Sam's story and try dragging the big amount into the box.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card just appeared beside the story showing two different solved examples! Look over at the card, and then try dragging the card for the big amount into the box.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card just appeared beside the story showing two solved examples! In the first story, Ruby's marbles is the big amount because she has more than Omar. In the second story, Omar's marbles is the big amount because he has more than Ruby. Now take another look at Sam's story and drag the card that names the big amount.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card popped up beside our story showing two solved examples! In the first story, Ruby has more marbles than Omar, so Ruby's marbles is the big amount. In the second story, Omar has more marbles than Ruby, so Omar's marbles is the big amount. Now look back at Sam's story and try dragging the big amount card into the box!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "wps-1-change-gain_end-big_number",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"wps-1-change-gain_end-big_number\",\"response\":\"Placed \\\"what Sam has now\\\" in the big-amount box.\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"model_story\"]}. Respond to the learner using the current task and workspace.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "select what sam has now"
+      ],
+      "ask": "Drag the story part that names the big amount into the big amount box.",
+      "leakTokens": [
+       "WPS_ITEM",
+       "WPS_MOVE_ON",
+       "WPS_COMPLETE",
+       "WPS_HEAR",
+       "WPS_BIG"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You placed \"what Sam has now\" in the big amount box.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You placed \"what Sam has now\" in the big amount box.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You placed \"what Sam has now\" in the big amount box because Sam picked more shells, so what Sam has now is the total amount.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it! You placed \"what Sam has now\" in the big amount box because Sam ended up with the whole total.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You placed \"what Sam has now\" in the big amount box, and that is right! Since Sam picked more shells, what he has now is the biggest amount.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

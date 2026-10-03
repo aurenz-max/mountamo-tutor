@@ -18,9 +18,14 @@
  * into the family, the sign appears, the answer fills the box, and the bar model grows underneath. Nothing the
  * child must say or place is drawn before they do it, which is why every mark is keyed to credited item ids. A
  * wrong answer no longer closes a step, so there is no tutor-carried mark to draw.
+ *
+ * LEVERS (`diWordProblemLevers.ts`, DI family 10). Not on `DiTeachingStage`, so the lever state (per step) and the
+ * practice item live here and are published beside the scene: a model card with two (or three) different stories
+ * solved; story links (a tapped card underlines its sentence); a read-along highlight across the built family; dots
+ * in the bar model; and a small-number story whose solve step is practised first, its earlier steps drawn as given.
  */
 
-import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -46,6 +51,9 @@ import { SHAPE_WORD, type Quantity } from './diWordProblemPlan';
 import type { DiWordProblemSetupData, WordProblemItem, WordProblemStepKind } from './diWordProblemScript';
 import { boardComplete, bigSlotMatches, describePlacement, wordProblemAssignment, wordProblemItems, wordProblemMiss,
   wordProblemScene, type FamilyPlacements } from './diWordProblemWorkspace';
+import { COUNT_DOTS, MODEL_STORY, READ_ALONG, STORY_LINKS, WITHIN_TEN, countDotsFor, modelStoriesFor, startingLevers, storySentences,
+  withinTenSteps, wordProblemLeverFacts, wordProblemLevers } from './diWordProblemLevers';
+import { familySpoken, numberWord as spokenNumber } from './diWordProblemPlan';
 
 export type {
   DiWordProblemSetupData,
@@ -120,18 +128,61 @@ const DiWordProblemSetupSurface: React.FC<DiWordProblemSetupProps> = ({ data, cl
     onItemOpened: () => resetBoard(), onCorrectionRetry: () => resetBoard(),
     onAffirmed: item => setCommitted(previous => new Set(previous).add(item.id)),
   });
-  const current = runner.currentItem;
+  const sessionItem = runner.currentItem;
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
-  const steps = useMemo(() => items.filter(item => item.problemId === current?.problemId), [items, current?.problemId]);
+  // Lever state is keyed by the session step: a new step starts from its own tier. The practice story `within_ten`
+  // opens stays through a retry and leaves only through `endPractice`.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<{ for: string; steps: WordProblemItem[] } | null>(null);
+  const practiceSteps = practice && practice.for === sessionItem?.id ? practice.steps : null;
+  const pulled = !sessionItem ? [] : leverState.item === sessionItem.id ? leverState.pulled : startingLevers(sessionItem);
+  const current = practiceSteps?.find(item => item.kind === 'solve') ?? sessionItem;
+  const sessionSteps = useMemo(() => items.filter(item => item.problemId === sessionItem?.problemId), [items, sessionItem?.problemId]);
+  const steps = practiceSteps ?? sessionSteps;
+  // A practice story's earlier steps are drawn as given; they are never credited.
+  const drawn = practiceSteps ? new Set([...Array.from(committed), ...practiceSteps.filter(item => item.kind !== 'solve').map(item => item.id)]) : committed;
   const bigStep = steps.find(item => item.kind === 'big_number');
-  const familyShown = !!bigStep && committed.has(bigStep.id);
+  const familyShown = !!bigStep && drawn.has(bigStep.id);
+  const shown = practiceSteps ? [] : pulled;
 
   // What the tutor and the observer are shown, republished every render. W1 offers no demonstration targets and
   // no presentation; every step is answerable once it opens.
   useLayoutEffect(() => {
-    if (!current) return;
-    workspace.current = { ...wordProblemScene(current, { familyShown }) };
+    if (!current || !sessionItem) return;
+    const scene = wordProblemScene(current, { familyShown });
+    const levers = practiceSteps ? [] : wordProblemLevers(sessionItem, pulled);
+    const onScreen = practiceSteps ? '' : wordProblemLeverFacts(sessionItem, pulled);
+    workspace.current = { ...scene, ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the page changes before this returns.
+      pullLever: (id: string) => {
+        const lever = levers.find(l => l.id === id);
+        if (practiceSteps || !lever) return `No lever ${id} on this step.`;
+        if (lever.pulled) return `${id} is already on screen.`;
+        const next = { item: sessionItem.id, pulled: [...pulled, id] };
+        if (id === WITHIN_TEN) {
+          const small = withinTenSteps(sessionItem);
+          const solve = small?.find(item => item.kind === 'solve');
+          if (!small || !solve) return 'There is no smaller story for this step.';
+          setLeverState(next); setPractice({ for: sessionItem.id, steps: small });
+          return { practice: wordProblemAssignment(solve) };
+        }
+        setLeverState(next);
+        return true;
+      },
+      endPractice: () => setPractice(null),
+    };
   });
+
+  // `read_along`: the highlight steps across small, plus, small, equals, big.
+  const [alongAt, setAlongAt] = useState(0);
+  const reading = shown.includes(READ_ALONG) && current?.kind === 'family';
+  useEffect(() => {
+    if (!reading) return;
+    setAlongAt(0);
+    const timer = window.setInterval(() => setAlongAt(at => (at + 1) % 5), 900);
+    return () => window.clearInterval(timer);
+  }, [reading]);
 
   const pip = useStimulusPipSurface({
     run: runner, instanceId: resolvedInstanceId, label: 'The story', finished: showSummary,
@@ -187,7 +238,7 @@ const DiWordProblemSetupSurface: React.FC<DiWordProblemSetupProps> = ({ data, cl
   }
 
   const plan = steps[0].plan;
-  const mark = (kind: WordProblemStepKind) => { const step = steps.find(item => item.kind === kind); return !!step && committed.has(step.id); };
+  const mark = (kind: WordProblemStepKind) => { const step = steps.find(item => item.kind === kind); return !!step && drawn.has(step.id); };
   const classified = mark('classify'), placedBig = mark('big_number'), familyRead = mark('family');
   const operationChosen = mark('operation'), solved = mark('solve');
   const focusedBigMode = plan && steps[0].challengeType === 'find_big_number';
@@ -261,7 +312,14 @@ const DiWordProblemSetupSurface: React.FC<DiWordProblemSetupProps> = ({ data, cl
         <div className="space-y-5">
           <div {...pip.target('stimulus')} data-word-problem-object="story" className="rounded-xl border border-white/10 bg-white/5 px-5 py-4">
             {classified && <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-emerald-300">{SHAPE_WORD[plan.shape]} problem</div>}
-            <p className="text-lg leading-relaxed text-slate-100" aria-label="The story">{plan.story}</p>
+            {shown.includes(STORY_LINKS) && current.kind === 'big_number' ? (() => {
+              const { sentences, sentenceOf } = storySentences(plan);
+              const lit = selectedId ? sentenceOf[selectedId] : -1;
+              return <p className="text-lg leading-relaxed text-slate-100" aria-label="The story" data-lever={STORY_LINKS}>
+                {sentences.map((sentence, i) => <span key={i} data-story-sentence={i} data-linked={i === lit}
+                  className={i === lit ? 'underline decoration-amber-300 decoration-4 underline-offset-4' : ''}>{sentence} </span>)}
+              </p>;
+            })() : <p className="text-lg leading-relaxed text-slate-100" aria-label="The story">{plan.story}</p>}
           </div>
           <LuminaPrompt>{current.actionContract.instruction}</LuminaPrompt>
           {focusedBigMode ? (
@@ -280,12 +338,12 @@ const DiWordProblemSetupSurface: React.FC<DiWordProblemSetupProps> = ({ data, cl
                 {current.kind === 'big_number' ? 'Put every story part in its role. The two small amounts make the big amount.'
                   : familyRead ? 'You read the setup. Now use it to finish the problem.' : 'Read this setup out loud: small plus small equals big.'}
               </p>
-              <div className="flex flex-wrap items-end justify-center gap-2" aria-label="Number family equation">
-                {familySlot('small1', 'small amount')}
-                <span className="pb-8 font-mono text-3xl text-cyan-200" aria-hidden="true">+</span>
-                {familySlot('small2', 'small amount')}
-                <span className="pb-8 font-mono text-3xl text-cyan-200" aria-hidden="true">=</span>
-                {familySlot('big', 'big amount')}
+              <div className="flex flex-wrap items-end justify-center gap-2" aria-label="Number family equation"
+                {...(reading ? { 'data-lever': READ_ALONG, 'data-read-along-at': alongAt } : {})}>
+                {[familySlot('small1', 'small amount'), <span key="plus" className="pb-8 font-mono text-3xl text-cyan-200" aria-hidden="true">+</span>,
+                  familySlot('small2', 'small amount'), <span key="equals" className="pb-8 font-mono text-3xl text-cyan-200" aria-hidden="true">=</span>,
+                  familySlot('big', 'big amount')].map((part, i) => <div key={i} className={`flex min-w-0 ${i % 2 ? '' : 'flex-1 basis-32'} rounded-lg ${
+                    reading && alongAt === i ? 'ring-2 ring-amber-300 ring-offset-2 ring-offset-slate-900' : ''}`}>{part}</div>)}
               </div>
               {storyPartBank}
               {operationChosen && <div className="mt-4 text-center font-mono text-xl text-emerald-300" aria-label="The working" data-word-problem-credited="operation">
@@ -314,7 +372,29 @@ const DiWordProblemSetupSurface: React.FC<DiWordProblemSetupProps> = ({ data, cl
                 })}
               </div>
             </div>
+            {shown.includes(COUNT_DOTS) && current.kind === 'solve' && (() => {
+              const dots = countDotsFor(plan);
+              if (!dots) return null;
+              const row = (n: number, crossedFrom = n, key = 0) => <div key={key} className="flex flex-wrap gap-1">
+                {Array.from({ length: n }, (_, i) => <span key={i} data-count-dot data-crossed={i >= crossedFrom}
+                  className={`relative h-3 w-3 rounded-full ${i >= crossedFrom ? 'bg-slate-500/60' : 'bg-cyan-300/80'}`}>
+                  {i >= crossedFrom && <span aria-hidden="true" className="absolute inset-0 -top-1 text-center text-[10px] font-bold text-rose-300">✕</span>}</span>)}
+              </div>;
+              return <div data-lever={COUNT_DOTS} aria-label="Dots in the known parts" className="mx-auto mt-3 max-w-md space-y-2">
+                {dots.kind === 'add' ? dots.rows.map((n, i) => row(n, n, i)) : row(dots.total, dots.total - dots.crossed)}
+              </div>;
+            })()}
           </div>}
+          {shown.includes(MODEL_STORY) && (() => {
+            const models = modelStoriesFor(sessionItem);
+            return models && <div data-lever={MODEL_STORY} aria-label="My turn: different stories, solved"
+              className="space-y-2 rounded-xl border-2 border-dashed border-purple-400/70 bg-purple-500/10 px-4 py-3 text-sm text-purple-100">
+              {models.map(m => <div key={m.frameId} data-model-story={m.operation} className="space-y-0.5">
+                <div>🗣️ {m.story}</div>
+                <div className="text-purple-200/80">Big amount: {m.big.label}. {familySpoken(m)}. {m.operation === 'add' ? 'Add' : 'Subtract'}: {spokenNumber(m.answer)}.</div>
+              </div>)}
+            </div>;
+          })()}
         </div>
       </LuminaCardContent>
     </LuminaCard>
