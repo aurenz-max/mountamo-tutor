@@ -10,16 +10,23 @@
  * rollout C6; the judged runner is gone, one-path ruling 09-23). The roll is the learner's own act and
  * never an answer: until the dice land the workspace is not ready for a response. An unbound mount
  * renders the stage's visible "needs the tutor" card.
+ *
+ * LEVERS (`diDiceRollLevers.ts`, DI family 2). A small "my turn" card with a DIFFERENT roll, solved; dots
+ * on the child's own dice that can be tapped and ringed (so the rolled dice live outside the roll button,
+ * which a disabled button would swallow taps for); a bracket under both dice for a sum. None of them draws
+ * or counts the child's answer.
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from '../../../ui';
 import type { DiDiceRollMetrics, PrimitiveEvaluationResult } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
-import DiTeachingStage, { diStageMetrics, type DiStageView } from './DiTeachingStage';
+import DiTeachingStage, { diStageMetrics, type DiStageLevers, type DiStageView } from './DiTeachingStage';
 import { diceValuesFor, isTwoDiceChallenge, type DiDiceRollChallenge, type DiDiceRollChallengeType,
   type DieValue } from './diDiceRollScript';
 import { diceAssignment, diceScene } from './diDiceRollWorkspace';
+import { BRACKET_LEVER, MODEL_LEVER, TOUCH_LEVER, diceLeverFacts, diceLevers, modelFor, simplerRoll,
+  startingLevers } from './diDiceRollLevers';
 
 export type {
   DiDiceRollChallenge,
@@ -40,6 +47,10 @@ export interface DieProps {
   rolling?: boolean;
   ariaLabel?: string;
   className?: string;
+  /** `touch_dots`: the pip cells (0-8) the learner has tapped. */
+  ringed?: ReadonlySet<number>;
+  /** `touch_dots`: present = each pip is a tap target. Absent = pips are not tappable. */
+  onPipTap?: (cell: number) => void;
 }
 
 export interface DiDiceRollData {
@@ -100,6 +111,8 @@ export const Die: React.FC<DieProps> = ({
   rolling = false,
   ariaLabel = 'Die with a dot pattern',
   className = '',
+  ringed,
+  onPipTap,
 }) => {
   const valid = Number.isInteger(value) && value >= 1 && value <= sides;
   const showPips = valid && representation === 'pips' && sides === 6;
@@ -112,7 +125,11 @@ export const Die: React.FC<DieProps> = ({
       className={`grid grid-cols-3 grid-rows-3 place-items-center text-4xl font-bold text-violet-700 transition-transform ${DIE_SIZE[size]} ${DIE_APPEARANCE[appearance]} ${rolling ? 'animate-bounce motion-reduce:animate-none' : ''} ${className}`}
     >
       {showPips
-        ? Array.from({ length: 9 }, (_, index) => (
+        ? Array.from({ length: 9 }, (_, index) => onPipTap && occupied?.has(index)
+          ? <button key={index} type="button" data-pip-tap={index} data-ringed={ringed?.has(index) ?? false}
+              aria-label="A dot" onClick={() => onPipTap(index)}
+              className={`${PIP_SIZE[size]} rounded-full bg-violet-600 shadow-sm ${ringed?.has(index) ? 'ring-4 ring-amber-400 ring-offset-2' : ''}`} />
+          : (
             <span
               key={index}
               aria-hidden="true"
@@ -156,12 +173,33 @@ const detail = (item: DiDiceRollChallenge) => item.challengeType === 'count_pips
     ? `${item.value} + ${item.secondValue} = ${item.total}`
     : `${item.value} dots · ${item.secondValue} dots`;
 
+const answerNumber = (item: DiDiceRollChallenge) => item.challengeType === 'sum_two_dice' ? item.total : item.value;
+
+/** `model_roll`: a different roll, solved, small and apart from the child's dice (DI's "my turn"). */
+function ModelRoll({ item }: { item: DiDiceRollChallenge }) {
+  const model = modelFor(item);
+  if (!model) return null;
+  const faces = diceValuesFor(model);
+  const star = model.challengeType === 'compare_dice' ? (model.comparison === 'left' ? 0 : 1) : -1;
+  return <div data-lever={MODEL_LEVER} data-model-roll={faces.join('-')}
+    aria-label={`My turn: a different roll, ${model.spokenAnswer}`}
+    className="mt-5 flex items-center gap-3 rounded-xl border-2 border-dashed border-purple-400/70 bg-purple-500/10 px-4 py-2">
+    <span aria-hidden="true" className="text-xl leading-none">🗣️</span>
+    {faces.map((value, index) => <div key={index} className="flex flex-col items-center">
+      <span aria-hidden="true" data-model-star={index === star || undefined} className="h-5 text-base leading-none">{index === star ? '⭐' : ''}</span>
+      <Die value={value} size="sm" className="!h-12 !w-12 !p-1.5" />
+    </div>)}
+    {model.challengeType !== 'compare_dice' && <span className="text-3xl font-semibold text-purple-100">= {answerNumber(model)}</span>}
+  </div>;
+}
+
 /** The covered dice, the controlled roll, and, once credited, the answer under them. Keyed by item, so
  *  a new item starts covered; Try again keeps the roll. */
 const DiceStage: React.FC<{ item: DiDiceRollChallenge; view: DiStageView; marked: boolean;
   appearance?: DieProps['appearance'] }> = ({ item, view, marked, appearance }) => {
   const [displayed, setDisplayed] = useState<DieValue[] | null>(view.ready ? [...diceValuesFor(item)] : null);
   const [rolling, setRolling] = useState(false);
+  const [ringed, setRinged] = useState<ReadonlySet<string>>(new Set());
   const timers = useRef<number[]>([]);
   useEffect(() => () => timers.current.forEach(timer => window.clearTimeout(timer)), []);
   const { markReady } = view;
@@ -188,33 +226,59 @@ const DiceStage: React.FC<{ item: DiDiceRollChallenge; view: DiStageView; marked
 
   const two = isTwoDiceChallenge(item);
   const credited = view.committed.has(item.id);
+  // Rings mark only what the learner taps: no number, no order.
+  const touch = view.pulled.includes(TOUCH_LEVER) && !rolling && displayed != null;
+  const tap = (die: number, cell: number) => {
+    SoundManager.tap();
+    setRinged(prev => {
+      const next = new Set(prev), key = `${die}-${cell}`;
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+  const ringsOn = (die: number) => new Set(Array.from(ringed).filter(k => k.startsWith(`${die}-`)).map(k => Number(k.split('-')[1])));
   const label = displayed == null ? (two ? 'Roll both dice' : 'Roll the die')
     : item.challengeType === 'compare_dice' ? 'Two dice with dot patterns. Say which has more: left, right, or same.'
       : two ? 'Two dice with dot patterns. Say how many dots there are altogether.'
         : 'Die with a dot pattern. Say how many dots you see.';
+  const dice = <>
+    <div className="flex items-end justify-center gap-5 sm:gap-8">
+      {Array.from({ length: two ? 2 : 1 }, (_, dieIndex) => (
+        <div key={dieIndex} className="flex flex-col items-center gap-2">
+          {item.challengeType === 'compare_dice' && <span aria-hidden="true"
+            className="text-xs font-bold uppercase tracking-[0.22em] text-slate-300">{dieIndex === 0 ? 'Left' : 'Right'}</span>}
+          {displayed == null
+            ? <div aria-hidden="true" className={`${two ? 'h-24 w-24' : 'h-32 w-32'} grid place-items-center rounded-[1.75rem] border-2 border-dashed border-violet-300/60 bg-violet-500/10 text-4xl font-semibold text-violet-200`}>?</div>
+            : <Die value={displayed[dieIndex]} size={two ? 'md' : 'lg'} rolling={rolling} appearance={appearance}
+              ariaLabel={item.challengeType === 'compare_dice' ? `${dieIndex === 0 ? 'Left' : 'Right'} die with a dot pattern` : 'Die with a dot pattern'}
+              className={credited ? motion.pop : motion.reveal}
+              {...(touch ? { onPipTap: (cell: number) => tap(dieIndex, cell), ringed: ringsOn(dieIndex) } : {})} />}
+        </div>
+      ))}
+    </div>
+    {view.pulled.includes(BRACKET_LEVER) && two && <div data-lever={BRACKET_LEVER} aria-label="All the dots on both dice"
+      className="mx-auto mt-3 h-4 w-full rounded-b-xl border-x-4 border-b-4 border-amber-300/80" />}
+  </>;
   return <div data-dice-object="dice" data-assignment-target="true" data-tutor-demonstration={marked}
+    data-practice-item={view.practice || undefined}
     className={`flex min-h-64 flex-col items-center justify-center rounded-2xl border border-violet-400/20 bg-violet-500/5 py-8 ${marked ? 'outline outline-2 outline-dashed outline-offset-4 outline-purple-400' : ''}`}>
-    <button type="button" onClick={roll} disabled={rolling || displayed != null} aria-label={label}
-      className="rounded-[2rem] p-2 outline-none transition-transform hover:scale-[1.03] focus-visible:ring-4 focus-visible:ring-violet-400/70 disabled:cursor-default disabled:hover:scale-100">
-      <div className="flex items-end justify-center gap-5 sm:gap-8">
-        {Array.from({ length: two ? 2 : 1 }, (_, dieIndex) => (
-          <div key={dieIndex} className="flex flex-col items-center gap-2">
-            {item.challengeType === 'compare_dice' && <span aria-hidden="true"
-              className="text-xs font-bold uppercase tracking-[0.22em] text-slate-300">{dieIndex === 0 ? 'Left' : 'Right'}</span>}
-            {displayed == null
-              ? <div aria-hidden="true" className={`${two ? 'h-24 w-24' : 'h-32 w-32'} grid place-items-center rounded-[1.75rem] border-2 border-dashed border-violet-300/60 bg-violet-500/10 text-4xl font-semibold text-violet-200`}>?</div>
-              : <Die value={displayed[dieIndex]} size={two ? 'md' : 'lg'} rolling={rolling} appearance={appearance}
-                ariaLabel={item.challengeType === 'compare_dice' ? `${dieIndex === 0 ? 'Left' : 'Right'} die with a dot pattern` : 'Die with a dot pattern'}
-                className={credited ? motion.pop : motion.reveal} />}
-          </div>
-        ))}
-      </div>
-    </button>
+    {/* Once rolled, the dice leave the roll button: a disabled button would swallow taps on their dots. */}
+    {displayed == null || rolling
+      ? <button type="button" onClick={roll} disabled={rolling} aria-label={label}
+        className="rounded-[2rem] p-2 outline-none transition-transform hover:scale-[1.03] focus-visible:ring-4 focus-visible:ring-violet-400/70 disabled:cursor-default disabled:hover:scale-100">
+        {dice}
+      </button>
+      : <div role="group" aria-label={label} className="rounded-[2rem] p-2">{dice}</div>}
+    {view.pulled.includes(MODEL_LEVER) && <ModelRoll item={item} />}
     {credited && <div className={`mt-5 text-center ${motion.pop}`} data-dice-credited={item.id}>
       <div className="text-4xl font-bold capitalize text-emerald-300">{headline(item)}</div>
       <div className="mt-1 text-lg font-semibold text-emerald-200">{detail(item)}</div>
     </div>}
   </div>;
+};
+
+const LEVERS: DiStageLevers<DiDiceRollChallenge> = {
+  declare: diceLevers, onScreen: diceLeverFacts, starting: startingLevers, simpler: simplerRoll,
 };
 
 /** Credited rolls, each drawn small with its answer. */
@@ -248,7 +312,7 @@ export const DiDiceRoll: React.FC<DiDiceRollProps> = ({ data, className, runtime
   return <DiTeachingStage<DiDiceRollChallenge, DiDiceRollMetrics> primitiveId="di-dice-roll" data={data}
     items={items} runtimeEvalMode={runtimeEvalMode} className={className} runtimePlanItemId={runtimePlanItemId}
     assignment={diceAssignment} scene={diceScene} copy={COPY} recapLabel={recapLabel} trail={creditedRolls}
-    awaitsStimulus
+    awaitsStimulus levers={LEVERS}
     stimulus={(item, marks, view) => <DiceStage key={item.id} item={item} view={view} marked={marks.includes('dice')}
       appearance={data.appearance} />}
     metrics={result => ({ type: 'di-dice-roll', ...diStageMetrics(result, items, data.challengeType),

@@ -46,10 +46,10 @@ describe('DiDiceRoll — every mode binds; the roll comes first', () => {
     expect(workspaceBinding({ instanceId: 'ws', primitiveId: 'di-dice-roll', pin: mode, objectiveIds: ['o'], data })).not.toBeNull();
     const h = mount(data);
     expect(h.state().task!.demand).toMatchObject({ rolled: 'no', presentation: 'not ready' });
-    expect(h.view.container.querySelectorAll('[role="img"]').length).toBe(0);
+    expect(h.view.container.querySelectorAll('[data-dice-object] > :not([data-lever]) [role="img"]').length).toBe(0);
     roll();
     expect(h.state().task!.demand).toMatchObject({ rolled: 'yes', presentation: 'ready' });
-    expect(h.view.container.querySelectorAll('[role="img"]').length).toBe(mode === 'count_pips' ? 1 : 2);
+    expect(h.view.container.querySelectorAll('[data-dice-object] > :not([data-lever]) [role="img"]').length).toBe(mode === 'count_pips' ? 1 : 2);
   });
 
   it('the key names the count-aloud route, or the three comparison answers', () => {
@@ -83,7 +83,9 @@ describe('DiDiceRoll — the roll', () => {
     expect(SoundManager.tick).toHaveBeenCalledTimes(4);
     expect(SoundManager.snap).toHaveBeenCalledOnce();
     expect(h.state().task!.demand).toMatchObject({ rolled: 'yes' });
-    fireEvent.click(screen.getByRole('button', { name: /Say how many dots/ }));
+    // Rolled dice are a plain group, not the roll button: there is nothing left to roll.
+    expect(screen.queryByRole('button', { name: /Roll/ })).toBeNull();
+    fireEvent.click(screen.getByRole('group', { name: /Say how many dots/ }));
     expect(SoundManager.tap).toHaveBeenCalledOnce();
   });
 });

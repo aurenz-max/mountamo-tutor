@@ -470,8 +470,9 @@ export const DI_CATALOG: ComponentDefinition[] = [
       guidance: 'The dice stay covered until the child taps them to roll; the roll is theirs, and there is nothing to '
         + 'answer before it, so ask them to roll first. Then the child answers OUT LOUD: how many dots, which die has '
         + 'more (left, right, or same), or how many dots altogether. No number is printed. Counting aloud and ending on '
-        + 'the right number is an answer. A different number is wrong however close. You cannot roll, change a die or '
-        + 'count for the child.',
+        + 'the right number is an answer. A different number is wrong however close. Never model this roll: your model '
+        + 'is the model_roll lever, a different roll solved beside it. You cannot roll, change a die or count for the child.',
+      levers: true,
       // Every item is spoken: its known wrong answers (`diceSpokenMisses`), named by the `spoken_miss` observer.
       misses: missLists<SpokenDiceMiss>({
         count_pips: ['skipped_a_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],

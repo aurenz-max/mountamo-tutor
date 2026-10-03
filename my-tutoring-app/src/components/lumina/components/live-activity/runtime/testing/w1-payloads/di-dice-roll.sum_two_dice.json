@@ -1,0 +1,93 @@
+{
+ "source": "qa/tutor-reports/di-dice-roll-runtime-sum_two_dice-payload-2026-10-03.json",
+ "primitiveId": "di-dice-roll",
+ "evalMode": "sum_two_dice",
+ "data": {
+  "title": "Roll and Say",
+  "description": "Roll the cubes, count the dots, and speak your answer out loud.",
+  "challengeType": "sum_two_dice",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "challenges": [
+   {
+    "id": "didr-1",
+    "challengeType": "sum_two_dice",
+    "action": "sum_two_dice",
+    "answerKind": "voice",
+    "responseClass": "number_word_to_20",
+    "sides": 6,
+    "value": 5,
+    "secondValue": 6,
+    "total": 11,
+    "spokenAnswer": "eleven",
+    "asrAliases": [
+     "eleven",
+     "11"
+    ]
+   },
+   {
+    "id": "didr-2",
+    "challengeType": "sum_two_dice",
+    "action": "sum_two_dice",
+    "answerKind": "voice",
+    "responseClass": "number_word_to_20",
+    "sides": 6,
+    "value": 2,
+    "secondValue": 1,
+    "total": 3,
+    "spokenAnswer": "three",
+    "asrAliases": [
+     "three",
+     "3"
+    ]
+   },
+   {
+    "id": "didr-3",
+    "challengeType": "sum_two_dice",
+    "action": "sum_two_dice",
+    "answerKind": "voice",
+    "responseClass": "number_word_to_20",
+    "sides": 6,
+    "value": 6,
+    "secondValue": 4,
+    "total": 10,
+    "spokenAnswer": "ten",
+    "asrAliases": [
+     "ten",
+     "10"
+    ]
+   },
+   {
+    "id": "didr-4",
+    "challengeType": "sum_two_dice",
+    "action": "sum_two_dice",
+    "answerKind": "voice",
+    "responseClass": "number_word_to_20",
+    "sides": 6,
+    "value": 6,
+    "secondValue": 6,
+    "total": 12,
+    "spokenAnswer": "twelve",
+    "asrAliases": [
+     "twelve",
+     "12"
+    ]
+   },
+   {
+    "id": "didr-5",
+    "challengeType": "sum_two_dice",
+    "action": "sum_two_dice",
+    "answerKind": "voice",
+    "responseClass": "number_word_to_20",
+    "sides": 6,
+    "value": 3,
+    "secondValue": 6,
+    "total": 9,
+    "spokenAnswer": "nine",
+    "asrAliases": [
+     "nine",
+     "9"
+    ]
+   }
+  ]
+ }
+}
