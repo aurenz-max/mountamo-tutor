@@ -33,6 +33,7 @@ import { useTeachingEvaluation, type TeachingEvaluationResult }
 import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
 import { NeedsTutor } from '../../../components/live-activity/runtime/NeedsTutor';
 import { WorkspacePin } from '../../../components/live-activity/runtime/workspacePin';
+import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
 import { catalogBindsWorkspace } from '../../../components/live-activity/pinnedModes';
 import type { PrimitiveMetrics } from '../../../evaluation';
 import type { ComponentId } from '../../../types';
@@ -60,6 +61,24 @@ export interface DiStageView {
   committed: ReadonlySet<string>;
   ready: boolean;
   markReady: () => void;
+  /** The levers on screen for this item: its tier's starting levers and any pulled since. None on a practice item. */
+  pulled: readonly string[];
+  /** The stimulus is the easier practice item a simplify lever opened, not the session item. */
+  practice: boolean;
+}
+
+/**
+ * A pack's in-item levers (`/add-support-tiers`). The stage owns their state, keyed by item, and the
+ * practice item a simplify lever opens; the pack supplies only pure domain functions.
+ */
+export interface DiStageLevers<Item> {
+  declare: (item: Item, pulled: readonly string[]) => WorkspaceLever[];
+  /** What the levers on screen show, as a scene fact. Never the item's answer. */
+  onScreen: (item: Item, pulled: readonly string[]) => string;
+  /** Levers the item's tier starts with on screen. Not a pull, so never recorded. */
+  starting?: (item: Item) => readonly string[];
+  /** The easier item a simplify lever opens, with an id of its own, or null to refuse. */
+  simpler?: (item: Item, lever: string) => Item | null;
 }
 
 export interface DiTeachingStageProps<Item extends { id: string }, M extends PrimitiveMetrics> {
@@ -85,6 +104,7 @@ export interface DiTeachingStageProps<Item extends { id: string }, M extends Pri
   awaitsStimulus?: boolean;
   /** The progress dots, when an item is one step of a larger problem. Default: one dot per item. */
   counter?: (item: Item, items: readonly Item[]) => { current: number; total: number };
+  levers?: DiStageLevers<Item>;
 }
 
 /**
@@ -116,7 +136,7 @@ export default function DiTeachingStage<Item extends { id: string }, M extends P
 
 function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>({ primitiveId, data, items,
     className, runtimePlanItemId, assignment, scene, metrics, copy, recapLabel, stimulus, trail,
-    awaitsStimulus, counter }:
+    awaitsStimulus, counter, levers }:
     DiTeachingStageProps<Item, M>) {
   const instance = useRef(data.instanceId || `${primitiveId}-${Date.now()}`);
   const workspace = useRef<TeachingWorkspace | null>(null);
@@ -131,19 +151,52 @@ function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>
   const evaluation = useTeachingEvaluation<M>({ primitiveType: primitiveId, instanceId: instance.current,
     data, assignments, lesson, metrics });
 
-  const item = items[lesson.state.index];
+  const sessionItem = items[lesson.state.index];
+  // Lever state is keyed by the session item, so a new item starts from its own tier. The practice item a
+  // simplify lever opened stays through a retry and leaves only through `endPractice`.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<{ for: string; item: Item } | null>(null);
+  const practiceItem = practice && practice.for === sessionItem?.id ? practice.item : null;
+  const pulled = !sessionItem || !levers ? [] : leverState.item === sessionItem.id ? leverState.pulled
+    : [...(levers.starting?.(sessionItem) ?? [])];
+  const item = practiceItem ?? sessionItem;
   const committed = items.filter(candidate =>
     lesson.state.attempts.some(attempt => attempt.itemId === candidate.id && attempt.correct));
   const committedKey = committed.map(candidate => candidate.id).join(' ');
   const committedIds = useMemo(() => new Set(committedKey ? committedKey.split(' ') : []), [committedKey]);
-  const [readyItemId, setReadyItemId] = useState<string | null>(null);
-  const ready = !awaitsStimulus || readyItemId === item?.id;
+  // Every item the learner has prepared (rolled) stays prepared: returning from an easier practice item must not
+  // cover the full item's dice again.
+  const [readyIds, setReadyIds] = useState<ReadonlySet<string>>(new Set());
+  const ready = !awaitsStimulus || (!!item && readyIds.has(item.id));
 
   useLayoutEffect(() => {
+    const drawn = scene(item, { ready });
+    const declared = levers && !practiceItem ? levers.declare(sessionItem, pulled) : [];
+    const onScreen = levers && !practiceItem ? levers.onScreen(sessionItem, pulled) : '';
     workspace.current = {
-      ...scene(item, { ready }),
+      ...drawn,
+      ...(onScreen ? { facts: { ...drawn.facts, onScreen } } : {}),
       demonstration: marks,
       readyForResponse: ready, canDemonstrate: true, mark, clearPresentation: () => mark([]),
+      ...(levers ? {
+        levers: declared,
+        // A synchronous commit (the workspace runs it inside flushSync): the stage changes before this returns.
+        pullLever: (id: string) => {
+          const lever = declared.find(l => l.id === id);
+          if (practiceItem || !lever) return `No lever ${id} on this item.`;
+          if (lever.pulled) return `${id} is already on screen.`;
+          const next = { item: sessionItem.id, pulled: [...pulled, id] };
+          if (lever.kind === 'simplify') {
+            const easier = levers.simpler?.(sessionItem, id);
+            if (!easier) return 'There is no easier one for this item.';
+            setLeverState(next); setPractice({ for: sessionItem.id, item: easier }); mark([]);
+            return { practice: assignment(easier) };
+          }
+          setLeverState(next);
+          return true;
+        },
+        endPractice: () => { setPractice(null); mark([]); },
+      } : {}),
     };
   });
 
@@ -194,14 +247,15 @@ function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>
       </div>
     </LuminaCardHeader>
     <LuminaCardContent className="space-y-6">
-      <LuminaChallengeCounter {...(counter?.(item, items) ?? { current: lesson.state.index + 1, total: items.length })}
+      <LuminaChallengeCounter {...(counter?.(sessionItem, items) ?? { current: lesson.state.index + 1, total: items.length })}
         variant="dots" />
       <div ref={pip.ref('stimulus')} data-pip-object="stimulus">
-        {stimulus(item, marks, { committed: committedIds, ready, markReady: () => setReadyItemId(item.id) })}
+        {stimulus(item, marks, { committed: committedIds, ready, markReady: () => setReadyIds(prev => new Set(prev).add(item.id)),
+          pulled: practiceItem ? [] : pulled, practice: !!practiceItem })}
       </div>
       {/* Every answer is spoken, so no answer surface lies between the dock and the stimulus. */}
       {pipStore && <div ref={pip.dock} data-pip-dock={instance.current} className={PIP_DOCK_CLASS} />}
-      {trail?.(committed, item)}
+      {trail?.(committed, sessionItem)}
       <div className="flex justify-center"><LuminaReadAloudGlyph size={22} speaking={lesson.tutorSpeaking} /></div>
       <p className="text-center text-sm text-slate-400">{copy.prompt}</p>
     </LuminaCardContent>

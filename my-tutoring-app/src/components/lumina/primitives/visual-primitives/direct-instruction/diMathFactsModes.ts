@@ -52,7 +52,7 @@ export const DI_MATH_FACTS_MODES = defineDiModes<MathFactsModePlanItem>(
   mode({
     evalMode: 'answer_fact', label: 'Answer a Fact', beta: 2.0, scaffoldingMode: 1,
     challengeTypes: ['answer_fact'],
-    description: 'See one printed addition fact, say the answer as a number word — modeled and guided first, then answered alone.',
+    description: 'See one printed addition fact, say the answer as a number word. A different fact may be modeled first; the learner answers their own fact alone.',
     challengeDocs: { answer_fact: {
       promptDoc: '"answer_fact": the child sees ONE printed addition fact and speaks the answer number word. The base skill, drilled as the objective\'s focused set.',
       schemaDescription: "'answer_fact' (say the answer to the printed fact)",

@@ -250,9 +250,13 @@ const WORD_CASES = [
 // The answer is NOT on screen, which inverts word reading's risks: the tutor can
 // supply the answer before the child says it, an operand echoed back sounds like an
 // answer, and a teen and its decade are one unstressed syllable apart.
+// The stage adds what its tier's starting levers draw (the easy model card) as `onScreen`, so the probe does too.
+const factLevers = await domain('direct-instruction/diMathFactsLevers.ts');
 const factItem = challenge => {
   const item = only(facts.buildMathFactItems([challenge]), challenge.id);
-  return { assignment: facts.workspaceAssignment(item), scene: facts.workspaceScene(item) };
+  const scene = facts.workspaceScene(item);
+  const onScreen = factLevers.mathFactLeverFacts(item, factLevers.startingLevers(item));
+  return { assignment: facts.workspaceAssignment(item), scene: onScreen ? { ...scene, facts: { ...scene.facts, onScreen } } : scene };
 };
 const FACT_ITEMS = {
   addition: factItem({ id: 'add', challengeType: 'answer_fact', a: 2, b: 1, display: '2 + 1', problem: 'two plus one', answerWord: 'three', answerNumeral: 3, solvedDisplay: '2 + 1 = 3' }),

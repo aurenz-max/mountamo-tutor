@@ -42,13 +42,21 @@
  * the stage — the overload finding's actual subject — while every affirmed fact
  * still gets its visible receipt.
  *
- * The workspace binding, evaluation and recap are `DiTeachingStage`.
+ * LEVERS (`diMathFactsLevers.ts`, user ruling 2026-10-02). The help levers draw beside or under the
+ * problem, never in place of it: a solved model card of a DIFFERENT fact (DI's "my turn" on a parallel
+ * item, small and secondary for the same overload reason), dots under each printed number, take-away
+ * dots, and a number path ending in an empty box. None of them draws this problem's answer. A simplify
+ * lever puts an easier fact on the stage, ungraded.
+ *
+ * The workspace binding, evaluation, lever state and recap are `DiTeachingStage`.
  */
 
 import React, { useMemo } from 'react';
 import type { DiMathFactsMetrics } from '../../../evaluation/types';
-import DiTeachingStage, { diStageMetrics } from './DiTeachingStage';
+import DiTeachingStage, { diStageMetrics, type DiStageLevers, type DiStageView } from './DiTeachingStage';
 import { buildMathFactItems, workspaceAssignment, workspaceScene, type MathFactItem } from './diMathFactsDomain';
+import { DOTS_LEVER, MODEL_LEVER, PATH_LEVER, TAKE_AWAY_LEVER, dotGroups, mathFactLeverFacts, mathFactLevers,
+  modelFor, numberPath, simplerItem, startingLevers, takeAwayDots } from './diMathFactsLevers';
 import type { DiMathFactsData } from './DiMathFacts';
 
 export interface DiMathFactsTeachingProps {
@@ -64,25 +72,77 @@ const COPY = {
   heading: 'Great work today!', celebration: 'You answered every fact!',
 };
 
-/** The printed problem alone. No answer, no equals sign, no worked form joins it
- *  before the child speaks — computing it IS the skill. */
-function stimulus(item: MathFactItem, marks: readonly string[]) {
-  return <div className="flex justify-center">
-    <div data-fact-object="problem" data-assignment-target="true"
-      data-tutor-demonstration={marks.includes('problem')}
-      aria-label={`The problem ${item.display}`}
-      className={`flex items-baseline gap-3 rounded-2xl border-2 border-amber-300 bg-amber-400/10 px-10 py-4 text-7xl font-bold tracking-wide text-white ${
-        marks.includes('problem') ? 'outline outline-2 outline-dashed outline-offset-4 outline-purple-400' : ''}`}>
-      {item.terms.length
-        ? item.terms.map((term, position) => (
-          <span key={position} data-fact-term={position}
-            data-tutor-demonstration={marks.includes(`term-${position}`)}
-            className={`rounded-lg px-1 ${marks.includes(`term-${position}`)
-              ? 'outline outline-2 outline-dashed outline-offset-2 outline-purple-400' : ''}`}>
-            {term}
-          </span>))
-        : <span>{item.display}</span>}
+const LEVERS: DiStageLevers<MathFactItem> = {
+  declare: mathFactLevers, onScreen: mathFactLeverFacts, starting: startingLevers, simpler: simplerItem,
+};
+
+/** Dots in rows of five, so a group is seen rather than counted one by one. `crossed` marks the last ones. */
+function Dots({ count, crossed = 0, group }: { count: number; crossed?: number; group: number }) {
+  const rows = Array.from({ length: Math.ceil(count / 5) }, (_, row) =>
+    Array.from({ length: Math.min(5, count - row * 5) }, (_, k) => row * 5 + k));
+  return <div data-dot-group={group} data-dots={count} data-crossed={crossed || undefined}
+    className="flex flex-col items-center gap-1 pt-2">
+    {rows.map((row, r) => <div key={r} className="flex gap-1">
+      {row.map(k => {
+        const out = k >= count - crossed;
+        return <span key={k} data-dot-crossed={out || undefined}
+          className={`relative inline-block h-3 w-3 rounded-full ${out ? 'bg-slate-500/50' : 'bg-amber-300'}`}>
+          {out && <span aria-hidden="true"
+            className="absolute inset-0 flex items-center justify-center text-[10px] font-bold leading-none text-rose-300">✕</span>}
+        </span>;
+      })}
+    </div>)}
+  </div>;
+}
+
+/** The printed problem, with whatever help levers are on screen. No answer, no equals sign, no worked
+ *  form joins it before the child speaks: computing it IS the skill. */
+function stimulus(item: MathFactItem, marks: readonly string[], view: DiStageView) {
+  const groups = view.pulled.includes(DOTS_LEVER) ? dotGroups(item) : null;
+  const take = view.pulled.includes(TAKE_AWAY_LEVER) ? takeAwayDots(item) : null;
+  const path = view.pulled.includes(PATH_LEVER) ? numberPath(item) : null;
+  const model = view.pulled.includes(MODEL_LEVER) ? modelFor(item) : null;
+  let numeral = -1;
+  return <div className="flex flex-col items-center gap-4">
+    <div className="flex flex-wrap items-center justify-center gap-4">
+      <div data-fact-object="problem" data-assignment-target="true" data-practice-item={view.practice || undefined}
+        data-tutor-demonstration={marks.includes('problem')}
+        aria-label={`The problem ${item.display}`}
+        className={`flex items-start gap-3 rounded-2xl border-2 border-amber-300 bg-amber-400/10 px-10 py-4 text-7xl font-bold tracking-wide text-white ${
+          marks.includes('problem') ? 'outline outline-2 outline-dashed outline-offset-4 outline-purple-400' : ''}`}>
+        {item.terms.length
+          ? item.terms.map((term, position) => {
+            const isNumber = /^[0-9]+$/.test(term);
+            if (isNumber) numeral++;
+            const dots = groups && isNumber ? groups[numeral] : undefined;
+            const takeAway = take && isNumber && numeral === 0 ? take : null;
+            return <span key={position} className="flex flex-col items-center">
+              <span data-fact-term={position}
+                data-tutor-demonstration={marks.includes(`term-${position}`)}
+                className={`rounded-lg px-1 ${marks.includes(`term-${position}`)
+                  ? 'outline outline-2 outline-dashed outline-offset-2 outline-purple-400' : ''}`}>
+                {term}
+              </span>
+              {dots !== undefined && <Dots count={dots} group={numeral} />}
+              {takeAway && <Dots count={takeAway.total} crossed={takeAway.crossed} group={0} />}
+            </span>;
+          })
+          : <span>{item.display}</span>}
+      </div>
+      {model && <div data-lever={MODEL_LEVER} data-model-fact={model.display}
+        aria-label={`My turn: ${model.problem} is ${model.answerWord}`}
+        className="flex flex-col items-center gap-1 rounded-xl border-2 border-dashed border-purple-400/70 bg-purple-500/10 px-4 py-2">
+        <span aria-hidden="true" className="text-xl leading-none">🗣️</span>
+        <span className="text-3xl font-semibold text-purple-100">
+          {model.challengeType === 'name_numeral' ? model.display : model.solvedDisplay}
+        </span>
+      </div>}
     </div>
+    {path && <div data-lever={PATH_LEVER} aria-label="A number path ending in an empty box" className="flex items-center gap-2">
+      {path.map(n => <span key={n} data-path-number={n}
+        className="rounded-lg border border-slate-500/60 bg-slate-800/60 px-3 py-1 text-3xl font-semibold text-slate-100">{n}</span>)}
+      <span data-path-box="empty" className="h-11 w-14 rounded-lg border-2 border-dashed border-amber-300/80" />
+    </div>}
   </div>;
 }
 
@@ -109,6 +169,6 @@ export default function DiMathFactsTeaching({ data, className, runtimePlanItemId
   return <DiTeachingStage<MathFactItem, DiMathFactsMetrics> primitiveId="di-math-facts" data={data}
     items={items} runtimeEvalMode={runtimeEvalMode} className={className} runtimePlanItemId={runtimePlanItemId}
     assignment={workspaceAssignment} scene={workspaceScene} copy={COPY} stimulus={stimulus} trail={solvedFacts}
-    recapLabel={recapLabel}
+    recapLabel={recapLabel} levers={LEVERS}
     metrics={result => ({ type: 'di-math-facts', ...diStageMetrics(result, items, data.challengeType), meanResponseMs: null })} />;
 }

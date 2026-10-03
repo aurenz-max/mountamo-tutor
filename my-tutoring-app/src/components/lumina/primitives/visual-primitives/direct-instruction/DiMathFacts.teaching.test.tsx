@@ -40,6 +40,7 @@ vi.mock('../../../components/DiActionPanel', () => ({ default: () => null }));
 import DiMathFacts, { type DiMathFactsData } from './DiMathFacts';
 import { DI_MATH_FACTS_WORKSPACE_MODES, buildMathFactItems, workspaceAssignment, workspaceScene,
   type DiMathFactsChallenge, type DiMathFactsChallengeType } from './diMathFactsDomain';
+import { mathFactLeverFacts, startingLevers } from './diMathFactsLevers';
 import { validateDiMathFactsData } from '../../../components/live-activity/adapters/diMathFactsLive';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 const diMathFactsLive = LIVE_ADAPTERS['di-math-facts'];
@@ -129,9 +130,10 @@ it.each(ALL_MODES)('%s publishes a factual ask with no scripted cue and no tutor
   expect(task.task).toBeTruthy();
   expect(task.task).not.toMatch(/\[DI_|Speak exactly|My turn|Your turn|Listen:|Together:/);
   expect(JSON.stringify(task)).not.toMatch(/Speak exactly|say exactly/i);
-  // The model sees help and demonstration. Recording and progression are observer-only.
+  // The model sees help, demonstration and the item's levers. Recording and progression are observer-only.
+  // A bare numeral's only lever (the model card) starts on screen at easy, so it has none left to pull.
   expect(h.state().affordances.filter(a => !a.controller).map(a => (a.action as any).operation ?? a.action.type).sort())
-    .toEqual(['begin_help', 'demonstrate']);
+    .toEqual(mode === 'name_numeral' ? ['begin_help', 'demonstrate'] : ['begin_help', 'demonstrate', 'pull_lever']);
   expect(runtimePacket(h.state()).choices.some(a => ['retry', 'advance'].includes(a.action.type))).toBe(false);
   expect(task.evidence.attemptNumber).toBe(0);
   expect(task.support).toEqual({ level: 0, answerExposure: 'none' });
@@ -418,8 +420,9 @@ it('sends learner signals with the packet, and counts the tutor’s own turn sep
   expect(packet().learner.signals).toMatchObject({ learnerTurns: 1, helpRequests: 1, stopRequests: 0 });
   expect(packet().learner.observations)
     .toEqual([expect.objectContaining({ kind: 'learner_intent', helpRequested: true })]);
-  // Advisory only: nothing about the item's record moved.
-  expect(h.state().task).toMatchObject({ phase: 'working', evidence: { attemptNumber: 0 }, support: { level: 0 } });
+  // No attempt moved. The help request pulled the next help lever (the 09-27 trigger ladder), so the item is assisted.
+  expect(h.state().task).toMatchObject({ phase: 'working', evidence: { attemptNumber: 0 }, support: { level: 2 } });
+  expect(h.state().task!.workspace!.levers!.find(l => l.id === 'dot_model')?.pulled).toBe(true);
   h.transport.close();
 });
 
@@ -496,8 +499,10 @@ it('publishes exactly the domain assignment and scene that the verdict probe rep
   const h = mount('answer_fact');
   const item = buildMathFactItems(CHALLENGES.answer_fact)[0];
   const { task, expectedAnswer, response } = workspaceAssignment(item), scene = workspaceScene(item);
-  expect(h.state().task).toMatchObject({ task, demand: { ...scene.facts, response, presentation: 'ready' } });
-  expect(h.state().task!.demand).toEqual({ ...scene.facts, response, presentation: 'ready' });
+  // Plus what the tier's starting levers draw, which the probe adds the same way.
+  const onScreen = mathFactLeverFacts(item, startingLevers(item));
+  expect(h.state().task).toMatchObject({ task, demand: { ...scene.facts, onScreen, response, presentation: 'ready' } });
+  expect(h.state().task!.demand).toEqual({ ...scene.facts, onScreen, response, presentation: 'ready' });
   expect(h.state().task!.workspace).toMatchObject({ objects: scene.objects, expectedAnswer });
 });
 
