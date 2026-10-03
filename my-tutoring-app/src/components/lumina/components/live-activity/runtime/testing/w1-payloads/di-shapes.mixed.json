@@ -1,0 +1,92 @@
+{
+ "source": "qa/tutor-reports/di-shapes-runtime-mixed-payload-2026-10-03.json",
+ "primitiveId": "di-shapes",
+ "evalMode": "mixed",
+ "data": {
+  "title": "Shape Safari Adventure",
+  "description": "Let us look at some fun outlines on the screen and say their names out loud together!",
+  "challengeType": "name_shape",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "challenges": [
+   {
+    "id": "dish-1-rectangle",
+    "challengeType": "name_shape",
+    "shape": "rectangle",
+    "shapeWord": "rectangle",
+    "article": "a",
+    "sides": 4,
+    "corners": 4,
+    "rotationDeg": -13,
+    "asrAliases": [
+     "rectangle",
+     "rectangles",
+     "wectangle"
+    ]
+   },
+   {
+    "id": "dish-2-rectangle",
+    "challengeType": "shape_review",
+    "shape": "rectangle",
+    "shapeWord": "rectangle",
+    "article": "a",
+    "sides": 4,
+    "corners": 4,
+    "rotationDeg": -14,
+    "asrAliases": [
+     "rectangle",
+     "rectangles",
+     "wectangle"
+    ]
+   },
+   {
+    "id": "dish-3-square",
+    "challengeType": "name_real_object",
+    "shape": "square",
+    "shapeWord": "square",
+    "article": "a",
+    "sides": 4,
+    "corners": 4,
+    "rotationDeg": 0,
+    "asrAliases": [
+     "square",
+     "squares",
+     "sware"
+    ],
+    "realObjectId": "window",
+    "realObjectLabel": "window"
+   },
+   {
+    "id": "dish-4-triangle",
+    "challengeType": "count_sides",
+    "shape": "triangle",
+    "shapeWord": "triangle",
+    "article": "a",
+    "sides": 3,
+    "corners": 3,
+    "rotationDeg": 0,
+    "asrAliases": [
+     "three",
+     "3"
+    ],
+    "countNumeral": 3,
+    "countWord": "three"
+   },
+   {
+    "id": "dish-5-square",
+    "challengeType": "count_corners",
+    "shape": "square",
+    "shapeWord": "square",
+    "article": "a",
+    "sides": 4,
+    "corners": 4,
+    "rotationDeg": 5,
+    "asrAliases": [
+     "four",
+     "4"
+    ],
+    "countNumeral": 4,
+    "countWord": "four"
+   }
+  ]
+ }
+}

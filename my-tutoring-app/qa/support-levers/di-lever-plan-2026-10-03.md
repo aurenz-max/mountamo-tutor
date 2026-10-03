@@ -1,5 +1,24 @@
 # DI levers: plan for the remaining 8 families (2026-10-03)
 
+**Status 2026-10-03: steps 0-8 BUILT; step 9 (class Live gate) READY, not run.** Rulings R1-R10 taken as recommended.
+Commits `22db8df0` (prep), `7c718319` shapes, `6b5b7a0a` dice compare R1, `815cff94` letter-sounds, `be2c6324`
+word-reading, `c9cc986f` sentence-reading, `157ade55` worked-procedure, `aa79a562` deduction (+ offer-cap fix),
+`cbe51977` spoken-practice, `5106b031` word-problem-setup. Readiness evidence: the sweep's lever inventory shows all
+37 DI modes with levers and every catalog miss answered; full dry journey clean; `<id>.mixed.json` saved for all ten
+packs and driven clean (spoken-practice and worked-procedure run one mode per session by design, so their mixed
+payload is one mode and the saved mode payloads stand in); text replay over the ten mixed payloads × 5: 0 flags
+(`qa/tutor-reports/replay/di-class-mixed-2026-10-03.json`).
+
+Step 9 commands (paid; the user runs or approves; `backend/tests/tutor_live/LIVE_TESTING.md` sets the count):
+
+```
+python run_live_runtime.py --primitive <di-id> --mode mixed --lever --lesson-entry --runs 1
+python run_live_runtime.py --primitive <di-id> --mode mixed --lever --lesson-entry --audio --runs 1
+```
+
+for the ten DI ids; for di-spoken-practice and di-worked-procedure add `--input` with a saved mode payload
+(`w1-payloads/<id>.<mode>.json`) per mode not covered by the mixed one.
+
 WORKSTREAMS 3.1d. Done: di-math-facts (5 modes), di-dice-roll (3). Remaining: 8 families, 29 modes.
 Each family has a DRAFT Phase 1-2 table in this folder (`<id>-lever-table-2026-10-03.md`). This file is the
 summary, the build order, and the rulings the build needs. Once the rulings below are answered, the tables

@@ -1,0 +1,132 @@
+{
+ "source": "qa/tutor-reports/di-deduction-runtime-mixed-payload-2026-10-03.json",
+ "primitiveId": "di-deduction",
+ "evalMode": "mixed",
+ "data": {
+  "title": "Follow the Clues",
+  "description": "Use the rule to state what follows and explain how you know.",
+  "challengeType": "conclude",
+  "rules": [
+   {
+    "id": "dd-1-1",
+    "category": "bird",
+    "categoryPlural": "birds",
+    "propertyPlural": "lay eggs",
+    "propertySingular": "lays eggs",
+    "propertyNegated": "does not lay eggs",
+    "kindNoun": "animal",
+    "members": [
+     "robin",
+     "penguin",
+     "owl"
+    ],
+    "nonMembers": [
+     "dog",
+     "cat"
+    ],
+    "lookalikes": [
+     "turtle",
+     "crocodile",
+     "snake"
+    ],
+    "shapes": [
+     "conclude",
+     "deny",
+     "cannot_tell"
+    ]
+   },
+   {
+    "id": "dd-1-3",
+    "category": "square",
+    "categoryPlural": "squares",
+    "propertyPlural": "have four equal sides",
+    "propertySingular": "has four equal sides",
+    "propertyNegated": "does not have four equal sides",
+    "kindNoun": "shape",
+    "members": [
+     "tile",
+     "window",
+     "block"
+    ],
+    "nonMembers": [
+     "circle",
+     "triangle"
+    ],
+    "lookalikes": [
+     "rhombus"
+    ],
+    "shapes": [
+     "conclude",
+     "deny",
+     "cannot_tell"
+    ]
+   }
+  ],
+  "spares": [
+   {
+    "id": "dd-1-4",
+    "category": "tree",
+    "categoryPlural": "trees",
+    "propertyPlural": "have wooden trunks",
+    "propertySingular": "has a wooden trunk",
+    "propertyNegated": "does not have a wooden trunk",
+    "kindNoun": "plant",
+    "members": [
+     "oak",
+     "pine",
+     "maple"
+    ],
+    "nonMembers": [
+     "rose",
+     "fern"
+    ],
+    "lookalikes": []
+   },
+   {
+    "id": "dd-1-5",
+    "category": "reptile",
+    "categoryPlural": "reptiles",
+    "propertyPlural": "have dry scales",
+    "propertySingular": "has dry scales",
+    "propertyNegated": "does not have dry scales",
+    "kindNoun": "animal",
+    "members": [
+     "lizard",
+     "python",
+     "iguana"
+    ],
+    "nonMembers": [
+     "horse",
+     "duck"
+    ],
+    "lookalikes": [
+     "pangolin"
+    ]
+   },
+   {
+    "id": "dd-1-6",
+    "category": "planet",
+    "categoryPlural": "planets",
+    "propertyPlural": "orbit the sun",
+    "propertySingular": "orbits the sun",
+    "propertyNegated": "does not orbit the sun",
+    "kindNoun": "space",
+    "members": [
+     "mars",
+     "venus",
+     "saturn"
+    ],
+    "nonMembers": [
+     "moon",
+     "meteor"
+    ],
+    "lookalikes": [
+     "asteroid",
+     "comet",
+     "pluto"
+    ]
+   }
+  ],
+  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

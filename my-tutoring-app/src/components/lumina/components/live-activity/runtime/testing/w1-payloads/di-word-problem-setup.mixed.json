@@ -1,0 +1,67 @@
+{
+ "source": "qa/tutor-reports/di-word-problem-setup-runtime-mixed-payload-2026-10-03.json",
+ "primitiveId": "di-word-problem-setup",
+ "evalMode": "mixed",
+ "data": {
+  "title": "Build the Story",
+  "description": "You will build the number family and read it out loud before working each fun story.",
+  "challengeType": "find_big_number",
+  "problems": [
+   {
+    "id": "wps-1-part_whole-whole",
+    "frameId": "part_whole:whole",
+    "theme": {
+     "nameA": "Mia",
+     "nameB": "Nina",
+     "nounPlural": "shells",
+     "gainPast": "picked",
+     "gainBase": "pick",
+     "losePast": "dropped",
+     "loseBase": "drop"
+    },
+    "first": 12,
+    "second": 4,
+    "adjectivePair": 2,
+    "challengeType": "find_big_number",
+    "maxNumber": 20
+   },
+   {
+    "id": "wps-2-change-gain_change",
+    "frameId": "change:gain_change",
+    "theme": {
+     "nameA": "Sam",
+     "nameB": "Zack",
+     "nounPlural": "stickers",
+     "gainPast": "bought",
+     "gainBase": "buy",
+     "losePast": "gave away",
+     "loseBase": "give away"
+    },
+    "first": 4,
+    "second": 10,
+    "adjectivePair": 1,
+    "challengeType": "build_family",
+    "maxNumber": 20
+   },
+   {
+    "id": "wps-3-comparison-difference",
+    "frameId": "comparison:difference",
+    "theme": {
+     "nameA": "Leo",
+     "nameB": "Maya",
+     "nounPlural": "marbles",
+     "gainPast": "found",
+     "gainBase": "find",
+     "losePast": "lost",
+     "loseBase": "lose"
+    },
+    "first": 15,
+    "second": 7,
+    "adjectivePair": 0,
+    "challengeType": "classify_and_build",
+    "maxNumber": 20
+   }
+  ],
+  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

@@ -1,0 +1,84 @@
+{
+ "source": "qa/tutor-reports/di-letter-sounds-runtime-mixed-payload-2026-10-03.json",
+ "primitiveId": "di-letter-sounds",
+ "evalMode": "mixed",
+ "data": {
+  "title": "Sound Time!",
+  "description": "Let us practice saying our letter sounds out loud together!",
+  "challengeType": "letter_sound",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "challenges": [
+   {
+    "id": "dils-1-m",
+    "challengeType": "letter_sound",
+    "letter": "m",
+    "spoken": "mmm",
+    "keyword": "moon",
+    "emoji": "\ud83c\udf19",
+    "elicitation": "isolated",
+    "asrAliases": [
+     "m",
+     "mm",
+     "mmm",
+     "hm",
+     "hmm",
+     "mhm",
+     "um"
+    ]
+   },
+   {
+    "id": "dils-2-s",
+    "challengeType": "letter_sound_review",
+    "letter": "s",
+    "spoken": "sss",
+    "keyword": "sun",
+    "emoji": "\u2600\ufe0f",
+    "elicitation": "isolated",
+    "asrAliases": [
+     "s",
+     "ss",
+     "sss",
+     "ess",
+     "sh",
+     "shh",
+     "hiss"
+    ]
+   },
+   {
+    "id": "dils-3-f",
+    "challengeType": "first_sound_in_word",
+    "letter": "f",
+    "spoken": "fff",
+    "keyword": "fish",
+    "emoji": "\ud83d\udc1f",
+    "elicitation": "isolated",
+    "asrAliases": [
+     "f",
+     "ff",
+     "fff",
+     "ef",
+     "huff"
+    ]
+   },
+   {
+    "id": "dils-4-s",
+    "challengeType": "letter_sound",
+    "letter": "s",
+    "spoken": "sss",
+    "keyword": "sun",
+    "emoji": "\u2600\ufe0f",
+    "elicitation": "isolated",
+    "asrAliases": [
+     "s",
+     "ss",
+     "sss",
+     "ess",
+     "sh",
+     "shh",
+     "hiss"
+    ]
+   }
+  ],
+  "letters": "m, s, f, s"
+ }
+}

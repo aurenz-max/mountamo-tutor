@@ -1,0 +1,5283 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    50
+   ],
+   "no_protocol_leak": [
+    0,
+    50
+   ],
+   "no_key_before_try": [
+    0,
+    50
+   ],
+   "no_fix_before_try": [
+    0,
+    50
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    50
+   ],
+   "no_protocol_leak": [
+    0,
+    50
+   ],
+   "no_key_before_try": [
+    0,
+    50
+   ],
+   "no_fix_before_try": [
+    0,
+    50
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    50
+   ],
+   "no_protocol_leak": [
+    0,
+    50
+   ],
+   "no_key_before_try": [
+    0,
+    50
+   ],
+   "no_fix_before_try": [
+    0,
+    50
+   ],
+   "no_change_before_receipt": [
+    0,
+    35
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    40
+   ],
+   "no_protocol_leak": [
+    0,
+    40
+   ],
+   "no_key_before_try": [
+    0,
+    40
+   ],
+   "no_fix_before_try": [
+    0,
+    40
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    45
+   ],
+   "no_protocol_leak": [
+    0,
+    45
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "di-deduction.mixed",
+   "primitiveId": "di-deduction",
+   "evalMode": "mixed",
+   "keys": [
+    "that a robin lays eggs, in any words (\"it lays eggs\", or the property alone). the rule read back (\"all birds lay eggs\"), the case read back, or a fact about a robin the rule does not give is not an answer.",
+    "a robin lays eggs"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dd-1-1-c0-conclude",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "that a robin lays eggs, in any words (\"it lays eggs\", or the property alone). the rule read back (\"all birds lay eggs\"), the case read back, or a fact about a robin the rule does not give is not an answer.",
+       "a robin lays eggs"
+      ],
+      "ask": "Say what the rule tells you about a robin.",
+      "leakTokens": [
+       "DD_ITEM",
+       "DD_MOVE_ON",
+       "DD_COMPLETE",
+       "DD_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at our model rule: \"All trees have wooden trunks.\" An oak is a tree, so an oak has a wooden trunk. A rose does not have a wooden trunk, so a rose is not a tree. \n\nNow, our rule says: \"All birds lay eggs,\" and our case card says: \"A robin is a bird.\" What does the rule tell you about a robin?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is an example: all trees have wooden trunks. An oak is a tree, so an oak has a wooden trunk. A rose does not have a wooden trunk, so a rose is not a tree. \n\nNow look at your cards: what does the rule tell you about a robin?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is a rule: \"All trees have wooden trunks.\" An oak is a tree, so an oak has a wooden trunk. A rose does not have a wooden trunk, so it is not this rule. Now look at your cards: what does the rule tell you about a robin?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is our model rule: \"All trees have wooden trunks.\" An oak is a tree, and all trees have wooden trunks. A rose does not have a wooden trunk, and no: all trees have wooden trunks, and a rose does not have a wooden trunk, so it is not this rule. Now looking at your cards, what does the rule tell you about a robin?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Look at our model rule: \"All trees have wooden trunks.\" An oak is a tree, so an oak has a wooden trunk. A rose does not have a wooden trunk, so a rose is not a tree. \n\nNow look at your cards: what does the rule tell you about a robin?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "dd-1-1-c0-conclude",
+     "trigger": "a robin does not lay eggs",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "that a robin lays eggs, in any words (\"it lays eggs\", or the property alone). the rule read back (\"all birds lay eggs\"), the case read back, or a fact about a robin the rule does not give is not an answer.",
+       "a robin lays eggs"
+      ],
+      "ask": "Say what the rule tells you about a robin.",
+      "leakTokens": [
+       "DD_ITEM",
+       "DD_MOVE_ON",
+       "DD_COMPLETE",
+       "DD_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the lit words that the cards share. Using only those cards, what does the rule tell you about a robin?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "shared_term"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the lit words on the cards. Try again: what does the rule tell you about a robin?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "shared_term"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the lit words. Using what the cards say, what does the rule tell you about a robin?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "shared_term"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the lit words that the cards share. Using only what the cards say, what does the rule tell you about a robin?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "shared_term",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the lit words. What does the rule tell you about a robin?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "shared_term",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dd-1-1-c0-conclude",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "that a robin lays eggs, in any words (\"it lays eggs\", or the property alone). the rule read back (\"all birds lay eggs\"), the case read back, or a fact about a robin the rule does not give is not an answer.",
+       "a robin lays eggs"
+      ],
+      "ask": "Say what the rule tells you about a robin.",
+      "leakTokens": [
+       "DD_ITEM",
+       "DD_MOVE_ON",
+       "DD_COMPLETE",
+       "DD_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the lit words that connect our two cards. What does the rule tell you a robin does?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "shared_term"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the lit words on the cards. What does the rule tell you about a robin?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "shared_term",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the lit words. What does the rule tell you about a robin?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "shared_term"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the lit words that the cards share. What does the rule tell you about a robin?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "shared_term",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the lit words that connect our cards. What does the rule tell you about a robin?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "shared_term",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "dd-1-1-c0-conclude",
+     "trigger": "The learner said they were stuck, so the host pulled answer_frame (help). It is on screen now: Prints the case's subject and an empty box under the cards: the answer starts with the subject. Read the frame; never fill the box. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question agai",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "that a robin lays eggs, in any words (\"it lays eggs\", or the property alone). the rule read back (\"all birds lay eggs\"), the case read back, or a fact about a robin the rule does not give is not an answer.",
+       "a robin lays eggs"
+      ],
+      "ask": "Say what the rule tells you about a robin.",
+      "leakTokens": [
+       "DD_ITEM",
+       "DD_MOVE_ON",
+       "DD_COMPLETE",
+       "DD_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Under the cards, there is a new sentence frame that says: \"A robin ___.\" \n\nUsing our rule, what goes in that blank?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under the cards, there is now a sentence starter that says, \"A robin,\" with an empty box next to it. \n\nUsing only our rule, how would you finish that sentence?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under the cards\u2014a frame is printed there now that says \"A robin\" with an empty box next to it. \n\nUsing only our rule, what goes in that box to finish the sentence?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under the cards, a frame appeared that reads: \"A robin ___.\" \n\nHow would you finish that sentence using our rule?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under the cards, there is a new sentence frame that says: \"A robin ___.\" with an empty box. \n\nWhat does the rule tell you goes in that blank?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "dd-1-1-c0-conclude",
+     "trigger": "a robin lays eggs",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "that a robin lays eggs, in any words (\"it lays eggs\", or the property alone). the rule read back (\"all birds lay eggs\"), the case read back, or a fact about a robin the rule does not give is not an answer.",
+       "a robin lays eggs"
+      ],
+      "ask": "Say what the rule tells you about a robin.",
+      "leakTokens": [
+       "DD_ITEM",
+       "DD_MOVE_ON",
+       "DD_COMPLETE",
+       "DD_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it right! You figured out that a robin lays eggs because all birds lay eggs.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You figured out that a robin lays eggs because all birds lay eggs.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You figured out that a robin lays eggs because all birds do.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it: a robin lays eggs! You used the rule to find that answer.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You figured out that a robin lays eggs because all birds lay eggs.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "di-dice-roll.mixed",
+   "primitiveId": "di-dice-roll",
+   "evalMode": "mixed",
+   "keys": [
+    "\"three\". counting the dots aloud and ending on three is the answer.",
+    "three"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "didr-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"three\". counting the dots aloud and ending on three is the answer.",
+       "three"
+      ],
+      "ask": "Tap the die to roll it. Say how many dots you see.",
+      "leakTokens": [
+       "DICE_ITEM",
+       "DICE_MOVE_ON",
+       "DICE_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Tap the die to roll it!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Tap the die to roll it!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Tap the die to roll it!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Tap the die to roll it!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Tap the die to roll it!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "didr-1",
+     "trigger": "two",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"three\". counting the dots aloud and ending on three is the answer.",
+       "three"
+      ],
+      "ask": "Tap the die to roll it. Say how many dots you see.",
+      "leakTokens": [
+       "DICE_ITEM",
+       "DICE_MOVE_ON",
+       "DICE_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Not quite. Now you can tap each dot to count them!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "touch_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. You can tap each dot as you count it, and try again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "touch_dots",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. You can tap each dot as you count it to try again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "touch_dots",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Now you can tap each dot to count them! Give it another try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "touch_dots",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Now you can tap each dot to count them! Give it another try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "touch_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "didr-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"three\". counting the dots aloud and ending on three is the answer.",
+       "three"
+      ],
+      "ask": "Tap the die to roll it. Say how many dots you see.",
+      "leakTokens": [
+       "DICE_ITEM",
+       "DICE_MOVE_ON",
+       "DICE_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Now you can tap each dot on the die to count it out loud!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "touch_dots",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Tap each dot on the die to count it. What number do you get?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "touch_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now you can tap each dot to ring it as you count out loud. Give it a try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "touch_dots",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now you can tap each dot on the die to count it. Try tapping the dots and say how many you see!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "touch_dots",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "You can tap each dot to give it a ring as you count. Give it a try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "touch_dots",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "didr-1",
+     "trigger": "The learner said they were stuck, so the host pulled touch_dots (help). It is on screen now: Lets the learner tap each dot as they count it; a tapped dot gets a ring. No numbers. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"three\". counting the dots aloud and ending on three is the answer.",
+       "three"
+      ],
+      "ask": "Tap the die to roll it. Say how many dots you see.",
+      "leakTokens": [
+       "DICE_ITEM",
+       "DICE_MOVE_ON",
+       "DICE_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Each dot gets a ring when you tap it. Try tapping each dot as you count!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Tap each dot on the die, and a ring will show up around it. Go ahead and count them out loud!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the dots\u2014now when you tap each one, a ring appears around it. Try tapping each dot to see how many there are!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Each dot you tap will get a little ring around it. Tap them one at a time and say how many dots there are!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Each dot gets a ring when you tap it. Tap the dots and say how many you see!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "didr-1",
+     "trigger": "three",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"three\". counting the dots aloud and ending on three is the answer.",
+       "three"
+      ],
+      "ask": "Tap the die to roll it. Say how many dots you see.",
+      "leakTokens": [
+       "DICE_ITEM",
+       "DICE_MOVE_ON",
+       "DICE_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You counted three dots on the die!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You counted three dots on the die!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You counted them and got three!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You counted three dots.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You counted three dots!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "di-letter-sounds.mixed",
+   "primitiveId": "di-letter-sounds",
+   "evalMode": "mixed",
+   "keys": [
+    "mmm"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dils-1-m",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "mmm"
+      ],
+      "ask": "What sound does the letter \"m\" make?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "My turn: this letter says *rrr*, like ring. Now your turn: what sound does your letter make?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: this letter says rrr, like ring. Now your turn: what sound does your letter make?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: this letter beside it says *rrr*, like ring. Now your turn: what sound does this letter make?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: this letter says rrr, like ring. Now your turn: what sound does your letter make?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: this letter says rrr, like ring. Now your turn: what sound does this letter make?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "dils-1-m",
+     "trigger": "sss",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "mmm"
+      ],
+      "ask": "What sound does the letter \"m\" make?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "That is a good try, but this letter makes a different sound. Look at the picture above your letter to help you, and try saying its sound again!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That's a good try, but this letter makes a different sound. Look at the picture above your letter to help, and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the picture above your letter to help you find its sound. What sound does your letter make?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That is a good try, but this letter makes a different sound. Look at the picture above your letter to help you, and try saying its sound again!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That is a neat sound, but not for this letter! Look at the picture above it to help you try again. What sound does this letter make?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dils-1-m",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "mmm"
+      ],
+      "ask": "What sound does the letter \"m\" make?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You can do it! What picture do you see right above your letter?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Look at the picture above your letter\u2014what is that a picture of?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/2",
+          "targets": [
+           "picture"
+          ]
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "What is the picture shown above your letter?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "What picture do you see right above the letter?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "targets": [
+           "picture"
+          ],
+          "actionId": "test/2/2"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Look at the picture above the letter to see what it shows. What sound does that picture start with?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/2",
+          "targets": [
+           "picture"
+          ]
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "dils-1-m",
+     "trigger": "The learner said they were stuck, so the host pulled sound_arrow (help). It is on screen now: Draws a ball and a long arrow under the printed letter: hold the sound while a finger moves along it. Say \"hold it\", never the sound. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question aga",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "mmm"
+      ],
+      "ask": "What sound does the letter \"m\" make?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look, a ball and a long arrow appeared right under your letter! When you say the sound, hold it as your finger moves along that arrow. What sound does your letter make?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, there is a ball with a long arrow right under your letter! Hold the sound as you follow the arrow, and tell me what sound your letter makes.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under your letter\u2014there is a ball and a long arrow now! Follow the arrow with your finger and hold the sound out long.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under your letter\u2014there is a ball with a long arrow now! Follow the arrow with your finger and hold the sound out long.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, a little ball and a long arrow appeared under your letter! Hold the sound while your finger moves along the arrow.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "dils-1-m",
+     "trigger": "mmm",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "mmm"
+      ],
+      "ask": "What sound does the letter \"m\" make?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You did it! You held the sound *mmm*!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You held that *mmm* sound perfectly.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You made the *mmm* sound!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You made the continuous *mmm* sound for the letter m. Fantastic work!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You held the sound *mmm*!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "di-math-facts.mixed",
+   "primitiveId": "di-math-facts",
+   "evalMode": "mixed",
+   "keys": [
+    "two"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dimf-1-id2",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "two"
+      ],
+      "ask": "What is this number?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "My turn: this number is zero. Your turn: what is this number?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: this number is zero. Your turn: what is this number?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: this number is zero. Your turn: what is this number?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: this number is zero. Your turn: what is this number?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: this number is zero. Your turn: what is this number?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "dimf-1-id2",
+     "trigger": "six",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "two"
+      ],
+      "ask": "What is this number?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Not quite six. Give it another try! What is this number?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite six. Give it another try! What number is this?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite, try this one again. What is this number?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite, give it another try! What is this number?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite six. Give it another try! What is this number?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dimf-1-id2",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "two"
+      ],
+      "ask": "What is this number?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "That is okay, we can do it together! Look closely at the curved line and the flat line at the bottom. What number do you think that is?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "That is okay, we can do it together! Look closely at the curved line and the flat line at the bottom\u2014what number do you think that makes?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Take a look at how it curves at the top and goes flat across the bottom. What number do you think that is?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "That's okay, we can do it together! Look closely at the curved top and flat bottom, and tell me what number you see.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Take a close look at the shape with a curve at the top and a flat line at the bottom. What number do you think it is?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "dimf-1-id2",
+     "trigger": "two",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "two"
+      ],
+      "ask": "What is this number?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You named the number two!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! That number is two.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You named the number two!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You named the number two!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You named the number two!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "di-sentence-reading.mixed",
+   "primitiveId": "di-sentence-reading",
+   "evalMode": "mixed",
+   "keys": [
+    "the red hen ran."
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "disr-1-red-hen",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the red hen ran."
+      ],
+      "ask": "Read the sentence out loud, every word in order.",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "My turn: Pip got wet. Now it's your turn to read the sentence in the gold ring out loud!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: Pip got wet. Now it's your turn to read the sentence with the gold ring out loud!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: Pip got wet. Now read the sentence in the gold ring out loud, every word in order.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: Pip got wet. Now it's your turn to read the sentence in the gold ring out loud!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: Pip got wet. Now it's your turn to read the sentence with the gold ring!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "disr-1-red-hen",
+     "trigger": "I see a dog.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the red hen ran."
+      ],
+      "ask": "Read the sentence out loud, every word in order.",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the dots under the letters to help you sound them out. Give the sentence in the gold ring another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sound_dots",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the dots under the letters to help sound them out. Give this sentence another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "sound_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, sound dots popped up under the letters to help us sound them out! Give it another try, reading each word in order.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sound_dots",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the little dots that popped up under the letters to help you sound them out. Give that sentence in the gold ring another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sound_dots",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the little dots that popped up under the letters to help you sound them out. Give this sentence another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "sound_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "disr-1-red-hen",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the red hen ran."
+      ],
+      "ask": "Read the sentence out loud, every word in order.",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Little dots appeared under the letters you can sound out. Try saying each sound and reading the sentence!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "sound_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now there are sound dots under the letters you can sound out. Start at the very first word and sound it out!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "sound_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Dots appeared under the letters to help you sound them out. Try reading each word from left to right!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sound_dots",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Little dots appeared under the letters you can sound out. Try sounding out the words one at a time!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "sound_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Little dots just appeared under the letters you can sound out. Try touching each dot and sounding out the words in order!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "sound_dots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "disr-1-red-hen",
+     "trigger": "The learner said they were stuck, so the host pulled tracking_underline (help). It is on screen now: Draws a line under every word and an arrow pointing left to right: touch each word in turn. Read none of them. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work ",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the red hen ran."
+      ],
+      "ask": "Read the sentence out loud, every word in order.",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "There is a line under each word with an arrow pointing from left to right. Follow the arrow with your finger and read each word in order!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look below the words: there is a line under each one and an arrow pointing from left to right. Follow along the arrow and try reading each word in order!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is now a line under each word and an arrow pointing across from left to right. Touch each word following the arrow, and try reading them out loud!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is a line under each word with an arrow pointing from left to right. Follow the arrow and try reading each word in order!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is now a line under each word with an arrow pointing from left to right to help you follow along. Touch each word across the line and read them out loud!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "disr-1-red-hen",
+     "trigger": "The red hen ran.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the red hen ran."
+      ],
+      "ask": "Read the sentence out loud, every word in order.",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You read every word in order: \"The red hen ran.\" That is wonderful reading!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You read every word in order: \"The red hen ran.\" That is wonderful reading!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You read every word in order: \"The red hen ran.\"! Fantastic job!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You read every word in order: \"The red hen ran.\"! Fantastic job!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You read every word in order: \"The red hen ran.\" Fantastic reading!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "di-shapes.mixed",
+   "primitiveId": "di-shapes",
+   "evalMode": "mixed",
+   "keys": [
+    "rectangle"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dish-1-rectangle",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "rectangle"
+      ],
+      "ask": "What shape is this?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "My turn: this shape is a circle. \n\nNow your turn: what shape is this?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: this shape is a circle. \n\nNow your turn: what shape is this?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: this shape is a circle. Now your turn: what shape is this?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: this shape is a circle. \n\nNow your turn: what shape is this?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: this shape is a circle. \n\nNow your turn: what shape is this?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "dish-1-rectangle",
+     "trigger": "circle",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "rectangle"
+      ],
+      "ask": "What shape is this?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "My shape is the circle. \n\nLook at your shape beside it\u2014what shape is yours?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite a circle. \n\nMy turn: this shape over here is a circle. What shape is your shape?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My shape was a circle. \n\nLook at your shape beside it\u2014what shape is yours?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My shape was the circle. \n\nWhat shape is your shape?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That is not a circle. \n\nMy turn: this other shape is a circle. What shape is yours?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dish-1-rectangle",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "rectangle"
+      ],
+      "ask": "What shape is this?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "My turn: this shape on the card is a circle.\n\nNow give yours a try\u2014what shape is it?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "My turn: this shape is a circle. \n\nNow, what shape is your shape?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "My turn: this shape is a circle.\n\nNow tell me, what shape is your shape?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "My turn: this shape on the small card is a circle.\n\nNow give yours a try\u2014what shape is it?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "My turn: this shape on the small card is a circle.\n\nNow what shape is your shape?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "dish-1-rectangle",
+     "trigger": "rectangle",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "rectangle"
+      ],
+      "ask": "What shape is this?",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You named it: that shape is a rectangle.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You named it\u2014it is a rectangle!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You named the rectangle!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You named the rectangle!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it\u2014you named the rectangle!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "di-spoken-practice.mixed",
+   "primitiveId": "di-spoken-practice",
+   "evalMode": "mixed",
+   "keys": [
+    "\"shorter\" (also accept \"shorter than the train\"). the learner chooses one word from \"longer\", \"shorter\"; any other word does not answer the question. saying just the word or a phrase ending in the word counts as the correct answer. saying the name of the object instead of the comparison word is not the answer."
+   ],
+   "stopped": "a simplify lever opened a practice item",
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dsp-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"shorter\" (also accept \"shorter than the train\"). the learner chooses one word from \"longer\", \"shorter\"; any other word does not answer the question. saying just the word or a phrase ending in the word counts as the correct answer. saying the name of the object instead of the comparison word is not the answer."
+      ],
+      "ask": "Here is a train, and here is a bicycle. Is the bicycle longer or shorter?",
+      "leakTokens": [
+       "SAY_ITEM",
+       "SAY_MOVE",
+       "SAY_HEAR",
+       "SAY_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "My turn: looking at the crocodile and ant, the crocodile is longer, and the ant is shorter. Now your turn: here is a train, and here is a bicycle\u2014is the bicycle longer or shorter?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: a crocodile is longer, and an ant is shorter. Your turn: here is a train, and here is a bicycle\u2014is the bicycle longer or shorter?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: looking at the crocodile and the ant, the crocodile is longer, and the ant is shorter. \n\nNow your turn: here is a train, and here is a bicycle. Is the bicycle longer or shorter?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: a crocodile is longer, and an ant is shorter. \n\nHere is a train, and here is a bicycle: is the bicycle longer or shorter?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: a crocodile is longer, and an ant is shorter. \n\nHere is a train, and here is a bicycle: is the bicycle longer or shorter?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "dsp-1",
+     "trigger": "longer",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"shorter\" (also accept \"shorter than the train\"). the learner chooses one word from \"longer\", \"shorter\"; any other word does not answer the question. saying just the word or a phrase ending in the word counts as the correct answer. saying the name of the object instead of the comparison word is not the answer."
+      ],
+      "ask": "Here is a train, and here is a bicycle. Is the bicycle longer or shorter?",
+      "leakTokens": [
+       "SAY_ITEM",
+       "SAY_MOVE",
+       "SAY_HEAR",
+       "SAY_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Let's look closely at both pictures. Compared to the train, is the bicycle longer or shorter?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's take another look: compare the size of the bicycle to the train. Is the bicycle longer or shorter?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Look at how much space each takes from end to end\u2014is the bicycle longer or shorter?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Take another look at the bicycle next to the train, and try again: is the bicycle longer or shorter?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Take another look at the bicycle compared to the train, and try again: is the bicycle longer or shorter?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dsp-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"shorter\" (also accept \"shorter than the train\"). the learner chooses one word from \"longer\", \"shorter\"; any other word does not answer the question. saying just the word or a phrase ending in the word counts as the correct answer. saying the name of the object instead of the comparison word is not the answer."
+      ],
+      "ask": "Here is a train, and here is a bicycle. Is the bicycle longer or shorter?",
+      "leakTokens": [
+       "SAY_ITEM",
+       "SAY_MOVE",
+       "SAY_HEAR",
+       "SAY_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Here are two new pictures to practice: a crocodile and an ant. Is the crocodile longer or shorter?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "far_pair",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "We have an easier pair to practice with first: here is a crocodile, and here is an ant. Is the crocodile longer or shorter?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "far_pair"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "We brought up a new practice pair: here is a crocodile, and here is an ant. Is the crocodile longer or shorter?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "far_pair"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Let's practice with an easier pair first: here is a crocodile, and here is an ant. Is the crocodile longer or shorter?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "far_pair"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Here is a crocodile, and here is an ant. Is the crocodile longer or shorter?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "far_pair"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "dsp-1~simpler",
+     "trigger": "The learner said they were stuck, so the host pulled far_pair (simplify). It is on screen now: Opens an easier one of the same kind first. It is not graded; the full question comes back after it. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the easier item on screen.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "\"shorter\" (also accept \"shorter than the train\"). the learner chooses one word from \"longer\", \"shorter\"; any other word does not answer the question. saying just the word or a phrase ending in the word counts as the correct answer. saying the name of the object instead of the comparison word is not the answer."
+      ],
+      "ask": "Here is a train, and here is a bicycle. Is the bicycle longer or shorter?",
+      "leakTokens": [
+       "SAY_ITEM",
+       "SAY_MOVE",
+       "SAY_HEAR",
+       "SAY_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the new picture on screen: there is a big crocodile and a tiny ant! Is the crocodile longer or shorter?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the screen: now we have a big crocodile and a tiny ant side by side. Is the crocodile longer or shorter?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "We have a new picture with a crocodile and a tiny ant side by side! Looking at them, is the crocodile longer or shorter?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, the pictures changed to show a crocodile and an ant side by side. Is the crocodile longer or shorter?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "We have a new picture with a big crocodile and a tiny ant side by side. Looking at them, is the crocodile longer or shorter?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "di-word-problem-setup.mixed",
+   "primitiveId": "di-word-problem-setup",
+   "evalMode": "mixed",
+   "keys": [
+    "select all the shells"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "wps-1-part_whole-whole-big_number",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "select all the shells"
+      ],
+      "ask": "Drag the story part that names the big amount into the big amount box.",
+      "leakTokens": [
+       "WPS_ITEM",
+       "WPS_MOVE_ON",
+       "WPS_COMPLETE",
+       "WPS_HEAR",
+       "WPS_BIG"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Here is our story: \"There are 12 striped shells and 4 spotted shells. How many shells are there in all?\" \n\nDrag the card that names the big amount into the big amount box.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There are 12 striped shells and 4 spotted shells. How many shells are there in all? Drag the card that names the big amount into the big amount box.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is our story: \"There are 12 striped shells and 4 spotted shells. How many shells are there in all?\" \n\nDrag the card that names the big amount into the big amount box.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is our story: \"There are 12 striped shells and 4 spotted shells. How many shells are there in all?\" \n\nDrag the card that names the big amount into the big amount box.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is our story: \"There are 12 striped shells and 4 spotted shells. How many shells are there in all?\" \n\nDrag the card that names the big amount into the big amount box.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "wps-1-part_whole-whole-big_number",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"wps-1-part_whole-whole-big_number\",\"response\":\"Placed \\\"striped shells\\\" in the big-amount box.\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"printed_small_in_big\"}. Respond to the learner using the current task and workspace.",
+     "miss": "printed_small_in_big",
+     "scoredWith": {
+      "keys": [
+       "select all the shells"
+      ],
+      "ask": "Drag the story part that names the big amount into the big amount box.",
+      "leakTokens": [
+       "WPS_ITEM",
+       "WPS_MOVE_ON",
+       "WPS_COMPLETE",
+       "WPS_HEAR",
+       "WPS_BIG"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at these two model stories! In the first story, Omar has 2 marbles and Ruby has 3 more marbles than Omar, so Ruby's marbles is the big amount because Ruby has more than Omar. In the second story, Omar has 5 marbles and Ruby has 2 marbles, so Omar's marbles is the big amount because Omar has more than Ruby. Now look at our shell story and try dragging the big amount into the box!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_story"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the two example stories on the card.\n\nIn the first story, Omar has 2 marbles and Ruby has 3 more marbles than Omar, so Ruby's marbles is the big amount because Ruby has more than Omar. In the second story, Omar has 5 marbles and Ruby has 2 marbles, so Omar's marbles is the big amount because Omar has more than Ruby.\n\nNow take another look at your shell story, and try dragging the big amount into the box!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_story"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's look at the model card with two solved stories. In the first story, Omar has 2 marbles, Ruby has 3 more, and the big amount is Ruby's marbles because she has more than Omar. In the second story, Omar has 5 marbles, Ruby has 2, and the big amount is Omar's marbles because he has more than Ruby. Now try dragging the card that names the big amount for your story into the box!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_story"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the two example stories on the card.\n\nIn the first story, Omar has 2 marbles and Ruby has 3 more, so the big amount is Ruby's marbles because she has more. In the second story, Omar has 5 marbles and Ruby has 2, so the big amount is Omar's marbles because he has more.\n\nNow look at your shell story again, and try placing the big amount card into the box.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_story",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Tap a card to see where it comes from in the story, and try placing the big amount again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "story_links"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "wps-1-part_whole-whole-big_number",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "select all the shells"
+      ],
+      "ask": "Drag the story part that names the big amount into the big amount box.",
+      "leakTokens": [
+       "WPS_ITEM",
+       "WPS_MOVE_ON",
+       "WPS_COMPLETE",
+       "WPS_HEAR",
+       "WPS_BIG"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Tap a card to see where it comes from!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "story_links"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A card with two solved model stories popped up on the screen! In the first story, Omar has 2 marbles and Ruby has 3 more marbles than Omar, so Ruby's marbles is the big amount because Ruby has more than Omar. In the second story, Omar has 5 marbles and Ruby has 2 marbles, so Omar's marbles is the big amount because Omar has more than Ruby. Now you try finding the big amount for our shell story!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_story"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A model card popped up showing two solved stories to help us! In the first story, Omar has 2 marbles and Ruby has 3 more marbles than Omar, so Ruby's marbles is the big amount because Ruby has more than Omar. In the second story, Omar has 5 marbles and Ruby has 2 marbles, so Omar's marbles is the big amount because Omar has more than Ruby. Now give our shell story another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_story",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Tap a card to see where it comes from!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "story_links"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Tap a card to see where it comes from!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "story_links",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "wps-1-part_whole-whole-big_number",
+     "trigger": "The learner said they were stuck, so the host pulled model_story (help). It is on screen now: Shows a card with TWO different stories, one to add and one to subtract, each solved (onScreen gives them). Say ALL of them as your turn, in order, each with its big amount and why; never only the one like the learner's story, and never say which of the learner's cards is big. Then hand back their step. F",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "select all the shells"
+      ],
+      "ask": "Drag the story part that names the big amount into the big amount box.",
+      "leakTokens": [
+       "WPS_ITEM",
+       "WPS_MOVE_ON",
+       "WPS_COMPLETE",
+       "WPS_HEAR",
+       "WPS_BIG"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A model card appeared beside our story with two solved examples! In the first story, Omar has 2 marbles and Ruby has 3 more marbles than Omar, so Ruby's marbles is the big amount because Ruby has more than Omar. In the second story, Omar has 5 marbles and Ruby has 2 marbles, so Omar's marbles is the big amount because Omar has more than Ruby. Now look back at our shell story and try dragging the big amount into the box!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A card just popped up beside our story showing two different solved examples! \n\nIn the first story, Omar has 2 marbles and Ruby has 3 more, so Ruby's marbles is the big amount because she has more than Omar. In the second story, Omar has 5 marbles and Ruby has 2, so Omar's marbles is the big amount because Omar has more than Ruby. \n\nNow look back at your shell story and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new model card popped up beside the story showing two different solved examples! \n\nIn the first story, Omar has 2 marbles and Ruby has 3 more marbles than Omar, so Ruby's marbles is the big amount because Ruby has more than Omar. In the second story, Omar has 5 marbles and Ruby has 2 marbles, so Omar's marbles is the big amount because Omar has more than Ruby. \n\nNow take another look at our shell story and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card has popped up beside our story with two solved examples! In the first story, Ruby has more than Omar, so Ruby's marbles is the big amount. In the second story, Omar has more than Ruby, so Omar's marbles is the big amount. Look back at our shell story and try dragging the big amount card into the box!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card is now beside our story showing two solved examples! In the first story, Omar has 2 marbles and Ruby has 3 more marbles than Omar, so Ruby's marbles is the big amount because Ruby has more than Omar. In the second story, Omar has 5 marbles and Ruby has 2 marbles, so Omar's marbles is the big amount because Omar has more than Ruby. Now look back at your shell story and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "wps-1-part_whole-whole-big_number",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"wps-1-part_whole-whole-big_number\",\"response\":\"Placed \\\"all the shells\\\" in the big-amount box.\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"model_story\"]}. Respond to the learner using the current task and workspace.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "select all the shells"
+      ],
+      "ask": "Drag the story part that names the big amount into the big amount box.",
+      "leakTokens": [
+       "WPS_ITEM",
+       "WPS_MOVE_ON",
+       "WPS_COMPLETE",
+       "WPS_HEAR",
+       "WPS_BIG"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You placed \"all the shells\" in the big amount box, and that's it!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You dragged \"all the shells\" into the big amount box because together they make the whole group.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You placed \"all the shells\" in the big amount box, and that is correct!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You put \"all the shells\" in the big amount box because all the shells is the whole group.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You placed \"all the shells\" in the big amount box because all the shells is the whole total.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "di-word-reading.mixed",
+   "primitiveId": "di-word-reading",
+   "evalMode": "mixed",
+   "keys": [
+    "cat"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "diwr-1-cat",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "cat"
+      ],
+      "ask": "What word is this? Read it out loud.",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "My turn: fff-ooo-ks, fox! Now it's your turn to read the word in the gold ring.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: fff-ooo-ks, fox! Now it's your turn to read the word in the gold ring.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: fff-ooo-ks, fox! Now it's your turn to read the word with the gold ring.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: fff-ooo-ks, fox! Now it's your turn to read the word in the gold ring out loud.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: fff-ooo-ks, fox! Now it's your turn to read the word in the gold ring out loud.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "diwr-1-cat",
+     "trigger": "dog",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "cat"
+      ],
+      "ask": "What word is this? Read it out loud.",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Not quite! Watch my card: fff-ooo-ks, fox. Now you try reading the word in the gold ring!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "model_word"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite dog! Look at the model card: fff-ooo-ks, fox. Now you try reading the letters in your word!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "model_word"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not dog. Let's look at the model card: fff-ooo-ks, fox. Now you try reading the word in the gold ring!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_word",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not dog. Look at my card: fff-ooo-ks, fox. Now you try reading the word in the gold ring!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "model_word"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That was a nice try, but this word is not dog. \n\nWatch how I read my card: fff-ooo-ks, fox! Now look at the letters on your card and try reading it again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_word",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "diwr-1-cat",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "cat"
+      ],
+      "ask": "What word is this? Read it out loud.",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Here is an easier two-letter word to practice blending first! Give this one a try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "short_word",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Let's try looking at the model card first: fff-ooo-ks, fox. Now, can you try saying the sounds of the letters in your word?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "short_word",
+          "actionId": "test/2/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Let's try a shorter word first to practice. Give this one a try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "short_word",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Try saying the sound of each letter from left to right, then say them fast together.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "short_word"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look beside your word: my card says fff-ooo-ks, fox. Now see the letters on your card and give reading it a try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sound_dots",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "diwr-1-cat",
+     "trigger": "The learner said they were stuck, so the host pulled blend_slide (help). It is on screen now: Slides the printed letters together over an arrow. Nothing plays; say \"slide them together\", never the word. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it throug",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "cat"
+      ],
+      "ask": "What word is this? Read it out loud.",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the arrow sliding the letters together! Slide the sounds together across the arrow to read the word.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the arrow below the letters, and slide them together. What word does it make?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, the letters are sliding together over the arrow! Follow the arrow and slide them together to read the word.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, the letters are sliding together over the arrow! Slide the sounds together to read the word.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, the letters are sliding together over the arrow! Follow the arrow and slide the sounds together to read the word.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "diwr-1-cat",
+     "trigger": "cat",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "cat"
+      ],
+      "ask": "What word is this? Read it out loud.",
+      "leakTokens": [
+       "DI_ITEM",
+       "DI_MOVE_ON",
+       "DI_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You read it\u2014cat! Super job blending those sounds together.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You read the word cat! You blended those sounds together perfectly.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it\u2014you read the word \"cat\"!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You read it! You read the word cat!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You read the word cat! You blended those sounds right together!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "di-worked-procedure.mixed",
+   "primitiveId": "di-worked-procedure",
+   "evalMode": "mixed",
+   "keys": [
+    "regroup (borrow, trade, or take one from the tens) and both new numbers, in any order or wording: five tens and seventeen ones. naming the regroup and seventeen with nothing about five tens is not yet the answer (the tens were never changed). turning the column upside down, \"eight minus seven\", is the signature error.",
+    "i can't take eight from seven, so i regroup: five tens, seventeen ones"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "wp-1-67-18-c0-decide",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "regroup (borrow, trade, or take one from the tens) and both new numbers, in any order or wording: five tens and seventeen ones. naming the regroup and seventeen with nothing about five tens is not yet the answer (the tens were never changed). turning the column upside down, \"eight minus seven\", is the signature error.",
+       "i can't take eight from seven, so i regroup: five tens, seventeen ones"
+      ],
+      "ask": "Look at the ones column and say what you do there.",
+      "leakTokens": [
+       "WP_ITEM",
+       "WP_MOVE_ON",
+       "WP_COMPLETE",
+       "WP_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the ringed ones column and tell me what you do there.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the ringed ones column and tell me what you do there.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the ringed ones column and tell me what you do there.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Look at the ringed ones column and tell me what you do there.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the ringed ones column and tell me what you do there.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "wp-1-67-18-c0-decide",
+     "trigger": "eight minus seven is one",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "regroup (borrow, trade, or take one from the tens) and both new numbers, in any order or wording: five tens and seventeen ones. naming the regroup and seventeen with nothing about five tens is not yet the answer (the tens were never changed). turning the column upside down, \"eight minus seven\", is the signature error.",
+       "i can't take eight from seven, so i regroup: five tens, seventeen ones"
+      ],
+      "ask": "Look at the ones column and say what you do there.",
+      "leakTokens": [
+       "WP_ITEM",
+       "WP_MOVE_ON",
+       "WP_COMPLETE",
+       "WP_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the blocks under each column showing the top number. What do you do in the ringed ones column?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "top_blocks",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Blocks for the top number are shown below each column. Looking at those blocks, what do you do in the ringed column?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "top_blocks",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is a model card beside our problem: for eighty-three minus sixteen, in the ones column, I cannot take six from three, so I regroup into seven tens and thirteen ones, and thirteen minus six is seven; then in the tens column, seven minus one is six. Now look at our ringed ones column and tell me what you do there.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "model_problem"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A helper card appeared showing eighty-three minus sixteen: for the ones, I can't take six from three, so I regroup into seven tens and thirteen ones, and thirteen minus six is seven; for the tens, seven minus one is six. Now look back at your ringed column and say what you do there.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_problem",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the blocks showing our top number under the problem. What do you do in the ringed column?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "top_blocks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "wp-1-67-18-c0-decide",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "regroup (borrow, trade, or take one from the tens) and both new numbers, in any order or wording: five tens and seventeen ones. naming the regroup and seventeen with nothing about five tens is not yet the answer (the tens were never changed). turning the column upside down, \"eight minus seven\", is the signature error.",
+       "i can't take eight from seven, so i regroup: five tens, seventeen ones"
+      ],
+      "ask": "Look at the ones column and say what you do there.",
+      "leakTokens": [
+       "WP_ITEM",
+       "WP_MOVE_ON",
+       "WP_COMPLETE",
+       "WP_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "On the model card, for eighty-three minus sixteen: in the ones, I can't take six from three, so I regroup to seven tens and thirteen ones, and thirteen minus six is seven; in the tens, seven minus one is six, giving sixty-seven. Now look back at your ringed ones column and tell me what you do there.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_problem"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "On the model card, eighty-three minus sixteen is worked out: in the ones column, you cannot take six from three, so regroup to seven tens and thirteen ones, and thirteen minus six is seven; in the tens column, seven minus one is six. Now look back at your ringed ones column and tell me what you do there.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_problem",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Here is a model problem: for 83 minus 16, in the ones column, I can't take six from three, so I regroup into seven tens and thirteen ones, and thirteen minus six is seven; in the tens column, seven minus one is six. Now look at your ringed ones column, and say what you do there.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_problem",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now blocks for the top number are shown underneath the columns. What do you do in the ringed ones column?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "top_blocks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "On the model card for eighty-three minus sixteen: in the ones, we can't take six from three, so we regroup to seven tens and thirteen ones, and thirteen minus six is seven; in the tens, seven minus one is six. Now look back at your ringed column and say what you do there.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_problem"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "wp-1-67-18-c0-decide",
+     "trigger": "The learner said they were stuck, so the host pulled model_problem (help). It is on screen now: Shows a small card with a DIFFERENT subtraction, fully worked (onScreen gives its walk). Say every column of it in order as your turn, never only the one like the learner's step, then ask the ringed column again. Never apply it to their problem. First point the learner to it: say what is now drawn and w",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "regroup (borrow, trade, or take one from the tens) and both new numbers, in any order or wording: five tens and seventeen ones. naming the regroup and seventeen with nothing about five tens is not yet the answer (the tens were never changed). turning the column upside down, \"eight minus seven\", is the signature error.",
+       "i can't take eight from seven, so i regroup: five tens, seventeen ones"
+      ],
+      "ask": "Look at the ones column and say what you do there.",
+      "leakTokens": [
+       "WP_ITEM",
+       "WP_MOVE_ON",
+       "WP_COMPLETE",
+       "WP_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Beside your problem, a new card shows eighty-three minus sixteen fully worked out: in the ones column, I can't take six from three, so I regroup to seven tens and thirteen ones, and thirteen minus six is seven; in the tens column, seven minus one is six, giving sixty-seven. \n\nNow look back at the ringed ones column in your own problem and tell me what you do there.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card just appeared beside your problem showing eighty-three minus sixteen. In the ones, I can't take six from three, so I regroup to seven tens and thirteen ones, and thirteen minus six is seven; in the tens, seven minus one is six, giving sixty-seven. Now look at your ringed ones column and tell me what you do there.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside your problem, there is now a card showing eighty-three minus sixteen worked out. In the ones, I can't take six from three, so I regroup to seven tens and thirteen ones, and thirteen minus six is seven; in the tens, seven minus one is six, giving sixty-seven. Now look back at your ringed ones column and tell me what you do there.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new card appeared beside our problem showing eighty-three minus sixteen fully worked out! In the ones column, since we can't take six from three, we regroup to seven tens and thirteen ones, and thirteen minus six gives seven; then in the tens column, seven minus one is six, giving sixty-seven. Now look back at your own ringed ones column and say what you do there.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside our problem, a new card popped up showing a different problem: eighty-three minus sixteen. In the ones, I can't take six from three, so I regroup to seven tens and thirteen ones, and thirteen minus six is seven; in the tens, seven minus one is six, giving sixty-seven. Now look back at your ringed ones column and tell me what you do there.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "wp-1-67-18-c0-decide",
+     "trigger": "I can't take eight from seven, so I regroup: five tens, seventeen ones",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "regroup (borrow, trade, or take one from the tens) and both new numbers, in any order or wording: five tens and seventeen ones. naming the regroup and seventeen with nothing about five tens is not yet the answer (the tens were never changed). turning the column upside down, \"eight minus seven\", is the signature error.",
+       "i can't take eight from seven, so i regroup: five tens, seventeen ones"
+      ],
+      "ask": "Look at the ones column and say what you do there.",
+      "leakTokens": [
+       "WP_ITEM",
+       "WP_MOVE_ON",
+       "WP_COMPLETE",
+       "WP_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it: you regroup to five tens and seventeen ones!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You regrouped to five tens and seventeen ones.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right\u2014you regrouped to five tens and seventeen ones!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You regrouped to five tens and seventeen ones.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on, you regrouped to five tens and seventeen ones!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

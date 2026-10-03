@@ -1,0 +1,91 @@
+{
+ "source": "qa/tutor-reports/di-dice-roll-runtime-mixed-payload-2026-10-03.json",
+ "primitiveId": "di-dice-roll",
+ "evalMode": "mixed",
+ "data": {
+  "title": "Fun with Dice Dots",
+  "description": "Roll the tumbling cube, look closely at the spots, and speak your answer out loud.",
+  "challengeType": "count_pips",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "challenges": [
+   {
+    "id": "didr-1",
+    "challengeType": "count_pips",
+    "action": "count_pips",
+    "answerKind": "voice",
+    "responseClass": "number_word_to_20",
+    "sides": 6,
+    "value": 3,
+    "spokenAnswer": "three",
+    "asrAliases": [
+     "three",
+     "3"
+    ]
+   },
+   {
+    "id": "didr-2",
+    "challengeType": "count_pips",
+    "action": "count_pips",
+    "answerKind": "voice",
+    "responseClass": "number_word_to_20",
+    "sides": 6,
+    "value": 6,
+    "spokenAnswer": "six",
+    "asrAliases": [
+     "six",
+     "6"
+    ]
+   },
+   {
+    "id": "didr-3",
+    "challengeType": "compare_dice",
+    "action": "compare_dice",
+    "answerKind": "voice",
+    "responseClass": "short_spoken_word",
+    "sides": 6,
+    "value": 5,
+    "secondValue": 3,
+    "comparison": "left",
+    "spokenAnswer": "left",
+    "asrAliases": [
+     "left",
+     "the left one",
+     "the left die"
+    ]
+   },
+   {
+    "id": "didr-4",
+    "challengeType": "compare_dice",
+    "action": "compare_dice",
+    "answerKind": "voice",
+    "responseClass": "short_spoken_word",
+    "sides": 6,
+    "value": 2,
+    "secondValue": 4,
+    "comparison": "right",
+    "spokenAnswer": "right",
+    "asrAliases": [
+     "right",
+     "the right one",
+     "the right die"
+    ]
+   },
+   {
+    "id": "didr-5",
+    "challengeType": "sum_two_dice",
+    "action": "sum_two_dice",
+    "answerKind": "voice",
+    "responseClass": "number_word_to_20",
+    "sides": 6,
+    "value": 2,
+    "secondValue": 5,
+    "total": 7,
+    "spokenAnswer": "seven",
+    "asrAliases": [
+     "seven",
+     "7"
+    ]
+   }
+  ]
+ }
+}

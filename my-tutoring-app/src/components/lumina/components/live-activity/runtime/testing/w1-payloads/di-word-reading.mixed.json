@@ -1,0 +1,65 @@
+{
+ "source": "qa/tutor-reports/di-word-reading-runtime-mixed-payload-2026-10-03.json",
+ "primitiveId": "di-word-reading",
+ "evalMode": "mixed",
+ "data": {
+  "title": "Fun Word Time",
+  "description": "Let us practice reading some new words together out loud!",
+  "challengeType": "cvc_reading",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "challenges": [
+   {
+    "id": "diwr-1-cat",
+    "challengeType": "cvc_reading",
+    "word": "cat",
+    "wordType": "cvc",
+    "graphemes": [
+     "c",
+     "a",
+     "t"
+    ],
+    "emoji": "\ud83d\udc31",
+    "asrAliases": [
+     "cat"
+    ]
+   },
+   {
+    "id": "diwr-2-and",
+    "challengeType": "read_word",
+    "word": "and",
+    "wordType": "sight",
+    "asrAliases": [
+     "and"
+    ]
+   },
+   {
+    "id": "diwr-3-the",
+    "challengeType": "sight_word",
+    "word": "the",
+    "wordType": "sight",
+    "asrAliases": [
+     "the",
+     "thee",
+     "duh"
+    ]
+   },
+   {
+    "id": "diwr-4-red",
+    "challengeType": "word_reading_review",
+    "word": "red",
+    "wordType": "cvc",
+    "graphemes": [
+     "r",
+     "e",
+     "d"
+    ],
+    "emoji": "\ud83d\udd34",
+    "asrAliases": [
+     "red",
+     "read"
+    ]
+   }
+  ],
+  "words": "cat, and, the, red"
+ }
+}

@@ -1,0 +1,98 @@
+{
+ "source": "qa/tutor-reports/di-math-facts-runtime-mixed-payload-2026-10-03.json",
+ "primitiveId": "di-math-facts",
+ "evalMode": "mixed",
+ "data": {
+  "title": "Math Star Practice",
+  "description": "Get ready to say your fun math facts out loud!",
+  "challengeType": "name_numeral",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "challenges": [
+   {
+    "challengeType": "name_numeral",
+    "answerWord": "two",
+    "answerNumeral": 2,
+    "asrAliases": [
+     "two",
+     "2",
+     "to",
+     "too"
+    ],
+    "id": "dimf-1-id2",
+    "a": 2,
+    "b": 0,
+    "display": "2",
+    "problem": "this number",
+    "solvedDisplay": "2 = two"
+   },
+   {
+    "challengeType": "counting_next",
+    "answerWord": "three",
+    "answerNumeral": 3,
+    "asrAliases": [
+     "three",
+     "3",
+     "free",
+     "tree"
+    ],
+    "id": "dimf-2-n2",
+    "a": 2,
+    "b": 1,
+    "display": "2 \u2192",
+    "problem": "the number after two",
+    "solvedDisplay": "2 \u2192 3"
+   },
+   {
+    "challengeType": "answer_fact",
+    "answerWord": "one",
+    "answerNumeral": 1,
+    "asrAliases": [
+     "one",
+     "1",
+     "won"
+    ],
+    "id": "dimf-3-1p0",
+    "a": 1,
+    "b": 0,
+    "display": "1 + 0",
+    "problem": "one plus zero",
+    "solvedDisplay": "1 + 0 = 1"
+   },
+   {
+    "challengeType": "fact_review",
+    "answerWord": "three",
+    "answerNumeral": 3,
+    "asrAliases": [
+     "three",
+     "3",
+     "free",
+     "tree"
+    ],
+    "id": "dimf-4-1p2",
+    "a": 1,
+    "b": 2,
+    "display": "1 + 2",
+    "problem": "one plus two",
+    "solvedDisplay": "1 + 2 = 3"
+   },
+   {
+    "challengeType": "subtraction_fact",
+    "answerWord": "three",
+    "answerNumeral": 3,
+    "asrAliases": [
+     "three",
+     "3",
+     "free",
+     "tree"
+    ],
+    "id": "dimf-5-5m2",
+    "a": 5,
+    "b": 2,
+    "display": "5 - 2",
+    "problem": "five minus two",
+    "solvedDisplay": "5 - 2 = 3"
+   }
+  ],
+  "facts": "2, 2 \u2192, 1 + 0, 1 + 2, 5 - 2"
+ }
+}

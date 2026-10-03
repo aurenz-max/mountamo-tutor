@@ -1,0 +1,154 @@
+{
+ "source": "qa/tutor-reports/di-spoken-practice-runtime-mixed-payload-2026-10-03.json",
+ "primitiveId": "di-spoken-practice",
+ "evalMode": "mixed",
+ "data": {
+  "title": "Comparing Lengths",
+  "description": "Listen to the pairs of things and say out loud which word describes them.",
+  "challengeType": "compare_choice",
+  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding.",
+  "items": [
+   {
+    "id": "dsp-1",
+    "mode": "compare_choice",
+    "action": "compare_choice",
+    "answerKind": "voice",
+    "responseClass": "closed_set_choice",
+    "stimulusKind": "pair",
+    "answerSource": "recall",
+    "stimulusText": "a train",
+    "stimulusEmoji": "\ud83d\ude82",
+    "stimulusText2": "a bicycle",
+    "stimulusEmoji2": "\ud83d\udeb2",
+    "choices": [
+     "longer",
+     "shorter"
+    ],
+    "stimulusCount": 0,
+    "ask": "Here is a train, and here is a bicycle. Is the bicycle longer or shorter?",
+    "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+    "expectedAnswer": "shorter",
+    "alternates": [
+     "shorter than the train"
+    ],
+    "easier": true,
+    "acceptRule": "Saying just the word or a phrase ending in the word counts as the correct answer.",
+    "signatureError": "Saying the name of the object instead of the comparison word is not the answer.",
+    "correctionBody": "The bicycle takes up less space end to end, so it is shorter.",
+    "actionContract": {
+     "id": "compare_choice",
+     "label": "Which Word?",
+     "icon": "<>",
+     "answerKind": "voice",
+     "instruction": "Here is a train, and here is a bicycle. Is the bicycle longer or shorter?",
+     "checkingInstruction": "Listening to your answer."
+    }
+   },
+   {
+    "id": "dsp-2",
+    "mode": "compare_choice",
+    "action": "compare_choice",
+    "answerKind": "voice",
+    "responseClass": "closed_set_choice",
+    "stimulusKind": "pair",
+    "answerSource": "recall",
+    "stimulusText": "a snake",
+    "stimulusEmoji": "\ud83d\udc0d",
+    "stimulusText2": "an earthworm",
+    "stimulusEmoji2": "\ud83d\udc1b",
+    "choices": [
+     "longer",
+     "shorter"
+    ],
+    "stimulusCount": 0,
+    "ask": "Here is a snake, and here is an earthworm. Is the snake longer or shorter?",
+    "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+    "expectedAnswer": "longer",
+    "alternates": [
+     "longer than the earthworm"
+    ],
+    "acceptRule": "Saying just the word or a phrase ending in rall or length counts as the correct answer.",
+    "signatureError": "Saying the wrong comparison word like shorter is not the answer.",
+    "correctionBody": "The snake stretches out further from end to end, so it is longer.",
+    "actionContract": {
+     "id": "compare_choice",
+     "label": "Which Word?",
+     "icon": "<>",
+     "answerKind": "voice",
+     "instruction": "Here is a snake, and here is an earthworm. Is the snake longer or shorter?",
+     "checkingInstruction": "Listening to your answer."
+    }
+   },
+   {
+    "id": "dsp-3",
+    "mode": "compare_choice",
+    "action": "compare_choice",
+    "answerKind": "voice",
+    "responseClass": "closed_set_choice",
+    "stimulusKind": "pair",
+    "answerSource": "recall",
+    "stimulusText": "a crayon",
+    "stimulusEmoji": "\ud83d\udd8d\ufe0f",
+    "stimulusText2": "a giant slide",
+    "stimulusEmoji2": "\ud83d\udedd",
+    "choices": [
+     "longer",
+     "shorter"
+    ],
+    "stimulusCount": 0,
+    "ask": "Here is a crayon, and here is a giant slide. Is the crayon longer or shorter?",
+    "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+    "expectedAnswer": "shorter",
+    "alternates": [
+     "shorter than the slide"
+    ],
+    "acceptRule": "Saying just the word or a phrase ending in the word counts as the correct answer.",
+    "signatureError": "Saying the opposite word like longer is not the answer.",
+    "correctionBody": "The crayon has less distance from tip to end than the slide, so it is shorter.",
+    "actionContract": {
+     "id": "compare_choice",
+     "label": "Which Word?",
+     "icon": "<>",
+     "answerKind": "voice",
+     "instruction": "Here is a crayon, and here is a giant slide. Is the crayon longer or shorter?",
+     "checkingInstruction": "Listening to your answer."
+    }
+   },
+   {
+    "id": "dsp-4",
+    "mode": "compare_choice",
+    "action": "compare_choice",
+    "answerKind": "voice",
+    "responseClass": "closed_set_choice",
+    "stimulusKind": "pair",
+    "answerSource": "recall",
+    "stimulusText": "a school bus",
+    "stimulusEmoji": "\ud83d\ude8c",
+    "stimulusText2": "a skateboard",
+    "stimulusEmoji2": "\ud83d\udef9",
+    "choices": [
+     "longer",
+     "shorter"
+    ],
+    "stimulusCount": 0,
+    "ask": "Here is a school bus, and here is a skateboard. Is the school bus longer or shorter?",
+    "howToPlay": "I will show you two things and say the words, and you say the one that fits.",
+    "expectedAnswer": "longer",
+    "alternates": [
+     "longer than the skateboard"
+    ],
+    "acceptRule": "Saying just the word or a phrase ending in the word counts as the correct answer.",
+    "signatureError": "Saying the wrong menu choice is not the answer.",
+    "correctionBody": "The school bus extends over a greater distance than the skateboard, so it is longer.",
+    "actionContract": {
+     "id": "compare_choice",
+     "label": "Which Word?",
+     "icon": "<>",
+     "answerKind": "voice",
+     "instruction": "Here is a school bus, and here is a skateboard. Is the school bus longer or shorter?",
+     "checkingInstruction": "Listening to your answer."
+    }
+   }
+  ]
+ }
+}

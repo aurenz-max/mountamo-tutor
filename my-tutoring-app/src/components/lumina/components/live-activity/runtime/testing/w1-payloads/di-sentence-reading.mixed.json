@@ -1,0 +1,65 @@
+{
+ "source": "qa/tutor-reports/di-sentence-reading-runtime-mixed-payload-2026-10-03.json",
+ "primitiveId": "di-sentence-reading",
+ "evalMode": "mixed",
+ "data": {
+  "title": "Fun With Reading",
+  "description": "Get ready to practice reading some wonderful new sentences out loud.",
+  "challengeType": "decodable_sentence",
+  "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+  "challenges": [
+   {
+    "id": "disr-1-red-hen",
+    "challengeType": "decodable_sentence",
+    "text": "The red hen ran.",
+    "wordCount": 4,
+    "vowels": [
+     "e",
+     "a"
+    ],
+    "emoji": "\ud83d\udc14",
+    "asrAliases": [
+     "the red hen ran"
+    ]
+   },
+   {
+    "id": "disr-2-here-it-is",
+    "challengeType": "read_sentence",
+    "text": "Here it is.",
+    "wordCount": 3,
+    "vowels": [
+     "i"
+    ],
+    "asrAliases": [
+     "here it is"
+    ]
+   },
+   {
+    "id": "disr-3-get-net",
+    "challengeType": "sentence_review",
+    "text": "Get the net.",
+    "wordCount": 3,
+    "vowels": [
+     "e"
+    ],
+    "emoji": "\ud83e\udd45",
+    "asrAliases": [
+     "get the net"
+    ]
+   },
+   {
+    "id": "disr-4-we-go",
+    "challengeType": "sight_phrase_sentence",
+    "text": "We can go up.",
+    "wordCount": 4,
+    "vowels": [
+     "u"
+    ],
+    "asrAliases": [
+     "we can go up"
+    ]
+   }
+  ],
+  "sentences": "The red hen ran. | Here it is. | Get the net. | We can go up."
+ }
+}
