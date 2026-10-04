@@ -1,6 +1,6 @@
 # word-builder: failure inventory and lever table (2026-10-03)
 
-**DRAFT 2026-10-03**. `/add-support-tiers` Phases 1-2, literacy G2-6 family 2 of 4.
+**BUILT 2026-10-04** (`qa/eval-reports/word-builder-levers-2026-10-04.md`). `/add-support-tiers` Phases 1-2, literacy G2-6 family 2 of 4.
 Rulings carried over: literacy leak rules (handoff 22): help on a production item acts on material outside the
 session; never show the answer word in print before credit. Spoken answers stay spoken (R2): no lever turns the
 word into a tap or a choice. Model levers fence the tutor in `does` (2026-10-03 memory: a model lever's `does`

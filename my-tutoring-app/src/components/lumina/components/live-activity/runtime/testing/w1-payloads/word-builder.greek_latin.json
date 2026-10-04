@@ -1,22 +1,22 @@
 {
- "source": "qa/tutor-reports/word-builder-runtime-greek_latin-payload-2026-09-29.json",
+ "source": "qa/tutor-reports/word-builder-runtime-greek_latin-payload-2026-10-04.json",
  "primitiveId": "word-builder",
  "evalMode": "greek_latin",
  "data": {
-  "title": "Building Greek and Latin Science Words",
+  "title": "Greek and Latin Word Builders",
   "complexityLevel": "greek_latin",
   "availableParts": [
    {
     "id": "pre-tele",
     "text": "tele",
     "type": "prefix",
-    "meaning": "far off"
+    "meaning": "far away"
    },
    {
     "id": "root-scope",
     "text": "scope",
     "type": "root",
-    "meaning": "see or look"
+    "meaning": "look at"
    },
    {
     "id": "pre-auto",
@@ -28,19 +28,7 @@
     "id": "root-graph",
     "text": "graph",
     "type": "root",
-    "meaning": "write or draw"
-   },
-   {
-    "id": "pre-thermo",
-    "text": "thermo",
-    "type": "prefix",
-    "meaning": "heat"
-   },
-   {
-    "id": "root-meter",
-    "text": "meter",
-    "type": "root",
-    "meaning": "measure"
+    "meaning": "write"
    },
    {
     "id": "pre-bio",
@@ -49,10 +37,10 @@
     "meaning": "life"
    },
    {
-    "id": "root-sphere",
-    "text": "sphere",
-    "type": "root",
-    "meaning": "globe or ball"
+    "id": "pre-micro",
+    "text": "micro",
+    "type": "prefix",
+    "meaning": "small"
    },
    {
     "id": "root-phone",
@@ -67,10 +55,16 @@
     "meaning": "earth"
    },
    {
-    "id": "pre-micro",
-    "text": "micro",
-    "type": "prefix",
-    "meaning": "small"
+    "id": "root-meter",
+    "text": "meter",
+    "type": "root",
+    "meaning": "measure"
+   },
+   {
+    "id": "root-port",
+    "text": "port",
+    "type": "root",
+    "meaning": "carry"
    },
    {
     "id": "suf-ic",
@@ -86,9 +80,9 @@
      "pre-tele",
      "root-scope"
     ],
-    "hint": "Name an instrument you look through to see distant planets and stars.",
-    "definition": "A tool with lenses used to see things that are far away.",
-    "sentenceContext": "We used a large ___ to see the rings around Saturn."
+    "hint": "Name an instrument you use to see objects in the night sky.",
+    "definition": "A tool used to make distant objects look closer and brighter.",
+    "sentenceContext": "She looked through the ___ to see the rings around Saturn."
    },
    {
     "word": "autograph",
@@ -96,31 +90,31 @@
      "pre-auto",
      "root-graph"
     ],
-    "hint": "Name a famous person's handwritten signature on a book or baseball.",
-    "definition": "A person's own signature written in their own handwriting.",
-    "sentenceContext": "The baseball player signed an ___ on my cap."
+    "hint": "Name a famous person's signature made with their own hand.",
+    "definition": "A person's own signature or handwriting.",
+    "sentenceContext": "The young fan asked the famous baseball player for an ___."
    },
    {
-    "word": "thermometer",
+    "word": "microscope",
     "parts": [
-     "pre-thermo",
-     "root-meter"
+     "pre-micro",
+     "root-scope"
     ],
-    "hint": "Name the tool used to find out how hot or cold something is.",
-    "definition": "An instrument that measures temperature.",
-    "sentenceContext": "The nurse checked the ___ to see if I had a fever."
+    "hint": "Name a science tool used to view tiny items too small to see with your eyes.",
+    "definition": "A scientific instrument that magnifies tiny objects.",
+    "sentenceContext": "In science class we placed an onion skin under the ___ to observe cells."
    },
    {
-    "word": "biosphere",
+    "word": "geophone",
     "parts": [
-     "pre-bio",
-     "root-sphere"
+     "pre-geo",
+     "root-phone"
     ],
-    "hint": "Name the entire zone on Earth where all living things exist.",
-    "definition": "The parts of Earth where animals, plants, and other life live.",
-    "sentenceContext": "Every living organism on our planet is part of the global ___."
+    "hint": "Name a sensor placed in the ground that detects vibrations and sounds.",
+    "definition": "A device that listens to vibrations beneath the ground.",
+    "sentenceContext": "The scientist pushed the ___ into the dirt to listen for underground tremors."
    }
   ],
-  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+  "gradeLevel": "Grade 5"
  }
 }

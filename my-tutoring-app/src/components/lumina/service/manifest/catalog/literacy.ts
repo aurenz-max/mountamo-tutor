@@ -718,15 +718,20 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       grades: ['Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
       guidance: 'A board of prefixes, roots and suffixes, each printed with its meaning, stays on screen. You tell the '
         + 'learner what a word means (the clue) and the learner says the whole word out loud, built from parts on the '
-        + 'board; it is judged against the word you are given. Building it aloud part by part counts when the whole '
+        + 'board. Building it aloud part by part counts when the whole '
         + 'word arrives at the end. Only the root, the parts never joined, the parts in the wrong order, or a word '
         + 'from only some of the parts is not yet it. Open each word with the clue and ask for the whole word. '
-        + 'Before the learner has tried, never say the word, name which parts make it, or ask about one part; after '
-        + 'an attempt you may take the meaning apart part by part. Say the clue again '
+        + 'Never say the word, name which parts or meanings make it, or ask about one part; after '
+        + 'an attempt, pull a lever, and never walk the meanings of the parts in order. Say the clue again '
         + 'asks you to repeat the clue only. You cannot mark or move a part.',
-      // Every item is one spoken word: its known wrong answers (`wordBuilderSpokenMisses`, handoff 20 Part B).
-      misses: sameMisses<SpokenWordBuilderMiss>(['simple_affix', 'compound_affix', 'greek_latin', 'multi_morpheme'],
-        ['root_only', 'part_missing', 'parts_out_of_order']),
+      levers: true,
+      // Every item is one spoken word: its known wrong answers (`wordBuilderSpokenMisses`, handoff 20 Part B; the lever
+      // table 2026-10-03 adds four). A 2-part simple_affix word cannot show part_missing.
+      misses: missLists<SpokenWordBuilderMiss>({
+        simple_affix: ['root_only', 'other_part_only', 'parts_not_joined', 'parts_out_of_order', 'swapped_part', 'meaning_word'],
+        ...Object.fromEntries(['compound_affix', 'greek_latin', 'multi_morpheme'].map(m => [m, ['root_only', 'other_part_only',
+          'part_missing', 'parts_not_joined', 'parts_out_of_order', 'swapped_part', 'meaning_word'] as SpokenWordBuilderMiss[]])),
+      }),
     },
     // ── DI MODALITY (2026-08-16) — the FIRST judged port above the K-2 band.
     // The tutor owns the clock: it states what the word means, waits, judges

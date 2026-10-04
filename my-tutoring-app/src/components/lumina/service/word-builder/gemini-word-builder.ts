@@ -61,6 +61,8 @@ export interface WordBuilderData {
   /** Stamped here so the judged session opens at the right grade — this
    *  primitive's band is 3-8 and the runner's fallback is kindergarten. */
   gradeLevel?: string;
+  /** config.difficulty, normalized: where the levers start (`wordBuilderLevers.startingLevers`). Never the words. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 }
 
 // ── Challenge type docs (one per eval mode) ──────────────────────────────��─
@@ -383,6 +385,10 @@ Generate 3-5 target words with a pool of 10-15 available parts.`;
   // so the log reports what the lesson will actually contain, not what the
   // model returned.
   const askable = itemsFromTargets(data.targets, data.availableParts, data.complexityLevel);
+  // Keep only what the runner will ask: the live adapter refuses a lesson that carries a target it would drop
+  // (a clue that invites another board word, a repeat), so a dropped target leaves the payload here.
+  const kept = new Set(askable.map(i => i.word.toLowerCase()));
+  data.targets = data.targets.filter(t => kept.has((t?.word ?? '').trim().toLowerCase()));
 
   console.log('🔤 Word Builder Generated:', {
     topic,
@@ -401,6 +407,9 @@ Generate 3-5 target words with a pool of 10-15 available parts.`;
   }
 
   data.gradeLevel = wordBuilderGradeLabel(config?.grade, data.complexityLevel);
+  // Phase 6: the tier only sets where the levers start; the words, parts and mode are the same at every tier.
+  const tier = (config?.difficulty ?? '').toLowerCase().trim();
+  if (tier === 'easy' || tier === 'medium' || tier === 'hard') data.supportTier = tier;
 
   return data;
 };

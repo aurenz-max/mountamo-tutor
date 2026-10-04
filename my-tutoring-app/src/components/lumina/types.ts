@@ -1239,6 +1239,8 @@ export interface WordBuilderData {
   targets: TargetWord[]; // Words to build (3-5 challenges)
   /** Stamped by the generator; the judged session opens at this grade. */
   gradeLevel?: string;
+  /** config.difficulty: where the levers start (easy draws the empty part frame). Never the words. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;

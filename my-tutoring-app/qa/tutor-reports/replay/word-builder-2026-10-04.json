@@ -1,0 +1,3549 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ],
+   "no_key_before_try": [
+    0,
+    30
+   ],
+   "no_fix_before_try": [
+    0,
+    30
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ],
+   "no_key_before_try": [
+    0,
+    30
+   ],
+   "no_fix_before_try": [
+    0,
+    30
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ],
+   "no_key_before_try": [
+    0,
+    30
+   ],
+   "no_fix_before_try": [
+    0,
+    30
+   ],
+   "no_change_before_receipt": [
+    0,
+    30
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ],
+   "no_key_before_try": [
+    0,
+    30
+   ],
+   "no_fix_before_try": [
+    0,
+    30
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "word-builder.compound_affix-easy",
+   "primitiveId": "word-builder",
+   "evalMode": "compound_affix",
+   "keys": [
+    "replayable (re + play + able). built out loud part by part counts when the whole word arrives at the end. only \"play\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+    "replayable"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "replayable",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "replayable (re + play + able). built out loud part by part counts when the whole word arrives at the end. only \"play\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "replayable"
+      ],
+      "ask": "Here is what the word means: Can be watched or enjoyed again on a screen. Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Here is what the word means: can be watched or enjoyed again on a screen. Say the whole word!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is what the word means: can be watched or enjoyed again on a screen. Say the whole word!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is what the word means: can be watched or enjoyed again on a screen. What whole word can you build from the board?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is what the word means: can be watched or enjoyed again on a screen. Say the whole word!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is what the word means: can be watched or enjoyed again on a screen. Say the whole word!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "replayable",
+     "trigger": "ableplayre",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "replayable (re + play + able). built out loud part by part counts when the whole word arrives at the end. only \"play\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "replayable"
+      ],
+      "ask": "Here is what the word means: Can be watched or enjoyed again on a screen. Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A model card popped up on screen! My turn: \"heated for too long, so the food burned\" is over + cook + ed, said \"overcooked.\" Now your turn to build the word for \"can be watched or enjoyed again on a screen.\"",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_word",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card appeared: \"heated for too long, so the food burned\" is over + cook + ed, making \"overcooked.\" Now try yours for \"can be watched or enjoyed again on a screen.\"",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_word",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: \"overcooked\" comes from prefix over, root cook, and suffix ed. Give your word another try in that order!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_word",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: heated for too long is over + cook + ed, overcooked. Now your turn to build your word in order.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "model_word"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "My turn: for \"heated for too long, so the food burned,\" we join over plus cook plus ed into overcooked. Now your turn: what is the whole word for can be watched or enjoyed again on a screen?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "model_word"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "replayable",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "replayable (re + play + able). built out loud part by part counts when the whole word arrives at the end. only \"play\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "replayable"
+      ],
+      "ask": "Here is what the word means: Can be watched or enjoyed again on a screen. Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The screen brought up a practice word with a smaller board! Here is its clue: can be watched or enjoyed again on a screen. Give the whole word a try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "small_board_word"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "We have a smaller practice board with fewer parts on screen to try first. What whole word means \"can be watched or enjoyed again on a screen\"?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "small_board_word",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The screen opened an easier practice word with a smaller board! Here is its clue: can be broken apart easily.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "small_board_word"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A model card appeared on screen! My turn: \"heated for too long, so the food burned\" is over + cook + ed, said \"overcooked.\" Now try building your word: \"can be watched or enjoyed again on a screen.\"",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_word"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A model card appeared showing \"heated for too long, so the food burned\" as over + cook + ed, making \"overcooked.\" Now try building your whole word for \"can be watched or enjoyed again on a screen.\"",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_word"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "replayable",
+     "trigger": "The learner said they were stuck, so the host pulled model_word (help). It is on screen now: Shows a solved card for a different word of the same shape: its clue, its parts with their meanings, and the joined word. Once it is on screen, say it as \"My turn\" on that word, the one the receipt names; never make up a model word of your own. Never say which board card or which part of this word matches ",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "replayable (re + play + able). built out loud part by part counts when the whole word arrives at the end. only \"play\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "replayable"
+      ],
+      "ask": "Here is what the word means: Can be watched or enjoyed again on a screen. Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A model card appeared on screen showing how a word comes together! \n\nMy turn: \"heated for too long, so the food burned\" is over (too much) + cook (heat food) + ed (already done), said \"overcooked.\"\n\nNow your turn for the clue: can be watched or enjoyed again on a screen. Say the whole word!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card is now on screen showing another word! My turn: \"heated for too long, so the food burned\" is over + cook + ed, said \"overcooked.\" Now look at our clue again: \"can be watched or enjoyed again on a screen\"\u2014say the whole word!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card appeared showing \"heated for too long, so the food burned\" is over + cook + ed, said \"overcooked.\" Now give your word a try for \"can be watched or enjoyed again on a screen.\"",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A solved model card appeared showing \"heated for too long, so the food burned\" is over + cook + ed, said \"overcooked.\" My turn on that card: prefix over, root cook, and suffix ed make overcooked. Now your turn: what whole word means can be watched or enjoyed again on a screen?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card has appeared on the screen showing a solved word. \n\nMy turn: \"heated for too long, so the food burned\" is over + cook + ed, said \"overcooked.\"\n\nNow it's your turn to try: can be watched or enjoyed again on a screen. Say the whole word!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "replayable",
+     "trigger": "replayable",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "replayable (re + play + able). built out loud part by part counts when the whole word arrives at the end. only \"play\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "replayable"
+      ],
+      "ask": "Here is what the word means: Can be watched or enjoyed again on a screen. Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You built it! You got the whole word replayable!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You built the whole word \"replayable.\"",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You built the whole word \"replayable.\"",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You built the whole word \"replayable.\"",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You built it! You got the whole word replayable!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "word-builder.compound_affix",
+   "primitiveId": "word-builder",
+   "evalMode": "compound_affix",
+   "keys": [
+    "unhelpful (un + help + ful). built out loud part by part counts when the whole word arrives at the end. only \"help\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+    "unhelpful"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "unhelpful",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "unhelpful (un + help + ful). built out loud part by part counts when the whole word arrives at the end. only \"help\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "unhelpful"
+      ],
+      "ask": "Here is what the word means: What word describes someone who is not providing assistance when you need it? Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "What word describes someone who is not providing assistance when you need it? Say the whole word.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "What word describes someone who is not providing assistance when you need it? Say the whole word.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "What word describes someone who is not providing assistance when you need it? Say the whole word.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "What word describes someone who is not providing assistance when you need it? Say the whole word.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "What word describes someone who is not providing assistance when you need it? Say the whole word.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "unhelpful",
+     "trigger": "fulhelpun",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "unhelpful (un + help + ful). built out loud part by part counts when the whole word arrives at the end. only \"help\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "unhelpful"
+      ],
+      "ask": "Here is what the word means: What word describes someone who is not providing assistance when you need it? Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the frame on the screen with boxes for a prefix, root, and suffix. Try saying the whole word with its parts in that order.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "part_slots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the screen\u2014boxes have appeared showing where the prefix, root, and suffix go to make one word. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "part_slots",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the screen: three empty boxes just appeared showing the order for prefix, root, and suffix. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "part_slots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the screen: three empty boxes have appeared, showing the order for a prefix, a root, and a suffix. Try saying the whole word again in that order.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "part_slots",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "An empty frame just appeared under the clue showing three boxes: prefix, root, and suffix. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "part_slots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "unhelpful",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "unhelpful (un + help + ful). built out loud part by part counts when the whole word arrives at the end. only \"help\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "unhelpful"
+      ],
+      "ask": "Here is what the word means: What word describes someone who is not providing assistance when you need it? Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A model card appeared to show how a prefix, root, and suffix fit together. Now it's your turn to say the whole word for someone who is not providing assistance.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_word"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An empty frame just appeared under the clue showing three boxes: prefix, root, and suffix. Give it another try by joining parts from the board in that order!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "part_slots",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An empty frame just appeared under the clue showing three boxes for a prefix, root, and suffix joined together. Give it another try by saying the whole word aloud.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "part_slots",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A frame appeared with three boxes showing the order: prefix, root, and suffix. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "part_slots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A frame appeared showing boxes for a prefix, a root, and a suffix joined together. Try saying the whole word built in that order.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "part_slots",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "unhelpful",
+     "trigger": "The learner said they were stuck, so the host pulled part_slots (help). It is on screen now: Draws an empty frame under the clue: one box per part, labelled only prefix, root or suffix, joined into one word box. It never shows a part, a meaning or a letter. Do not say which parts go in it. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never cal",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "unhelpful (un + help + ful). built out loud part by part counts when the whole word arrives at the end. only \"help\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "unhelpful"
+      ],
+      "ask": "Here is what the word means: What word describes someone who is not providing assistance when you need it? Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look under the clue\u2014there is now a frame showing three boxes for a prefix, a root, and a suffix joined together. What whole word describes someone who is not providing assistance?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under the clue, there is now an empty frame showing three joined boxes: a prefix, a root, and a suffix. What word describes someone who is not providing assistance when you need it?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "An empty frame just appeared under the clue with boxes for a prefix, a root, and a suffix joining into one word. Give it another try by saying the whole word aloud!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "An empty frame is now drawn under the clue with boxes labelled prefix, root, and suffix, joining into one word. What whole word describes someone who is not providing assistance?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under the clue, there is now an empty frame showing three boxes labeled prefix, root, and suffix joining together into one word. What word describes someone who is not providing assistance when you need it?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "unhelpful",
+     "trigger": "unhelpful",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "unhelpful (un + help + ful). built out loud part by part counts when the whole word arrives at the end. only \"help\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "unhelpful"
+      ],
+      "ask": "Here is what the word means: What word describes someone who is not providing assistance when you need it? Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You built the whole word \"unhelpful\" by putting the parts in the right order.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You built it! You put the prefix, root, and suffix together to make the word \"unhelpful\".",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right\u2014the word is unhelpful!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You built the whole word \"unhelpful\" by putting un, help, and ful together.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You built the whole word unhelpful.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "word-builder.greek_latin-3part",
+   "primitiveId": "word-builder",
+   "evalMode": "greek_latin",
+   "keys": [
+    "telescope (tele + scope). built out loud part by part counts when the whole word arrives at the end. only \"scope\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+    "telescope"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "telescope",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "telescope (tele + scope). built out loud part by part counts when the whole word arrives at the end. only \"scope\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "telescope"
+      ],
+      "ask": "Here is what the word means: An optical instrument used to view stars and planets across space. Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Here is what the word means: an optical instrument used to view stars and planets across space. Say the whole word.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is what the word means: an optical instrument used to view stars and planets across space. Say the whole word.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is what the word means: an optical instrument used to view stars and planets across space. Say the whole word!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is what the word means: an optical instrument used to view stars and planets across space. Say the whole word.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is what the word means: an optical instrument used to view stars and planets across space. Say the whole word.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "telescope",
+     "trigger": "scopetele",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "telescope (tele + scope). built out loud part by part counts when the whole word arrives at the end. only \"scope\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "telescope"
+      ],
+      "ask": "Here is what the word means: An optical instrument used to view stars and planets across space. Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the boxes on screen: a prefix box comes first, followed by the root box to make the whole word. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "part_slots",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A frame just appeared showing a prefix box followed by a root box joining into one word. Give the whole word another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "part_slots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the boxes on screen: a prefix box comes first, followed by the root box to make the whole word. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "part_slots",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the screen\u2014an empty frame appeared showing a prefix box followed by a root box. Give the whole word another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "part_slots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under the clue: there is a frame with a box for the prefix and a box for the root. Try building the whole word again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "part_slots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "telescope",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "telescope (tele + scope). built out loud part by part counts when the whole word arrives at the end. only \"scope\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "telescope"
+      ],
+      "ask": "Here is what the word means: An optical instrument used to view stars and planets across space. Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Notice the frame under the clue showing a prefix box joined with a root box into one whole word. Take another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_word",
+          "actionId": "test/2/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "part_slots",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A frame appeared with a box for a prefix followed by a box for a root, joining into one word. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_word",
+          "actionId": "test/2/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "part_slots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A frame has appeared under the clue showing two boxes: a prefix joined to a root. Try putting the prefix first and the root second to say the whole word.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "part_slots",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Under the clue, there is now an empty frame showing a prefix box joined to a root box. Say the whole word that matches the clue.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_word",
+          "actionId": "test/2/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "part_slots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A frame has appeared showing two boxes joined together: a prefix first, and then a root. Give it a try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_word"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "part_slots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "telescope",
+     "trigger": "The learner said they were stuck, so the host pulled part_slots (help). It is on screen now: Draws an empty frame under the clue: one box per part, labelled only prefix, root or suffix, joined into one word box. It never shows a part, a meaning or a letter. Do not say which parts go in it. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never cal",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "telescope (tele + scope). built out loud part by part counts when the whole word arrives at the end. only \"scope\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "telescope"
+      ],
+      "ask": "Here is what the word means: An optical instrument used to view stars and planets across space. Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Under the clue, an empty frame has appeared with a prefix box and a root box joining together into one word box. Take a look at those slots and give the whole word another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under the clue: there is a frame with an empty prefix box joined to an empty root box leading into one word. Give it another try and say the whole word!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under the clue: there is a frame with an empty prefix box joined to a root box. Give building the whole word another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under the clue: there is a frame with an empty prefix box joined to an empty root box leading into one word box. Say the whole word!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "An empty frame has appeared under the clue, showing a prefix box joined with a root box into one word box. What word can you build from the board to match the clue?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "telescope",
+     "trigger": "telescope",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "telescope (tele + scope). built out loud part by part counts when the whole word arrives at the end. only \"scope\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "telescope"
+      ],
+      "ask": "Here is what the word means: An optical instrument used to view stars and planets across space. Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You built the whole word telescope.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You built the word telescope, putting the parts together in the right order!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You built the word telescope! That puts tele and scope together perfectly.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You built the whole word telescope!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You built the whole word telescope by putting tele and scope together.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "word-builder.greek_latin",
+   "primitiveId": "word-builder",
+   "evalMode": "greek_latin",
+   "keys": [
+    "telescope (tele + scope). built out loud part by part counts when the whole word arrives at the end. only \"scope\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+    "telescope"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "telescope",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "telescope (tele + scope). built out loud part by part counts when the whole word arrives at the end. only \"scope\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "telescope"
+      ],
+      "ask": "Here is what the word means: Name an instrument you use to see objects in the night sky. Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Name an instrument you use to see objects in the night sky. What is the whole word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Name an instrument you use to see objects in the night sky. Say the whole word.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is what the word means: name an instrument you use to see objects in the night sky. What is the whole word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is what the word means: name an instrument you use to see objects in the night sky. Say the whole word!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Name an instrument you use to see objects in the night sky. What is the whole word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "telescope",
+     "trigger": "scopetele",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "telescope (tele + scope). built out loud part by part counts when the whole word arrives at the end. only \"scope\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "telescope"
+      ],
+      "ask": "Here is what the word means: Name an instrument you use to see objects in the night sky. Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the frame on the screen: it shows a prefix box followed by a root box. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "part_slots",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the new frame: it shows a prefix box followed by a root box joining into one word. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "part_slots",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "An empty frame appeared showing a prefix box followed by a root box. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "part_slots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A frame appeared showing two boxes joined together: a prefix first, then a root. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "part_slots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A frame appeared below the clue showing a prefix box joined to a root box. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "part_slots",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "telescope",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "telescope (tele + scope). built out loud part by part counts when the whole word arrives at the end. only \"scope\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "telescope"
+      ],
+      "ask": "Here is what the word means: Name an instrument you use to see objects in the night sky. Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A frame just appeared with two boxes showing prefix plus root joining into one word. What whole word fits the clue?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "part_slots",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "",
+       "before": "",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_word"
+         }
+        },
+        {
+         "name": "observe_runtime",
+         "args": {}
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An empty frame appeared showing two boxes joined together: a prefix followed by a root. Give it a try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "part_slots",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "",
+       "before": "",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_word",
+          "actionId": "test/2/0"
+         }
+        },
+        {
+         "name": "observe_runtime",
+         "args": {}
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "",
+       "before": "",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_word",
+          "actionId": "test/2/0"
+         }
+        },
+        {
+         "name": "observe_runtime",
+         "args": {}
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "telescope",
+     "trigger": "The learner said they were stuck, so the host pulled part_slots (help). It is on screen now: Draws an empty frame under the clue: one box per part, labelled only prefix, root or suffix, joined into one word box. It never shows a part, a meaning or a letter. Do not say which parts go in it. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never cal",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "telescope (tele + scope). built out loud part by part counts when the whole word arrives at the end. only \"scope\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "telescope"
+      ],
+      "ask": "Here is what the word means: Name an instrument you use to see objects in the night sky. Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "There is now an empty frame under the clue with a box for a prefix and a box for a root, joined together into one whole word box. What whole word do those parts make for an instrument used to see objects in the night sky?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under the clue: there is a frame with an empty prefix box joined to a root box. What whole word can you make from the board to fit the clue?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "An empty frame is now drawn under the clue with a box for a prefix and a box for a root joining into one word. What whole word do you get?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "An empty frame has appeared under the clue with a box for a prefix and a box for a root joining into one word. What whole word can you make from the board to fit the clue?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "An empty frame has appeared under the clue, showing a box for a prefix and a box for a root joining into one word. What is the whole word you get?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "telescope",
+     "trigger": "telescope",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "telescope (tele + scope). built out loud part by part counts when the whole word arrives at the end. only \"scope\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "telescope"
+      ],
+      "ask": "Here is what the word means: Name an instrument you use to see objects in the night sky. Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You built the whole word telescope.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You built the whole word telescope!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it, you built the word telescope!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You built the whole word telescope.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You built the whole word telescope!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "word-builder.multi_morpheme",
+   "primitiveId": "word-builder",
+   "evalMode": "multi_morpheme",
+   "keys": [
+    "instruction (in + struct + ion). built out loud part by part counts when the whole word arrives at the end. only \"struct\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+    "instruction"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "instruction",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "instruction (in + struct + ion). built out loud part by part counts when the whole word arrives at the end. only \"struct\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "instruction"
+      ],
+      "ask": "Here is what the word means: What word means directions or teaching given to help someone learn? Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "What word means directions or teaching given to help someone learn? Say the whole word!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "What word means directions or teaching given to help someone learn? Say the whole word!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "What word means directions or teaching given to help someone learn? Say the whole word!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "What word means directions or teaching given to help someone learn? Say the whole word!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "What word means directions or teaching given to help someone learn? Say the whole word!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "instruction",
+     "trigger": "ionstructin",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "instruction (in + struct + ion). built out loud part by part counts when the whole word arrives at the end. only \"struct\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "instruction"
+      ],
+      "ask": "Here is what the word means: What word means directions or teaching given to help someone learn? Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the screen: three boxes just appeared showing the order for prefix, root, and suffix. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "part_slots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "An empty frame appeared showing three boxes: prefix, then root, then suffix. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "part_slots",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the screen\u2014three boxes appeared showing a prefix, a root, and a suffix joined together. Try saying the whole word with those parts in order!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "part_slots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You now have three boxes on screen showing the order: prefix, root, and suffix. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "part_slots",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A frame appeared showing boxes for a prefix, a root, and a suffix. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "part_slots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "instruction",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "instruction (in + struct + ion). built out loud part by part counts when the whole word arrives at the end. only \"struct\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "instruction"
+      ],
+      "ask": "Here is what the word means: What word means directions or teaching given to help someone learn? Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A solved example card just appeared on screen showing how a prefix, root, and suffix join together. Give our word another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_word",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A frame just appeared with three boxes: prefix, then root, then suffix. Use that order to say the whole word!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_word"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "part_slots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A solved model card is now on your screen showing how prefix, root, and suffix fit together. Now it's your turn to say the whole word for directions or teaching given to help someone learn!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_word"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the frame on the screen: it shows three boxes joined together for a prefix, a root, and a suffix. What word can you build from the board to fit that clue?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_word"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "part_slots",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An example card just popped up to show how word parts join together. Now give your word another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_word"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "instruction",
+     "trigger": "The learner said they were stuck, so the host pulled part_slots (help). It is on screen now: Draws an empty frame under the clue: one box per part, labelled only prefix, root or suffix, joined into one word box. It never shows a part, a meaning or a letter. Do not say which parts go in it. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never cal",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "instruction (in + struct + ion). built out loud part by part counts when the whole word arrives at the end. only \"struct\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "instruction"
+      ],
+      "ask": "Here is what the word means: What word means directions or teaching given to help someone learn? Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Under the clue, there is now an empty frame showing three boxes: prefix, root, and suffix, joining together into one word box. \n\nWhat whole word means directions or teaching given to help someone learn?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under the clue: there is now a frame showing three boxes labeled prefix, root, and suffix joining together into one word. What whole word means directions or teaching given to help someone learn?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look right under the clue: there is a new frame with three connected boxes labeled prefix, root, and suffix. \n\nWhat whole word means directions or teaching given to help someone learn?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under the clue: there is now a frame of three boxes showing the order\u2014prefix first, then root, then suffix! What whole word does that make?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right below the clue: three empty boxes just appeared, showing a prefix, a root, and a suffix joined into one word box. \n\nWhat word means directions or teaching given to help someone learn? Say the whole word!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "instruction",
+     "trigger": "instruction",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "instruction (in + struct + ion). built out loud part by part counts when the whole word arrives at the end. only \"struct\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "instruction"
+      ],
+      "ask": "Here is what the word means: What word means directions or teaching given to help someone learn? Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You built the whole word \"instruction\" from the prefix, root, and suffix.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You built the whole word instruction!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You built the whole word, instruction!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You built the whole word, instruction!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You built the whole word instruction!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "word-builder.simple_affix",
+   "primitiveId": "word-builder",
+   "evalMode": "simple_affix",
+   "keys": [
+    "replay (re + play). built out loud part by part counts when the whole word arrives at the end. only \"play\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+    "replay"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "replay",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "replay (re + play). built out loud part by part counts when the whole word arrives at the end. only \"play\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "replay"
+      ],
+      "ask": "Here is what the word means: To start a video clip over from the beginning. Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Here is what the word means: to start a video clip over from the beginning. What is the whole word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is what the word means: to start a video clip over from the beginning. What is the whole word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is what the word means: to start a video clip over from the beginning. What is the whole word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is what the word means: to start a video clip over from the beginning. Say the whole word!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is what the word means: to start a video clip over from the beginning. What is the whole word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "replay",
+     "trigger": "playre",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "replay (re + play). built out loud part by part counts when the whole word arrives at the end. only \"play\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "replay"
+      ],
+      "ask": "Here is what the word means: To start a video clip over from the beginning. Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look below the clue: two boxes show a prefix followed by a root. Try building the whole word again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "part_slots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A frame just appeared showing a prefix box joined to a root box. Give the whole word another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "part_slots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look below the clue: two boxes show where the prefix and the root go to make one word. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "part_slots",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the new frame on the screen: it shows a prefix box first, followed by a root box. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "part_slots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the boxes on screen: the prefix comes first, followed by the root. Give the whole word another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "part_slots",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "replay",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "replay (re + play). built out loud part by part counts when the whole word arrives at the end. only \"play\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "replay"
+      ],
+      "ask": "Here is what the word means: To start a video clip over from the beginning. Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the board to find a prefix that means again and a root that means perform, then say them together as one whole word.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_word",
+          "actionId": "test/2/0"
+         }
+        },
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A model card is on the screen to show how a word comes together. Look at the clue to start a video clip over from the beginning, and say the whole word.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_word"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Two empty boxes appeared under the clue to show a prefix comes first, followed by the root. Give the whole word a try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "part_slots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An empty frame has appeared under the clue with two boxes showing prefix first, then root. What whole word can you build to match the clue?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "part_slots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An empty frame appeared under the clue with a box for a prefix joined to a box for a root. Try saying the whole word.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "part_slots",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "replay",
+     "trigger": "The learner said they were stuck, so the host pulled part_slots (help). It is on screen now: Draws an empty frame under the clue: one box per part, labelled only prefix, root or suffix, joined into one word box. It never shows a part, a meaning or a letter. Do not say which parts go in it. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never cal",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "replay (re + play). built out loud part by part counts when the whole word arrives at the end. only \"play\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "replay"
+      ],
+      "ask": "Here is what the word means: To start a video clip over from the beginning. Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "An empty frame just appeared under the clue with a box for a prefix and a box for a root joining together. Give it another try and say the whole word!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under the clue: there is a frame with a prefix box and a root box joining together. Give the whole word a try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under the clue, there is now an empty frame showing a prefix box joined to a root box. Give the whole word a try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under the clue, there is now an empty frame showing two boxes\u2014one for a prefix and one for a root\u2014joining into a whole word. Give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look below the clue: two boxes are drawn showing a prefix joined to a root to make one word. Give the whole word another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "replay",
+     "trigger": "replay",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "replay (re + play). built out loud part by part counts when the whole word arrives at the end. only \"play\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "replay"
+      ],
+      "ask": "Here is what the word means: To start a video clip over from the beginning. Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You built the whole word \"replay\" from the prefix and root.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You built the whole word \"replay\" from the parts on the board.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You built the whole word \"replay.\"",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You built the whole word replay.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right\u2014you built the whole word \"replay\"!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

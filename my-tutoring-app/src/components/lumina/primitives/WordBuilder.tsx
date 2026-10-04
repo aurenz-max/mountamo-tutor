@@ -34,6 +34,10 @@
  * The reveal is gated on `revealHeld` and NOT cleared in `onItemOpened`: a
  * credit that also advances opens the next item in the SAME dispatch, so a
  * payload cleared there paints on the last item and nowhere else (18b).
+ *
+ * ── IN-ITEM LEVERS (`wordBuilderLevers.ts`, lever plan 2026-10-03) ──────────
+ * An empty frame of typed part boxes, a solved model card for another word of the same shape, and an easier
+ * practice word on a small board of its own. None marks a part of the learner's word: in order, those ARE the word.
  */
 
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -63,6 +67,8 @@ import {
   type WordBuilderItem,
 } from './visual-primitives/literacy/wordBuilderScript';
 import { hearClueRequest, wordBuilderAssignment, wordBuilderScene } from './visual-primitives/literacy/wordBuilderWorkspace';
+import { MODEL_LEVER, SLOTS_LEVER, SMALL_BOARD_LEVER, leversOnScreen, modelFor, slotFrame, smallBoardWordFor,
+  startingLevers, wordBuilderLevers, type PracticeWord } from './visual-primitives/literacy/wordBuilderLevers';
 import { useStimulusPipSurface } from '../pip/useStimulusPipSurface';
 import PhaseSummaryPanel, { type PhaseResult } from '../components/PhaseSummaryPanel';
 import { phaseResultsFromSummary } from '../hooks/usePhaseResults';
@@ -184,9 +190,16 @@ function WordBuilderSurface({ data, className, runtimePlanItemId }: WordBuilderP
   //    `revealHeld`, and deliberately NOT cleared when the next item opens. ──
   const [revealed, setRevealed] = useState<WordBuilderItem | null>(null);
 
+  // The board feeds the swapped-part miss; it is the session's one board.
+  const assignment = useCallback((item: WordBuilderItem) => wordBuilderAssignment(item, availableParts), [availableParts]);
+  // In-item levers, keyed by the session word they were pulled on, and the practice word a simplify lever put on
+  // screen in its place (ungraded; the full word comes back after it).
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<PracticeWord | null>(null);
+
   const runner = useWorkspaceRunner<WordBuilderItem>({
     primitiveId: 'word-builder',
-    assignment: wordBuilderAssignment,
+    assignment,
     items,
     workspace,
     objectiveId,
@@ -197,7 +210,14 @@ function WordBuilderSurface({ data, className, runtimePlanItemId }: WordBuilderP
     onAffirmed: setRevealed,
   });
 
-  const currentItem = runner.currentItem;
+  const sessionItem = runner.currentItem;
+  /** What is on screen: the practice word while a simplify lever holds it, else the session word. */
+  const currentItem = practice?.item ?? sessionItem;
+  const board = practice?.board ?? availableParts;
+  const starting = practice ? [] : startingLevers(data.supportTier);
+  const pulledLevers = practice || leverState.item !== sessionItem?.id ? [] : leverState.pulled;
+  const leverOn = (id: string) => starting.includes(id) || pulledLevers.includes(id);
+  const model = sessionItem && !practice && leverOn(MODEL_LEVER) ? modelFor(sessionItem, items, availableParts) : null;
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
   // Pip: the clue is the question side; the word-part wall is what the answer
   // is built from, so Pip points only at the clue.
@@ -209,8 +229,31 @@ function WordBuilderSurface({ data, className, runtimePlanItemId }: WordBuilderP
   // What the tutor and the observer are shown, republished every render.
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
-    if (!currentItem) return;
-    workspace.current = { ...wordBuilderScene(currentItem, availableParts) };
+    if (!currentItem || !sessionItem) return;
+    const levers = practice ? [] : wordBuilderLevers(sessionItem, items, availableParts, pulledLevers, starting);
+    const scene = wordBuilderScene(currentItem, board);
+    const onScreen = practice ? null : leversOnScreen([...starting, ...pulledLevers], sessionItem, items, availableParts);
+    workspace.current = { ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { levers_on_screen: onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice word on a small board of its own, ungraded. The full word comes back after it.' } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: id => {
+        const lever = levers.find(l => l.id === id);
+        if (!lever) return `No lever ${id} on this word.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        if (id === SMALL_BOARD_LEVER) {
+          const simpler = smallBoardWordFor(sessionItem, items, availableParts);
+          if (!simpler) return 'There is no easier word for this item.';
+          setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+          setPractice(simpler);
+          return { practice: wordBuilderAssignment(simpler.item, simpler.board) };
+        }
+        setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+        return true;
+      },
+      endPractice: () => setPractice(null),
+    };
   });
 
   /** Asks the tutor for the clue again: a silent host request, never the word. */
@@ -279,6 +322,45 @@ function WordBuilderSurface({ data, className, runtimePlanItemId }: WordBuilderP
                   Build the word that means
                 </p>
                 <p className="text-slate-100 text-lg font-medium">{currentItem.clue}</p>
+                {practice && <p className="mt-1 text-xs text-amber-300">Practice word</p>}
+              </LuminaPanel>
+            )}
+
+            {/* part_slots: one empty box per part, labelled only with its type, joined into one word box. */}
+            {!practice && leverOn(SLOTS_LEVER) && (
+              <div data-lever="part-slots" className="flex flex-wrap items-end justify-center gap-2">
+                {slotFrame(currentItem).map((type, i) => (
+                  <React.Fragment key={`slot-${i}`}>
+                    {i > 0 && <span className="text-slate-500 text-lg pb-2">+</span>}
+                    <div className="flex flex-col items-center gap-1">
+                      <span className={`text-[10px] font-mono uppercase tracking-widest ${SLOT_LABEL_COLORS[type] ?? 'text-slate-400'}`}>{type}</span>
+                      <div className="h-10 w-20 rounded-lg border border-dashed border-white/25 bg-white/5" />
+                    </div>
+                  </React.Fragment>
+                ))}
+                <span className="text-slate-500 text-lg pb-2">→</span>
+                <div className="h-10 w-28 rounded-lg border border-dashed border-cyan-300/40 bg-cyan-500/5" aria-label="The whole word" />
+              </div>
+            )}
+
+            {/* model_word: a different word of the same shape, solved. Never a part of this word. */}
+            {model && (
+              <LuminaPanel data-lever="model-word" className="p-3 text-center border-cyan-300/20 bg-cyan-950/10">
+                <p className="text-[10px] font-mono uppercase tracking-widest text-cyan-300">Another word</p>
+                <p className="text-sm text-slate-300 mt-1">{model.clue}</p>
+                <div className="flex flex-wrap items-end justify-center gap-2 mt-2">
+                  {model.parts.map(([text, type, meaning], i) => (
+                    <React.Fragment key={`model-${i}`}>
+                      {i > 0 && <span className="text-cyan-400/60 text-lg pb-2">+</span>}
+                      <div className={`rounded-lg border px-3 py-1.5 ${PART_COLORS[type] ?? 'bg-white/5 border-white/10'}`}>
+                        <span className="text-sm font-bold">{text}</span>
+                        <span className="block text-[10px] opacity-70">{meaning}</span>
+                      </div>
+                    </React.Fragment>
+                  ))}
+                  <span className="text-cyan-400/60 text-lg pb-2">=</span>
+                  <span className="text-lg font-black text-cyan-100 pb-1">{model.word}</span>
+                </div>
               </LuminaPanel>
             )}
 
@@ -329,7 +411,7 @@ function WordBuilderSurface({ data, className, runtimePlanItemId }: WordBuilderP
                 Word parts
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                {availableParts.map((part) => (
+                {board.map((part) => (
                   <div
                     key={part.id}
                     className={`rounded-xl border p-2.5 text-center ${

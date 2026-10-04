@@ -1,17 +1,11 @@
 {
- "source": "qa/tutor-reports/word-builder-runtime-simple_affix-payload-2026-09-24.json",
+ "source": "qa/tutor-reports/word-builder-runtime-simple_affix-payload-2026-10-04.json",
  "primitiveId": "word-builder",
  "evalMode": "simple_affix",
  "data": {
-  "title": "Building Everyday Words with Prefixes and Suffixes",
+  "title": "Building Words with Prefixes and Suffixes",
   "complexityLevel": "simple_affix",
   "availableParts": [
-   {
-    "id": "pre-un",
-    "text": "un",
-    "type": "prefix",
-    "meaning": "not"
-   },
    {
     "id": "pre-re",
     "text": "re",
@@ -19,40 +13,16 @@
     "meaning": "again"
    },
    {
-    "id": "pre-pre",
-    "text": "pre",
-    "type": "prefix",
-    "meaning": "before"
-   },
-   {
     "id": "root-play",
     "text": "play",
     "type": "root",
-    "meaning": "have fun"
+    "meaning": "perform"
    },
    {
-    "id": "root-kind",
-    "text": "kind",
+    "id": "root-cheer",
+    "text": "cheer",
     "type": "root",
-    "meaning": "caring"
-   },
-   {
-    "id": "root-teach",
-    "text": "teach",
-    "type": "root",
-    "meaning": "show how"
-   },
-   {
-    "id": "root-start",
-    "text": "start",
-    "type": "root",
-    "meaning": "begin"
-   },
-   {
-    "id": "root-help",
-    "text": "help",
-    "type": "root",
-    "meaning": "assist"
+    "meaning": "good spirits"
    },
    {
     "id": "suf-ful",
@@ -61,10 +31,34 @@
     "meaning": "full of"
    },
    {
+    "id": "pre-un",
+    "text": "un",
+    "type": "prefix",
+    "meaning": "opposite of"
+   },
+   {
+    "id": "root-lock",
+    "text": "lock",
+    "type": "root",
+    "meaning": "fasten"
+   },
+   {
+    "id": "root-paint",
+    "text": "paint",
+    "type": "root",
+    "meaning": "brush pigment"
+   },
+   {
     "id": "suf-er",
     "text": "er",
     "type": "suffix",
-    "meaning": "one who"
+    "meaning": "person who"
+   },
+   {
+    "id": "pre-pre",
+    "text": "pre",
+    "type": "prefix",
+    "meaning": "before"
    },
    {
     "id": "suf-less",
@@ -73,54 +67,60 @@
     "meaning": "without"
    },
    {
-    "id": "suf-ly",
-    "text": "ly",
-    "type": "suffix",
-    "meaning": "in a way"
+    "id": "root-jump",
+    "text": "jump",
+    "type": "root",
+    "meaning": "leap"
+   },
+   {
+    "id": "root-farm",
+    "text": "farm",
+    "type": "root",
+    "meaning": "work land"
    }
   ],
   "targets": [
    {
-    "word": "playful",
-    "parts": [
-     "root-play",
-     "suf-ful"
-    ],
-    "hint": "This describes a puppy that is full of fun and bouncy energy.",
-    "definition": "Full of fun and high spirits.",
-    "sentenceContext": "The ___ puppy chased its tail across the living room rug."
-   },
-   {
-    "word": "unkind",
-    "parts": [
-     "pre-un",
-     "root-kind"
-    ],
-    "hint": "This describes words or actions that are mean and not caring.",
-    "definition": "Not friendly, pleasant, or considerate.",
-    "sentenceContext": "It was ___ to laugh when your classmate dropped her books."
-   },
-   {
-    "word": "teacher",
-    "parts": [
-     "root-teach",
-     "suf-er"
-    ],
-    "hint": "This is a person whose job is helping students learn in school.",
-    "definition": "A person who instructs others in a school.",
-    "sentenceContext": "Our science ___ showed the class how to plant sunflower seeds."
-   },
-   {
-    "word": "restart",
+    "word": "replay",
     "parts": [
      "pre-re",
-     "root-start"
+     "root-play"
     ],
-    "hint": "This is what you do when you turn a tablet off and begin again.",
-    "definition": "To begin something anew after stopping.",
-    "sentenceContext": "The computer froze, so Dad had to ___ the machine to fix it."
+    "hint": "To start a video clip over from the beginning.",
+    "definition": "To run a recording again from the start.",
+    "sentenceContext": "We asked the coach to ___ the clip on the big screen."
+   },
+   {
+    "word": "cheerful",
+    "parts": [
+     "root-cheer",
+     "suf-ful"
+    ],
+    "hint": "Showing bright happiness to everyone in the room.",
+    "definition": "Feeling or showing lively happiness.",
+    "sentenceContext": "The friendly puppy gave a ___ bark when we arrived."
+   },
+   {
+    "word": "unlock",
+    "parts": [
+     "pre-un",
+     "root-lock"
+    ],
+    "hint": "To open a closed door by turning a key.",
+    "definition": "To open something by using a key.",
+    "sentenceContext": "Use the brass key to ___ the front gate."
+   },
+   {
+    "word": "painter",
+    "parts": [
+     "root-paint",
+     "suf-er"
+    ],
+    "hint": "A creator who makes pictures with brushes on canvas.",
+    "definition": "An artist who coats surfaces in pigment.",
+    "sentenceContext": "The skilled ___ covered the tall fence in fresh white."
    }
   ],
-  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+  "gradeLevel": "Grade 3"
  }
 }

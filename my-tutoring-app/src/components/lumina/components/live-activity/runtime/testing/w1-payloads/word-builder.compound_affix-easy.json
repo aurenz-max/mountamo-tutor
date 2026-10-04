@@ -1,0 +1,143 @@
+{
+ "source": "qa/tutor-reports/word-builder-runtime-compound_affix-easy-payload-2026-10-04.json",
+ "primitiveId": "word-builder",
+ "evalMode": "compound_affix",
+ "data": {
+  "title": "Prefix and Suffix Word Builders",
+  "complexityLevel": "compound_affix",
+  "availableParts": [
+   {
+    "id": "pre-re",
+    "text": "re",
+    "type": "prefix",
+    "meaning": "again"
+   },
+   {
+    "id": "pre-un",
+    "text": "un",
+    "type": "prefix",
+    "meaning": "not"
+   },
+   {
+    "id": "pre-dis",
+    "text": "dis",
+    "type": "prefix",
+    "meaning": "opposite of"
+   },
+   {
+    "id": "pre-mis",
+    "text": "mis",
+    "type": "prefix",
+    "meaning": "badly"
+   },
+   {
+    "id": "pre-pre",
+    "text": "pre",
+    "type": "prefix",
+    "meaning": "before"
+   },
+   {
+    "id": "root-play",
+    "text": "play",
+    "type": "root",
+    "meaning": "have fun"
+   },
+   {
+    "id": "root-break",
+    "text": "break",
+    "type": "root",
+    "meaning": "snap apart"
+   },
+   {
+    "id": "root-agree",
+    "text": "agree",
+    "type": "root",
+    "meaning": "share ideas"
+   },
+   {
+    "id": "root-treat",
+    "text": "treat",
+    "type": "root",
+    "meaning": "act toward"
+   },
+   {
+    "id": "root-cheer",
+    "text": "cheer",
+    "type": "root",
+    "meaning": "shout joy"
+   },
+   {
+    "id": "suf-able",
+    "text": "able",
+    "type": "suffix",
+    "meaning": "can be done"
+   },
+   {
+    "id": "suf-ment",
+    "text": "ment",
+    "type": "suffix",
+    "meaning": "state of"
+   },
+   {
+    "id": "suf-less",
+    "text": "less",
+    "type": "suffix",
+    "meaning": "without"
+   },
+   {
+    "id": "suf-ful",
+    "text": "ful",
+    "type": "suffix",
+    "meaning": "full of"
+   }
+  ],
+  "targets": [
+   {
+    "word": "replayable",
+    "parts": [
+     "pre-re",
+     "root-play",
+     "suf-able"
+    ],
+    "hint": "Can be watched or enjoyed again on a screen.",
+    "definition": "Able to be played or run through again.",
+    "sentenceContext": "That exciting video game level was so fun it was completely ___."
+   },
+   {
+    "word": "unbreakable",
+    "parts": [
+     "pre-un",
+     "root-break",
+     "suf-able"
+    ],
+    "hint": "Tough enough that it cannot be smashed or ruined.",
+    "definition": "Not able to be broken or shattered.",
+    "sentenceContext": "The strong plastic cup dropped to the floor because it was ___."
+   },
+   {
+    "word": "disagreement",
+    "parts": [
+     "pre-dis",
+     "root-agree",
+     "suf-ment"
+    ],
+    "hint": "A situation where people have opposite opinions.",
+    "definition": "The state of not agreeing or arguing over ideas.",
+    "sentenceContext": "The two friends had a small ___ about which movie to see."
+   },
+   {
+    "word": "mistreatment",
+    "parts": [
+     "pre-mis",
+     "root-treat",
+     "suf-ment"
+    ],
+    "hint": "Cruel or harmful behavior that hurts a living thing.",
+    "definition": "The action of treating someone or something badly.",
+    "sentenceContext": "Animal shelters work hard to save pets from cruel ___."
+   }
+  ],
+  "gradeLevel": "Grade 4",
+  "supportTier": "easy"
+ }
+}
