@@ -1,0 +1,158 @@
+{
+ "source": "qa/tutor-reports/sentence-analyzer-runtime-identify_role-g6-payload-2026-10-04.json",
+ "primitiveId": "sentence-analyzer",
+ "evalMode": "identify_role",
+ "data": {
+  "title": "Mastering Nouns, Verbs, and Adjectives",
+  "description": "Practice identifying grammatical roles for words in grade-six sentences out loud.",
+  "gradeLevel": "6",
+  "challenges": [
+   {
+    "id": "ch1",
+    "type": "identify_role",
+    "sentence": "Brilliant stars shine brightly.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Brilliant",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "stars",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w2",
+      "text": "shine",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w3",
+      "text": "brightly.",
+      "partOfSpeech": "Adverb",
+      "grammaticalRole": "Modifier"
+     }
+    ],
+    "explanation": "In this sentence, 'stars' is the subject noun doing the action, while 'Brilliant' acts as a modifier describing the stars."
+   },
+   {
+    "id": "ch2",
+    "type": "identify_role",
+    "sentence": "He caught the heavy ball.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "He",
+      "partOfSpeech": "Pronoun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w1",
+      "text": "caught",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w2",
+      "text": "the",
+      "partOfSpeech": "Determiner",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w3",
+      "text": "heavy",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w4",
+      "text": "ball.",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Direct Object"
+     }
+    ],
+    "explanation": "The word 'He' is the pronoun subject, 'caught' is the verb predicate, and 'ball' is the direct object receiving the action."
+   },
+   {
+    "id": "ch3",
+    "type": "identify_role",
+    "sentence": "Curious cats chase small mice.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Curious",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "cats",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w2",
+      "text": "chase",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w3",
+      "text": "small",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w4",
+      "text": "mice.",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Direct Object"
+     }
+    ],
+    "explanation": "Here, 'cats' is the subject noun, 'chase' is the verb predicate, and 'mice' functions as the direct object noun."
+   },
+   {
+    "id": "ch4",
+    "type": "identify_role",
+    "sentence": "Cold wind blew through trees.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Cold",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "wind",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w2",
+      "text": "blew",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w3",
+      "text": "through",
+      "partOfSpeech": "Preposition",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w4",
+      "text": "trees.",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Object of Preposition"
+     }
+    ],
+    "explanation": "The word 'wind' is the noun subject, 'blew' is the verb predicate, and 'trees' is the object of the preposition 'through'."
+   }
+  ]
+ }
+}

@@ -1,0 +1,165 @@
+{
+ "source": "qa/tutor-reports/sentence-analyzer-runtime-identify_pos-easy-payload-2026-10-04.json",
+ "primitiveId": "sentence-analyzer",
+ "evalMode": "identify_pos",
+ "data": {
+  "title": "Nouns, Verbs, and Adjectives Word Workout",
+  "description": "Practice identifying parts of speech in short sentences aloud.",
+  "gradeLevel": "4",
+  "challenges": [
+   {
+    "id": "ch1",
+    "type": "identify_pos",
+    "sentence": "Four green frogs leaped.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Four",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "green",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w2",
+      "text": "frogs",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w3",
+      "text": "leaped.",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     }
+    ],
+    "explanation": "The word frogs is a noun because it names an animal. Leaped is a verb because it is the action they did."
+   },
+   {
+    "id": "ch2",
+    "type": "identify_pos",
+    "sentence": "She baked delicious cookies.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "She",
+      "partOfSpeech": "Pronoun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w1",
+      "text": "baked",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w2",
+      "text": "delicious",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w3",
+      "text": "cookies.",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Direct Object"
+     }
+    ],
+    "explanation": "Delicious describes the cookies, so it is an adjective. Cookies is a noun acting as the direct object receiving the action."
+   },
+   {
+    "id": "ch3",
+    "type": "identify_pos",
+    "sentence": "The happy dog and the small cat played.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "The",
+      "partOfSpeech": "Determiner",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "happy",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w2",
+      "text": "dog",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w3",
+      "text": "and",
+      "partOfSpeech": "Conjunction",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w4",
+      "text": "the",
+      "partOfSpeech": "Determiner",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w5",
+      "text": "small",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w6",
+      "text": "cat",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w7",
+      "text": "played.",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     }
+    ],
+    "explanation": "The word and is a conjunction connecting two nouns to form a compound subject. Happy and small are adjectives describing the animals."
+   },
+   {
+    "id": "ch4",
+    "type": "identify_pos",
+    "sentence": "Bright stars shine brightly.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Bright",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "stars",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w2",
+      "text": "shine",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w3",
+      "text": "brightly.",
+      "partOfSpeech": "Adverb",
+      "grammaticalRole": "Modifier"
+     }
+    ],
+    "explanation": "Bright is an adjective describing the stars, while brightly is an adverb describing how they shine."
+   }
+  ],
+  "supportTier": "easy"
+ }
+}

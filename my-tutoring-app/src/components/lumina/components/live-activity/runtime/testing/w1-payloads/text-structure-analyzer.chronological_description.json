@@ -1,11 +1,11 @@
 {
- "source": "qa/tutor-reports/text-structure-analyzer-runtime-chronological_description-payload-2026-09-26.json",
+ "source": "qa/tutor-reports/text-structure-analyzer-runtime-chronological_description-payload-2026-10-04.json",
  "primitiveId": "text-structure-analyzer",
  "evalMode": "chronological_description",
  "data": {
-  "title": "How a Seed Grows",
+  "title": "Tracing the Steps of a River Overflow",
   "gradeLevel": "4",
-  "passage": "First, a tiny seed is planted in the dark soil. Next, the warm rain makes the ground wet. After that, a little green shoot pushes up into the bright sun. Later, green leaves open wide to catch the golden light. Finally, tall stems reach high toward the sky.",
+  "passage": "First, heavy rains pour down onto the mountain slopes. Next, the small streams fill up with rushing water. After, the water level rises higher than the grassy banks. Finally, the muddy water spills across nearby streets and yards.",
   "structureType": "chronological",
   "signalWords": [
    {
@@ -15,87 +15,73 @@
    },
    {
     "word": "Next",
-    "startIndex": 48,
-    "endIndex": 52
+    "startIndex": 55,
+    "endIndex": 59
    },
    {
     "word": "After",
-    "startIndex": 90,
-    "endIndex": 95
-   },
-   {
-    "word": "Later",
-    "startIndex": 154,
-    "endIndex": 159
+    "startIndex": 107,
+    "endIndex": 112
    },
    {
     "word": "Finally",
-    "startIndex": 211,
-    "endIndex": 218
+    "startIndex": 166,
+    "endIndex": 173
    }
   ],
   "structureOptions": [
    {
     "type": "chronological",
     "label": "Time Order",
-    "description": "Tells events in the order they happen from start to finish"
+    "description": "Tells events in the order they happen"
    },
    {
     "type": "description",
     "label": "Description",
-    "description": "Tells about a topic by giving facts and details"
+    "description": "Shares details about a topic"
    },
    {
     "type": "cause-effect",
     "label": "Cause and Effect",
-    "description": "Explains why something happened and what happened as a result"
-   },
-   {
-    "type": "compare-contrast",
-    "label": "Compare and Contrast",
-    "description": "Shows how things are alike and how they are different"
+    "description": "Shows why something happens and what happens"
    }
   ],
   "templateRegions": [
    {
-    "regionId": "step1",
-    "label": "Before"
+    "regionId": "beginning",
+    "label": "Beginning"
    },
    {
-    "regionId": "step2",
+    "regionId": "middle",
     "label": "Middle"
    },
    {
-    "regionId": "step3",
-    "label": "After"
+    "regionId": "end",
+    "label": "End"
    }
   ],
   "keyIdeas": [
    {
     "ideaId": "idea1",
-    "text": "A tiny seed is placed deep in the dark soil.",
-    "correctRegionId": "step1"
+    "text": "heavy rains pour down onto the mountain slopes",
+    "correctRegionId": "beginning"
    },
    {
     "ideaId": "idea2",
-    "text": "Warm rain makes the dry ground very wet.",
-    "correctRegionId": "step1"
+    "text": "the small streams fill up with rushing water",
+    "correctRegionId": "middle"
    },
    {
     "ideaId": "idea3",
-    "text": "A little green shoot pushes up toward the sun.",
-    "correctRegionId": "step2"
+    "text": "the water level rises higher than the grassy banks",
+    "correctRegionId": "middle"
    },
    {
     "ideaId": "idea4",
-    "text": "Green leaves open wide to catch the golden light.",
-    "correctRegionId": "step2"
-   },
-   {
-    "ideaId": "idea5",
-    "text": "Tall stems reach high toward the open sky.",
-    "correctRegionId": "step3"
+    "text": "the muddy water spills across nearby streets",
+    "correctRegionId": "end"
    }
-  ]
+  ],
+  "authorPurposeExplanation": "The author used chronological structure to show the clear steps of how an overflowing river develops over time."
  }
 }

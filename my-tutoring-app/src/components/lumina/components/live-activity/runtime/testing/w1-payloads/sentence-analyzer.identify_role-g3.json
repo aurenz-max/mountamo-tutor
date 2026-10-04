@@ -1,0 +1,134 @@
+{
+ "source": "qa/tutor-reports/sentence-analyzer-runtime-identify_role-g3-payload-2026-10-04.json",
+ "primitiveId": "sentence-analyzer",
+ "evalMode": "identify_role",
+ "data": {
+  "title": "Fun Word Jobs",
+  "description": "Practice finding subjects, predicates, and modifiers in short sentences.",
+  "gradeLevel": "3",
+  "challenges": [
+   {
+    "id": "ch1",
+    "type": "identify_role",
+    "sentence": "Bright stars shine tonight.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Bright",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "stars",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w2",
+      "text": "shine",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w3",
+      "text": "tonight.",
+      "partOfSpeech": "Adverb",
+      "grammaticalRole": "Modifier"
+     }
+    ],
+    "explanation": "The word stars is the subject because it is what the sentence is about. The word shine is the predicate because it tells what the stars are doing."
+   },
+   {
+    "id": "ch2",
+    "type": "identify_role",
+    "sentence": "She painted happily.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "She",
+      "partOfSpeech": "Pronoun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w1",
+      "text": "painted",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w2",
+      "text": "happily.",
+      "partOfSpeech": "Adverb",
+      "grammaticalRole": "Modifier"
+     }
+    ],
+    "explanation": "The word She is a pronoun acting as the subject. The word painted is the verb acting as the predicate."
+   },
+   {
+    "id": "ch3",
+    "type": "identify_role",
+    "sentence": "Cold wind blows hard.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Cold",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "wind",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w2",
+      "text": "blows",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w3",
+      "text": "hard.",
+      "partOfSpeech": "Adverb",
+      "grammaticalRole": "Modifier"
+     }
+    ],
+    "explanation": "Cold describes wind, making it a modifier. The word wind is the subject noun that performs the action."
+   },
+   {
+    "id": "ch4",
+    "type": "identify_role",
+    "sentence": "Little frogs leap far.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Little",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "frogs",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w2",
+      "text": "leap",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w3",
+      "text": "far.",
+      "partOfSpeech": "Adverb",
+      "grammaticalRole": "Modifier"
+     }
+    ],
+    "explanation": "Frogs is the subject noun doing the leaping. Leap is the verb acting as the predicate."
+   }
+  ]
+ }
+}

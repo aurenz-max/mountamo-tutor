@@ -284,6 +284,14 @@ export const BINARY_BUCKET: Partial<Record<GenreId, 'fiction' | 'nonfiction'>> =
   persuasive: 'nonfiction',
 };
 
+/**
+ * Words that say fiction or nonfiction outright ("tell a made-up story from someone's imagination", "give facts you
+ * could look up"). On identify_basic a feature built from them restates the answer instead of pointing at the words
+ * of the text (lever plan 2026-10-03 step 0, genre-explorer F1). Word-bounded, case-folded.
+ */
+const BINARY_RESTATE = /\b(made[- ]up|make[- ]believe|imagin\w*|pretend\w*|not real|real|true|facts?|fiction\w*|nonfiction\w*)\b/i;
+export const restatesBinaryGenre = (predicate: string): boolean => BINARY_RESTATE.test(predicate);
+
 export const binaryBucketOf = (genre: GenreId | null): GenreId | null =>
   genre ? (BINARY_BUCKET[genre] ?? null) : null;
 
@@ -856,6 +864,8 @@ export const itemsFromPayload = (payload: GenreExplorerPayloadLike): GenreBuildR
       if (!feature.featureId || !isSayablePredicate(feature.predicate)) return false;
       // ⚠️ A predicate that names a genre asks the genre question early.
       if (namesAGenre(feature.predicate)) return false;
+      // On the binary mode a feature that restates fiction or nonfiction IS the genre verdict in other words.
+      if (binaryMode && restatesBinaryGenre(feature.predicate)) return false;
       // An unresolvable excerptId means we do not know which text it is true of.
       // KEEP-OR-DROP: a guessed `false` here is a spoken ask with a wrong answer.
       return feature.presentIn.every((id) => excerptById.has(id));

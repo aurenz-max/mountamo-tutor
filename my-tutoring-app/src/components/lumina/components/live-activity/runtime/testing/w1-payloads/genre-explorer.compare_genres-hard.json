@@ -1,0 +1,73 @@
+{
+ "source": "qa/tutor-reports/genre-explorer-runtime-compare_genres-hard-payload-2026-10-04.json",
+ "primitiveId": "genre-explorer",
+ "evalMode": "compare_genres",
+ "data": {
+  "title": "Sun and Sky",
+  "gradeLevel": "3",
+  "excerpts": [
+   {
+    "excerptId": "e1",
+    "text": "Long ago, the glowing sky spirit drove a chariot of fire across the clouds. The people below sang hymns to thank the warm light for waking the crops. They believed the spirit grew tired at dusk and rested beneath the western mountains.",
+    "genre": "myth"
+   },
+   {
+    "excerptId": "e2",
+    "text": "The Sun is a giant ball of hot gas located at the center of our solar system. It measures about 865,000 miles wide and provides the heat needed for plants to grow. Light from the sun takes about eight minutes to reach Earth.",
+    "genre": "informational"
+   }
+  ],
+  "features": [
+   {
+    "featureId": "f1",
+    "predicate": "tell about a glowing sky spirit",
+    "presentIn": [
+     "e1"
+    ]
+   },
+   {
+    "featureId": "f2",
+    "predicate": "drive a chariot of fire",
+    "presentIn": [
+     "e1"
+    ]
+   },
+   {
+    "featureId": "f3",
+    "predicate": "give numbers and measurements",
+    "presentIn": [
+     "e2"
+    ]
+   },
+   {
+    "featureId": "f4",
+    "predicate": "describe a ball of hot gas",
+    "presentIn": [
+     "e2"
+    ]
+   },
+   {
+    "featureId": "f5",
+    "predicate": "mention plants needing light",
+    "presentIn": [
+     "e1",
+     "e2"
+    ]
+   },
+   {
+    "featureId": "f6",
+    "predicate": "use rhyme",
+    "presentIn": []
+   }
+  ],
+  "genreOptions": [
+   "myth",
+   "informational",
+   "folktale",
+   "fable",
+   "poem"
+  ],
+  "mode": "compare_genres",
+  "supportTier": "hard"
+ }
+}

@@ -1,0 +1,48 @@
+{
+ "source": "qa/tutor-reports/genre-explorer-runtime-identify_basic-g1-payload-2026-10-04.json",
+ "primitiveId": "genre-explorer",
+ "evalMode": "identify_basic",
+ "data": {
+  "title": "Animals and Facts",
+  "gradeLevel": "1",
+  "excerpts": [
+   {
+    "excerptId": "e1",
+    "text": "The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them.",
+    "genre": "fiction"
+   },
+   {
+    "excerptId": "e2",
+    "text": "Elephants live in hot places. They use their long trunks to drink water and pull leaves off tall trees.",
+    "genre": "nonfiction"
+   }
+  ],
+  "features": [
+   {
+    "featureId": "talking-animals",
+    "predicate": "have an animal that speaks",
+    "presentIn": [
+     "e1"
+    ]
+   },
+   {
+    "featureId": "real-animals",
+    "predicate": "tell about what animals do in nature",
+    "presentIn": [
+     "e2"
+    ]
+   },
+   {
+    "featureId": "rhyme",
+    "predicate": "use words that rhyme",
+    "presentIn": []
+   }
+  ],
+  "genreOptions": [
+   "fiction",
+   "nonfiction"
+  ],
+  "mode": "identify_basic",
+  "objectiveGrade": "1"
+ }
+}

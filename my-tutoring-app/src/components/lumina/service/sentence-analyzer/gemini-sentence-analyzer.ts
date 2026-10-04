@@ -464,6 +464,12 @@ HARD RULES — a challenge that breaks one is thrown away:
 - Every word MUST have an accurate part of speech AND an accurate job.
 - Do NOT make punctuation a separate word — attach it to the word before it.
 - Sentences should be about "${topic}".
+- No number words (one, two, three...): programs disagree on whether they are adjectives or determiners.
+- A Preposition always has its object after it ("under the bridge"). "down" in "Water flows down quickly." has no
+  object, so it is an Adverb. Object of Preposition only follows a preposition.
+- VARY THE SHAPES. No two sentences may follow the same word pattern (not every sentence "The big dog ran fast.").
+  Use a pronoun or a conjunction in at least one sentence. parse_structure sets use at least TWO different sentence
+  kinds (a question, a command or an exclamation beside statements).
 ${!evalConstraint ? '- Vary challenge types across the set — include at least 2 different types\n' : ''}${tier ? `\n${TIER_GUARDRAIL}\n` : ''}
 EXAMPLE (parse_structure):
 {

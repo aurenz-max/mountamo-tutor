@@ -555,6 +555,25 @@ const pickSpread = <T>(
   return kept;
 };
 
+const NUMBER_WORDS = new Set(['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
+  'eleven', 'twelve', 'twenty', 'hundred']);
+const bare = (text: string) => text.toLowerCase().replace(/[^a-z']/g, '');
+
+/**
+ * Labels the generator keys wrong often enough that a child saying the right label is refused (lever plan
+ * 2026-10-03 step 0, sentence-analyzer D1-D3). The word stays in the sentence, unasked; its label is cleared:
+ * - a Preposition with no Noun or Pronoun after it ("flows down quickly": "down" is an adverb there);
+ * - an Object of Preposition with no Preposition before it ("shine every night");
+ * - a number word's part of speech ("Three" is taught as an adjective in some programs and a determiner in others).
+ */
+export const unaskableKeys = (words: Array<{ text: string; pos: PosLabel | null; role: RoleLabel | null }>): void => {
+  words.forEach((word, i) => {
+    if (word.pos === 'Preposition' && !words.slice(i + 1).some(w => w.pos === 'Noun' || w.pos === 'Pronoun')) word.pos = null;
+    if (word.role === 'Object of Preposition' && !words.slice(0, i).some(w => w.pos === 'Preposition')) word.role = null;
+    if (NUMBER_WORDS.has(bare(word.text))) word.pos = null;
+  });
+};
+
 /**
  * Every judged item this payload can ask, in the order a DI sitting runs them.
  *
@@ -599,6 +618,7 @@ export const itemsFromPayload = (
       role: canonicalRole(word?.grammaticalRole),
     })).filter((word) => !!word.text);
     if (words.length === 0) { dropped += 1; return; }
+    unaskableKeys(words);
 
     const end = challenge.subjectEndIndex;
     // Both halves must be non-empty for the boundary to be a real question, and

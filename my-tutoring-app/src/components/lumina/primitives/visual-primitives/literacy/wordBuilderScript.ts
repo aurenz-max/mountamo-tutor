@@ -243,6 +243,27 @@ export const spokenSentenceFrom = (sentence: string): string =>
   sentence.replace(/_{2,}/g, 'hmm').replace(/\s{2,}/g, ' ').trim();
 
 /**
+ * A clue that names a board ROOT the word does not use invites a defensible board-built wrong answer: "a person
+ * whose job is helping students learn" (teacher) with `help` and `er` on the board makes "helper"; "life on Earth"
+ * (biosphere) with `geo` = "earth" on the board makes "geosphere". The clue may not contain, at a word start, the
+ * text of a root that is not in the item, nor (as a whole word) a one-word meaning of 4+ letters printed beside such
+ * a root (2026-10-03 lever plan step 0, word-builder F1/F2).
+ */
+export const clueInvitesOtherPart = (clue: string, itemPartIds: readonly string[], pool: readonly WordPartLike[]): boolean => {
+  const words: string[] = norm(clue).match(/[a-z]+/g) ?? [];
+  const inItem = new Set(itemPartIds);
+  const itemTexts = new Set(pool.filter(p => inItem.has(p.id)).map(p => norm(p.text)));
+  return pool.some((p) => {
+    if (p.type !== 'root' || inItem.has(p.id)) return false;
+    const text = norm(p.text);
+    if (itemTexts.has(text)) return false;
+    const meaning = norm(p.meaning ?? '').replace(/[.;,]+$/, '');
+    if (text.length >= 3 && words.some(w => w.startsWith(text))) return true;
+    return /^[a-z]{4,}$/.test(meaning) && words.includes(meaning);
+  });
+};
+
+/**
  * One judged item, or null when the target cannot be ASKED. Nothing here
  * backfills: a placeholder in a judged loop becomes a spoken ask the tutor must
  * stand behind, so a broken target is dropped and the session runs shorter.
@@ -302,6 +323,7 @@ export const itemFromTarget = (
   if (!isSayableProse(clue, MAX_CLUE_CHARS)) return null;
   if (norm(clue).includes(norm(word))) return null;
   if (opensWithSentinel(clue)) return null;
+  if (clueInvitesOtherPart(clue, ids, pool)) return null;
 
   const definition = (target?.definition ?? '').trim();
 

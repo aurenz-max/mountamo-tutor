@@ -24,7 +24,9 @@ import {
  */
 import {
   isSayableLabel,
+  isStructureType,
   locateSignalWords,
+  passageNamesStructure,
   MIN_STRUCTURE_OPTIONS_EASY,
   opensWithSentinel,
   optionsEarSeparable,
@@ -47,7 +49,7 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   'compare-contrast': {
     promptDoc:
       `"compare-contrast": Analyze similarities and differences in text. `
-      + `The passage should use signal words like "however", "similarly", "in contrast", "on the other hand", "both". `
+      + `The passage should use signal words like "however", "similarly", "but", "on the other hand", "both". `
       // ⚠️ NOT "Item A / Item B" — the child SAYS the region name, and said out
       // loud those two are indistinguishable (the ear-separability gate drops
       // them, which would silently delete the placement step on every
@@ -58,7 +60,7 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   'problem-solution': {
     promptDoc:
       `"problem-solution": Identify the problem and proposed solutions in text. `
-      + `The passage should use signal words like "the problem is", "one solution", "as a result", "to fix this". `
+      + `The passage should use signal words like "to fix this", "solved by", "so", "as a result". `
       + `Template regions: Problem / Solution(s). Key ideas map to problem or solution regions.`,
     schemaDescription: "'problem-solution' (identify problem and proposed solutions, β 3.5)",
   },
@@ -641,23 +643,35 @@ C. ⭐ **A key idea may NEVER contain the name of the region it belongs to.** "T
    Rewrite the excerpt so it states the content without naming its own region.
 D. **Never begin any excerpt, label, title or description with "Yes" or with "My turn"** — those
    two openers are reserved verdict signals in the spoken session.
+E. ⭐ **THE PASSAGE NEVER PRINTS ITS OWN STRUCTURE'S NAME.** No "problem" or "solution" in a
+   problem-solution passage, no "cause" or "effect" in a cause-effect passage, no "compare" or
+   "contrast" in a compare-contrast passage, no "describe" in a description passage. The child
+   names the structure from a printed menu; a passage that says "The problem is" answers it by
+   word matching, and the question is dropped.
+F. **Every key idea has ONE defensible region.** Cause-effect: one cause and its effects (or one
+   effect and its causes), never a chain where an effect becomes the next cause, and no sentence
+   about fixing the problem. Chronological: regions Beginning / Middle / End over at most three
+   clear stages; never name a region with a word the passage uses as a signal ("After", "Before",
+   "Next"), and an idea from a sentence that opens "After that" belongs to the region a child
+   reading the passage would pick.
 
 Rules:
 1. Write an informational passage using ONE primary structure from the available list
 2. Embed signal words naturally — include the word field with the exact text as it appears in the passage. Do NOT worry about startIndex/endIndex accuracy — they will be recomputed automatically. Every signal word must appear in a DIFFERENT sentence (rule A).
 3. structureOptions: always provide 3-4 options including the correct one plus plausible distractors from the available structures list. Write the kid-friendly description for each; the LABEL is set by the application, so do not worry about its exact wording.
-4. templateRegions: create regions matching the chosen structure (e.g. Cause/Effect for cause-effect, Before/After for chronological), under rule B
+4. templateRegions: create regions matching the chosen structure (e.g. Cause/Effect for cause-effect, Beginning/Middle/End for chronological), under rules B and F
 5. keyIdeas: short excerpts from the passage (14 words or fewer) that the tutor reads aloud, under rule C
 6. CRITICAL — Signal words must ONLY be words that belong to the chosen structure type. Do NOT include signal words from other structure types:
    - cause-effect ONLY: "because", "so", "as a result", "therefore", "since", "due to", "consequently", "leads to"
-   - compare-contrast ONLY: "however", "similarly", "in contrast", "on the other hand", "both", "alike", "different", "whereas", "unlike"
-   - problem-solution ONLY: "the problem is", "one solution", "to fix this", "as a result", "solved by", "the challenge"
+   - compare-contrast ONLY: "however", "similarly", "but", "on the other hand", "both", "alike", "different", "whereas", "unlike"
+   - problem-solution ONLY: "to fix this", "as a result", "solved by", "so", "instead"
    - chronological ONLY: "first", "then", "next", "finally", "after", "before", "later", "meanwhile", "during"
    - description ONLY: "for example", "such as", "includes", "characteristics", "features", "specifically"
 7. Include authorPurposeExplanation for grades 5-6`;
 
   try {
-    const response = await ai.models.generateContent({
+    // R6: a passage that prints its own structure's name loses the structure ask, so it is drawn once more.
+    const draw = () => ai.models.generateContent({
       model: 'gemini-flash-lite-latest',
       contents: prompt,
       config: {
@@ -676,9 +690,15 @@ Rules:
         systemInstruction: 'You are an expert K-6 reading comprehension instructor specializing in informational text structure analysis. You create grade-appropriate passages with clear organizational patterns and embedded signal words. This activity is SPOKEN and live-judged: the student reads the passage and says every answer out loud, so each sentence carries at most one connecting word, region labels are plain words a child can say and tell apart by ear, and a key idea never contains the name of the region it belongs to.',
       }
     });
-    const text = response.text;
-    if (!text) throw new Error("No data returned from Gemini API");
-    const result = JSON.parse(text) as TextStructureAnalyzerData;
+    let response = await draw();
+    let parsed = response.text ? JSON.parse(response.text) as TextStructureAnalyzerData : null;
+    if (parsed && isStructureType(parsed.structureType) && passageNamesStructure(parsed.passage ?? '', parsed.structureType)) {
+      console.log('[text-structure-analyzer] passage printed the name of its structure (R6); drawing again');
+      response = await draw();
+      parsed = response.text ? JSON.parse(response.text) as TextStructureAnalyzerData : parsed;
+    }
+    if (!parsed) throw new Error("No data returned from Gemini API");
+    const result = parsed;
 
     // SP-8: Recompute signal word offsets — LLMs cannot count characters reliably
     if (result.passage && result.signalWords) {

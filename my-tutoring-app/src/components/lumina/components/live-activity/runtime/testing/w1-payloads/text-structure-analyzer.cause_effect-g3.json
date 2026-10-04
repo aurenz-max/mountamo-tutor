@@ -1,0 +1,84 @@
+{
+ "source": "qa/tutor-reports/text-structure-analyzer-runtime-cause_effect-g3-payload-2026-10-04.json",
+ "primitiveId": "text-structure-analyzer",
+ "evalMode": "cause_effect",
+ "data": {
+  "title": "Why Rivers Flood",
+  "gradeLevel": "3",
+  "passage": "Heavy rains fall on the high mountains for many days. Rivers fill up with rushing water because the ground gets too wet to hold any more. The banks overflow onto nearby fields. People must move to higher ground so they stay safe. Mud covers the roads as a result of the rising water.",
+  "structureType": "cause-effect",
+  "signalWords": [
+   {
+    "word": "because",
+    "startIndex": 88,
+    "endIndex": 95
+   },
+   {
+    "word": "so",
+    "startIndex": 211,
+    "endIndex": 213
+   },
+   {
+    "word": "as a result",
+    "startIndex": 251,
+    "endIndex": 262
+   }
+  ],
+  "structureOptions": [
+   {
+    "type": "cause-effect",
+    "label": "Cause and Effect",
+    "description": "Explains why things happen and what happens next"
+   },
+   {
+    "type": "chronological",
+    "label": "Time Order",
+    "description": "Tells events in the order that they happen"
+   },
+   {
+    "type": "description",
+    "label": "Description",
+    "description": "Shares details and facts about a topic"
+   }
+  ],
+  "templateRegions": [
+   {
+    "regionId": "region_cause",
+    "label": "Cause"
+   },
+   {
+    "regionId": "region_effect",
+    "label": "Effect"
+   }
+  ],
+  "keyIdeas": [
+   {
+    "ideaId": "idea_1",
+    "text": "Heavy rains fall on the high mountains",
+    "correctRegionId": "region_cause"
+   },
+   {
+    "ideaId": "idea_2",
+    "text": "The ground gets too wet",
+    "correctRegionId": "region_cause"
+   },
+   {
+    "ideaId": "idea_3",
+    "text": "The banks overflow onto nearby fields",
+    "correctRegionId": "region_effect"
+   },
+   {
+    "ideaId": "idea_4",
+    "text": "People must move to higher ground",
+    "correctRegionId": "region_effect"
+   },
+   {
+    "ideaId": "idea_5",
+    "text": "Mud covers the roads",
+    "correctRegionId": "region_effect"
+   }
+  ],
+  "authorPurposeExplanation": "The author used a cause-effect structure to help readers understand the specific reasons why rivers overflow and what happens when they do.",
+  "objectiveGrade": "3"
+ }
+}

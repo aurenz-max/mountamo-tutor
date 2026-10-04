@@ -1,0 +1,95 @@
+{
+ "source": "qa/tutor-reports/text-structure-analyzer-runtime-problem_solution-hard-payload-2026-10-04.json",
+ "primitiveId": "text-structure-analyzer",
+ "evalMode": "problem_solution",
+ "data": {
+  "title": "Rising Waters",
+  "gradeLevel": "4",
+  "passage": "Heavy rains fill mountain streams with rushing water very fast. To fix this, workers build high concrete walls along the riverbanks. Melting snow adds massive weight to the river channels. Instead, engineers create wide overflow basins to catch extra water safely. Constant heavy downpours overwhelm standard drainage systems completely. As a result, towns install giant pumps to push water away from homes.",
+  "structureType": "problem-solution",
+  "signalWords": [
+   {
+    "word": "To fix this",
+    "startIndex": 64,
+    "endIndex": 75
+   },
+   {
+    "word": "Instead",
+    "startIndex": 189,
+    "endIndex": 196
+   },
+   {
+    "word": "As a result",
+    "startIndex": 338,
+    "endIndex": 349
+   }
+  ],
+  "structureOptions": [
+   {
+    "type": "cause-effect",
+    "label": "Cause and Effect",
+    "description": "Explains why events happen and what happens because of them"
+   },
+   {
+    "type": "problem-solution",
+    "label": "Problem and Solution",
+    "description": "Shows a trouble and tells how people fix it"
+   },
+   {
+    "type": "compare-contrast",
+    "label": "Compare and Contrast",
+    "description": "Tells how things are alike and different"
+   },
+   {
+    "type": "chronological",
+    "label": "Time Order",
+    "description": "Explains events in the order they happen"
+   }
+  ],
+  "templateRegions": [
+   {
+    "regionId": "region1",
+    "label": "Trouble"
+   },
+   {
+    "regionId": "region2",
+    "label": "Fix"
+   }
+  ],
+  "keyIdeas": [
+   {
+    "ideaId": "idea1",
+    "text": "Heavy rains fill mountain streams with rushing water very fast",
+    "correctRegionId": "region1"
+   },
+   {
+    "ideaId": "idea2",
+    "text": "Workers build high concrete walls along the riverbanks",
+    "correctRegionId": "region2"
+   },
+   {
+    "ideaId": "idea3",
+    "text": "Melting snow adds massive weight to the river channels",
+    "correctRegionId": "region1"
+   },
+   {
+    "ideaId": "idea4",
+    "text": "Engineers create wide overflow basins to catch extra water safely",
+    "correctRegionId": "region2"
+   },
+   {
+    "ideaId": "idea5",
+    "text": "Constant heavy downpours overwhelm standard drainage systems completely",
+    "correctRegionId": "region1"
+   },
+   {
+    "ideaId": "idea6",
+    "text": "Towns install giant pumps to push water away from homes",
+    "correctRegionId": "region2"
+   }
+  ],
+  "authorPurposeExplanation": "The author used a problem-solution structure to help readers understand the specific troubles caused by high water and the clever methods humans use to keep dry.",
+  "nameStrategy": false,
+  "supportTier": "hard"
+ }
+}

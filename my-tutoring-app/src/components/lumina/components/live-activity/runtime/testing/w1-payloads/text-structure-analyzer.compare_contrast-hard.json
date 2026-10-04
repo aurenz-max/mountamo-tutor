@@ -1,0 +1,99 @@
+{
+ "source": "qa/tutor-reports/text-structure-analyzer-runtime-compare_contrast-hard-payload-2026-10-04.json",
+ "primitiveId": "text-structure-analyzer",
+ "evalMode": "compare_contrast",
+ "data": {
+  "title": "Rivers and Coastlines",
+  "gradeLevel": "4",
+  "passage": "Rainwater can fill rivers until water spills over the grassy banks. Similarly, ocean waves can rise high and flood sandy shores. However, a river flood happens much faster after a heavy storm. An ocean flood moves more slowly with the shifting tides. Both events can water the surrounding fields and bring rich soil. Unlike river floods, ocean floods leave behind salty water in the soil.",
+  "structureType": "compare-contrast",
+  "signalWords": [
+   {
+    "word": "Similarly",
+    "startIndex": 68,
+    "endIndex": 77
+   },
+   {
+    "word": "However",
+    "startIndex": 129,
+    "endIndex": 136
+   },
+   {
+    "word": "Both",
+    "startIndex": 251,
+    "endIndex": 255
+   },
+   {
+    "word": "Unlike",
+    "startIndex": 317,
+    "endIndex": 323
+   }
+  ],
+  "structureOptions": [
+   {
+    "type": "compare-contrast",
+    "label": "Compare and Contrast",
+    "description": "Shows how two things are alike and different."
+   },
+   {
+    "type": "description",
+    "label": "Description",
+    "description": "Details and features about one topic."
+   },
+   {
+    "type": "cause-effect",
+    "label": "Cause and Effect",
+    "description": "Shows why something happens and what happens as a result."
+   },
+   {
+    "type": "problem-solution",
+    "label": "Problem and Solution",
+    "description": "Shows a difficulty and how it gets fixed."
+   }
+  ],
+  "templateRegions": [
+   {
+    "regionId": "rivers",
+    "label": "River Floods"
+   },
+   {
+    "regionId": "oceans",
+    "label": "Ocean Floods"
+   },
+   {
+    "regionId": "both",
+    "label": "Both"
+   }
+  ],
+  "keyIdeas": [
+   {
+    "ideaId": "id1",
+    "text": "Water spills over the grassy banks.",
+    "correctRegionId": "rivers"
+   },
+   {
+    "ideaId": "id2",
+    "text": "Waves can rise high and flood sandy shores.",
+    "correctRegionId": "oceans"
+   },
+   {
+    "ideaId": "id3",
+    "text": "Happens much faster after a heavy storm.",
+    "correctRegionId": "rivers"
+   },
+   {
+    "ideaId": "id4",
+    "text": "Moves more slowly with the shifting tides.",
+    "correctRegionId": "oceans"
+   },
+   {
+    "ideaId": "id5",
+    "text": "Water the surrounding fields and bring rich soil.",
+    "correctRegionId": "both"
+   }
+  ],
+  "authorPurposeExplanation": "The author used this structure to help readers understand the similarities and differences between rising waters in two different places.",
+  "nameStrategy": false,
+  "supportTier": "hard"
+ }
+}

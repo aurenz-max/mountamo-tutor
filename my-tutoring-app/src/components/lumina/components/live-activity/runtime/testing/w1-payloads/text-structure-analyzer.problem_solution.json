@@ -1,88 +1,73 @@
 {
- "source": "qa/tutor-reports/text-structure-analyzer-runtime-problem_solution-payload-2026-09-29.json",
+ "source": "qa/tutor-reports/text-structure-analyzer-runtime-problem_solution-payload-2026-10-04.json",
  "primitiveId": "text-structure-analyzer",
  "evalMode": "problem_solution",
  "data": {
-  "title": "Stopping the Rising Waters",
+  "title": "Rising Waters",
   "gradeLevel": "4",
-  "passage": "Heavy spring rains cause rivers to overflow their muddy banks and flood nearby towns. The problem is that rushing water damages homes and ruins crops. One solution is to build tall concrete walls along the edges. To fix this, workers also dig deep channels to guide extra water safely away. As a result, families stay safe when heavy storms arrive.",
+  "passage": "Heavy rains fill mountain streams with too much water. As a result, fast currents wash away soil and dirt. To fix this, workers build tall walls along the riverbanks. People also plant extra trees to hold the earth in place.",
   "structureType": "problem-solution",
   "signalWords": [
    {
-    "word": "The problem is",
-    "startIndex": 86,
-    "endIndex": 100
-   },
-   {
-    "word": "One solution",
-    "startIndex": 151,
-    "endIndex": 163
+    "word": "As a result",
+    "startIndex": 55,
+    "endIndex": 66
    },
    {
     "word": "To fix this",
-    "startIndex": 213,
-    "endIndex": 224
-   },
-   {
-    "word": "As a result",
-    "startIndex": 291,
-    "endIndex": 302
+    "startIndex": 107,
+    "endIndex": 118
    }
   ],
   "structureOptions": [
    {
     "type": "problem-solution",
     "label": "Problem and Solution",
-    "description": "Shows a difficulty and tells how it gets fixed"
+    "description": "Tells about a difficult situation and ways to make it better."
    },
    {
     "type": "cause-effect",
     "label": "Cause and Effect",
-    "description": "Explains why events happen and what happens next"
+    "description": "Shows why something happens and what happens because of it."
    },
    {
     "type": "compare-contrast",
     "label": "Compare and Contrast",
-    "description": "Tells how things are alike or different"
-   },
-   {
-    "type": "chronological",
-    "label": "Time Order",
-    "description": "Puts events in the order they happen"
+    "description": "Explains how two things are alike and different."
    }
   ],
   "templateRegions": [
    {
-    "regionId": "region_problem",
-    "label": "Problem"
+    "regionId": "region1",
+    "label": "Issue"
    },
    {
-    "regionId": "region_solution",
-    "label": "Solution"
+    "regionId": "region2",
+    "label": "Answer"
    }
   ],
   "keyIdeas": [
    {
-    "ideaId": "idea_1",
-    "text": "Rushing water damages homes and ruins crops",
-    "correctRegionId": "region_problem"
+    "ideaId": "idea1",
+    "text": "Heavy rains fill mountain streams with too much water",
+    "correctRegionId": "region1"
    },
    {
-    "ideaId": "idea_2",
-    "text": "Build tall concrete walls along the edges",
-    "correctRegionId": "region_solution"
+    "ideaId": "idea2",
+    "text": "Fast currents wash away soil and dirt",
+    "correctRegionId": "region1"
    },
    {
-    "ideaId": "idea_3",
-    "text": "Workers dig deep channels to guide extra water",
-    "correctRegionId": "region_solution"
+    "ideaId": "idea3",
+    "text": "Workers build tall walls along the riverbanks",
+    "correctRegionId": "region2"
    },
    {
-    "ideaId": "idea_4",
-    "text": "Heavy spring rains cause rivers to overflow",
-    "correctRegionId": "region_problem"
+    "ideaId": "idea4",
+    "text": "People plant extra trees to hold the earth in place",
+    "correctRegionId": "region2"
    }
   ],
-  "authorPurposeExplanation": "The author uses this structure to clearly show what dangers rising rivers bring and how people work to protect their towns."
+  "authorPurposeExplanation": "The author uses a problem and solution structure to show what causes high river danger and how people take action to protect the land."
  }
 }

@@ -191,12 +191,30 @@ const baseSchema: Schema = {
 
 // ── Generator ──────────────────────────��───────────────────────────────────
 
+/** The lowest grade each level is written for (the prompt docs above). */
+const GRADE_FLOOR: Record<WordBuilderData['complexityLevel'], number> = {
+  simple_affix: 3, compound_affix: 4, greek_latin: 5, multi_morpheme: 6,
+};
+
+/**
+ * The session's grade label: the lesson's grade, raised to the level's floor (never below Grade 3, this primitive's
+ * floor). It used to be the generic grade-context prose ("elementary students (grades 1-5)"), which opened the
+ * session below the floor (lever plan 2026-10-03 step 0, F4).
+ */
+export const wordBuilderGradeLabel = (grade: unknown, level: WordBuilderData['complexityLevel']): string => {
+  const n = Number(String(grade ?? '').replace(/[^0-9]/g, ''));
+  const floor = GRADE_FLOOR[level] ?? 3;
+  return `Grade ${Number.isFinite(n) && n > 0 ? Math.min(Math.max(n, floor), 8) : floor}`;
+};
+
 export const generateWordBuilder = async (
   topic: string,
   gradeContext: string,
   config?: {
     intent?: string;
     targetEvalMode?: string;
+    grade?: string;
+    difficulty?: string;
   },
 ): Promise<WordBuilderData> => {
   // Resolve eval mode constraint from catalog
@@ -268,6 +286,8 @@ lesson, a repaired one gets read to a child.
 11. **No two target words may overlap, and no hint or sentence may mention another target's word.** "helpful" and "unhelpful" in the same set means the tutor speaks one word's answer while asking the other.
 
 12. **Never begin any word, hint, definition, sentence or meaning with "Yes" or with "My turn"** — those two openers are reserved verdict signals in the spoken session.
+
+13. **A hint never uses a root from the board that its word does not use, nor that root's printed meaning.** "a person whose job is helping students learn" (teacher) with the root help on the board invites "helper"; "life on Earth" (biosphere) with geo = "earth" on the board invites "geosphere". Such a target is dropped.
 
 ${!evalConstraint ? `## Grade-Level Guidelines
 - Grades 3-4: Use common English prefixes/suffixes (un-, re-, -ful, -ly) with everyday roots
@@ -380,7 +400,7 @@ Generate 3-5 target words with a pool of 10-15 available parts.`;
     console.warn('[WordBuilder] no target survived the build gates — the lesson will render empty');
   }
 
-  data.gradeLevel = gradeContext;
+  data.gradeLevel = wordBuilderGradeLabel(config?.grade, data.complexityLevel);
 
   return data;
 };

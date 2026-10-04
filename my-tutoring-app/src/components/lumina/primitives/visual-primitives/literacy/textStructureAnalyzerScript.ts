@@ -400,6 +400,25 @@ const normalizeForEar = (value: string): string =>
 const earWords = (value: string): string[] => normalizeForEar(value).split(' ').filter(Boolean);
 
 /**
+ * The words of each structure's NAME that a passage of that structure may not print (lever plan 2026-10-03 R6,
+ * text-structure-analyzer D1). "Time Order" has none: "time" and "order" are everyday words in any passage, and a
+ * chronological passage that says "at that time" is not telling the child the structure's name.
+ */
+export const LABEL_EAR_WORDS: Record<StructureTypeId, readonly string[]> = {
+  'cause-effect': ['cause', 'causes', 'caused', 'effect', 'effects'],
+  'compare-contrast': ['compare', 'compared', 'compares', 'comparing', 'contrast', 'contrasts'],
+  'problem-solution': ['problem', 'problems', 'solution', 'solutions'],
+  chronological: [],
+  description: ['describe', 'describes', 'description'],
+};
+
+/** True when `text` prints a word of `structure`'s name (R6). */
+export const passageNamesStructure = (text: string, structure: StructureTypeId): boolean => {
+  const banned = new Set(LABEL_EAR_WORDS[structure]);
+  return earWords(text).some(w => banned.has(w));
+};
+
+/**
  * Can every option be told from every other BY EAR? decodable-reader's gate,
  * sharpened by one clause this pack needs: the distinguishing word must be at
  * least `MIN_DISTINGUISHING_CHARS` long. The generator's own prompt used to
@@ -714,7 +733,11 @@ export const itemsFromPayload = (
 
   // ── Phase 2: name the structure ───────────────────────────────────────────
   const structureType = payload.structureType;
-  if (isStructureType(structureType)) {
+  if (isStructureType(structureType) && passageNamesStructure(passage, structureType)) {
+    // R6 (lever plan 2026-10-03): "The problem is" in a problem-solution passage makes naming the structure word
+    // matching. The phrase stays a countable signal; the structure ask is dropped.
+    dropped += 1;
+  } else if (isStructureType(structureType)) {
     // Canonical labels, LLM glosses. The option ORDER is the generator's (axis 2
     // orders the distractors by confusability and the trim keeps the leading
     // ones), so it is preserved exactly — only the strings are canonicalised.

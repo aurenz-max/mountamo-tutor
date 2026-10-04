@@ -1,0 +1,68 @@
+{
+ "source": "qa/tutor-reports/text-structure-analyzer-runtime-chronological_description-g2-payload-2026-10-04.json",
+ "primitiveId": "text-structure-analyzer",
+ "evalMode": "chronological_description",
+ "data": {
+  "title": "How Rivers Flood Step by Step",
+  "gradeLevel": "2",
+  "passage": "First, heavy rain falls on the green mountains high above. Next, water rushes down the steep hills into the dry valley. Finally, the rushing water spills over the grassy banks into the park.",
+  "structureType": "chronological",
+  "signalWords": [
+   {
+    "word": "First",
+    "startIndex": 0,
+    "endIndex": 5
+   },
+   {
+    "word": "Next",
+    "startIndex": 59,
+    "endIndex": 63
+   },
+   {
+    "word": "Finally",
+    "startIndex": 120,
+    "endIndex": 127
+   }
+  ],
+  "structureOptions": [
+   {
+    "type": "chronological",
+    "label": "Time Order",
+    "description": "Tells events in the order they happen using time words."
+   },
+   {
+    "type": "description",
+    "label": "Description",
+    "description": "Tells about a topic by giving details and examples."
+   },
+   {
+    "type": "cause-effect",
+    "label": "Cause and Effect",
+    "description": "Explains why something happens and what happens as a result."
+   }
+  ],
+  "templateRegions": [
+   {
+    "regionId": "start",
+    "label": "Beginning"
+   },
+   {
+    "regionId": "end",
+    "label": "End"
+   }
+  ],
+  "keyIdeas": [
+   {
+    "ideaId": "idea1",
+    "text": "Heavy rain falls on the green mountains high above.",
+    "correctRegionId": "start"
+   },
+   {
+    "ideaId": "idea2",
+    "text": "The rushing water spills over the grassy banks into the park.",
+    "correctRegionId": "end"
+   }
+  ],
+  "objectiveGrade": "2"
+ }
+}

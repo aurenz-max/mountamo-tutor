@@ -1,0 +1,70 @@
+{
+ "source": "qa/tutor-reports/genre-explorer-runtime-classify_genre-hard-payload-2026-10-04.json",
+ "primitiveId": "genre-explorer",
+ "evalMode": "classify_genre",
+ "data": {
+  "title": "Text Clues",
+  "gradeLevel": "3",
+  "excerpts": [
+   {
+    "excerptId": "e1",
+    "text": "The clever red fox wanted the grapes hanging high on the vine. He jumped three times but could not reach them. Walking away, he muttered that the fruit was probably sour anyway.",
+    "genre": "fable"
+   },
+   {
+    "excerptId": "e2",
+    "text": "Bees visit flowers to collect sweet nectar all day long. They carry pollen on their hairy legs from plant to plant. This busy work helps new flowers grow in the garden.",
+    "genre": "informational"
+   },
+   {
+    "excerptId": "e3",
+    "text": "Long ago, the brave goddess of the dawn painted the morning sky with pink and gold. She walked across the clouds to wake the sleeping world below.",
+    "genre": "myth"
+   }
+  ],
+  "features": [
+   {
+    "featureId": "f1",
+    "predicate": "have an animal that speaks",
+    "presentIn": [
+     "e1"
+    ]
+   },
+   {
+    "featureId": "f2",
+    "predicate": "teach a lesson at the end",
+    "presentIn": [
+     "e1"
+    ]
+   },
+   {
+    "featureId": "f3",
+    "predicate": "give facts about a creature",
+    "presentIn": [
+     "e2"
+    ]
+   },
+   {
+    "featureId": "f4",
+    "predicate": "use rhyming words",
+    "presentIn": []
+   },
+   {
+    "featureId": "f5",
+    "predicate": "tell about a god from long ago",
+    "presentIn": [
+     "e3"
+    ]
+   }
+  ],
+  "genreOptions": [
+   "fable",
+   "informational",
+   "myth",
+   "folktale",
+   "poem"
+  ],
+  "mode": "classify_genre",
+  "supportTier": "hard"
+ }
+}

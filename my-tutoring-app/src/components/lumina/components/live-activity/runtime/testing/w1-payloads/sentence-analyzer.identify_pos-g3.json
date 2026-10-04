@@ -1,0 +1,140 @@
+{
+ "source": "qa/tutor-reports/sentence-analyzer-runtime-identify_pos-g3-payload-2026-10-04.json",
+ "primitiveId": "sentence-analyzer",
+ "evalMode": "identify_pos",
+ "data": {
+  "title": "Fun With Words",
+  "description": "Identify parts of speech in short, fun sentences.",
+  "gradeLevel": "3",
+  "challenges": [
+   {
+    "id": "ch1",
+    "type": "identify_pos",
+    "sentence": "Bright stars shine tonight.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Bright",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "stars",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w2",
+      "text": "shine",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w3",
+      "text": "tonight.",
+      "partOfSpeech": "Adverb",
+      "grammaticalRole": "Modifier"
+     }
+    ],
+    "explanation": "Bright is an adjective because it describes the noun stars. Stars is the noun doing the action, and shine is the verb."
+   },
+   {
+    "id": "ch2",
+    "type": "identify_pos",
+    "sentence": "He runs very fast.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "He",
+      "partOfSpeech": "Pronoun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w1",
+      "text": "runs",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w2",
+      "text": "very",
+      "partOfSpeech": "Adverb",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w3",
+      "text": "fast.",
+      "partOfSpeech": "Adverb",
+      "grammaticalRole": "Modifier"
+     }
+    ],
+    "explanation": "He is a pronoun taking the place of a name. Runs is the action verb, and very modifies the adverb fast."
+   },
+   {
+    "id": "ch3",
+    "type": "identify_pos",
+    "sentence": "The puppy barks loudly.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "The",
+      "partOfSpeech": "Determiner",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "puppy",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w2",
+      "text": "barks",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w3",
+      "text": "loudly.",
+      "partOfSpeech": "Adverb",
+      "grammaticalRole": "Modifier"
+     }
+    ],
+    "explanation": "The is a determiner pointing to the noun puppy. Barks is the verb telling us what the puppy does."
+   },
+   {
+    "id": "ch4",
+    "type": "identify_pos",
+    "sentence": "Cold wind blows softly.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Cold",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "wind",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w2",
+      "text": "blows",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w3",
+      "text": "softly.",
+      "partOfSpeech": "Adverb",
+      "grammaticalRole": "Modifier"
+     }
+    ],
+    "explanation": "Cold is an adjective describing the noun wind. Blows is the verb, and softly is an adverb."
+   }
+  ]
+ }
+}

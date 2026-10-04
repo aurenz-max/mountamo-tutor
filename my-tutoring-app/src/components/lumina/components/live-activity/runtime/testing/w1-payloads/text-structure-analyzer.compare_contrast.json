@@ -1,92 +1,97 @@
 {
- "source": "qa/tutor-reports/text-structure-analyzer-runtime-compare_contrast-payload-2026-09-29.json",
+ "source": "qa/tutor-reports/text-structure-analyzer-runtime-compare_contrast-payload-2026-10-04.json",
  "primitiveId": "text-structure-analyzer",
  "evalMode": "compare_contrast",
  "data": {
-  "title": "Comparing Two Kinds of River Floods",
+  "title": "Comparing River Floods",
   "gradeLevel": "4",
-  "passage": "Slow river floods happen after long winter rains fill up every valley. Similarly, melting mountain snow can slowly raise water levels over many days. However, flash floods arrive very fast during a sudden heavy summer storm. Both types of water overflow send water rushing across nearby fields. In contrast, flash floods sweep away cars while slow floods just cover the grass.",
+  "passage": "Heavy rain storms cause waters to rise rapidly in local valleys. However, melting snowpacks create a different kind of overflow. Both events fill river channels beyond normal capacity. Similarly, blocked drainage paths make water spill over banks. Unlike natural floods, urban runoff happens much faster.",
   "structureType": "compare-contrast",
   "signalWords": [
    {
-    "word": "Similarly",
-    "startIndex": 71,
-    "endIndex": 80
-   },
-   {
     "word": "However",
-    "startIndex": 150,
-    "endIndex": 157
+    "startIndex": 65,
+    "endIndex": 72
    },
    {
     "word": "Both",
-    "startIndex": 225,
-    "endIndex": 229
+    "startIndex": 129,
+    "endIndex": 133
    },
    {
-    "word": "In contrast",
-    "startIndex": 295,
-    "endIndex": 306
+    "word": "Similarly",
+    "startIndex": 185,
+    "endIndex": 194
+   },
+   {
+    "word": "Unlike",
+    "startIndex": 248,
+    "endIndex": 254
    }
   ],
   "structureOptions": [
    {
     "type": "compare-contrast",
     "label": "Compare and Contrast",
-    "description": "Shows how two things are alike and different"
+    "description": "Shows how two or more things are alike and different"
    },
    {
     "type": "cause-effect",
     "label": "Cause and Effect",
-    "description": "Explains why things happen and what happens next"
+    "description": "Explains why something happens and what happens as a result"
    },
    {
     "type": "problem-solution",
     "label": "Problem and Solution",
-    "description": "Tells about a trouble and how it gets fixed"
+    "description": "Highlights a challenge and tells how it gets fixed"
+   },
+   {
+    "type": "chronological",
+    "label": "Time Order",
+    "description": "Tells events in the order they happen in time"
    }
   ],
   "templateRegions": [
    {
-    "regionId": "region1",
-    "label": "Slow Floods"
+    "regionId": "rain",
+    "label": "Rain Storms"
    },
    {
-    "regionId": "region2",
-    "label": "Flash Floods"
+    "regionId": "snow",
+    "label": "Snow Melts"
    },
    {
-    "regionId": "region3",
-    "label": "Both"
+    "regionId": "both",
+    "label": "Both Types"
    }
   ],
   "keyIdeas": [
    {
     "ideaId": "idea1",
-    "text": "Winter rains fill up every valley over many days",
-    "correctRegionId": "region1"
+    "text": "waters to rise rapidly in local valleys",
+    "correctRegionId": "rain"
    },
    {
     "ideaId": "idea2",
-    "text": "Arrive very fast during a sudden heavy summer storm",
-    "correctRegionId": "region2"
+    "text": "melting snowpacks create a different kind of overflow",
+    "correctRegionId": "snow"
    },
    {
     "ideaId": "idea3",
-    "text": "Send water rushing across nearby fields",
-    "correctRegionId": "region3"
+    "text": "fill river channels beyond normal capacity",
+    "correctRegionId": "both"
    },
    {
     "ideaId": "idea4",
-    "text": "Sweep away cars and major structures",
-    "correctRegionId": "region2"
+    "text": "blocked drainage paths make water spill over banks",
+    "correctRegionId": "snow"
    },
    {
     "ideaId": "idea5",
-    "text": "Just cover the grass without rushing hard",
-    "correctRegionId": "region1"
+    "text": "urban runoff happens much faster",
+    "correctRegionId": "rain"
    }
   ],
-  "authorPurposeExplanation": "The author used a compare and contrast structure to help readers understand the important differences between slow and fast river overflows."
+  "authorPurposeExplanation": "The author uses a compare-contrast structure to help readers understand the different ways that water overflows into rivers by looking at their shared traits and unique details."
  }
 }

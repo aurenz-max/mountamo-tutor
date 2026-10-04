@@ -1,16 +1,16 @@
 {
- "source": "qa/tutor-reports/sentence-analyzer-runtime-parse_structure-payload-2026-09-26.json",
+ "source": "qa/tutor-reports/sentence-analyzer-runtime-parse_structure-payload-2026-10-04.json",
  "primitiveId": "sentence-analyzer",
  "evalMode": "parse_structure",
  "data": {
-  "title": "Subject and Predicate Safari",
-  "description": "Practice finding subjects and predicates in spoken sentences.",
+  "title": "Sentence Structure Detective",
+  "description": "Practice identifying subjects, predicates, and sentence types out loud.",
   "gradeLevel": "4",
   "challenges": [
    {
     "id": "ch1",
     "type": "parse_structure",
-    "sentence": "The hungry brown bear slept.",
+    "sentence": "The hungry bear ate berries.",
     "words": [
      {
       "id": "w0",
@@ -26,117 +26,31 @@
      },
      {
       "id": "w2",
-      "text": "brown",
-      "partOfSpeech": "Adjective",
-      "grammaticalRole": "Modifier"
-     },
-     {
-      "id": "w3",
       "text": "bear",
       "partOfSpeech": "Noun",
       "grammaticalRole": "Subject"
      },
      {
-      "id": "w4",
-      "text": "slept.",
-      "partOfSpeech": "Verb",
-      "grammaticalRole": "Predicate"
-     }
-    ],
-    "explanation": "The complete subject is 'The hungry brown bear' because it tells us who is doing the action. The rest of the sentence tells us what the bear did.",
-    "sentenceType": "Declarative",
-    "subjectEndIndex": 3
-   },
-   {
-    "id": "ch2",
-    "type": "parse_structure",
-    "sentence": "Three little birds sang loudly.",
-    "words": [
-     {
-      "id": "w0",
-      "text": "Three",
-      "partOfSpeech": "Adjective",
-      "grammaticalRole": "Modifier"
-     },
-     {
-      "id": "w1",
-      "text": "little",
-      "partOfSpeech": "Adjective",
-      "grammaticalRole": "Modifier"
-     },
-     {
-      "id": "w2",
-      "text": "birds",
-      "partOfSpeech": "Noun",
-      "grammaticalRole": "Subject"
-     },
-     {
       "id": "w3",
-      "text": "sang",
+      "text": "ate",
       "partOfSpeech": "Verb",
       "grammaticalRole": "Predicate"
      },
      {
       "id": "w4",
-      "text": "loudly.",
-      "partOfSpeech": "Adverb",
-      "grammaticalRole": "Modifier"
-     }
-    ],
-    "explanation": "The complete subject is 'Three little birds' because they are the ones performing the action. 'Sang loudly' forms the predicate.",
-    "sentenceType": "Declarative",
-    "subjectEndIndex": 2
-   },
-   {
-    "id": "ch3",
-    "type": "parse_structure",
-    "sentence": "My playful dog caught the ball.",
-    "words": [
-     {
-      "id": "w0",
-      "text": "My",
-      "partOfSpeech": "Determiner",
-      "grammaticalRole": "Modifier"
-     },
-     {
-      "id": "w1",
-      "text": "playful",
-      "partOfSpeech": "Adjective",
-      "grammaticalRole": "Modifier"
-     },
-     {
-      "id": "w2",
-      "text": "dog",
-      "partOfSpeech": "Noun",
-      "grammaticalRole": "Subject"
-     },
-     {
-      "id": "w3",
-      "text": "caught",
-      "partOfSpeech": "Verb",
-      "grammaticalRole": "Predicate"
-     },
-     {
-      "id": "w4",
-      "text": "the",
-      "partOfSpeech": "Determiner",
-      "grammaticalRole": "Modifier"
-     },
-     {
-      "id": "w5",
-      "text": "ball.",
+      "text": "berries.",
       "partOfSpeech": "Noun",
       "grammaticalRole": "Direct Object"
      }
     ],
-    "explanation": "The complete subject is 'My playful dog' as it names the doer. The predicate starts at 'caught' and tells us what action happened.",
+    "explanation": "The complete subject is 'The hungry bear', and the predicate is 'ate berries' which tells us the action.",
     "sentenceType": "Declarative",
     "subjectEndIndex": 2
    },
    {
-    "id": "ch4",
+    "id": "ch2",
     "type": "parse_structure",
-    "sentence": "Bright stars shine every night.",
+    "sentence": "Bright stars shine tonight.",
     "words": [
      {
       "id": "w0",
@@ -158,20 +72,120 @@
      },
      {
       "id": "w3",
-      "text": "every",
+      "text": "tonight.",
+      "partOfSpeech": "Adverb",
+      "grammaticalRole": "Modifier"
+     }
+    ],
+    "explanation": "Bright stars is the subject ending at index 1, and shine tonight is the predicate telling us what they do.",
+    "sentenceType": "Declarative",
+    "subjectEndIndex": 1
+   },
+   {
+    "id": "ch3",
+    "type": "parse_structure",
+    "sentence": "Did she catch fish?",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Did",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w1",
+      "text": "she",
+      "partOfSpeech": "Pronoun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w2",
+      "text": "catch",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w3",
+      "text": "fish?",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Direct Object"
+     }
+    ],
+    "explanation": "This question splits the subject and predicate, asking for information in an interrogative sentence.",
+    "sentenceType": "Interrogative"
+   },
+   {
+    "id": "ch4",
+    "type": "parse_structure",
+    "sentence": "Close the heavy door.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Close",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w1",
+      "text": "the",
       "partOfSpeech": "Determiner",
       "grammaticalRole": "Modifier"
      },
      {
-      "id": "w4",
-      "text": "night.",
+      "id": "w2",
+      "text": "heavy",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w3",
+      "text": "door.",
       "partOfSpeech": "Noun",
-      "grammaticalRole": "Object of Preposition"
+      "grammaticalRole": "Direct Object"
      }
     ],
-    "explanation": "The subject is 'Bright stars' because they are what the sentence describes. The predicate is 'shine every night'.",
+    "explanation": "This is an imperative sentence giving a command, so it has no subject word at the beginning.",
+    "sentenceType": "Imperative"
+   },
+   {
+    "id": "ch5",
+    "type": "parse_structure",
+    "sentence": "That clever dog barks loudly.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "That",
+      "partOfSpeech": "Determiner",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "clever",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w2",
+      "text": "dog",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w3",
+      "text": "barks",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w4",
+      "text": "loudly.",
+      "partOfSpeech": "Adverb",
+      "grammaticalRole": "Modifier"
+     }
+    ],
+    "explanation": "The subject 'That clever dog' ends at index 2, followed by the predicate telling us how it barks.",
     "sentenceType": "Declarative",
-    "subjectEndIndex": 1
+    "subjectEndIndex": 2
    }
   ]
  }

@@ -1,0 +1,133 @@
+{
+ "source": "qa/tutor-reports/word-builder-runtime-greek_latin-3part-payload-2026-10-04.json",
+ "primitiveId": "word-builder",
+ "evalMode": "greek_latin",
+ "data": {
+  "title": "Building Academic Words with Classical Roots",
+  "complexityLevel": "greek_latin",
+  "availableParts": [
+   {
+    "id": "pre-tele",
+    "text": "tele",
+    "type": "prefix",
+    "meaning": "distant"
+   },
+   {
+    "id": "root-scope",
+    "text": "scope",
+    "type": "root",
+    "meaning": "look at"
+   },
+   {
+    "id": "pre-auto",
+    "text": "auto",
+    "type": "prefix",
+    "meaning": "self"
+   },
+   {
+    "id": "root-graph",
+    "text": "graph",
+    "type": "root",
+    "meaning": "write"
+   },
+   {
+    "id": "pre-bio",
+    "text": "bio",
+    "type": "prefix",
+    "meaning": "living"
+   },
+   {
+    "id": "root-sphere",
+    "text": "sphere",
+    "type": "root",
+    "meaning": "globe"
+   },
+   {
+    "id": "pre-geo",
+    "text": "geo",
+    "type": "prefix",
+    "meaning": "earth"
+   },
+   {
+    "id": "root-therm",
+    "text": "therm",
+    "type": "root",
+    "meaning": "heat"
+   },
+   {
+    "id": "suf-al",
+    "text": "al",
+    "type": "suffix",
+    "meaning": "relating to"
+   },
+   {
+    "id": "pre-micro",
+    "text": "micro",
+    "type": "prefix",
+    "meaning": "small"
+   },
+   {
+    "id": "root-meter",
+    "text": "meter",
+    "type": "root",
+    "meaning": "measure"
+   },
+   {
+    "id": "root-phon",
+    "text": "phon",
+    "type": "root",
+    "meaning": "sound"
+   },
+   {
+    "id": "suf-ic",
+    "text": "ic",
+    "type": "suffix",
+    "meaning": "nature of"
+   }
+  ],
+  "targets": [
+   {
+    "word": "telescope",
+    "parts": [
+     "pre-tele",
+     "root-scope"
+    ],
+    "hint": "An optical instrument used to view stars and planets across space.",
+    "definition": "A tubular device that makes distant celestial objects appear larger.",
+    "sentenceContext": "Astronomers used the giant ___ to inspect a newly discovered comet."
+   },
+   {
+    "word": "autograph",
+    "parts": [
+     "pre-auto",
+     "root-graph"
+    ],
+    "hint": "A famous person signature made with their own hand.",
+    "definition": "A signature written by a person, typically someone well known.",
+    "sentenceContext": "The young fan politely asked the author for an ___ inside the novel."
+   },
+   {
+    "word": "biosphere",
+    "parts": [
+     "pre-bio",
+     "root-sphere"
+    ],
+    "hint": "The planetary zone where all organisms exist.",
+    "definition": "The regions of surface, atmosphere, and waters occupied by organisms.",
+    "sentenceContext": "Pollution in the oceans threatens delicate habitats across the entire ___."
+   },
+   {
+    "word": "geothermal",
+    "parts": [
+     "pre-geo",
+     "root-therm",
+     "suf-al"
+    ],
+    "hint": "Energy produced by high underground temperatures.",
+    "definition": "Produced by or relating to internal underground heat.",
+    "sentenceContext": "Iceland generates clean electricity by tapping into deep ___ reservoirs."
+   }
+  ],
+  "gradeLevel": "Grade 5"
+ }
+}

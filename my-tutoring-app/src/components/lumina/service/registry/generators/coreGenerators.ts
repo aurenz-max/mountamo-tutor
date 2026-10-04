@@ -296,6 +296,7 @@ registerContextGenerator('word-builder', async (ctx) => {
   const data = await generateWordBuilder(ctx.topic, ctx.gradeContext, {
     ...(ctx.raw as AnyConfig),
     intent: ctx.intent,
+    grade: ctx.grade,
   });
   return {
     type: 'word-builder',

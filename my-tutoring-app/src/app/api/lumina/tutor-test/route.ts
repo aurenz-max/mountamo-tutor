@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createHash } from 'node:crypto';
 import { UNIVERSAL_CATALOG, getComponentById } from '@/components/lumina/service/manifest/catalog';
 import { generateComponentContent } from '@/components/lumina/service/geminiService';
+import { normalizeObjectiveGrade } from '@/components/lumina/service/generation/resolveGenerationContext';
 import type { ComponentDefinition, TutoringScaffold } from '@/components/lumina/types';
 import {
   buildSourceIndex,
@@ -105,9 +106,15 @@ async function handleProbe(request: NextRequest, frozen?: Record<string, unknown
     const gradeLevel = searchParams.get('gradeLevel') || 'elementary';
     const evalMode = searchParams.get('evalMode');
     const pinned = evalMode && entry.evalModes?.some(m => m.evalMode === evalMode) ? { targetEvalMode: evalMode } : {};
+    // The grade and tier a saved payload asks for ("Grade 2", hard): without them every payload came back at the
+    // band's default grade with no tier (lever plan 2026-10-03 step 0).
+    const difficulty = searchParams.get('difficulty') || undefined;
+    const objectiveGrade = normalizeObjectiveGrade(gradeLevel);
     try {
       const result = frozen ? { data: frozen } : await generateComponentContent(
-        { componentId, instanceId: `tutor-test-${componentId}-${Date.now()}`, config: pinned }, topic, gradeLevel);
+        { componentId, instanceId: `tutor-test-${componentId}-${Date.now()}`,
+          config: { ...pinned, ...(difficulty ? { difficulty } : {}), ...(objectiveGrade ? { objectiveGrade } : {}) } },
+        topic, gradeLevel);
       const generatedData = (result?.data ?? {}) as Record<string, unknown>;
       return NextResponse.json({ status: 'workspace', componentId,
         probe: { evalMode: evalMode ?? null, topic, gradeLevel, liveContext: { tutoring: null, generatedData, mergedBag: {} } } });
@@ -148,7 +155,8 @@ async function handleProbe(request: NextRequest, frozen?: Record<string, unknown
       const item = {
         componentId,
         instanceId: `tutor-test-${componentId}-${Date.now()}`,
-        config: { ...(evalMode ? { targetEvalMode: evalMode } : {}), ...(difficulty ? { difficulty } : {}) },
+        config: { ...(evalMode ? { targetEvalMode: evalMode } : {}), ...(difficulty ? { difficulty } : {}),
+          ...(normalizeObjectiveGrade(gradeLevel) ? { objectiveGrade: normalizeObjectiveGrade(gradeLevel) } : {}) },
       };
       const result = frozen ? { data: frozen } : await generateComponentContent(item, topic, gradeLevel);
       const generated = (result?.data ?? {}) as Record<string, unknown>;

@@ -1,0 +1,92 @@
+{
+ "source": "qa/tutor-reports/text-structure-analyzer-runtime-problem_solution-easy-payload-2026-10-04.json",
+ "primitiveId": "text-structure-analyzer",
+ "evalMode": "problem_solution",
+ "data": {
+  "title": "Water Rising",
+  "gradeLevel": "4",
+  "passage": "Heavy spring rains fill local streams with rapid currents. As a result, water spills over the grassy banks onto nearby streets. Families must leave their houses quickly when water rises too high. To fix this, workers build tall walls along the river edges. Similarly, engineers dig deep ditches to carry extra water away. These changes help keep neighborhoods dry.",
+  "structureType": "problem-solution",
+  "signalWords": [
+   {
+    "word": "As a result",
+    "startIndex": 59,
+    "endIndex": 70
+   },
+   {
+    "word": "To fix this",
+    "startIndex": 196,
+    "endIndex": 207
+   },
+   {
+    "word": "Similarly",
+    "startIndex": 257,
+    "endIndex": 266
+   }
+  ],
+  "structureOptions": [
+   {
+    "type": "problem-solution",
+    "label": "Problem and Solution",
+    "description": "Explains a difficulty and tells how it gets fixed"
+   },
+   {
+    "type": "chronological",
+    "label": "Time Order",
+    "description": "Tells events in the order they happen"
+   },
+   {
+    "type": "description",
+    "label": "Description",
+    "description": "Shares details and facts about a topic"
+   },
+   {
+    "type": "cause-effect",
+    "label": "Cause and Effect",
+    "description": "One thing makes another thing happen."
+   }
+  ],
+  "templateRegions": [
+   {
+    "regionId": "region_1",
+    "label": "Problem"
+   },
+   {
+    "regionId": "region_2",
+    "label": "Solution"
+   }
+  ],
+  "keyIdeas": [
+   {
+    "ideaId": "idea_1",
+    "text": "Water spills over the grassy banks onto nearby streets.",
+    "correctRegionId": "region_1"
+   },
+   {
+    "ideaId": "idea_2",
+    "text": "Families must leave their houses quickly.",
+    "correctRegionId": "region_1"
+   },
+   {
+    "ideaId": "idea_3",
+    "text": "Workers build tall walls along the river edges.",
+    "correctRegionId": "region_2"
+   },
+   {
+    "ideaId": "idea_4",
+    "text": "Engineers dig deep ditches to carry extra water away.",
+    "correctRegionId": "region_2"
+   },
+   {
+    "ideaId": "idea_5",
+    "text": "These changes help keep neighborhoods dry.",
+    "correctRegionId": "region_2"
+   }
+  ],
+  "authorPurposeExplanation": "The author used a problem-solution structure to clearly show how rising river water causes trouble for communities and what steps people take to keep homes safe.",
+  "nameStrategy": true,
+  "maxStructureOptions": 3,
+  "supportTier": "easy",
+  "anchorIdeaId": "idea_3"
+ }
+}

@@ -1,0 +1,98 @@
+{
+ "source": "qa/tutor-reports/text-structure-analyzer-runtime-chronological_description-description-payload-2026-10-04.json",
+ "primitiveId": "text-structure-analyzer",
+ "evalMode": "chronological_description",
+ "data": {
+  "title": "Exploring Inside a Volcano",
+  "gradeLevel": "4",
+  "passage": "A volcano features a tall mountain shape with steep rocky slopes. Specifically, a large bowl at the top holds glowing melted rock. Characteristics of this hot liquid include extreme heat and thick bubbling. For example, deep underground chambers store magma before an eruption. Such chambers feed the central pipe that goes straight up.",
+  "structureType": "description",
+  "signalWords": [
+   {
+    "word": "Specifically",
+    "startIndex": 66,
+    "endIndex": 78
+   },
+   {
+    "word": "Characteristics",
+    "startIndex": 131,
+    "endIndex": 146
+   },
+   {
+    "word": "include",
+    "startIndex": 166,
+    "endIndex": 173
+   },
+   {
+    "word": "For example",
+    "startIndex": 207,
+    "endIndex": 218
+   },
+   {
+    "word": "Such",
+    "startIndex": 278,
+    "endIndex": 282
+   }
+  ],
+  "structureOptions": [
+   {
+    "type": "description",
+    "label": "Description",
+    "description": "Explains a topic by listing its parts and features"
+   },
+   {
+    "type": "chronological",
+    "label": "Time Order",
+    "description": "Tells events in the order they happen"
+   },
+   {
+    "type": "cause-effect",
+    "label": "Cause and Effect",
+    "description": "Shows why something happens and what happens as a result"
+   },
+   {
+    "type": "compare-contrast",
+    "label": "Compare and Contrast",
+    "description": "Shows how things are alike and different"
+   }
+  ],
+  "templateRegions": [
+   {
+    "regionId": "topic",
+    "label": "Main Topic"
+   },
+   {
+    "regionId": "details",
+    "label": "Details"
+   }
+  ],
+  "keyIdeas": [
+   {
+    "ideaId": "idea1",
+    "text": "a tall mountain shape with steep rocky slopes",
+    "correctRegionId": "topic"
+   },
+   {
+    "ideaId": "idea2",
+    "text": "a large bowl at the top holds glowing melted rock",
+    "correctRegionId": "details"
+   },
+   {
+    "ideaId": "idea3",
+    "text": "extreme heat and thick bubbling",
+    "correctRegionId": "details"
+   },
+   {
+    "ideaId": "idea4",
+    "text": "deep underground chambers store magma",
+    "correctRegionId": "details"
+   },
+   {
+    "ideaId": "idea5",
+    "text": "feeds the central pipe that goes straight up",
+    "correctRegionId": "details"
+   }
+  ],
+  "authorPurposeExplanation": "The author uses a description structure to help readers visualize the physical appearance and internal parts of a volcano."
+ }
+}

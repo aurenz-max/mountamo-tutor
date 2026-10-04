@@ -1,0 +1,88 @@
+{
+ "source": "qa/tutor-reports/text-structure-analyzer-runtime-chronological_description-hard-payload-2026-10-04.json",
+ "primitiveId": "text-structure-analyzer",
+ "evalMode": "chronological_description",
+ "data": {
+  "title": "Understanding River Flows",
+  "gradeLevel": "4",
+  "passage": "Heavy rain falls on the mountains for many hours. Next, extra water rushes down steep hills into small streams. After that, streams grow wide and spill over their grassy edges. Finally, water covers nearby fields and roads.",
+  "structureType": "chronological",
+  "signalWords": [
+   {
+    "word": "Next",
+    "startIndex": 50,
+    "endIndex": 54
+   },
+   {
+    "word": "After that",
+    "startIndex": 112,
+    "endIndex": 122
+   },
+   {
+    "word": "Finally",
+    "startIndex": 177,
+    "endIndex": 184
+   }
+  ],
+  "structureOptions": [
+   {
+    "type": "chronological",
+    "label": "Time Order",
+    "description": "Explains events in the order they happen over time"
+   },
+   {
+    "type": "description",
+    "label": "Description",
+    "description": "Shares details and features about a topic"
+   },
+   {
+    "type": "cause-effect",
+    "label": "Cause and Effect",
+    "description": "Shows why something happens and what happens as a result"
+   },
+   {
+    "type": "compare-contrast",
+    "label": "Compare and Contrast",
+    "description": "How two things are alike and different."
+   }
+  ],
+  "templateRegions": [
+   {
+    "regionId": "beginning",
+    "label": "Beginning"
+   },
+   {
+    "regionId": "middle",
+    "label": "Middle"
+   },
+   {
+    "regionId": "end",
+    "label": "End"
+   }
+  ],
+  "keyIdeas": [
+   {
+    "ideaId": "idea1",
+    "text": "Heavy rain falls on the mountains for many hours.",
+    "correctRegionId": "beginning"
+   },
+   {
+    "ideaId": "idea2",
+    "text": "Extra water rushes down steep hills into small streams.",
+    "correctRegionId": "beginning"
+   },
+   {
+    "ideaId": "idea3",
+    "text": "Streams grow wide and spill over their grassy edges.",
+    "correctRegionId": "middle"
+   },
+   {
+    "ideaId": "idea4",
+    "text": "Water covers nearby fields and roads.",
+    "correctRegionId": "end"
+   }
+  ],
+  "nameStrategy": false,
+  "supportTier": "hard"
+ }
+}

@@ -35,6 +35,7 @@ import {
   isReadableAloud,
   isSayablePredicate,
   namesAGenre,
+  restatesBinaryGenre,
   opensWithSentinel,
   optionsEarSeparable,
   pruneForEar,
@@ -354,6 +355,7 @@ function applyJudgedBuildGates(
   result.features = (result.features ?? []).filter((feature) => {
     if (!feature?.featureId || !isSayablePredicate(feature.predicate ?? '')) return false;
     if (namesAGenre(feature.predicate ?? '')) return false;
+    if (binaryMode && restatesBinaryGenre(feature.predicate ?? '')) return false;
     if (opensWithSentinel(feature.predicate ?? '')) return false;
     return (feature.presentIn ?? []).every((id) => excerptIds.has(id));
   });
@@ -512,6 +514,12 @@ Everything below follows from that:
    facts. A feature true of no excerpt is fine (use []); it becomes a "no" question.
 6. Mix them: for each excerpt at least one feature should be TRUE and at least one FALSE, or the child can
    answer "yes" every round without reading.
+6b. Every predicate is something the child can point to in the WORDS of the excerpt ("have an animal that
+   talks", "give a number"), never a judgment about the text's purpose ("explain how ancient people understood
+   nature"). Never restate fiction or nonfiction in other words: no "made up", "imagination", "real", "true" or
+   "facts" in a predicate. Give at least two such features.
+6c. Write fresh texts for this topic. Do not retell the stock examples (the lion and the mouse, the honeybee
+   report, the sun god's chariot).
 7. genreOptions are ids from the allowed list, and must include every excerpt's correct genre.
    ⚠️ Never put "fiction" in the same list as "historical-fiction" or "realistic-fiction" — said out loud, the
    short one fits both and the question has no honest answer.

@@ -1,0 +1,116 @@
+{
+ "source": "qa/tutor-reports/sentence-analyzer-runtime-identify_pos-g2-payload-2026-10-04.json",
+ "primitiveId": "sentence-analyzer",
+ "evalMode": "identify_pos",
+ "data": {
+  "title": "Fun With Words",
+  "description": "Practice identifying parts of speech in simple sentences.",
+  "gradeLevel": "2",
+  "challenges": [
+   {
+    "id": "ch1",
+    "type": "identify_pos",
+    "sentence": "Big cats run.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Big",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "cats",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w2",
+      "text": "run.",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     }
+    ],
+    "explanation": "Big is an adjective because it describes the cats. Cats is a noun because it names the animals. Run is a verb because it is the action they do."
+   },
+   {
+    "id": "ch2",
+    "type": "identify_pos",
+    "sentence": "The dog sleeps.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "The",
+      "partOfSpeech": "Determiner",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "dog",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w2",
+      "text": "sleeps.",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     }
+    ],
+    "explanation": "The is a determiner that introduces the noun dog. Dog is the noun naming the animal, and sleeps is the verb showing what the dog is doing."
+   },
+   {
+    "id": "ch3",
+    "type": "identify_pos",
+    "sentence": "Happy kids play.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Happy",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "kids",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w2",
+      "text": "play.",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     }
+    ],
+    "explanation": "Happy is an adjective describing the kids. Kids is a noun naming the people, and play is a verb for the action."
+   },
+   {
+    "id": "ch4",
+    "type": "identify_pos",
+    "sentence": "Red birds sing.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Red",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "birds",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w2",
+      "text": "sing.",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     }
+    ],
+    "explanation": "Red is an adjective telling us the color of the birds. Birds is a noun, and sing is the action verb."
+   }
+  ]
+ }
+}

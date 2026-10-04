@@ -1,0 +1,89 @@
+{
+ "source": "qa/tutor-reports/text-structure-analyzer-runtime-cause_effect-hard-payload-2026-10-04.json",
+ "primitiveId": "text-structure-analyzer",
+ "evalMode": "cause_effect",
+ "data": {
+  "title": "Understanding River Overflow Events",
+  "gradeLevel": "4",
+  "passage": "Heavy rain falls constantly over the mountains. Rivers rise rapidly because the ground cannot absorb all the moisture. Water spills over the muddy riverbanks. Fields and roads become completely covered in deep water. Therefore, people living near the valley must move to higher ground.",
+  "structureType": "cause-effect",
+  "signalWords": [
+   {
+    "word": "because",
+    "startIndex": 68,
+    "endIndex": 75
+   },
+   {
+    "word": "Therefore",
+    "startIndex": 217,
+    "endIndex": 226
+   }
+  ],
+  "structureOptions": [
+   {
+    "type": "cause-effect",
+    "label": "Cause and Effect",
+    "description": "Explains why things happen and what happens as a result."
+   },
+   {
+    "type": "problem-solution",
+    "label": "Problem and Solution",
+    "description": "Shows a trouble and tells how it gets fixed."
+   },
+   {
+    "type": "compare-contrast",
+    "label": "Compare and Contrast",
+    "description": "Tells how ideas are alike or different."
+   },
+   {
+    "type": "chronological",
+    "label": "Time Order",
+    "description": "Presents events in the order they happen in time."
+   }
+  ],
+  "templateRegions": [
+   {
+    "regionId": "region_1",
+    "label": "Cause"
+   },
+   {
+    "regionId": "region_2",
+    "label": "Effect"
+   }
+  ],
+  "keyIdeas": [
+   {
+    "ideaId": "idea_1",
+    "text": "Heavy rain falls constantly over the mountains.",
+    "correctRegionId": "region_1"
+   },
+   {
+    "ideaId": "idea_2",
+    "text": "The ground cannot absorb all the moisture.",
+    "correctRegionId": "region_1"
+   },
+   {
+    "ideaId": "idea_3",
+    "text": "Rivers rise rapidly.",
+    "correctRegionId": "region_2"
+   },
+   {
+    "ideaId": "idea_4",
+    "text": "Water spills over the muddy riverbanks.",
+    "correctRegionId": "region_2"
+   },
+   {
+    "ideaId": "idea_5",
+    "text": "Fields and roads become completely covered in deep water.",
+    "correctRegionId": "region_2"
+   },
+   {
+    "ideaId": "idea_6",
+    "text": "People living near the valley must move to higher ground.",
+    "correctRegionId": "region_2"
+   }
+  ],
+  "nameStrategy": false,
+  "supportTier": "hard"
+ }
+}

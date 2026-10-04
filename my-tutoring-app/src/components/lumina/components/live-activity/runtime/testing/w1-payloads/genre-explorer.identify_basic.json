@@ -1,28 +1,54 @@
 {
- "source": "qa/tutor-reports/genre-explorer-runtime-identify_basic-payload-2026-09-26.json",
+ "source": "qa/tutor-reports/genre-explorer-runtime-identify_basic-payload-2026-10-04.json",
  "primitiveId": "genre-explorer",
  "evalMode": "identify_basic",
  "data": {
-  "title": "Finding Facts and Tales",
+  "title": "Spotting Made-Up Tales and Real Facts",
   "gradeLevel": "3",
   "excerpts": [
    {
     "excerptId": "e1",
-    "text": "A tiny mouse ran across the sleeping paw of a giant lion. The lion woke up and caught the mouse in his big hand. The mouse begged for mercy, and the lion let him go with a smile.",
+    "text": "The clever red fox looked up at the crow sitting on a tall branch. The crow held a sweet golden chunk of cheese in her beak. Mr. Fox spoke sweet words to trick the bird into opening her mouth.",
     "genre": "fiction"
    },
    {
     "excerptId": "e2",
-    "text": "Honeybees are flying insects that gather sweet nectar from blooming flowers. They use this nectar to make honey inside their busy hives. A single hive can hold thousands of buzzing bees.",
+    "text": "Honeybees are flying insects that live together in large groups called colonies. A single hive can hold thousands of worker bees. These insects visit many flowers every day to gather sweet nectar.",
     "genre": "nonfiction"
+   },
+   {
+    "excerptId": "e3",
+    "text": "Long ago, people looked up at the night sky and drew pictures with the bright stars. They told stories about a great hunter who chased a giant bear across the dark heavens.",
+    "genre": "fiction"
    }
   ],
   "features": [
    {
-    "featureId": "made-up-events",
-    "predicate": "tell a made-up story from someone's imagination",
+    "featureId": "talking-animals",
+    "predicate": "have an animal that speaks words",
     "presentIn": [
      "e1"
+    ]
+   },
+   {
+    "featureId": "real-science",
+    "predicate": "tell about insects that visit flowers",
+    "presentIn": [
+     "e2"
+    ]
+   },
+   {
+    "featureId": "ancient-sky",
+    "predicate": "tell about people looking at stars",
+    "presentIn": [
+     "e3"
+    ]
+   },
+   {
+    "featureId": "numbers-used",
+    "predicate": "include the word thousands",
+    "presentIn": [
+     "e2"
     ]
    }
   ],
