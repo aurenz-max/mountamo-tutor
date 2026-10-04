@@ -1,6 +1,6 @@
 # text-structure-analyzer: failure inventory and lever table (2026-10-03)
 
-**DRAFT 2026-10-03**. `/add-support-tiers` Phases 1-2, literacy G2-6 family 4 of 4.
+**BUILT 2026-10-04** (`qa/eval-reports/text-structure-analyzer-levers-2026-10-04.md`). `/add-support-tiers` Phases 1-2, literacy G2-6 family 4 of 4.
 Rulings carried over: the child answers out loud and no lever turns an answer into a tap (DI spoken-first);
 "my turn" models a DIFFERENT item, never the learner's (10-02); the passage is never read aloud (catalog law);
 help on a recognition item acts on material outside the item (handoff 22 "model pair outside the item"); a

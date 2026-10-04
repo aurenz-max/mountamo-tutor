@@ -8,6 +8,7 @@ import { startingLevers as wordBuilderStarts } from './wordBuilderLevers';
 import { startingLevers as sentenceStarts } from './sentenceAnalyzerLevers';
 import { startingLevers as genreStarts } from './genreExplorerLevers';
 import type { GenreExplorerItem } from './genreExplorerScript';
+import { startingLevers as tsaStarts } from './textStructureAnalyzerLevers';
 
 const genreAt = (action: GenreExplorerItem['action']) => (tier: Tier) => genreStarts(tier, { action } as GenreExplorerItem);
 
@@ -18,6 +19,9 @@ const FAMILIES: Array<[family: string, starts: (tier: Tier) => string[], table: 
   ['genre-explorer check-feature', genreAt('check-feature'), { easy: ['sentence_rows'], medium: [], hard: [], none: [] }],
   ['genre-explorer pick-excerpt', genreAt('pick-excerpt'), { easy: ['two_checks'], medium: [], hard: [], none: [] }],
   ['genre-explorer name-genre', genreAt('name-genre'), { easy: ['read_glosses'], medium: [], hard: [], none: [] }],
+  // text-structure-analyzer's tiers already drew the ring, the spoken menu and the anchor; the levers make them pullable.
+  ['text-structure-analyzer', tsaStarts, { easy: ['focus_sentence', 'say_choices', 'anchor_idea'], medium: ['focus_sentence', 'say_choices'],
+    hard: [], none: ['focus_sentence', 'say_choices'] }],
 ];
 
 describe.each(FAMILIES)('%s', (_family, starts, table) => {

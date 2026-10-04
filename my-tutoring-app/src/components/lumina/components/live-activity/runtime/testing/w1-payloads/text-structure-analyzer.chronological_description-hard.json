@@ -3,86 +3,92 @@
  "primitiveId": "text-structure-analyzer",
  "evalMode": "chronological_description",
  "data": {
-  "title": "Understanding River Flows",
+  "title": "Growing Wings",
   "gradeLevel": "4",
-  "passage": "Heavy rain falls on the mountains for many hours. Next, extra water rushes down steep hills into small streams. After that, streams grow wide and spill over their grassy edges. Finally, water covers nearby fields and roads.",
+  "passage": "First, a tiny egg rests softly on a green leaf. Next, a hungry caterpillar hatches out and eats all day long. Then, the insect builds a hard shell around itself. Finally, a bright winged creature emerges into the sunny sky.",
   "structureType": "chronological",
   "signalWords": [
    {
-    "word": "Next",
-    "startIndex": 50,
-    "endIndex": 54
+    "word": "First",
+    "startIndex": 0,
+    "endIndex": 5
    },
    {
-    "word": "After that",
-    "startIndex": 112,
-    "endIndex": 122
+    "word": "Next",
+    "startIndex": 48,
+    "endIndex": 52
+   },
+   {
+    "word": "Then",
+    "startIndex": 110,
+    "endIndex": 114
    },
    {
     "word": "Finally",
-    "startIndex": 177,
-    "endIndex": 184
+    "startIndex": 162,
+    "endIndex": 169
    }
   ],
   "structureOptions": [
    {
     "type": "chronological",
     "label": "Time Order",
-    "description": "Explains events in the order they happen over time"
+    "description": "Shows events in the exact order they happen over time"
    },
    {
     "type": "description",
     "label": "Description",
-    "description": "Shares details and features about a topic"
+    "description": "Lists features, traits, or details about a single topic"
    },
    {
     "type": "cause-effect",
     "label": "Cause and Effect",
-    "description": "Shows why something happens and what happens as a result"
+    "description": "Explains why something happens and what happens as a result"
    },
    {
     "type": "compare-contrast",
     "label": "Compare and Contrast",
-    "description": "How two things are alike and different."
+    "description": "Shows how two or more things are alike and different"
    }
   ],
   "templateRegions": [
    {
-    "regionId": "beginning",
-    "label": "Beginning"
+    "regionId": "early",
+    "label": "Early Stage"
    },
    {
     "regionId": "middle",
-    "label": "Middle"
+    "label": "Middle Stage"
    },
    {
-    "regionId": "end",
-    "label": "End"
+    "regionId": "late",
+    "label": "Late Stage"
    }
   ],
   "keyIdeas": [
    {
-    "ideaId": "idea1",
-    "text": "Heavy rain falls on the mountains for many hours.",
-    "correctRegionId": "beginning"
+    "ideaId": "idea_1",
+    "text": "A tiny egg rests softly on a green leaf",
+    "correctRegionId": "early"
    },
    {
-    "ideaId": "idea2",
-    "text": "Extra water rushes down steep hills into small streams.",
-    "correctRegionId": "beginning"
+    "ideaId": "idea_2",
+    "text": "A hungry caterpillar hatches out and eats all day long",
+    "correctRegionId": "early"
    },
    {
-    "ideaId": "idea3",
-    "text": "Streams grow wide and spill over their grassy edges.",
+    "ideaId": "idea_3",
+    "text": "The insect builds a hard shell around itself",
     "correctRegionId": "middle"
    },
    {
-    "ideaId": "idea4",
-    "text": "Water covers nearby fields and roads.",
-    "correctRegionId": "end"
+    "ideaId": "idea_4",
+    "text": "A bright winged creature emerges into the sunny sky",
+    "correctRegionId": "late"
    }
   ],
   "nameStrategy": false,
-  "supportTier": "hard"
+  "supportTier": "hard",
+  "objectiveGrade": "4"
  }
 }

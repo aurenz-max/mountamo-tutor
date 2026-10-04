@@ -3,37 +3,37 @@
  "primitiveId": "text-structure-analyzer",
  "evalMode": "compare_contrast",
  "data": {
-  "title": "Rivers and Coastlines",
+  "title": "River Behavior Analysis",
   "gradeLevel": "4",
-  "passage": "Rainwater can fill rivers until water spills over the grassy banks. Similarly, ocean waves can rise high and flood sandy shores. However, a river flood happens much faster after a heavy storm. An ocean flood moves more slowly with the shifting tides. Both events can water the surrounding fields and bring rich soil. Unlike river floods, ocean floods leave behind salty water in the soil.",
+  "passage": "Spring rainstorms fill mountain streams with rushing water very quickly. Similarly, heavy melting winter snow sends massive sheets of water down the valleys. However, low flat regions absorb much of this extra moisture into the deep soil. In contrast, rocky landscapes bounce the liquid right back into the overflowing riverbeds. Both situations require careful tracking by local weather stations. Farmers must watch water levels closely to protect their crops.",
   "structureType": "compare-contrast",
   "signalWords": [
    {
     "word": "Similarly",
-    "startIndex": 68,
-    "endIndex": 77
+    "startIndex": 73,
+    "endIndex": 82
    },
    {
     "word": "However",
-    "startIndex": 129,
-    "endIndex": 136
+    "startIndex": 158,
+    "endIndex": 165
+   },
+   {
+    "word": "In contrast",
+    "startIndex": 239,
+    "endIndex": 250
    },
    {
     "word": "Both",
-    "startIndex": 251,
-    "endIndex": 255
-   },
-   {
-    "word": "Unlike",
-    "startIndex": 317,
-    "endIndex": 323
+    "startIndex": 330,
+    "endIndex": 334
    }
   ],
   "structureOptions": [
    {
     "type": "compare-contrast",
     "label": "Compare and Contrast",
-    "description": "Shows how two things are alike and different."
+    "description": "Shows how two things are alike and different"
    },
    {
     "type": "description",
@@ -43,57 +43,58 @@
    {
     "type": "cause-effect",
     "label": "Cause and Effect",
-    "description": "Shows why something happens and what happens as a result."
+    "description": "Explains why something happens and what happens as a result"
    },
    {
     "type": "problem-solution",
     "label": "Problem and Solution",
-    "description": "Shows a difficulty and how it gets fixed."
+    "description": "Shares a trouble and tells how it gets fixed"
    }
   ],
   "templateRegions": [
    {
-    "regionId": "rivers",
-    "label": "River Floods"
+    "regionId": "region1",
+    "label": "Soft Ground"
    },
    {
-    "regionId": "oceans",
-    "label": "Ocean Floods"
+    "regionId": "region2",
+    "label": "Rocky Land"
    },
    {
-    "regionId": "both",
-    "label": "Both"
+    "regionId": "region3",
+    "label": "Shared Traits"
    }
   ],
   "keyIdeas": [
    {
-    "ideaId": "id1",
-    "text": "Water spills over the grassy banks.",
-    "correctRegionId": "rivers"
+    "ideaId": "idea1",
+    "text": "absorb much of this extra moisture into the deep soil",
+    "correctRegionId": "region1"
    },
    {
-    "ideaId": "id2",
-    "text": "Waves can rise high and flood sandy shores.",
-    "correctRegionId": "oceans"
+    "ideaId": "idea2",
+    "text": "bounce the liquid right back into the overflowing riverbeds",
+    "correctRegionId": "region2"
    },
    {
-    "ideaId": "id3",
-    "text": "Happens much faster after a heavy storm.",
-    "correctRegionId": "rivers"
+    "ideaId": "idea3",
+    "text": "require careful tracking by local weather stations",
+    "correctRegionId": "region3"
    },
    {
-    "ideaId": "id4",
-    "text": "Moves more slowly with the shifting tides.",
-    "correctRegionId": "oceans"
+    "ideaId": "idea4",
+    "text": "watch water levels closely to protect their crops",
+    "correctRegionId": "region3"
    },
    {
-    "ideaId": "id5",
-    "text": "Water the surrounding fields and bring rich soil.",
-    "correctRegionId": "both"
+    "ideaId": "idea5",
+    "text": "fill mountain streams with rushing water very quickly",
+    "correctRegionId": "region1"
    }
   ],
-  "authorPurposeExplanation": "The author used this structure to help readers understand the similarities and differences between rising waters in two different places.",
+  "authorPurposeExplanation": "The author used this structure to help readers understand the distinct ways different types of terrain handle heavy water amounts.",
   "nameStrategy": false,
-  "supportTier": "hard"
+  "supportTier": "hard",
+  "objectiveGrade": "4"
  }
 }

@@ -227,6 +227,20 @@ export const STRUCTURE_GLOSS: Record<StructureTypeId, string> = {
 
 export const ALL_STRUCTURE_TYPES = Object.keys(STRUCTURE_LABEL) as StructureTypeId[];
 
+/**
+ * How easily two structures are mistaken: 1 near (cause-effect and problem-solution), 3 far. Moved here from the
+ * generator (lever plan 2026-10-03 step 4) so the runtime practice builder reads the same table.
+ */
+export const STRUCTURE_DISTANCE: Record<StructureTypeId, Partial<Record<StructureTypeId, number>>> = {
+  'cause-effect': { 'problem-solution': 1, 'compare-contrast': 2, chronological: 3, description: 3 },
+  'problem-solution': { 'cause-effect': 1, 'compare-contrast': 2, chronological: 3, description: 3 },
+  'compare-contrast': { 'cause-effect': 2, 'problem-solution': 2, description: 2, chronological: 3 },
+  chronological: { description: 2, 'cause-effect': 3, 'problem-solution': 3, 'compare-contrast': 3 },
+  description: { 'compare-contrast': 2, chronological: 2, 'cause-effect': 3, 'problem-solution': 3 },
+};
+export const structureDistance = (a: StructureTypeId, b: StructureTypeId): number =>
+  (a === b ? 0 : STRUCTURE_DISTANCE[a]?.[b] ?? 2);
+
 export const isStructureType = (value: unknown): value is StructureTypeId =>
   typeof value === 'string' && (ALL_STRUCTURE_TYPES as string[]).includes(value);
 
@@ -268,6 +282,8 @@ export interface TextStructureItem extends JudgedScriptItem {
   /** Perception tier lever (#1), rebuilt answer-free: highlight WHICH SENTENCE
    *  to look in. Never the signal word — that is the answer. */
   showFocusSentence: boolean;
+  /** A practice item from a simplify lever: its sentence or mini passage is on a card, not in the passage. */
+  onCard?: boolean;
 }
 
 /** Every item is SAID. Nothing in this pack answers with its hands. */
@@ -624,10 +640,14 @@ export interface TextStructureBuildResult {
   truncated: number;
   /** The sentences of the passage, for the stage's highlight and printing. */
   sentences: PassageSentence[];
+  /** Askable ideas held back by the cap: never asked, so the levers may show one filed or practise on it. */
+  spares: SpareIdea[];
 }
 
+export interface SpareIdea { id: string; text: string; region: string }
+
 const EMPTY_BUILD: TextStructureBuildResult = {
-  items: [], dropped: 0, truncated: 0, sentences: [],
+  items: [], dropped: 0, truncated: 0, sentences: [], spares: [],
 };
 
 /**
@@ -691,6 +711,7 @@ export const itemsFromPayload = (
   const showFocusSentence = tier !== 'hard';
 
   const items: TextStructureItem[] = [];
+  const spares: SpareIdea[] = [];
   let dropped = 0;
   let truncated = 0;
 
@@ -825,6 +846,8 @@ export const itemsFromPayload = (
 
     const kept = capCoveringEveryRegion(askable, regions.map((r) => r.regionId), MAX_MAP_ITEMS);
     truncated += Math.max(0, askable.length - kept.length);
+    spares.push(...askable.filter((idea) => !kept.includes(idea))
+      .map((idea) => ({ id: idea.ideaId, text: idea.text, region: labelOf.get(idea.correctRegionId) as string })));
     // One answer repeated every round is a placement the child can pass without
     // placing — the same defect a one-option menu is.
     const regionsReached = new Set(kept.map((i) => i.correctRegionId)).size;
@@ -881,7 +904,7 @@ export const itemsFromPayload = (
     );
   }
 
-  return { items: answerFree, dropped, truncated, sentences };
+  return { items: answerFree, dropped, truncated, sentences, spares };
 };
 
 // ── Small speakable helpers ─────────────────────────────────────────────────
@@ -974,8 +997,10 @@ export const askFor = (item: TextStructureItem): string => {
     case 'find-signal':
       // CARDINAL, never an ordinal — "the first sentence" said the answer out
       // loud on every chronological passage. See `SENTENCE_NUMBERS`.
+      if (item.onCard) return 'Your turn. Read the sentence on the card. Which word links the ideas?';
       return `Your turn. Read sentence ${sentenceNumberFor(item.sentenceIndex) ?? 'one'}. Which word links the ideas?`;
     case 'name-structure':
+      if (item.onCard) return `Your turn. Read the short passage on the card. How is it put together? ${choicesPhrase(item)}`;
       return item.namesChoices
         ? `Your turn. Think about the whole passage. How is it put together? ${choicesPhrase(item)}`
         // `hard` above the band floor: the structures are printed and the tier

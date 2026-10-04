@@ -127,7 +127,26 @@
      },
      "samples": [
       {
-       "text": "The sentence says: \"Four green frogs leaped.\" What part of speech is the word **green**?",
+       "text": "Our sentence is: \"Four green frogs leaped.\" What part of speech is the word **green**?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The sentence is \"Four green frogs leaped.\" What part of speech is the word \"green\"?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -165,7 +184,7 @@
        "pulledLever": null
       },
       {
-       "text": "The sentence is: \"Four green frogs leaped.\" What part of speech is the word **green**?",
+       "text": "\"Four green frogs leaped.\" What part of speech is the word **green**?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -184,26 +203,7 @@
        "pulledLever": null
       },
       {
-       "text": "\"Four green frogs leaped.\" What part of speech is the word green?",
-       "calls": [
-        {
-         "name": "observe_runtime",
-         "args": {}
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "Four green frogs leaped. What part of speech is the word green?",
+       "text": "\"Four green frogs leaped.\" What part of speech is the word \"green\"?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -243,16 +243,8 @@
      },
      "samples": [
       {
-       "text": "Not quite a conjunction. The word **green** describes what kind of frogs they are, so what part of speech is it?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/1/1"
-         }
-        }
-       ],
-       "before": "",
+       "text": "Not quite conjunction. Look at the word \"green\"\u2014it tells us what the frogs look like. Give it another try!",
+       "calls": [],
        "checks": {
         "not_empty": true,
         "no_protocol_leak": true,
@@ -264,16 +256,8 @@
        "pulledLever": null
       },
       {
-       "text": "Not quite a conjunction. The word **green** tells us what the frogs look like, so what part of speech is it?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/1/1"
-         }
-        }
-       ],
-       "before": "",
+       "text": "Not quite conjunction. The word **green** tells us what kind of frogs they are\u2014give it another try!",
+       "calls": [],
        "checks": {
         "not_empty": true,
         "no_protocol_leak": true,
@@ -285,16 +269,8 @@
        "pulledLever": null
       },
       {
-       "text": "Not quite a conjunction. The word **green** tells us what the frogs look like, so what part of speech is it?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/1/1"
-         }
-        }
-       ],
-       "before": "",
+       "text": "Not quite a conjunction. What does the word \"green\" tell us about the frogs? Take another look at the word wall and give it another try.",
+       "calls": [],
        "checks": {
         "not_empty": true,
         "no_protocol_leak": true,
@@ -306,16 +282,8 @@
        "pulledLever": null
       },
       {
-       "text": "Not quite a conjunction. The word **green** tells us what the frogs look like, so what part of speech is it?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/1/1"
-         }
-        }
-       ],
-       "before": "",
+       "text": "Not quite conjunction. Look at the word wall and think about what the word **green** is doing in the sentence\u2014try giving it another shot!",
+       "calls": [],
        "checks": {
         "not_empty": true,
         "no_protocol_leak": true,
@@ -327,16 +295,8 @@
        "pulledLever": null
       },
       {
-       "text": "Not quite. Notice what \"green\" does in the sentence\u2014it describes what the frogs look like. What part of speech describes a noun?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/1/1"
-         }
-        }
-       ],
-       "before": "",
+       "text": "Not quite. \"Green\" describes what kind of frogs they are, so try another label from our word wall.",
+       "calls": [],
        "checks": {
         "not_empty": true,
         "no_protocol_leak": true,
@@ -369,7 +329,29 @@
      },
      "samples": [
       {
-       "text": "A model card just appeared showing each word's job in a new sentence. Look at the word describing the puppy to see what label it has, and try **green** again!",
+       "text": "A model sentence card is now on your screen showing each word and its label. Take a look at the model and see what label goes with a word that describes a thing.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_sentence",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A card just appeared showing a new sentence with every word labelled. Look at what the words do there to help you name the part of speech for **green**.",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -391,7 +373,7 @@
        "pulledLever": true
       },
       {
-       "text": "A card popped up showing an example sentence with all its words labeled. Look at how words that describe a thing are labeled, and try naming the part of speech for **green** again.",
+       "text": "A model card is now on the screen showing: \"This brave puppy chased them quickly.\" \n\nLook at how the words are labeled on the card, and tell me what part of speech you think \"green\" is.",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -413,7 +395,7 @@
        "pulledLever": true
       },
       {
-       "text": "A card just appeared showing another sentence with each word labeled by what it does. Look at how words that describe a thing are labeled there, and give it another try!",
+       "text": "A card popped up showing an example sentence with every word labelled. Look at the word that describes what kind of puppy it is, and see what label it has!",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -435,29 +417,7 @@
        "pulledLever": true
       },
       {
-       "text": "A card popped up with an example sentence showing how different words are labeled. Look at how words that describe a thing are labeled there, and give **green** another try!",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/2/0",
-          "lever": "model_sentence"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": true
-       },
-       "evidence": {},
-       "pulledLever": true
-      },
-      {
-       "text": "A card popped up showing an example sentence with all its words labeled. Look at how words that describe a thing are labeled there, and give it another try!",
+       "text": "A model card just appeared showing each word labelled in an example sentence: \"This brave puppy chased them quickly.\" Which part of speech labels the word that describes a naming word?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -483,7 +443,7 @@
     {
      "kind": "lever",
      "itemId": "ch1-pos-1",
-     "trigger": "The learner said they were stuck, so the host pulled model_sentence (help). It is on screen now: Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which mode",
+     "trigger": "The learner said they were stuck, so the host pulled model_sentence (help). It is on screen now: Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels",
      "miss": null,
      "scoredWith": {
       "keys": [
@@ -500,7 +460,7 @@
      },
      "samples": [
       {
-       "text": "A card popped up showing an example sentence with every word labelled. Find the word describing what kind of puppy it is, and then tell me what part of speech **green** is.",
+       "text": "A card popped up with another sentence: \"This brave puppy chased them quickly,\" where each word shows its part of speech. Look at how those words work, then tell me: what part of speech is \"green\"?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -513,7 +473,7 @@
        "pulledLever": null
       },
       {
-       "text": "A new sentence card has appeared below with each word labelled. Check out how those words work, and tell me what part of speech **green** is!",
+       "text": "A new card popped up showing the sentence: \"This brave puppy chased them quickly,\" with each word labelled underneath. Look at how words that describe a thing are labelled there, and tell me what part of speech \"green\" is.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -526,7 +486,7 @@
        "pulledLever": null
       },
       {
-       "text": "A new card appeared with another sentence, showing what job each word does. Take a look at the word describing what kind of puppy it is, and give **green** another try!",
+       "text": "A card has appeared showing another sentence: \"This brave puppy chased them quickly,\" with each word labelled. Look at what each word does to see what part of speech \"green\" is in our sentence.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -539,7 +499,7 @@
        "pulledLever": null
       },
       {
-       "text": "There is a new card on the screen with an example sentence showing every word with its label. Take a look at the card, and tell me what part of speech **green** is in our sentence!",
+       "text": "A new card appeared with the sentence: \"This brave puppy chased them quickly,\" showing each word's part of speech. Look at how each word does its job on the card, and tell me: what part of speech is the word **green**?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -552,7 +512,7 @@
        "pulledLever": null
       },
       {
-       "text": "Look at the new card on your screen showing a model sentence with labels over every word. When a word describes what kind of thing a noun is, what label does the card show for it?",
+       "text": "A new card popped up showing the sentence: \"This brave puppy chased them quickly,\" with each word labelled. Take a look at that card to see what part of speech describes a noun, and tell me what part of speech \"green\" is.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -586,7 +546,7 @@
      },
      "samples": [
       {
-       "text": "Spot on! You identified that **green** is an adjective because it describes a noun.",
+       "text": "You got it! \"Green\" is an adjective because it describes the frogs. Great work!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -599,7 +559,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it! **Green** is an adjective because it describes the frogs.",
+       "text": "You got it! Green is an adjective because it describes the frogs.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -612,7 +572,7 @@
        "pulledLever": null
       },
       {
-       "text": "Spot on! You named it\u2014**green** is an adjective because it describes the frogs.",
+       "text": "You got it! Green is an adjective because it describes the frogs.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -625,7 +585,7 @@
        "pulledLever": null
       },
       {
-       "text": "Spot on! You correctly identified that **green** is an adjective because it describes the frogs.",
+       "text": "You got it right\u2014\"green\" is an adjective! It describes the frogs.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -638,7 +598,7 @@
        "pulledLever": null
       },
       {
-       "text": "Spot on, you got it! **Green** is an adjective because it describes the frogs.",
+       "text": "You got it! Green is an adjective because it describes the frogs.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -684,7 +644,7 @@
      },
      "samples": [
       {
-       "text": "Listen: \"Big cats run.\" What part of speech is the word **Big**?",
+       "text": "Listen: \"Big cats run.\" What part of speech is the word \"Big\"?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -703,7 +663,7 @@
        "pulledLever": null
       },
       {
-       "text": "Big cats run. What part of speech is the word \"Big\"?",
+       "text": "Listen to this sentence: \"Big cats run.\" What part of speech is the word \"Big\"?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -722,7 +682,7 @@
        "pulledLever": null
       },
       {
-       "text": "Listen: \"Big cats run.\" What part of speech is the word **Big**?",
+       "text": "Listen to this sentence: \"Big cats run.\" What part of speech is the word \"Big\"?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -741,7 +701,7 @@
        "pulledLever": null
       },
       {
-       "text": "Listen: \"Big cats run.\" What part of speech is the word **Big**?",
+       "text": "Listen: \"Big cats run.\" What part of speech is the word \"Big\"?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -760,7 +720,7 @@
        "pulledLever": null
       },
       {
-       "text": "Big cats run. What part of speech is the word \"Big\"?",
+       "text": "Listen: Big cats run. What part of speech is the word \"Big\"?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -800,101 +760,101 @@
      },
      "samples": [
       {
-       "text": "Not quite, but take a look at the word wall\u2014now there is an example shown under each label. \n\nWhat part of speech is the word **Big**?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "lever": "wall_examples",
-          "actionId": "test/1/0"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "Take a look at the word wall\u2014there is now an example under each label to help. Give it another try!",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "lever": "wall_examples",
-          "actionId": "test/1/0"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "Take a look at the word wall\u2014there is now an example under each label to help. Give it another try!",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "lever": "wall_examples",
-          "actionId": "test/1/0"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "Not quite. Look at the word wall\u2014there is now an example under each label to help you. What part of speech is the word **Big**?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "lever": "wall_examples",
-          "actionId": "test/1/0"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "Take a look at the word wall\u2014there is now an example under each label to help you. What part of speech is **Big**?",
+       "text": "Not quite. Take a look at the word wall\u2014there are examples under each label now to help you. What part of speech is \"Big\"?",
        "calls": [
         {
          "name": "perform_runtime_action",
          "args": {
           "actionId": "test/1/0",
           "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite, but take a look at the word wall\u2014now there is an example under each word to help. Which part of speech tells what kind the cats are?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite, but look at the word wall\u2014now there is an example under each label. What part of speech is the word \"Big\"?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Look at the word wall\u2014there are now example words shown under each label to help you. What part of speech is \"Big\"?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite! Take a look at the word wall: an example has appeared under each label to help you. Which label best describes what the word \"Big\" does?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
          }
         }
        ],
@@ -931,7 +891,7 @@
      },
      "samples": [
       {
-       "text": "Look at the word wall now: each label has an example with an underlined word.\n\nWhat part of speech is the word **Big**?",
+       "text": "I put an example under each word on the word wall to show how they work. Which label best fits what \"Big\" does in \"Big cats run\"?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -939,6 +899,10 @@
           "actionId": "test/2/0",
           "lever": "wall_examples"
          }
+        },
+        {
+         "name": "observe_runtime",
+         "args": {}
         }
        ],
        "before": "",
@@ -953,29 +917,7 @@
        "pulledLever": true
       },
       {
-       "text": "Under each label on the wall, there is now an example sentence with a word underlined. \n\nLook at those examples to see which one matches what **Big** is doing, and give it another try!",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/2/0",
-          "lever": "wall_examples"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": true
-       },
-       "evidence": {},
-       "pulledLever": true
-      },
-      {
-       "text": "An example sentence has appeared under each label on the word wall with an example word underlined. \n\nTake a look at those examples, and then try telling me: what part of speech is **Big**?",
+       "text": "Now there is an example under each label on the word wall to help you. Which label best describes the word \"Big\"?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -997,7 +939,29 @@
        "pulledLever": true
       },
       {
-       "text": "I've added examples under each label on the word wall to help you out. \n\nWhat part of speech is the word **Big**?",
+       "text": "The word wall now shows an example sentence under each label with a word underlined. Take a look at those examples and give \"Big\" another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Some example words are showing under each label on the word wall to help you. Which label matches what the word \"Big\" does?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -1019,13 +983,13 @@
        "pulledLever": true
       },
       {
-       "text": "You can do this! Look at the examples that just appeared under each word on the wall to help you decide.\n\nWhat part of speech is **Big**?",
+       "text": "Take a look at the word wall now\u2014there is an example word underlined under each label. What part of speech is \"Big\"?",
        "calls": [
         {
          "name": "perform_runtime_action",
          "args": {
-          "lever": "wall_examples",
-          "actionId": "test/2/0"
+          "actionId": "test/2/0",
+          "lever": "wall_examples"
          }
         }
        ],
@@ -1045,7 +1009,7 @@
     {
      "kind": "lever",
      "itemId": "ch1-pos-0",
-     "trigger": "The learner said they were stuck, so the host pulled model_sentence (help). It is on screen now: Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which mode",
+     "trigger": "The learner said they were stuck, so the host pulled model_sentence (help). It is on screen now: Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels",
      "miss": null,
      "scoredWith": {
       "keys": [
@@ -1062,7 +1026,7 @@
      },
      "samples": [
       {
-       "text": "A new card popped up showing an example sentence with every word labelled by its part of speech.\n\nLooking at that card to help you, what part of speech is the word **Big**?",
+       "text": "A new card popped up on the screen showing the sentence: \"That yellow bus stopped,\" with each word labelled. Looking at how those words are labelled, what part of speech is \"Big\"?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1075,7 +1039,7 @@
        "pulledLever": null
       },
       {
-       "text": "A new card popped up on your screen with another sentence, and every word on it has its label underneath! Take a look at what each word does there, and tell me: what part of speech is the word **Big**?",
+       "text": "A new card appeared on screen with a sentence that has every word labeled! Look at that sentence to see how each word works, then tell me: what part of speech is \"Big\"?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1088,7 +1052,7 @@
        "pulledLever": null
       },
       {
-       "text": "A card is on the screen with a new sentence, and each word has its label underneath it. \n\nTake a look at that card, and tell me: what part of speech is the word **Big**?",
+       "text": "A card just appeared with a new sentence: \"That yellow bus stopped,\" and every word has its label right above it! Looking at how those words are labelled, what part of speech is \"Big\"?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1101,7 +1065,7 @@
        "pulledLever": null
       },
       {
-       "text": "A card is now on your screen with another sentence, showing words that point out, describe, name, and show actions. \n\nLooking at what the word does, what part of speech is **Big**?",
+       "text": "A new card popped up showing the sentence: \"That yellow bus stopped,\" with labels above each word. Look at how each word is labeled, and tell me: what part of speech is \"Big\"?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1114,7 +1078,7 @@
        "pulledLever": null
       },
       {
-       "text": "A card appeared showing an example sentence with every word labelled above it. \n\nTake a look at the card, and tell me: what part of speech is the word **Big**?",
+       "text": "A card just appeared showing a new sentence: \"That yellow bus stopped,\" with each word labelled. Look at what each word does there, and tell me: what part of speech is \"Big\"?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1148,7 +1112,7 @@
      },
      "samples": [
       {
-       "text": "You got it! **Big** is an adjective because it describes the cats.",
+       "text": "You got it\u2014\"Big\" is an adjective! It describes the cats.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1161,7 +1125,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it right\u2014\"Big\" is an adjective!",
+       "text": "You got it! \"Big\" is an adjective because it describes the cats.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1174,7 +1138,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it right! You named that \"Big\" is an adjective.",
+       "text": "You got it! You named the adjective.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1187,7 +1151,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it right! You named the adjective!",
+       "text": "You got it! \"Big\" is an adjective because it describes the cats. Great job using the card to figure it out!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1200,7 +1164,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it! You named it as an adjective.",
+       "text": "You got it! \"Big\" is an adjective because it describes the cats.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1246,44 +1210,6 @@
      },
      "samples": [
       {
-       "text": "The sentence is: \"Bright stars shine tonight.\" What part of speech is the word \"Bright\"?",
-       "calls": [
-        {
-         "name": "observe_runtime",
-         "args": {}
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "\"Bright stars shine tonight.\" What part of speech is the highlighted word \"Bright\"?",
-       "calls": [
-        {
-         "name": "observe_runtime",
-         "args": {}
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
        "text": "Bright stars shine tonight. What part of speech is the word \"Bright\"?",
        "calls": [
         {
@@ -1322,7 +1248,45 @@
        "pulledLever": null
       },
       {
-       "text": "\"Bright stars shine tonight.\" What part of speech is the word \"Bright\"?",
+       "text": "Bright stars shine tonight. What part of speech is the word \"Bright\"?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The sentence is \"Bright stars shine tonight.\" What part of speech is the word \"Bright\"?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Bright stars shine tonight. What part of speech is the word \"Bright\"?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -1362,51 +1326,7 @@
      },
      "samples": [
       {
-       "text": "Not quite pronoun. Look at the word wall\u2014there are examples added under each label to help you try again.",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "lever": "wall_examples",
-          "actionId": "test/1/0"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "Not quite. Examples with underlined words have appeared under each word on the wall to help. What part of speech is \"Bright\"?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "lever": "wall_examples",
-          "actionId": "test/1/0"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "Not quite. Look at the word wall\u2014there are now example words under each label to help you. Take another look and give it another try!",
+       "text": "Not quite, but good try! I added example words under each label on the word wall to help you see how each one works. Take another look and give it another try!",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -1428,7 +1348,7 @@
        "pulledLever": null
       },
       {
-       "text": "Examples have appeared under each label on the word wall to help. Take another look and give it another try!",
+       "text": "Not quite pronoun. Look at the word wall\u2014examples have appeared under each label to help you out, so take a look and give it another try!",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -1450,13 +1370,57 @@
        "pulledLever": null
       },
       {
-       "text": "Not quite, but good try! Look at the word wall now\u2014there is an example under each word to help. Which part of speech describes the stars?",
+       "text": "Not quite pronoun. Look at the word wall\u2014examples have appeared under each label to help you try again.",
        "calls": [
         {
          "name": "perform_runtime_action",
          "args": {
           "lever": "wall_examples",
           "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Examples have appeared under each word on the word wall to help, so take a look and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Look at the word wall\u2014there are now example sentences under each label to help you try again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "wall_examples"
          }
         }
        ],
@@ -1493,7 +1457,7 @@
      },
      "samples": [
       {
-       "text": "Look at the word wall\u2014now there is an example under every label with a word underlined. Which label best matches what \"Bright\" does?",
+       "text": "I put example words under each label on the word wall to show how each one is used. Look at what the word \"Bright\" is doing to the stars, and see which label matches!",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -1515,29 +1479,7 @@
        "pulledLever": true
       },
       {
-       "text": "Examples with an underlined word have appeared under each label on the wall. Take a look at them and give it another try!",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/2/0",
-          "lever": "wall_examples"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": true
-       },
-       "evidence": {},
-       "pulledLever": true
-      },
-      {
-       "text": "An example has appeared under each label on the word wall to show how they work. Take a look at them and tell me what part of speech \"Bright\" is!",
+       "text": "Take a look at the word wall now\u2014there is an example under each label with an underlined word. Which label best describes what \"Bright\" does in the sentence?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -1559,7 +1501,29 @@
        "pulledLever": true
       },
       {
-       "text": "An example has been added under each word on the wall. Take a look at them and give \"Bright\" another try!",
+       "text": "I've put an example sentence under each label on the wall with an underlined word. Look at what \"Bright\" is doing in our sentence, and see which example works the same way!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I put an example word under each label on the word wall to show how they work. What part of speech do you think \"Bright\" is?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -1581,13 +1545,13 @@
        "pulledLever": true
       },
       {
-       "text": "Examples have appeared under each label on the word wall. What part of speech describes the stars?",
+       "text": "I put an example word under each label on the word wall to show how they work. Take a look at what \"Bright\" is doing in our sentence, and try saying which label fits!",
        "calls": [
         {
          "name": "perform_runtime_action",
          "args": {
-          "actionId": "test/2/0",
-          "lever": "wall_examples"
+          "lever": "wall_examples",
+          "actionId": "test/2/0"
          }
         }
        ],
@@ -1607,7 +1571,7 @@
     {
      "kind": "lever",
      "itemId": "ch1-pos-0",
-     "trigger": "The learner said they were stuck, so the host pulled model_sentence (help). It is on screen now: Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which mode",
+     "trigger": "The learner said they were stuck, so the host pulled model_sentence (help). It is on screen now: Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels",
      "miss": null,
      "scoredWith": {
       "keys": [
@@ -1624,7 +1588,7 @@
      },
      "samples": [
       {
-       "text": "A model card has appeared showing another sentence with every word labelled. Notice what kind of job each word does, and give \"Bright\" another try!",
+       "text": "A model card has appeared showing another sentence: \"Her quiet uncle gently handed me a warm blanket,\" with each word labelled. Look at what \"Bright\" is doing in our sentence, and see what label matches.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1637,7 +1601,7 @@
        "pulledLever": null
       },
       {
-       "text": "A card popped up with an example sentence showing each word's part of speech. What part of speech is \"Bright\"?",
+       "text": "A card just popped up showing another sentence with every word labelled. Look at what the words do on that card, and tell me what part of speech \"Bright\" is!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1650,7 +1614,7 @@
        "pulledLever": null
       },
       {
-       "text": "A card just appeared showing a whole new sentence with all of its words labelled. Take a look at what each word does there, and give \"Bright\" another try!",
+       "text": "A new card is on the screen showing another sentence with every word labelled. Look at what the words do there, and tell me what part of speech \"Bright\" is!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1663,7 +1627,7 @@
        "pulledLever": null
       },
       {
-       "text": "A card appeared showing a different sentence with each word's part of speech labeled. Look at how each word does its job there, then tell me what part of speech \"Bright\" is.",
+       "text": "A card popped up with another sentence where every word is already labelled: \"Her quiet uncle gently handed me a warm blanket.\" Look at how the words describing the blanket or uncle are labelled, and give our word \"Bright\" another try!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1676,7 +1640,7 @@
        "pulledLever": null
       },
       {
-       "text": "A card is now on your screen showing an example sentence with every word labelled. Take a look at what each word does, and tell me what part of speech \"Bright\" is!",
+       "text": "There is a new card on the screen showing another sentence with every word labelled. Look at what each word does to see how describing words are labelled, and tell me what part of speech \"Bright\" is!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1710,33 +1674,7 @@
      },
      "samples": [
       {
-       "text": "You got it\u2014\"Bright\" is an adjective describing the stars!",
-       "calls": [],
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": null,
-        "no_fix_before_try": null,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "Spot on! You named it\u2014\"Bright\" is an adjective because it describes the stars.",
-       "calls": [],
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": null,
-        "no_fix_before_try": null,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "You got it, \"Bright\" is an adjective! It describes the stars.",
+       "text": "You got it! \"Bright\" describes the stars, so it is an adjective.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1762,7 +1700,33 @@
        "pulledLever": null
       },
       {
-       "text": "You got it\u2014\"Bright\" is an adjective describing the stars!",
+       "text": "You got it! \"Bright\" is an adjective because it describes the stars.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! \"Bright\" is an adjective because it describes the stars.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You correctly identified that \"Bright\" is an adjective.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1808,7 +1772,45 @@
      },
      "samples": [
       {
-       "text": "\"Three brown dogs barked loudly.\" What part of speech is the word brown?",
+       "text": "What part of speech is the word \"brown\" in \"Three brown dogs barked loudly\"?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the sentence: \"Three brown dogs barked loudly.\" What part of speech is the highlighted word \"brown\"?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! In the sentence \"Three brown dogs barked loudly,\" what part of speech is the word brown?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -1846,45 +1848,7 @@
        "pulledLever": null
       },
       {
-       "text": "\"Three brown dogs barked loudly.\" What part of speech is the word \"brown\"?",
-       "calls": [
-        {
-         "name": "observe_runtime",
-         "args": {}
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "Our sentence is: \"Three brown dogs barked loudly.\" What part of speech is the word **brown**?",
-       "calls": [
-        {
-         "name": "observe_runtime",
-         "args": {}
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "\"Three brown dogs barked loudly.\" What part of speech is the word \"brown\"?",
+       "text": "Welcome! In the sentence \"Three brown dogs barked loudly,\" what part of speech is the word **brown**?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -1924,101 +1888,101 @@
      },
      "samples": [
       {
-       "text": "Not quite. Examples have appeared under each word on the wall to help. What part of speech is the word brown?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "lever": "wall_examples",
-          "actionId": "test/1/0"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "Not quite conjunction. Examples have been added under the words on the wall to help you compare, so give it another try.",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "lever": "wall_examples",
-          "actionId": "test/1/0"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "That's not quite it, but now there are example words shown under the labels on the wall. Take another look and tell me what part of speech \"brown\" is.",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "lever": "wall_examples",
-          "actionId": "test/1/0"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "Not quite conjunction. Look at the word wall\u2014examples have appeared under each label to help you try again.",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "lever": "wall_examples",
-          "actionId": "test/1/0"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "Not quite conjunction. I've added examples under the words on the word wall to help you try again.",
+       "text": "Not quite, but take a look at the word wall where examples have been added under each label. What does the word \"brown\" do in our sentence?",
        "calls": [
         {
          "name": "perform_runtime_action",
          "args": {
           "actionId": "test/1/0",
           "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite conjunction\u2014take a look at the word wall where examples have been added under each label. What part of speech describes the dogs?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite, but take a look at the word wall where examples have appeared under each label. What part of speech is \"brown\"?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Take a look at the word wall\u2014example words have appeared under each label to help you try again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Look at the word wall\u2014there are now example words under each label to help you try again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
          }
         }
        ],
@@ -2055,7 +2019,7 @@
      },
      "samples": [
       {
-       "text": "Take a look at the examples under each word on the word wall to see how each one is used. What part of speech is the word brown?",
+       "text": "There are now example words under each label on the word wall to help you. Which label matches a word that describes what the dogs look like?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -2077,7 +2041,51 @@
        "pulledLever": true
       },
       {
-       "text": "Examples have appeared under each label on the word wall with an underlined word. Take a look at them and give it another try!",
+       "text": "An example sentence has appeared under each label on the word wall with an underlined word. Look at what \"brown\" does to \"dogs,\" and see which example matches that kind of job.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "There is now an example sentence with an underlined word under each label on the word wall. Which label best matches what \"brown\" is doing?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Examples with underlined words have appeared under each label on the word wall. Which label best matches what \"brown\" is doing here?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -2099,51 +2107,7 @@
        "pulledLever": true
       },
       {
-       "text": "Take a look at the examples under each word on the word wall to see how each one is used. What part of speech is the word brown?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "lever": "wall_examples",
-          "actionId": "test/2/0"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": true
-       },
-       "evidence": {},
-       "pulledLever": true
-      },
-      {
-       "text": "Take a look at the word wall\u2014there is now an example under each label to guide you. Which label tells what kind of dogs they are?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "lever": "wall_examples",
-          "actionId": "test/2/0"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": true
-       },
-       "evidence": {},
-       "pulledLever": true
-      },
-      {
-       "text": "There is now an example sentence with an underlined word under each label on the word wall. Take a look at them and tell me what part of speech the word brown is.",
+       "text": "There is now an example sentence with an underlined word under each label on the word wall. Take a look at them and see which one does the same job as \"brown.\"",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -2169,7 +2133,7 @@
     {
      "kind": "lever",
      "itemId": "ch1-pos-1",
-     "trigger": "The learner said they were stuck, so the host pulled model_sentence (help). It is on screen now: Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which mode",
+     "trigger": "The learner said they were stuck, so the host pulled model_sentence (help). It is on screen now: Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels",
      "miss": null,
      "scoredWith": {
       "keys": [
@@ -2186,7 +2150,7 @@
      },
      "samples": [
       {
-       "text": "A card has appeared showing a different sentence with every word labelled. Look at what each word does in that example, and tell me what part of speech the word brown is.",
+       "text": "A card appeared showing the sentence \"This brave puppy chased them quickly\" with every word's job labelled. Look at the card to see which label fits a word that describes like \"brown\", and give it another try!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2199,7 +2163,7 @@
        "pulledLever": null
       },
       {
-       "text": "A model card has appeared showing another sentence with each word's part of speech labelled. Take a look at what each word does there, and give \"brown\" another try!",
+       "text": "A new card has appeared showing another sentence with every word labelled. Look at what each word does there, and tell me what part of speech \"brown\" is.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2212,7 +2176,7 @@
        "pulledLever": null
       },
       {
-       "text": "A model card has appeared showing another sentence with each word's part of speech labeled. Take a look at what each word does there, and tell me: what part of speech is \"brown\"?",
+       "text": "A card appeared showing the sentence \"This brave puppy chased them quickly\" with every word labeled. Take a look at the model card and tell me, what part of speech is the word \"brown\"?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2225,7 +2189,7 @@
        "pulledLever": null
       },
       {
-       "text": "A new card has appeared with an example sentence showing each word's grammar label. Look at what kind of job \"brown\" does in our sentence, and give it another try!",
+       "text": "A card is now on your screen showing another sentence with each word's part of speech labelled underneath. Take a look at that card to see how the describing words are labelled, and give our word \"brown\" another try!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2238,7 +2202,7 @@
        "pulledLever": null
       },
       {
-       "text": "A new card has appeared with an example sentence showing each word's part of speech. Look at what kinds of words describe things there, and try telling me: what part of speech is the word brown?",
+       "text": "A new card has appeared on the screen showing a different sentence with every word labelled. Look at what each word does there, and then tell me: what part of speech is the word \"brown\"?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2272,7 +2236,7 @@
      },
      "samples": [
       {
-       "text": "You got it! Brown is an adjective because it describes the dogs.",
+       "text": "You got it! \"Brown\" is an adjective because it describes the dogs.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2285,7 +2249,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it right\u2014the word brown is an adjective!",
+       "text": "You got it! \"Brown\" is an adjective because it describes the dogs.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2298,7 +2262,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it! Brown is an adjective because it describes the dogs.",
+       "text": "You got it, adjective! \"Brown\" describes the dogs.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2311,7 +2275,7 @@
        "pulledLever": null
       },
       {
-       "text": "Spot on! You identified that brown is an adjective describing the dogs.",
+       "text": "You got it, adjective is correct because \"brown\" describes the dogs!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2324,7 +2288,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it right\u2014brown is an adjective describing the dogs!",
+       "text": "Spot on! You named it\u2014\"brown\" is an adjective because it describes the dogs.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2370,7 +2334,7 @@
      },
      "samples": [
       {
-       "text": "Our sentence says: \"Bright stars shine tonight.\" What job does the word \"Bright\" do in this sentence?",
+       "text": "The sentence is: \"Bright stars shine tonight.\" What job does the word \"Bright\" do in this sentence?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -2427,7 +2391,7 @@
        "pulledLever": null
       },
       {
-       "text": "\"Bright stars shine tonight.\" What job does the word \"Bright\" do in this sentence?",
+       "text": "Bright stars shine tonight. What job does the word \"Bright\" do in this sentence?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -2446,7 +2410,7 @@
        "pulledLever": null
       },
       {
-       "text": "Our sentence is: \"Bright stars shine tonight.\" What job does the word \"Bright\" do in this sentence?",
+       "text": "Bright stars shine tonight. What job does the word \"Bright\" do in this sentence?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -2486,51 +2450,7 @@
      },
      "samples": [
       {
-       "text": "A model card appeared showing how each word in a sentence has a job. Give it another try: what job does the word \"Bright\" do in our sentence?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/1/0",
-          "lever": "two_row_model"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "A model card popped up showing how each word in an example sentence has a job. Take another look at our sentence and try again: what job does the word \"Bright\" do?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/1/0",
-          "lever": "two_row_model"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "A model card appeared showing how different words have their parts of speech and jobs listed. Look at what job the describing word does there, and give our sentence another try!",
+       "text": "A card is on the screen showing a different sentence with each word's part of speech and job. Take a look at the model card and try again.",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -2552,7 +2472,7 @@
        "pulledLever": null
       },
       {
-       "text": "Not quite. A helper card appeared showing another sentence with the job under each word. Look at the word wall and try again for the job of \"Bright\".",
+       "text": "A model card is now on the screen showing a different sentence with each word's part of speech over its job. Take a look at the model and give it another try!",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -2574,7 +2494,51 @@
        "pulledLever": null
       },
       {
-       "text": "A card appeared showing an example sentence with parts of speech and jobs. Take another look and give it another try!",
+       "text": "Not quite. A helper card appeared showing another sentence with parts of speech and jobs. Look at our sentence again and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "two_row_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card is now on the screen showing a different sentence with parts of speech and jobs. Look at the word wall and give \"Bright\" another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "two_row_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. A helper card appeared showing another sentence with parts of speech and jobs. Look at the word wall: what job does \"Bright\" do here?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -2617,7 +2581,7 @@
      },
      "samples": [
       {
-       "text": "A model card has appeared showing another sentence with each word's part of speech and its job underneath. Take a look at the model card and the word wall, then tell me what job \"Bright\" does.",
+       "text": "A model card appeared with the sentence \"A tiny frog jumped,\" showing each word's part of speech over its job. Looking at the word wall labels, what job does \"Bright\" do in our sentence?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -2639,13 +2603,13 @@
        "pulledLever": true
       },
       {
-       "text": "A model card appeared with an example sentence showing each word's part of speech and job. Look at how words describe and do their jobs, then give our sentence another try.",
+       "text": "A model card appeared showing another sentence with each word's part of speech above its job. Look at what job a describing word does, and give it another try!",
        "calls": [
         {
          "name": "perform_runtime_action",
          "args": {
-          "lever": "two_row_model",
-          "actionId": "test/2/0"
+          "actionId": "test/2/0",
+          "lever": "two_row_model"
          }
         }
        ],
@@ -2661,13 +2625,13 @@
        "pulledLever": true
       },
       {
-       "text": "A model card is now on the screen showing a practice sentence with parts of speech and jobs. Look at the bottom row of jobs on the card, then try naming the job of \"Bright.\"",
+       "text": "A model card is now on the screen showing the sentence \"A tiny frog jumped\", with the part of speech and job listed under each word. Look at the jobs shown on that card, and give our sentence another try!",
        "calls": [
         {
          "name": "perform_runtime_action",
          "args": {
-          "lever": "two_row_model",
-          "actionId": "test/2/0"
+          "actionId": "test/2/0",
+          "lever": "two_row_model"
          }
         }
        ],
@@ -2683,13 +2647,13 @@
        "pulledLever": true
       },
       {
-       "text": "A model card popped up showing an example sentence with parts of speech on top and each word's job on the bottom. Look at the word wall labels and tell me what job \"Bright\" does.",
+       "text": "A model card has appeared showing another sentence with each word's part of speech over its job. Take a look at the model card and try naming the job for \"Bright\".",
        "calls": [
         {
          "name": "perform_runtime_action",
          "args": {
-          "lever": "two_row_model",
-          "actionId": "test/2/0"
+          "actionId": "test/2/0",
+          "lever": "two_row_model"
          }
         }
        ],
@@ -2705,13 +2669,13 @@
        "pulledLever": true
       },
       {
-       "text": "A model card has appeared on the screen showing a different sentence with parts of speech and jobs. Look at the word wall and tell me what job the word \"Bright\" does.",
+       "text": "A model card has appeared on your screen showing another sentence with each word's part of speech and its job underneath. Look at what each word does on that card, and give our sentence another try!",
        "calls": [
         {
          "name": "perform_runtime_action",
          "args": {
-          "lever": "two_row_model",
-          "actionId": "test/2/0"
+          "actionId": "test/2/0",
+          "lever": "two_row_model"
          }
         }
        ],
@@ -2731,7 +2695,7 @@
     {
      "kind": "lever",
      "itemId": "ch1-role-0",
-     "trigger": "The learner said they were stuck, so the host pulled two_row_model (help). It is on screen now: Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a",
+     "trigger": "The learner said they were stuck, so the host pulled two_row_model (help). It is on screen now: Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tr",
      "miss": null,
      "scoredWith": {
       "keys": [
@@ -2748,7 +2712,7 @@
      },
      "samples": [
       {
-       "text": "A card is now on your screen showing a model sentence with each word's job listed underneath it. Look at the bottom row on that card to see the job names, and tell me what job the word \"Bright\" does.",
+       "text": "A card appeared showing the sentence \"A tiny frog jumped,\" with each word's part of speech written over its job. Take a look at the jobs on the card and the word wall, and give it another try!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2761,7 +2725,7 @@
        "pulledLever": null
       },
       {
-       "text": "A new card appeared on your screen showing a model sentence with parts of speech on top and jobs on the bottom. Look at what jobs words do on the card, and give \"Bright\" another try!",
+       "text": "A card is now on screen showing the example sentence \"A tiny frog jumped,\" with labels underneath each word showing its part of speech and its job. Take a look at that card, and then tell me what job the word \"Bright\" does in our sentence.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2774,7 +2738,7 @@
        "pulledLever": null
       },
       {
-       "text": "A new card appeared showing an example sentence, with each word's part of speech written above its job. Look at how describing words are labeled on that card, and give our sentence another try: what job does \"Bright\" do?",
+       "text": "On the screen, a model card now shows the sentence \"A tiny frog jumped,\" with parts of speech on top and jobs underneath. Which job from the word wall fits what the word \"Bright\" is doing?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2787,7 +2751,7 @@
        "pulledLever": null
       },
       {
-       "text": "A new card is on the screen showing a practice sentence with each word's part of speech placed right above its job. Look at how those jobs are labeled on the card, and tell me what job \"Bright\" does in our sentence.",
+       "text": "A new model card is on the screen showing the sentence \"A tiny frog jumped,\" with words and their jobs written underneath. Looking at the job labels there and on your word wall, what job does the word \"Bright\" do in our sentence?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2800,7 +2764,7 @@
        "pulledLever": null
       },
       {
-       "text": "On the screen, a card has appeared with an example sentence showing each word's part of speech on top and its job on the bottom. Look at the bottom row of jobs on that card, and tell me what job \"Bright\" does in our sentence.",
+       "text": "A new card popped up showing the sentence \"A tiny frog jumped,\" with words and their jobs underneath. Take a look at those bottom job labels and see what matches the job of \"Bright\" in our sentence!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2834,7 +2798,7 @@
      },
      "samples": [
       {
-       "text": "You got it! Modifier is the right job because \"Bright\" describes the stars.",
+       "text": "You got it, \"Bright\" is a modifier! It describes the stars.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2847,7 +2811,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it right! You named the modifier for the word \"Bright\".",
+       "text": "You got it! The word \"Bright\" acts as a modifier because it describes the stars.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2860,7 +2824,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it right! The word \"Bright\" acts as a modifier because it describes the stars.",
+       "text": "You got it! You found the job Modifier.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2873,7 +2837,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it! You correctly identified that \"Bright\" does the job of a Modifier by describing the stars.",
+       "text": "You got it\u2014\"Bright\" does the job of a modifier!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2886,7 +2850,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it! You correctly identified that \"Bright\" does the job of a modifier by describing the stars.",
+       "text": "You got it right\u2014\"Bright\" does the job of a modifier!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -3048,7 +3012,7 @@
      },
      "samples": [
       {
-       "text": "Examples have appeared under each label on the word wall. Take a look at them and try naming the job of \"Brilliant\" again.",
+       "text": "Examples have appeared under each label on the word wall. Take a look at them and try another guess for the job of \"Brilliant.\"",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -3070,29 +3034,7 @@
        "pulledLever": null
       },
       {
-       "text": "Examples have appeared under each label on the word wall with an underlined word. Take a look at them and try another guess for the job of \"Brilliant\".",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/1/0",
-          "lever": "wall_examples"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "Examples with underlined words have appeared under each label on the word wall. Take a look at those examples and try naming the job again.",
+       "text": "Not quite, but now an example sentence has appeared under each label on the word wall. Take a look at those examples and give it another try!",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -3114,7 +3056,29 @@
        "pulledLever": null
       },
       {
-       "text": "Not quite, but take a look at the word wall: an example is now shown under each label. What job does the word \"Brilliant\" do here?",
+       "text": "Notice the examples that appeared under the labels on the wall. Take another look and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Examples with underlined words have appeared under each label on the word wall. Take a look at them, and try naming the job of \"Brilliant\" again.",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -3136,13 +3100,13 @@
        "pulledLever": null
       },
       {
-       "text": "Examples with underlined words have appeared under each label on the word wall. Take a look at them and try again.",
+       "text": "Not quite. Take a look at the word wall\u2014there are examples added under each label now to help you try again.",
        "calls": [
         {
          "name": "perform_runtime_action",
          "args": {
-          "actionId": "test/1/0",
-          "lever": "wall_examples"
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
          }
         }
        ],
@@ -3220,113 +3184,8 @@
         {
          "name": "perform_runtime_action",
          "args": {
-          "actionId": "test/2/0",
-          "lever": "wall_examples"
-         }
-        },
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/2/0",
-          "lever": "short_sentence"
-         }
-        },
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/2/1"
-         }
-        }
-       ],
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": true
-       },
-       "evidence": {},
-       "pulledLever": true
-      },
-      {
-       "text": "",
-       "before": "",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
           "lever": "wall_examples",
           "actionId": "test/2/0"
-         }
-        },
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/2/0",
-          "lever": "short_sentence"
-         }
-        },
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/2/1"
-         }
-        }
-       ],
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": true
-       },
-       "evidence": {},
-       "pulledLever": true
-      },
-      {
-       "text": "",
-       "before": "",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/2/0",
-          "lever": "wall_examples"
-         }
-        },
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/2/0",
-          "lever": "short_sentence"
-         }
-        },
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/2/1"
-         }
-        }
-       ],
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": true
-       },
-       "evidence": {},
-       "pulledLever": true
-      },
-      {
-       "text": "",
-       "before": "",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/2/0",
-          "lever": "wall_examples"
          }
         },
         {
@@ -3352,13 +3211,79 @@
        },
        "evidence": {},
        "pulledLever": true
+      },
+      {
+       "text": "An example sentence with an underlined word has been added under each label on the word wall. See which example matches the way \"Brilliant\" describes \"stars.\"",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Examples with underlined words have appeared under each label on the word wall. Which label matches what \"Brilliant\" is doing to the stars?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Take a look at the examples showing how each label works on the word wall. Which job matches what \"Brilliant\" is doing for \"stars\"?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
       }
      ]
     },
     {
      "kind": "lever",
      "itemId": "ch1-role-0",
-     "trigger": "The learner said they were stuck, so the host pulled two_row_model (help). It is on screen now: Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a",
+     "trigger": "The learner said they were stuck, so the host pulled two_row_model (help). It is on screen now: Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tr",
      "miss": null,
      "scoredWith": {
       "keys": [
@@ -3375,7 +3300,7 @@
      },
      "samples": [
       {
-       "text": "A card has appeared showing another sentence with each word's part of speech above its job. Look at how words that describe or give more detail are labeled on that card, and give it another try!",
+       "text": "A model card has appeared on the screen showing a different sentence, with each word's part of speech written right above its job. Look at what each word does on that card, and give \"Brilliant\" another try!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -3388,7 +3313,7 @@
        "pulledLever": null
       },
       {
-       "text": "A new card has appeared showing an example sentence with parts of speech listed right above each word's job. Check how words describe other words on that card, and give the job of \"Brilliant\" another try!",
+       "text": "A card has appeared showing another sentence with each word's part of speech above its job. Look at what the words do on that card, and give the job for \"Brilliant\" another try!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -3401,7 +3326,7 @@
        "pulledLever": null
       },
       {
-       "text": "A model card has appeared showing another sentence with each word's part of speech right above its job. Look at how words that describe other words are labeled there, and give \"Brilliant\" another try.",
+       "text": "A model card has appeared showing another sentence, with the part of speech written above each word and its job written below it. Take a look at the jobs shown on that card and give our question another try!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -3414,7 +3339,7 @@
        "pulledLever": null
       },
       {
-       "text": "A model card has appeared showing another sentence with each word's part of speech over its job. Take a look at the model card and try naming the job that \"Brilliant\" does in our sentence.",
+       "text": "A card appeared with an example sentence showing each word's part of speech above its job. Look at the jobs listed on the card and give \"Brilliant\" another try!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -3427,7 +3352,7 @@
        "pulledLever": null
       },
       {
-       "text": "A model card has appeared showing another sentence with each word's part of speech right above its job. Take a look at how those words are labelled, and give the job of \"Brilliant\" another try!",
+       "text": "A model card with another sentence has appeared, showing parts of speech above their jobs. Take a look at the model card and try naming the job of \"Brilliant.\"",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -3461,7 +3386,7 @@
      },
      "samples": [
       {
-       "text": "You got it! \"Brilliant\" is indeed a modifier because it describes the stars.",
+       "text": "Spot on! You got it right with Modifier, because \"Brilliant\" describes the stars.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -3474,7 +3399,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it right! The job of \"Brilliant\" is a modifier because it describes the stars.",
+       "text": "Spot on! You correctly identified that \"Brilliant\" is acting as a modifier in this sentence.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -3487,7 +3412,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it! \"Brilliant\" is indeed a modifier because it describes the stars.",
+       "text": "You got it right! You named the job as Modifier, describing the stars.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -3500,7 +3425,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it! \"Modifier\" is the right job because \"Brilliant\" describes the stars.",
+       "text": "You got it! You correctly identified that \"Brilliant\" is working as a modifier.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -3513,7 +3438,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it right! The job of \"Brilliant\" is a modifier because it describes the stars.",
+       "text": "You got it! You correctly identified that \"Brilliant\" acts as a modifier.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -3559,7 +3484,26 @@
      },
      "samples": [
       {
-       "text": "The brown dog barked loudly. What job does the word \"The\" do in this sentence?",
+       "text": "The sentence is: \"The brown dog barked loudly.\" What job does the word \"The\" do in this sentence?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The sentence says: \"The brown dog barked loudly.\" What job does the word \"The\" do in this sentence?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -3597,7 +3541,7 @@
        "pulledLever": null
       },
       {
-       "text": "The sentence is, \"The brown dog barked loudly.\" What job does the word \"The\" do in this sentence?",
+       "text": "The sentence says, \"The brown dog barked loudly.\" What job does the word \"The\" do in this sentence?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -3616,26 +3560,7 @@
        "pulledLever": null
       },
       {
-       "text": "The sentence is: \"The brown dog barked loudly.\" What job does the word \"The\" do in this sentence?",
-       "calls": [
-        {
-         "name": "observe_runtime",
-         "args": {}
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "The sentence is: \"The brown dog barked loudly.\" What job does the word \"The\" do in this sentence?",
+       "text": "\"The brown dog barked loudly.\" What job does the word \"The\" do in this sentence?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -3675,7 +3600,7 @@
      },
      "samples": [
       {
-       "text": "Take a look at the word wall\u2014examples have appeared under each label to show how they work. Give it another try!",
+       "text": "Take a look at the word wall\u2014an example sentence has appeared under each label with an underlined word. Give it another try!",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -3697,7 +3622,7 @@
        "pulledLever": null
       },
       {
-       "text": "Not quite. Look at the word wall\u2014an example has appeared under each label to show how it is used. Take another look and give it another try!",
+       "text": "Examples have appeared under each label on the word wall to show how they work. Take a look at them and try naming the job of \"The\" again.",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -3719,7 +3644,7 @@
        "pulledLever": null
       },
       {
-       "text": "Not quite direct object. Look at the word wall now\u2014there is an example sentence under each label to help you try again.",
+       "text": "Not quite, but good try. Take a look at the word wall\u2014new examples have appeared under each label to help you see what they do. Which job fits \"The\"?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -3741,7 +3666,7 @@
        "pulledLever": null
       },
       {
-       "text": "Take a look at the word wall\u2014examples have appeared under each label to show how they work. Give it another try!",
+       "text": "Take another look\u2014new example sentences have appeared under each label on the word wall to help you see how each one works. What job do you think \"The\" has here?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -3763,13 +3688,13 @@
        "pulledLever": null
       },
       {
-       "text": "Not quite direct object. Take a look at the examples added under the labels on the word wall, and give it another try!",
+       "text": "Not quite, but look closely: there are now examples with underlined words under each label on the word wall. Give it another try!",
        "calls": [
         {
          "name": "perform_runtime_action",
          "args": {
-          "actionId": "test/1/0",
-          "lever": "wall_examples"
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
          }
         }
        ],
@@ -3806,7 +3731,7 @@
      },
      "samples": [
       {
-       "text": "Look at the word wall now: each label has an example with an underlined word beneath it. What job does \"The\" do in our sentence?",
+       "text": "An example sentence has appeared under each label on the word wall with an underlined word. Look at those examples and give it another try!",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -3828,51 +3753,7 @@
        "pulledLever": true
       },
       {
-       "text": "Look at the word wall\u2014each label now shows an example sentence with an underlined word. Which label fits what \"The\" does?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "lever": "wall_examples",
-          "actionId": "test/2/0"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": true
-       },
-       "evidence": {},
-       "pulledLever": true
-      },
-      {
-       "text": "An example has been added under each label on the word wall with a word underlined to help you compare. Which job matches what \"The\" does?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "lever": "wall_examples",
-          "actionId": "test/2/0"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": true
-       },
-       "evidence": {},
-       "pulledLever": true
-      },
-      {
-       "text": "An example sentence has appeared under each label on the wall with an underlined word. Look closely at those examples and try again!",
+       "text": "Examples with underlined words have appeared under each option on the word wall to help guide you. Which job matches the word \"The\"?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -3899,6 +3780,50 @@
         {
          "name": "perform_runtime_action",
          "args": {
+          "actionId": "test/2/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An example sentence has appeared under each label on the word wall with an underlined word to help you compare. Which job matches the word \"The\"?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now an example sentence appears under each word on the word wall, with a word underlined to show how it is used. Which label matches the job of \"The\"?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
           "lever": "wall_examples",
           "actionId": "test/2/0"
          }
@@ -3920,7 +3845,7 @@
     {
      "kind": "lever",
      "itemId": "ch1-role-0",
-     "trigger": "The learner said they were stuck, so the host pulled two_row_model (help). It is on screen now: Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a",
+     "trigger": "The learner said they were stuck, so the host pulled two_row_model (help). It is on screen now: Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tr",
      "miss": null,
      "scoredWith": {
       "keys": [
@@ -3937,7 +3862,7 @@
      },
      "samples": [
       {
-       "text": "A model card has appeared on your screen showing a different sentence with each word's part of speech written over its job. Take a look at how the words are labeled there, and tell me what job the word \"The\" does in our sentence.",
+       "text": "A new model card has appeared showing another sentence: \"This brave puppy chased them quickly,\" with each word's part of speech written above its job. Look at the jobs listed on that card and try our sentence again!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -3950,7 +3875,7 @@
        "pulledLever": null
       },
       {
-       "text": "A new model card has appeared showing another sentence, with parts of speech listed right above each word's job. Take a look at that card to see how words do different jobs, and tell me what job the word \"The\" does in our sentence.",
+       "text": "A model card has appeared showing another sentence with each word's part of speech over its job: \"This brave puppy chased them quickly.\" \n\nTake a look at how those words work, and try telling me what job \"The\" does in our sentence!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -3963,7 +3888,7 @@
        "pulledLever": null
       },
       {
-       "text": "A card has appeared showing a different sentence, with parts of speech listed over each word's job. Take a look at how those words are labelled, and tell me what job the word \"The\" does in our sentence.",
+       "text": "A card has appeared showing another sentence with each word's part of speech above its job. Look at the card to see how words do different jobs, then give our sentence another try!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -3976,7 +3901,7 @@
        "pulledLever": null
       },
       {
-       "text": "A new card has appeared showing an example sentence with the part of speech above each word's job. Take a look at how those words are labelled, and tell me what job the word \"The\" does in our sentence.",
+       "text": "A card has appeared showing another sentence: \"This brave puppy chased them quickly,\" with each word's part of speech listed above its job. Look at how those jobs are labeled on the card, and give our sentence another try!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -3989,7 +3914,7 @@
        "pulledLever": null
       },
       {
-       "text": "A card has appeared showing a different sentence, with parts of speech listed over each word's job. Take a look at how those jobs are labeled, and try our question again: what job does the word \"The\" do in our sentence?",
+       "text": "A model card has appeared on the screen showing another sentence, with each word's part of speech written over its job. Take a look at the card, and tell me what job the word \"The\" does in our sentence!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -4023,7 +3948,7 @@
      },
      "samples": [
       {
-       "text": "You got it right\u2014the word \"The\" acts as a modifier in this sentence!",
+       "text": "You got it! The word \"The\" acts as a modifier in this sentence.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -4036,7 +3961,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it right\u2014\"The\" does the job of a modifier by telling us which dog!",
+       "text": "You got it right! Modifier is the exact job the word \"The\" does here.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -4049,7 +3974,7 @@
        "pulledLever": null
       },
       {
-       "text": "Spot on! You correctly named \"The\" as a modifier.",
+       "text": "You got it right! Modifier is the correct job for the word \"The.\"",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -4062,7 +3987,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it! \"The\" does the job of a modifier here.",
+       "text": "You got it! The word \"The\" acts as a modifier here.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -4075,7 +4000,7 @@
        "pulledLever": null
       },
       {
-       "text": "Spot on! You correctly identified that the word \"The\" acts as a modifier in this sentence.",
+       "text": "You got it right\u2014the word \"The\" acts as a modifier!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -4121,7 +4046,7 @@
      },
      "samples": [
       {
-       "text": "The sentence says: \"Four brown dogs chased cats.\" What part of speech is the word \"brown\"?",
+       "text": "The sentence is: \"Four brown dogs chased cats.\" What part of speech is the word \"brown\"?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -4159,7 +4084,7 @@
        "pulledLever": null
       },
       {
-       "text": "The sentence is: \"Four brown dogs chased cats.\" What part of speech is the word \"brown\"?",
+       "text": "\"Four brown dogs chased cats.\" What part of speech is the word \"brown\"?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -4178,7 +4103,7 @@
        "pulledLever": null
       },
       {
-       "text": "Our sentence is: \"Four brown dogs chased cats.\" What part of speech is the word **brown**?",
+       "text": "In the sentence, \"Four brown dogs chased cats,\" what part of speech is the word brown?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -4197,7 +4122,7 @@
        "pulledLever": null
       },
       {
-       "text": "Four brown dogs chased cats. What part of speech is the word brown?",
+       "text": "Welcome! Look at the sentence: \"Four brown dogs chased cats.\" What part of speech is the word brown?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -4237,29 +4162,7 @@
      },
      "samples": [
       {
-       "text": "Take a look at the word wall\u2014each label now has an example showing how that word works. What part of speech is \"brown\"?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/1/0",
-          "lever": "wall_examples"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "Not quite, but good try. Examples have appeared under each label on the word wall to help, so give \"brown\" another shot!",
+       "text": "Not quite. Take a look at the word wall\u2014there are examples added under each label now to help you try again.",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -4281,7 +4184,7 @@
        "pulledLever": null
       },
       {
-       "text": "Not quite, but take a look at the word wall\u2014there are now example sentences under the labels to help you out. Look at what \"brown\" is doing for the dogs, and give it another try!",
+       "text": "Not quite conjunction. Examples have been added under each label on the word wall to help you out\u2014take a look and try again!",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -4303,13 +4206,13 @@
        "pulledLever": null
       },
       {
-       "text": "Not quite, but I've added examples under each word on the wall to help. Take another look and give it another try!",
+       "text": "I've added examples under each label on the word wall to help. What part of speech describes the dogs in our sentence?",
        "calls": [
         {
          "name": "perform_runtime_action",
          "args": {
-          "actionId": "test/1/0",
-          "lever": "wall_examples"
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
          }
         }
        ],
@@ -4325,13 +4228,35 @@
        "pulledLever": null
       },
       {
-       "text": "Take a look at the word wall\u2014example words have been added under each label to help. Give it another try: what part of speech is \"brown\"?",
+       "text": "Not quite, but take a look at the word wall\u2014now there is an example under each label to help you. What part of speech is the word \"brown\"?",
        "calls": [
         {
          "name": "perform_runtime_action",
          "args": {
-          "actionId": "test/1/0",
-          "lever": "wall_examples"
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Examples have appeared under each word on the word wall to help you out\u2014give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
          }
         }
        ],
@@ -4368,7 +4293,7 @@
      },
      "samples": [
       {
-       "text": "An example with an underlined word has been added under each label on the word wall to show how each one is used. Which label matches what \"brown\" is doing?",
+       "text": "An example has been added under every label on the word wall with an underlined word. Take a look at those examples and see which one acts like \"brown.\"",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -4390,29 +4315,7 @@
        "pulledLever": true
       },
       {
-       "text": "The word wall now shows an example sentence under every label with a key word underlined. Which label fits what the word \"brown\" does?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/2/0",
-          "lever": "wall_examples"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": true
-       },
-       "evidence": {},
-       "pulledLever": true
-      },
-      {
-       "text": "An example has been added under each label on the word wall with an underlined word to help you. What part of speech is \"brown\"?",
+       "text": "I put an example under each word on the wall with an underlined word. Which one matches what \"brown\" does in our sentence?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -4434,7 +4337,7 @@
        "pulledLever": true
       },
       {
-       "text": "An example with an underlined word has been added under each label on the word wall to help you see how each one is used. What part of speech is \"brown\"?",
+       "text": "An example sentence has appeared under each label on the word wall, with an example word underlined. Look at how \"brown\" describes the dogs and see which example matches that job.",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -4456,13 +4359,35 @@
        "pulledLever": true
       },
       {
-       "text": "Examples have been added under each label on the word wall with an underlined word to help you see how each one works. Which part of speech tells what kind of dogs they are?",
+       "text": "I've added examples under each label on the word wall with example words underlined. See which one matches what \"brown\" is doing!",
        "calls": [
         {
          "name": "perform_runtime_action",
          "args": {
-          "lever": "wall_examples",
-          "actionId": "test/2/0"
+          "actionId": "test/2/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I added an example sentence under each label on the word wall with an underlined word. Take a look at those examples to see which label matches what \"brown\" does in our sentence!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "wall_examples"
          }
         }
        ],
@@ -4482,7 +4407,7 @@
     {
      "kind": "lever",
      "itemId": "ch1-pos-1",
-     "trigger": "The learner said they were stuck, so the host pulled model_sentence (help). It is on screen now: Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which mode",
+     "trigger": "The learner said they were stuck, so the host pulled model_sentence (help). It is on screen now: Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels",
      "miss": null,
      "scoredWith": {
       "keys": [
@@ -4499,7 +4424,7 @@
      },
      "samples": [
       {
-       "text": "A new card is on the screen showing another sentence with every word labelled. Look at what the words do there, and tell me: what part of speech is \"brown\"?",
+       "text": "A card has appeared showing a different sentence with every word labelled. Look at what each word does there, and tell me what part of speech \"brown\" is.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -4512,7 +4437,7 @@
        "pulledLever": null
       },
       {
-       "text": "A card has appeared showing a different sentence with each of its words labeled. Look at how those words work, then give \"brown\" another try!",
+       "text": "A card popped up with a model sentence showing every word labelled with its part of speech: \"She quickly painted a purple kite.\" \n\nCheck out what each word does there, and give \"brown\" another try!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -4525,7 +4450,7 @@
        "pulledLever": null
       },
       {
-       "text": "A card has appeared showing another sentence with every word labelled by what it does. Look at how each word is labelled on that card, and tell me what part of speech \"brown\" is.",
+       "text": "A card just popped up showing another sentence with every word labelled. Look at what each word does there, and give \"brown\" another try!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -4538,7 +4463,7 @@
        "pulledLever": null
       },
       {
-       "text": "A card has appeared showing a different sentence with each of its words labeled. Look at how those words are working and tell me: what part of speech is \"brown\"?",
+       "text": "A card has appeared showing a different sentence: \"She quickly painted a purple kite,\" with each word labelled to show its job. Look at how each word works there, and tell me: what part of speech is \"brown\"?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -4551,7 +4476,7 @@
        "pulledLever": null
       },
       {
-       "text": "A card with a new practice sentence has appeared, and every word in it has its grammar label right next to it. Look at the jobs those words are doing, and tell me what part of speech \"brown\" is.",
+       "text": "A card has appeared showing a different sentence: \"She quickly painted a purple kite,\" with every word's part of speech labeled. Look at how each word is labeled there, and give \"brown\" another try.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -4585,7 +4510,7 @@
      },
      "samples": [
       {
-       "text": "You got it right\u2014\"brown\" is an adjective!",
+       "text": "You got it! \"Brown\" is an adjective because it describes the dogs.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -4598,33 +4523,7 @@
        "pulledLever": null
       },
       {
-       "text": "Spot on, you got it! \"Brown\" is an adjective because it describes the dogs.",
-       "calls": [],
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": null,
-        "no_fix_before_try": null,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "You got it right\u2014\"brown\" is an adjective!",
-       "calls": [],
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": null,
-        "no_fix_before_try": null,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "You got it right\u2014\"brown\" is an adjective because it describes the dogs!",
+       "text": "You got it\u2014\"brown\" is an adjective! It describes the dogs.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -4638,6 +4537,32 @@
       },
       {
        "text": "You got it right\u2014\"brown\" is an adjective!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right\u2014\"brown\" is an adjective!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it\u2014brown is an adjective! It describes the dogs.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -4681,7 +4606,7 @@
      },
      "samples": [
       {
-       "text": "The sentence is: \"The hungry bear ate berries.\" Is the word \"The\" in the subject or in the predicate?",
+       "text": "\"The hungry bear ate berries.\" Is the highlighted word \"The\" in the subject or in the predicate?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -4700,7 +4625,7 @@
        "pulledLever": null
       },
       {
-       "text": "The sentence says: \"The hungry bear ate berries.\" Is the word \"The\" in the subject or in the predicate?",
+       "text": "\"The hungry bear ate berries.\" Is the highlighted word \"The\" in the subject or in the predicate?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -4719,7 +4644,7 @@
        "pulledLever": null
       },
       {
-       "text": "In the sentence \"The hungry bear ate berries,\" is the highlighted word \"The\" in the subject or in the predicate?",
+       "text": "\"The hungry bear ate berries.\" Is the highlighted word \"The\" in the subject or in the predicate?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -4738,7 +4663,7 @@
        "pulledLever": null
       },
       {
-       "text": "The hungry bear ate berries. Is the word \"The\" in the subject or in the predicate?",
+       "text": "\"The hungry bear ate berries.\" Is the word \"The\" in the subject or in the predicate?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -4757,7 +4682,7 @@
        "pulledLever": null
       },
       {
-       "text": "The sentence is: \"The hungry bear ate berries.\" Is the word \"The\" in the subject or in the predicate?",
+       "text": "\"The hungry bear ate berries.\" Is the word \"The\" in the subject or in the predicate?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -4796,7 +4721,7 @@
      },
      "samples": [
       {
-       "text": "Not quite. Look at the new card that shows how another sentence splits its parts. Would you like to try again with \"The\"?",
+       "text": "Take a look at the model card that appeared on screen. Now, look back at our sentence and give it another try!",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -4818,7 +4743,7 @@
        "pulledLever": null
       },
       {
-       "text": "Take a look at the model card that appeared on your screen showing how another sentence is split. Which side is the word \"The\" on in our sentence?",
+       "text": "Take a look at the model card on the screen to see how a sentence splits. With that in mind, is \"The\" in the subject or in the predicate?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -4840,7 +4765,29 @@
        "pulledLever": null
       },
       {
-       "text": "Take a look at the model card that appeared on your screen showing how another sentence splits into its parts. Would you like to try again: is \"The\" in the subject or in the predicate?",
+       "text": "Not quite. Take a look at the model card on the screen to see how the words are split, and try again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "split_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. A helper card appeared with a new sentence to show how parts are split\u2014take a look at that card and give it another try!",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -4862,35 +4809,13 @@
        "pulledLever": null
       },
       {
-       "text": "A card appeared showing an example sentence divided into its two parts. Take another look at our sentence: is \"The\" in the subject or in the predicate?",
+       "text": "A model card appeared showing another sentence: \"Her quiet uncle\" is grouped together, and the rest is grouped together. Take another look at \"The hungry bear ate berries\"\u2014is \"The\" in the subject or in the predicate?",
        "calls": [
         {
          "name": "perform_runtime_action",
          "args": {
-          "actionId": "test/1/0",
-          "lever": "split_model"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "A card just appeared showing another sentence split into its parts to help you look at how it works. Take a look at that model, and try again on our sentence: is the word \"The\" in the subject or in the predicate?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/1/0",
-          "lever": "split_model"
+          "lever": "split_model",
+          "actionId": "test/1/0"
          }
         }
        ],
@@ -4926,7 +4851,7 @@
      },
      "samples": [
       {
-       "text": "A helper card appeared showing how another sentence is split into its subject and predicate. Take a look at how it brackets the words, and then tell me: is \"The\" in the subject or the predicate?",
+       "text": "A model card appeared showing the sentence \"Her quiet uncle cooked dinner,\" with \"Her quiet uncle\" bracketed as the subject and the rest as the predicate. Now look back at our sentence\u2014is \"The\" in the subject or in the predicate?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -4948,7 +4873,7 @@
        "pulledLever": true
       },
       {
-       "text": "A card just appeared showing an example sentence with its parts labeled. Take a look at how it splits, then tell me if \"The\" belongs in the subject or the predicate.",
+       "text": "A model card appeared showing the sentence \"Her quiet uncle cooked dinner,\" with \"Her quiet uncle\" bracketed as the subject and \"cooked dinner\" as the predicate. Now, is \"The\" in the subject or in the predicate?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -4970,7 +4895,7 @@
        "pulledLever": true
       },
       {
-       "text": "A model card popped up showing how another sentence is split into its parts. Take a look at it, and then tell me if \"The\" is in the subject or the predicate.",
+       "text": "A card appeared showing the sentence \"Her quiet uncle ate lunch,\" with parts grouped and labeled. Which side does \"The\" belong to in our sentence?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -4992,7 +4917,7 @@
        "pulledLever": true
       },
       {
-       "text": "A helper card popped up showing how another sentence is divided into its two main parts. Take a look at how it brackets those parts, and then tell me: is \"The\" in the subject or in the predicate?",
+       "text": "A card appeared with another sentence: \"Her quiet uncle\" is grouped together on one side, and the rest is on the other. What side is our word on?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -5014,7 +4939,7 @@
        "pulledLever": true
       },
       {
-       "text": "A new card appeared showing how another sentence divides its parts. Looking at how that sentence is split, what do you think \"The\" is in our sentence?",
+       "text": "A card appeared showing the sentence \"Her quiet uncle ate lunch,\" with parts labeled to guide you. Which side is \"The\" on in our sentence?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -5040,7 +4965,7 @@
     {
      "kind": "lever",
      "itemId": "ch1-side-0",
-     "trigger": "The learner said they were stuck, so the host pulled split_model (help). It is on screen now: Shows a card with a different sentence, its complete subject bracketed and labelled subject, the rest predicate. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence. First point the lear",
+     "trigger": "The learner said they were stuck, so the host pulled split_model (help). It is on screen now: Shows a card with a different sentence, its complete subject bracketed and labelled subject, the rest predicate. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the ",
      "miss": null,
      "scoredWith": {
       "keys": [
@@ -5056,7 +4981,7 @@
      },
      "samples": [
       {
-       "text": "A new card popped up showing an example sentence with brackets around its parts. Take a look at which side the words at the front belong to, and then tell me: is \"The\" in the subject or in the predicate?",
+       "text": "A new card is on the screen showing the sentence \"Her quiet uncle cooked dinner,\" with brackets labeling the parts. Take a look at that card, and tell me if \"The\" is in the subject or in the predicate.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -5069,7 +4994,7 @@
        "pulledLever": null
       },
       {
-       "text": "A card is now showing with another sentence, with brackets marking its parts. Take a look at where the brackets divide the words, and try saying whether \"The\" is in the subject or the predicate.",
+       "text": "A model card has appeared on the screen showing how another sentence splits into its two parts. Take a look at the card, and then tell me: is \"The\" in the subject or in the predicate?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -5082,7 +5007,7 @@
        "pulledLever": null
       },
       {
-       "text": "A model card has appeared showing another sentence with its parts labeled. Take a look at how it splits its words, and try telling me: is \"The\" in the subject or the predicate?",
+       "text": "A card appeared showing \"Her quiet uncle cooked dinner,\" with brackets dividing the sentence into parts. Look at how that sentence is split, and tell me: is \"The\" in the subject or in the predicate?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -5095,7 +5020,7 @@
        "pulledLever": null
       },
       {
-       "text": "A new card has popped up showing another sentence with its parts bracketed and labelled. Take a look at that card, and then try: is \"The\" in the subject or in the predicate?",
+       "text": "A model card is now on screen showing another sentence with its parts bracketed and labeled. Take a look at how that sentence is divided, and try our question again!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -5108,7 +5033,7 @@
        "pulledLever": null
       },
       {
-       "text": "A model card is now on screen showing another sentence split into its parts with brackets. Take a look at where the words are bracketed, and tell me: is \"The\" in the subject or in the predicate?",
+       "text": "A card has popped up on screen with the sentence \"Her quiet uncle cooked dinner,\" showing its two parts bracketed. Looking at that model, is \"The\" in the subject or in the predicate?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -5141,7 +5066,7 @@
      },
      "samples": [
       {
-       "text": "Spot on! You got it right that \"The\" is in the subject!",
+       "text": "You got it right! The word \"The\" is in the subject.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -5154,7 +5079,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it! You found that \"The\" is in the subject!",
+       "text": "You got it right\u2014\"The\" is in the subject!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -5167,7 +5092,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it! \"The\" is in the subject.",
+       "text": "You got it\u2014the word \"The\" is in the subject!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -5180,7 +5105,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it! \"The\" is in the subject.",
+       "text": "You got it right\u2014\"The\" is in the subject!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -5193,7 +5118,7 @@
        "pulledLever": null
       },
       {
-       "text": "Spot on! You got it right\u2014\"The\" is in the subject!",
+       "text": "You got it right\u2014\"The\" is in the subject!",
        "calls": [],
        "checks": {
         "not_empty": true,

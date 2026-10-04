@@ -40,7 +40,10 @@ export function textStructureItems(payload: TextStructurePayloadLike, instanceId
 /** The pack's own ask, without its "Your turn." hand-over. */
 const ask = (item: TextStructureItem) => askFor(item).replace(/\s*Your turn\.\s*/, ' ').replace(/\s+/g, ' ').trim();
 
-export function textStructureAssignment(item: TextStructureItem): TeachingAssignment {
+/** What the misses may quote beyond the item: the passage title and the session's linking words. */
+export interface MissContext { title?: string; signals?: readonly string[] }
+
+export function textStructureAssignment(item: TextStructureItem, ctx: MissContext = {}): TeachingAssignment {
   let expectedAnswer: string;
   switch (item.action) {
     case 'find-signal':
@@ -57,34 +60,51 @@ export function textStructureAssignment(item: TextStructureItem): TeachingAssign
         + 'counts. Saying the idea back is not an answer.';
       break;
   }
-  const misses = textStructureSpokenMisses(item);
+  const misses = textStructureSpokenMisses(item, ctx);
   return { id: item.id, task: ask(item), response: 'speech', expectedAnswer, ...(misses.length ? { misses } : {}) };
 }
 
 /** Words of four letters or more that name no thing or action, kept out of `content_word`'s examples. */
 const SMALL_WORDS = new Set(['that', 'this', 'with', 'into', 'from', 'there', 'then', 'they', 'their', 'when', 'were', 'have', 'already', 'across', 'onto', 'over']);
 
-/** What a wrong spoken answer shows (handoff 20 Part B), by action. */
-export type SpokenTextStructureMiss = 'content_word' | 'other_structure' | 'other_part' | 'said_idea_back';
+/** What a wrong spoken answer shows (handoff 20 Part B), by action; the lever table 2026-10-03 adds the last three. */
+export type SpokenTextStructureMiss = 'content_word' | 'other_structure' | 'other_part' | 'said_idea_back'
+  | 'not_in_sentence' | 'said_topic' | 'said_signal_word';
+
+/** Linking words a child might offer that a sentence does not use, for `not_in_sentence`'s examples. */
+const COMMON_LINKS = ['then', 'because', 'but', 'so', 'next', 'also', 'after'];
 
 /**
  * An item's known wrong answers, in precedence order, for the `spoken_miss` observer: another word of the sentence
  * that is not the linking word (find-signal), another printed structure (name-structure), the other part or the
  * idea said back (place-idea).
  */
-export function textStructureSpokenMisses(item: TextStructureItem): KnownMiss[] {
+export function textStructureSpokenMisses(item: TextStructureItem, ctx: MissContext = {}): KnownMiss[] {
   const quote = (xs: readonly string[]) => xs.map(x => `"${x}"`).join(' or ');
   switch (item.action) {
     case 'find-signal': {
       const signal = item.answer.toLowerCase().split(/\s+/);
       const words = (item.stimulusText.toLowerCase().match(/[a-z']+/g) ?? []).filter(w => !signal.includes(w) && w.length > 3 && !SMALL_WORDS.has(w));
+      const inSentence = new Set(item.stimulusText.toLowerCase().match(/[a-z']+/g) ?? []);
+      const absent = [...(ctx.signals ?? []), ...COMMON_LINKS].map(w => w.toLowerCase())
+        .filter((w, i, all) => all.indexOf(w) === i && !w.split(' ').some(x => inSentence.has(x)));
       return [{ id: 'content_word', pattern: `The linking word in "${item.stimulusText}" is "${item.answer}". The learner's answer is a different word from that sentence, one that names a thing, an action or a description.`,
-        examples: words.slice(0, 2) }];
+        examples: words.slice(0, 2) },
+      ...(absent.length ? [{ id: 'not_in_sentence', pattern: `The linking word in "${item.stimulusText}" is "${item.answer}". The learner's answer is a word that is not in that sentence: another sentence's word, or a linking word this sentence does not use.`,
+        examples: absent.slice(0, 2) }] : [])];
     }
     case 'name-structure': {
       const others = item.choices.filter(c => c !== item.answer);
-      return others.length ? [{ id: 'other_structure', pattern: `The passage is organised as ${item.answer}. The learner's answer is another printed structure: ${quote(others)}.`,
-        examples: others.slice(0, 2) }] : [];
+      const topic = (ctx.title?.match(/[A-Za-z]{4,}/g) ?? []).filter(w => !/^(how|what|why|when|with|from|that|this)$/i.test(w));
+      const signals = (ctx.signals ?? []).filter(w => !others.some(o => o.toLowerCase().includes(w.toLowerCase())));
+      return [
+        ...(others.length ? [{ id: 'other_structure', pattern: `The passage is organised as ${item.answer}. The learner's answer is another printed structure: ${quote(others)}.`,
+          examples: others.slice(0, 2) }] : []),
+        { id: 'said_topic', pattern: `The passage is organised as ${item.answer}. The learner names what the passage is about (its topic) and no structure.`,
+          ...(topic.length ? { examples: topic.slice(0, 2).map(w => w.toLowerCase()) } : {}) },
+        { id: 'said_signal_word', pattern: `The passage is organised as ${item.answer}. The learner says a linking word from the passage, such as ${signals.length ? quote(signals.slice(0, 2)) : '"because"'}, and no structure.`,
+          examples: (signals.length ? signals : ['because']).slice(0, 2) },
+      ];
     }
     case 'place-idea': {
       const others = item.choices.filter(c => c !== item.answer);

@@ -72,7 +72,7 @@
            "describing_word"
           ],
           "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
-          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "short_sentence",
@@ -204,7 +204,7 @@
            "describing_word"
           ],
           "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
-          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "short_sentence",
@@ -417,7 +417,7 @@
            "describing_word"
           ],
           "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
-          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "short_sentence",
@@ -574,7 +574,7 @@
            "describing_word"
           ],
           "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
-          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "short_sentence",
@@ -685,13 +685,13 @@
       }
      },
      "host": [
-      "The learner said they were stuck, so the host pulled model_sentence (help). It is on screen now: Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+      "The learner said they were stuck, so the host pulled model_sentence (help). It is on screen now: Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
      ],
      "spoken": false,
      "lever": {
       "id": "model_sentence",
       "kind": "help",
-      "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+      "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
      }
     },
     {
@@ -752,7 +752,7 @@
            "describing_word"
           ],
           "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
-          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "short_sentence",
@@ -1023,7 +1023,7 @@
            "describing_word"
           ],
           "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
-          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -1166,7 +1166,7 @@
            "describing_word"
           ],
           "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
-          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -1382,7 +1382,7 @@
            "describing_word"
           ],
           "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
-          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -1551,7 +1551,7 @@
            "describing_word"
           ],
           "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
-          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -1674,13 +1674,13 @@
       }
      },
      "host": [
-      "The learner said they were stuck, so the host pulled model_sentence (help). It is on screen now: Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+      "The learner said they were stuck, so the host pulled model_sentence (help). It is on screen now: Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
      ],
      "spoken": false,
      "lever": {
       "id": "model_sentence",
       "kind": "help",
-      "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+      "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
      }
     },
     {
@@ -1741,7 +1741,7 @@
            "describing_word"
           ],
           "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
-          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -2017,7 +2017,7 @@
            "describing_word"
           ],
           "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
-          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -2160,7 +2160,7 @@
            "describing_word"
           ],
           "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
-          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -2383,7 +2383,7 @@
            "describing_word"
           ],
           "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
-          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -2552,7 +2552,7 @@
            "describing_word"
           ],
           "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
-          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -2675,13 +2675,13 @@
       }
      },
      "host": [
-      "The learner said they were stuck, so the host pulled model_sentence (help). It is on screen now: Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+      "The learner said they were stuck, so the host pulled model_sentence (help). It is on screen now: Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
      ],
      "spoken": false,
      "lever": {
       "id": "model_sentence",
       "kind": "help",
-      "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+      "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
      }
     },
     {
@@ -2742,7 +2742,7 @@
            "describing_word"
           ],
           "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
-          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -3025,7 +3025,7 @@
            "describing_word"
           ],
           "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
-          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -3168,7 +3168,7 @@
            "describing_word"
           ],
           "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
-          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -3391,7 +3391,7 @@
            "describing_word"
           ],
           "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
-          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -3560,7 +3560,7 @@
            "describing_word"
           ],
           "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
-          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -3683,13 +3683,13 @@
       }
      },
      "host": [
-      "The learner said they were stuck, so the host pulled model_sentence (help). It is on screen now: Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+      "The learner said they were stuck, so the host pulled model_sentence (help). It is on screen now: Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
      ],
      "spoken": false,
      "lever": {
       "id": "model_sentence",
       "kind": "help",
-      "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+      "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
      }
     },
     {
@@ -3750,7 +3750,7 @@
            "describing_word"
           ],
           "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
-          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -4033,7 +4033,7 @@
            "named_the_side"
           ],
           "when": "The learner says a part of speech for a job, or says subject or predicate for a word inside them.",
-          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -4177,7 +4177,7 @@
            "named_the_side"
           ],
           "when": "The learner says a part of speech for a job, or says subject or predicate for a word inside them.",
-          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -4402,7 +4402,7 @@
            "named_the_side"
           ],
           "when": "The learner says a part of speech for a job, or says subject or predicate for a word inside them.",
-          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -4572,7 +4572,7 @@
            "named_the_side"
           ],
           "when": "The learner says a part of speech for a job, or says subject or predicate for a word inside them.",
-          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -4696,13 +4696,13 @@
       }
      },
      "host": [
-      "The learner said they were stuck, so the host pulled two_row_model (help). It is on screen now: Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+      "The learner said they were stuck, so the host pulled two_row_model (help). It is on screen now: Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
      ],
      "spoken": false,
      "lever": {
       "id": "two_row_model",
       "kind": "help",
-      "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+      "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
      }
     },
     {
@@ -4763,7 +4763,7 @@
            "named_the_side"
           ],
           "when": "The learner says a part of speech for a job, or says subject or predicate for a word inside them.",
-          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -5048,7 +5048,7 @@
            "named_the_side"
           ],
           "when": "The learner says a part of speech for a job, or says subject or predicate for a word inside them.",
-          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -5192,7 +5192,7 @@
            "named_the_side"
           ],
           "when": "The learner says a part of speech for a job, or says subject or predicate for a word inside them.",
-          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -5417,7 +5417,7 @@
            "named_the_side"
           ],
           "when": "The learner says a part of speech for a job, or says subject or predicate for a word inside them.",
-          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -5587,7 +5587,7 @@
            "named_the_side"
           ],
           "when": "The learner says a part of speech for a job, or says subject or predicate for a word inside them.",
-          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -5711,13 +5711,13 @@
       }
      },
      "host": [
-      "The learner said they were stuck, so the host pulled two_row_model (help). It is on screen now: Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+      "The learner said they were stuck, so the host pulled two_row_model (help). It is on screen now: Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
      ],
      "spoken": false,
      "lever": {
       "id": "two_row_model",
       "kind": "help",
-      "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+      "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
      }
     },
     {
@@ -5778,7 +5778,7 @@
            "named_the_side"
           ],
           "when": "The learner says a part of speech for a job, or says subject or predicate for a word inside them.",
-          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -6063,7 +6063,7 @@
            "named_the_side"
           ],
           "when": "The learner says a part of speech for a job, or says subject or predicate for a word inside them.",
-          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -6207,7 +6207,7 @@
            "named_the_side"
           ],
           "when": "The learner says a part of speech for a job, or says subject or predicate for a word inside them.",
-          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -6432,7 +6432,7 @@
            "named_the_side"
           ],
           "when": "The learner says a part of speech for a job, or says subject or predicate for a word inside them.",
-          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -6602,7 +6602,7 @@
            "named_the_side"
           ],
           "when": "The learner says a part of speech for a job, or says subject or predicate for a word inside them.",
-          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -6726,13 +6726,13 @@
       }
      },
      "host": [
-      "The learner said they were stuck, so the host pulled two_row_model (help). It is on screen now: Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+      "The learner said they were stuck, so the host pulled two_row_model (help). It is on screen now: Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
      ],
      "spoken": false,
      "lever": {
       "id": "two_row_model",
       "kind": "help",
-      "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+      "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
      }
     },
     {
@@ -6793,7 +6793,7 @@
            "named_the_side"
           ],
           "when": "The learner says a part of speech for a job, or says subject or predicate for a word inside them.",
-          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -7078,7 +7078,7 @@
            "describing_word"
           ],
           "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
-          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -7221,7 +7221,7 @@
            "describing_word"
           ],
           "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
-          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -7444,7 +7444,7 @@
            "describing_word"
           ],
           "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
-          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -7613,7 +7613,7 @@
            "describing_word"
           ],
           "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
-          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -7736,13 +7736,13 @@
       }
      },
      "host": [
-      "The learner said they were stuck, so the host pulled model_sentence (help). It is on screen now: Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+      "The learner said they were stuck, so the host pulled model_sentence (help). It is on screen now: Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
      ],
      "spoken": false,
      "lever": {
       "id": "model_sentence",
       "kind": "help",
-      "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+      "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
      }
     },
     {
@@ -7803,7 +7803,7 @@
            "describing_word"
           ],
           "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
-          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "wall_examples",
@@ -8083,7 +8083,7 @@
            "other_side"
           ],
           "when": "The learner puts a small word or a describing word on the wrong side.",
-          "does": "Shows a card with a different sentence, its complete subject bracketed and labelled subject, the rest predicate. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, its complete subject bracketed and labelled subject, the rest predicate. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "short_subject",
@@ -8210,7 +8210,7 @@
            "other_side"
           ],
           "when": "The learner puts a small word or a describing word on the wrong side.",
-          "does": "Shows a card with a different sentence, its complete subject bracketed and labelled subject, the rest predicate. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, its complete subject bracketed and labelled subject, the rest predicate. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "short_subject",
@@ -8401,7 +8401,7 @@
            "other_side"
           ],
           "when": "The learner puts a small word or a describing word on the wrong side.",
-          "does": "Shows a card with a different sentence, its complete subject bracketed and labelled subject, the rest predicate. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, its complete subject bracketed and labelled subject, the rest predicate. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "short_subject",
@@ -8554,7 +8554,7 @@
            "other_side"
           ],
           "when": "The learner puts a small word or a describing word on the wrong side.",
-          "does": "Shows a card with a different sentence, its complete subject bracketed and labelled subject, the rest predicate. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, its complete subject bracketed and labelled subject, the rest predicate. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "short_subject",
@@ -8663,13 +8663,13 @@
       }
      },
      "host": [
-      "The learner said they were stuck, so the host pulled split_model (help). It is on screen now: Shows a card with a different sentence, its complete subject bracketed and labelled subject, the rest predicate. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+      "The learner said they were stuck, so the host pulled split_model (help). It is on screen now: Shows a card with a different sentence, its complete subject bracketed and labelled subject, the rest predicate. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
      ],
      "spoken": false,
      "lever": {
       "id": "split_model",
       "kind": "help",
-      "does": "Shows a card with a different sentence, its complete subject bracketed and labelled subject, the rest predicate. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+      "does": "Shows a card with a different sentence, its complete subject bracketed and labelled subject, the rest predicate. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
      }
     },
     {
@@ -8728,7 +8728,7 @@
            "other_side"
           ],
           "when": "The learner puts a small word or a describing word on the wrong side.",
-          "does": "Shows a card with a different sentence, its complete subject bracketed and labelled subject, the rest predicate. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+          "does": "Shows a card with a different sentence, its complete subject bracketed and labelled subject, the rest predicate. Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
          },
          {
           "id": "short_subject",

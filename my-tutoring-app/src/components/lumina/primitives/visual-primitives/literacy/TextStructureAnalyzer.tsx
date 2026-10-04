@@ -54,7 +54,7 @@
  * assignment and scene the tutor receives live in `textStructureAnalyzerWorkspace.ts`.
  */
 
-import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaBadge,
   LuminaCard,
@@ -87,6 +87,10 @@ import {
   type TextStructureTier,
 } from './textStructureAnalyzerScript';
 import { textStructureAssignment, textStructureItems, textStructureScene } from './textStructureAnalyzerWorkspace';
+import { ANCHOR_LEVER, FOCUS_LEVER, LINK_MODEL_LEVER, SAY_CHOICES_LEVER, SOURCE_LEVER, STRUCTURE_MODEL_LEVER,
+  anchorFor, leversOnScreen, linkModelFor, linkParts, shortLinkFor, sourceFor, startingLevers, structureModelFor,
+  structurePracticeFor, textStructureLevers, twoPartFor, type TsaSession } from './textStructureAnalyzerLevers';
+import { STRUCTURE_LABEL as LABEL_OF, isStructureType as isStructureId } from './textStructureAnalyzerScript';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -215,7 +219,14 @@ const TextStructureAnalyzerSurface: React.FC<TextStructureAnalyzerProps> = ({ da
   const workspace = useRef<TeachingWorkspace | null>(null);
 
   /** Build gates drop what cannot be asked; the structure menu takes its per-instance order. */
-  const { items, sentences } = useMemo(() => textStructureItems(data, resolvedInstanceId), [data, resolvedInstanceId]);
+  const { items, sentences, spares } = useMemo(() => textStructureItems(data, resolvedInstanceId), [data, resolvedInstanceId]);
+  // In-item levers, keyed by the session item they were pulled on, and the practice item a simplify lever put on
+  // screen in its place (ungraded; the full item comes back after it). `text` is a practice mini passage.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<{ item: TextStructureItem; text?: string } | null>(null);
+  /** The misses may quote the title and the session's linking words (said_topic, said_signal_word). */
+  const signals = useMemo(() => items.filter((i) => i.action === 'find-signal').map((i) => i.answer), [items]);
+  const assignment = useCallback((item: TextStructureItem) => textStructureAssignment(item, { title, signals }), [title, signals]);
 
   /** The credited item's reveal payload, rendered behind `runner.revealHeld`. */
   const [reveal, setReveal] = useState<{ action: TextStructureAction; answer: string } | null>(null);
@@ -266,7 +277,7 @@ const TextStructureAnalyzerSurface: React.FC<TextStructureAnalyzerProps> = ({ da
 
   const runner = useWorkspaceRunner<TextStructureItem>({
     primitiveId: 'text-structure-analyzer',
-    assignment: textStructureAssignment,
+    assignment,
     items,
     workspace,
     objectiveId,
@@ -281,14 +292,53 @@ const TextStructureAnalyzerSurface: React.FC<TextStructureAnalyzerProps> = ({ da
   });
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
-  const currentItem = runner.currentItem;
+  const sessionItem = runner.currentItem;
+  /** What is on screen: the practice item while a simplify lever holds it, else the session item. */
+  const currentItem = practice?.item ?? sessionItem;
   const actionMeta = ACTION_META[currentItem?.action ?? 'find-signal'];
+  const session: TsaSession = { passage, sentences, items, spares, grade: Number(String(gradeLevel).replace(/[^0-9]/g, '')) || 4,
+    structure: isStructureId(structureType) ? structureType : null, hasAnchor: !!anchorIdeaId };
+  const starting = practice ? [] : startingLevers(data.supportTier);
+  const pulledLevers = practice || leverState.item !== sessionItem?.id ? [] : leverState.pulled;
+  const leverOn = (id: string) => starting.includes(id) || pulledLevers.includes(id);
+  const linkModel = sessionItem && !practice && leverOn(LINK_MODEL_LEVER) ? linkModelFor(sessionItem, session) : null;
+  const structureModel = sessionItem && !practice && leverOn(STRUCTURE_MODEL_LEVER) ? structureModelFor(sessionItem, session) : null;
+  const leverAnchor = sessionItem && !practice && pulledLevers.includes(ANCHOR_LEVER) ? anchorFor(sessionItem, session) : null;
+  const source = sessionItem && !practice && leverOn(SOURCE_LEVER) && sessionItem.action === 'place-idea' ? sourceFor(sessionItem, session) : null;
+  const sayChoices = !practice && pulledLevers.includes(SAY_CHOICES_LEVER);
 
   // What the tutor and the observer are shown, republished every render. W1 offers no
   // demonstration targets and no presentation; every item is answerable once it opens.
   useLayoutEffect(() => {
-    if (!currentItem) return;
-    workspace.current = { ...textStructureScene(currentItem, passage) };
+    if (!currentItem || !sessionItem) return;
+    const levers = practice ? [] : textStructureLevers(sessionItem, session, pulledLevers, starting);
+    const scene = textStructureScene(currentItem, passage);
+    const onScreen = practice ? null : leversOnScreen(pulledLevers, sessionItem, session);
+    const card = practice ? (practice.text ?? (practice.item.action === 'find-signal' ? practice.item.stimulusText : '')) : '';
+    workspace.current = { ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { levers_on_screen: onScreen } : {}),
+        ...(practice ? { practice: `An easier practice item, ungraded. The full item comes back after it.${card
+          ? ` On the card, for the learner to read (never read it aloud): "${card}"` : ''}` } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: id => {
+        const lever = levers.find(l => l.id === id);
+        if (!lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        if (lever.kind === 'simplify') {
+          const simpler = sessionItem.action === 'find-signal' ? (() => { const x = shortLinkFor(sessionItem, session); return x ? { item: x } : null; })()
+            : sessionItem.action === 'name-structure' ? structurePracticeFor(sessionItem, session)
+              : (() => { const x = twoPartFor(sessionItem, session); return x ? { item: x } : null; })();
+          if (!simpler) return 'There is no easier item for this one.';
+          setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+          setPractice(simpler);
+          return { practice: assignment(simpler.item) };
+        }
+        setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+        return true;
+      },
+      endPractice: () => setPractice(null),
+    };
   });
 
   // Pip: the passage is the question side. On a place-idea item the idea card
@@ -309,9 +359,10 @@ const TextStructureAnalyzerSurface: React.FC<TextStructureAnalyzerProps> = ({ da
     return map;
   }, [items, solvedIds]);
 
-  /** Ideas already filed on their mats — same rule. */
+  /** Ideas already filed on their mats — same rule — plus a pulled anchor_idea's example. */
   const filedByRegion = useMemo(() => {
     const map = new Map<string, string[]>();
+    if (leverAnchor) map.set(leverAnchor.region, [leverAnchor.text]);
     if (anchorIdeaId) {
       const anchor = keyIdeas.find((k) => k.ideaId === anchorIdeaId);
       const label = templateRegions.find((r) => r.regionId === anchor?.correctRegionId)?.label;
@@ -322,16 +373,16 @@ const TextStructureAnalyzerSurface: React.FC<TextStructureAnalyzerProps> = ({ da
       map.set(item.answer, [...(map.get(item.answer) ?? []), item.stimulusText]);
     }
     return map;
-  }, [items, solvedIds, anchorIdeaId, keyIdeas, templateRegions]);
+  }, [items, solvedIds, anchorIdeaId, keyIdeas, templateRegions, leverAnchor]);
 
   /** The choice just credited, for the reveal ring. Guarded on the ACTION. */
   const revealedChoice =
     runner.revealHeld && reveal && reveal.action === currentItem?.action ? reveal.answer : null;
 
   const focusSentence =
-    currentItem?.action === 'find-signal' && currentItem.showFocusSentence
+    !practice && currentItem?.action === 'find-signal' && (currentItem.showFocusSentence || leverOn(FOCUS_LEVER))
       ? currentItem.sentenceIndex
-      : -1;
+      : source ? source.index : -1;
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
@@ -412,6 +463,7 @@ const TextStructureAnalyzerSurface: React.FC<TextStructureAnalyzerProps> = ({ da
           >
             <p className={`text-sm font-medium ${isRevealed ? 'text-emerald-200' : 'text-slate-100'}`}>
               {label}
+              {sayChoices && <span data-lever="say-choices" aria-hidden="true" className="ml-1 text-xs">🔊</span>}
             </p>
             {item.choiceNotes[idx] && (
               <p className="mt-0.5 text-xs text-slate-400">{item.choiceNotes[idx]}</p>
@@ -435,6 +487,7 @@ const TextStructureAnalyzerSurface: React.FC<TextStructureAnalyzerProps> = ({ da
           <div key={label} className="w-full">
             <h3 className={`mb-2 text-center text-sm font-bold ${MAT_COLORS[idx] ?? MAT_COLORS[0]}`}>
               {label}
+              {sayChoices && <span data-lever="say-choices" aria-hidden="true" className="ml-1 text-xs">🔊</span>}
             </h3>
             <LuminaDropZone
               state={zoneState}
@@ -443,9 +496,8 @@ const TextStructureAnalyzerSurface: React.FC<TextStructureAnalyzerProps> = ({ da
               {filed.map((text) => (
                 <span key={text} className="rounded bg-black/20 px-2 py-1 text-xs text-slate-200">
                   {text}
-                  {anchorIdeaId
-                    && keyIdeas.find((k) => k.ideaId === anchorIdeaId)?.text === text
-                    && <span className="ml-1 opacity-60">(example)</span>}
+                  {((anchorIdeaId && keyIdeas.find((k) => k.ideaId === anchorIdeaId)?.text === text) || leverAnchor?.text === text)
+                    && <span data-lever={leverAnchor?.text === text ? 'anchor-idea' : undefined} className="ml-1 opacity-60">(example)</span>}
                 </span>
               ))}
             </LuminaDropZone>
@@ -486,6 +538,39 @@ const TextStructureAnalyzerSurface: React.FC<TextStructureAnalyzerProps> = ({ da
 
             {pip.store && <div {...pip.dock} />}
             <div {...pip.target('stimulus')}>{renderPassage()}</div>
+
+            {/* A practice card: a sentence or a short passage the learner reads (never the session passage). */}
+            {practice && practice.item.action !== 'place-idea' && (
+              <LuminaPanel data-lever="practice-card" className="p-3 border-amber-300/30 bg-amber-950/10">
+                <p className="mb-1 text-[10px] font-mono uppercase tracking-widest text-amber-300">Practice</p>
+                <p className="text-sm text-slate-100">{practice.text ?? practice.item.stimulusText}</p>
+              </LuminaPanel>
+            )}
+
+            {/* link_model: another sentence, its linking word underlined between two bracketed ideas. */}
+            {linkModel && (() => { const [left, word, right] = linkParts(linkModel); return (
+              <LuminaPanel data-lever="link-model" className="p-3 text-center border-cyan-300/20 bg-cyan-950/10">
+                <p className="mb-1 text-[10px] font-mono uppercase tracking-widest text-cyan-300">Another sentence</p>
+                <p className="text-sm text-slate-100">
+                  {left && <span className="rounded border border-sky-400/40 px-1">{left}</span>}{' '}
+                  <u className="decoration-amber-300 decoration-2">{word}</u>{' '}
+                  {right && <span className="rounded border border-sky-400/40 px-1">{right}</span>}
+                </p>
+              </LuminaPanel>
+            ); })()}
+
+            {/* structure_model: another short passage of a different structure, named. */}
+            {structureModel && (
+              <LuminaPanel data-lever="structure-model" className="p-3 border-cyan-300/20 bg-cyan-950/10">
+                <p className="mb-1 text-[10px] font-mono uppercase tracking-widest text-cyan-300">
+                  Another passage: {LABEL_OF[structureModel.structure]}
+                </p>
+                <p className="text-sm text-slate-100">
+                  {structureModel.text.split(new RegExp(`(${structureModel.signals.join('|')})`)).map((part, i) =>
+                    structureModel.signals.includes(part) ? <u key={i} className="decoration-amber-300">{part}</u> : <React.Fragment key={i}>{part}</React.Fragment>)}
+                </p>
+              </LuminaPanel>
+            )}
 
             {currentItem?.action === 'name-structure' && renderStructureMenu(currentItem)}
 

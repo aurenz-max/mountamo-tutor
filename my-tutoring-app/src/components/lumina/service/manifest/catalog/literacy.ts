@@ -4560,18 +4560,18 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     supportsEvaluation: true,
     teachingWorkspace: {
       grades: ['Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
-      guidance: 'One printed passage the learner reads; every answer is said out loud. Three kinds of question: the linking '
-        + 'word in a numbered sentence, how the whole passage is organised from the printed menu, and which labelled part '
-        + 'of the chart an idea belongs in. Never read the passage or any sentence of it aloud: reading it is the skill, '
-        + 'and the linking word is in the sentence. Ask for "the word that links the ideas" in "sentence one", "sentence '
-        + 'two": in a time-order passage your own "first", "next", "then" or "last" can be the answer. You may say an idea '
-        + 'card. A word that '
-        + 'names a thing or an action is not a linking word; saying the idea back is not a part; a close structure is '
-        + 'wrong. Before an attempt never say the answer. Nothing on screen marks a linking word or a structure until '
-        + 'credit. You cannot point at or highlight the passage.',
-      // Every item is spoken: its known wrong answers by action (`textStructureSpokenMisses`, handoff 20 Part B).
+      guidance: 'One printed passage the learner reads; every answer is said out loud: the linking word in a numbered '
+        + 'sentence, how the whole passage is organised from the printed menu, and which labelled part of the chart an '
+        + 'idea belongs in. Never read the passage or any sentence of it aloud: reading it is the skill. Say "sentence '
+        + 'one", "sentence two", never "first" or "next": in a time-order passage those can be the answer. You may say an '
+        + 'idea card, and read a model card aloud: it is not the passage. A word that names a thing or an action is not a '
+        + 'linking word; saying the idea back is not a part; a close structure is wrong. Before an attempt never say the '
+        + 'answer. Nothing marks a linking word or a structure until credit. You cannot point at the passage yourself.',
+      levers: true,
+      // Every item is spoken: its known wrong answers by action (`textStructureSpokenMisses`, handoff 20 Part B; the lever
+      // table 2026-10-03 adds not_in_sentence, said_topic, said_signal_word). Every mode runs all three actions.
       misses: sameMisses<SpokenTextStructureMiss>(['chronological_description', 'cause_effect', 'compare_contrast', 'problem_solution'],
-        ['content_word', 'other_structure', 'other_part', 'said_idea_back']),
+        ['content_word', 'not_in_sentence', 'other_structure', 'said_topic', 'said_signal_word', 'other_part', 'said_idea_back']),
     },
     tutoring: {
       // ⚠️ `challengeType` IS THE STEP, NOT THE EVAL MODE. This primitive's eval

@@ -80,7 +80,7 @@
            "said_feature_back"
           ],
           "when": "The learner gives the wrong verdict or says the feature back.",
-          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Never say what the model means for the learner's text."
+          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "yes: the first one does tell about a real person who lived. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"tell about a real person who lived\") gives no verdict and is not it.",
@@ -207,7 +207,7 @@
            "said_feature_back"
           ],
           "when": "The learner gives the wrong verdict or says the feature back.",
-          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Never say what the model means for the learner's text."
+          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "yes: the first one does tell about a real person who lived. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"tell about a real person who lived\") gives no verdict and is not it.",
@@ -404,7 +404,7 @@
            "said_feature_back"
           ],
           "when": "The learner gives the wrong verdict or says the feature back.",
-          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Never say what the model means for the learner's text."
+          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "yes: the first one does tell about a real person who lived. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"tell about a real person who lived\") gives no verdict and is not it.",
@@ -557,7 +557,7 @@
            "said_feature_back"
           ],
           "when": "The learner gives the wrong verdict or says the feature back.",
-          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Never say what the model means for the learner's text."
+          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "yes: the first one does tell about a real person who lived. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"tell about a real person who lived\") gives no verdict and is not it.",
@@ -731,7 +731,7 @@
            "said_feature_back"
           ],
           "when": "The learner gives the wrong verdict or says the feature back.",
-          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Never say what the model means for the learner's text."
+          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "yes: the first one does tell about a real person who lived. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"tell about a real person who lived\") gives no verdict and is not it.",
@@ -988,7 +988,7 @@
            "said_feature_back"
           ],
           "when": "The learner gives the wrong verdict or says the feature back.",
-          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Never say what the model means for the learner's text."
+          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "yes: the first one does explain how ancient people understood nature. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"explain how ancient people understood nature\") gives no verdict and is not it.",
@@ -1115,7 +1115,7 @@
            "said_feature_back"
           ],
           "when": "The learner gives the wrong verdict or says the feature back.",
-          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Never say what the model means for the learner's text."
+          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "yes: the first one does explain how ancient people understood nature. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"explain how ancient people understood nature\") gives no verdict and is not it.",
@@ -1312,7 +1312,7 @@
            "said_feature_back"
           ],
           "when": "The learner gives the wrong verdict or says the feature back.",
-          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Never say what the model means for the learner's text."
+          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "yes: the first one does explain how ancient people understood nature. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"explain how ancient people understood nature\") gives no verdict and is not it.",
@@ -1465,7 +1465,7 @@
            "said_feature_back"
           ],
           "when": "The learner gives the wrong verdict or says the feature back.",
-          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Never say what the model means for the learner's text."
+          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "yes: the first one does explain how ancient people understood nature. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"explain how ancient people understood nature\") gives no verdict and is not it.",
@@ -1639,7 +1639,7 @@
            "said_feature_back"
           ],
           "when": "The learner gives the wrong verdict or says the feature back.",
-          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Never say what the model means for the learner's text."
+          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "yes: the first one does explain how ancient people understood nature. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"explain how ancient people understood nature\") gives no verdict and is not it.",
@@ -1898,7 +1898,7 @@
            "said_both"
           ],
           "when": "The learner still cannot tell which text has it.",
-          "does": "Shows a card with two other texts and a different feature found in only one, its words underlined. Once it is on screen, say it as \"My turn\". Never say what the model means for the learner's text."
+          "does": "Shows a card with two other texts and a different feature found in only one, its words underlined. Once it is on screen, say it as \"My turn\". Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "the first one. The position alone (\"first\", \"second\") counts. The other text is wrong, and so are \"both\" and \"neither\": the feature is true of exactly one of the two.",
@@ -2028,7 +2028,7 @@
            "said_both"
           ],
           "when": "The learner still cannot tell which text has it.",
-          "does": "Shows a card with two other texts and a different feature found in only one, its words underlined. Once it is on screen, say it as \"My turn\". Never say what the model means for the learner's text."
+          "does": "Shows a card with two other texts and a different feature found in only one, its words underlined. Once it is on screen, say it as \"My turn\". Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "the first one. The position alone (\"first\", \"second\") counts. The other text is wrong, and so are \"both\" and \"neither\": the feature is true of exactly one of the two.",
@@ -2230,7 +2230,7 @@
            "said_both"
           ],
           "when": "The learner still cannot tell which text has it.",
-          "does": "Shows a card with two other texts and a different feature found in only one, its words underlined. Once it is on screen, say it as \"My turn\". Never say what the model means for the learner's text."
+          "does": "Shows a card with two other texts and a different feature found in only one, its words underlined. Once it is on screen, say it as \"My turn\". Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "the first one. The position alone (\"first\", \"second\") counts. The other text is wrong, and so are \"both\" and \"neither\": the feature is true of exactly one of the two.",
@@ -2386,7 +2386,7 @@
            "said_both"
           ],
           "when": "The learner still cannot tell which text has it.",
-          "does": "Shows a card with two other texts and a different feature found in only one, its words underlined. Once it is on screen, say it as \"My turn\". Never say what the model means for the learner's text."
+          "does": "Shows a card with two other texts and a different feature found in only one, its words underlined. Once it is on screen, say it as \"My turn\". Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "the first one. The position alone (\"first\", \"second\") counts. The other text is wrong, and so are \"both\" and \"neither\": the feature is true of exactly one of the two.",
@@ -2563,7 +2563,7 @@
            "said_both"
           ],
           "when": "The learner still cannot tell which text has it.",
-          "does": "Shows a card with two other texts and a different feature found in only one, its words underlined. Once it is on screen, say it as \"My turn\". Never say what the model means for the learner's text."
+          "does": "Shows a card with two other texts and a different feature found in only one, its words underlined. Once it is on screen, say it as \"My turn\". Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "the first one. The position alone (\"first\", \"second\") counts. The other text is wrong, and so are \"both\" and \"neither\": the feature is true of exactly one of the two.",
@@ -2823,7 +2823,7 @@
            "said_both"
           ],
           "when": "The learner still cannot tell which text has it.",
-          "does": "Shows a card with two other texts and a different feature found in only one, its words underlined. Once it is on screen, say it as \"My turn\". Never say what the model means for the learner's text."
+          "does": "Shows a card with two other texts and a different feature found in only one, its words underlined. Once it is on screen, say it as \"My turn\". Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "the first one. The position alone (\"first\", \"second\") counts. The other text is wrong, and so are \"both\" and \"neither\": the feature is true of exactly one of the two.",
@@ -2952,7 +2952,7 @@
            "said_both"
           ],
           "when": "The learner still cannot tell which text has it.",
-          "does": "Shows a card with two other texts and a different feature found in only one, its words underlined. Once it is on screen, say it as \"My turn\". Never say what the model means for the learner's text."
+          "does": "Shows a card with two other texts and a different feature found in only one, its words underlined. Once it is on screen, say it as \"My turn\". Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "the first one. The position alone (\"first\", \"second\") counts. The other text is wrong, and so are \"both\" and \"neither\": the feature is true of exactly one of the two.",
@@ -3152,7 +3152,7 @@
            "said_both"
           ],
           "when": "The learner still cannot tell which text has it.",
-          "does": "Shows a card with two other texts and a different feature found in only one, its words underlined. Once it is on screen, say it as \"My turn\". Never say what the model means for the learner's text."
+          "does": "Shows a card with two other texts and a different feature found in only one, its words underlined. Once it is on screen, say it as \"My turn\". Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "the first one. The position alone (\"first\", \"second\") counts. The other text is wrong, and so are \"both\" and \"neither\": the feature is true of exactly one of the two.",
@@ -3307,7 +3307,7 @@
            "said_both"
           ],
           "when": "The learner still cannot tell which text has it.",
-          "does": "Shows a card with two other texts and a different feature found in only one, its words underlined. Once it is on screen, say it as \"My turn\". Never say what the model means for the learner's text."
+          "does": "Shows a card with two other texts and a different feature found in only one, its words underlined. Once it is on screen, say it as \"My turn\". Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "the first one. The position alone (\"first\", \"second\") counts. The other text is wrong, and so are \"both\" and \"neither\": the feature is true of exactly one of the two.",
@@ -3483,7 +3483,7 @@
            "said_both"
           ],
           "when": "The learner still cannot tell which text has it.",
-          "does": "Shows a card with two other texts and a different feature found in only one, its words underlined. Once it is on screen, say it as \"My turn\". Never say what the model means for the learner's text."
+          "does": "Shows a card with two other texts and a different feature found in only one, its words underlined. Once it is on screen, say it as \"My turn\". Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "the first one. The position alone (\"first\", \"second\") counts. The other text is wrong, and so are \"both\" and \"neither\": the feature is true of exactly one of the two.",
@@ -3752,7 +3752,7 @@
            "said_feature_back"
           ],
           "when": "The learner gives the wrong verdict or says the feature back.",
-          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Never say what the model means for the learner's text."
+          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "yes: the first one does have an animal that speaks. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"have an animal that speaks\") gives no verdict and is not it.",
@@ -3890,7 +3890,7 @@
            "said_feature_back"
           ],
           "when": "The learner gives the wrong verdict or says the feature back.",
-          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Never say what the model means for the learner's text."
+          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "yes: the first one does have an animal that speaks. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"have an animal that speaks\") gives no verdict and is not it.",
@@ -4098,7 +4098,7 @@
            "said_feature_back"
           ],
           "when": "The learner gives the wrong verdict or says the feature back.",
-          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Never say what the model means for the learner's text."
+          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "yes: the first one does have an animal that speaks. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"have an animal that speaks\") gives no verdict and is not it.",
@@ -4262,7 +4262,7 @@
            "said_feature_back"
           ],
           "when": "The learner gives the wrong verdict or says the feature back.",
-          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Never say what the model means for the learner's text."
+          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "yes: the first one does have an animal that speaks. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"have an animal that speaks\") gives no verdict and is not it.",
@@ -4447,7 +4447,7 @@
            "said_feature_back"
           ],
           "when": "The learner gives the wrong verdict or says the feature back.",
-          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Never say what the model means for the learner's text."
+          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "yes: the first one does have an animal that speaks. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"have an animal that speaks\") gives no verdict and is not it.",
@@ -4704,7 +4704,7 @@
            "said_feature_back"
           ],
           "when": "The learner gives the wrong verdict or says the feature back.",
-          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Never say what the model means for the learner's text."
+          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "yes: the first one does have an animal that speaks words. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"have an animal that speaks words\") gives no verdict and is not it.",
@@ -4831,7 +4831,7 @@
            "said_feature_back"
           ],
           "when": "The learner gives the wrong verdict or says the feature back.",
-          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Never say what the model means for the learner's text."
+          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "yes: the first one does have an animal that speaks words. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"have an animal that speaks words\") gives no verdict and is not it.",
@@ -5028,7 +5028,7 @@
            "said_feature_back"
           ],
           "when": "The learner gives the wrong verdict or says the feature back.",
-          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Never say what the model means for the learner's text."
+          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "yes: the first one does have an animal that speaks words. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"have an animal that speaks words\") gives no verdict and is not it.",
@@ -5181,7 +5181,7 @@
            "said_feature_back"
           ],
           "when": "The learner gives the wrong verdict or says the feature back.",
-          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Never say what the model means for the learner's text."
+          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "yes: the first one does have an animal that speaks words. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"have an animal that speaks words\") gives no verdict and is not it.",
@@ -5355,7 +5355,7 @@
            "said_feature_back"
           ],
           "when": "The learner gives the wrong verdict or says the feature back.",
-          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Never say what the model means for the learner's text."
+          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
          }
         ],
         "expectedAnswer": "yes: the first one does have an animal that speaks words. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"have an animal that speaks words\") gives no verdict and is not it.",

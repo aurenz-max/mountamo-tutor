@@ -27,6 +27,7 @@ import {
   isStructureType,
   locateSignalWords,
   passageNamesStructure,
+  structureDistance,
   MIN_STRUCTURE_OPTIONS_EASY,
   opensWithSentinel,
   optionsEarSeparable,
@@ -239,17 +240,8 @@ const ALL_STRUCTURES: StructureType[] = [
  * Sequential (chronological) and categorical (description) are the distinct anchors.
  * Distance 1 = near (easily mistaken), 2 = moderate, 3 = far (obviously different).
  */
-const STRUCTURE_DISTANCE: Record<StructureType, Partial<Record<StructureType, number>>> = {
-  'cause-effect':      { 'problem-solution': 1, 'compare-contrast': 2, 'chronological': 3, 'description': 3 },
-  'problem-solution':  { 'cause-effect': 1, 'compare-contrast': 2, 'chronological': 3, 'description': 3 },
-  'compare-contrast':  { 'cause-effect': 2, 'problem-solution': 2, 'description': 2, 'chronological': 3 },
-  'chronological':     { 'description': 2, 'cause-effect': 3, 'problem-solution': 3, 'compare-contrast': 3 },
-  'description':       { 'compare-contrast': 2, 'chronological': 2, 'cause-effect': 3, 'problem-solution': 3 },
-};
-
 function distance(a: StructureType, b: StructureType): number {
-  if (a === b) return 0;
-  return STRUCTURE_DISTANCE[a]?.[b] ?? 2;
+  return structureDistance(a, b);
 }
 
 /**
@@ -660,7 +652,7 @@ Rules:
 2. Embed signal words naturally — include the word field with the exact text as it appears in the passage. Do NOT worry about startIndex/endIndex accuracy — they will be recomputed automatically. Every signal word must appear in a DIFFERENT sentence (rule A).
 3. structureOptions: always provide 3-4 options including the correct one plus plausible distractors from the available structures list. Write the kid-friendly description for each; the LABEL is set by the application, so do not worry about its exact wording.
 4. templateRegions: create regions matching the chosen structure (e.g. Cause/Effect for cause-effect, Beginning/Middle/End for chronological), under rules B and F
-5. keyIdeas: short excerpts from the passage (14 words or fewer) that the tutor reads aloud, under rule C
+5. keyIdeas: 6 short excerpts from the passage (14 words or fewer) that the tutor reads aloud, under rule C. Four are asked; the others are spares the activity can show as a worked example or a practice item
 6. CRITICAL — Signal words must ONLY be words that belong to the chosen structure type. Do NOT include signal words from other structure types:
    - cause-effect ONLY: "because", "so", "as a result", "therefore", "since", "due to", "consequently", "leads to"
    - compare-contrast ONLY: "however", "similarly", "but", "on the other hand", "both", "alike", "different", "whereas", "unlike"

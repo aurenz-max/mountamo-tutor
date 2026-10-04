@@ -55,7 +55,7 @@
     30
    ],
    "no_key_before_try": [
-    1,
+    0,
     30
    ],
    "no_fix_before_try": [
@@ -77,7 +77,7 @@
     30
    ],
    "no_key_before_try": [
-    1,
+    0,
     30
    ],
    "no_fix_before_try": [
@@ -127,63 +127,6 @@
      },
      "samples": [
       {
-       "text": "I'll read the first one aloud: \"Born in 1897 in Philadelphia, Marian Anderson showed an incredible singing voice at a very young age. She sang in her church choir and later traveled across Europe to perform in front of large crowds. In 1939, she sang on the steps of the Lincoln Memorial in Washington, D.C., drawing a huge audience of seventy-five thousand listeners.\"\n\nDoes the first one tell about a real person who lived?",
-       "calls": [
-        {
-         "name": "observe_runtime",
-         "args": {}
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "Listen to this text: \"Born in 1897 in Philadelphia, Marian Anderson showed an incredible singing voice at a very young age. She sang in her church choir and later traveled across Europe to perform in front of large crowds. In 1939, she sang on the steps of the Lincoln Memorial in Washington, D.C., drawing a huge audience of seventy-five thousand listeners.\"\n\nDoes the first one tell about a real person who lived?",
-       "calls": [
-        {
-         "name": "observe_runtime",
-         "args": {}
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "Listen to this text: \"Born in 1897 in Philadelphia, Marian Anderson showed an incredible singing voice at a very young age. She sang in her church choir and later traveled across Europe to perform in front of large crowds. In 1939, she sang on the steps of the Lincoln Memorial in Washington, D.C., drawing a huge audience of seventy-five thousand listeners.\"\n\nDoes the first one tell about a real person who lived?",
-       "calls": [
-        {
-         "name": "observe_runtime",
-         "args": {}
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
        "text": "Here is the text: \"Born in 1897 in Philadelphia, Marian Anderson showed an incredible singing voice at a very young age. She sang in her church choir and later traveled across Europe to perform in front of large crowds. In 1939, she sang on the steps of the Lincoln Memorial in Washington, D.C., drawing a huge audience of seventy-five thousand listeners.\"\n\nDoes the first one tell about a real person who lived?",
        "calls": [
         {
@@ -203,7 +146,64 @@
        "pulledLever": null
       },
       {
-       "text": "I will read the text out loud for you: \"Born in 1897 in Philadelphia, Marian Anderson showed an incredible singing voice at a very young age. She sang in her church choir and later traveled across Europe to perform in front of large crowds. In 1939, she sang on the steps of the Lincoln Memorial in Washington, D.C., drawing a huge audience of seventy-five thousand listeners.\"\n\nDoes the first one tell about a real person who lived?",
+       "text": "Here is our text: \"Born in 1897 in Philadelphia, Marian Anderson showed an incredible singing voice at a very young age. She sang in her church choir and later traveled across Europe to perform in front of large crowds. In 1939, she sang on the steps of the Lincoln Memorial in Washington, D.C., drawing a huge audience of seventy-five thousand listeners.\"\n\nDoes the first one tell about a real person who lived?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is our text: \"Born in 1897 in Philadelphia, Marian Anderson showed an incredible singing voice at a very young age. She sang in her church choir and later traveled across Europe to perform in front of large crowds. In 1939, she sang on the steps of the Lincoln Memorial in Washington, D.C., drawing a huge audience of seventy-five thousand listeners.\"\n\nDoes the first one tell about a real person who lived?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is the text: \"Born in 1897 in Philadelphia, Marian Anderson showed an incredible singing voice at a very young age. She sang in her church choir and later traveled across Europe to perform in front of large crowds. In 1939, she sang on the steps of the Lincoln Memorial in Washington, D.C., drawing a huge audience of seventy-five thousand listeners.\"\n\nDoes this tell about a real person who lived?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is the text: \"Born in 1897 in Philadelphia, Marian Anderson showed an incredible singing voice at a very young age. She sang in her church choir and later traveled across Europe to perform in front of large crowds. In 1939, she sang on the steps of the Lincoln Memorial in Washington, D.C., drawing a huge audience of seventy-five thousand listeners.\"\n\nDoes the first one tell about a real person who lived?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -243,13 +243,20 @@
      },
      "samples": [
       {
-       "text": "A new card is on the screen. \n\nLet's look at the words again: does this first text tell about a real person who lived?",
+       "text": "The text is now split into separate lines for each sentence. Take a look at each line and tell me: does the first one tell about a real person who lived?",
        "calls": [
         {
          "name": "perform_runtime_action",
          "args": {
-          "actionId": "test/1/0",
-          "lever": "text_model"
+          "lever": "text_model",
+          "actionId": "test/1/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sentence_rows",
+          "actionId": "test/1/0"
          }
         }
        ],
@@ -265,7 +272,36 @@
        "pulledLever": null
       },
       {
-       "text": "A new card appeared on the screen! \n\nTake another look at our first text about Marian Anderson: does it tell about a real person who lived?",
+       "text": "The text is split into separate lines now. Check each line to see if it tells about a real person who lived, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "text_model",
+          "actionId": "test/1/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "sentence_rows"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's look at the words closely. Think about the details like the birth year and Marian Anderson's singing. \n\nDoes the first one tell about a real person who lived?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -287,57 +323,35 @@
        "pulledLever": null
       },
       {
-       "text": "A card popped up with another example to look at. \n\nLet's try our text again: does Marian Anderson's story tell about a real person who lived?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/1/0",
-          "lever": "text_model"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "A new card popped up on the screen! \n\nMy turn: this one tells about events that actually happened. \n\nTake another listen to our text: \"Born in 1897 in Philadelphia, Marian Anderson showed an incredible singing voice at a very young age.\" \n\nDoes the first one tell about a real person who lived?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/1/0",
-          "lever": "text_model"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "Let's look at another example. \n\nDoes the first text tell about a real person who lived? Give it another try!",
+       "text": "Let's look closely at the words: \"Born in 1897 in Philadelphia, Marian Anderson showed an incredible singing voice at a very young age.\" \n\nDoes the first one tell about a real person who lived? Give it another try!",
        "calls": [
         {
          "name": "perform_runtime_action",
          "args": {
           "lever": "text_model",
           "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The text is now split into separate lines. Take a look at each line and tell me: does the first one tell about a real person who lived?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "sentence_rows"
          }
         }
        ],
@@ -374,27 +388,17 @@
      },
      "samples": [
       {
-       "text": "",
-       "before": "",
+       "text": "The text is now split into separate lines for each sentence. Check each line to see if it tells about a real person who lived, and give it another try!",
        "calls": [
         {
          "name": "perform_runtime_action",
          "args": {
-          "lever": "text_model",
-          "actionId": "test/2/0"
-         }
-        },
-        {
-         "name": "observe_runtime",
-         "args": {}
-        },
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/2/1"
+          "actionId": "test/2/0",
+          "lever": "sentence_rows"
          }
         }
        ],
+       "before": "",
        "checks": {
         "not_empty": true,
         "no_protocol_leak": true,
@@ -406,39 +410,7 @@
        "pulledLever": true
       },
       {
-       "text": "",
-       "before": "",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "lever": "text_model",
-          "actionId": "test/2/0"
-         }
-        },
-        {
-         "name": "observe_runtime",
-         "args": {}
-        },
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/2/1"
-         }
-        }
-       ],
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": true
-       },
-       "evidence": {},
-       "pulledLever": true
-      },
-      {
-       "text": "A model card is now on the screen.\n\nLook closely at the words about Marian Anderson: does the first text tell about a real person who lived?",
+       "text": "The text is now split into separate lines for each sentence. Check each line to see: does the first one tell about a real person who lived?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -448,29 +420,10 @@
          }
         },
         {
-         "name": "observe_runtime",
-         "args": {}
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": true
-       },
-       "evidence": {},
-       "pulledLever": true
-      },
-      {
-       "text": "A card with another example appeared on your screen.\n\nMy turn: this one does tell facts about real events.\n\nNow take another look at the words in our first story\u2014does it tell about a real person who lived?",
-       "calls": [
-        {
          "name": "perform_runtime_action",
          "args": {
-          "actionId": "test/2/0",
-          "lever": "text_model"
+          "lever": "sentence_rows",
+          "actionId": "test/2/0"
          }
         }
        ],
@@ -486,13 +439,64 @@
        "pulledLever": true
       },
       {
-       "text": "A card popped up with another example to look at.\n\nDoes our first text about Marian Anderson tell about a real person who lived?",
+       "text": "The text is now split into separate lines for each sentence. \n\nCheck each line and see what it tells us about Marian Anderson.",
        "calls": [
         {
          "name": "perform_runtime_action",
          "args": {
-          "lever": "text_model",
+          "lever": "sentence_rows",
           "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The text is now split into separate lines for each sentence. Check each line to see: does the first one tell about a real person who lived?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "text_model"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "sentence_rows"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The text is split into separate rows now, one sentence for each row. Take a look and check each line to see if it tells about a real person who lived.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "sentence_rows"
          }
         }
        ],
@@ -529,7 +533,7 @@
      },
      "samples": [
       {
-       "text": "The text is now split into separate lines, one sentence per row. \n\nCheck each line: does the first text tell about a real person who lived?",
+       "text": "The text is now arranged line by line in rows. Check each line to see if it tells about a real person who lived, and give it another try!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -542,7 +546,7 @@
        "pulledLever": null
       },
       {
-       "text": "The text is now split into separate rows, one sentence on each line. \n\nCheck each line carefully: does the first one tell about a real person who lived?",
+       "text": "The text is now arranged line by line in rows. Take a look at each line and tell me: does the first one tell about a real person who lived?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -555,7 +559,7 @@
        "pulledLever": null
       },
       {
-       "text": "The text is now split into separate rows, one sentence per row. \n\nCheck each line and see what it tells you\u2014does the first one tell about a real person who lived?",
+       "text": "The sentences are now lined up one by one in their own rows. Check each line to see if it tells about a real person who lived, and give it another try!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -568,7 +572,7 @@
        "pulledLever": null
       },
       {
-       "text": "The text is now split into separate lines, one sentence per row. \n\nCheck each line carefully: does the first text tell about a real person who lived?",
+       "text": "The text is now split into separate lines for each sentence. Look across each line, and tell me: does the first one tell about a real person who lived?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -581,7 +585,7 @@
        "pulledLever": null
       },
       {
-       "text": "The text is now split into separate lines, one sentence per row. \n\nCheck each line\u2014does the first one tell about a real person who lived?",
+       "text": "Each sentence has its own row on the screen now. Check each line to see if it tells about a real person who lived, and give it another try!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -615,7 +619,7 @@
      },
      "samples": [
       {
-       "text": "You got it right! You said \"yes,\" and this text does tell about a real person who lived, Marian Anderson.",
+       "text": "Spot on, you said yes! Marian Anderson was a real singer who lived and performed.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -628,7 +632,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it! You correctly said yes, the first text tells about a real person who lived.",
+       "text": "You got it right! Yes, the first text tells about a real person who lived, Marian Anderson.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -641,7 +645,7 @@
        "pulledLever": null
       },
       {
-       "text": "That's it, you said yes! Marian Anderson was a real person who lived.",
+       "text": "You got it right! Yes, it tells about a real person who lived, Marian Anderson.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -654,7 +658,7 @@
        "pulledLever": null
       },
       {
-       "text": "That's right, you said yes! The first text does tell about a real person who lived, Marian Anderson.",
+       "text": "You got it right\u2014yes, it tells about a real person who lived, Marian Anderson!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -667,7 +671,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it! You said yes, and this text really does tell about a real person who lived.",
+       "text": "You got it! Saying yes was right\u2014the first one tells about Marian Anderson, a real person who lived.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -713,7 +717,7 @@
      },
      "samples": [
       {
-       "text": "Here is the first text: \"The sun god rode his golden chariot across the sky every single morning to bring daylight to the world. When he grew tired at evening, his fiery horses rested beneath the great western ocean.\" \n\nDoes this explain how ancient people understood nature?",
+       "text": "I will read the text out loud for you: \"The sun god rode his golden chariot across the sky every single morning to bring daylight to the world. When he grew tired at evening, his fiery horses rested beneath the great western ocean.\"\n\nDoes this text explain how ancient people understood nature?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -732,7 +736,45 @@
        "pulledLever": null
       },
       {
-       "text": "Listen closely: \"The sun god rode his golden chariot across the sky every single morning to bring daylight to the world. When he grew tired at evening, his fiery horses rested beneath the great western ocean.\"\n\nDoes this explain how ancient people understood nature?",
+       "text": "Here is the text: \"The sun god rode his golden chariot across the sky every single morning to bring daylight to the world. When he grew tired at evening, his fiery horses rested beneath the great western ocean.\"\n\nDoes the first one explain how ancient people understood nature?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to this story: \"The sun god rode his golden chariot across the sky every single morning to bring daylight to the world. When he grew tired at evening, his fiery horses rested beneath the great western ocean.\"\n\nDoes the first one explain how ancient people understood nature?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is our first text: \"The sun god rode his golden chariot across the sky every single morning to bring daylight to the world. When he grew tired at evening, his fiery horses rested beneath the great western ocean.\"\n\nDoes this one explain how ancient people understood nature?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -752,44 +794,6 @@
       },
       {
        "text": "Here is the first text: \"The sun god rode his golden chariot across the sky every single morning to bring daylight to the world. When he grew tired at evening, his fiery horses rested beneath the great western ocean.\"\n\nDoes this explain how ancient people understood nature?",
-       "calls": [
-        {
-         "name": "observe_runtime",
-         "args": {}
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "Here is the first text: \"The sun god rode his golden chariot across the sky every single morning to bring daylight to the world. When he grew tired at evening, his fiery horses rested beneath the great western ocean.\"\n\nDoes this one explain how ancient people understood nature?",
-       "calls": [
-        {
-         "name": "observe_runtime",
-         "args": {}
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "Here is the first text: \"The sun god rode his golden chariot across the sky every single morning to bring daylight to the world. When he grew tired at evening, his fiery horses rested beneath the great western ocean.\" \n\nDoes the first one explain how ancient people understood nature?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -829,29 +833,7 @@
      },
      "samples": [
       {
-       "text": "Let's look at another example on the screen. \n\nMy turn: this one does tell a story with characters and actions, like how the sun god brings daylight and rests his fiery horses. Now take another look at your text: does it explain how ancient people understood nature?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "lever": "text_model",
-          "actionId": "test/1/0"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "A card appeared showing an example. \n\nMy turn: this one tells about animals acting like people, where the words say the clever fox tricked the crow. Now look back at our text: does the first one explain how ancient people understood nature?",
+       "text": "The text is now split into separate lines for each sentence. Take a look at each line and try again: does it explain how ancient people understood nature?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -859,26 +841,11 @@
           "actionId": "test/1/0",
           "lever": "text_model"
          }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "A new card is on the screen to help us compare. \n\nTake another look at our text about the sun god bringing daylight and his fiery horses resting\u2014does this one explain how ancient people understood nature?",
-       "calls": [
+        },
         {
          "name": "perform_runtime_action",
          "args": {
-          "lever": "text_model",
+          "lever": "sentence_rows",
           "actionId": "test/1/0"
          }
         }
@@ -895,7 +862,36 @@
        "pulledLever": null
       },
       {
-       "text": "Not quite. Look, the sentences are split into lines for you now\u2014check each line and give it another try!",
+       "text": "The text is now split into separate lines. Let's check each line carefully to see if it explains daylight and evening, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "text_model",
+          "actionId": "test/1/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "sentence_rows"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The text is now split into separate lines. Let's check each line: does this explain how ancient people understood nature?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -924,13 +920,49 @@
        "pulledLever": null
       },
       {
-       "text": "The text is now split into lines so we can see each sentence by itself. Check each line to see if it explains how daylight and evening happen, and give it another try!",
+       "text": "The text is now split into separate lines for each sentence. Take a look at each line and tell me: does this text explain how ancient people understood nature?",
        "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "text_model",
+          "actionId": "test/1/0"
+         }
+        },
         {
          "name": "perform_runtime_action",
          "args": {
           "actionId": "test/1/0",
           "lever": "sentence_rows"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The text is now split into lines for you. Check each line to see what happens, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "text_model",
+          "actionId": "test/1/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sentence_rows",
+          "actionId": "test/1/0"
          }
         }
        ],
@@ -967,12 +999,12 @@
      },
      "samples": [
       {
-       "text": "A new card appeared with an example.\n\nMy turn: this one does explain daylight by showing a sun god driving across the sky. \n\nNow give your text another try: does it explain how ancient people understood nature?",
+       "text": "The text is now shown with one sentence on each line. Check each line to see if it explains daylight and evening, and tell me: yes or no?",
        "calls": [
         {
          "name": "perform_runtime_action",
          "args": {
-          "lever": "text_model",
+          "lever": "sentence_rows",
           "actionId": "test/2/0"
          }
         }
@@ -989,79 +1021,100 @@
        "pulledLever": true
       },
       {
-       "text": "A model card has appeared on the screen with underlined words.\n\nMy turn: this one does explain daylight and sunset through a story about a sun god. \n\nNow give your text another try!",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "lever": "text_model",
-          "actionId": "test/2/0"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": true
-       },
-       "evidence": {},
-       "pulledLever": true
-      },
-      {
-       "text": "A card just popped up showing another example with some words underlined. \n\nMy turn: this one does use a character's journey to show why the seasons change. Now look back at your sentences\u2014does your story explain how daylight comes and goes?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "lever": "text_model",
-          "actionId": "test/2/0"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": true
-       },
-       "evidence": {},
-       "pulledLever": true
-      },
-      {
-       "text": "A new card has appeared with an example.\n\nMy turn: this one does tell how daylight and night happen through a story about the sun god. \n\nNow, does the first text explain how ancient people understood nature?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "lever": "text_model",
-          "actionId": "test/2/0"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": true
-       },
-       "evidence": {},
-       "pulledLever": true
-      },
-      {
-       "text": "A new card popped up on the screen showing another example text.\n\nMy turn: this one does tell how a character's actions explain daylight. \n\nGive our original question another try: does the first text explain how ancient people understood nature?",
+       "text": "Each sentence is now on its own row. Check each line to see what it says, and tell me: does this text explain how ancient people understood nature?",
        "calls": [
         {
          "name": "perform_runtime_action",
          "args": {
           "actionId": "test/2/0",
           "lever": "text_model"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sentence_rows",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I split the story into separate rows for each sentence. \n\nCheck each line carefully and tell me: does this story explain how ancient people understood nature?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "text_model",
+          "actionId": "test/2/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "sentence_rows"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The text is now shown with one sentence on each line. Look closely at each line and tell me: does this explain how ancient people understood nature?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sentence_rows",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The screen now shows each sentence on its own separate line. \n\nCheck each line carefully: does this story explain how ancient people understood nature?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "text_model",
+          "actionId": "test/2/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "sentence_rows"
          }
         }
        ],
@@ -1098,7 +1151,7 @@
      },
      "samples": [
       {
-       "text": "The sentences are now split into their own separate rows on your screen. Check each line carefully, and tell me: does this explain how ancient people understood nature?",
+       "text": "The text is split into separate rows, with one sentence on each line. Look closely at each line and tell me: does it explain how ancient people understood nature?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1111,7 +1164,7 @@
        "pulledLever": null
       },
       {
-       "text": "The text is now split into separate lines for each sentence. \n\nCheck each line carefully: does the first one explain how ancient people understood nature?",
+       "text": "The text is now split into separate rows, with one sentence on each line. Take a look at each line to check the words, and tell me: does it explain how ancient people understood nature?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1124,7 +1177,7 @@
        "pulledLever": null
       },
       {
-       "text": "The text is now split into separate lines for each sentence. \n\nTake a look and check each line carefully, then tell me: does this explain how ancient people understood nature?",
+       "text": "The lines have split so each sentence has its own row. Check each line to see what it tells us, and give it another try: does this text explain how ancient people understood nature?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1137,7 +1190,7 @@
        "pulledLever": null
       },
       {
-       "text": "Look at the screen: each sentence is now split into its own row so you can read them one at a time. \n\nCheck each line, and tell me: does the first one explain how ancient people understood nature?",
+       "text": "The text is now arranged into separate lines, with one sentence on each row. Check each line to see what it tells us, and give it another try: does this text explain how ancient people understood nature?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1150,7 +1203,7 @@
        "pulledLever": null
       },
       {
-       "text": "The text is split into rows now, with one sentence on each line. Take a look and check each line to see if it explains how ancient people understood nature.",
+       "text": "The sentences are now split into their own separate lines on your screen. Check each line to see if it tells how daylight and night happen, then tell me: does it explain how ancient people understood nature?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1184,7 +1237,7 @@
      },
      "samples": [
       {
-       "text": "Spot on! You correctly answered \"yes\"\u2014the text really does explain how ancient people understood nature by describing the sun god bringing daylight.",
+       "text": "You got it right! You said \"yes,\" and this story explains how daylight and evening happen through the sun god and his chariot.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1197,7 +1250,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it right saying yes! The text explains daylight by telling how a sun god brings morning and rests his horses at night.",
+       "text": "You got it! Saying yes is correct\u2014the text explains daylight using the story of a sun god and his chariot.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1210,7 +1263,7 @@
        "pulledLever": null
       },
       {
-       "text": "Spot on! You said yes, and this story really does explain daylight and sunset through the ancient story of the sun god.",
+       "text": "You got it right saying yes! The text explains daylight and evening using a sun god and his chariot.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1223,7 +1276,7 @@
        "pulledLever": null
       },
       {
-       "text": "That's right, you said yes! It explains how daylight comes and goes using the sun god and his chariot.",
+       "text": "You got it right saying yes! The text explains daylight and evening using a sun god and his chariot.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1236,7 +1289,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it right saying yes! The text explains daylight by telling how a sun god brings morning light with his chariot.",
+       "text": "You got it right saying yes! The text explains daylight and evening as the sun god and his fiery horses traveling across the sky.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1280,44 +1333,6 @@
      },
      "samples": [
       {
-       "text": "The first one: Long ago, people watched the bright sun vanish from the sky in the middle of the day. They believed a giant celestial dragon was swallowing the glowing orb whole. To scare the beast away, villagers gathered in the streets and banged loudly on bronze drums and pots. After a few minutes, the sun would always return to its place in the heavens. The elders nodded sagely and declared the deafening noise had successfully chased the monster off.\n\nThe second one: A solar eclipse occurs when the Moon passes directly between the Earth and the Sun. This alignment blocks the light of the Sun from reaching our planet entirely or in part. Observers in the path of totality can see the solar corona, which is the outermost atmosphere of the star. Scientists calculate the exact path and timing of these astronomical events years in advance. Special protective solar viewing glasses must be worn to prevent eye damage during the observation.\n\nDoes the first one describe a celestial dragon, or does the second one?",
-       "calls": [
-        {
-         "name": "observe_runtime",
-         "args": {}
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "Here is the first one: \"Long ago, people watched the bright sun vanish from the sky in the middle of the day. They believed a giant celestial dragon was swallowing the glowing orb whole. To scare the beast away, villagers gathered in the streets and banged loudly on bronze drums and pots. After a few minutes, the sun would always return to its place in the heavens. The elders nodded sagely and declared the deafening noise had successfully chased the monster off.\"\n\nHere is the second one: \"A solar eclipse occurs when the Moon passes directly between the Earth and the Sun. This alignment blocks the light of the Sun from reaching our planet entirely or in part. Observers in the path of totality can see the solar corona, which is the outermost atmosphere of the star. Scientists calculate the exact path and timing of these astronomical events years in advance. Special protective solar viewing glasses must be worn to prevent eye damage during the observation.\"\n\nDoes the first one describe a celestial dragon, or does the second one?",
-       "calls": [
-        {
-         "name": "observe_runtime",
-         "args": {}
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
        "text": "I'll read both texts aloud for you. \n\nThe first one: \"Long ago, people watched the bright sun vanish from the sky in the middle of the day. They believed a giant celestial dragon was swallowing the glowing orb whole. To scare the beast away, villagers gathered in the streets and banged loudly on bronze drums and pots. After a few minutes, the sun would always return to its place in the heavens. The elders nodded sagely and declared the deafening noise had successfully chased the monster off.\"\n\nThe second one: \"A solar eclipse occurs when the Moon passes directly between the Earth and the Sun. This alignment blocks the light of the Sun from reaching our planet entirely or in part. Observers in the path of totality can see the solar corona, which is the outermost atmosphere of the star. Scientists calculate the exact path and timing of these astronomical events years in advance. Special protective solar viewing glasses must be worn to prevent eye damage during the observation.\"\n\nDoes the first one describe a celestial dragon, or does the second one?",
        "calls": [
         {
@@ -1337,7 +1352,7 @@
        "pulledLever": null
       },
       {
-       "text": "Here is the first one: \"Long ago, people watched the bright sun vanish from the sky in the middle of the day. They believed a giant celestial dragon was swallowing the glowing orb whole. To scare the beast away, villagers gathered in the streets and banged loudly on bronze drums and pots. After a few minutes, the sun would always return to its place in the heavens. The elders nodded sagely and declared the deafening noise had successfully chased the monster off.\"\n\nHere is the second one: \"A solar eclipse occurs when the Moon passes directly between the Earth and the Sun. This alignment blocks the light of the Sun from reaching our planet entirely or in part. Observers in the path of totality can see the solar corona, which is the outermost atmosphere of the star. Scientists calculate the exact path and timing of these astronomical events years in advance. Special protective solar viewing glasses must be worn to prevent eye damage during the observation.\"\n\nDoes the first one describe a celestial dragon, or does the second one?",
+       "text": "Here is the first one: \"Long ago, people watched the bright sun vanish from the sky in the middle of the day. They believed a giant celestial dragon was swallowing the glowing orb whole. To scare the beast away, villagers gathered in the streets and banged loudly on bronze drums and pots. After a few minutes, the sun would always return to its place in the heavens. The elders nodded sagely and declared the deafening noise had successfully chased the monster off.\"\n\nAnd here is the second one: \"A solar eclipse occurs when the Moon passes directly between the Earth and the Sun. This alignment blocks the light of the Sun from reaching our planet entirely or in part. Observers in the path of totality can see the solar corona, which is the outermost atmosphere of the star. Scientists calculate the exact path and timing of these astronomical events years in advance. Special protective solar viewing glasses must be worn to prevent eye damage during the observation.\"\n\nDoes the first one describe a celestial dragon, or does the second one?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -1356,7 +1371,45 @@
        "pulledLever": null
       },
       {
-       "text": "The first one says: \"Long ago, people watched the bright sun vanish from the sky in the middle of the day. They believed a giant celestial dragon was swallowing the glowing orb whole. To scare the beast away, villagers gathered in the streets and banged loudly on bronze drums and pots. After a few minutes, the sun would always return to its place in the heavens. The elders nodded sagely and declared the deafening noise had successfully chased the monster off.\" \n\nThe second one says: \"A solar eclipse occurs when the Moon passes directly between the Earth and the Sun. This alignment blocks the light of the Sun from reaching our planet entirely or in part. Observers in the path of totality can see the solar corona, which is the outermost atmosphere of the star. Scientists calculate the exact path and timing of these astronomical events years in advance.\"\n\nDoes the first one describe a celestial dragon, or does the second one?",
+       "text": "I will read both texts aloud for you. \n\nHere is the first one: \"Long ago, people watched the bright sun vanish from the sky in the middle of the day. They believed a giant celestial dragon was swallowing the glowing orb whole. To scare the beast away, villagers gathered in the streets and banged loudly on bronze drums and pots. After a few minutes, the sun would always return to its place in the heavens. The elders nodded sagely and declared the deafening noise had successfully chased the monster off.\"\n\nHere is the second one: \"A solar eclipse occurs when the Moon passes directly between the Earth and the Sun. This alignment blocks the light of the Sun from reaching our planet entirely or in part. Observers in the path of totality can see the solar corona, which is the outermost atmosphere of the star. Scientists calculate the exact path and timing of these astronomical events years in advance. Special protective solar viewing glasses must be worn to prevent eye damage during the observation.\"\n\nDoes the first one describe a celestial dragon, or does the second one?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is the first one: \"Long ago, people watched the bright sun vanish from the sky in the middle of the day. They believed a giant celestial dragon was swallowing the glowing orb whole. To scare the beast away, villagers gathered in the streets and banged loudly on bronze drums and pots. After a few minutes, the sun would always return to its place in the heavens. The elders nodded sagely and declared the deafening noise had successfully chased the monster off.\"\n\nAnd here is the second one: \"A solar eclipse occurs when the Moon passes directly between the Earth and the Sun. This alignment blocks the light of the Sun from reaching our planet entirely or in part. Observers in the path of totality can see the solar corona, which is the outermost atmosphere of the star. Scientists calculate the exact path and timing of these astronomical events years in advance. Special protective solar viewing glasses must be worn to prevent eye damage during the observation.\"\n\nDoes the first one describe a celestial dragon, or does the second one?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's look at our two texts!\n\nThe first one: \"Long ago, people watched the bright sun vanish from the sky in the middle of the day. They believed a giant celestial dragon was swallowing the glowing orb whole. To scare the beast away, villagers gathered in the streets and banged loudly on bronze drums and pots. After a few minutes, the sun would always return to its place in the heavens. The elders nodded sagely and declared the deafening noise had successfully chased the monster off.\"\n\nThe second one: \"A solar eclipse occurs when the Moon passes directly between the Earth and the Sun. This alignment blocks the light of the Sun from reaching our planet entirely or in part. Observers in the path of totality can see the solar corona, which is the outermost atmosphere of the star. Scientists calculate the exact path and timing of these astronomical events years in advance.\"\n\nDoes the first one describe a celestial dragon, or does the second one?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -1395,7 +1448,7 @@
      },
      "samples": [
       {
-       "text": "Not quite. Look, there is now an empty check mark under each text. \n\nDoes the first text mention a celestial dragon swallowing the sun?",
+       "text": "An empty check box just appeared under each text so we can look at them one at a time. \n\nDoes the first text mention a giant celestial dragon swallowing the sun?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -1417,7 +1470,7 @@
        "pulledLever": null
       },
       {
-       "text": "We have a check box under each text now. Does the first text mention a giant celestial dragon swallowing the sun, or does the second one?",
+       "text": "There is now an empty check under each text. \n\nDoes the first text mention a celestial dragon?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -1439,7 +1492,29 @@
        "pulledLever": null
       },
       {
-       "text": "There is now an empty check box under each text. \n\nDoes the first text mention a giant celestial dragon swallowing the glowing orb?",
+       "text": "Now there is a check box under each text to help us look closely. \n\nDoes the first text talk about a giant celestial dragon, or does the second one?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "two_checks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "We now have an empty check under each text to help us. \n\nLet's look at one at a time: does the first text talk about a giant celestial dragon swallowing the sun?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -1461,29 +1536,7 @@
        "pulledLever": null
       },
       {
-       "text": "There is an empty check under each text now. \n\nDoes the first text mention a giant beast swallowing the sun, or does the second one?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/1/0",
-          "lever": "two_checks"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "There is now a check box under each text. \n\nLet's check the first one: does it describe a giant celestial dragon swallowing the sun?",
+       "text": "There's an empty check under each text now. Does the first one describe a giant celestial dragon?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -1525,51 +1578,7 @@
      },
      "samples": [
       {
-       "text": "Two empty check marks just appeared under the texts.\n\nDoes the first text talk about a giant celestial dragon?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/2/0",
-          "lever": "two_checks"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": true
-       },
-       "evidence": {},
-       "pulledLever": true
-      },
-      {
-       "text": "An empty check box appeared under each text to help us. \n\nDoes the first text mention a giant celestial dragon?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/2/0",
-          "lever": "two_checks"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": true
-       },
-       "evidence": {},
-       "pulledLever": true
-      },
-      {
-       "text": "An empty check mark appeared under each text to help us.\n\nDoes the first text talk about a giant celestial dragon?",
+       "text": "Two check boxes are on screen now under each text so we can check them one by one. Does the first text talk about a giant celestial dragon?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -1591,13 +1600,13 @@
        "pulledLever": true
       },
       {
-       "text": "An empty check mark has appeared under each text so we can look at them one at a time.\n\nDoes the first text mention people believing a giant celestial dragon was swallowing the sun?",
+       "text": "Two empty check boxes are now under the texts to help us test each one. \n\nDoes the first text talk about a celestial dragon?",
        "calls": [
         {
          "name": "perform_runtime_action",
          "args": {
-          "lever": "two_checks",
-          "actionId": "test/2/0"
+          "actionId": "test/2/0",
+          "lever": "two_checks"
          }
         }
        ],
@@ -1613,7 +1622,51 @@
        "pulledLever": true
       },
       {
-       "text": "We have an empty check under each text now. \n\nDoes the first text mention a celestial dragon?",
+       "text": "An empty check box is now under each text so we can take them one at a time.\n\nDoes the first one talk about a giant celestial dragon?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "two_checks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An empty check box is now under each text so we can check them one at a time.\n\nDoes the first one have a giant celestial dragon in it?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "two_checks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An empty check box is now under each text so we can check them one by one.\n\nDoes the first text talk about a giant celestial dragon?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -1655,7 +1708,7 @@
      },
      "samples": [
       {
-       "text": "There is now an empty check mark under each text to help us look.\n\nDoes the first text describe a celestial dragon?",
+       "text": "Look right below the texts\u2014there is an empty check box under each one now. \n\nDoes the first one describe a celestial dragon, or does the second one?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1668,7 +1721,7 @@
        "pulledLever": null
       },
       {
-       "text": "Take a look right under each text\u2014there is now an empty check mark for each one.\n\nDoes the first one describe a celestial dragon, or does the second one?",
+       "text": "An empty check box is now showing right underneath each text. \n\nDoes the first text describe a celestial dragon, or does the second one?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1681,7 +1734,7 @@
        "pulledLever": null
       },
       {
-       "text": "Look under the texts, where two empty check boxes have appeared. \n\nDoes the first text mention a giant celestial dragon?",
+       "text": "Look right beneath each text\u2014there is now an empty check box under both of them. \n\nDoes the first text describe a celestial dragon, or does the second one?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1694,7 +1747,7 @@
        "pulledLever": null
       },
       {
-       "text": "There is an empty check box under each text now.\n\nDoes the first text mention a celestial dragon?",
+       "text": "Look right below each passage\u2014there is now an empty check box underneath each text. \n\nDoes the first text describe a giant celestial dragon, yes or no?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1707,7 +1760,7 @@
        "pulledLever": null
       },
       {
-       "text": "There is an empty check box under each text now.\n\nDoes the first one describe a celestial dragon?",
+       "text": "Look right under each story\u2014there is now an empty check box under the first text and another under the second text.\n\nDoes the first story talk about a celestial dragon?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1740,59 +1793,59 @@
      },
      "samples": [
       {
-       "text": "That's right, you found it! The first one is the text that describes the giant celestial dragon swallowing the sun.",
-       "calls": [],
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": null,
-        "no_fix_before_try": null,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "You got it right! The first one is the text that describes the celestial dragon.",
-       "calls": [],
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": null,
-        "no_fix_before_try": null,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "You got it right\u2014it is the first one that describes the celestial dragon!",
-       "calls": [],
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": null,
-        "no_fix_before_try": null,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "Spot on! You correctly picked the first one, which describes the giant celestial dragon swallowing the sun.",
-       "calls": [],
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": null,
-        "no_fix_before_try": null,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
        "text": "You got it right! You chose the first one, which describes the giant celestial dragon swallowing the sun.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You chose the first one, which describes the people believing a giant celestial dragon was swallowing the sun.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You chose the first one, which describes the people believing a giant celestial dragon was swallowing the sun.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You chose the first one, which describes the people believing a giant celestial dragon was swallowing the sun.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You got it right with the first one\u2014it's the one that describes the giant celestial dragon swallowing the sun.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -1836,7 +1889,7 @@
      },
      "samples": [
       {
-       "text": "I'll read both texts to you!\n\nThe first one: \"The Sun God rode his golden chariot across the sky every single day to bring warmth to the earth. When the moon maiden came out at night, she spun silver thread to weave the starry night blanket.\"\n\nThe second one: \"The sun is a giant star made of hot, glowing gas at the center of our solar system. The earth travels in a path called an orbit around the sun once every 365 days.\"\n\nDoes the first one tell a traditional story about gods, or does the second one?",
+       "text": "Here is the first one: \"The Sun God rode his golden chariot across the sky every single day to bring warmth to the earth. When the moon maiden came out at night, she spun silver thread to weave the starry night blanket.\"\n\nAnd here is the second one: \"The sun is a giant star made of hot, glowing gas at the center of our solar system. The earth travels in a path called an orbit around the sun once every 365 days.\"\n\nDoes the first one tell a traditional story about gods, or does the second one?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -1855,7 +1908,7 @@
        "pulledLever": null
       },
       {
-       "text": "I will read both texts for you! \n\nThe first one: \"The Sun God rode his golden chariot across the sky every single day to bring warmth to the earth. When the moon maiden came out at night, she spun silver thread to weave the starry night blanket.\"\n\nThe second one: \"The sun is a giant star made of hot, glowing gas at the center of our solar system. The earth travels in a path called an orbit around the sun once every 365 days.\"\n\nDoes the first one tell a traditional story about gods, or does the second one?",
+       "text": "The first one says: \"The Sun God rode his golden chariot across the sky every single day to bring warmth to the earth. When the moon maiden came out at night, she spun silver thread to weave the starry night blanket.\"\n\nThe second one says: \"The sun is a giant star made of hot, glowing gas at the center of our solar system. The earth travels in a path called an orbit around the sun once every 365 days.\"\n\nDoes the first one tell a traditional story about gods, or does the second one?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -1874,7 +1927,7 @@
        "pulledLever": null
       },
       {
-       "text": "I'll read both texts to you!\n\nThe first one: \"The Sun God rode his golden chariot across the sky every single day to bring warmth to the earth. When the moon maiden came out at night, she spun silver thread to weave the starry night blanket.\"\n\nThe second one: \"The sun is a giant star made of hot, glowing gas at the center of our solar system. The earth travels in a path called an orbit around the sun once every 365 days.\"\n\nDoes the first one tell a traditional story about gods, or does the second one?",
+       "text": "Here is the first one: \"The Sun God rode his golden chariot across the sky every single day to bring warmth to the earth. When the moon maiden came out at night, she spun silver thread to weave the starry night blanket.\"\n\nHere is the second one: \"The sun is a giant star made of hot, glowing gas at the center of our solar system. The earth travels in a path called an orbit around the sun once every 365 days.\"\n\nDoes the first one tell a traditional story about gods, or does the second one?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -1893,7 +1946,7 @@
        "pulledLever": null
       },
       {
-       "text": "Let's listen to both texts! \n\nThe first one: \"The Sun God rode his golden chariot across the sky every single day to bring warmth to the earth. When the moon maiden came out at night, she spun silver thread to weave the starry night blanket.\"\n\nThe second one: \"The sun is a giant star made of hot, glowing gas at the center of our solar system. The earth travels in a path called an orbit around the sun once every 365 days.\"\n\nDoes the first one tell a traditional story about gods, or does the second one?",
+       "text": "Listen closely while I read both texts.\n\nThe first one: \"The Sun God rode his golden chariot across the sky every single day to bring warmth to the earth. When the moon maiden came out at night, she spun silver thread to weave the starry night blanket.\"\n\nThe second one: \"The sun is a giant star made of hot, glowing gas at the center of our solar system. The earth travels in a path called an orbit around the sun once every 365 days.\"\n\nDoes the first one tell a traditional story about gods, or does the second one?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -1912,7 +1965,7 @@
        "pulledLever": null
       },
       {
-       "text": "I'll read both texts to you!\n\nThe first one: \"The Sun God rode his golden chariot across the sky every single day to bring warmth to the earth. When the moon maiden came out at night, she spun silver thread to weave the starry night blanket.\"\n\nThe second one: \"The sun is a giant star made of hot, glowing gas at the center of our solar system. The earth travels in a path called an orbit around the sun once every 365 days.\"\n\nDoes the first one tell a traditional story about gods, or does the second one?",
+       "text": "The first one: \"The Sun God rode his golden chariot across the sky every single day to bring warmth to the earth. When the moon maiden came out at night, she spun silver thread to weave the starry night blanket.\"\n\nThe second one: \"The sun is a giant star made of hot, glowing gas at the center of our solar system. The earth travels in a path called an orbit around the sun once every 365 days.\"\n\nDoes the first one tell a traditional story about gods, or does the second one?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -1951,51 +2004,7 @@
      },
      "samples": [
       {
-       "text": "An empty check box appeared under each text to help us look closer. \n\nDoes the first text mention gods, or does the second text?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/1/0",
-          "lever": "two_checks"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "Not quite. We now have a check box under each text to help us look closer. \n\nDoes the first text mention gods, or does the second text?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/1/0",
-          "lever": "two_checks"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "We have a check box under each text to test them one at a time. \n\nDoes the second text mention gods and chariots, or does the first text?",
+       "text": "We have a check box under each text now. \n\nDoes the second text talk about gods riding chariots, or does the first text?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -2017,7 +2026,29 @@
        "pulledLever": null
       },
       {
-       "text": "We have an empty check under each text now to help us look closer. \n\nDoes the first one talk about a Sun God and a moon maiden, or does the second one?",
+       "text": "There is now an empty check box under each text. \n\nLet's check the first one: does it tell a story about gods?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "two_checks",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "We have an empty check under each text now.\n\nDoes the first one talk about gods?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -2039,13 +2070,35 @@
        "pulledLever": null
       },
       {
-       "text": "Let's look closer! An empty check just appeared under each text to help us. \n\nDoes the first one talk about gods and woven night blankets, or does the second one?",
+       "text": "There is now an empty check box under each text. \n\nDoes the first text tell about gods?",
        "calls": [
         {
          "name": "perform_runtime_action",
          "args": {
-          "lever": "two_checks",
-          "actionId": "test/1/0"
+          "actionId": "test/1/0",
+          "lever": "two_checks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is now an empty check box under each text. \n\nLet's look at the first one: does it talk about gods, or does the second one?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "two_checks"
          }
         }
        ],
@@ -2081,29 +2134,7 @@
      },
      "samples": [
       {
-       "text": "We now have a check box under each text to help us decide.\n\nDoes the first text tell about gods?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/2/0",
-          "lever": "two_checks"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": true
-       },
-       "evidence": {},
-       "pulledLever": true
-      },
-      {
-       "text": "There is an empty check box under each text now.\n\nDoes the first text tell a traditional story about gods?",
+       "text": "There is now an empty check box under each text.\n\nDoes the first text tell a traditional story about gods?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -2125,7 +2156,29 @@
        "pulledLever": true
       },
       {
-       "text": "An empty check box appeared under each text so we can check them one by one.\n\nDoes the first text mention gods?",
+       "text": "An empty check box appeared under each text to help us.\n\nDoes the first text tell about a Sun God riding a chariot?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "two_checks",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An empty check box appeared under each text to help us look at them one by one.\n\nDoes the first text mention a Sun God and a moon maiden, or does the second one?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -2147,13 +2200,13 @@
        "pulledLever": true
       },
       {
-       "text": "An empty check box appeared under each text to help us look closer.\n\nDoes the first text mention gods, or does the second text?",
+       "text": "An empty check box appeared under each text to help us.\n\nDoes the first text tell about a Sun God riding a chariot?",
        "calls": [
         {
          "name": "perform_runtime_action",
          "args": {
-          "actionId": "test/2/0",
-          "lever": "two_checks"
+          "lever": "two_checks",
+          "actionId": "test/2/0"
          }
         }
        ],
@@ -2169,7 +2222,7 @@
        "pulledLever": true
       },
       {
-       "text": "We now have an empty check box under each text.\n\nDoes the first text tell a traditional story about gods?",
+       "text": "Look at the screen: there is now an empty check box under each text.\n\nDoes the first text tell about gods?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -2211,7 +2264,7 @@
      },
      "samples": [
       {
-       "text": "Look right under the two texts\u2014there is an empty check box under each one now!\n\nListen to the first text: \"The Sun God rode his golden chariot across the sky every single day to bring warmth to the earth. When the moon maiden came out at night, she spun silver thread to weave the starry night blanket.\"\n\nDoes the first one tell a traditional story about gods?",
+       "text": "Look right under each text\u2014there is now an empty check box!\n\nDoes the first one tell a traditional story about gods?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2224,7 +2277,7 @@
        "pulledLever": null
       },
       {
-       "text": "Under each text, there is now an empty check box. \n\nDoes the first text tell a traditional story about gods?",
+       "text": "Look below the texts: there is now an empty check box under each one.\n\nDoes the first one tell a traditional story about gods, or does the second one?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2237,7 +2290,7 @@
        "pulledLever": null
       },
       {
-       "text": "Look under each text\u2014there is now an empty check box under both of them!\n\nDoes the first text tell about gods?",
+       "text": "Look right beneath each text\u2014there is now an empty check box under both of them. \n\nDoes the first one tell a traditional story about gods, or does the second one?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2250,7 +2303,7 @@
        "pulledLever": null
       },
       {
-       "text": "There is now an empty check box right under each text for us to look at.\n\nDoes the first text tell about gods?",
+       "text": "Look below each text\u2014there is now an empty check box under both of them!\n\nDoes the first text tell a traditional story about gods?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2263,7 +2316,7 @@
        "pulledLever": null
       },
       {
-       "text": "There is now an empty check mark under each text on your screen!\n\nLet's look at the first one: does it tell about gods, or does the second one?",
+       "text": "Look right under each text\u2014there is now an empty check box!\n\nDoes the first text tell a traditional story about gods?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2296,46 +2349,7 @@
      },
      "samples": [
       {
-       "text": "You got it\u2014it is the first one! You found the story about the Sun God and moon maiden.",
-       "calls": [],
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": null,
-        "no_fix_before_try": null,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "You got it! You picked the first one, which tells a story about the Sun God.",
-       "calls": [],
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": null,
-        "no_fix_before_try": null,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "You got it right! You chose the first one, which tells a story about the Sun God and the moon maiden.",
-       "calls": [],
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": null,
-        "no_fix_before_try": null,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "You got it right! You picked the first one, which tells the story about the Sun God and the moon maiden.",
+       "text": "You got it right! You named the first one, which tells the story about the Sun God and the moon maiden.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2349,6 +2363,45 @@
       },
       {
        "text": "You got it right! You chose the first one, which tells the story about the Sun God and the moon maiden.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You chose the first one, which tells the story about the Sun God.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You chose the first one, which tells the story about the Sun God and the moon maiden.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You chose the first one, which tells the traditional story about the Sun God and moon maiden.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2432,7 +2485,7 @@
        "pulledLever": null
       },
       {
-       "text": "Listen to the first one: The little red fox looked at the grapes and said, \"I want those.\" He jumped high into the air, but he could not reach them. Does the first one have an animal that speaks?",
+       "text": "Listen to the first one: The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them. Does the first one have an animal that speaks?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -2470,7 +2523,7 @@
        "pulledLever": null
       },
       {
-       "text": "Listen to the first one: The little red fox looked at the grapes and said, \"I want those.\" He jumped high into the air, but he could not reach them. Does the first one have an animal that speaks?",
+       "text": "Listen to this story: The little red fox looked at the grapes and said, \"I want those.\" He jumped high into the air, but he could not reach them. Does this story have an animal that speaks?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -2510,74 +2563,15 @@
      },
      "samples": [
       {
-       "text": "A speaker mark appeared on our text. Let's listen again: \"The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them.\" Does the first one have an animal that speaks?",
+       "text": "There's a speaker mark on the text now, so let's listen again: \"The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them.\" Does the first one have an animal that speaks?",
        "calls": [
         {
          "name": "perform_runtime_action",
          "args": {
-          "actionId": "test/1/0",
-          "lever": "read_again"
+          "lever": "text_model",
+          "actionId": "test/1/0"
          }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "A new card appeared on the screen. Let's give it another try: does the first one have an animal that speaks?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/1/0",
-          "lever": "text_model"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "A new card popped up on our screen. My turn: this one does have an animal talking. Give our fox story another listen: does the fox speak?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/1/0",
-          "lever": "text_model"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "A speaker mark appeared on the text, so let's listen to it one more time: The little red fox looked at the grapes and said, \"I want those.\" He jumped high into the air, but he could not reach them. Does the first one have an animal that speaks?",
-       "calls": [
+        },
         {
          "name": "perform_runtime_action",
          "args": {
@@ -2598,8 +2592,88 @@
        "pulledLever": null
       },
       {
-       "text": "There is a speaker mark on the text now. \n\nListen once more: \"The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them.\"\n\nDoes the first one have an animal that speaks?",
+       "text": "There is a speaker mark now, so let's listen again: The little red fox looked at the grapes and said, \"I want those.\" He jumped high into the air, but he could not reach them. Does the first one have an animal that speaks?",
        "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "text_model"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "read_again",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's listen closely to the words again: \"The little red fox looked at the grapes and said, 'I want those.'\" What did the fox do?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "text_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's listen closely to the words again: The little red fox looked at the grapes and said, \"I want those.\" He jumped high into the air, but he could not reach them. Does the first one have an animal that speaks?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "text_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A speaker mark showed up on our text, so let's listen to it once more: \"The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them.\" Does the first one have an animal that speaks?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "text_model"
+         }
+        },
         {
          "name": "perform_runtime_action",
          "args": {
@@ -2641,7 +2715,8 @@
      },
      "samples": [
       {
-       "text": "A card appeared showing another text. My turn: this one does have words spoken out loud, reading \"I want those.\" Now your turn: does the first one have an animal that speaks?",
+       "text": "",
+       "before": "",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -2649,31 +2724,18 @@
           "lever": "text_model",
           "actionId": "test/2/0"
          }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": true
-       },
-       "evidence": {},
-       "pulledLever": true
-      },
-      {
-       "text": "A card popped up with an example to help us. \n\nMy turn: this one does have words that show someone talking, where it says \"I want those.\" \n\nNow your turn: does the first one have an animal that speaks?",
-       "calls": [
+        },
+        {
+         "name": "observe_runtime",
+         "args": {}
+        },
         {
          "name": "perform_runtime_action",
          "args": {
-          "actionId": "test/2/0",
-          "lever": "text_model"
+          "actionId": "test/2/1"
          }
         }
        ],
-       "before": "",
        "checks": {
         "not_empty": true,
         "no_protocol_leak": true,
@@ -2685,51 +2747,7 @@
        "pulledLever": true
       },
       {
-       "text": "A speaker mark popped up by the words. \n\n\"The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them.\"\n\nDoes the first one have an animal that speaks?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "lever": "read_again",
-          "actionId": "test/2/0"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": true
-       },
-       "evidence": {},
-       "pulledLever": true
-      },
-      {
-       "text": "A speaker mark appeared on our text. \n\nThe little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them.\n\nDoes the first one have an animal that speaks?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/2/0",
-          "lever": "read_again"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": true
-       },
-       "evidence": {},
-       "pulledLever": true
-      },
-      {
-       "text": "Each sentence is now on its own row. Let's check each line to see if an animal speaks.",
+       "text": "Each sentence is on its own line now. Check each line to see if an animal speaks.",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -2740,6 +2758,96 @@
         }
        ],
        "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "",
+       "before": "",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "text_model",
+          "actionId": "test/2/0"
+         }
+        },
+        {
+         "name": "observe_runtime",
+         "args": {}
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Let's break it down together. Listen closely to the words: \"The little red fox looked at the grapes and said, 'I want those.'\" Does an animal speak here?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "text_model"
+         }
+        },
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "",
+       "before": "",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "text_model",
+          "actionId": "test/2/0"
+         }
+        },
+        {
+         "name": "observe_runtime",
+         "args": {}
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
        "checks": {
         "not_empty": true,
         "no_protocol_leak": true,
@@ -2772,7 +2880,7 @@
      },
      "samples": [
       {
-       "text": "Look at the screen, there is a speaker mark right on our text now. \n\nLet's listen to it once more: \"The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them.\"\n\nDoes the first one have an animal that speaks?",
+       "text": "There is a speaker mark next to the words now. \n\n\"The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them.\"\n\nDoes the first one have an animal that speaks?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2785,7 +2893,7 @@
        "pulledLever": null
       },
       {
-       "text": "A speaker mark is now showing right by our text! \n\nListen to the whole text once more: \"The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them.\"\n\nDoes the first one have an animal that speaks?",
+       "text": "There is a speaker mark next to the words now, so let's listen to the text once more: \"The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them.\" \n\nDoes the first one have an animal that speaks?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2798,7 +2906,7 @@
        "pulledLever": null
       },
       {
-       "text": "Look, a speaker mark appeared right on the text! \n\n\"The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them.\"\n\nDoes the first one have an animal that speaks?",
+       "text": "There is a speaker mark next to the words now. \n\nListen as I read it again: \"The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them.\"\n\nDoes the first one have an animal that speaks?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2811,7 +2919,7 @@
        "pulledLever": null
       },
       {
-       "text": "Look right beside our text\u2014a little speaker mark is there now! \n\nListen to the whole text once more: \"The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them.\"\n\nDoes the first one have an animal that speaks?",
+       "text": "A little speaker mark appeared right by the text, so let's listen to it again: \"The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them.\" Does the first one have an animal that speaks?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2824,7 +2932,7 @@
        "pulledLever": null
       },
       {
-       "text": "There is a speaker mark on the text now. \n\nListen to the whole text once more: \"The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them.\"\n\nDoes the first one have an animal that speaks?",
+       "text": "Look at the speaker mark by the text. \n\n\"The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them.\"\n\nDoes the first one have an animal that speaks?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2858,7 +2966,7 @@
      },
      "samples": [
       {
-       "text": "You got it! You said yes, the fox speaks when he says, \"I want those.\"",
+       "text": "You got it right! The answer is yes, because the little red fox spoke and said, \"I want those.\"",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2871,7 +2979,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it, yes! You found that the fox talks in this story.",
+       "text": "That's right! You said yes, and the little fox does speak when he says, \"I want those.\"",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2884,7 +2992,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it right! The answer is yes, because the little red fox speaks out loud.",
+       "text": "You got it! You said yes, because the little red fox speaks and says, \"I want those.\"",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2897,7 +3005,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it! You said yes, and the fox does speak in this story.",
+       "text": "You got it! Yes, the fox speaks and says, \"I want those.\"",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2910,7 +3018,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it! You said yes, the fox speaks when he says \"I want those.\"",
+       "text": "You got it right! The answer is yes, the fox speaks and says, \"I want those.\"",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -2956,7 +3064,7 @@
      },
      "samples": [
       {
-       "text": "Let's listen to the first story: \"The clever red fox looked up at the crow sitting on a tall branch. The crow held a sweet golden chunk of cheese in her beak. Mr. Fox spoke sweet words to trick the bird into opening her mouth.\"\n\nDoes the first one have an animal that speaks words?",
+       "text": "Here is the story: \"The clever red fox looked up at the crow sitting on a tall branch. The crow held a sweet golden chunk of cheese in her beak. Mr. Fox spoke sweet words to trick the bird into opening her mouth.\"\n\nDoes the first one have an animal that speaks words?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -2975,7 +3083,7 @@
        "pulledLever": null
       },
       {
-       "text": "Let's listen to this story: \"The clever red fox looked up at the crow sitting on a tall branch. The crow held a sweet golden chunk of cheese in her beak. Mr. Fox spoke sweet words to trick the bird into opening her mouth.\"\n\nDoes the first one have an animal that speaks words?",
+       "text": "Here is the first story: \"The clever red fox looked up at the crow sitting on a tall branch. The crow held a sweet golden chunk of cheese in her beak. Mr. Fox spoke sweet words to trick the bird into opening her mouth.\"\n\nDoes the first one have an animal that speaks words?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -2994,7 +3102,7 @@
        "pulledLever": null
       },
       {
-       "text": "Here is our first story: \"The clever red fox looked up at the crow sitting on a tall branch. The crow held a sweet golden chunk of cheese in her beak. Mr. Fox spoke sweet words to trick the bird into opening her mouth.\" \n\nDoes the first one have an animal that speaks words?",
+       "text": "Let's read this story together: \"The clever red fox looked up at the crow sitting on a tall branch. The crow held a sweet golden chunk of cheese in her beak. Mr. Fox spoke sweet words to trick the bird into opening her mouth.\"\n\nDoes the first one have an animal that speaks words?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -3013,7 +3121,7 @@
        "pulledLever": null
       },
       {
-       "text": "I'll read our story aloud: \"The clever red fox looked up at the crow sitting on a tall branch. The crow held a sweet golden chunk of cheese in her beak. Mr. Fox spoke sweet words to trick the bird into opening her mouth.\"\n\nDoes the first one have an animal that speaks words?",
+       "text": "Here is the text: \"The clever red fox looked up at the crow sitting on a tall branch. The crow held a sweet golden chunk of cheese in her beak. Mr. Fox spoke sweet words to trick the bird into opening her mouth.\"\n\nDoes the first one have an animal that speaks words?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -3032,7 +3140,7 @@
        "pulledLever": null
       },
       {
-       "text": "Here is the first text: \"The clever red fox looked up at the crow sitting on a tall branch. The crow held a sweet golden chunk of cheese in her beak. Mr. Fox spoke sweet words to trick the bird into opening her mouth.\"\n\nDoes the first one have an animal that speaks words?",
+       "text": "Listen to this story: \"The clever red fox looked up at the crow sitting on a tall branch. The crow held a sweet golden chunk of cheese in her beak. Mr. Fox spoke sweet words to trick the bird into opening her mouth.\"\n\nDoes the first one have an animal that speaks words?",
        "calls": [
         {
          "name": "observe_runtime",
@@ -3072,7 +3180,36 @@
      },
      "samples": [
       {
-       "text": "Not quite. The text is now split into separate lines, so check each line carefully to see if an animal speaks words. Give it another try!",
+       "text": "The sentences are now split into their own rows so we can look closely. Check each line: does the first one have an animal that speaks words?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "text_model",
+          "actionId": "test/1/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "sentence_rows"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The story is now split so each sentence is on its own row. Check each line to see if an animal speaks words, and try again!",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -3094,7 +3231,7 @@
        "pulledLever": null
       },
       {
-       "text": "Look, the text is split into sentences row by row now. Check each line carefully\u2014does the first one have an animal that speaks words?",
+       "text": "The sentences are now split into their own rows. Check each line to see if an animal speaks words. What do you think now?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -3116,13 +3253,13 @@
        "pulledLever": null
       },
       {
-       "text": "The text is now shown one sentence per row. Take a close look at each line to see what happens, and give it another try!",
+       "text": "The screen now shows each sentence on its own line. Check each line carefully\u2014does the first one have an animal that speaks words?",
        "calls": [
         {
          "name": "perform_runtime_action",
          "args": {
-          "actionId": "test/1/0",
-          "lever": "sentence_rows"
+          "lever": "sentence_rows",
+          "actionId": "test/1/0"
          }
         }
        ],
@@ -3138,35 +3275,13 @@
        "pulledLever": null
       },
       {
-       "text": "The text is split into rows now. Let's check each line carefully: does the first one have an animal that speaks words?",
+       "text": "Look, the text is now split into one sentence per row. Take a close look at each line\u2014does this story have an animal that speaks words?",
        "calls": [
         {
          "name": "perform_runtime_action",
          "args": {
-          "actionId": "test/1/0",
-          "lever": "sentence_rows"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": null
-       },
-       "evidence": {},
-       "pulledLever": null
-      },
-      {
-       "text": "Not quite. The text is now split into one sentence per row. Take a close look at each line and tell me: does the first one have an animal that speaks words?",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/1/0",
-          "lever": "sentence_rows"
+          "lever": "sentence_rows",
+          "actionId": "test/1/0"
          }
         }
        ],
@@ -3203,51 +3318,7 @@
      },
      "samples": [
       {
-       "text": "The story is now broken into separate rows so each sentence has its own line. Check each line to see if an animal speaks words!",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/2/0",
-          "lever": "sentence_rows"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": true
-       },
-       "evidence": {},
-       "pulledLever": true
-      },
-      {
-       "text": "The text is now split into separate lines. Check each line to see if an animal speaks words!",
-       "calls": [
-        {
-         "name": "perform_runtime_action",
-         "args": {
-          "actionId": "test/2/0",
-          "lever": "sentence_rows"
-         }
-        }
-       ],
-       "before": "",
-       "checks": {
-        "not_empty": true,
-        "no_protocol_leak": true,
-        "no_key_before_try": true,
-        "no_fix_before_try": true,
-        "no_change_before_receipt": true
-       },
-       "evidence": {},
-       "pulledLever": true
-      },
-      {
-       "text": "I set each sentence onto its own row. Check each line to see if an animal speaks words.",
+       "text": "The text is now split into one sentence per row. Take a look and check each line to see if an animal speaks words.",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -3269,7 +3340,29 @@
        "pulledLever": true
       },
       {
-       "text": "I split the text so each sentence is on its own row. Check each line to see if an animal speaks words, and tell me: yes or no?",
+       "text": "The text is now split into one sentence per row. Take a look and check each line to see if an animal speaks words!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sentence_rows",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The story is now split into one sentence per row on your screen. Check each line to see: does the first one have an animal that speaks words?",
        "calls": [
         {
          "name": "perform_runtime_action",
@@ -3291,13 +3384,35 @@
        "pulledLever": true
       },
       {
-       "text": "The text is now shown with one sentence on each row. Check each line to see what happens.",
+       "text": "The screen now shows each sentence on its own row. Check each line to see: does the first one have an animal that speaks words?",
        "calls": [
         {
          "name": "perform_runtime_action",
          "args": {
-          "lever": "sentence_rows",
-          "actionId": "test/2/0"
+          "actionId": "test/2/0",
+          "lever": "sentence_rows"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The screen now shows each sentence on its own separate line so we can read them carefully. Check each line to see: does the first one have an animal that speaks words?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "sentence_rows"
          }
         }
        ],
@@ -3334,7 +3449,7 @@
      },
      "samples": [
       {
-       "text": "The text is now split into rows, with one sentence on each line. Take a look and check each line to see if an animal speaks words!",
+       "text": "Each sentence is now written on its own line. Check each line to see if an animal speaks words.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -3347,7 +3462,7 @@
        "pulledLever": null
       },
       {
-       "text": "Each sentence is now laid out on its own row. Look at each line and tell me: does the first one have an animal that speaks words?",
+       "text": "Each sentence is now on its own line. Check each line: does the first one have an animal that speaks words?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -3360,7 +3475,7 @@
        "pulledLever": null
       },
       {
-       "text": "Look at the screen: each sentence is now drawn on its own separate line. Check each line to see if an animal speaks words, and tell me: yes or no?",
+       "text": "The text is now split into one sentence per row on your screen. Check each line to see if an animal speaks words.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -3373,7 +3488,7 @@
        "pulledLever": null
       },
       {
-       "text": "Look at the screen: each sentence has been split into its own row now. Check each line to see if an animal speaks words!",
+       "text": "The story is split into three lines now, with each sentence on its own row. Check each line to see if an animal speaks words!",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -3386,7 +3501,7 @@
        "pulledLever": null
       },
       {
-       "text": "Look at the screen: each sentence from our story is now placed on its very own row! \n\nCheck each line carefully\u2014does the first one have an animal that speaks words?",
+       "text": "Look at the screen: each sentence is now split onto its own line. Check each line carefully and tell me, does the first one have an animal that speaks words?",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -3420,7 +3535,7 @@
      },
      "samples": [
       {
-       "text": "That's right, you said yes! Mr. Fox spoke sweet words to trick the bird, so this animal definitely speaks.",
+       "text": "You got it right! You said yes, and the text says Mr. Fox spoke sweet words to trick the bird.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -3433,7 +3548,7 @@
        "pulledLever": null
       },
       {
-       "text": "You got it right saying yes! Mr. Fox spoke sweet words to trick the bird.",
+       "text": "That's it, you got it right with yes! Mr. Fox spoke sweet words to trick the bird.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -3446,7 +3561,7 @@
        "pulledLever": null
       },
       {
-       "text": "That's right, you found it! The answer is yes, because Mr. Fox speaks sweet words.",
+       "text": "That's right! You found it: the story does have an animal that speaks words, because Mr. Fox spoke to the crow.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -3459,7 +3574,7 @@
        "pulledLever": null
       },
       {
-       "text": "Spot on! You found that the first one does have an animal that speaks words\u2014Mr. Fox spoke sweet words to trick the bird.",
+       "text": "You got it right! Yes, the story has Mr. Fox speaking sweet words.",
        "calls": [],
        "checks": {
         "not_empty": true,
@@ -3472,7 +3587,7 @@
        "pulledLever": null
       },
       {
-       "text": "That is right, you got it! The fox speaks sweet words to the crow, so the first story does have an animal that speaks words.",
+       "text": "You got it right! Yes, the story has an animal that speaks words\u2014Mr. Fox spoke sweet words to trick the bird.",
        "calls": [],
        "checks": {
         "not_empty": true,

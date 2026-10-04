@@ -167,7 +167,8 @@ export function sentenceAnalyzerLevers(item: SentenceAnalyzerItem | null, ctx: L
   const add = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: readonly string[], when: string, does: string) => {
     if (!starting.includes(id)) levers.push({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
   };
-  const fence = 'The learner reads its labels: do not say a label aloud before the learner tries, never say which model '
+  const fence = 'Read only the card the receipt names; never make up a model of your own. The learner reads its labels: '
+    + 'do not say a label aloud before the learner tries, never say which model '
     + 'word is like the asked word, and never label a word of this sentence.';
   if (item.action === 'name-pos' && modelSentenceFor(item, session)) add(MODEL_LEVER, 'help', 'both', ANSWERS[MODEL_LEVER],
     'The learner mixes up two labels, such as adjective and adverb, or says "describing word".',

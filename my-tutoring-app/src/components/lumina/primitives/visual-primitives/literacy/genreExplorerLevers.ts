@@ -144,7 +144,8 @@ export function genreExplorerLevers(item: GenreExplorerItem | null, s: GenreSess
     'The learner has lost the text.',
     `Puts a speaker mark on the text. Once it is on screen, read ${shown.length > 1 ? 'both texts' : 'the whole text'} once more, `
     + `evenly and in order, stressing nothing: ${shown.map(e => `"${e.spokenText}"`).join(' then ')}`);
-  const fence = 'Never say what the model means for the learner\'s text.';
+  const fence = 'Read only the card the receipt names; never make up a model of your own. Never say what the model '
+    + 'means for the text of the learner.';
   if (item.action === 'check-feature') {
     if (readable) readAgain(['opposite_verdict']);
     add(ROWS_LEVER, 'help', 'shown', ['opposite_verdict'], 'The learner answers from what they expect, not from the words.',
