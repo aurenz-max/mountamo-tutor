@@ -1,6 +1,6 @@
 # genre-explorer: failure inventory and lever table (2026-10-03)
 
-**DRAFT 2026-10-03**. `/add-support-tiers` Phases 1-2, literacy G2-6 family 3 of 4.
+**BUILT 2026-10-04** (`qa/eval-reports/genre-explorer-levers-2026-10-04.md`). `/add-support-tiers` Phases 1-2, literacy G2-6 family 3 of 4.
 Rulings carried over: literacy leak rules (handoff 22): help on a recognition item acts on a model outside the
 session; a spoken answer never becomes a tap; simplify never repeats the learner's item (R3). DI levers (10-02):
 "my turn" models a DIFFERENT item, never the learner's. Removing choices is assisted work, never unaided credit.

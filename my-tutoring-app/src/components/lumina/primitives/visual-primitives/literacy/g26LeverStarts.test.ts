@@ -6,11 +6,18 @@
 import { describe, expect, it } from 'vitest';
 import { startingLevers as wordBuilderStarts } from './wordBuilderLevers';
 import { startingLevers as sentenceStarts } from './sentenceAnalyzerLevers';
+import { startingLevers as genreStarts } from './genreExplorerLevers';
+import type { GenreExplorerItem } from './genreExplorerScript';
+
+const genreAt = (action: GenreExplorerItem['action']) => (tier: Tier) => genreStarts(tier, { action } as GenreExplorerItem);
 
 type Tier = 'easy' | 'medium' | 'hard' | undefined;
 const FAMILIES: Array<[family: string, starts: (tier: Tier) => string[], table: Record<string, string[]>]> = [
   ['word-builder', wordBuilderStarts, { easy: ['part_slots'], medium: [], hard: [], none: [] }],
   ['sentence-analyzer', sentenceStarts, { easy: ['wall_examples'], medium: [], hard: [], none: [] }],
+  ['genre-explorer check-feature', genreAt('check-feature'), { easy: ['sentence_rows'], medium: [], hard: [], none: [] }],
+  ['genre-explorer pick-excerpt', genreAt('pick-excerpt'), { easy: ['two_checks'], medium: [], hard: [], none: [] }],
+  ['genre-explorer name-genre', genreAt('name-genre'), { easy: ['read_glosses'], medium: [], hard: [], none: [] }],
 ];
 
 describe.each(FAMILIES)('%s', (_family, starts, table) => {

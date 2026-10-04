@@ -53,8 +53,9 @@ export function genreAssignment(item: GenreExplorerItem): TeachingAssignment {
   return { id: item.id, task: ask(item), response: 'speech', expectedAnswer, ...(misses.length ? { misses } : {}) };
 }
 
-/** What a wrong spoken answer shows (handoff 20 Part B), by action. */
-export type SpokenGenreMiss = 'opposite_verdict' | 'said_feature_back' | 'other_text' | 'said_both' | 'close_relative' | 'other_genre';
+/** What a wrong spoken answer shows (handoff 20 Part B), by action; `said_broad_kind` from the lever table 2026-10-03. */
+export type SpokenGenreMiss = 'opposite_verdict' | 'said_feature_back' | 'other_text' | 'said_both' | 'close_relative' | 'other_genre'
+  | 'said_broad_kind';
 
 /**
  * An item's known wrong answers, in precedence order, for the `spoken_miss` observer: the other verdict or the
@@ -84,12 +85,18 @@ export function genreSpokenMisses(item: GenreExplorerItem): KnownMiss[] {
       const others = item.choices.filter(c => c !== item.answer);
       const close = (id ? GENRE_SIBLING[id] ?? [] : []).map(g => GENRE_LABEL[g]).filter(label => others.includes(label));
       const rest = others.filter(c => !close.includes(c));
+      // The broad side, only where the menu lists specific kinds; never a form the answer accepts ("a true story about a person" is Biography).
+      const accepted = [item.answer, ...(id ? GENRE_ALTERNATES[id] : [])].map(a => a.toLowerCase());
+      const broad = item.choices.some(c => c === 'Fiction' || c === 'Nonfiction') ? []
+        : ['fiction', 'nonfiction', 'made up', 'real'].filter(b => !accepted.some(a => a.includes(b))).slice(0, 2);
       const quote = (xs: string[]) => xs.map(x => `"${x}"`).join(' or ');
       return [
         ...(close.length ? [{ id: 'close_relative', pattern: `This text is ${item.answer}. The learner's answer is ${quote(close)}, a kind of writing close to ${item.answer} on the printed list.`,
           examples: close.slice(0, 2) }] : []),
         ...(rest.length ? [{ id: 'other_genre', pattern: `This text is ${item.answer}. The learner's answer is ${quote(rest)}, another kind of writing on the printed list.`,
           examples: rest.slice(0, 2) }] : []),
+        ...(broad.length ? [{ id: 'said_broad_kind', pattern: `This text is ${item.answer}. The learner names the broad side (fiction or nonfiction, made up, true, real) instead of a kind on the printed list.`,
+          examples: broad }] : []),
       ];
     }
   }

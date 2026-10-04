@@ -4348,11 +4348,16 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'menu. When the ask carries a text, read it aloud first: at grades 1-2 the learner cannot read it. Reading a text '
         + 'aloud gives nothing away, since no text names its genre. Saying the feature back is not a yes or no, and "both" '
         + 'is never the text: each feature is true of one. Before an attempt never say the answer or which genre a text '
-        + 'is; a close relative genre is wrong. Nothing on screen marks a genre until credit. You cannot point at or '
-        + 'highlight the text.',
-      // Every item is spoken: its known wrong answers by action (`genreSpokenMisses`, handoff 20 Part B).
-      misses: sameMisses<SpokenGenreMiss>(['identify_basic', 'classify_genre', 'compare_genres'],
-        ['opposite_verdict', 'said_feature_back', 'other_text', 'said_both', 'close_relative', 'other_genre']),
+        + 'is; a close relative genre is wrong. Nothing marks the kind of this text until credit; models name only kinds off '
+        + 'the menu. You cannot point at the text yourself.',
+      levers: true,
+      // Every item is spoken: its known wrong answers by action (`genreSpokenMisses`, handoff 20 Part B). Per mode, only
+      // the misses its actions can show (lever table 2026-10-03): identify_basic has no pick-excerpt and a two-kind menu.
+      misses: missLists<SpokenGenreMiss>({
+        identify_basic: ['opposite_verdict', 'said_feature_back', 'close_relative'],
+        classify_genre: ['opposite_verdict', 'said_feature_back', 'close_relative', 'other_genre', 'said_broad_kind'],
+        compare_genres: ['other_text', 'said_both', 'close_relative', 'other_genre', 'said_broad_kind'],
+      }),
     },
     tutoring: {
       // ⚠️ `challengeType` IS THE STEP, NOT THE EVAL MODE. `identify_basic` names

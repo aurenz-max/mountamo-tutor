@@ -1,0 +1,3492 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ],
+   "no_key_before_try": [
+    0,
+    30
+   ],
+   "no_fix_before_try": [
+    0,
+    30
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ],
+   "no_key_before_try": [
+    0,
+    30
+   ],
+   "no_fix_before_try": [
+    0,
+    30
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ],
+   "no_key_before_try": [
+    1,
+    30
+   ],
+   "no_fix_before_try": [
+    0,
+    30
+   ],
+   "no_change_before_receipt": [
+    0,
+    30
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ],
+   "no_key_before_try": [
+    1,
+    30
+   ],
+   "no_fix_before_try": [
+    0,
+    30
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "genre-explorer.classify_genre-hard",
+   "primitiveId": "genre-explorer",
+   "evalMode": "classify_genre",
+   "keys": [
+    "yes: the first one does tell about a real person who lived. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"tell about a real person who lived\") gives no verdict and is not it.",
+    "yes"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "feature::e1::f1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: the first one does tell about a real person who lived. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"tell about a real person who lived\") gives no verdict and is not it.",
+       "yes"
+      ],
+      "ask": "Does the first one tell about a real person who lived?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "I'll read the first one aloud: \"Born in 1897 in Philadelphia, Marian Anderson showed an incredible singing voice at a very young age. She sang in her church choir and later traveled across Europe to perform in front of large crowds. In 1939, she sang on the steps of the Lincoln Memorial in Washington, D.C., drawing a huge audience of seventy-five thousand listeners.\"\n\nDoes the first one tell about a real person who lived?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to this text: \"Born in 1897 in Philadelphia, Marian Anderson showed an incredible singing voice at a very young age. She sang in her church choir and later traveled across Europe to perform in front of large crowds. In 1939, she sang on the steps of the Lincoln Memorial in Washington, D.C., drawing a huge audience of seventy-five thousand listeners.\"\n\nDoes the first one tell about a real person who lived?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to this text: \"Born in 1897 in Philadelphia, Marian Anderson showed an incredible singing voice at a very young age. She sang in her church choir and later traveled across Europe to perform in front of large crowds. In 1939, she sang on the steps of the Lincoln Memorial in Washington, D.C., drawing a huge audience of seventy-five thousand listeners.\"\n\nDoes the first one tell about a real person who lived?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is the text: \"Born in 1897 in Philadelphia, Marian Anderson showed an incredible singing voice at a very young age. She sang in her church choir and later traveled across Europe to perform in front of large crowds. In 1939, she sang on the steps of the Lincoln Memorial in Washington, D.C., drawing a huge audience of seventy-five thousand listeners.\"\n\nDoes the first one tell about a real person who lived?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I will read the text out loud for you: \"Born in 1897 in Philadelphia, Marian Anderson showed an incredible singing voice at a very young age. She sang in her church choir and later traveled across Europe to perform in front of large crowds. In 1939, she sang on the steps of the Lincoln Memorial in Washington, D.C., drawing a huge audience of seventy-five thousand listeners.\"\n\nDoes the first one tell about a real person who lived?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "feature::e1::f1",
+     "trigger": "no",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: the first one does tell about a real person who lived. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"tell about a real person who lived\") gives no verdict and is not it.",
+       "yes"
+      ],
+      "ask": "Does the first one tell about a real person who lived?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A new card is on the screen. \n\nLet's look at the words again: does this first text tell about a real person who lived?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "text_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new card appeared on the screen! \n\nTake another look at our first text about Marian Anderson: does it tell about a real person who lived?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "text_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A card popped up with another example to look at. \n\nLet's try our text again: does Marian Anderson's story tell about a real person who lived?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "text_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new card popped up on the screen! \n\nMy turn: this one tells about events that actually happened. \n\nTake another listen to our text: \"Born in 1897 in Philadelphia, Marian Anderson showed an incredible singing voice at a very young age.\" \n\nDoes the first one tell about a real person who lived?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "text_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's look at another example. \n\nDoes the first text tell about a real person who lived? Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "text_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "feature::e1::f1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: the first one does tell about a real person who lived. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"tell about a real person who lived\") gives no verdict and is not it.",
+       "yes"
+      ],
+      "ask": "Does the first one tell about a real person who lived?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "",
+       "before": "",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "text_model",
+          "actionId": "test/2/0"
+         }
+        },
+        {
+         "name": "observe_runtime",
+         "args": {}
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "",
+       "before": "",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "text_model",
+          "actionId": "test/2/0"
+         }
+        },
+        {
+         "name": "observe_runtime",
+         "args": {}
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A model card is now on the screen.\n\nLook closely at the words about Marian Anderson: does the first text tell about a real person who lived?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "text_model"
+         }
+        },
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A card with another example appeared on your screen.\n\nMy turn: this one does tell facts about real events.\n\nNow take another look at the words in our first story\u2014does it tell about a real person who lived?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "text_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A card popped up with another example to look at.\n\nDoes our first text about Marian Anderson tell about a real person who lived?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "text_model",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "feature::e1::f1",
+     "trigger": "The learner said they were stuck, so the host pulled sentence_rows (help). It is on screen now: Redraws the text one sentence per row, every row marked the same. Ask the learner to check each line. Never say which row. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do no",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: the first one does tell about a real person who lived. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"tell about a real person who lived\") gives no verdict and is not it.",
+       "yes"
+      ],
+      "ask": "Does the first one tell about a real person who lived?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The text is now split into separate lines, one sentence per row. \n\nCheck each line: does the first text tell about a real person who lived?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The text is now split into separate rows, one sentence on each line. \n\nCheck each line carefully: does the first one tell about a real person who lived?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The text is now split into separate rows, one sentence per row. \n\nCheck each line and see what it tells you\u2014does the first one tell about a real person who lived?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The text is now split into separate lines, one sentence per row. \n\nCheck each line carefully: does the first text tell about a real person who lived?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The text is now split into separate lines, one sentence per row. \n\nCheck each line\u2014does the first one tell about a real person who lived?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "feature::e1::f1",
+     "trigger": "yes",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: the first one does tell about a real person who lived. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"tell about a real person who lived\") gives no verdict and is not it.",
+       "yes"
+      ],
+      "ask": "Does the first one tell about a real person who lived?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it right! You said \"yes,\" and this text does tell about a real person who lived, Marian Anderson.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You correctly said yes, the first text tells about a real person who lived.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That's it, you said yes! Marian Anderson was a real person who lived.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That's right, you said yes! The first text does tell about a real person who lived, Marian Anderson.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You said yes, and this text really does tell about a real person who lived.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "genre-explorer.classify_genre",
+   "primitiveId": "genre-explorer",
+   "evalMode": "classify_genre",
+   "keys": [
+    "yes: the first one does explain how ancient people understood nature. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"explain how ancient people understood nature\") gives no verdict and is not it.",
+    "yes"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "feature::e1::f1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: the first one does explain how ancient people understood nature. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"explain how ancient people understood nature\") gives no verdict and is not it.",
+       "yes"
+      ],
+      "ask": "Does the first one explain how ancient people understood nature?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Here is the first text: \"The sun god rode his golden chariot across the sky every single morning to bring daylight to the world. When he grew tired at evening, his fiery horses rested beneath the great western ocean.\" \n\nDoes this explain how ancient people understood nature?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen closely: \"The sun god rode his golden chariot across the sky every single morning to bring daylight to the world. When he grew tired at evening, his fiery horses rested beneath the great western ocean.\"\n\nDoes this explain how ancient people understood nature?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is the first text: \"The sun god rode his golden chariot across the sky every single morning to bring daylight to the world. When he grew tired at evening, his fiery horses rested beneath the great western ocean.\"\n\nDoes this explain how ancient people understood nature?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is the first text: \"The sun god rode his golden chariot across the sky every single morning to bring daylight to the world. When he grew tired at evening, his fiery horses rested beneath the great western ocean.\"\n\nDoes this one explain how ancient people understood nature?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is the first text: \"The sun god rode his golden chariot across the sky every single morning to bring daylight to the world. When he grew tired at evening, his fiery horses rested beneath the great western ocean.\" \n\nDoes the first one explain how ancient people understood nature?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "feature::e1::f1",
+     "trigger": "no",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: the first one does explain how ancient people understood nature. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"explain how ancient people understood nature\") gives no verdict and is not it.",
+       "yes"
+      ],
+      "ask": "Does the first one explain how ancient people understood nature?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Let's look at another example on the screen. \n\nMy turn: this one does tell a story with characters and actions, like how the sun god brings daylight and rests his fiery horses. Now take another look at your text: does it explain how ancient people understood nature?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "text_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A card appeared showing an example. \n\nMy turn: this one tells about animals acting like people, where the words say the clever fox tricked the crow. Now look back at our text: does the first one explain how ancient people understood nature?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "text_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new card is on the screen to help us compare. \n\nTake another look at our text about the sun god bringing daylight and his fiery horses resting\u2014does this one explain how ancient people understood nature?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "text_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Look, the sentences are split into lines for you now\u2014check each line and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "text_model"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "sentence_rows"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The text is now split into lines so we can see each sentence by itself. Check each line to see if it explains how daylight and evening happen, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "sentence_rows"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "feature::e1::f1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: the first one does explain how ancient people understood nature. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"explain how ancient people understood nature\") gives no verdict and is not it.",
+       "yes"
+      ],
+      "ask": "Does the first one explain how ancient people understood nature?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A new card appeared with an example.\n\nMy turn: this one does explain daylight by showing a sun god driving across the sky. \n\nNow give your text another try: does it explain how ancient people understood nature?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "text_model",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A model card has appeared on the screen with underlined words.\n\nMy turn: this one does explain daylight and sunset through a story about a sun god. \n\nNow give your text another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "text_model",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A card just popped up showing another example with some words underlined. \n\nMy turn: this one does use a character's journey to show why the seasons change. Now look back at your sentences\u2014does your story explain how daylight comes and goes?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "text_model",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A new card has appeared with an example.\n\nMy turn: this one does tell how daylight and night happen through a story about the sun god. \n\nNow, does the first text explain how ancient people understood nature?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "text_model",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A new card popped up on the screen showing another example text.\n\nMy turn: this one does tell how a character's actions explain daylight. \n\nGive our original question another try: does the first text explain how ancient people understood nature?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "text_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "feature::e1::f1",
+     "trigger": "The learner said they were stuck, so the host pulled sentence_rows (help). It is on screen now: Redraws the text one sentence per row, every row marked the same. Ask the learner to check each line. Never say which row. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do no",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: the first one does explain how ancient people understood nature. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"explain how ancient people understood nature\") gives no verdict and is not it.",
+       "yes"
+      ],
+      "ask": "Does the first one explain how ancient people understood nature?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The sentences are now split into their own separate rows on your screen. Check each line carefully, and tell me: does this explain how ancient people understood nature?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The text is now split into separate lines for each sentence. \n\nCheck each line carefully: does the first one explain how ancient people understood nature?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The text is now split into separate lines for each sentence. \n\nTake a look and check each line carefully, then tell me: does this explain how ancient people understood nature?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the screen: each sentence is now split into its own row so you can read them one at a time. \n\nCheck each line, and tell me: does the first one explain how ancient people understood nature?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The text is split into rows now, with one sentence on each line. Take a look and check each line to see if it explains how ancient people understood nature.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "feature::e1::f1",
+     "trigger": "yes",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: the first one does explain how ancient people understood nature. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"explain how ancient people understood nature\") gives no verdict and is not it.",
+       "yes"
+      ],
+      "ask": "Does the first one explain how ancient people understood nature?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Spot on! You correctly answered \"yes\"\u2014the text really does explain how ancient people understood nature by describing the sun god bringing daylight.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right saying yes! The text explains daylight by telling how a sun god brings morning and rests his horses at night.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You said yes, and this story really does explain daylight and sunset through the ancient story of the sun god.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That's right, you said yes! It explains how daylight comes and goes using the sun god and his chariot.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right saying yes! The text explains daylight by telling how a sun god brings morning light with his chariot.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "genre-explorer.compare_genres-hard",
+   "primitiveId": "genre-explorer",
+   "evalMode": "compare_genres",
+   "keys": [
+    "the first one. the position alone (\"first\", \"second\") counts. the other text is wrong, and so are \"both\" and \"neither\": the feature is true of exactly one of the two."
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "contrast::f1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the first one. the position alone (\"first\", \"second\") counts. the other text is wrong, and so are \"both\" and \"neither\": the feature is true of exactly one of the two."
+      ],
+      "ask": "Does the first one describe a celestial dragon, or does the second one?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The first one: Long ago, people watched the bright sun vanish from the sky in the middle of the day. They believed a giant celestial dragon was swallowing the glowing orb whole. To scare the beast away, villagers gathered in the streets and banged loudly on bronze drums and pots. After a few minutes, the sun would always return to its place in the heavens. The elders nodded sagely and declared the deafening noise had successfully chased the monster off.\n\nThe second one: A solar eclipse occurs when the Moon passes directly between the Earth and the Sun. This alignment blocks the light of the Sun from reaching our planet entirely or in part. Observers in the path of totality can see the solar corona, which is the outermost atmosphere of the star. Scientists calculate the exact path and timing of these astronomical events years in advance. Special protective solar viewing glasses must be worn to prevent eye damage during the observation.\n\nDoes the first one describe a celestial dragon, or does the second one?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is the first one: \"Long ago, people watched the bright sun vanish from the sky in the middle of the day. They believed a giant celestial dragon was swallowing the glowing orb whole. To scare the beast away, villagers gathered in the streets and banged loudly on bronze drums and pots. After a few minutes, the sun would always return to its place in the heavens. The elders nodded sagely and declared the deafening noise had successfully chased the monster off.\"\n\nHere is the second one: \"A solar eclipse occurs when the Moon passes directly between the Earth and the Sun. This alignment blocks the light of the Sun from reaching our planet entirely or in part. Observers in the path of totality can see the solar corona, which is the outermost atmosphere of the star. Scientists calculate the exact path and timing of these astronomical events years in advance. Special protective solar viewing glasses must be worn to prevent eye damage during the observation.\"\n\nDoes the first one describe a celestial dragon, or does the second one?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I'll read both texts aloud for you. \n\nThe first one: \"Long ago, people watched the bright sun vanish from the sky in the middle of the day. They believed a giant celestial dragon was swallowing the glowing orb whole. To scare the beast away, villagers gathered in the streets and banged loudly on bronze drums and pots. After a few minutes, the sun would always return to its place in the heavens. The elders nodded sagely and declared the deafening noise had successfully chased the monster off.\"\n\nThe second one: \"A solar eclipse occurs when the Moon passes directly between the Earth and the Sun. This alignment blocks the light of the Sun from reaching our planet entirely or in part. Observers in the path of totality can see the solar corona, which is the outermost atmosphere of the star. Scientists calculate the exact path and timing of these astronomical events years in advance. Special protective solar viewing glasses must be worn to prevent eye damage during the observation.\"\n\nDoes the first one describe a celestial dragon, or does the second one?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is the first one: \"Long ago, people watched the bright sun vanish from the sky in the middle of the day. They believed a giant celestial dragon was swallowing the glowing orb whole. To scare the beast away, villagers gathered in the streets and banged loudly on bronze drums and pots. After a few minutes, the sun would always return to its place in the heavens. The elders nodded sagely and declared the deafening noise had successfully chased the monster off.\"\n\nHere is the second one: \"A solar eclipse occurs when the Moon passes directly between the Earth and the Sun. This alignment blocks the light of the Sun from reaching our planet entirely or in part. Observers in the path of totality can see the solar corona, which is the outermost atmosphere of the star. Scientists calculate the exact path and timing of these astronomical events years in advance. Special protective solar viewing glasses must be worn to prevent eye damage during the observation.\"\n\nDoes the first one describe a celestial dragon, or does the second one?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The first one says: \"Long ago, people watched the bright sun vanish from the sky in the middle of the day. They believed a giant celestial dragon was swallowing the glowing orb whole. To scare the beast away, villagers gathered in the streets and banged loudly on bronze drums and pots. After a few minutes, the sun would always return to its place in the heavens. The elders nodded sagely and declared the deafening noise had successfully chased the monster off.\" \n\nThe second one says: \"A solar eclipse occurs when the Moon passes directly between the Earth and the Sun. This alignment blocks the light of the Sun from reaching our planet entirely or in part. Observers in the path of totality can see the solar corona, which is the outermost atmosphere of the star. Scientists calculate the exact path and timing of these astronomical events years in advance.\"\n\nDoes the first one describe a celestial dragon, or does the second one?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "contrast::f1",
+     "trigger": "the second one",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the first one. the position alone (\"first\", \"second\") counts. the other text is wrong, and so are \"both\" and \"neither\": the feature is true of exactly one of the two."
+      ],
+      "ask": "Does the first one describe a celestial dragon, or does the second one?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Not quite. Look, there is now an empty check mark under each text. \n\nDoes the first text mention a celestial dragon swallowing the sun?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "two_checks",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "We have a check box under each text now. Does the first text mention a giant celestial dragon swallowing the sun, or does the second one?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "two_checks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is now an empty check box under each text. \n\nDoes the first text mention a giant celestial dragon swallowing the glowing orb?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "two_checks",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is an empty check under each text now. \n\nDoes the first text mention a giant beast swallowing the sun, or does the second one?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "two_checks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is now a check box under each text. \n\nLet's check the first one: does it describe a giant celestial dragon swallowing the sun?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "two_checks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "contrast::f1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the first one. the position alone (\"first\", \"second\") counts. the other text is wrong, and so are \"both\" and \"neither\": the feature is true of exactly one of the two."
+      ],
+      "ask": "Does the first one describe a celestial dragon, or does the second one?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Two empty check marks just appeared under the texts.\n\nDoes the first text talk about a giant celestial dragon?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "two_checks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An empty check box appeared under each text to help us. \n\nDoes the first text mention a giant celestial dragon?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "two_checks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An empty check mark appeared under each text to help us.\n\nDoes the first text talk about a giant celestial dragon?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "two_checks",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An empty check mark has appeared under each text so we can look at them one at a time.\n\nDoes the first text mention people believing a giant celestial dragon was swallowing the sun?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "two_checks",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "We have an empty check under each text now. \n\nDoes the first text mention a celestial dragon?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "two_checks",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "contrast::f1",
+     "trigger": "The learner said they were stuck, so the host pulled two_checks (help). It is on screen now: Puts an empty check under each text. Ask the feature of one text at a time, then ask \"which one?\" again. Never answer either check. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again;",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the first one. the position alone (\"first\", \"second\") counts. the other text is wrong, and so are \"both\" and \"neither\": the feature is true of exactly one of the two."
+      ],
+      "ask": "Does the first one describe a celestial dragon, or does the second one?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "There is now an empty check mark under each text to help us look.\n\nDoes the first text describe a celestial dragon?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look right under each text\u2014there is now an empty check mark for each one.\n\nDoes the first one describe a celestial dragon, or does the second one?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under the texts, where two empty check boxes have appeared. \n\nDoes the first text mention a giant celestial dragon?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is an empty check box under each text now.\n\nDoes the first text mention a celestial dragon?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is an empty check box under each text now.\n\nDoes the first one describe a celestial dragon?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "contrast::f1",
+     "trigger": "the first one",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the first one. the position alone (\"first\", \"second\") counts. the other text is wrong, and so are \"both\" and \"neither\": the feature is true of exactly one of the two."
+      ],
+      "ask": "Does the first one describe a celestial dragon, or does the second one?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "That's right, you found it! The first one is the text that describes the giant celestial dragon swallowing the sun.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! The first one is the text that describes the celestial dragon.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right\u2014it is the first one that describes the celestial dragon!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You correctly picked the first one, which describes the giant celestial dragon swallowing the sun.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You chose the first one, which describes the giant celestial dragon swallowing the sun.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "genre-explorer.compare_genres",
+   "primitiveId": "genre-explorer",
+   "evalMode": "compare_genres",
+   "keys": [
+    "the first one. the position alone (\"first\", \"second\") counts. the other text is wrong, and so are \"both\" and \"neither\": the feature is true of exactly one of the two."
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "contrast::f2",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the first one. the position alone (\"first\", \"second\") counts. the other text is wrong, and so are \"both\" and \"neither\": the feature is true of exactly one of the two."
+      ],
+      "ask": "Does the first one tell a traditional story about gods, or does the second one?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "I'll read both texts to you!\n\nThe first one: \"The Sun God rode his golden chariot across the sky every single day to bring warmth to the earth. When the moon maiden came out at night, she spun silver thread to weave the starry night blanket.\"\n\nThe second one: \"The sun is a giant star made of hot, glowing gas at the center of our solar system. The earth travels in a path called an orbit around the sun once every 365 days.\"\n\nDoes the first one tell a traditional story about gods, or does the second one?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I will read both texts for you! \n\nThe first one: \"The Sun God rode his golden chariot across the sky every single day to bring warmth to the earth. When the moon maiden came out at night, she spun silver thread to weave the starry night blanket.\"\n\nThe second one: \"The sun is a giant star made of hot, glowing gas at the center of our solar system. The earth travels in a path called an orbit around the sun once every 365 days.\"\n\nDoes the first one tell a traditional story about gods, or does the second one?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I'll read both texts to you!\n\nThe first one: \"The Sun God rode his golden chariot across the sky every single day to bring warmth to the earth. When the moon maiden came out at night, she spun silver thread to weave the starry night blanket.\"\n\nThe second one: \"The sun is a giant star made of hot, glowing gas at the center of our solar system. The earth travels in a path called an orbit around the sun once every 365 days.\"\n\nDoes the first one tell a traditional story about gods, or does the second one?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's listen to both texts! \n\nThe first one: \"The Sun God rode his golden chariot across the sky every single day to bring warmth to the earth. When the moon maiden came out at night, she spun silver thread to weave the starry night blanket.\"\n\nThe second one: \"The sun is a giant star made of hot, glowing gas at the center of our solar system. The earth travels in a path called an orbit around the sun once every 365 days.\"\n\nDoes the first one tell a traditional story about gods, or does the second one?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I'll read both texts to you!\n\nThe first one: \"The Sun God rode his golden chariot across the sky every single day to bring warmth to the earth. When the moon maiden came out at night, she spun silver thread to weave the starry night blanket.\"\n\nThe second one: \"The sun is a giant star made of hot, glowing gas at the center of our solar system. The earth travels in a path called an orbit around the sun once every 365 days.\"\n\nDoes the first one tell a traditional story about gods, or does the second one?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "contrast::f2",
+     "trigger": "the second one",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the first one. the position alone (\"first\", \"second\") counts. the other text is wrong, and so are \"both\" and \"neither\": the feature is true of exactly one of the two."
+      ],
+      "ask": "Does the first one tell a traditional story about gods, or does the second one?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "An empty check box appeared under each text to help us look closer. \n\nDoes the first text mention gods, or does the second text?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "two_checks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. We now have a check box under each text to help us look closer. \n\nDoes the first text mention gods, or does the second text?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "two_checks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "We have a check box under each text to test them one at a time. \n\nDoes the second text mention gods and chariots, or does the first text?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "two_checks",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "We have an empty check under each text now to help us look closer. \n\nDoes the first one talk about a Sun God and a moon maiden, or does the second one?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "two_checks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's look closer! An empty check just appeared under each text to help us. \n\nDoes the first one talk about gods and woven night blankets, or does the second one?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "two_checks",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "contrast::f2",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the first one. the position alone (\"first\", \"second\") counts. the other text is wrong, and so are \"both\" and \"neither\": the feature is true of exactly one of the two."
+      ],
+      "ask": "Does the first one tell a traditional story about gods, or does the second one?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "We now have a check box under each text to help us decide.\n\nDoes the first text tell about gods?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "two_checks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "There is an empty check box under each text now.\n\nDoes the first text tell a traditional story about gods?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "two_checks",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An empty check box appeared under each text so we can check them one by one.\n\nDoes the first text mention gods?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "two_checks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An empty check box appeared under each text to help us look closer.\n\nDoes the first text mention gods, or does the second text?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "two_checks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "We now have an empty check box under each text.\n\nDoes the first text tell a traditional story about gods?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "two_checks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "contrast::f2",
+     "trigger": "The learner said they were stuck, so the host pulled two_checks (help). It is on screen now: Puts an empty check under each text. Ask the feature of one text at a time, then ask \"which one?\" again. Never answer either check. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again;",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the first one. the position alone (\"first\", \"second\") counts. the other text is wrong, and so are \"both\" and \"neither\": the feature is true of exactly one of the two."
+      ],
+      "ask": "Does the first one tell a traditional story about gods, or does the second one?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look right under the two texts\u2014there is an empty check box under each one now!\n\nListen to the first text: \"The Sun God rode his golden chariot across the sky every single day to bring warmth to the earth. When the moon maiden came out at night, she spun silver thread to weave the starry night blanket.\"\n\nDoes the first one tell a traditional story about gods?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under each text, there is now an empty check box. \n\nDoes the first text tell a traditional story about gods?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under each text\u2014there is now an empty check box under both of them!\n\nDoes the first text tell about gods?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is now an empty check box right under each text for us to look at.\n\nDoes the first text tell about gods?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is now an empty check mark under each text on your screen!\n\nLet's look at the first one: does it tell about gods, or does the second one?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "contrast::f2",
+     "trigger": "the first one",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "the first one. the position alone (\"first\", \"second\") counts. the other text is wrong, and so are \"both\" and \"neither\": the feature is true of exactly one of the two."
+      ],
+      "ask": "Does the first one tell a traditional story about gods, or does the second one?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it\u2014it is the first one! You found the story about the Sun God and moon maiden.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You picked the first one, which tells a story about the Sun God.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You chose the first one, which tells a story about the Sun God and the moon maiden.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You picked the first one, which tells the story about the Sun God and the moon maiden.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You chose the first one, which tells the story about the Sun God and the moon maiden.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "genre-explorer.identify_basic-g1",
+   "primitiveId": "genre-explorer",
+   "evalMode": "identify_basic",
+   "keys": [
+    "yes: the first one does have an animal that speaks. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"have an animal that speaks\") gives no verdict and is not it.",
+    "yes"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "feature::e1::talking-animals",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: the first one does have an animal that speaks. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"have an animal that speaks\") gives no verdict and is not it.",
+       "yes"
+      ],
+      "ask": "Listen to the first one. The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them. Does the first one have an animal that speaks?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Listen to the first one: The little red fox looked at the grapes and said, \"I want those.\" He jumped high into the air, but he could not reach them. Does the first one have an animal that speaks?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to the first one: The little red fox looked at the grapes and said, \"I want those.\" He jumped high into the air, but he could not reach them. Does the first one have an animal that speaks?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to the first one: The little red fox looked at the grapes and said, \"I want those.\" He jumped high into the air, but he could not reach them. Does the first one have an animal that speaks?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to the first one: The little red fox looked at the grapes and said, \"I want those.\" He jumped high into the air, but he could not reach them. Does the first one have an animal that speaks?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to the first one: The little red fox looked at the grapes and said, \"I want those.\" He jumped high into the air, but he could not reach them. Does the first one have an animal that speaks?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "feature::e1::talking-animals",
+     "trigger": "no",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: the first one does have an animal that speaks. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"have an animal that speaks\") gives no verdict and is not it.",
+       "yes"
+      ],
+      "ask": "Listen to the first one. The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them. Does the first one have an animal that speaks?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A speaker mark appeared on our text. Let's listen again: \"The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them.\" Does the first one have an animal that speaks?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "read_again"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new card appeared on the screen. Let's give it another try: does the first one have an animal that speaks?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "text_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new card popped up on our screen. My turn: this one does have an animal talking. Give our fox story another listen: does the fox speak?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "text_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A speaker mark appeared on the text, so let's listen to it one more time: The little red fox looked at the grapes and said, \"I want those.\" He jumped high into the air, but he could not reach them. Does the first one have an animal that speaks?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "read_again",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is a speaker mark on the text now. \n\nListen once more: \"The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them.\"\n\nDoes the first one have an animal that speaks?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "read_again",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "feature::e1::talking-animals",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: the first one does have an animal that speaks. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"have an animal that speaks\") gives no verdict and is not it.",
+       "yes"
+      ],
+      "ask": "Listen to the first one. The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them. Does the first one have an animal that speaks?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A card appeared showing another text. My turn: this one does have words spoken out loud, reading \"I want those.\" Now your turn: does the first one have an animal that speaks?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "text_model",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A card popped up with an example to help us. \n\nMy turn: this one does have words that show someone talking, where it says \"I want those.\" \n\nNow your turn: does the first one have an animal that speaks?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "text_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A speaker mark popped up by the words. \n\n\"The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them.\"\n\nDoes the first one have an animal that speaks?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "read_again",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A speaker mark appeared on our text. \n\nThe little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them.\n\nDoes the first one have an animal that speaks?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "read_again"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Each sentence is now on its own row. Let's check each line to see if an animal speaks.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sentence_rows",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "feature::e1::talking-animals",
+     "trigger": "The learner said they were stuck, so the host pulled read_again (help). It is on screen now: Puts a speaker mark on the text. Once it is on screen, read the whole text once more, evenly and in order, stressing nothing: \"The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them.\" First point the learner to it: say what is now drawn and ",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: the first one does have an animal that speaks. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"have an animal that speaks\") gives no verdict and is not it.",
+       "yes"
+      ],
+      "ask": "Listen to the first one. The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them. Does the first one have an animal that speaks?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the screen, there is a speaker mark right on our text now. \n\nLet's listen to it once more: \"The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them.\"\n\nDoes the first one have an animal that speaks?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A speaker mark is now showing right by our text! \n\nListen to the whole text once more: \"The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them.\"\n\nDoes the first one have an animal that speaks?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, a speaker mark appeared right on the text! \n\n\"The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them.\"\n\nDoes the first one have an animal that speaks?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right beside our text\u2014a little speaker mark is there now! \n\nListen to the whole text once more: \"The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them.\"\n\nDoes the first one have an animal that speaks?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is a speaker mark on the text now. \n\nListen to the whole text once more: \"The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them.\"\n\nDoes the first one have an animal that speaks?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "feature::e1::talking-animals",
+     "trigger": "yes",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: the first one does have an animal that speaks. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"have an animal that speaks\") gives no verdict and is not it.",
+       "yes"
+      ],
+      "ask": "Listen to the first one. The little red fox looked at the grapes and said, I want those. He jumped high into the air, but he could not reach them. Does the first one have an animal that speaks?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You said yes, the fox speaks when he says, \"I want those.\"",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it, yes! You found that the fox talks in this story.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! The answer is yes, because the little red fox speaks out loud.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You said yes, and the fox does speak in this story.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You said yes, the fox speaks when he says \"I want those.\"",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "genre-explorer.identify_basic",
+   "primitiveId": "genre-explorer",
+   "evalMode": "identify_basic",
+   "keys": [
+    "yes: the first one does have an animal that speaks words. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"have an animal that speaks words\") gives no verdict and is not it.",
+    "yes"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "feature::e1::talking-animals",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: the first one does have an animal that speaks words. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"have an animal that speaks words\") gives no verdict and is not it.",
+       "yes"
+      ],
+      "ask": "Does the first one have an animal that speaks words?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Let's listen to the first story: \"The clever red fox looked up at the crow sitting on a tall branch. The crow held a sweet golden chunk of cheese in her beak. Mr. Fox spoke sweet words to trick the bird into opening her mouth.\"\n\nDoes the first one have an animal that speaks words?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's listen to this story: \"The clever red fox looked up at the crow sitting on a tall branch. The crow held a sweet golden chunk of cheese in her beak. Mr. Fox spoke sweet words to trick the bird into opening her mouth.\"\n\nDoes the first one have an animal that speaks words?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is our first story: \"The clever red fox looked up at the crow sitting on a tall branch. The crow held a sweet golden chunk of cheese in her beak. Mr. Fox spoke sweet words to trick the bird into opening her mouth.\" \n\nDoes the first one have an animal that speaks words?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I'll read our story aloud: \"The clever red fox looked up at the crow sitting on a tall branch. The crow held a sweet golden chunk of cheese in her beak. Mr. Fox spoke sweet words to trick the bird into opening her mouth.\"\n\nDoes the first one have an animal that speaks words?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is the first text: \"The clever red fox looked up at the crow sitting on a tall branch. The crow held a sweet golden chunk of cheese in her beak. Mr. Fox spoke sweet words to trick the bird into opening her mouth.\"\n\nDoes the first one have an animal that speaks words?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "feature::e1::talking-animals",
+     "trigger": "no",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: the first one does have an animal that speaks words. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"have an animal that speaks words\") gives no verdict and is not it.",
+       "yes"
+      ],
+      "ask": "Does the first one have an animal that speaks words?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Not quite. The text is now split into separate lines, so check each line carefully to see if an animal speaks words. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "sentence_rows"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, the text is split into sentences row by row now. Check each line carefully\u2014does the first one have an animal that speaks words?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sentence_rows",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The text is now shown one sentence per row. Take a close look at each line to see what happens, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "sentence_rows"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The text is split into rows now. Let's check each line carefully: does the first one have an animal that speaks words?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "sentence_rows"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. The text is now split into one sentence per row. Take a close look at each line and tell me: does the first one have an animal that speaks words?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "sentence_rows"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "feature::e1::talking-animals",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: the first one does have an animal that speaks words. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"have an animal that speaks words\") gives no verdict and is not it.",
+       "yes"
+      ],
+      "ask": "Does the first one have an animal that speaks words?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The story is now broken into separate rows so each sentence has its own line. Check each line to see if an animal speaks words!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "sentence_rows"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The text is now split into separate lines. Check each line to see if an animal speaks words!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "sentence_rows"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I set each sentence onto its own row. Check each line to see if an animal speaks words.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sentence_rows",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I split the text so each sentence is on its own row. Check each line to see if an animal speaks words, and tell me: yes or no?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "sentence_rows"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The text is now shown with one sentence on each row. Check each line to see what happens.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sentence_rows",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "feature::e1::talking-animals",
+     "trigger": "The learner said they were stuck, so the host pulled sentence_rows (help). It is on screen now: Redraws the text one sentence per row, every row marked the same. Ask the learner to check each line. Never say which row. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do no",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: the first one does have an animal that speaks words. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"have an animal that speaks words\") gives no verdict and is not it.",
+       "yes"
+      ],
+      "ask": "Does the first one have an animal that speaks words?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The text is now split into rows, with one sentence on each line. Take a look and check each line to see if an animal speaks words!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Each sentence is now laid out on its own row. Look at each line and tell me: does the first one have an animal that speaks words?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the screen: each sentence is now drawn on its own separate line. Check each line to see if an animal speaks words, and tell me: yes or no?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the screen: each sentence has been split into its own row now. Check each line to see if an animal speaks words!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the screen: each sentence from our story is now placed on its very own row! \n\nCheck each line carefully\u2014does the first one have an animal that speaks words?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "feature::e1::talking-animals",
+     "trigger": "yes",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: the first one does have an animal that speaks words. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"have an animal that speaks words\") gives no verdict and is not it.",
+       "yes"
+      ],
+      "ask": "Does the first one have an animal that speaks words?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "That's right, you said yes! Mr. Fox spoke sweet words to trick the bird, so this animal definitely speaks.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right saying yes! Mr. Fox spoke sweet words to trick the bird.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That's right, you found it! The answer is yes, because Mr. Fox speaks sweet words.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You found that the first one does have an animal that speaks words\u2014Mr. Fox spoke sweet words to trick the bird.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That is right, you got it! The fox speaks sweet words to the crow, so the first story does have an animal that speaks words.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

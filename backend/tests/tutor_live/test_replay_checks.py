@@ -66,6 +66,9 @@ def test_a_known_miss_is_caught(text, kind, keys, ask, missed):
     ('That word is not dog. Look at the letters on your card and try reading it again!', 'miss', ['and'],
      'What word is this? Read it out loud.'),
     ('That was not quite it, but that\'s okay! Let\'s try it again together and count back carefully.', 'miss', ['3'], 'Solve 8 minus 5'),
+    # The answer form naming both verdicts names neither (genre-explorer check-feature replay, 10-04).
+    ('Check each line to see if an animal speaks words, and tell me: yes or no?', 'lever', ['yes'],
+     'Does the first one have an animal that speaks words?'),
 ])
 def test_a_clean_line_passes(text, kind, keys, ask):
     result = check(text, kind, keys, ask)

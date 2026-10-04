@@ -79,6 +79,10 @@ import {
   type GenreTier,
 } from './genreExplorerScript';
 import { genreAssignment, genreScene } from './genreExplorerWorkspace';
+import { FAR_KINDS_LEVER, GLOSSES_LEVER, KIND_PAIR_LEVER, PAIR_MODEL_LEVER, READ_AGAIN_LEVER, ROWS_LEVER, TEXT_MODEL_LEVER,
+  TWO_CHECKS_LEVER, farKindsFor, genreExplorerLevers, kindPairFor, leversOnScreen, pairModelFor, sentenceRows,
+  startingLevers, textModelFor, type FarKindsPractice, type GenreSession } from './genreExplorerLevers';
+import { GENRE_LABEL } from './genreExplorerScript';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -198,6 +202,10 @@ const GenreExplorerSurface: React.FC<GenreExplorerProps> = ({ data, className, r
   const [reveal, setReveal] = useState<{ action: GenreAction; answer: string } | null>(null);
   /** Items credited so far: the only route by which a finding or a genre name reaches the screen. */
   const [solvedIds, setSolvedIds] = useState<ReadonlySet<string>>(() => new Set());
+  // In-item levers, keyed by the session item they were pulled on, and the practice text a simplify lever put on
+  // screen in its place (ungraded; the full item comes back after it).
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<FarKindsPractice | null>(null);
 
   // ── Evaluation ─────────────────────────────────────────────────────────────
   const evaluation = usePrimitiveEvaluation<GenreExplorerMetrics>({
@@ -258,14 +266,52 @@ const GenreExplorerSurface: React.FC<GenreExplorerProps> = ({ data, className, r
   });
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
-  const currentItem = runner.currentItem;
+  const sessionItem = runner.currentItem;
+  /** What is on screen: the practice item while a simplify lever holds it, else the session item. */
+  const currentItem = practice?.item ?? sessionItem;
   const actionMeta = ACTION_META[currentItem?.action ?? 'check-feature'];
+  const session: GenreSession = { items, excerpts, menu, readsAloud };
+  const starting = practice ? [] : startingLevers(data.supportTier, sessionItem);
+  const pulledLevers = practice || leverState.item !== sessionItem?.id ? [] : leverState.pulled;
+  const leverOn = (id: string) => starting.includes(id) || pulledLevers.includes(id);
+  const textModel = sessionItem && leverOn(TEXT_MODEL_LEVER) ? textModelFor(sessionItem, session) : null;
+  const pairModel = sessionItem && leverOn(PAIR_MODEL_LEVER) ? pairModelFor(sessionItem, session) : null;
+  const kindPair = sessionItem && leverOn(KIND_PAIR_LEVER) ? kindPairFor(sessionItem, session) : null;
+  /** The menu on screen: the practice item's two kinds while one is open. */
+  const shownMenu = practice ? practice.item.choices : menu;
+  const shownNotes = practice ? practice.item.choiceNotes : menuNotes;
 
   // What the tutor and the observer are shown, republished every render. W1 offers no
   // demonstration targets and no presentation; every item is answerable once it opens.
   useLayoutEffect(() => {
-    if (!currentItem) return;
-    workspace.current = { ...genreScene(currentItem, excerpts, currentItem.action === 'name-genre' ? menu : [], readsAloud) };
+    if (!currentItem || !sessionItem) return;
+    const levers = practice ? [] : genreExplorerLevers(sessionItem, session, pulledLevers, starting);
+    const scene = practice
+      ? genreScene(practice.item, [{ index: -1, excerptId: 'practice', text: practice.text, spokenText: '', genre: null, ordinal: 'this one' }],
+        practice.item.choices, readsAloud)
+      : genreScene(currentItem, excerpts, currentItem.action === 'name-genre' ? menu : [], readsAloud);
+    const onScreen = practice ? null : leversOnScreen([...starting, ...pulledLevers], sessionItem, session);
+    workspace.current = { ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { levers_on_screen: onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice text named from two kinds, ungraded. The full item comes back after it.' } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: id => {
+        const lever = levers.find(l => l.id === id);
+        if (!lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        if (id === FAR_KINDS_LEVER) {
+          const simpler = farKindsFor(sessionItem, session);
+          if (!simpler) return 'There is no easier text for this item.';
+          setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+          setPractice(simpler);
+          return { practice: genreAssignment(simpler.item) };
+        }
+        setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+        return true;
+      },
+      endPractice: () => setPractice(null),
+    };
   });
 
   // Pip: the texts are the question side and the genre menu is the answer, so
@@ -311,9 +357,10 @@ const GenreExplorerSurface: React.FC<GenreExplorerProps> = ({ data, className, r
    * every other item shows the one it is about.
    */
   const shownExcerpts = useMemo(() => {
+    if (practice) return [{ index: -1, excerptId: 'practice', text: practice.text, spokenText: '', genre: null, ordinal: 'this one' }];
     if (!currentItem || currentItem.excerptIndex < 0) return excerpts;
     return excerpts.filter((e) => e.index === currentItem.excerptIndex);
-  }, [currentItem, excerpts]);
+  }, [currentItem, excerpts, practice]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
@@ -358,15 +405,30 @@ const GenreExplorerSurface: React.FC<GenreExplorerProps> = ({ data, className, r
           >
             <div className="mb-2 flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wide text-slate-400">
-                {excerpts.length > 1 ? excerpt.ordinal : 'the text'}
+                {practice ? 'practice text' : excerpts.length > 1 ? excerpt.ordinal : 'the text'}
               </span>
+              {/* read_again: the speaker mark; the tutor reads the whole text once more. */}
+              {leverOn(READ_AGAIN_LEVER) && <span data-lever="read-again" aria-label="Read again" className="text-sm">🔊</span>}
               {affirmedGenre && (
                 <LuminaBadge accent="emerald" className="text-xs">{affirmedGenre}</LuminaBadge>
               )}
             </div>
-            <p className="whitespace-pre-line text-sm leading-relaxed text-slate-200">
-              {excerpt.text}
-            </p>
+            {/* sentence_rows: one sentence per row, every row marked the same; no row is styled from the key. */}
+            {leverOn(ROWS_LEVER) && !practice ? (
+              <ul data-lever="sentence-rows" className="space-y-1 text-sm leading-relaxed text-slate-200">
+                {sentenceRows(excerpt.text).map((row, i) => (
+                  <li key={i} className="flex gap-2"><span className="text-slate-500">•</span><span>{row}</span></li>
+                ))}
+              </ul>
+            ) : (
+              <p className="whitespace-pre-line text-sm leading-relaxed text-slate-200">
+                {excerpt.text}
+              </p>
+            )}
+            {/* two_checks: an empty check under each text; nothing fills it. */}
+            {leverOn(TWO_CHECKS_LEVER) && !practice && (
+              <p data-lever="two-checks" className="mt-2 text-xs text-slate-400">☐ Does it {currentItem?.predicate}?</p>
+            )}
           </LuminaPanel>
         );
       })}
@@ -392,7 +454,7 @@ const GenreExplorerSurface: React.FC<GenreExplorerProps> = ({ data, className, r
    *  one it is; the ring appears only when the tutor affirms. */
   const renderMenu = () => (
     <div className="grid gap-2 sm:grid-cols-2">
-      {menu.map((label, idx) => {
+      {shownMenu.map((label, idx) => {
         const isRevealed = revealed === label;
         return (
           <div
@@ -405,9 +467,11 @@ const GenreExplorerSurface: React.FC<GenreExplorerProps> = ({ data, className, r
           >
             <p className={`text-sm font-medium ${isRevealed ? 'text-emerald-200' : 'text-slate-100'}`}>
               {label}
+              {/* read_glosses: a speaker mark on every card; the tutor reads them all, in order. */}
+              {leverOn(GLOSSES_LEVER) && !practice && <span data-lever="read-glosses" aria-hidden="true" className="ml-1 text-xs">🔊</span>}
             </p>
-            {menuNotes[idx] && (
-              <p className="mt-0.5 text-xs text-slate-400">{menuNotes[idx]}</p>
+            {shownNotes[idx] && (
+              <p className="mt-0.5 text-xs text-slate-400">{shownNotes[idx]}</p>
             )}
           </div>
         );
@@ -448,9 +512,30 @@ const GenreExplorerSurface: React.FC<GenreExplorerProps> = ({ data, className, r
             {pip.store && <div {...pip.dock} />}
             <div {...pip.target('stimulus')}>{renderExcerpts()}</div>
 
+            {/* The model cards: other texts, never the learner's. */}
+            {(textModel || pairModel || kindPair) && (
+              <LuminaPanel data-lever={textModel ? 'text-model' : pairModel ? 'pair-model' : 'kind-pair-model'}
+                className="p-3 border-cyan-300/20 bg-cyan-950/10">
+                <p className="mb-2 text-center text-[10px] font-mono uppercase tracking-widest text-cyan-300">
+                  {textModel ? `Another text: this one does ${textModel.predicate}.` : pairModel
+                    ? `Two other texts: only one does ${pairModel[0].predicate}.` : 'Two other texts, two close kinds'}
+                </p>
+                <div className={`grid gap-2 ${textModel ? '' : 'md:grid-cols-2'}`}>
+                  {(textModel ? [textModel] : (pairModel ?? kindPair)!).map((model, i) => (
+                    <div key={i} className="rounded-lg border border-white/10 bg-white/5 p-2 text-xs text-slate-200">
+                      {kindPair && <p className="mb-1 font-semibold text-cyan-200">{GENRE_LABEL[model.kind]}</p>}
+                      {(!pairModel || i === 0) && model.text.includes(model.evidence) ? (
+                        <p>{model.text.split(model.evidence)[0]}<u className="decoration-cyan-300">{model.evidence}</u>{model.text.split(model.evidence).slice(1).join(model.evidence)}</p>
+                      ) : <p>{model.text}</p>}
+                    </div>
+                  ))}
+                </div>
+              </LuminaPanel>
+            )}
+
             {findings.length > 0 && renderFindings()}
 
-            {menu.length > 0 && renderMenu()}
+            {shownMenu.length > 0 && renderMenu()}
 
           </>
         )}

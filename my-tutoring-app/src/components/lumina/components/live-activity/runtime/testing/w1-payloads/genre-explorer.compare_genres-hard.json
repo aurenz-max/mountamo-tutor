@@ -3,52 +3,38 @@
  "primitiveId": "genre-explorer",
  "evalMode": "compare_genres",
  "data": {
-  "title": "Sun and Sky",
-  "gradeLevel": "3",
+  "title": "Solar Eclipses Through Time and Science",
+  "gradeLevel": "5",
   "excerpts": [
    {
     "excerptId": "e1",
-    "text": "Long ago, the glowing sky spirit drove a chariot of fire across the clouds. The people below sang hymns to thank the warm light for waking the crops. They believed the spirit grew tired at dusk and rested beneath the western mountains.",
+    "text": "Long ago, people watched the bright sun vanish from the sky in the middle of the day. They believed a giant celestial dragon was swallowing the glowing orb whole. To scare the beast away, villagers gathered in the streets and banged loudly on bronze drums and pots. After a few minutes, the sun would always return to its place in the heavens. The elders nodded sagely and declared the deafening noise had successfully chased the monster off.",
     "genre": "myth"
    },
    {
     "excerptId": "e2",
-    "text": "The Sun is a giant ball of hot gas located at the center of our solar system. It measures about 865,000 miles wide and provides the heat needed for plants to grow. Light from the sun takes about eight minutes to reach Earth.",
+    "text": "A solar eclipse occurs when the Moon passes directly between the Earth and the Sun. This alignment blocks the light of the Sun from reaching our planet entirely or in part. Observers in the path of totality can see the solar corona, which is the outermost atmosphere of the star. Scientists calculate the exact path and timing of these astronomical events years in advance. Special protective solar viewing glasses must be worn to prevent eye damage during the observation.",
     "genre": "informational"
    }
   ],
   "features": [
    {
     "featureId": "f1",
-    "predicate": "tell about a glowing sky spirit",
+    "predicate": "describe a celestial dragon",
     "presentIn": [
      "e1"
     ]
    },
    {
     "featureId": "f2",
-    "predicate": "drive a chariot of fire",
+    "predicate": "mention villagers banging on bronze drums",
     "presentIn": [
      "e1"
     ]
    },
    {
-    "featureId": "f3",
-    "predicate": "give numbers and measurements",
-    "presentIn": [
-     "e2"
-    ]
-   },
-   {
-    "featureId": "f4",
-    "predicate": "describe a ball of hot gas",
-    "presentIn": [
-     "e2"
-    ]
-   },
-   {
     "featureId": "f5",
-    "predicate": "mention plants needing light",
+    "predicate": "describe events happening in the sky",
     "presentIn": [
      "e1",
      "e2"
@@ -56,7 +42,12 @@
    },
    {
     "featureId": "f6",
-    "predicate": "use rhyme",
+    "predicate": "include dialogue spoken by characters",
+    "presentIn": []
+   },
+   {
+    "featureId": "f7",
+    "predicate": "use rhyme at the end of lines",
     "presentIn": []
    }
   ],
@@ -64,10 +55,12 @@
    "myth",
    "informational",
    "folktale",
-   "fable",
-   "poem"
+   "legend",
+   "persuasive",
+   "fable"
   ],
   "mode": "compare_genres",
+  "objectiveGrade": "5",
   "supportTier": "hard"
  }
 }

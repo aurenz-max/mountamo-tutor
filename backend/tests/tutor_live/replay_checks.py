@@ -108,6 +108,8 @@ def said_key(text, keys):
     # The partitive names which object, not how many ("one of the hands went away", counting-board 09-28). Only here:
     # as an instruction it is an amount ("shade just one of the slices", LB-11), which `said_fix` still catches.
     text = re.sub(r"\bone of (?:the|these|those|your)\b", '', PRONOUN_ONE.sub('', text), flags=re.I)
+    # Both answers named as the answer form ("tell me: yes or no?", genre-explorer replay 10-04) say neither.
+    text = re.sub(r"\b(?:yes or no|no or yes)\b", '', text, flags=re.I)
     # "one" counting the ten itself ("fill one whole ten-frame"), which a ten-and-ones ask names ("a group of ten"),
     # is not the ones (number-bond ten_frame_part replay, 09-28).
     text = re.sub(r"\bone (?:whole |full |complete )?(?:ten[- ]frames?(?: boxe?s?)?|frames?|group of ten|ten)\b", '', text, flags=re.I)

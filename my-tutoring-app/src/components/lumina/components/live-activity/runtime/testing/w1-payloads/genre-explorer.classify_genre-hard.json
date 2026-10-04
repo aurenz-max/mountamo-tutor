@@ -3,68 +3,65 @@
  "primitiveId": "genre-explorer",
  "evalMode": "classify_genre",
  "data": {
-  "title": "Text Clues",
-  "gradeLevel": "3",
+  "title": "Text Style Sort",
+  "gradeLevel": "4",
   "excerpts": [
    {
     "excerptId": "e1",
-    "text": "The clever red fox wanted the grapes hanging high on the vine. He jumped three times but could not reach them. Walking away, he muttered that the fruit was probably sour anyway.",
-    "genre": "fable"
+    "text": "Born in 1897 in Philadelphia, Marian Anderson showed an incredible singing voice at a very young age. She sang in her church choir and later traveled across Europe to perform in front of large crowds. In 1939, she sang on the steps of the Lincoln Memorial in Washington, D.C., drawing a huge audience of seventy-five thousand listeners.",
+    "genre": "biography"
    },
    {
     "excerptId": "e2",
-    "text": "Bees visit flowers to collect sweet nectar all day long. They carry pollen on their hairy legs from plant to plant. This busy work helps new flowers grow in the garden.",
-    "genre": "informational"
+    "text": "In the winter of 1912, young Leo rode in a crowded steamship across the cold Atlantic Ocean with his mother and sister. They carried two heavy wooden trunks filled with clothes and family photographs. When the ship finally docked at Ellis Island, Leo gripped his mother's hand tightly as they stood in line to answer questions from the inspectors.",
+    "genre": "historical-fiction"
    },
    {
     "excerptId": "e3",
-    "text": "Long ago, the brave goddess of the dawn painted the morning sky with pink and gold. She walked across the clouds to wake the sleeping world below.",
-    "genre": "myth"
+    "text": "Honeybees have six legs and two pairs of wings that beat two hundred times every second. Worker bees fly from flower to flower gathering sticky pollen on their hairy legs. When they return to the hive, they perform a special movement called a waggle dance to show other bees where to find the sweetest nectar.",
+    "genre": "informational"
    }
   ],
   "features": [
    {
     "featureId": "f1",
-    "predicate": "have an animal that speaks",
+    "predicate": "tell about a real person who lived",
     "presentIn": [
      "e1"
     ]
    },
    {
     "featureId": "f2",
-    "predicate": "teach a lesson at the end",
+    "predicate": "give dates and real place names",
     "presentIn": [
      "e1"
     ]
    },
    {
-    "featureId": "f3",
-    "predicate": "give facts about a creature",
+    "featureId": "f5",
+    "predicate": "explain how animals move and behave",
     "presentIn": [
-     "e2"
+     "e3"
     ]
    },
    {
-    "featureId": "f4",
-    "predicate": "use rhyming words",
-    "presentIn": []
-   },
-   {
-    "featureId": "f5",
-    "predicate": "tell about a god from long ago",
+    "featureId": "f6",
+    "predicate": "contain numbers and measurements",
     "presentIn": [
+     "e1",
      "e3"
     ]
    }
   ],
   "genreOptions": [
-   "fable",
+   "biography",
+   "historical-fiction",
    "informational",
-   "myth",
-   "folktale",
-   "poem"
+   "autobiography",
+   "realistic-fiction"
   ],
   "mode": "classify_genre",
+  "objectiveGrade": "4",
   "supportTier": "hard"
  }
 }
