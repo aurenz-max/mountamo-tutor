@@ -1,0 +1,146 @@
+{
+ "source": "qa/tutor-reports/sentence-analyzer-runtime-mixed-payload-2026-10-04.json",
+ "primitiveId": "sentence-analyzer",
+ "evalMode": "mixed",
+ "data": {
+  "title": "Fun with Nouns, Verbs, and Adjectives",
+  "description": "Practice identifying parts of speech and roles for grade 3 sentences.",
+  "gradeLevel": "3",
+  "challenges": [
+   {
+    "id": "ch1",
+    "type": "identify_pos",
+    "sentence": "Bright stars shine tonight.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Bright",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "stars",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w2",
+      "text": "shine",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w3",
+      "text": "tonight.",
+      "partOfSpeech": "Adverb",
+      "grammaticalRole": "Modifier"
+     }
+    ],
+    "explanation": "Bright describes the stars, so it is an adjective. Stars name the things shining, making it a noun."
+   },
+   {
+    "id": "ch2",
+    "type": "identify_role",
+    "sentence": "The happy dog barked loudly.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "The",
+      "partOfSpeech": "Determiner",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "happy",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w2",
+      "text": "dog",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w3",
+      "text": "barked",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w4",
+      "text": "loudly.",
+      "partOfSpeech": "Adverb",
+      "grammaticalRole": "Modifier"
+     }
+    ],
+    "explanation": "The word dog is the subject because it is who the sentence is about, and barked is the predicate action."
+   },
+   {
+    "id": "ch3",
+    "type": "label_all",
+    "sentence": "Cold wind blows hard.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "Cold",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w1",
+      "text": "wind",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w2",
+      "text": "blows",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w3",
+      "text": "hard.",
+      "partOfSpeech": "Adverb",
+      "grammaticalRole": "Modifier"
+     }
+    ],
+    "explanation": "Cold is an adjective modifying wind, wind is a noun acting as the subject, blows is the verb predicate, and hard is an adverb."
+   },
+   {
+    "id": "ch4",
+    "type": "identify_pos",
+    "sentence": "She paints pretty pictures.",
+    "words": [
+     {
+      "id": "w0",
+      "text": "She",
+      "partOfSpeech": "Pronoun",
+      "grammaticalRole": "Subject"
+     },
+     {
+      "id": "w1",
+      "text": "paints",
+      "partOfSpeech": "Verb",
+      "grammaticalRole": "Predicate"
+     },
+     {
+      "id": "w2",
+      "text": "pretty",
+      "partOfSpeech": "Adjective",
+      "grammaticalRole": "Modifier"
+     },
+     {
+      "id": "w3",
+      "text": "pictures.",
+      "partOfSpeech": "Noun",
+      "grammaticalRole": "Modifier"
+     }
+    ],
+    "explanation": "She is a pronoun replacing a name. Pretty is an adjective describing the noun pictures."
+   }
+  ]
+ }
+}

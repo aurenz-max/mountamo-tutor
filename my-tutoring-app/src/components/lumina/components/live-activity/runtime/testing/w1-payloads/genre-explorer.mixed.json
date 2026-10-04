@@ -1,0 +1,63 @@
+{
+ "source": "qa/tutor-reports/genre-explorer-runtime-mixed-payload-2026-10-04.json",
+ "primitiveId": "genre-explorer",
+ "evalMode": "mixed",
+ "data": {
+  "title": "Sun, Wind, and Stars",
+  "gradeLevel": "3",
+  "excerpts": [
+   {
+    "excerptId": "e1",
+    "text": "A tiny spider wanted to reach the top of the tall grass. The wind blew hard and knocked the spider down to the dirt. The spider climbed up again slowly. If you try again and again, you will finally win.",
+    "genre": "fable"
+   },
+   {
+    "excerptId": "e2",
+    "text": "Long ago, people looked at the bright sky and believed a golden bird carried the sun across the world every morning. The shining wings warmed the earth until evening fell.",
+    "genre": "myth"
+   },
+   {
+    "excerptId": "e3",
+    "text": "The sun is a giant ball of hot gas located at the center of our solar system. Earth and seven other planets travel in circles around it.",
+    "genre": "informational"
+   }
+  ],
+  "features": [
+   {
+    "featureId": "f2",
+    "predicate": "teach a lesson at the end",
+    "presentIn": [
+     "e1"
+    ]
+   },
+   {
+    "featureId": "f4",
+    "predicate": "mention long ago beliefs about the sky",
+    "presentIn": [
+     "e2"
+    ]
+   },
+   {
+    "featureId": "f5",
+    "predicate": "give numbers and measurements about planets",
+    "presentIn": [
+     "e3"
+    ]
+   },
+   {
+    "featureId": "f6",
+    "predicate": "use rhyme at the end of lines",
+    "presentIn": []
+   }
+  ],
+  "genreOptions": [
+   "fable",
+   "myth",
+   "informational",
+   "folktale",
+   "poem"
+  ],
+  "mode": "classify_genre",
+  "objectiveGrade": "3"
+ }
+}

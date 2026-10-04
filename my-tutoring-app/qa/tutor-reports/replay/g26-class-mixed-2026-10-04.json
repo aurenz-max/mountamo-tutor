@@ -1,0 +1,2400 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ],
+   "no_change_before_receipt": [
+    0,
+    20
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "genre-explorer.mixed",
+   "primitiveId": "genre-explorer",
+   "evalMode": "mixed",
+   "keys": [
+    "yes: the first one does teach a lesson at the end. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"teach a lesson at the end\") gives no verdict and is not it.",
+    "yes"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "feature::e1::f2",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: the first one does teach a lesson at the end. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"teach a lesson at the end\") gives no verdict and is not it.",
+       "yes"
+      ],
+      "ask": "Does the first one teach a lesson at the end?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Here is the first text: \"A tiny spider wanted to reach the top of the tall grass. The wind blew hard and knocked the spider down to the dirt. The spider climbed up again slowly. If you try again and again, you will finally win.\" \n\nDoes the first one teach a lesson at the end?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is our text: \"A tiny spider wanted to reach the top of the tall grass. The wind blew hard and knocked the spider down to the dirt. The spider climbed up again slowly. If you try again and again, you will finally win.\"\n\nDoes the first one teach a lesson at the end?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's listen to the first one: \"A tiny spider wanted to reach the top of the tall grass. The wind blew hard and knocked the spider down to the dirt. The spider climbed up again slowly. If you try again and again, you will finally win.\"\n\nDoes the first one teach a lesson at the end?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is our story: \"A tiny spider wanted to reach the top of the tall grass. The wind blew hard and knocked the spider down to the dirt. The spider climbed up again slowly. If you try again and again, you will finally win.\" \n\nDoes the first one teach a lesson at the end?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I'll read our story aloud: \"A tiny spider wanted to reach the top of the tall grass. The wind blew hard and knocked the spider down to the dirt. The spider climbed up again slowly. If you try again and again, you will finally win.\"\n\nDoes the first one teach a lesson at the end?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "feature::e1::f2",
+     "trigger": "no",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: the first one does teach a lesson at the end. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"teach a lesson at the end\") gives no verdict and is not it.",
+       "yes"
+      ],
+      "ask": "Does the first one teach a lesson at the end?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The sentences are now split into their own rows so we can look closely at each one. Take a look through each line, and try asking yourself again: does the first one teach a lesson at the end?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "sentence_rows"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The text is split into rows now. Check each line, and tell me: does the first one teach a lesson at the end?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sentence_rows",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The text is now shown with one sentence on each line. Take a close look at each line, and try again: does the first one teach a lesson at the end?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "text_model",
+          "actionId": "test/1/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "sentence_rows"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The text is now split into lines so you can see each sentence by itself. Check each line, and try again: does the first one teach a lesson at the end?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "text_model"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "sentence_rows"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The text is split into rows now with one sentence on each line. Take a close look at each line and try again: does the first one teach a lesson at the end?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "text_model"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sentence_rows",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "feature::e1::f2",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: the first one does teach a lesson at the end. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"teach a lesson at the end\") gives no verdict and is not it.",
+       "yes"
+      ],
+      "ask": "Does the first one teach a lesson at the end?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The text is now split into separate lines for each sentence. Look closely at each line: does the first one teach a lesson at the end?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "sentence_rows"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The sentences are now split into rows so we can look at each one. Check each line, and tell me: does the first one teach a lesson at the end?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "sentence_rows"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The text is now shown with one sentence on each line. Check each line carefully, and tell me: does the first one teach a lesson at the end?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sentence_rows",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The screen now shows each sentence on its own line. Check each line to see: does the first one teach a lesson at the end?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sentence_rows",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Each sentence is now on its own row on your screen. Check each line, and see if the first one teaches a lesson at the end.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sentence_rows",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "feature::e1::f2",
+     "trigger": "The learner said they were stuck, so the host pulled sentence_rows (help). It is on screen now: Redraws the text one sentence per row, every row marked the same. Ask the learner to check each line. Never say which row. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do no",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: the first one does teach a lesson at the end. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"teach a lesson at the end\") gives no verdict and is not it.",
+       "yes"
+      ],
+      "ask": "Does the first one teach a lesson at the end?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The text is now split into separate lines for each sentence. Look closely at each line: does the first one teach a lesson at the end?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The text is now split into its own row for each sentence. Check each line, and tell me: does the first one teach a lesson at the end?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Each sentence is now written on its own row. Check each line to see: does the first one teach a lesson at the end?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The text is now shown with one sentence on each line. Check each line to see: does the first one teach a lesson at the end?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Each sentence is now laid out on its own row. Check each line to see: does the first one teach a lesson at the end?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "feature::e1::f2",
+     "trigger": "yes",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "yes: the first one does teach a lesson at the end. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"teach a lesson at the end\") gives no verdict and is not it.",
+       "yes"
+      ],
+      "ask": "Does the first one teach a lesson at the end?",
+      "leakTokens": [
+       "GEX_ITEM",
+       "GEX_MOVE",
+       "GEX_COMPLETE",
+       "GEX_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it right! You said yes, and the first text really does teach a lesson at the end.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You said yes, and that first one really does teach a lesson right at the end.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! Yes, the first one does teach a lesson at the end.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You said yes, and the first one does teach a lesson at the end.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! Yes, the first one does teach a lesson at the end with that last sentence.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "sentence-analyzer.mixed",
+   "primitiveId": "sentence-analyzer",
+   "evalMode": "mixed",
+   "keys": [
+    "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+    "adjective"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch1-pos-0",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "What part of speech is the word Bright?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Our sentence is: \"Bright stars shine tonight.\" What part of speech is the word \"Bright\"?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "\"Bright stars shine tonight.\" What part of speech is the word \"Bright\"?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The sentence is \"Bright stars shine tonight.\" What part of speech is the word \"Bright\"?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "\"Bright stars shine tonight.\" What part of speech is the word \"Bright\"?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Our sentence is: \"Bright stars shine tonight.\" What part of speech is the word \"Bright\"?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ch1-pos-0",
+     "trigger": "Pronoun",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "What part of speech is the word Bright?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Not quite, but good try! Look at the word wall\u2014examples have appeared under each label to help you see how each word works. Take another look and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Examples have appeared under each word on our word wall to help\u2014take a look and try again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite a pronoun. Look at the word wall\u2014there are examples under each label now to help you think about what \"Bright\" does.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite a pronoun. Look at the word wall\u2014there are examples under each label now to help you think about what \"Bright\" does. What part of speech is it?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite a pronoun. Look at the word wall\u2014there are examples under each label now to help you compare. What part of speech describes the stars?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ch1-pos-0",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "What part of speech is the word Bright?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Example words have appeared under each word on the wall to show how they work. Take a look at them and tell me what you think \"Bright\" is!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An example has appeared under every label on the word wall with an underlined word. Take a look at those examples to see which one does the same kind of job as \"Bright,\" and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I added an example under every label on the word wall with an underlined word. Take a look at those examples to see which one works like \"Bright,\" and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An example has been added under each label on the word wall to show how words are used. Take a look at those examples and try naming the part of speech for \"Bright\" again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An example sentence has appeared under each label on the word wall with an underlined word. Take a look at what each underlined word is doing, and tell me what part of speech \"Bright\" is!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ch1-pos-0",
+     "trigger": "The learner said they were stuck, so the host pulled model_sentence (help). It is on screen now: Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "What part of speech is the word Bright?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A new card has appeared with an example sentence where every word is labeled: \"Her quiet uncle gently handed me a warm blanket.\" Look at how the words are labeled on that card, and then tell me: what part of speech is \"Bright\"?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new card appeared with another sentence, showing each word and what job it does: \"Her quiet uncle gently handed me a warm blanket.\" What part of speech is the word \"Bright\" in our sentence?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A card has appeared showing a different sentence with every word labelled: \"Her quiet uncle gently handed me a warm blanket.\" Look at the labels on the card and tell me, what part of speech is the word \"Bright\"?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new card has appeared with an example sentence where every word is labelled: \"Her quiet uncle gently handed me a warm blanket.\" Look at how the words are labelled there, and tell me what part of speech you think \"Bright\" is!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new card appeared showing a different sentence with every word labelled: \"Her quiet uncle gently handed me a warm blanket.\" Look at how the words are labelled there, and tell me what part of speech you think \"Bright\" is!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch1-pos-0",
+     "trigger": "Adjective",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "What part of speech is the word Bright?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Spot on! You got it right\u2014\"Bright\" is an adjective because it describes the stars.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That's right, you got it! The word \"Bright\" is an adjective because it describes the stars.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You named that \"Bright\" is an adjective because it describes the stars.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You correctly named \"Bright\" as an adjective!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on, you got it! You found that \"Bright\" is an adjective because it describes the stars.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "text-structure-analyzer.mixed",
+   "primitiveId": "text-structure-analyzer",
+   "evalMode": "mixed",
+   "keys": [
+    "however, the linking word in \"however, a wide river channel can hold the extra water safely.\". it may come inside a little phrase (\"the word however\"). any other word of that sentence is wrong: words that name things and actions are not linking words.",
+    "however"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "signal::2::however",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "however, the linking word in \"however, a wide river channel can hold the extra water safely.\". it may come inside a little phrase (\"the word however\"). any other word of that sentence is wrong: words that name things and actions are not linking words.",
+       "however"
+      ],
+      "ask": "Read sentence three. Which word links the ideas?",
+      "leakTokens": [
+       "TSA_ITEM",
+       "TSA_MOVE",
+       "TSA_COMPLETE",
+       "TSA_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at sentence three on your screen. Which word links the ideas?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at sentence three on your screen. Which word links the ideas?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at sentence three. Which word links the ideas?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at sentence three. Which word links the ideas?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Read sentence three. Which word links the ideas?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "signal::2::however",
+     "trigger": "wide",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "however, the linking word in \"however, a wide river channel can hold the extra water safely.\". it may come inside a little phrase (\"the word however\"). any other word of that sentence is wrong: words that name things and actions are not linking words.",
+       "however"
+      ],
+      "ask": "Read sentence three. Which word links the ideas?",
+      "leakTokens": [
+       "TSA_ITEM",
+       "TSA_MOVE",
+       "TSA_COMPLETE",
+       "TSA_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A model card appeared showing how a linking word connects ideas. My turn: \"The road was icy, therefore the bus went slowly.\" Looking back at sentence three, which word links the ideas?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "link_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card popped up on the screen. My turn: \"The road was icy, therefore the bus went slowly.\" Now look at sentence three again\u2014which word links the ideas?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "link_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card appeared showing an example sentence. \n\nMy turn: \"The road was icy, therefore the bus went slowly.\" \n\nNow look back at sentence three: which word links the ideas?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "link_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card popped up on the screen. My turn: \"The road was icy, therefore the bus went slowly.\" Now, look back at sentence three in your passage\u2014which word links the ideas?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "link_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card popped up on the screen. My turn: \"The road was icy, therefore the bus went slowly.\" Now read sentence three again\u2014which word links the ideas?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "link_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "signal::2::however",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "however, the linking word in \"however, a wide river channel can hold the extra water safely.\". it may come inside a little phrase (\"the word however\"). any other word of that sentence is wrong: words that name things and actions are not linking words.",
+       "however"
+      ],
+      "ask": "Read sentence three. Which word links the ideas?",
+      "leakTokens": [
+       "TSA_ITEM",
+       "TSA_MOVE",
+       "TSA_COMPLETE",
+       "TSA_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A card appeared showing an example sentence. My turn: \"The road was icy, therefore the bus went slowly.\" Now read sentence three\u2014which word links the ideas?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "link_model",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A model card is on your screen now. My turn: \"The road was icy, therefore the bus went slowly.\" Now read sentence three again and tell me which word links the ideas.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "link_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A model card is on the screen showing a linking word between two ideas. My turn: \"The road was icy, therefore the bus went slowly.\" Now read sentence three again and give it a try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "link_model",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A model card appeared showing an example sentence. My turn: \"The road was icy, therefore the bus went slowly.\" Now read sentence three\u2014which word links the ideas?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "link_model",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A model card appeared with an example sentence. My turn: \"The road was icy, therefore the bus went slowly.\" Now read sentence three again and give it a try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "link_model",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "signal::2::however",
+     "trigger": "The learner said they were stuck, so the host pulled link_model (help). It is on screen now: Shows a card with another sentence, its linking word underlined between its two bracketed ideas. Once it is on screen you may read the model card aloud, \"My turn\", then ask about the numbered sentence again. Read only the card the receipt names; never make up a model of your own. Never apply it to the pass",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "however, the linking word in \"however, a wide river channel can hold the extra water safely.\". it may come inside a little phrase (\"the word however\"). any other word of that sentence is wrong: words that name things and actions are not linking words.",
+       "however"
+      ],
+      "ask": "Read sentence three. Which word links the ideas?",
+      "leakTokens": [
+       "TSA_ITEM",
+       "TSA_MOVE",
+       "TSA_COMPLETE",
+       "TSA_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A new card appeared on your screen showing a model sentence. \n\nMy turn: \"The road was icy, therefore the bus went slowly.\" \n\nNow look back at sentence three in your passage\u2014which word links the ideas?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A card has appeared showing two ideas with the linking word underlined between them. My turn: \"The road was icy, therefore the bus went slowly.\" Now look back at sentence three\u2014which word links the ideas?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new card popped up on your screen with an example sentence! \n\nMy turn: \"The road was icy, therefore the bus went slowly.\" \n\nNow look back at sentence three in your passage\u2014which word links the ideas?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card is now showing on your screen. \n\nMy turn: \"The road was icy, therefore the bus went slowly.\" \n\nNow look back at sentence three. Which word links the ideas?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A card has appeared showing an example sentence. \n\nMy turn: \"The road was icy, therefore the bus went slowly.\" \n\nNow look back at sentence three: which word links the ideas?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "signal::2::however",
+     "trigger": "However",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "however, the linking word in \"however, a wide river channel can hold the extra water safely.\". it may come inside a little phrase (\"the word however\"). any other word of that sentence is wrong: words that name things and actions are not linking words.",
+       "however"
+      ],
+      "ask": "Read sentence three. Which word links the ideas?",
+      "leakTokens": [
+       "TSA_ITEM",
+       "TSA_MOVE",
+       "TSA_COMPLETE",
+       "TSA_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You found it! \"However\" is the linking word connecting the ideas in sentence three.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You correctly found the linking word \"However.\"",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it! \"However\" is the linking word connecting those ideas.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You found the linking word \"However\".",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You found the linking word \"However\".",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "word-builder.mixed",
+   "primitiveId": "word-builder",
+   "evalMode": "mixed",
+   "keys": [
+    "replay (re + play). built out loud part by part counts when the whole word arrives at the end. only \"play\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+    "replay"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "replay",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "replay (re + play). built out loud part by part counts when the whole word arrives at the end. only \"play\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "replay"
+      ],
+      "ask": "Here is what the word means: This action means to watch a video clip once more. Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Here is what the word means: This action means to watch a video clip once more. What is the whole word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is what the word means: This action means to watch a video clip once more. What is the whole word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is what the word means: this action means to watch a video clip once more. What is the whole word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is what the word means: this action means to watch a video clip once more. What is the whole word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is what the word means: This action means to watch a video clip once more. What is the whole word?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "replay",
+     "trigger": "playre",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "replay (re + play). built out loud part by part counts when the whole word arrives at the end. only \"play\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "replay"
+      ],
+      "ask": "Here is what the word means: This action means to watch a video clip once more. Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A frame appeared showing where the prefix and the root go. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "part_slots",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under the clue: two boxes appeared showing a prefix first and then a root. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "part_slots",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A frame appeared showing a prefix box followed by a root box. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "part_slots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the new frame showing the prefix box before the root box. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "part_slots"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A frame appeared below the clue showing where the prefix and root go. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "part_slots",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "replay",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "replay (re + play). built out loud part by part counts when the whole word arrives at the end. only \"play\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "replay"
+      ],
+      "ask": "Here is what the word means: This action means to watch a video clip once more. Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "",
+       "before": "",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_word",
+          "actionId": "test/2/0"
+         }
+        },
+        {
+         "name": "observe_runtime",
+         "args": {}
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "",
+       "before": "",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_word"
+         }
+        },
+        {
+         "name": "observe_runtime",
+         "args": {}
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An example card appeared on the screen to show how a word comes together. Look at the clue and see what whole word you can make!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_word"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A solved example card appeared on the screen to show how parts join together. Now give your word another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_word"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "",
+       "before": "",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_word",
+          "actionId": "test/2/0"
+         }
+        },
+        {
+         "name": "observe_runtime",
+         "args": {}
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "replay",
+     "trigger": "The learner said they were stuck, so the host pulled part_slots (help). It is on screen now: Draws an empty frame under the clue: one box per part, labelled only prefix, root or suffix, joined into one word box. It never shows a part, a meaning or a letter. Do not say which parts go in it. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never cal",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "replay (re + play). built out loud part by part counts when the whole word arrives at the end. only \"play\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "replay"
+      ],
+      "ask": "Here is what the word means: This action means to watch a video clip once more. Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look under the clue\u2014there is now an empty frame showing two boxes labelled prefix and root joined into one word box. \n\nWhenever you're ready, what whole word fits the clue?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under the clue: there is a frame with a prefix box and a root box joining together into one word. Give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "An empty frame appeared right under the clue showing two boxes: prefix first, then root, joined into one word box. Look at those boxes and try saying the whole word!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under the clue\u2014there is a frame showing a prefix box joined to a root box. What whole word can you make to match the clue?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under the clue, there is now an empty frame with boxes labeled prefix and root joining together into one word box. Take a look at that frame and say the whole word.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "replay",
+     "trigger": "replay",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "replay (re + play). built out loud part by part counts when the whole word arrives at the end. only \"play\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+       "replay"
+      ],
+      "ask": "Here is what the word means: This action means to watch a video clip once more. Say the whole word.",
+      "leakTokens": [
+       "WB_ITEM",
+       "WB_MOVE",
+       "WB_COMPLETE",
+       "WB_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You built the whole word \"replay\" from the parts on the board.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You built the whole word \"replay\" from the parts on the board.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You built the whole word \"replay\" from the parts on the board.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You built the whole word \"replay\" from the parts on the board.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You built the whole word replay.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

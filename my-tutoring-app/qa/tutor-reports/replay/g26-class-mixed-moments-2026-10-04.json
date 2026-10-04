@@ -1,0 +1,3940 @@
+{
+ "lessonEntry": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+ "records": [
+  {
+   "payload": "genre-explorer.mixed",
+   "primitiveId": "genre-explorer",
+   "evalMode": "mixed",
+   "guidance": "Two or three short texts; every answer is said out loud. Three kinds of question: yes or no about what is in one text, which of two texts something is true of, and what kind of writing a text is from the printed menu. When the ask carries a text, read it aloud first: at grades 1-2 the learner cannot read it. Reading a text aloud gives nothing away, since no text names its genre. Saying the feature back is not a yes or no, and \"both\" is never the text: each feature is true of one. Before an attempt never say the answer or which genre a text is; a close relative genre is wrong. Nothing marks the kind of this text until credit; models name only kinds off the menu. You cannot point at the text yourself. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Fables, myths and informational texts",
+   "gradeLevel": "3",
+   "leakTokens": [
+    "GEX_ITEM",
+    "GEX_MOVE",
+    "GEX_COMPLETE",
+    "GEX_HEAR"
+   ],
+   "ask": "Does the first one teach a lesson at the end?",
+   "keys": [
+    "yes: the first one does teach a lesson at the end. any natural form of that verdict counts (\"yeah\", \"it does\"). saying the feature back (\"teach a lesson at the end\") gives no verdict and is not it.",
+    "yes"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "feature::e1::f2",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "genre-explorer",
+      "objectiveId": "genre-explorer-practice",
+      "evalMode": "mixed",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "feature::e1::f2",
+       "phase": "working",
+       "task": "Does the first one teach a lesson at the end?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "text": "the first one: A tiny spider wanted to reach the top of the tall grass. The wind blew hard and knocked the spider down to the dirt. The spider climbed up again slowly. If you try again and again, you will finally win.",
+        "constraints": "The learner answers out loud; nothing on screen marks a genre or a feature until the answer is credited.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "sentence_rows",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "opposite_verdict"
+          ],
+          "when": "The learner answers from what they expect, not from the words.",
+          "does": "Redraws the text one sentence per row, every row marked the same. Ask the learner to check each line. Never say which row."
+         },
+         {
+          "id": "text_model",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "opposite_verdict",
+           "said_feature_back"
+          ],
+          "when": "The learner gives the wrong verdict or says the feature back.",
+          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
+         }
+        ],
+        "expectedAnswer": "yes: the first one does teach a lesson at the end. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"teach a lesson at the end\") gives no verdict and is not it.",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "feature::e1::f2",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "feature::e1::f2",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "genre-explorer",
+      "objectiveId": "genre-explorer-practice",
+      "evalMode": "mixed",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "feature::e1::f2",
+       "phase": "working",
+       "task": "Does the first one teach a lesson at the end?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "text": "the first one: A tiny spider wanted to reach the top of the tall grass. The wind blew hard and knocked the spider down to the dirt. The spider climbed up again slowly. If you try again and again, you will finally win.",
+        "constraints": "The learner answers out loud; nothing on screen marks a genre or a feature until the answer is credited.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "sentence_rows",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "opposite_verdict"
+          ],
+          "when": "The learner answers from what they expect, not from the words.",
+          "does": "Redraws the text one sentence per row, every row marked the same. Ask the learner to check each line. Never say which row."
+         },
+         {
+          "id": "text_model",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "opposite_verdict",
+           "said_feature_back"
+          ],
+          "when": "The learner gives the wrong verdict or says the feature back.",
+          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
+         }
+        ],
+        "expectedAnswer": "yes: the first one does teach a lesson at the end. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"teach a lesson at the end\") gives no verdict and is not it.",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "no"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "feature::e1::f2",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "no",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "feature::e1::f2",
+       "revision": 1
+      },
+      "task": "Does the first one teach a lesson at the end?",
+      "phase": "working",
+      "learner": "no",
+      "expectedAnswer": "yes: the first one does teach a lesson at the end. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"teach a lesson at the end\") gives no verdict and is not it.",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "no"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [],
+       "demonstration": [],
+       "facts": {
+        "text": "the first one: A tiny spider wanted to reach the top of the tall grass. The wind blew hard and knocked the spider down to the dirt. The spider climbed up again slowly. If you try again and again, you will finally win.",
+        "constraints": "The learner answers out loud; nothing on screen marks a genre or a feature until the answer is credited.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "feature::e1::f2"
+      },
+      "task": "Does the first one teach a lesson at the end?",
+      "expectedAnswer": "yes: the first one does teach a lesson at the end. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"teach a lesson at the end\") gives no verdict and is not it.",
+      "learner": "no",
+      "misses": [
+       {
+        "id": "opposite_verdict",
+        "pattern": "The right verdict is \"yes\": the first one does teach a lesson at the end. The learner gives the opposite verdict, \"no\" (or \"nope\", \"it does not\").",
+        "examples": [
+         "no",
+         "it does not"
+        ]
+       },
+       {
+        "id": "said_feature_back",
+        "pattern": "The learner says the feature back (\"teach a lesson at the end\") with no yes or no.",
+        "examples": [
+         "teach a lesson at the end"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "feature::e1::f2",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "genre-explorer",
+      "objectiveId": "genre-explorer-practice",
+      "evalMode": "mixed",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "feature::e1::f2",
+       "phase": "working",
+       "task": "Does the first one teach a lesson at the end?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "no",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "text": "the first one: A tiny spider wanted to reach the top of the tall grass. The wind blew hard and knocked the spider down to the dirt. The spider climbed up again slowly. If you try again and again, you will finally win.",
+        "constraints": "The learner answers out loud; nothing on screen marks a genre or a feature until the answer is credited.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "sentence_rows",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "opposite_verdict"
+          ],
+          "when": "The learner answers from what they expect, not from the words.",
+          "does": "Redraws the text one sentence per row, every row marked the same. Ask the learner to check each line. Never say which row."
+         },
+         {
+          "id": "text_model",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "opposite_verdict",
+           "said_feature_back"
+          ],
+          "when": "The learner gives the wrong verdict or says the feature back.",
+          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
+         }
+        ],
+        "expectedAnswer": "yes: the first one does teach a lesson at the end. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"teach a lesson at the end\") gives no verdict and is not it.",
+        "lastResponse": {
+         "itemId": "feature::e1::f2",
+         "response": "no",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "feature::e1::f2",
+          "response": "no",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "feature::e1::f2",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "feature::e1::f2",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "genre-explorer",
+      "objectiveId": "genre-explorer-practice",
+      "evalMode": "mixed",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "feature::e1::f2",
+       "phase": "working",
+       "task": "Does the first one teach a lesson at the end?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "no",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "text": "the first one: A tiny spider wanted to reach the top of the tall grass. The wind blew hard and knocked the spider down to the dirt. The spider climbed up again slowly. If you try again and again, you will finally win.",
+        "constraints": "The learner answers out loud; nothing on screen marks a genre or a feature until the answer is credited.",
+        "levers_on_screen": "the text redrawn one sentence per row, every row marked the same",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "sentence_rows",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "opposite_verdict"
+          ],
+          "when": "The learner answers from what they expect, not from the words.",
+          "does": "Redraws the text one sentence per row, every row marked the same. Ask the learner to check each line. Never say which row."
+         },
+         {
+          "id": "text_model",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "opposite_verdict",
+           "said_feature_back"
+          ],
+          "when": "The learner gives the wrong verdict or says the feature back.",
+          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
+         }
+        ],
+        "expectedAnswer": "yes: the first one does teach a lesson at the end. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"teach a lesson at the end\") gives no verdict and is not it.",
+        "lastResponse": {
+         "itemId": "feature::e1::f2",
+         "response": "no",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "feature::e1::f2",
+          "response": "no",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "feature::e1::f2",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "sentence_rows"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "feature::e1::f2",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled sentence_rows (help). It is on screen now: Redraws the text one sentence per row, every row marked the same. Ask the learner to check each line. Never say which row. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "sentence_rows",
+      "kind": "help",
+      "does": "Redraws the text one sentence per row, every row marked the same. Ask the learner to check each line. Never say which row."
+     }
+    },
+    {
+     "kind": "credit",
+     "itemId": "feature::e1::f2",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "genre-explorer",
+      "objectiveId": "genre-explorer-practice",
+      "evalMode": "mixed",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "feature::e1::f2",
+       "phase": "working",
+       "task": "Does the first one teach a lesson at the end?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "no",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "text": "the first one: A tiny spider wanted to reach the top of the tall grass. The wind blew hard and knocked the spider down to the dirt. The spider climbed up again slowly. If you try again and again, you will finally win.",
+        "constraints": "The learner answers out loud; nothing on screen marks a genre or a feature until the answer is credited.",
+        "levers_on_screen": "the text redrawn one sentence per row, every row marked the same",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "sentence_rows",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "opposite_verdict"
+          ],
+          "when": "The learner answers from what they expect, not from the words.",
+          "does": "Redraws the text one sentence per row, every row marked the same. Ask the learner to check each line. Never say which row."
+         },
+         {
+          "id": "text_model",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "opposite_verdict",
+           "said_feature_back"
+          ],
+          "when": "The learner gives the wrong verdict or says the feature back.",
+          "does": "Shows a card with another text and a different feature it has, its words underlined. Once it is on screen, say it as \"My turn: this one does ...\", reading the underlined words. Never say yes or no about it. Read only the card the receipt names; never make up a model of your own. Never say what the model means for the text of the learner."
+         }
+        ],
+        "expectedAnswer": "yes: the first one does teach a lesson at the end. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"teach a lesson at the end\") gives no verdict and is not it.",
+        "pendingResponse": {
+         "id": "speech:1:2",
+         "text": "yes"
+        },
+        "lastResponse": {
+         "itemId": "feature::e1::f2",
+         "response": "no",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "feature::e1::f2",
+          "response": "no",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "feature::e1::f2",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "sentence_rows"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "feature::e1::f2",
+        "secondsOnItem": 20,
+        "secondsSinceReady": 20,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "yes",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "feature::e1::f2",
+       "revision": 3
+      },
+      "task": "Does the first one teach a lesson at the end?",
+      "phase": "working",
+      "learner": "yes",
+      "expectedAnswer": "yes: the first one does teach a lesson at the end. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"teach a lesson at the end\") gives no verdict and is not it.",
+      "pendingResponse": {
+       "id": "speech:1:2",
+       "text": "yes"
+      },
+      "lastResponse": {
+       "itemId": "feature::e1::f2",
+       "response": "no",
+       "source": "speech",
+       "correct": false,
+       "tutorResponse": "Not quite.",
+       "judgment": "tutor",
+       "assisted": false,
+       "answerExposure": "none"
+      },
+      "activity": {
+       "responseSource": "speech",
+       "attemptNumber": 1,
+       "objects": [],
+       "demonstration": [],
+       "facts": {
+        "text": "the first one: A tiny spider wanted to reach the top of the tall grass. The wind blew hard and knocked the spider down to the dirt. The spider climbed up again slowly. If you try again and again, you will finally win.",
+        "constraints": "The learner answers out loud; nothing on screen marks a genre or a feature until the answer is credited.",
+        "levers_on_screen": "the text redrawn one sentence per row, every row marked the same",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 2,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "feature::e1::f2"
+      },
+      "task": "Does the first one teach a lesson at the end?",
+      "expectedAnswer": "yes: the first one does teach a lesson at the end. Any natural form of that verdict counts (\"yeah\", \"it does\"). Saying the feature back (\"teach a lesson at the end\") gives no verdict and is not it.",
+      "learner": "yes",
+      "misses": [
+       {
+        "id": "opposite_verdict",
+        "pattern": "The right verdict is \"yes\": the first one does teach a lesson at the end. The learner gives the opposite verdict, \"no\" (or \"nope\", \"it does not\").",
+        "examples": [
+         "no",
+         "it does not"
+        ]
+       },
+       {
+        "id": "said_feature_back",
+        "pattern": "The learner says the feature back (\"teach a lesson at the end\") with no yes or no.",
+        "examples": [
+         "teach a lesson at the end"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    }
+   ]
+  },
+  {
+   "payload": "sentence-analyzer.mixed",
+   "primitiveId": "sentence-analyzer",
+   "evalMode": "mixed",
+   "guidance": "One printed sentence at a time with the asked word highlighted; every answer is a grammar label said out loud: the part of speech of the word, its job in the sentence, whether it is in the subject or the predicate, or the kind of sentence. A word wall of the grade labels is printed for reference. When the ask carries the sentence, read it aloud (grade 2). A part of speech is not an answer to a job question; a label that sounds close or contains the right one is wrong. Small words and describing words in front of the naming word are part of the complete subject: judge the side against the given answer. Before an attempt never say the label. No word of the sentence is labelled until credit. Models are other sentences; never say which model word matches the asked one. You cannot point at or highlight words. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Nouns, verbs and adjectives",
+   "gradeLevel": "3",
+   "leakTokens": [
+    "SAN_ITEM",
+    "SAN_MOVE",
+    "SAN_COMPLETE",
+    "SAN_HEAR"
+   ],
+   "ask": "What part of speech is the word Bright?",
+   "keys": [
+    "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+    "adjective"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch1-pos-0",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "sentence-analyzer",
+      "objectiveId": "sentence-analyzer-practice",
+      "evalMode": "mixed",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ch1-pos-0",
+       "phase": "working",
+       "task": "What part of speech is the word Bright?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "sentence": "Bright stars shine tonight.",
+        "highlighted": "The word \"Bright\" is highlighted.",
+        "wall": "Printed on the word wall: Noun, Verb, Adjective, Determiner, Adverb, Pronoun.",
+        "constraints": "The learner answers out loud; no word of this sentence is labelled until the answer is credited.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_sentence",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "confusable_label",
+           "describing_word"
+          ],
+          "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+         },
+         {
+          "id": "wall_examples",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "confusable_label",
+           "other_label"
+          ],
+          "when": "The learner says another label from the wall.",
+          "does": "Puts one example under every label on the wall, its example word underlined. It marks no label. Do not point to one or read a label aloud."
+         },
+         {
+          "id": "short_sentence",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "confusable_label",
+           "other_label",
+           "describing_word"
+          ],
+          "when": "The learner still cannot name it after help.",
+          "does": "Opens an easier practice sentence first (three or four words), with one word or the whole sentence to name. Ask it. It is not graded; the full item comes back after it."
+         }
+        ],
+        "expectedAnswer": "Adjective. \"Adverb\" are different answers and wrong here. Any other grammar label is wrong.",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ch1-pos-0",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "ch1-pos-0",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "sentence-analyzer",
+      "objectiveId": "sentence-analyzer-practice",
+      "evalMode": "mixed",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ch1-pos-0",
+       "phase": "working",
+       "task": "What part of speech is the word Bright?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "sentence": "Bright stars shine tonight.",
+        "highlighted": "The word \"Bright\" is highlighted.",
+        "wall": "Printed on the word wall: Noun, Verb, Adjective, Determiner, Adverb, Pronoun.",
+        "constraints": "The learner answers out loud; no word of this sentence is labelled until the answer is credited.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_sentence",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "confusable_label",
+           "describing_word"
+          ],
+          "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+         },
+         {
+          "id": "wall_examples",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "confusable_label",
+           "other_label"
+          ],
+          "when": "The learner says another label from the wall.",
+          "does": "Puts one example under every label on the wall, its example word underlined. It marks no label. Do not point to one or read a label aloud."
+         },
+         {
+          "id": "short_sentence",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "confusable_label",
+           "other_label",
+           "describing_word"
+          ],
+          "when": "The learner still cannot name it after help.",
+          "does": "Opens an easier practice sentence first (three or four words), with one word or the whole sentence to name. Ask it. It is not graded; the full item comes back after it."
+         }
+        ],
+        "expectedAnswer": "Adjective. \"Adverb\" are different answers and wrong here. Any other grammar label is wrong.",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "Pronoun"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ch1-pos-0",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "Pronoun",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "ch1-pos-0",
+       "revision": 1
+      },
+      "task": "What part of speech is the word Bright?",
+      "phase": "working",
+      "learner": "Pronoun",
+      "expectedAnswer": "Adjective. \"Adverb\" are different answers and wrong here. Any other grammar label is wrong.",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "Pronoun"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [],
+       "demonstration": [],
+       "facts": {
+        "sentence": "Bright stars shine tonight.",
+        "highlighted": "The word \"Bright\" is highlighted.",
+        "wall": "Printed on the word wall: Noun, Verb, Adjective, Determiner, Adverb, Pronoun.",
+        "constraints": "The learner answers out loud; no word of this sentence is labelled until the answer is credited.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "ch1-pos-0"
+      },
+      "task": "What part of speech is the word Bright?",
+      "expectedAnswer": "Adjective. \"Adverb\" are different answers and wrong here. Any other grammar label is wrong.",
+      "learner": "Pronoun",
+      "misses": [
+       {
+        "id": "confusable_label",
+        "pattern": "In \"Bright stars shine tonight.\", the word \"Bright\" is a Adjective. The learner's answer is \"Adverb\", a different label that is often mixed up with Adjective.",
+        "examples": [
+         "Adverb"
+        ]
+       },
+       {
+        "id": "describing_word",
+        "pattern": "In \"Bright stars shine tonight.\", the word \"Bright\" is a Adjective. The learner's answer is \"describing word\", which names both adjective and adverb.",
+        "examples": [
+         "describing word",
+         "a describing word"
+        ]
+       },
+       {
+        "id": "other_label",
+        "pattern": "In \"Bright stars shine tonight.\", the word \"Bright\" is a Adjective. The learner's answer is another label from the printed wall: \"Noun\" or \"Verb\" or \"Determiner\" or \"Pronoun\".",
+        "examples": [
+         "Determiner",
+         "Pronoun"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ch1-pos-0",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "sentence-analyzer",
+      "objectiveId": "sentence-analyzer-practice",
+      "evalMode": "mixed",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ch1-pos-0",
+       "phase": "working",
+       "task": "What part of speech is the word Bright?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Pronoun",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "sentence": "Bright stars shine tonight.",
+        "highlighted": "The word \"Bright\" is highlighted.",
+        "wall": "Printed on the word wall: Noun, Verb, Adjective, Determiner, Adverb, Pronoun.",
+        "constraints": "The learner answers out loud; no word of this sentence is labelled until the answer is credited.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_sentence",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "confusable_label",
+           "describing_word"
+          ],
+          "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+         },
+         {
+          "id": "wall_examples",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "confusable_label",
+           "other_label"
+          ],
+          "when": "The learner says another label from the wall.",
+          "does": "Puts one example under every label on the wall, its example word underlined. It marks no label. Do not point to one or read a label aloud."
+         },
+         {
+          "id": "short_sentence",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "confusable_label",
+           "other_label",
+           "describing_word"
+          ],
+          "when": "The learner still cannot name it after help.",
+          "does": "Opens an easier practice sentence first (three or four words), with one word or the whole sentence to name. Ask it. It is not graded; the full item comes back after it."
+         }
+        ],
+        "expectedAnswer": "Adjective. \"Adverb\" are different answers and wrong here. Any other grammar label is wrong.",
+        "lastResponse": {
+         "itemId": "ch1-pos-0",
+         "response": "Pronoun",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "ch1-pos-0",
+          "response": "Pronoun",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ch1-pos-0",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "ch1-pos-0",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "sentence-analyzer",
+      "objectiveId": "sentence-analyzer-practice",
+      "evalMode": "mixed",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ch1-pos-0",
+       "phase": "working",
+       "task": "What part of speech is the word Bright?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Pronoun",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "sentence": "Bright stars shine tonight.",
+        "highlighted": "The word \"Bright\" is highlighted.",
+        "wall": "Printed on the word wall: Noun, Verb, Adjective, Determiner, Adverb, Pronoun.",
+        "constraints": "The learner answers out loud; no word of this sentence is labelled until the answer is credited.",
+        "levers_on_screen": "a model card with another sentence, every word labelled: Her (Determiner) quiet (Adjective) uncle (Noun) gently (Adverb) handed (Verb) me (Pronoun) a (Determiner) warm (Adjective) blanket (Noun). Models are other sentences, not this one",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_sentence",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "confusable_label",
+           "describing_word"
+          ],
+          "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+         },
+         {
+          "id": "wall_examples",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "confusable_label",
+           "other_label"
+          ],
+          "when": "The learner says another label from the wall.",
+          "does": "Puts one example under every label on the wall, its example word underlined. It marks no label. Do not point to one or read a label aloud."
+         },
+         {
+          "id": "short_sentence",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "confusable_label",
+           "other_label",
+           "describing_word"
+          ],
+          "when": "The learner still cannot name it after help.",
+          "does": "Opens an easier practice sentence first (three or four words), with one word or the whole sentence to name. Ask it. It is not graded; the full item comes back after it."
+         }
+        ],
+        "expectedAnswer": "Adjective. \"Adverb\" are different answers and wrong here. Any other grammar label is wrong.",
+        "lastResponse": {
+         "itemId": "ch1-pos-0",
+         "response": "Pronoun",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "ch1-pos-0",
+          "response": "Pronoun",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "ch1-pos-0",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "model_sentence"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ch1-pos-0",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled model_sentence (help). It is on screen now: Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "model_sentence",
+      "kind": "help",
+      "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+     }
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch1-pos-0",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "sentence-analyzer",
+      "objectiveId": "sentence-analyzer-practice",
+      "evalMode": "mixed",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ch1-pos-0",
+       "phase": "working",
+       "task": "What part of speech is the word Bright?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Pronoun",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "sentence": "Bright stars shine tonight.",
+        "highlighted": "The word \"Bright\" is highlighted.",
+        "wall": "Printed on the word wall: Noun, Verb, Adjective, Determiner, Adverb, Pronoun.",
+        "constraints": "The learner answers out loud; no word of this sentence is labelled until the answer is credited.",
+        "levers_on_screen": "a model card with another sentence, every word labelled: Her (Determiner) quiet (Adjective) uncle (Noun) gently (Adverb) handed (Verb) me (Pronoun) a (Determiner) warm (Adjective) blanket (Noun). Models are other sentences, not this one",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "model_sentence",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "confusable_label",
+           "describing_word"
+          ],
+          "when": "The learner mixes up two labels, such as adjective and adverb, or says \"describing word\".",
+          "does": "Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). Read only the card the receipt names; never make up a model of your own. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence."
+         },
+         {
+          "id": "wall_examples",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "confusable_label",
+           "other_label"
+          ],
+          "when": "The learner says another label from the wall.",
+          "does": "Puts one example under every label on the wall, its example word underlined. It marks no label. Do not point to one or read a label aloud."
+         },
+         {
+          "id": "short_sentence",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "confusable_label",
+           "other_label",
+           "describing_word"
+          ],
+          "when": "The learner still cannot name it after help.",
+          "does": "Opens an easier practice sentence first (three or four words), with one word or the whole sentence to name. Ask it. It is not graded; the full item comes back after it."
+         }
+        ],
+        "expectedAnswer": "Adjective. \"Adverb\" are different answers and wrong here. Any other grammar label is wrong.",
+        "pendingResponse": {
+         "id": "speech:1:2",
+         "text": "Adjective"
+        },
+        "lastResponse": {
+         "itemId": "ch1-pos-0",
+         "response": "Pronoun",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "ch1-pos-0",
+          "response": "Pronoun",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "ch1-pos-0",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "model_sentence"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ch1-pos-0",
+        "secondsOnItem": 20,
+        "secondsSinceReady": 20,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "Adjective",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "ch1-pos-0",
+       "revision": 3
+      },
+      "task": "What part of speech is the word Bright?",
+      "phase": "working",
+      "learner": "Adjective",
+      "expectedAnswer": "Adjective. \"Adverb\" are different answers and wrong here. Any other grammar label is wrong.",
+      "pendingResponse": {
+       "id": "speech:1:2",
+       "text": "Adjective"
+      },
+      "lastResponse": {
+       "itemId": "ch1-pos-0",
+       "response": "Pronoun",
+       "source": "speech",
+       "correct": false,
+       "tutorResponse": "Not quite.",
+       "judgment": "tutor",
+       "assisted": false,
+       "answerExposure": "none"
+      },
+      "activity": {
+       "responseSource": "speech",
+       "attemptNumber": 1,
+       "objects": [],
+       "demonstration": [],
+       "facts": {
+        "sentence": "Bright stars shine tonight.",
+        "highlighted": "The word \"Bright\" is highlighted.",
+        "wall": "Printed on the word wall: Noun, Verb, Adjective, Determiner, Adverb, Pronoun.",
+        "constraints": "The learner answers out loud; no word of this sentence is labelled until the answer is credited.",
+        "levers_on_screen": "a model card with another sentence, every word labelled: Her (Determiner) quiet (Adjective) uncle (Noun) gently (Adverb) handed (Verb) me (Pronoun) a (Determiner) warm (Adjective) blanket (Noun). Models are other sentences, not this one",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 2,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "ch1-pos-0"
+      },
+      "task": "What part of speech is the word Bright?",
+      "expectedAnswer": "Adjective. \"Adverb\" are different answers and wrong here. Any other grammar label is wrong.",
+      "learner": "Adjective",
+      "misses": [
+       {
+        "id": "confusable_label",
+        "pattern": "In \"Bright stars shine tonight.\", the word \"Bright\" is a Adjective. The learner's answer is \"Adverb\", a different label that is often mixed up with Adjective.",
+        "examples": [
+         "Adverb"
+        ]
+       },
+       {
+        "id": "describing_word",
+        "pattern": "In \"Bright stars shine tonight.\", the word \"Bright\" is a Adjective. The learner's answer is \"describing word\", which names both adjective and adverb.",
+        "examples": [
+         "describing word",
+         "a describing word"
+        ]
+       },
+       {
+        "id": "other_label",
+        "pattern": "In \"Bright stars shine tonight.\", the word \"Bright\" is a Adjective. The learner's answer is another label from the printed wall: \"Noun\" or \"Verb\" or \"Determiner\" or \"Pronoun\".",
+        "examples": [
+         "Determiner",
+         "Pronoun"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    }
+   ]
+  },
+  {
+   "payload": "text-structure-analyzer.mixed",
+   "primitiveId": "text-structure-analyzer",
+   "evalMode": "mixed",
+   "guidance": "One printed passage the learner reads; every answer is said out loud: the linking word in a numbered sentence, how the whole passage is organised from the printed menu, and which labelled part of the chart an idea belongs in. Never read the passage or any sentence of it aloud: reading it is the skill. Say \"sentence one\", \"sentence two\", never \"first\" or \"next\": in a time-order passage those can be the answer. You may say an idea card, and read a model card aloud: it is not the passage. A word that names a thing or an action is not a linking word; saying the idea back is not a part; a close structure is wrong. Before an attempt never say the answer. Nothing marks a linking word or a structure until credit. You cannot point at the passage yourself. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Why rivers flood",
+   "gradeLevel": "4",
+   "leakTokens": [
+    "TSA_ITEM",
+    "TSA_MOVE",
+    "TSA_COMPLETE",
+    "TSA_HEAR"
+   ],
+   "ask": "Read sentence three. Which word links the ideas?",
+   "keys": [
+    "however, the linking word in \"however, a wide river channel can hold the extra water safely.\". it may come inside a little phrase (\"the word however\"). any other word of that sentence is wrong: words that name things and actions are not linking words.",
+    "however"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "signal::2::however",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "text-structure-analyzer",
+      "objectiveId": "text-structure-analyzer-practice",
+      "evalMode": "mixed",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "signal::2::however",
+       "phase": "working",
+       "task": "Read sentence three. Which word links the ideas?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "passage": "Heavy rain falls on high mountain peaks during the spring months. Melting snow rushes down the rocky hillsides too quickly. However, a wide river channel can hold the extra water safely. Similarly, thick grass and tall trees slow down the flowing streams. To fix this overflow hazard, workers build high concrete walls along the banks. As a result, nearby towns stay dry and safe from damage.",
+        "focus": "The asked sentence is highlighted in the passage.",
+        "constraints": "The learner reads the passage and answers out loud; never read the passage or a sentence of it aloud. Nothing on screen marks a linking word or a structure until the answer is credited.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "link_model",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "content_word",
+           "not_in_sentence"
+          ],
+          "when": "The learner names a thing or an action, or a word not in the sentence.",
+          "does": "Shows a card with another sentence, its linking word underlined between its two bracketed ideas. Once it is on screen you may read the model card aloud, \"My turn\", then ask about the numbered sentence again. Read only the card the receipt names; never make up a model of your own. Never apply it to the passage or say which word or part of the passage is like it."
+         },
+         {
+          "id": "short_link_sentence",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "content_word"
+          ],
+          "when": "The learner still cannot find the linking word after help.",
+          "does": "Opens an easier practice sentence on a card: two short ideas and one linking word. The learner reads it; do not read it. It is not graded; the full item comes back after it."
+         }
+        ],
+        "expectedAnswer": "However, the linking word in \"However, a wide river channel can hold the extra water safely.\". It may come inside a little phrase (\"the word However\"). Any other word of that sentence is wrong: words that name things and actions are not linking words.",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "signal::2::however",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "signal::2::however",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "text-structure-analyzer",
+      "objectiveId": "text-structure-analyzer-practice",
+      "evalMode": "mixed",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "signal::2::however",
+       "phase": "working",
+       "task": "Read sentence three. Which word links the ideas?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "passage": "Heavy rain falls on high mountain peaks during the spring months. Melting snow rushes down the rocky hillsides too quickly. However, a wide river channel can hold the extra water safely. Similarly, thick grass and tall trees slow down the flowing streams. To fix this overflow hazard, workers build high concrete walls along the banks. As a result, nearby towns stay dry and safe from damage.",
+        "focus": "The asked sentence is highlighted in the passage.",
+        "constraints": "The learner reads the passage and answers out loud; never read the passage or a sentence of it aloud. Nothing on screen marks a linking word or a structure until the answer is credited.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "link_model",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "content_word",
+           "not_in_sentence"
+          ],
+          "when": "The learner names a thing or an action, or a word not in the sentence.",
+          "does": "Shows a card with another sentence, its linking word underlined between its two bracketed ideas. Once it is on screen you may read the model card aloud, \"My turn\", then ask about the numbered sentence again. Read only the card the receipt names; never make up a model of your own. Never apply it to the passage or say which word or part of the passage is like it."
+         },
+         {
+          "id": "short_link_sentence",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "content_word"
+          ],
+          "when": "The learner still cannot find the linking word after help.",
+          "does": "Opens an easier practice sentence on a card: two short ideas and one linking word. The learner reads it; do not read it. It is not graded; the full item comes back after it."
+         }
+        ],
+        "expectedAnswer": "However, the linking word in \"However, a wide river channel can hold the extra water safely.\". It may come inside a little phrase (\"the word However\"). Any other word of that sentence is wrong: words that name things and actions are not linking words.",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "wide"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "signal::2::however",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "wide",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "signal::2::however",
+       "revision": 1
+      },
+      "task": "Read sentence three. Which word links the ideas?",
+      "phase": "working",
+      "learner": "wide",
+      "expectedAnswer": "However, the linking word in \"However, a wide river channel can hold the extra water safely.\". It may come inside a little phrase (\"the word However\"). Any other word of that sentence is wrong: words that name things and actions are not linking words.",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "wide"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [],
+       "demonstration": [],
+       "facts": {
+        "passage": "Heavy rain falls on high mountain peaks during the spring months. Melting snow rushes down the rocky hillsides too quickly. However, a wide river channel can hold the extra water safely. Similarly, thick grass and tall trees slow down the flowing streams. To fix this overflow hazard, workers build high concrete walls along the banks. As a result, nearby towns stay dry and safe from damage.",
+        "focus": "The asked sentence is highlighted in the passage.",
+        "constraints": "The learner reads the passage and answers out loud; never read the passage or a sentence of it aloud. Nothing on screen marks a linking word or a structure until the answer is credited.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "signal::2::however"
+      },
+      "task": "Read sentence three. Which word links the ideas?",
+      "expectedAnswer": "However, the linking word in \"However, a wide river channel can hold the extra water safely.\". It may come inside a little phrase (\"the word However\"). Any other word of that sentence is wrong: words that name things and actions are not linking words.",
+      "learner": "wide",
+      "misses": [
+       {
+        "id": "content_word",
+        "pattern": "The linking word in \"However, a wide river channel can hold the extra water safely.\" is \"However\". The learner's answer is a different word from that sentence, one that names a thing, an action or a description.",
+        "examples": [
+         "wide",
+         "river"
+        ]
+       },
+       {
+        "id": "not_in_sentence",
+        "pattern": "The linking word in \"However, a wide river channel can hold the extra water safely.\" is \"However\". The learner's answer is a word that is not in that sentence: another sentence's word, or a linking word this sentence does not use.",
+        "examples": [
+         "similarly",
+         "to fix this"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "signal::2::however",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "text-structure-analyzer",
+      "objectiveId": "text-structure-analyzer-practice",
+      "evalMode": "mixed",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "signal::2::however",
+       "phase": "working",
+       "task": "Read sentence three. Which word links the ideas?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "wide",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "passage": "Heavy rain falls on high mountain peaks during the spring months. Melting snow rushes down the rocky hillsides too quickly. However, a wide river channel can hold the extra water safely. Similarly, thick grass and tall trees slow down the flowing streams. To fix this overflow hazard, workers build high concrete walls along the banks. As a result, nearby towns stay dry and safe from damage.",
+        "focus": "The asked sentence is highlighted in the passage.",
+        "constraints": "The learner reads the passage and answers out loud; never read the passage or a sentence of it aloud. Nothing on screen marks a linking word or a structure until the answer is credited.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "link_model",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "content_word",
+           "not_in_sentence"
+          ],
+          "when": "The learner names a thing or an action, or a word not in the sentence.",
+          "does": "Shows a card with another sentence, its linking word underlined between its two bracketed ideas. Once it is on screen you may read the model card aloud, \"My turn\", then ask about the numbered sentence again. Read only the card the receipt names; never make up a model of your own. Never apply it to the passage or say which word or part of the passage is like it."
+         },
+         {
+          "id": "short_link_sentence",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "content_word"
+          ],
+          "when": "The learner still cannot find the linking word after help.",
+          "does": "Opens an easier practice sentence on a card: two short ideas and one linking word. The learner reads it; do not read it. It is not graded; the full item comes back after it."
+         }
+        ],
+        "expectedAnswer": "However, the linking word in \"However, a wide river channel can hold the extra water safely.\". It may come inside a little phrase (\"the word However\"). Any other word of that sentence is wrong: words that name things and actions are not linking words.",
+        "lastResponse": {
+         "itemId": "signal::2::however",
+         "response": "wide",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "signal::2::however",
+          "response": "wide",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "signal::2::however",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "signal::2::however",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "text-structure-analyzer",
+      "objectiveId": "text-structure-analyzer-practice",
+      "evalMode": "mixed",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "signal::2::however",
+       "phase": "working",
+       "task": "Read sentence three. Which word links the ideas?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "wide",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "passage": "Heavy rain falls on high mountain peaks during the spring months. Melting snow rushes down the rocky hillsides too quickly. However, a wide river channel can hold the extra water safely. Similarly, thick grass and tall trees slow down the flowing streams. To fix this overflow hazard, workers build high concrete walls along the banks. As a result, nearby towns stay dry and safe from damage.",
+        "focus": "The asked sentence is highlighted in the passage.",
+        "constraints": "The learner reads the passage and answers out loud; never read the passage or a sentence of it aloud. Nothing on screen marks a linking word or a structure until the answer is credited.",
+        "levers_on_screen": "a model card with another sentence, \"The road was icy, therefore the bus went slowly.\": \"therefore\" underlined between its two bracketed ideas. You may read the model card; it is not the passage",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "link_model",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "content_word",
+           "not_in_sentence"
+          ],
+          "when": "The learner names a thing or an action, or a word not in the sentence.",
+          "does": "Shows a card with another sentence, its linking word underlined between its two bracketed ideas. Once it is on screen you may read the model card aloud, \"My turn\", then ask about the numbered sentence again. Read only the card the receipt names; never make up a model of your own. Never apply it to the passage or say which word or part of the passage is like it."
+         },
+         {
+          "id": "short_link_sentence",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "content_word"
+          ],
+          "when": "The learner still cannot find the linking word after help.",
+          "does": "Opens an easier practice sentence on a card: two short ideas and one linking word. The learner reads it; do not read it. It is not graded; the full item comes back after it."
+         }
+        ],
+        "expectedAnswer": "However, the linking word in \"However, a wide river channel can hold the extra water safely.\". It may come inside a little phrase (\"the word However\"). Any other word of that sentence is wrong: words that name things and actions are not linking words.",
+        "lastResponse": {
+         "itemId": "signal::2::however",
+         "response": "wide",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "signal::2::however",
+          "response": "wide",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "signal::2::however",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "link_model"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "signal::2::however",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled link_model (help). It is on screen now: Shows a card with another sentence, its linking word underlined between its two bracketed ideas. Once it is on screen you may read the model card aloud, \"My turn\", then ask about the numbered sentence again. Read only the card the receipt names; never make up a model of your own. Never apply it to the passage or say which word or part of the passage is like it. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "link_model",
+      "kind": "help",
+      "does": "Shows a card with another sentence, its linking word underlined between its two bracketed ideas. Once it is on screen you may read the model card aloud, \"My turn\", then ask about the numbered sentence again. Read only the card the receipt names; never make up a model of your own. Never apply it to the passage or say which word or part of the passage is like it."
+     }
+    },
+    {
+     "kind": "credit",
+     "itemId": "signal::2::however",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "text-structure-analyzer",
+      "objectiveId": "text-structure-analyzer-practice",
+      "evalMode": "mixed",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "signal::2::however",
+       "phase": "working",
+       "task": "Read sentence three. Which word links the ideas?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "wide",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "passage": "Heavy rain falls on high mountain peaks during the spring months. Melting snow rushes down the rocky hillsides too quickly. However, a wide river channel can hold the extra water safely. Similarly, thick grass and tall trees slow down the flowing streams. To fix this overflow hazard, workers build high concrete walls along the banks. As a result, nearby towns stay dry and safe from damage.",
+        "focus": "The asked sentence is highlighted in the passage.",
+        "constraints": "The learner reads the passage and answers out loud; never read the passage or a sentence of it aloud. Nothing on screen marks a linking word or a structure until the answer is credited.",
+        "levers_on_screen": "a model card with another sentence, \"The road was icy, therefore the bus went slowly.\": \"therefore\" underlined between its two bracketed ideas. You may read the model card; it is not the passage",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "link_model",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "content_word",
+           "not_in_sentence"
+          ],
+          "when": "The learner names a thing or an action, or a word not in the sentence.",
+          "does": "Shows a card with another sentence, its linking word underlined between its two bracketed ideas. Once it is on screen you may read the model card aloud, \"My turn\", then ask about the numbered sentence again. Read only the card the receipt names; never make up a model of your own. Never apply it to the passage or say which word or part of the passage is like it."
+         },
+         {
+          "id": "short_link_sentence",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "content_word"
+          ],
+          "when": "The learner still cannot find the linking word after help.",
+          "does": "Opens an easier practice sentence on a card: two short ideas and one linking word. The learner reads it; do not read it. It is not graded; the full item comes back after it."
+         }
+        ],
+        "expectedAnswer": "However, the linking word in \"However, a wide river channel can hold the extra water safely.\". It may come inside a little phrase (\"the word However\"). Any other word of that sentence is wrong: words that name things and actions are not linking words.",
+        "pendingResponse": {
+         "id": "speech:1:2",
+         "text": "However"
+        },
+        "lastResponse": {
+         "itemId": "signal::2::however",
+         "response": "wide",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "signal::2::however",
+          "response": "wide",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "signal::2::however",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "link_model"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "signal::2::however",
+        "secondsOnItem": 20,
+        "secondsSinceReady": 20,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "However",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "signal::2::however",
+       "revision": 3
+      },
+      "task": "Read sentence three. Which word links the ideas?",
+      "phase": "working",
+      "learner": "However",
+      "expectedAnswer": "However, the linking word in \"However, a wide river channel can hold the extra water safely.\". It may come inside a little phrase (\"the word However\"). Any other word of that sentence is wrong: words that name things and actions are not linking words.",
+      "pendingResponse": {
+       "id": "speech:1:2",
+       "text": "However"
+      },
+      "lastResponse": {
+       "itemId": "signal::2::however",
+       "response": "wide",
+       "source": "speech",
+       "correct": false,
+       "tutorResponse": "Not quite.",
+       "judgment": "tutor",
+       "assisted": false,
+       "answerExposure": "none"
+      },
+      "activity": {
+       "responseSource": "speech",
+       "attemptNumber": 1,
+       "objects": [],
+       "demonstration": [],
+       "facts": {
+        "passage": "Heavy rain falls on high mountain peaks during the spring months. Melting snow rushes down the rocky hillsides too quickly. However, a wide river channel can hold the extra water safely. Similarly, thick grass and tall trees slow down the flowing streams. To fix this overflow hazard, workers build high concrete walls along the banks. As a result, nearby towns stay dry and safe from damage.",
+        "focus": "The asked sentence is highlighted in the passage.",
+        "constraints": "The learner reads the passage and answers out loud; never read the passage or a sentence of it aloud. Nothing on screen marks a linking word or a structure until the answer is credited.",
+        "levers_on_screen": "a model card with another sentence, \"The road was icy, therefore the bus went slowly.\": \"therefore\" underlined between its two bracketed ideas. You may read the model card; it is not the passage",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 2,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "signal::2::however"
+      },
+      "task": "Read sentence three. Which word links the ideas?",
+      "expectedAnswer": "However, the linking word in \"However, a wide river channel can hold the extra water safely.\". It may come inside a little phrase (\"the word However\"). Any other word of that sentence is wrong: words that name things and actions are not linking words.",
+      "learner": "However",
+      "misses": [
+       {
+        "id": "content_word",
+        "pattern": "The linking word in \"However, a wide river channel can hold the extra water safely.\" is \"However\". The learner's answer is a different word from that sentence, one that names a thing, an action or a description.",
+        "examples": [
+         "wide",
+         "river"
+        ]
+       },
+       {
+        "id": "not_in_sentence",
+        "pattern": "The linking word in \"However, a wide river channel can hold the extra water safely.\" is \"However\". The learner's answer is a word that is not in that sentence: another sentence's word, or a linking word this sentence does not use.",
+        "examples": [
+         "similarly",
+         "to fix this"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    }
+   ]
+  },
+  {
+   "payload": "word-builder.mixed",
+   "primitiveId": "word-builder",
+   "evalMode": "mixed",
+   "guidance": "A board of prefixes, roots and suffixes, each printed with its meaning, stays on screen. You tell the learner what a word means (the clue) and the learner says the whole word out loud, built from parts on the board. Building it aloud part by part counts when the whole word arrives at the end. Only the root, the parts never joined, the parts in the wrong order, or a word from only some of the parts is not yet it. Open each word with the clue and ask for the whole word. Never say the word, name which parts or meanings make it, or ask about one part; after an attempt, pull a lever, and never walk the meanings of the parts in order. Say the clue again asks you to repeat the clue only. You cannot mark or move a part. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Building words from prefixes, roots and suffixes",
+   "gradeLevel": "Grade 4",
+   "leakTokens": [
+    "WB_ITEM",
+    "WB_MOVE",
+    "WB_COMPLETE",
+    "WB_HEAR"
+   ],
+   "ask": "Here is what the word means: This action means to watch a video clip once more. Say the whole word.",
+   "keys": [
+    "replay (re + play). built out loud part by part counts when the whole word arrives at the end. only \"play\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+    "replay"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "replay",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "word-builder",
+      "objectiveId": "word-builder-practice",
+      "evalMode": "mixed",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "replay",
+       "phase": "working",
+       "task": "Here is what the word means: This action means to watch a video clip once more. Say the whole word.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "clue": "This action means to watch a video clip once more.",
+        "board": "re (again), un (not), pre (before), play (amuse oneself), paint (spread pigment), help (support), kind (caring), jump (spring upward), ful (full of), er (one who), less (without)",
+        "sentence": "The referee watched the video hmm to check the goal.",
+        "constraints": "The learner says the whole word out loud, built from parts on the board. The clue and the board of parts with their meanings are printed; the word, its assembly and its definition appear only after credit. Nothing on the board is tapped.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "part_slots",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "root_only",
+           "other_part_only",
+           "part_missing",
+           "parts_not_joined",
+           "parts_out_of_order",
+           "swapped_part",
+           "meaning_word"
+          ],
+          "when": "The learner says only some of the parts, says them apart, or says a word not built from the board.",
+          "does": "Draws an empty frame under the clue: one box per part, labelled only prefix, root or suffix, joined into one word box. It never shows a part, a meaning or a letter. Do not say which parts go in it."
+         },
+         {
+          "id": "model_word",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "root_only",
+           "other_part_only",
+           "part_missing",
+           "parts_not_joined",
+           "parts_out_of_order",
+           "swapped_part",
+           "meaning_word"
+          ],
+          "when": "The learner does not know how to start, or keeps saying only part of the word.",
+          "does": "Shows a solved card for a different word of the same shape: its clue, its parts with their meanings, and the joined word. Once it is on screen, say it as \"My turn\" on that word, the one the receipt names; never make up a model word of your own. Never say which board card or which part of this word matches a model part, and never walk this word's parts."
+         },
+         {
+          "id": "small_board_word",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "root_only",
+           "other_part_only",
+           "part_missing",
+           "swapped_part",
+           "meaning_word"
+          ],
+          "when": "The learner still cannot build the word after help.",
+          "does": "Opens an easier practice word first, on a small board of its own parts and one extra per kind. Say its clue. It is not graded; the full word comes back after it."
+         }
+        ],
+        "expectedAnswer": "replay (re + play). Built out loud part by part counts when the whole word arrives at the end. Only \"play\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "replay",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "replay",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "word-builder",
+      "objectiveId": "word-builder-practice",
+      "evalMode": "mixed",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "replay",
+       "phase": "working",
+       "task": "Here is what the word means: This action means to watch a video clip once more. Say the whole word.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "clue": "This action means to watch a video clip once more.",
+        "board": "re (again), un (not), pre (before), play (amuse oneself), paint (spread pigment), help (support), kind (caring), jump (spring upward), ful (full of), er (one who), less (without)",
+        "sentence": "The referee watched the video hmm to check the goal.",
+        "constraints": "The learner says the whole word out loud, built from parts on the board. The clue and the board of parts with their meanings are printed; the word, its assembly and its definition appear only after credit. Nothing on the board is tapped.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "part_slots",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "root_only",
+           "other_part_only",
+           "part_missing",
+           "parts_not_joined",
+           "parts_out_of_order",
+           "swapped_part",
+           "meaning_word"
+          ],
+          "when": "The learner says only some of the parts, says them apart, or says a word not built from the board.",
+          "does": "Draws an empty frame under the clue: one box per part, labelled only prefix, root or suffix, joined into one word box. It never shows a part, a meaning or a letter. Do not say which parts go in it."
+         },
+         {
+          "id": "model_word",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "root_only",
+           "other_part_only",
+           "part_missing",
+           "parts_not_joined",
+           "parts_out_of_order",
+           "swapped_part",
+           "meaning_word"
+          ],
+          "when": "The learner does not know how to start, or keeps saying only part of the word.",
+          "does": "Shows a solved card for a different word of the same shape: its clue, its parts with their meanings, and the joined word. Once it is on screen, say it as \"My turn\" on that word, the one the receipt names; never make up a model word of your own. Never say which board card or which part of this word matches a model part, and never walk this word's parts."
+         },
+         {
+          "id": "small_board_word",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "root_only",
+           "other_part_only",
+           "part_missing",
+           "swapped_part",
+           "meaning_word"
+          ],
+          "when": "The learner still cannot build the word after help.",
+          "does": "Opens an easier practice word first, on a small board of its own parts and one extra per kind. Say its clue. It is not graded; the full word comes back after it."
+         }
+        ],
+        "expectedAnswer": "replay (re + play). Built out loud part by part counts when the whole word arrives at the end. Only \"play\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "playre"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "replay",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "playre",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "replay",
+       "revision": 1
+      },
+      "task": "Here is what the word means: This action means to watch a video clip once more. Say the whole word.",
+      "phase": "working",
+      "learner": "playre",
+      "expectedAnswer": "replay (re + play). Built out loud part by part counts when the whole word arrives at the end. Only \"play\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "playre"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [],
+       "demonstration": [],
+       "facts": {
+        "clue": "This action means to watch a video clip once more.",
+        "board": "re (again), un (not), pre (before), play (amuse oneself), paint (spread pigment), help (support), kind (caring), jump (spring upward), ful (full of), er (one who), less (without)",
+        "sentence": "The referee watched the video hmm to check the goal.",
+        "constraints": "The learner says the whole word out loud, built from parts on the board. The clue and the board of parts with their meanings are printed; the word, its assembly and its definition appear only after credit. Nothing on the board is tapped.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "replay"
+      },
+      "task": "Here is what the word means: This action means to watch a video clip once more. Say the whole word.",
+      "expectedAnswer": "replay (re + play). Built out loud part by part counts when the whole word arrives at the end. Only \"play\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+      "learner": "playre",
+      "misses": [
+       {
+        "id": "root_only",
+        "pattern": "The learner's whole answer is the single word \"play\". That is the root of \"replay\" on its own, which is wrong because the prefix or suffix is missing.",
+        "examples": [
+         "play"
+        ]
+       },
+       {
+        "id": "other_part_only",
+        "pattern": "The learner's whole answer is \"re\": one part of \"replay\" that is not its root, said on its own.",
+        "examples": [
+         "re"
+        ]
+       },
+       {
+        "id": "parts_not_joined",
+        "pattern": "The learner says the parts of \"replay\" (re, play) one at a time, with pauses, and never says the joined word.",
+        "examples": [
+         "re ... play"
+        ]
+       },
+       {
+        "id": "parts_out_of_order",
+        "pattern": "The learner's answer is made of the parts of \"replay\" (re + play) put together in a wrong order, such as \"playre\".",
+        "examples": [
+         "playre"
+        ]
+       },
+       {
+        "id": "swapped_part",
+        "pattern": "The learner's answer uses a part from the board that is not in \"replay\", in place of one of its parts, such as \"unplay\" or \"preplay\".",
+        "examples": [
+         "unplay",
+         "preplay"
+        ]
+       },
+       {
+        "id": "meaning_word",
+        "pattern": "The learner says a word that fits the clue but is not \"replay\" and is not built from the parts on the board: a word recalled for the meaning instead of built."
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "replay",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 2,
+      "visibleRevision": 2,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "word-builder",
+      "objectiveId": "word-builder-practice",
+      "evalMode": "mixed",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "replay",
+       "phase": "working",
+       "task": "Here is what the word means: This action means to watch a video clip once more. Say the whole word.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "playre",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "clue": "This action means to watch a video clip once more.",
+        "board": "re (again), un (not), pre (before), play (amuse oneself), paint (spread pigment), help (support), kind (caring), jump (spring upward), ful (full of), er (one who), less (without)",
+        "sentence": "The referee watched the video hmm to check the goal.",
+        "constraints": "The learner says the whole word out loud, built from parts on the board. The clue and the board of parts with their meanings are printed; the word, its assembly and its definition appear only after credit. Nothing on the board is tapped.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "part_slots",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "root_only",
+           "other_part_only",
+           "part_missing",
+           "parts_not_joined",
+           "parts_out_of_order",
+           "swapped_part",
+           "meaning_word"
+          ],
+          "when": "The learner says only some of the parts, says them apart, or says a word not built from the board.",
+          "does": "Draws an empty frame under the clue: one box per part, labelled only prefix, root or suffix, joined into one word box. It never shows a part, a meaning or a letter. Do not say which parts go in it."
+         },
+         {
+          "id": "model_word",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "root_only",
+           "other_part_only",
+           "part_missing",
+           "parts_not_joined",
+           "parts_out_of_order",
+           "swapped_part",
+           "meaning_word"
+          ],
+          "when": "The learner does not know how to start, or keeps saying only part of the word.",
+          "does": "Shows a solved card for a different word of the same shape: its clue, its parts with their meanings, and the joined word. Once it is on screen, say it as \"My turn\" on that word, the one the receipt names; never make up a model word of your own. Never say which board card or which part of this word matches a model part, and never walk this word's parts."
+         },
+         {
+          "id": "small_board_word",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "root_only",
+           "other_part_only",
+           "part_missing",
+           "swapped_part",
+           "meaning_word"
+          ],
+          "when": "The learner still cannot build the word after help.",
+          "does": "Opens an easier practice word first, on a small board of its own parts and one extra per kind. Say its clue. It is not graded; the full word comes back after it."
+         }
+        ],
+        "expectedAnswer": "replay (re + play). Built out loud part by part counts when the whole word arrives at the end. Only \"play\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+        "lastResponse": {
+         "itemId": "replay",
+         "response": "playre",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "replay",
+          "response": "playre",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/2/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "replay",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "replay",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "word-builder",
+      "objectiveId": "word-builder-practice",
+      "evalMode": "mixed",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "replay",
+       "phase": "working",
+       "task": "Here is what the word means: This action means to watch a video clip once more. Say the whole word.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "playre",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "clue": "This action means to watch a video clip once more.",
+        "board": "re (again), un (not), pre (before), play (amuse oneself), paint (spread pigment), help (support), kind (caring), jump (spring upward), ful (full of), er (one who), less (without)",
+        "sentence": "The referee watched the video hmm to check the goal.",
+        "constraints": "The learner says the whole word out loud, built from parts on the board. The clue and the board of parts with their meanings are printed; the word, its assembly and its definition appear only after credit. Nothing on the board is tapped.",
+        "levers_on_screen": "an empty frame under the clue: 2 boxes labelled prefix, root, joined by + into one word box. It shows how many parts and their kinds, not which parts",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "part_slots",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "root_only",
+           "other_part_only",
+           "part_missing",
+           "parts_not_joined",
+           "parts_out_of_order",
+           "swapped_part",
+           "meaning_word"
+          ],
+          "when": "The learner says only some of the parts, says them apart, or says a word not built from the board.",
+          "does": "Draws an empty frame under the clue: one box per part, labelled only prefix, root or suffix, joined into one word box. It never shows a part, a meaning or a letter. Do not say which parts go in it."
+         },
+         {
+          "id": "model_word",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "root_only",
+           "other_part_only",
+           "part_missing",
+           "parts_not_joined",
+           "parts_out_of_order",
+           "swapped_part",
+           "meaning_word"
+          ],
+          "when": "The learner does not know how to start, or keeps saying only part of the word.",
+          "does": "Shows a solved card for a different word of the same shape: its clue, its parts with their meanings, and the joined word. Once it is on screen, say it as \"My turn\" on that word, the one the receipt names; never make up a model word of your own. Never say which board card or which part of this word matches a model part, and never walk this word's parts."
+         },
+         {
+          "id": "small_board_word",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "root_only",
+           "other_part_only",
+           "part_missing",
+           "swapped_part",
+           "meaning_word"
+          ],
+          "when": "The learner still cannot build the word after help.",
+          "does": "Opens an easier practice word first, on a small board of its own parts and one extra per kind. Say its clue. It is not graded; the full word comes back after it."
+         }
+        ],
+        "expectedAnswer": "replay (re + play). Built out loud part by part counts when the whole word arrives at the end. Only \"play\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+        "lastResponse": {
+         "itemId": "replay",
+         "response": "playre",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "replay",
+          "response": "playre",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "replay",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "part_slots"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "replay",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled part_slots (help). It is on screen now: Draws an empty frame under the clue: one box per part, labelled only prefix, root or suffix, joined into one word box. It never shows a part, a meaning or a letter. Do not say which parts go in it. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "part_slots",
+      "kind": "help",
+      "does": "Draws an empty frame under the clue: one box per part, labelled only prefix, root or suffix, joined into one word box. It never shows a part, a meaning or a letter. Do not say which parts go in it."
+     }
+    },
+    {
+     "kind": "credit",
+     "itemId": "replay",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "word-builder",
+      "objectiveId": "word-builder-practice",
+      "evalMode": "mixed",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "replay",
+       "phase": "working",
+       "task": "Here is what the word means: This action means to watch a video clip once more. Say the whole word.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "playre",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "clue": "This action means to watch a video clip once more.",
+        "board": "re (again), un (not), pre (before), play (amuse oneself), paint (spread pigment), help (support), kind (caring), jump (spring upward), ful (full of), er (one who), less (without)",
+        "sentence": "The referee watched the video hmm to check the goal.",
+        "constraints": "The learner says the whole word out loud, built from parts on the board. The clue and the board of parts with their meanings are printed; the word, its assembly and its definition appear only after credit. Nothing on the board is tapped.",
+        "levers_on_screen": "an empty frame under the clue: 2 boxes labelled prefix, root, joined by + into one word box. It shows how many parts and their kinds, not which parts",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "part_slots",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "root_only",
+           "other_part_only",
+           "part_missing",
+           "parts_not_joined",
+           "parts_out_of_order",
+           "swapped_part",
+           "meaning_word"
+          ],
+          "when": "The learner says only some of the parts, says them apart, or says a word not built from the board.",
+          "does": "Draws an empty frame under the clue: one box per part, labelled only prefix, root or suffix, joined into one word box. It never shows a part, a meaning or a letter. Do not say which parts go in it."
+         },
+         {
+          "id": "model_word",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "root_only",
+           "other_part_only",
+           "part_missing",
+           "parts_not_joined",
+           "parts_out_of_order",
+           "swapped_part",
+           "meaning_word"
+          ],
+          "when": "The learner does not know how to start, or keeps saying only part of the word.",
+          "does": "Shows a solved card for a different word of the same shape: its clue, its parts with their meanings, and the joined word. Once it is on screen, say it as \"My turn\" on that word, the one the receipt names; never make up a model word of your own. Never say which board card or which part of this word matches a model part, and never walk this word's parts."
+         },
+         {
+          "id": "small_board_word",
+          "kind": "simplify",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "root_only",
+           "other_part_only",
+           "part_missing",
+           "swapped_part",
+           "meaning_word"
+          ],
+          "when": "The learner still cannot build the word after help.",
+          "does": "Opens an easier practice word first, on a small board of its own parts and one extra per kind. Say its clue. It is not graded; the full word comes back after it."
+         }
+        ],
+        "expectedAnswer": "replay (re + play). Built out loud part by part counts when the whole word arrives at the end. Only \"play\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+        "pendingResponse": {
+         "id": "speech:1:2",
+         "text": "replay"
+        },
+        "lastResponse": {
+         "itemId": "replay",
+         "response": "playre",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "replay",
+          "response": "playre",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "replay",
+        "revision": 3,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "part_slots"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "replay",
+        "secondsOnItem": 20,
+        "secondsSinceReady": 20,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "replay",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "replay",
+       "revision": 3
+      },
+      "task": "Here is what the word means: This action means to watch a video clip once more. Say the whole word.",
+      "phase": "working",
+      "learner": "replay",
+      "expectedAnswer": "replay (re + play). Built out loud part by part counts when the whole word arrives at the end. Only \"play\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+      "pendingResponse": {
+       "id": "speech:1:2",
+       "text": "replay"
+      },
+      "lastResponse": {
+       "itemId": "replay",
+       "response": "playre",
+       "source": "speech",
+       "correct": false,
+       "tutorResponse": "Not quite.",
+       "judgment": "tutor",
+       "assisted": false,
+       "answerExposure": "none"
+      },
+      "activity": {
+       "responseSource": "speech",
+       "attemptNumber": 1,
+       "objects": [],
+       "demonstration": [],
+       "facts": {
+        "clue": "This action means to watch a video clip once more.",
+        "board": "re (again), un (not), pre (before), play (amuse oneself), paint (spread pigment), help (support), kind (caring), jump (spring upward), ful (full of), er (one who), less (without)",
+        "sentence": "The referee watched the video hmm to check the goal.",
+        "constraints": "The learner says the whole word out loud, built from parts on the board. The clue and the board of parts with their meanings are printed; the word, its assembly and its definition appear only after credit. Nothing on the board is tapped.",
+        "levers_on_screen": "an empty frame under the clue: 2 boxes labelled prefix, root, joined by + into one word box. It shows how many parts and their kinds, not which parts",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 2,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "replay"
+      },
+      "task": "Here is what the word means: This action means to watch a video clip once more. Say the whole word.",
+      "expectedAnswer": "replay (re + play). Built out loud part by part counts when the whole word arrives at the end. Only \"play\", the parts never joined, the parts in the wrong order, or a word from only some of the parts is not it.",
+      "learner": "replay",
+      "misses": [
+       {
+        "id": "root_only",
+        "pattern": "The learner's whole answer is the single word \"play\". That is the root of \"replay\" on its own, which is wrong because the prefix or suffix is missing.",
+        "examples": [
+         "play"
+        ]
+       },
+       {
+        "id": "other_part_only",
+        "pattern": "The learner's whole answer is \"re\": one part of \"replay\" that is not its root, said on its own.",
+        "examples": [
+         "re"
+        ]
+       },
+       {
+        "id": "parts_not_joined",
+        "pattern": "The learner says the parts of \"replay\" (re, play) one at a time, with pauses, and never says the joined word.",
+        "examples": [
+         "re ... play"
+        ]
+       },
+       {
+        "id": "parts_out_of_order",
+        "pattern": "The learner's answer is made of the parts of \"replay\" (re + play) put together in a wrong order, such as \"playre\".",
+        "examples": [
+         "playre"
+        ]
+       },
+       {
+        "id": "swapped_part",
+        "pattern": "The learner's answer uses a part from the board that is not in \"replay\", in place of one of its parts, such as \"unplay\" or \"preplay\".",
+        "examples": [
+         "unplay",
+         "preplay"
+        ]
+       },
+       {
+        "id": "meaning_word",
+        "pattern": "The learner says a word that fits the clue but is not \"replay\" and is not built from the parts on the board: a word recalled for the meaning instead of built."
+       }
+      ]
+     },
+     "missFromWords": false
+    }
+   ]
+  }
+ ]
+}

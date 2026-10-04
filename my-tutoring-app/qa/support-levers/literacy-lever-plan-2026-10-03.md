@@ -9,6 +9,27 @@ route now passes `--grade` and `--difficulty` on workspace families, which it si
 saved payload of these families is at the band's default grade). R8 is checked per family as each is built
 (`g26LeverStarts.test.ts`).
 
+**Status 2026-10-04: steps 0-4 BUILT; step 5 (class Live gate) READY, not run.** Commits `f08134f5` (prep),
+`20aad157` word-builder, `ed0edeca` sentence-analyzer, `2374b08a` genre-explorer, `1fcccbcd` text-structure-analyzer.
+Reports: `qa/eval-reports/<id>-levers-2026-10-04.md`. All 15 modes have levers and every catalog miss is answered by a
+lever on a saved payload (J9 clean; text-structure-analyzer's grade-2 structure ask has none by decision, pinned in
+its unit test). R8 holds at the class (`g26LeverStarts.test.ts`). Readiness: `<id>.mixed.json` saved for the four and
+driven clean (word-builder, genre-explorer and text-structure-analyzer run one mode per session, so the mixed payload
+is one mode and the saved mode payloads stand in for the others); text replay over the four mixed payloads × 5: 0 flags
+(`qa/tutor-reports/replay/g26-class-mixed-2026-10-04.json`). Each family's own replay (every saved payload × 5): 0 flags.
+
+Step 5 commands (paid; the user runs or approves; `backend/tests/tutor_live/LIVE_TESTING.md` sets the count):
+
+```
+python run_live_runtime.py --primitive <id> --mode mixed --lever --lesson-entry --runs 1
+python run_live_runtime.py --primitive <id> --mode mixed --lever --lesson-entry --audio --runs 1
+```
+
+for word-builder, sentence-analyzer, genre-explorer and text-structure-analyzer; for the one-mode families add `--input`
+with a saved mode payload (`w1-payloads/<id>.<mode>.json`) per mode the mixed payload does not cover. What the Live
+pair must show that replay cannot: a tutor that pulls a model lever itself narrates the card the receipt names (the
+replay answers such a pull with the pre-pull packet).
+
 WORKSTREAMS 3.1b. K-2 literacy closed 09-29 (`qa/eval-reports/levers-literacy-K2-close-2026-09-29.md`). Measured
 today (journey sweep `leverInventory` on the working tree, 342 tests green), the literacy families on the
 workspace with modes still `none`:

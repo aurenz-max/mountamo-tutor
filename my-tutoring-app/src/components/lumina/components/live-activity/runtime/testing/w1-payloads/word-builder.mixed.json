@@ -1,0 +1,120 @@
+{
+ "source": "qa/tutor-reports/word-builder-runtime-mixed-payload-2026-10-04.json",
+ "primitiveId": "word-builder",
+ "evalMode": "mixed",
+ "data": {
+  "title": "Building Words with Prefixes and Suffixes",
+  "complexityLevel": "simple_affix",
+  "availableParts": [
+   {
+    "id": "pre-re",
+    "text": "re",
+    "type": "prefix",
+    "meaning": "again"
+   },
+   {
+    "id": "pre-un",
+    "text": "un",
+    "type": "prefix",
+    "meaning": "not"
+   },
+   {
+    "id": "pre-pre",
+    "text": "pre",
+    "type": "prefix",
+    "meaning": "before"
+   },
+   {
+    "id": "root-play",
+    "text": "play",
+    "type": "root",
+    "meaning": "amuse oneself"
+   },
+   {
+    "id": "root-paint",
+    "text": "paint",
+    "type": "root",
+    "meaning": "spread pigment"
+   },
+   {
+    "id": "root-help",
+    "text": "help",
+    "type": "root",
+    "meaning": "support"
+   },
+   {
+    "id": "root-kind",
+    "text": "kind",
+    "type": "root",
+    "meaning": "caring"
+   },
+   {
+    "id": "root-jump",
+    "text": "jump",
+    "type": "root",
+    "meaning": "spring upward"
+   },
+   {
+    "id": "suf-ful",
+    "text": "ful",
+    "type": "suffix",
+    "meaning": "full of"
+   },
+   {
+    "id": "suf-er",
+    "text": "er",
+    "type": "suffix",
+    "meaning": "one who"
+   },
+   {
+    "id": "suf-less",
+    "text": "less",
+    "type": "suffix",
+    "meaning": "without"
+   }
+  ],
+  "targets": [
+   {
+    "word": "replay",
+    "parts": [
+     "pre-re",
+     "root-play"
+    ],
+    "hint": "This action means to watch a video clip once more.",
+    "definition": "To show a recorded video clip one more time",
+    "sentenceContext": "The referee watched the video ___ to check the goal."
+   },
+   {
+    "word": "painter",
+    "parts": [
+     "root-paint",
+     "suf-er"
+    ],
+    "hint": "This is an artist who creates images on canvas.",
+    "definition": "An artist who produces images on canvas",
+    "sentenceContext": "The famous ___ finished a portrait of the king."
+   },
+   {
+    "word": "helpful",
+    "parts": [
+     "root-help",
+     "suf-ful"
+    ],
+    "hint": "This describes someone who is always ready to lend a hand.",
+    "definition": "Giving aid or useful service to someone",
+    "sentenceContext": "The librarian was very ___ when finding our books."
+   },
+   {
+    "word": "unkind",
+    "parts": [
+     "pre-un",
+     "root-kind"
+    ],
+    "hint": "This describes someone who is rude and treats others meanly.",
+    "definition": "Lacking warmth or behaving badly toward others",
+    "sentenceContext": "It was ___ to tease the boy about his new shoes."
+   }
+  ],
+  "gradeLevel": "Grade 4"
+ }
+}

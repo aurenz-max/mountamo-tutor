@@ -1,0 +1,98 @@
+{
+ "source": "qa/tutor-reports/text-structure-analyzer-runtime-mixed-payload-2026-10-04.json",
+ "primitiveId": "text-structure-analyzer",
+ "evalMode": "mixed",
+ "data": {
+  "title": "Why Rivers Overflow",
+  "gradeLevel": "4",
+  "passage": "Heavy rain falls on high mountain peaks during the spring months. Melting snow rushes down the rocky hillsides too quickly. However, a wide river channel can hold the extra water safely. Similarly, thick grass and tall trees slow down the flowing streams. To fix this overflow hazard, workers build high concrete walls along the banks. As a result, nearby towns stay dry and safe from damage.",
+  "structureType": "problem-solution",
+  "signalWords": [
+   {
+    "word": "However",
+    "startIndex": 124,
+    "endIndex": 131
+   },
+   {
+    "word": "Similarly",
+    "startIndex": 187,
+    "endIndex": 196
+   },
+   {
+    "word": "To fix this",
+    "startIndex": 256,
+    "endIndex": 267
+   },
+   {
+    "word": "As a result",
+    "startIndex": 336,
+    "endIndex": 347
+   }
+  ],
+  "structureOptions": [
+   {
+    "type": "problem-solution",
+    "label": "Problem and Solution",
+    "description": "Explains a trouble and tells how people fix it"
+   },
+   {
+    "type": "cause-effect",
+    "label": "Cause and Effect",
+    "description": "Shows why things happen and what happens next"
+   },
+   {
+    "type": "chronological",
+    "label": "Time Order",
+    "description": "Tells events in the order they happen"
+   },
+   {
+    "type": "compare-contrast",
+    "label": "Compare and Contrast",
+    "description": "Shows how things are alike and different"
+   }
+  ],
+  "templateRegions": [
+   {
+    "regionId": "region_problem",
+    "label": "Trouble"
+   },
+   {
+    "regionId": "region_solution",
+    "label": "Fix"
+   }
+  ],
+  "keyIdeas": [
+   {
+    "ideaId": "idea_1",
+    "text": "Heavy rain falls on high mountain peaks.",
+    "correctRegionId": "region_problem"
+   },
+   {
+    "ideaId": "idea_2",
+    "text": "Melting snow rushes down the rocky hillsides.",
+    "correctRegionId": "region_problem"
+   },
+   {
+    "ideaId": "idea_3",
+    "text": "A wide river channel holds extra water.",
+    "correctRegionId": "region_solution"
+   },
+   {
+    "ideaId": "idea_4",
+    "text": "Thick grass and tall trees slow down streams.",
+    "correctRegionId": "region_solution"
+   },
+   {
+    "ideaId": "idea_5",
+    "text": "Workers build high concrete walls along banks.",
+    "correctRegionId": "region_solution"
+   },
+   {
+    "ideaId": "idea_6",
+    "text": "Nearby towns stay dry and safe from damage.",
+    "correctRegionId": "region_solution"
+   }
+  ],
+  "objectiveGrade": "4"
+ }
+}
