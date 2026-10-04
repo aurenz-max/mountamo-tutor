@@ -75,12 +75,18 @@ import { useWorkspaceRunner, type TeachingEvaluationResult }
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import {
+  gradeNumberOf,
   itemsFromPayload,
+  posWallFor,
   type SentenceAction,
   type SentenceAnalyzerItem,
   type SentenceTier,
 } from './sentenceAnalyzerScript';
 import { sentenceAssignment, sentenceScene } from './sentenceAnalyzerWorkspace';
+import { EXAMPLES_LEVER, MODEL_LEVER, SPLIT_LEVER, TWO_ROW_LEVER, leversOnScreen, modelSentenceFor, practiceFor,
+  sentenceAnalyzerLevers, sessionWords, splitModelFor, startingLevers, twoRowModelFor, wallExamplesFor,
+  type LeverContext, type Practice } from './sentenceAnalyzerLevers';
+import type { PoolSentence } from './sentenceModels';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -214,6 +220,10 @@ const SentenceAnalyzerSurface: React.FC<SentenceAnalyzerProps> = ({ data, classN
   const [reveal, setReveal] = useState<{ action: SentenceAction; answer: string } | null>(null);
   /** Items credited so far: the only route by which a grammar label reaches the screen. */
   const [solvedIds, setSolvedIds] = useState<ReadonlySet<string>>(() => new Set());
+  // In-item levers, keyed by the session item they were pulled on, and the practice sentence a simplify lever put on
+  // screen in its place (ungraded; the full item comes back after it).
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<Practice | null>(null);
 
   // ── Evaluation ─────────────────────────────────────────────────────────────
   const evaluation = usePrimitiveEvaluation<SentenceAnalyzerMetrics>({
@@ -276,14 +286,52 @@ const SentenceAnalyzerSurface: React.FC<SentenceAnalyzerProps> = ({ data, classN
   });
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
-  const currentItem = runner.currentItem;
+  const sessionItem = runner.currentItem;
+  /** What is on screen: the practice item while a simplify lever holds it, else the session item. */
+  const currentItem = practice?.item ?? sessionItem;
+  const session = useMemo(() => sessionWords(items), [items]);
+  const leverCtx: LeverContext = {
+    items, posWall: posWallFor(gradeNumberOf(gradeLevel)), readsAloud,
+    subjectWords: (sentences.find((x) => x.index === sessionItem?.sentenceIndex)?.subjectEndIndex ?? -1) + 1,
+  };
+  const starting = practice ? [] : startingLevers(data.supportTier);
+  const pulledLevers = practice || leverState.item !== sessionItem?.id ? [] : leverState.pulled;
+  const leverOn = (id: string) => starting.includes(id) || pulledLevers.includes(id);
+  const model = !sessionItem || practice ? null
+    : leverOn(MODEL_LEVER) && sessionItem.action === 'name-pos' ? wrapModel(modelSentenceFor(sessionItem, session), 'pos')
+      : leverOn(TWO_ROW_LEVER) && sessionItem.action === 'name-role' ? wrapModel(twoRowModelFor(sessionItem, session, leverCtx.posWall), 'both')
+        : leverOn(SPLIT_LEVER) && sessionItem.action === 'name-side' ? wrapModel(splitModelFor(sessionItem, session), 'split') : null;
+  const examples = currentItem && leverOn(EXAMPLES_LEVER) ? wallExamplesFor(currentItem, session) : null;
   const actionMeta = ACTION_META[currentItem?.action ?? 'name-pos'];
 
   // What the tutor and the observer are shown, republished every render. W1 offers no
   // demonstration targets and no presentation; every item is answerable once it opens.
   useLayoutEffect(() => {
-    if (!currentItem) return;
-    workspace.current = { ...sentenceScene(currentItem, readsAloud) };
+    if (!currentItem || !sessionItem) return;
+    const levers = practice ? [] : sentenceAnalyzerLevers(sessionItem, leverCtx, pulledLevers, starting);
+    const scene = sentenceScene(currentItem, readsAloud);
+    const onScreen = practice ? null : leversOnScreen([...starting, ...pulledLevers], sessionItem, leverCtx);
+    workspace.current = { ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { levers_on_screen: onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice sentence, ungraded. The full item comes back after it.' } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: id => {
+        const lever = levers.find(l => l.id === id);
+        if (!lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        if (lever.kind === 'simplify') {
+          const simpler = practiceFor(sessionItem, session, leverCtx);
+          if (!simpler) return 'There is no easier sentence for this item.';
+          setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+          setPractice(simpler);
+          return { practice: sentenceAssignment(simpler.item) };
+        }
+        setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+        return true;
+      },
+      endPractice: () => setPractice(null),
+    };
   });
 
   // Pip: the sentence is the question side (its highlight already marks the word);
@@ -296,10 +344,11 @@ const SentenceAnalyzerSurface: React.FC<SentenceAnalyzerProps> = ({ data, classN
   const revealed =
     runner.revealHeld && reveal && reveal.action === currentItem?.action ? reveal.answer : null;
 
-  /** The sentence this item is about — one on screen at a time. */
+  /** The sentence this item is about — one on screen at a time (the practice sentence while one is open). */
   const shownSentence = useMemo(
-    () => sentences.find((s) => s.index === (currentItem?.sentenceIndex ?? 0)) ?? sentences[0],
-    [sentences, currentItem],
+    () => (practice ? { index: -1, words: practice.words.map((text, i) => ({ id: `practice-${i}`, text })) }
+      : sentences.find((s) => s.index === (currentItem?.sentenceIndex ?? 0)) ?? sentences[0]),
+    [sentences, currentItem, practice],
   );
 
   /** Labels already credited on THIS sentence, by word index. */
@@ -405,6 +454,16 @@ const SentenceAnalyzerSurface: React.FC<SentenceAnalyzerProps> = ({ data, classN
               {wallNotes[idx] && (
                 <p className="mt-0.5 text-xs text-slate-400">{wallNotes[idx]}</p>
               )}
+              {/* wall_examples: one fixed example per label, all labels at once; marks no label. */}
+              {examples?.[label] && (
+                <p data-lever="wall-example" className="mt-1 text-xs italic text-cyan-200/80">
+                  {examples[label].phrase.split(' ').map((w, i) => (
+                    <React.Fragment key={i}>{i > 0 && ' '}
+                      {w.replace(/[.,!?]/g, '') === examples[label].word ? <u>{w}</u> : w}
+                    </React.Fragment>
+                  ))}
+                </p>
+              )}
             </div>
           );
         })}
@@ -444,6 +503,31 @@ const SentenceAnalyzerSurface: React.FC<SentenceAnalyzerProps> = ({ data, classN
 
             {pip.store && <div {...pip.dock} />}
             <div {...pip.target('stimulus')}>{renderSentence()}</div>
+            {practice && <p className="text-center text-xs text-amber-300">Practice sentence</p>}
+
+            {/* The model card: a different sentence, labelled. Nothing on the item's sentence changes. */}
+            {model && (
+              <LuminaPanel data-lever={model.row === 'pos' ? 'model-sentence' : model.row === 'both' ? 'two-row-model' : 'split-model'}
+                className="p-3 border-cyan-300/20 bg-cyan-950/10">
+                <p className="mb-2 text-center text-[10px] font-mono uppercase tracking-widest text-cyan-300">Another sentence</p>
+                <div className="flex flex-wrap items-start justify-center gap-2">
+                  {model.card.words.map((w, i) => {
+                    const end = model.card.subjectEnd ?? -1;
+                    return (
+                      <div key={i} className={`flex flex-col items-center gap-0.5 ${model.row === 'split'
+                        ? `border-b-2 px-1 ${i <= end ? 'border-sky-400/70' : 'border-violet-400/70'}` : ''}`}>
+                        <span className="font-serif text-base text-slate-100">{w.text}</span>
+                        {model.row !== 'split' && <span className="text-[10px] text-cyan-200">{w.pos}</span>}
+                        {model.row === 'both' && <span className="text-[10px] text-violet-200">{w.role}</span>}
+                        {model.row === 'split' && (i === 0 || i === end + 1) && (
+                          <span className="text-[10px] text-slate-300">{i === 0 ? 'subject' : 'predicate'}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </LuminaPanel>
+            )}
 
             {wall.length > 0 && renderWall()}
 
@@ -463,6 +547,10 @@ const SentenceAnalyzerSurface: React.FC<SentenceAnalyzerProps> = ({ data, classN
     </LuminaCard>
   );
 };
+
+function wrapModel(card: PoolSentence | null, row: 'pos' | 'both' | 'split') {
+  return card ? { card, row } : null;
+}
 
 /** Runs only on the teaching workspace; an unbound mount shows the "needs the tutor" card. */
 const SentenceAnalyzer = withWorkspaceOnly<SentenceAnalyzerProps>('sentence-analyzer', SentenceAnalyzerSurface,

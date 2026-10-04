@@ -5,10 +5,12 @@
  */
 import { describe, expect, it } from 'vitest';
 import { startingLevers as wordBuilderStarts } from './wordBuilderLevers';
+import { startingLevers as sentenceStarts } from './sentenceAnalyzerLevers';
 
 type Tier = 'easy' | 'medium' | 'hard' | undefined;
 const FAMILIES: Array<[family: string, starts: (tier: Tier) => string[], table: Record<string, string[]>]> = [
   ['word-builder', wordBuilderStarts, { easy: ['part_slots'], medium: [], hard: [], none: [] }],
+  ['sentence-analyzer', sentenceStarts, { easy: ['wall_examples'], medium: [], hard: [], none: [] }],
 ];
 
 describe.each(FAMILIES)('%s', (_family, starts, table) => {

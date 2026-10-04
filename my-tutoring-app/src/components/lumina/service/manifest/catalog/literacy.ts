@@ -685,11 +685,14 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'sentence, read it aloud (grade 2). A part of speech is not an answer to a job question; a label that sounds '
         + 'close or contains the right one is wrong. Small words and describing words in front of the naming word are '
         + 'part of the complete subject: judge the side against the given answer. Before an attempt never say the label. '
-        + 'No word is coloured or labelled until credit. You cannot point at or highlight words.',
-      // Every item is spoken: its known wrong labels by action (`sentenceSpokenMisses`, handoff 20 Part B).
-      misses: missLists<SpokenSentenceMiss>({ identify_pos: ['confusable_label', 'other_label'],
-        identify_role: ['part_of_speech', 'confusable_label', 'other_label'],
-        label_all: ['confusable_label', 'other_label'],
+        + 'No word of the sentence is labelled until credit. Models are other sentences; never say which model word '
+        + 'matches the asked one. You cannot point at or highlight words.',
+      levers: true,
+      // Every item is spoken: its known wrong labels by action (`sentenceSpokenMisses`, handoff 20 Part B; the lever
+      // table 2026-10-03 adds describing_word and named_the_side).
+      misses: missLists<SpokenSentenceMiss>({ identify_pos: ['confusable_label', 'describing_word', 'other_label'],
+        identify_role: ['part_of_speech', 'named_the_side', 'confusable_label', 'other_label'],
+        label_all: ['confusable_label', 'describing_word', 'other_label'],
         parse_structure: ['other_side', 'other_label'] }),
     },
   },

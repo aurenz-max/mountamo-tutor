@@ -48,8 +48,9 @@ export function sentenceAssignment(item: SentenceAnalyzerItem): TeachingAssignme
   return { id: item.id, task: ask(item), response: 'speech', expectedAnswer, ...(misses.length ? { misses } : {}) };
 }
 
-/** What a wrong spoken label shows (handoff 20 Part B). */
-export type SpokenSentenceMiss = 'other_side' | 'part_of_speech' | 'confusable_label' | 'other_label';
+/** What a wrong spoken label shows (handoff 20 Part B; the lever table 2026-10-03 adds the last two). */
+export type SpokenSentenceMiss = 'other_side' | 'part_of_speech' | 'confusable_label' | 'other_label' | 'describing_word'
+  | 'named_the_side';
 
 /**
  * An item's known wrong answers, in precedence order, for the `spoken_miss` observer: the other side (name-side);
@@ -73,6 +74,12 @@ export function sentenceSpokenMisses(item: SentenceAnalyzerItem): KnownMiss[] {
       examples: ['noun', 'verb'] }] : []),
     ...(confusable.length ? [{ id: 'confusable_label', pattern: `${about} The learner's answer is ${quote(confusable)}, a different label that is often mixed up with ${item.answer}.`,
       examples: confusable.slice(0, 2) }] : []),
+    ...(item.action === 'name-pos' && (item.answer === 'Adjective' || item.answer === 'Adverb') ? [{ id: 'describing_word',
+      pattern: `${about} The learner's answer is "describing word", which names both adjective and adverb.`,
+      examples: ['describing word', 'a describing word'] }] : []),
+    ...(item.action === 'name-role' && item.answer !== 'Subject' && item.answer !== 'Predicate' ? [{ id: 'named_the_side',
+      pattern: `${about} The learner's answer is "subject" or "predicate": the part of the sentence the word sits in, not its own job.`,
+      examples: ['subject', 'predicate'] }] : []),
     ...(others.length ? [{ id: 'other_label', pattern: `${about} The learner's answer is another label from the printed wall: ${quote(others)}.`,
       examples: others.slice(-2) }] : []),
   ];
@@ -84,7 +91,7 @@ export function sentenceScene(item: SentenceAnalyzerItem, readsAloud: boolean): 
     ...(item.targetIndex >= 0 ? { highlighted: `The word "${speakableWord(item.targetWord)}" is highlighted.` } : {}),
     ...(item.wallLabels.length ? { wall: `Printed on the word wall: ${item.wallLabels.join(', ')}.` } : {}),
   };
-  facts.constraints = 'The learner answers out loud; no word is coloured or labelled until the answer is credited.'
+  facts.constraints = 'The learner answers out loud; no word of this sentence is labelled until the answer is credited.'
     + (readsAloud ? ' The learner is an early reader: read the sentence aloud when the ask carries it.' : '');
   return { objects: [], facts };
 }

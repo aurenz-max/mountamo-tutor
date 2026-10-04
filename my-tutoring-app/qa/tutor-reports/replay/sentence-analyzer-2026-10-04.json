@@ -1,0 +1,5213 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    45
+   ],
+   "no_protocol_leak": [
+    0,
+    45
+   ],
+   "no_key_before_try": [
+    0,
+    45
+   ],
+   "no_fix_before_try": [
+    0,
+    45
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    45
+   ],
+   "no_protocol_leak": [
+    0,
+    45
+   ],
+   "no_key_before_try": [
+    0,
+    45
+   ],
+   "no_fix_before_try": [
+    0,
+    45
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    45
+   ],
+   "no_protocol_leak": [
+    0,
+    45
+   ],
+   "no_key_before_try": [
+    0,
+    45
+   ],
+   "no_fix_before_try": [
+    0,
+    45
+   ],
+   "no_change_before_receipt": [
+    0,
+    45
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    45
+   ],
+   "no_protocol_leak": [
+    0,
+    45
+   ],
+   "no_key_before_try": [
+    0,
+    45
+   ],
+   "no_fix_before_try": [
+    0,
+    45
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    45
+   ],
+   "no_protocol_leak": [
+    0,
+    45
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "sentence-analyzer.identify_pos-easy",
+   "primitiveId": "sentence-analyzer",
+   "evalMode": "identify_pos",
+   "keys": [
+    "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+    "adjective"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch1-pos-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "What part of speech is the word green?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The sentence says: \"Four green frogs leaped.\" What part of speech is the word **green**?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Four green frogs leaped. What part of speech is the word green?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The sentence is: \"Four green frogs leaped.\" What part of speech is the word **green**?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "\"Four green frogs leaped.\" What part of speech is the word green?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Four green frogs leaped. What part of speech is the word green?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ch1-pos-1",
+     "trigger": "Conjunction",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "What part of speech is the word green?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Not quite a conjunction. The word **green** describes what kind of frogs they are, so what part of speech is it?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite a conjunction. The word **green** tells us what the frogs look like, so what part of speech is it?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite a conjunction. The word **green** tells us what the frogs look like, so what part of speech is it?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite a conjunction. The word **green** tells us what the frogs look like, so what part of speech is it?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Notice what \"green\" does in the sentence\u2014it describes what the frogs look like. What part of speech describes a noun?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ch1-pos-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "What part of speech is the word green?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A model card just appeared showing each word's job in a new sentence. Look at the word describing the puppy to see what label it has, and try **green** again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_sentence"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A card popped up showing an example sentence with all its words labeled. Look at how words that describe a thing are labeled, and try naming the part of speech for **green** again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_sentence"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A card just appeared showing another sentence with each word labeled by what it does. Look at how words that describe a thing are labeled there, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_sentence"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A card popped up with an example sentence showing how different words are labeled. Look at how words that describe a thing are labeled there, and give **green** another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_sentence"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A card popped up showing an example sentence with all its words labeled. Look at how words that describe a thing are labeled there, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_sentence"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ch1-pos-1",
+     "trigger": "The learner said they were stuck, so the host pulled model_sentence (help). It is on screen now: Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which mode",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "What part of speech is the word green?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A card popped up showing an example sentence with every word labelled. Find the word describing what kind of puppy it is, and then tell me what part of speech **green** is.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new sentence card has appeared below with each word labelled. Check out how those words work, and tell me what part of speech **green** is!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new card appeared with another sentence, showing what job each word does. Take a look at the word describing what kind of puppy it is, and give **green** another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is a new card on the screen with an example sentence showing every word with its label. Take a look at the card, and tell me what part of speech **green** is in our sentence!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the new card on your screen showing a model sentence with labels over every word. When a word describes what kind of thing a noun is, what label does the card show for it?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch1-pos-1",
+     "trigger": "Adjective",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "What part of speech is the word green?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Spot on! You identified that **green** is an adjective because it describes a noun.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! **Green** is an adjective because it describes the frogs.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You named it\u2014**green** is an adjective because it describes the frogs.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You correctly identified that **green** is an adjective because it describes the frogs.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on, you got it! **Green** is an adjective because it describes the frogs.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "sentence-analyzer.identify_pos-g2",
+   "primitiveId": "sentence-analyzer",
+   "evalMode": "identify_pos",
+   "keys": [
+    "adjective. any other grammar label is wrong.",
+    "adjective"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch1-pos-0",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "Listen. Big cats run. What part of speech is the word Big?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Listen: \"Big cats run.\" What part of speech is the word **Big**?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Big cats run. What part of speech is the word \"Big\"?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: \"Big cats run.\" What part of speech is the word **Big**?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen: \"Big cats run.\" What part of speech is the word **Big**?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Big cats run. What part of speech is the word \"Big\"?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ch1-pos-0",
+     "trigger": "Determiner",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "Listen. Big cats run. What part of speech is the word Big?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Not quite, but take a look at the word wall\u2014now there is an example shown under each label. \n\nWhat part of speech is the word **Big**?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the word wall\u2014there is now an example under each label to help. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the word wall\u2014there is now an example under each label to help. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Look at the word wall\u2014there is now an example under each label to help you. What part of speech is the word **Big**?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the word wall\u2014there is now an example under each label to help you. What part of speech is **Big**?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ch1-pos-0",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "Listen. Big cats run. What part of speech is the word Big?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the word wall now: each label has an example with an underlined word.\n\nWhat part of speech is the word **Big**?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Under each label on the wall, there is now an example sentence with a word underlined. \n\nLook at those examples to see which one matches what **Big** is doing, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An example sentence has appeared under each label on the word wall with an example word underlined. \n\nTake a look at those examples, and then try telling me: what part of speech is **Big**?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I've added examples under each label on the word wall to help you out. \n\nWhat part of speech is the word **Big**?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "You can do this! Look at the examples that just appeared under each word on the wall to help you decide.\n\nWhat part of speech is **Big**?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ch1-pos-0",
+     "trigger": "The learner said they were stuck, so the host pulled model_sentence (help). It is on screen now: Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which mode",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "Listen. Big cats run. What part of speech is the word Big?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A new card popped up showing an example sentence with every word labelled by its part of speech.\n\nLooking at that card to help you, what part of speech is the word **Big**?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new card popped up on your screen with another sentence, and every word on it has its label underneath! Take a look at what each word does there, and tell me: what part of speech is the word **Big**?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A card is on the screen with a new sentence, and each word has its label underneath it. \n\nTake a look at that card, and tell me: what part of speech is the word **Big**?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A card is now on your screen with another sentence, showing words that point out, describe, name, and show actions. \n\nLooking at what the word does, what part of speech is **Big**?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A card appeared showing an example sentence with every word labelled above it. \n\nTake a look at the card, and tell me: what part of speech is the word **Big**?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch1-pos-0",
+     "trigger": "Adjective",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "Listen. Big cats run. What part of speech is the word Big?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! **Big** is an adjective because it describes the cats.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right\u2014\"Big\" is an adjective!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You named that \"Big\" is an adjective.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You named the adjective!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You named it as an adjective.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "sentence-analyzer.identify_pos-g3",
+   "primitiveId": "sentence-analyzer",
+   "evalMode": "identify_pos",
+   "keys": [
+    "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+    "adjective"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch1-pos-0",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "What part of speech is the word Bright?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The sentence is: \"Bright stars shine tonight.\" What part of speech is the word \"Bright\"?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "\"Bright stars shine tonight.\" What part of speech is the highlighted word \"Bright\"?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Bright stars shine tonight. What part of speech is the word \"Bright\"?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "\"Bright stars shine tonight.\" What part of speech is the word \"Bright\"?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "\"Bright stars shine tonight.\" What part of speech is the word \"Bright\"?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ch1-pos-0",
+     "trigger": "Pronoun",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "What part of speech is the word Bright?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Not quite pronoun. Look at the word wall\u2014there are examples added under each label to help you try again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Examples with underlined words have appeared under each word on the wall to help. What part of speech is \"Bright\"?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Look at the word wall\u2014there are now example words under each label to help you. Take another look and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Examples have appeared under each label on the word wall to help. Take another look and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite, but good try! Look at the word wall now\u2014there is an example under each word to help. Which part of speech describes the stars?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ch1-pos-0",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "What part of speech is the word Bright?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the word wall\u2014now there is an example under every label with a word underlined. Which label best matches what \"Bright\" does?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Examples with an underlined word have appeared under each label on the wall. Take a look at them and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An example has appeared under each label on the word wall to show how they work. Take a look at them and tell me what part of speech \"Bright\" is!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An example has been added under each word on the wall. Take a look at them and give \"Bright\" another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Examples have appeared under each label on the word wall. What part of speech describes the stars?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ch1-pos-0",
+     "trigger": "The learner said they were stuck, so the host pulled model_sentence (help). It is on screen now: Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which mode",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "What part of speech is the word Bright?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A model card has appeared showing another sentence with every word labelled. Notice what kind of job each word does, and give \"Bright\" another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A card popped up with an example sentence showing each word's part of speech. What part of speech is \"Bright\"?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A card just appeared showing a whole new sentence with all of its words labelled. Take a look at what each word does there, and give \"Bright\" another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A card appeared showing a different sentence with each word's part of speech labeled. Look at how each word does its job there, then tell me what part of speech \"Bright\" is.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A card is now on your screen showing an example sentence with every word labelled. Take a look at what each word does, and tell me what part of speech \"Bright\" is!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch1-pos-0",
+     "trigger": "Adjective",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "What part of speech is the word Bright?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it\u2014\"Bright\" is an adjective describing the stars!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You named it\u2014\"Bright\" is an adjective because it describes the stars.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it, \"Bright\" is an adjective! It describes the stars.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! \"Bright\" is an adjective because it describes the stars.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it\u2014\"Bright\" is an adjective describing the stars!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "sentence-analyzer.identify_pos",
+   "primitiveId": "sentence-analyzer",
+   "evalMode": "identify_pos",
+   "keys": [
+    "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+    "adjective"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch1-pos-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "What part of speech is the word brown?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "\"Three brown dogs barked loudly.\" What part of speech is the word brown?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "\"Three brown dogs barked loudly.\" What part of speech is the word \"brown\"?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "\"Three brown dogs barked loudly.\" What part of speech is the word \"brown\"?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Our sentence is: \"Three brown dogs barked loudly.\" What part of speech is the word **brown**?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "\"Three brown dogs barked loudly.\" What part of speech is the word \"brown\"?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ch1-pos-1",
+     "trigger": "Conjunction",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "What part of speech is the word brown?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Not quite. Examples have appeared under each word on the wall to help. What part of speech is the word brown?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite conjunction. Examples have been added under the words on the wall to help you compare, so give it another try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That's not quite it, but now there are example words shown under the labels on the wall. Take another look and tell me what part of speech \"brown\" is.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite conjunction. Look at the word wall\u2014examples have appeared under each label to help you try again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite conjunction. I've added examples under the words on the word wall to help you try again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ch1-pos-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "What part of speech is the word brown?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at the examples under each word on the word wall to see how each one is used. What part of speech is the word brown?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Examples have appeared under each label on the word wall with an underlined word. Take a look at them and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Take a look at the examples under each word on the word wall to see how each one is used. What part of speech is the word brown?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Take a look at the word wall\u2014there is now an example under each label to guide you. Which label tells what kind of dogs they are?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "There is now an example sentence with an underlined word under each label on the word wall. Take a look at them and tell me what part of speech the word brown is.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ch1-pos-1",
+     "trigger": "The learner said they were stuck, so the host pulled model_sentence (help). It is on screen now: Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which mode",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "What part of speech is the word brown?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A card has appeared showing a different sentence with every word labelled. Look at what each word does in that example, and tell me what part of speech the word brown is.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card has appeared showing another sentence with each word's part of speech labelled. Take a look at what each word does there, and give \"brown\" another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card has appeared showing another sentence with each word's part of speech labeled. Take a look at what each word does there, and tell me: what part of speech is \"brown\"?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new card has appeared with an example sentence showing each word's grammar label. Look at what kind of job \"brown\" does in our sentence, and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new card has appeared with an example sentence showing each word's part of speech. Look at what kinds of words describe things there, and try telling me: what part of speech is the word brown?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch1-pos-1",
+     "trigger": "Adjective",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "What part of speech is the word brown?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! Brown is an adjective because it describes the dogs.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right\u2014the word brown is an adjective!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! Brown is an adjective because it describes the dogs.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You identified that brown is an adjective describing the dogs.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right\u2014brown is an adjective describing the dogs!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "sentence-analyzer.identify_role-g3",
+   "primitiveId": "sentence-analyzer",
+   "evalMode": "identify_role",
+   "keys": [
+    "modifier. a part of speech (\"noun\", \"verb\") answers a different question and is wrong. any other grammar label is wrong.",
+    "modifier"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch1-role-0",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "modifier. a part of speech (\"noun\", \"verb\") answers a different question and is wrong. any other grammar label is wrong.",
+       "modifier"
+      ],
+      "ask": "What job does the word Bright do in this sentence?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Our sentence says: \"Bright stars shine tonight.\" What job does the word \"Bright\" do in this sentence?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "\"Bright stars shine tonight.\" What job does the word \"Bright\" do in this sentence?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "\"Bright stars shine tonight.\" What job does the word \"Bright\" do in this sentence?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "\"Bright stars shine tonight.\" What job does the word \"Bright\" do in this sentence?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Our sentence is: \"Bright stars shine tonight.\" What job does the word \"Bright\" do in this sentence?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ch1-role-0",
+     "trigger": "Predicate",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "modifier. a part of speech (\"noun\", \"verb\") answers a different question and is wrong. any other grammar label is wrong.",
+       "modifier"
+      ],
+      "ask": "What job does the word Bright do in this sentence?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A model card appeared showing how each word in a sentence has a job. Give it another try: what job does the word \"Bright\" do in our sentence?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "two_row_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card popped up showing how each word in an example sentence has a job. Take another look at our sentence and try again: what job does the word \"Bright\" do?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "two_row_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card appeared showing how different words have their parts of speech and jobs listed. Look at what job the describing word does there, and give our sentence another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "two_row_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. A helper card appeared showing another sentence with the job under each word. Look at the word wall and try again for the job of \"Bright\".",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "two_row_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A card appeared showing an example sentence with parts of speech and jobs. Take another look and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "two_row_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ch1-role-0",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "modifier. a part of speech (\"noun\", \"verb\") answers a different question and is wrong. any other grammar label is wrong.",
+       "modifier"
+      ],
+      "ask": "What job does the word Bright do in this sentence?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A model card has appeared showing another sentence with each word's part of speech and its job underneath. Take a look at the model card and the word wall, then tell me what job \"Bright\" does.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "two_row_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A model card appeared with an example sentence showing each word's part of speech and job. Look at how words describe and do their jobs, then give our sentence another try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "two_row_model",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A model card is now on the screen showing a practice sentence with parts of speech and jobs. Look at the bottom row of jobs on the card, then try naming the job of \"Bright.\"",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "two_row_model",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A model card popped up showing an example sentence with parts of speech on top and each word's job on the bottom. Look at the word wall labels and tell me what job \"Bright\" does.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "two_row_model",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A model card has appeared on the screen showing a different sentence with parts of speech and jobs. Look at the word wall and tell me what job the word \"Bright\" does.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "two_row_model",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ch1-role-0",
+     "trigger": "The learner said they were stuck, so the host pulled two_row_model (help). It is on screen now: Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "modifier. a part of speech (\"noun\", \"verb\") answers a different question and is wrong. any other grammar label is wrong.",
+       "modifier"
+      ],
+      "ask": "What job does the word Bright do in this sentence?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A card is now on your screen showing a model sentence with each word's job listed underneath it. Look at the bottom row on that card to see the job names, and tell me what job the word \"Bright\" does.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new card appeared on your screen showing a model sentence with parts of speech on top and jobs on the bottom. Look at what jobs words do on the card, and give \"Bright\" another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new card appeared showing an example sentence, with each word's part of speech written above its job. Look at how describing words are labeled on that card, and give our sentence another try: what job does \"Bright\" do?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new card is on the screen showing a practice sentence with each word's part of speech placed right above its job. Look at how those jobs are labeled on the card, and tell me what job \"Bright\" does in our sentence.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "On the screen, a card has appeared with an example sentence showing each word's part of speech on top and its job on the bottom. Look at the bottom row of jobs on that card, and tell me what job \"Bright\" does in our sentence.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch1-role-0",
+     "trigger": "Modifier",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "modifier. a part of speech (\"noun\", \"verb\") answers a different question and is wrong. any other grammar label is wrong.",
+       "modifier"
+      ],
+      "ask": "What job does the word Bright do in this sentence?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! Modifier is the right job because \"Bright\" describes the stars.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You named the modifier for the word \"Bright\".",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! The word \"Bright\" acts as a modifier because it describes the stars.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You correctly identified that \"Bright\" does the job of a Modifier by describing the stars.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You correctly identified that \"Bright\" does the job of a modifier by describing the stars.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "sentence-analyzer.identify_role-g6",
+   "primitiveId": "sentence-analyzer",
+   "evalMode": "identify_role",
+   "keys": [
+    "modifier. a part of speech (\"noun\", \"verb\") answers a different question and is wrong. any other grammar label is wrong.",
+    "modifier"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch1-role-0",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "modifier. a part of speech (\"noun\", \"verb\") answers a different question and is wrong. any other grammar label is wrong.",
+       "modifier"
+      ],
+      "ask": "What job does the word Brilliant do in this sentence?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "\"Brilliant stars shine brightly.\" What job does the word \"Brilliant\" do in this sentence?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "\"Brilliant stars shine brightly.\" What job does the word \"Brilliant\" do in this sentence?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "\"Brilliant stars shine brightly.\" What job does the word \"Brilliant\" do in this sentence?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "\"Brilliant stars shine brightly.\" What job does the word \"Brilliant\" do in this sentence?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "\"Brilliant stars shine brightly.\" What job does the word \"Brilliant\" do in this sentence?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ch1-role-0",
+     "trigger": "Object of Preposition",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "modifier. a part of speech (\"noun\", \"verb\") answers a different question and is wrong. any other grammar label is wrong.",
+       "modifier"
+      ],
+      "ask": "What job does the word Brilliant do in this sentence?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Examples have appeared under each label on the word wall. Take a look at them and try naming the job of \"Brilliant\" again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Examples have appeared under each label on the word wall with an underlined word. Take a look at them and try another guess for the job of \"Brilliant\".",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Examples with underlined words have appeared under each label on the word wall. Take a look at those examples and try naming the job again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite, but take a look at the word wall: an example is now shown under each label. What job does the word \"Brilliant\" do here?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Examples with underlined words have appeared under each label on the word wall. Take a look at them and try again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ch1-role-0",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "modifier. a part of speech (\"noun\", \"verb\") answers a different question and is wrong. any other grammar label is wrong.",
+       "modifier"
+      ],
+      "ask": "What job does the word Brilliant do in this sentence?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "",
+       "before": "",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/2/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "short_sentence"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "",
+       "before": "",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "wall_examples"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "short_sentence"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "",
+       "before": "",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/2/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "short_sentence"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "",
+       "before": "",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "wall_examples"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "short_sentence"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "",
+       "before": "",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "wall_examples"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "short_sentence",
+          "actionId": "test/2/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ch1-role-0",
+     "trigger": "The learner said they were stuck, so the host pulled two_row_model (help). It is on screen now: Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "modifier. a part of speech (\"noun\", \"verb\") answers a different question and is wrong. any other grammar label is wrong.",
+       "modifier"
+      ],
+      "ask": "What job does the word Brilliant do in this sentence?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A card has appeared showing another sentence with each word's part of speech above its job. Look at how words that describe or give more detail are labeled on that card, and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new card has appeared showing an example sentence with parts of speech listed right above each word's job. Check how words describe other words on that card, and give the job of \"Brilliant\" another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card has appeared showing another sentence with each word's part of speech right above its job. Look at how words that describe other words are labeled there, and give \"Brilliant\" another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card has appeared showing another sentence with each word's part of speech over its job. Take a look at the model card and try naming the job that \"Brilliant\" does in our sentence.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card has appeared showing another sentence with each word's part of speech right above its job. Take a look at how those words are labelled, and give the job of \"Brilliant\" another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch1-role-0",
+     "trigger": "Modifier",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "modifier. a part of speech (\"noun\", \"verb\") answers a different question and is wrong. any other grammar label is wrong.",
+       "modifier"
+      ],
+      "ask": "What job does the word Brilliant do in this sentence?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! \"Brilliant\" is indeed a modifier because it describes the stars.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! The job of \"Brilliant\" is a modifier because it describes the stars.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! \"Brilliant\" is indeed a modifier because it describes the stars.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! \"Modifier\" is the right job because \"Brilliant\" describes the stars.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! The job of \"Brilliant\" is a modifier because it describes the stars.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "sentence-analyzer.identify_role",
+   "primitiveId": "sentence-analyzer",
+   "evalMode": "identify_role",
+   "keys": [
+    "modifier. a part of speech (\"noun\", \"verb\") answers a different question and is wrong. any other grammar label is wrong.",
+    "modifier"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch1-role-0",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "modifier. a part of speech (\"noun\", \"verb\") answers a different question and is wrong. any other grammar label is wrong.",
+       "modifier"
+      ],
+      "ask": "What job does the word The do in this sentence?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The brown dog barked loudly. What job does the word \"The\" do in this sentence?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The sentence is: \"The brown dog barked loudly.\" What job does the word \"The\" do in this sentence?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The sentence is, \"The brown dog barked loudly.\" What job does the word \"The\" do in this sentence?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The sentence is: \"The brown dog barked loudly.\" What job does the word \"The\" do in this sentence?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The sentence is: \"The brown dog barked loudly.\" What job does the word \"The\" do in this sentence?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ch1-role-0",
+     "trigger": "Direct Object",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "modifier. a part of speech (\"noun\", \"verb\") answers a different question and is wrong. any other grammar label is wrong.",
+       "modifier"
+      ],
+      "ask": "What job does the word The do in this sentence?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at the word wall\u2014examples have appeared under each label to show how they work. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite. Look at the word wall\u2014an example has appeared under each label to show how it is used. Take another look and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite direct object. Look at the word wall now\u2014there is an example sentence under each label to help you try again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the word wall\u2014examples have appeared under each label to show how they work. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite direct object. Take a look at the examples added under the labels on the word wall, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ch1-role-0",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "modifier. a part of speech (\"noun\", \"verb\") answers a different question and is wrong. any other grammar label is wrong.",
+       "modifier"
+      ],
+      "ask": "What job does the word The do in this sentence?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the word wall now: each label has an example with an underlined word beneath it. What job does \"The\" do in our sentence?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the word wall\u2014each label now shows an example sentence with an underlined word. Which label fits what \"The\" does?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An example has been added under each label on the word wall with a word underlined to help you compare. Which job matches what \"The\" does?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An example sentence has appeared under each label on the wall with an underlined word. Look closely at those examples and try again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An example sentence has appeared under each label on the word wall with an underlined word. Which label best matches what \"The\" is doing?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ch1-role-0",
+     "trigger": "The learner said they were stuck, so the host pulled two_row_model (help). It is on screen now: Shows a card with a different sentence, each word with its part of speech over its job. Once it is on screen you may walk the card by what each word does. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "modifier. a part of speech (\"noun\", \"verb\") answers a different question and is wrong. any other grammar label is wrong.",
+       "modifier"
+      ],
+      "ask": "What job does the word The do in this sentence?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A model card has appeared on your screen showing a different sentence with each word's part of speech written over its job. Take a look at how the words are labeled there, and tell me what job the word \"The\" does in our sentence.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new model card has appeared showing another sentence, with parts of speech listed right above each word's job. Take a look at that card to see how words do different jobs, and tell me what job the word \"The\" does in our sentence.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A card has appeared showing a different sentence, with parts of speech listed over each word's job. Take a look at how those words are labelled, and tell me what job the word \"The\" does in our sentence.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new card has appeared showing an example sentence with the part of speech above each word's job. Take a look at how those words are labelled, and tell me what job the word \"The\" does in our sentence.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A card has appeared showing a different sentence, with parts of speech listed over each word's job. Take a look at how those jobs are labeled, and try our question again: what job does the word \"The\" do in our sentence?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch1-role-0",
+     "trigger": "Modifier",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "modifier. a part of speech (\"noun\", \"verb\") answers a different question and is wrong. any other grammar label is wrong.",
+       "modifier"
+      ],
+      "ask": "What job does the word The do in this sentence?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it right\u2014the word \"The\" acts as a modifier in this sentence!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right\u2014\"The\" does the job of a modifier by telling us which dog!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You correctly named \"The\" as a modifier.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! \"The\" does the job of a modifier here.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You correctly identified that the word \"The\" acts as a modifier in this sentence.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "sentence-analyzer.label_all",
+   "primitiveId": "sentence-analyzer",
+   "evalMode": "label_all",
+   "keys": [
+    "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+    "adjective"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch1-pos-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "What part of speech is the word brown?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The sentence says: \"Four brown dogs chased cats.\" What part of speech is the word \"brown\"?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Our sentence is: \"Four brown dogs chased cats.\" What part of speech is the word \"brown\"?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The sentence is: \"Four brown dogs chased cats.\" What part of speech is the word \"brown\"?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Our sentence is: \"Four brown dogs chased cats.\" What part of speech is the word **brown**?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Four brown dogs chased cats. What part of speech is the word brown?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ch1-pos-1",
+     "trigger": "Conjunction",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "What part of speech is the word brown?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at the word wall\u2014each label now has an example showing how that word works. What part of speech is \"brown\"?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite, but good try. Examples have appeared under each label on the word wall to help, so give \"brown\" another shot!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite, but take a look at the word wall\u2014there are now example sentences under the labels to help you out. Look at what \"brown\" is doing for the dogs, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite, but I've added examples under each word on the wall to help. Take another look and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the word wall\u2014example words have been added under each label to help. Give it another try: what part of speech is \"brown\"?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ch1-pos-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "What part of speech is the word brown?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "An example with an underlined word has been added under each label on the word wall to show how each one is used. Which label matches what \"brown\" is doing?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The word wall now shows an example sentence under every label with a key word underlined. Which label fits what the word \"brown\" does?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An example has been added under each label on the word wall with an underlined word to help you. What part of speech is \"brown\"?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An example with an underlined word has been added under each label on the word wall to help you see how each one is used. What part of speech is \"brown\"?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "wall_examples"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Examples have been added under each label on the word wall with an underlined word to help you see how each one works. Which part of speech tells what kind of dogs they are?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "wall_examples",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ch1-pos-1",
+     "trigger": "The learner said they were stuck, so the host pulled model_sentence (help). It is on screen now: Shows a card with a different sentence, every word labelled with its part of speech. Once it is on screen you may walk the card by what each word does (names a thing, tells which one, shows an action). The learner reads its labels: do not say a label aloud before the learner tries, never say which mode",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "What part of speech is the word brown?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A new card is on the screen showing another sentence with every word labelled. Look at what the words do there, and tell me: what part of speech is \"brown\"?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A card has appeared showing a different sentence with each of its words labeled. Look at how those words work, then give \"brown\" another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A card has appeared showing another sentence with every word labelled by what it does. Look at how each word is labelled on that card, and tell me what part of speech \"brown\" is.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A card has appeared showing a different sentence with each of its words labeled. Look at how those words are working and tell me: what part of speech is \"brown\"?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A card with a new practice sentence has appeared, and every word in it has its grammar label right next to it. Look at the jobs those words are doing, and tell me what part of speech \"brown\" is.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch1-pos-1",
+     "trigger": "Adjective",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "adjective. \"adverb\" are different answers and wrong here. any other grammar label is wrong.",
+       "adjective"
+      ],
+      "ask": "What part of speech is the word brown?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it right\u2014\"brown\" is an adjective!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on, you got it! \"Brown\" is an adjective because it describes the dogs.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right\u2014\"brown\" is an adjective!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right\u2014\"brown\" is an adjective because it describes the dogs!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right\u2014\"brown\" is an adjective!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "sentence-analyzer.parse_structure",
+   "primitiveId": "sentence-analyzer",
+   "evalMode": "parse_structure",
+   "keys": [
+    "subject: \"the\" is in the subject of \"the hungry bear ate berries.\". \"predicate\" is wrong. small words and describing words in front of the naming word belong to the complete subject; judge against this answer, not a re-reading."
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch1-side-0",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "subject: \"the\" is in the subject of \"the hungry bear ate berries.\". \"predicate\" is wrong. small words and describing words in front of the naming word belong to the complete subject; judge against this answer, not a re-reading."
+      ],
+      "ask": "Is the word The in the subject or in the predicate?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The sentence is: \"The hungry bear ate berries.\" Is the word \"The\" in the subject or in the predicate?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The sentence says: \"The hungry bear ate berries.\" Is the word \"The\" in the subject or in the predicate?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "In the sentence \"The hungry bear ate berries,\" is the highlighted word \"The\" in the subject or in the predicate?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The hungry bear ate berries. Is the word \"The\" in the subject or in the predicate?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The sentence is: \"The hungry bear ate berries.\" Is the word \"The\" in the subject or in the predicate?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ch1-side-0",
+     "trigger": "predicate",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "subject: \"the\" is in the subject of \"the hungry bear ate berries.\". \"predicate\" is wrong. small words and describing words in front of the naming word belong to the complete subject; judge against this answer, not a re-reading."
+      ],
+      "ask": "Is the word The in the subject or in the predicate?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Not quite. Look at the new card that shows how another sentence splits its parts. Would you like to try again with \"The\"?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "split_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the model card that appeared on your screen showing how another sentence is split. Which side is the word \"The\" on in our sentence?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "split_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the model card that appeared on your screen showing how another sentence splits into its parts. Would you like to try again: is \"The\" in the subject or in the predicate?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "split_model",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A card appeared showing an example sentence divided into its two parts. Take another look at our sentence: is \"The\" in the subject or in the predicate?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "split_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A card just appeared showing another sentence split into its parts to help you look at how it works. Take a look at that model, and try again on our sentence: is the word \"The\" in the subject or in the predicate?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "split_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ch1-side-0",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "subject: \"the\" is in the subject of \"the hungry bear ate berries.\". \"predicate\" is wrong. small words and describing words in front of the naming word belong to the complete subject; judge against this answer, not a re-reading."
+      ],
+      "ask": "Is the word The in the subject or in the predicate?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A helper card appeared showing how another sentence is split into its subject and predicate. Take a look at how it brackets the words, and then tell me: is \"The\" in the subject or the predicate?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "split_model",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A card just appeared showing an example sentence with its parts labeled. Take a look at how it splits, then tell me if \"The\" belongs in the subject or the predicate.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "split_model",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A model card popped up showing how another sentence is split into its parts. Take a look at it, and then tell me if \"The\" is in the subject or the predicate.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "split_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A helper card popped up showing how another sentence is divided into its two main parts. Take a look at how it brackets those parts, and then tell me: is \"The\" in the subject or in the predicate?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "split_model",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A new card appeared showing how another sentence divides its parts. Looking at how that sentence is split, what do you think \"The\" is in our sentence?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "split_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ch1-side-0",
+     "trigger": "The learner said they were stuck, so the host pulled split_model (help). It is on screen now: Shows a card with a different sentence, its complete subject bracketed and labelled subject, the rest predicate. The learner reads its labels: do not say a label aloud before the learner tries, never say which model word is like the asked word, and never label a word of this sentence. First point the lear",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "subject: \"the\" is in the subject of \"the hungry bear ate berries.\". \"predicate\" is wrong. small words and describing words in front of the naming word belong to the complete subject; judge against this answer, not a re-reading."
+      ],
+      "ask": "Is the word The in the subject or in the predicate?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A new card popped up showing an example sentence with brackets around its parts. Take a look at which side the words at the front belong to, and then tell me: is \"The\" in the subject or in the predicate?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A card is now showing with another sentence, with brackets marking its parts. Take a look at where the brackets divide the words, and try saying whether \"The\" is in the subject or the predicate.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card has appeared showing another sentence with its parts labeled. Take a look at how it splits its words, and try telling me: is \"The\" in the subject or the predicate?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new card has popped up showing another sentence with its parts bracketed and labelled. Take a look at that card, and then try: is \"The\" in the subject or in the predicate?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model card is now on screen showing another sentence split into its parts with brackets. Take a look at where the words are bracketed, and tell me: is \"The\" in the subject or in the predicate?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch1-side-0",
+     "trigger": "subject",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "subject: \"the\" is in the subject of \"the hungry bear ate berries.\". \"predicate\" is wrong. small words and describing words in front of the naming word belong to the complete subject; judge against this answer, not a re-reading."
+      ],
+      "ask": "Is the word The in the subject or in the predicate?",
+      "leakTokens": [
+       "SAN_ITEM",
+       "SAN_MOVE",
+       "SAN_COMPLETE",
+       "SAN_HEAR"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Spot on! You got it right that \"The\" is in the subject!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You found that \"The\" is in the subject!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! \"The\" is in the subject.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! \"The\" is in the subject.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You got it right\u2014\"The\" is in the subject!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

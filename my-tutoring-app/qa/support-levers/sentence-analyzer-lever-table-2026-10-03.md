@@ -1,6 +1,6 @@
 # sentence-analyzer: failure inventory and lever table (2026-10-03)
 
-**DRAFT 2026-10-03**. `/add-support-tiers` Phases 1-2, literacy G2-6 family 1 of 4.
+**BUILT 2026-10-04** (`qa/eval-reports/sentence-analyzer-levers-2026-10-04.md`). `/add-support-tiers` Phases 1-2, literacy G2-6 family 1 of 4.
 Rulings carried over: the child answers out loud and no lever turns the answer into a tap (DI spoken-first, x3);
 help on a recognition item acts on material outside the session, never on the item's own words (handoff 22
 "model pair outside the item"); a model lever's `does` text forbids extending the model to the item (10-02/10-03).
