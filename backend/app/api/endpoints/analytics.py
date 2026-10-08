@@ -16,6 +16,8 @@ from ...services.bigquery_analytics import BigQueryAnalyticsService
 from ...services.bigquery_etl import BigQueryETLService
 from ...services.ai_recommendations import AIRecommendationService
 from ...services.firestore_analytics import FirestoreAnalyticsService
+from ...services.progress_report import ProgressReportService
+from ...services.progress_report_narrative import get_narrative as get_progress_narrative
 from ...dependencies import get_firestore_analytics_service
 from ...core.config import settings
 
@@ -1216,6 +1218,84 @@ async def get_student_profile(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error retrieving student profile: {str(e)}"
+        )
+
+
+@router.get("/student/{student_id}/report")
+async def get_progress_report(
+    student_id: int,
+    grade: Optional[str] = Query(None, description="Grade code (K, 1, ...); defaults to the grade of record"),
+    user_context: dict = Depends(get_user_context),
+    analytics_service: FirestoreAnalyticsService = Depends(get_firestore_analytics_service)
+):
+    """Progress report: the facts behind "how is my child doing?".
+
+    Practice by week, the grade map from mastery gates, recent masteries,
+    current work, struggles and recorded mistake patterns, interests, and the
+    evidence base. Numbers only; see app/services/progress_report.py.
+    """
+    if user_context["student_id"] != student_id:
+        if not getattr(settings, 'ALLOW_ANY_STUDENT_ANALYTICS', False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied to student {student_id} report"
+            )
+
+    cache_key = get_cache_key("progress_report", student_id=student_id, grade=grade)
+    cached_result = get_from_cache(cache_key, ttl_minutes=5)
+    if cached_result:
+        return cached_result
+
+    try:
+        report = await ProgressReportService(analytics_service.fs).get_report(student_id, grade=grade)
+        set_cache(cache_key, report)
+        return report
+    except Exception as e:
+        logger.error(f"Progress report error for student {student_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error building progress report: {str(e)}"
+        )
+
+
+@router.get("/student/{student_id}/report/narrative")
+async def get_progress_report_narrative(
+    student_id: int,
+    grade: Optional[str] = Query(None, description="Grade code (K, 1, ...); defaults to the grade of record"),
+    name: Optional[str] = Query(None, max_length=60, description="What the report calls the learner"),
+    user_context: dict = Depends(get_user_context),
+    analytics_service: FirestoreAnalyticsService = Depends(get_firestore_analytics_service)
+):
+    """Prose for the progress report: Gemini narrative over the report facts,
+    parent-facing skill sentences, and at-home tips. Every part may be absent;
+    the page keeps its templated text for anything missing.
+    See app/services/progress_report_narrative.py.
+    """
+    if user_context["student_id"] != student_id:
+        if not getattr(settings, 'ALLOW_ANY_STUDENT_ANALYTICS', False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied to student {student_id} report"
+            )
+    display = (name or "").strip() or f"Student {student_id}"
+    cache_key = get_cache_key("progress_report_narrative", student_id=student_id, grade=grade, name=display)
+    cached_result = get_from_cache(cache_key, ttl_minutes=5)
+    if cached_result:
+        return cached_result
+    try:
+        report_key = get_cache_key("progress_report", student_id=student_id, grade=grade)
+        report = get_from_cache(report_key, ttl_minutes=5)
+        if not report:
+            report = await ProgressReportService(analytics_service.fs).get_report(student_id, grade=grade)
+            set_cache(report_key, report)
+        result = await get_progress_narrative(analytics_service.fs, student_id, report, display)
+        set_cache(cache_key, result)
+        return result
+    except Exception as e:
+        logger.error(f"Progress report narrative error for student {student_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error writing progress report text: {str(e)}"
         )
 
 

@@ -1,0 +1,314 @@
+<title>How 1004 Is Doing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+/* Layout: one reading column; each section is a parent's question, answered first in a sentence, then shown. */
+:root{
+  --bg:#f6f7f4; --surface:#ffffff; --ink:#1d2a2e; --ink-2:#4c5b60; --ink-3:#7c8a8e; --rule:#dde2df;
+  --accent:#0f6b6b; --accent-soft:#e0efec;
+  --s0:#e6ecea; --s1:#cfe6e1; --s2:#8cc7bc; --s3:#3f9a8d; --s4:#0f5f5f;
+  --warm:#b8661a; --warm-soft:#fbeedf; --zone:#e7f1ee;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121a1c; --surface:#1a2427; --ink:#e7eeec; --ink-2:#adbcbb; --ink-3:#7f908f; --rule:#2c393c;
+  --accent:#6cc9ba; --accent-soft:#1d3634;
+  --s0:#263336; --s1:#244641; --s2:#2f6e64; --s3:#4fa898; --s4:#8fe0d0;
+  --warm:#f0a65e; --warm-soft:#3a2b1c; --zone:#1c302d; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#121a1c; --surface:#1a2427; --ink:#e7eeec; --ink-2:#adbcbb; --ink-3:#7f908f; --rule:#2c393c;
+  --accent:#6cc9ba; --accent-soft:#1d3634;
+  --s0:#263336; --s1:#244641; --s2:#2f6e64; --s3:#4fa898; --s4:#8fe0d0;
+  --warm:#f0a65e; --warm-soft:#3a2b1c; --zone:#1c302d; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--body);padding-inline:16px;padding-block:28px 64px}
+.wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:44px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+h1{font-size:clamp(2rem,5vw,2.9rem);line-height:1.05;font-weight:700}
+h2{font-size:1.55rem;font-weight:700}
+h3{font-size:1.05rem;font-weight:700}
+p{margin:0;max-width:66ch}
+.eyebrow{font-size:.74rem;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+.muted{color:var(--ink-2)} .small{font-size:.86rem} .num{font-variant-numeric:tabular-nums}
+header{display:flex;flex-direction:column;gap:14px}
+.meta{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--ink-2);font-size:.92rem}
+.answer{background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:12px}
+.answer p{font-size:1.08rem}
+.answer strong{color:var(--accent)}
+.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.fact{display:flex;flex-direction:column;gap:2px;padding-top:12px;border-top:2px solid var(--rule)}
+.fact b{font-family:var(--display);font-size:1.7rem;line-height:1.1;font-variant-numeric:tabular-nums}
+.fact span{font-size:.84rem;color:var(--ink-2)}
+@media (max-width:620px){.facts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+section{display:flex;flex-direction:column;gap:16px}
+.lede{font-size:1.04rem}
+.panel{background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.chart{width:100%;height:auto;display:block;overflow:visible}
+.chart text{fill:var(--ink-3);font:12px var(--body)}
+.grid line{stroke:var(--rule)}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);padding:7px 10px;border-radius:8px;font-size:.82rem;line-height:1.35;max-width:260px;z-index:9;opacity:0;transition:opacity .1s}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.82rem;color:var(--ink-2);align-items:center}
+.key{display:inline-flex;align-items:center;gap:6px}
+.sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+.subj{display:flex;flex-direction:column;gap:10px;padding-block:6px}
+.subj+.subj{border-top:1px solid var(--rule);padding-top:16px}
+.subj-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.stack{display:flex;height:14px;border-radius:7px;overflow:hidden;gap:2px;background:var(--s0)}
+.stack i{display:block;height:100%}
+details summary{cursor:pointer;color:var(--accent);font-size:.9rem;font-weight:700;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▸ ";} details[open] summary::before{content:"▾ ";}
+summary:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+.units{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.unit{display:grid;grid-template-columns:minmax(0,210px) minmax(0,1fr) 54px;gap:12px;align-items:center;font-size:.88rem}
+.unit .nm{color:var(--ink-2)}
+.cells{display:flex;flex-wrap:wrap;gap:3px}
+.cells i{width:9px;height:9px;border-radius:2px;display:block;background:var(--s0)}
+.unit .ct{text-align:right;color:var(--ink-3);font-variant-numeric:tabular-nums}
+@media (max-width:560px){.unit{grid-template-columns:minmax(0,1fr) 50px}.unit .cells{grid-column:1/-1;order:3}}
+.list{display:flex;flex-direction:column}
+.item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 16px;padding:12px 0;border-top:1px solid var(--rule)}
+.item:first-child{border-top:0}
+.item .d{font-weight:700}
+.item .ev{color:var(--ink-3);font-size:.84rem;font-variant-numeric:tabular-nums}
+.item .side{text-align:right;font-size:.84rem;color:var(--ink-2);white-space:nowrap}
+.steps{display:inline-flex;gap:3px;vertical-align:middle;margin-right:6px}
+.steps i{width:14px;height:6px;border-radius:3px;background:var(--s0)}
+.steps i.on{background:var(--s3)}
+.chip{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.04em;padding:2px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent);margin-left:6px;vertical-align:2px}
+.chip.ahead{background:var(--warm-soft);color:var(--warm)}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:700px){.two{grid-template-columns:1fr}}
+.help{border-left:3px solid var(--warm);padding:4px 0 4px 16px;display:flex;flex-direction:column;gap:6px}
+.help .home{background:var(--warm-soft);border-radius:10px;padding:10px 12px;font-size:.92rem}
+.help .home b{color:var(--warm)}
+.bars{display:flex;flex-direction:column;gap:8px}
+.bar{display:grid;grid-template-columns:130px minmax(0,1fr) 64px;gap:10px;align-items:center;font-size:.88rem}
+.bar .track{height:10px;background:var(--s0);border-radius:5px;overflow:hidden}
+.bar .track i{display:block;height:100%;background:var(--s3);border-radius:5px}
+.bar .v{text-align:right;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.tags{display:flex;flex-wrap:wrap;gap:8px}
+.tag{border:1px solid var(--rule);background:var(--surface);border-radius:99px;padding:5px 12px;font-size:.9rem}
+.notes{font-size:.88rem;color:var(--ink-2);display:flex;flex-direction:column;gap:8px}
+.notes li{max-width:72ch}
+.proto{font-size:.8rem;color:var(--ink-3);border-top:1px solid var(--rule);padding-top:14px}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Lumina progress report · prototype</div>
+    <h1>How is Student 1004 doing?</h1>
+    <div class="meta"><span>Kindergarten</span><span id="m-span"></span><span>Report date: Oct 7, 2026</span></div>
+  </header>
+
+  <div class="answer">
+    <div class="eyebrow">The short answer</div>
+    <p id="short"></p>
+    <div class="facts" id="facts"></div>
+  </div>
+
+  <section id="s-learning">
+    <div class="eyebrow">Are they learning?</div>
+    <h2>Practice is steady, and the work is almost always right</h2>
+    <p class="lede muted" id="learn-lede"></p>
+    <div class="panel">
+      <h3>Minutes practiced each week</h3>
+      <svg class="chart" id="c-minutes" viewBox="0 0 800 210" role="img" aria-label="Minutes practiced per week"></svg>
+      <div class="legend"><span class="key"><span class="sw" style="background:var(--s3)"></span>Minutes</span><span class="key"><span class="sw" style="background:var(--warm);border-radius:50%"></span>Skills mastered that week (number shown when more than one)</span></div>
+    </div>
+    <div class="panel">
+      <h3>Share of answers correct each week</h3>
+      <svg class="chart" id="c-acc" viewBox="0 0 800 170" role="img" aria-label="Weekly accuracy"></svg>
+      <p class="small muted">The shaded band (70–85%) is where children usually learn fastest: hard enough to stretch, easy enough to keep going. Week after week above it means the lessons can be harder.</p>
+    </div>
+  </section>
+
+  <section id="s-year">
+    <div class="eyebrow">Where are they in the Kindergarten year?</div>
+    <h2>Furthest along in counting and early reading</h2>
+    <p class="lede muted" id="year-lede"></p>
+    <div class="panel" id="year"></div>
+    <div class="legend" id="stage-legend"></div>
+  </section>
+
+  <section id="s-strong">
+    <div class="eyebrow">Where are they doing well?</div>
+    <h2>Recently mastered</h2>
+    <p class="lede muted">Mastered means the skill passed all four checks over time, not only that one answer was right.</p>
+    <div class="panel"><div class="list" id="mastered"></div></div>
+    <h3>Working on now</h3>
+    <div class="panel"><div class="list" id="progress"></div></div>
+  </section>
+
+  <section id="s-help">
+    <div class="eyebrow">Where can I help?</div>
+    <h2>Two mistake patterns, and one skill that needs more practice</h2>
+    <p class="lede muted">Struggles are rare for this learner. These are the specific patterns the tutor recorded, with something to try at home.</p>
+    <div class="panel" id="help" style="gap:20px"></div>
+  </section>
+
+  <section id="s-into">
+    <div class="eyebrow">What are they into?</div>
+    <h2>Trucks, and anything with numbers</h2>
+    <div class="two">
+      <div class="panel">
+        <h3>Their interests</h3>
+        <div class="tags" id="interests"></div>
+        <p class="small muted" id="int-note"></p>
+      </div>
+      <div class="panel">
+        <h3>Where their time goes</h3>
+        <div class="bars" id="subj-bars"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>Working ahead of Kindergarten</h3>
+      <p class="muted" id="ahead"></p>
+      <div class="bars" id="grade-bars"></div>
+    </div>
+  </section>
+
+  <section id="s-sure">
+    <div class="eyebrow">How sure are we?</div>
+    <h2>What this report is based on</h2>
+    <ul class="notes" id="notes"></ul>
+  </section>
+
+  <p class="proto">Prototype built from a Firestore export of students/1004 (attempts, mastery lifecycle, ability, misconceptions, curriculum). The at-home activities are written by hand for this prototype; the product would generate them per pattern.</p>
+</div>
+<div class="tip" id="tip"></div>
+
+<script>
+const D = __DATA__;
+const $ = id => document.getElementById(id);
+const fmtDate = s => new Date(s + "T12:00:00").toLocaleDateString("en-US", {month: "short", day: "numeric"});
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const T = D.totals;
+const kTot = D.k_subjects.reduce((a, s) => a + s.total, 0);
+const kM = D.k_subjects.reduce((a, s) => a + s.mastered, 0);
+const kP = D.k_subjects.reduce((a, s) => a + s.progress, 0);
+const recentWeeks = D.weeks.filter(w => w.items).slice(-8);
+const accAvg = Math.round(recentWeeks.reduce((a, w) => a + w.avg * w.items, 0) / recentWeeks.reduce((a, w) => a + w.items, 0));
+const gradeTotal = Object.values(D.grade_mix).reduce((a, b) => a + b, 0) - (D.grade_mix["?"] || 0);
+const aheadN = gradeTotal - (D.grade_mix.K || 0);
+const aheadPct = Math.round(aheadN / gradeTotal * 100);
+
+$("m-span").textContent = `Learning with Lumina since ${new Date(D.student.first_activity).toLocaleDateString("en-US",{month:"long",year:"numeric"})}`;
+$("short").innerHTML = `1004 practices most weeks in short sessions (about ${T.median_session} minutes each) and gets <strong>${accAvg}% of answers right</strong>. They have <strong>mastered ${kM} Kindergarten skills</strong>, mostly in counting and letter sounds, and are partway through ${kP} more. They regularly work ahead: ${aheadPct}% of their practice is Grade 1 material or above. Because they almost never miss, the main opportunity is <strong>harder lessons</strong>, not more help. Two small mistake patterns are worth a few minutes at home.`;
+$("facts").innerHTML = [
+  [T.days_30d, "days practiced in the last 30"],
+  [`${Math.floor(T.minutes_30d/60)}h ${T.minutes_30d%60}m`, "practice time, last 30 days"],
+  [T.mastered_30d, "skills mastered, last 30 days"],
+  [`${accAvg}%`, "answers correct, last 8 active weeks"],
+].map(([b, s]) => `<div class="fact"><b>${b}</b><span>${s}</span></div>`).join("");
+
+const tip = $("tip");
+function showTip(e, html){ tip.innerHTML = html; tip.style.opacity = 1; const x = Math.min(e.clientX + 14, innerWidth - 270); tip.style.left = x + "px"; tip.style.top = (e.clientY + 14) + "px"; }
+function hideTip(){ tip.style.opacity = 0; }
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent){ const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); parent && parent.appendChild(n); return n; }
+
+// --- minutes per week + mastered markers ---
+(function(){
+  const svg = $("c-minutes"), W = D.weeks, L = 44, R = 790, top = 34, base = 172;
+  const max = Math.ceil(Math.max(...W.map(w => w.minutes)) / 60) * 60;
+  const g = el("g", {class: "grid"}, svg);
+  for (let v = 0; v <= max; v += max / 3){ const y = base - v / max * (base - top); el("line", {x1: L, x2: R, y1: y, y2: y}, g); el("text", {x: L - 8, y: y + 4, "text-anchor": "end"}, svg).textContent = Math.round(v); }
+  const step = (R - L) / W.length, bw = Math.min(30, step - 8);
+  W.forEach((w, i) => {
+    const x = L + i * step + (step - bw) / 2, h = w.minutes / max * (base - top);
+    if (w.minutes) el("rect", {x, y: base - h, width: bw, height: Math.max(h, 2), rx: 4, fill: "var(--s3)"}, svg);
+    if (w.mastered) { const cy = Math.max(top - 12, base - h - 11); el("circle", {cx: x + bw / 2, cy, r: 5, fill: "var(--warm)", stroke: "var(--surface)", "stroke-width": 2}, svg);
+      if (w.mastered > 1) el("text", {x: x + bw / 2 + 9, y: cy + 4, style: "fill:var(--warm);font-weight:700"}, svg).textContent = w.mastered; }
+    if (i % 2 === 0 || i === W.length - 1) el("text", {x: x + bw / 2, y: base + 18, "text-anchor": "middle"}, svg).textContent = fmtDate(w.week);
+    const hit = el("rect", {x: L + i * step, y: top - 20, width: step, height: base - top + 20, fill: "transparent"}, svg);
+    hit.addEventListener("mousemove", e => showTip(e, `<b>Week of ${fmtDate(w.week)}</b><br>${w.minutes} min · ${w.days} day${w.days===1?"":"s"} · ${w.items} answers${w.avg!=null?` · ${w.avg}% right`:""}<br>${w.mastered} mastered · ${w.gates} checks passed`));
+    hit.addEventListener("mouseleave", hideTip);
+  });
+})();
+
+// --- accuracy per week, with learning-zone band ---
+(function(){
+  const svg = $("c-acc"), W = D.weeks, L = 44, R = 790, top = 14, base = 140;
+  const y = v => base - (v - 50) / 50 * (base - top);
+  el("rect", {x: L, y: y(85), width: R - L, height: y(70) - y(85), fill: "var(--zone)"}, svg);
+  const g = el("g", {class: "grid"}, svg);
+  [50, 70, 85, 100].forEach(v => { el("line", {x1: L, x2: R, y1: y(v), y2: y(v)}, g); el("text", {x: L - 8, y: y(v) + 4, "text-anchor": "end"}, svg).textContent = v + "%"; });
+  const step = (R - L) / W.length, pts = [];
+  W.forEach((w, i) => { if (w.avg != null) pts.push([L + i * step + step / 2, y(w.avg), w]); });
+  el("path", {d: pts.map((p, i) => (i ? "L" : "M") + p[0] + " " + p[1]).join(" "), fill: "none", stroke: "var(--accent)", "stroke-width": 2}, svg);
+  pts.forEach(([x, yy, w], i) => {
+    el("circle", {cx: x, cy: yy, r: i === pts.length - 1 ? 5.5 : 4, fill: "var(--accent)", stroke: "var(--surface)", "stroke-width": 2}, svg);
+    const hit = el("rect", {x: x - step / 2, y: top, width: step, height: base - top, fill: "transparent"}, svg);
+    hit.addEventListener("mousemove", e => showTip(e, `<b>Week of ${fmtDate(w.week)}</b><br>${w.avg}% right across ${w.items} answers`));
+    hit.addEventListener("mouseleave", hideTip);
+  });
+  W.forEach((w, i) => { if (i % 2 === 0 || i === W.length - 1) el("text", {x: L + i * step + step / 2, y: base + 18, "text-anchor": "middle"}, svg).textContent = fmtDate(w.week); });
+})();
+const aboveZone = recentWeeks.filter(w => w.avg > 85).length;
+$("learn-lede").textContent = `Over the last ${D.weeks.length} weeks, 1004 practiced in ${D.weeks.filter(w => w.items).length} of them and passed ${D.weeks.reduce((a,w)=>a+w.gates,0)} mastery checks. In ${aboveZone} of the last ${recentWeeks.length} active weeks they got more than 85% right. That says they're ready for harder material.`;
+
+// --- Kindergarten year map ---
+const STAGES = [["Not started","var(--s0)"],["Tried","var(--s1)"],["Learning (checks 1–3)","var(--s2)"],["Mastered","var(--s4)"]];
+const cellColor = g => g < 0 ? "var(--s0)" : g === 0 ? "var(--s1)" : g < 4 ? "var(--s2)" : "var(--s4)";
+const stageLabel = g => g < 0 ? "Not started" : g === 0 ? "Tried, no checks passed yet" : g < 4 ? `Learning: ${g} of 4 checks passed` : "Mastered";
+$("stage-legend").innerHTML = STAGES.map(([n, c]) => `<span class="key"><span class="sw" style="background:${c}"></span>${n}</span>`).join("");
+$("year-lede").textContent = `The Kindergarten map has ${kTot} skills across four subjects. 1004 has mastered ${kM} and is learning ${kP}. Each square below is one skill.`;
+$("year").innerHTML = D.k_subjects.map(s => {
+  const started = s.started, rest = s.total - s.mastered - s.progress - started;
+  const seg = (n, c) => n ? `<i style="width:${n / s.total * 100}%;background:${c}"></i>` : "";
+  const units = s.units.map(u => {
+    const cells = u.skills.flatMap(sk => sk.cells.map(g => `<i style="background:${cellColor(g)}" data-t="${esc(sk.desc)}" data-g="${g}"></i>`)).join("");
+    return `<div class="unit"><span class="nm">${esc(u.title)}</span><span class="cells">${cells}</span><span class="ct">${u.mastered}/${u.total}</span></div>`;
+  }).join("");
+  const open = s.id === "LANGUAGE_ARTS" || s.id === "MATHEMATICS" ? " open" : "";
+  return `<div class="subj"><div class="subj-head"><h3>${s.name}</h3><span class="small muted num">${s.mastered} mastered · ${s.progress} learning · ${s.total} skills</span></div>
+    <div class="stack" role="img" aria-label="${s.name}: ${s.mastered} mastered, ${s.progress} learning, ${started} tried, ${rest} not started">${seg(s.mastered,"var(--s4)")}${seg(s.progress,"var(--s2)")}${seg(started,"var(--s1)")}</div>
+    <details${open}><summary>Units</summary><div class="units">${units}</div></details></div>`;
+}).join("");
+$("year").addEventListener("mousemove", e => { const c = e.target.closest(".cells i"); if (!c) return hideTip(); showTip(e, `<b>${stageLabel(+c.dataset.g)}</b><br>${c.dataset.t}`); });
+$("year").addEventListener("mouseleave", hideTip);
+
+// --- mastered + in progress ---
+const gradeChip = g => (g && g !== "Kindergarten" && g !== "K" && g !== "?") ? `<span class="chip ahead">Grade ${g}</span>` : "";
+const ev = r => r.attempts ? `${r.attempts} answer${r.attempts===1?"":"s"}${r.avg!=null?`, ${r.avg}% right`:""}` : "evidence from earlier lessons";
+$("mastered").innerHTML = D.recent_mastered.filter(r => r.grade !== "?").slice(0, 7).map(r =>
+  `<div class="item"><div><div class="d">${esc(r.desc)}${gradeChip(r.grade)}</div><div class="ev">${esc(r.unit || "")} · ${ev(r)}</div></div><div class="side">${fmtDate(r.mastered_on)}</div></div>`).join("");
+$("progress").innerHTML = D.in_progress.filter(r => r.grade !== "?").slice(0, 7).map(r =>
+  `<div class="item"><div><div class="d">${esc(r.desc)}${gradeChip(r.grade)}</div><div class="ev">${ev(r)}</div></div><div class="side"><span class="steps">${[1,2,3,4].map(k => `<i class="${k <= r.gate ? "on" : ""}"></i>`).join("")}</span>${r.gate} of 4</div></div>`).join("");
+
+// --- where to help ---
+const HOME = {
+  "OPS001-02-b": "Put 7 crackers on a plate. Say \"7 take away 3\" and eat 3 together. Count what's left before saying the answer. The answer is what is left, not the number taken away.",
+  "SCI001-02-B": "Go on a house hunt for one thing made of each: wood (a spoon or block), metal (a key), plastic (a cup), fabric (a sock). Sort them into four piles and name each pile.",
+  "NBT004-01-b": "This came from a Grade 4 activity, well beyond Kindergarten. Nothing to do at home. It shows up here because the tutor recorded it.",
+};
+const helpItems = [];
+D.misconceptions.forEach(m => helpItems.push({title: m.text.replace(/^The student (\w)/, (_, c) => c.toUpperCase()), sub: `${m.desc || ""}`, grade: m.grade, when: m.detected, sid: m.sid, kind: "Mistake pattern"}));
+D.help.filter(r => !D.misconceptions.some(m => m.sid === r.sid) && HOME[r.sid]).forEach(r => helpItems.push({title: r.desc, sub: `${ev(r)} · ${r.gate} of 4 checks passed`, grade: r.grade, when: r.last, sid: r.sid, kind: "Needs practice"}));
+helpItems.sort((a, b) => (a.grade === "4") - (b.grade === "4"));
+$("help").innerHTML = helpItems.map(h => `<div class="help"><div class="eyebrow">${h.kind} · seen ${fmtDate(h.when)}${h.grade && h.grade !== "Kindergarten" ? ` · Grade ${h.grade} material` : ""}</div>
+  <div class="d" style="font-weight:700">${esc(h.title)}</div><div class="small muted">${esc(h.sub)}</div>
+  ${HOME[h.sid] ? `<div class="home"><b>Try at home: </b>${esc(HOME[h.sid])}</div>` : ""}</div>`).join("");
+
+// --- interests ---
+$("interests").innerHTML = D.student.interests.map(i => `<span class="tag">${esc(i)}</span>`).join("");
+$("int-note").textContent = `Lessons use these themes where they fit. 1004 has done ${D.vehicle_items} activities in truck and excavator simulations, and mastered a Grade 1 science skill estimating dump-truck loads.`;
+const SN = {MATHEMATICS: "Math", LANGUAGE_ARTS: "Reading", SCIENCE: "Science", SOCIAL_STUDIES: "Social Studies", ENGINEERING: "Engineering", GENERAL: "Mixed lessons"};
+const sm = Object.entries(D.subject_minutes), smMax = Math.max(...sm.map(x => x[1]));
+const totalMin = sm.reduce((a, x) => a + x[1], 0);
+$("subj-bars").innerHTML = sm.map(([k, v]) => `<div class="bar"><span>${SN[k] || k}</span><span class="track"><i style="width:${v / smMax * 100}%"></i></span><span class="v">${Math.round(v / totalMin * 100)}%</span></div>`).join("");
+const gm = ["K","1","2","3","4","5"].map(g => [g, D.grade_mix[g] || 0]).filter(x => x[1]);
+const gmMax = Math.max(...gm.map(x => x[1]));
+$("ahead").textContent = `${aheadN} of ${gradeTotal} answers (${aheadPct}%) came from Grade 1 or higher. Most of that is Grade 1 math and reading, and the accuracy there is just as high.`;
+$("grade-bars").innerHTML = gm.map(([g, n]) => `<div class="bar"><span>${g === "K" ? "Kindergarten" : "Grade " + g}</span><span class="track"><i style="width:${n / gmMax * 100}%;${g === "K" ? "" : "background:var(--warm)"}"></i></span><span class="v">${n}</span></div>`).join("");
+
+// --- how sure ---
+$("notes").innerHTML = [
+  `Built from ${T.items} answers across ${T.sessions} sessions on ${T.active_days} days. Practice time is estimated from session start and end times.`,
+  `${T.dropped_burst.toLocaleString()} answers were left out: on Mar 9, Mar 14 and Jun 8, single skills logged hundreds of answers at about one per second. That is a system replay or test script, not a child.`,
+  `"Mastered" comes from Lumina's four-check model: a skill must keep being answered correctly across separate lessons as the questions get harder. A skill with one lucky answer stays at "Tried".`,
+  `Skills marked with a grade chip are above Kindergarten. They count toward the "working ahead" figure, not toward the Kindergarten map.`,
+].map(s => `<li>${esc(s)}</li>`).join("");
+</script>

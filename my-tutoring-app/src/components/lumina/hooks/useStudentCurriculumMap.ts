@@ -33,6 +33,8 @@ interface SubjectInfo {
 interface CurriculumSubskill {
   id: string;
   description: string;
+  /** Plain sentence for learners and parents, when the curriculum has one. */
+  parent_summary?: string;
 }
 interface CurriculumSkill {
   id: string;
@@ -50,6 +52,8 @@ export type MasteryStatus = KnowledgeGraphNode['status'] | 'unknown';
 export interface UnitSubskillDetail {
   id: string;
   description: string;
+  /** Plain sentence for learners and parents; null until the curriculum carries one. */
+  parentSummary: string | null;
   status: MasteryStatus;
   gate: number;
   theta: number | null;
@@ -299,6 +303,7 @@ export function useStudentCurriculumMap(studentId: number): StudentCurriculumMap
             return {
               id: ss.id,
               description: ss.description,
+              parentSummary: ss.parent_summary ?? null,
               status: node?.status ?? (hasKg ? 'not_started' : 'unknown'),
               gate: node?.current_gate ?? 0,
               theta: node?.theta ?? null,

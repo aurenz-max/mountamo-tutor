@@ -296,6 +296,9 @@ class CurriculumService:
                         ss_entry["target_primitive"] = subskill["target_primitive"]
                     if subskill.get("target_eval_modes"):
                         ss_entry["target_eval_modes"] = subskill["target_eval_modes"]
+                    if subskill.get("parent_summary"):
+                        # Plain sentence for learners/parents; `description` stays the authoring text.
+                        ss_entry["parent_summary"] = subskill["parent_summary"]
                     skill_entry["subskills"].append(ss_entry)
                 unit_entry["skills"].append(skill_entry)
             structured.append(unit_entry)

@@ -414,6 +414,117 @@ export interface PulseSessionHistoryResponse {
   cached?: boolean;
 }
 
+
+// ---------------------------------------------------------------------------
+// Progress report — GET /api/analytics/student/{id}/report
+// The facts behind "how is my child doing?" (backend app/services/progress_report.py).
+// Mastery = lifecycle gate 4; gates are 0-4, null = never started.
+// ---------------------------------------------------------------------------
+
+export interface ProgressReportSkillRow {
+  subskill_id: string;
+  description: string | null;
+  /** Published parent-facing sentence, when the curriculum has one. */
+  parent_summary?: string | null;
+  unit: string | null;
+  subject: string | null;
+  grade: string | null;
+  gate: number;
+  answers: number;
+  accuracy: number | null; // 0-100
+  mastered_on: string | null;
+  last_seen: string | null;
+}
+
+export interface ProgressReportWeek {
+  week_of: string;
+  minutes: number;
+  active_days: number;
+  answers: number;
+  accuracy: number | null; // 0-100
+  checks_passed: number;
+  mastered: number;
+}
+
+export interface ProgressReportSubskillStats {
+  gate: number | null;
+  answers: number;
+  accuracy: number | null; // 0-100
+  lessons: number;
+}
+
+export interface ProgressReportSubject {
+  subject: string;
+  name: string;
+  total: number;
+  mastered: number;
+  learning: number;
+  tried: number;
+  units: Array<{
+    unit_id: string | null;
+    title: string;
+    total: number;
+    mastered: number;
+    learning: number;
+    skills: Array<{ skill_id: string | null; description: string; gates: Array<number | null> }>;
+  }>;
+}
+
+export interface ProgressReportResponse {
+  student_id: number;
+  grade: string;
+  as_of: string;
+  interests: string[];
+  first_activity: string | null;
+  last_activity: string | null;
+  recent: { days: number; active_days: number; minutes: number; answers: number; mastered: number };
+  accuracy_recent_weeks: number | null;
+  typical_session_minutes: number | null;
+  weeks: ProgressReportWeek[];
+  grade_map: ProgressReportSubject[];
+  /** subskill_id -> evidence (burst-excluded answers, lifecycle gate, lessons), for subskills with any. */
+  subskill_stats: Record<string, ProgressReportSubskillStats>;
+  recent_mastered: ProgressReportSkillRow[];
+  in_progress: ProgressReportSkillRow[];
+  needs_practice: ProgressReportSkillRow[];
+  misconceptions: Array<{
+    pattern: string;
+    detected_on: string | null;
+    confidence: string | null;
+    subskill_id: string;
+    description: string | null;
+    parent_summary?: string | null;
+    grade: string | null;
+  }>;
+  time_by_subject: Array<{ subject: string; name: string; minutes: number }>;
+  grade_mix: Array<{ grade: string; answers: number }>;
+  favorite_activities: Array<{ primitive_type: string; answers: number; accuracy: number }>;
+  interest_answers: number;
+  evidence: {
+    answers: number;
+    sessions: number;
+    active_days: number;
+    excluded_burst_answers: number;
+    burst_days: string[];
+  };
+}
+/** Prose for the report (GET .../report/narrative). Any part may be missing. */
+export interface ProgressReportNarrativeResponse {
+  as_of: string;
+  narrative: {
+    short_answer: string;
+    learning_headline: string;
+    learning_lede: string;
+    year_lede: string;
+    help_lede: string;
+  } | null;
+  narrative_rejected: string | null;
+  /** subskill_id -> one plain sentence for parents. */
+  summaries: Record<string, string>;
+  /** "pattern:<subskill_id>" | "practice:<subskill_id>" -> at-home activity. */
+  tips: Record<string, string>;
+}
+
 // UPDATED API OBJECT - Now uses authApiClient for authentication
 export const analyticsApi = {
   // Get hierarchical metrics for a student
@@ -668,6 +779,29 @@ export const analyticsApi = {
     const queryString = params.toString();
     const endpoint = `/api/analytics/student/${studentId}/profile${queryString ? `?${queryString}` : ''}`;
     return authApi.get<StudentProfileResponse>(endpoint);
+  },
+
+  // Progress report: practice, the grade map, masteries, struggles, interests.
+  async getProgressReport(
+    studentId: number,
+    options: { grade?: string } = {}
+  ): Promise<ProgressReportResponse> {
+    const query = options.grade ? `?grade=${encodeURIComponent(options.grade)}` : '';
+    return authApi.get<ProgressReportResponse>(`/api/analytics/student/${studentId}/report${query}`);
+  },
+
+  // Gemini-written text for the progress report (slow on first daily load; cached after).
+  async getProgressReportNarrative(
+    studentId: number,
+    options: { grade?: string; name?: string } = {}
+  ): Promise<ProgressReportNarrativeResponse> {
+    const params = new URLSearchParams();
+    if (options.grade) params.append('grade', options.grade);
+    if (options.name) params.append('name', options.name);
+    const query = params.toString();
+    return authApi.get<ProgressReportNarrativeResponse>(
+      `/api/analytics/student/${studentId}/report/narrative${query ? `?${query}` : ''}`
+    );
   },
 
   // IRT session-scope selector: what should this student's next lesson in a

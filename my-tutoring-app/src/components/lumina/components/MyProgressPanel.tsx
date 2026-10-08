@@ -25,6 +25,7 @@ import StudentActivityPanel from './StudentActivityPanel';
 import StudentProfileSummary from './StudentProfileSummary';
 import SavedLearningObservations from './SavedLearningObservations';
 import UnitSkillsPanel from './UnitSkillsPanel';
+import ProgressReport from './progressReport/ProgressReport';
 
 /** The curriculum-map hero, driven by the student's real grade + curriculum + mastery. */
 const YourJourney: React.FC<{ studentId: number }> = ({ studentId }) => {
@@ -88,6 +89,9 @@ export default function MyProgressPanel({ studentId, onBack }: MyProgressPanelPr
           &larr; Back
         </button>
       )}
+
+      {/* ── Progress report — "how is my child doing?" (GET .../report) ── */}
+      <ProgressReport studentId={studentId} />
 
       {/* ── Snapshot — one-call profile read (level/XP/streak + subject mastery) ── */}
       <StudentProfileSummary studentId={studentId} />

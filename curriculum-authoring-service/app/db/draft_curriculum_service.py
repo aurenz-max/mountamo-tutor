@@ -619,8 +619,28 @@ class DraftCurriculumService:
         if not doc:
             raise ValueError(f"No draft found for {subject_id} (grade={grade})")
 
+        # deploy_curriculum writes to the grade named INSIDE the doc. A draft whose
+        # grade field disagrees with the grade being published would overwrite another
+        # grade's curriculum (10-08: the G1 SOCIAL_STUDIES draft said "Kindergarten" and
+        # replaced published K Social Studies). Refuse instead.
+        if not grades_match(str(doc.get("grade") or ""), grade):
+            raise ValueError(
+                f"Draft {subject_id} at grade {grade!r} is labelled grade {doc.get('grade')!r}; "
+                f"publishing it would overwrite that grade's curriculum. Fix the draft's grade field first."
+            )
+
         # Clean legacy fields from draft so they don't keep propagating
         self._strip_legacy_fields(doc)
+
+        # Parent-facing summaries for new or edited subskills (never blocks publish)
+        try:
+            from app.services.parent_summaries import fill_parent_summaries
+            filled = await fill_parent_summaries(doc)
+            if filled["needed"]:
+                logger.info(f"Parent summaries for {subject_id}: {filled['written']}/{filled['needed']} written")
+        except Exception as e:
+            logger.warning(f"Parent summaries skipped for {subject_id}: {e}")
+
         await self.save_draft(grade, subject_id, doc)
 
         published = deepcopy(doc)
@@ -821,6 +841,8 @@ class DraftCurriculumService:
                         entry["target_primitive"] = ss["target_primitive"]
                     if ss.get("target_eval_modes"):
                         entry["target_eval_modes"] = ss["target_eval_modes"]
+                    if ss.get("parent_summary"):
+                        entry["parent_summary"] = ss["parent_summary"]
                     index[ss["subskill_id"]] = entry
 
         doc["subskill_index"] = index
