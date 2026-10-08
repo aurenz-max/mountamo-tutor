@@ -30,6 +30,7 @@ import type { PhonemeMiss } from '../../../primitives/visual-primitives/literacy
 import type { SwapMiss } from '../../../primitives/visual-primitives/literacy/soundSwapLevers';
 import type { SyllableMiss } from '../../../primitives/visual-primitives/literacy/syllableClapperLevers';
 import type { FlipMiss } from '../../../primitives/visual-primitives/literacy/wordFlipLevers';
+import type { InflectBuildMiss } from '../../../primitives/visual-primitives/literacy/inflectBuild';
 import type { SpokenPictureVocabMiss } from '../../../primitives/visual-primitives/literacy/pictureVocabularyWorkspace';
 import type { PictureVocabMiss } from '../../../primitives/visual-primitives/literacy/pictureVocabularyLevers';
 import type { SpokenGenreMiss } from '../../../primitives/visual-primitives/literacy/genreExplorerWorkspace';
@@ -3996,7 +3997,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'judges the answer from the audio and its own affirmation moves the lesson on. The one-thing word is on '
       + 'screen and tappable to hear; there are no answer chips and nothing to click to advance. Requires a '
       + 'microphone. Teaches regular and irregular noun plurals plus regular -ed and common irregular past forms. '
-      + 'ESSENTIAL for early-elementary Language Arts grammar.',
+      + 'ESSENTIAL for early-elementary Language Arts grammar. One mode is the exception: in build_inflect (open build, '
+      + 'grades 1-2) the learner taps a base-word card and an ending card (s, es, ies, ed) to MAKE a word that means more '
+      + 'than one or that tells it already happened, and many words can pass.',
     constraints:
       'GRAMMAR objectives only (plural nouns or past-tense verbs). Do NOT route decoding/CVC/phonics/spelling objectives here — the pool is chosen for honest morphology, not decodability. Modes cover regular -s, regular -es, consonant-y → -ies, common irregular plurals, add-only -ed verbs, and code-owned irregular past forms. The -ies and past modes are Grade 1-2 extensions; keep K objectives on -s/-es and familiar irregular plurals. Every noun or action must be concrete and picturable. The manifest must NOT supply per-challenge words — the generator authors typed candidates and code validates and derives every answer deterministically. Spoken answers require the live tutor and a microphone.',
     // reader: 'none' — READY @ PRE (word-flip is the reader-fit skill's own PRE
@@ -4023,6 +4026,22 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     // sentence-scoped verdict scan would classify a phantom verdict.
     audioInput: { manual_activity: true },
     evalModes: [
+      {
+        evalMode: 'build_inflect',
+        affordances: { answers: ['build'] },
+        label: 'Make a Word with an Ending (open build)',
+        beta: 3.6,
+        discrimination: 1.6,
+        scaffoldingMode: 3,
+        challengeTypes: ['build_inflect'],
+        description:
+          'Open build: tap a base-word card and an ending card (s, es, ies, ed) into a row to MAKE a word that means more '
+          + 'than one or that tells it already happened, then press done; every second item asks for a second, different word. '
+          + 'Many words pass (cats, boxes, babies). The learner chooses the spelling change (ies for a word ending in a '
+          + 'consonant and y; the card takes the place of the y); no doubled consonant is asked. Code checks the ending '
+          + 'against the ask and the base, the shared literacy judge reads the made word. Grades 1-2. '
+          + 'β = past_ed + 0.1: the board mixes the -es, y to -ies and -ed choices.',
+      },
       {
         evalMode: 'plural_s',
         label: 'Add -s (Tier 1)',
@@ -4205,13 +4224,19 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'says the changed word aloud and it is judged against the word you are given; saying it inside a phrase '
         + '(three dogs, yesterday I jumped) is correct. The word said back unchanged, or the rule applied twice '
         + '(dogses, jumpeded), is not yet the answer. The new word is a blank until credited: never say it before the '
-        + 'learner has tried. A tapped card asks you to say its word unchanged. You cannot tap or fill in the blank.',
+        + 'learner has tried. A tapped card asks you to say its word unchanged. You cannot tap or fill in the blank. On '
+        + 'build_inflect the learner instead taps a word card and an ending card into a row to MAKE a word for the ask and '
+        + 'presses "I\'m done!"; many words can fit. Never say a word that would fit, which ending to use, or which word '
+        + 'takes which ending; when they stop, invite them to read the word in their row and check it against the ask.',
       levers: true,
       // Spoken misses (`wordFlipLevers.ts`), emitted by `flipSpokenMisses`. `unanswered` stays the levers' own list
-      // (`wordFlipLevers.test.ts` pins it).
-      misses: missLists<FlipMiss>({ plural_s: ['unchanged', 'wrong_ending', 'double_ending'], plural_es: ['unchanged', 'wrong_ending', 'double_ending'], plural_y: ['unchanged', 'wrong_ending', 'double_ending'],
-        past_ed: ['unchanged', 'wrong_ending', 'double_ending'], irregulars: ['regularized', 'unchanged'], past_irregular: ['regularized', 'unchanged'] }),
-      unanswered: { plural_s: ['unchanged', 'wrong_ending', 'double_ending'], plural_es: ['unchanged', 'wrong_ending', 'double_ending'], plural_y: ['unchanged', 'wrong_ending', 'double_ending'],
+      // (`wordFlipLevers.test.ts` pins it). The open build: code checks, then the shared literacy judge (`inflectBuild.ts`).
+      misses: missLists<FlipMiss | InflectBuildMiss>({ plural_s: ['unchanged', 'wrong_ending', 'double_ending'], plural_es: ['unchanged', 'wrong_ending', 'double_ending'], plural_y: ['unchanged', 'wrong_ending', 'double_ending'],
+        past_ed: ['unchanged', 'wrong_ending', 'double_ending'], irregulars: ['regularized', 'unchanged'], past_irregular: ['regularized', 'unchanged'],
+        build_inflect: ['base_only', 'ending_only', 'parts_out_of_order', 'double_ending', 'wrong_ending_kind', 'other_base',
+          'wrong_ending', 'missed_y_change', 'same_word', 'not_a_word', 'wrong_meaning'] }),
+      // build_inflect `same_word` has no lever: the word already made stays on screen above the row.
+      unanswered: { build_inflect: ['same_word'], plural_s: ['unchanged', 'wrong_ending', 'double_ending'], plural_es: ['unchanged', 'wrong_ending', 'double_ending'], plural_y: ['unchanged', 'wrong_ending', 'double_ending'],
         past_ed: ['unchanged', 'wrong_ending', 'double_ending'], irregulars: ['regularized', 'unchanged'], past_irregular: ['regularized', 'unchanged'] },
     },
   },

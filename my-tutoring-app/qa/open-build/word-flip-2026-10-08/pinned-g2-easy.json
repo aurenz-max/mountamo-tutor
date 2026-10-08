@@ -1,0 +1,210 @@
+{
+  "generatedAt": "2026-10-08T09:29:46.759Z",
+  "case": {
+    "targetEvalMode": "build_inflect",
+    "grade": "2",
+    "topic": "At the park",
+    "intent": "Plural and past tense endings",
+    "supportTier": "easy"
+  },
+  "data": {
+    "title": "Playground Fun at the Park!",
+    "challengeType": "build_inflect",
+    "task": "build_inflect",
+    "challenges": [],
+    "availableParts": [
+      {
+        "id": "noun-berry",
+        "text": "berry",
+        "type": "root",
+        "meaning": "🫐"
+      },
+      {
+        "id": "noun-dish",
+        "text": "dish",
+        "type": "root",
+        "meaning": "🍽️"
+      },
+      {
+        "id": "noun-hat",
+        "text": "hat",
+        "type": "root",
+        "meaning": "🎩"
+      },
+      {
+        "id": "noun-city",
+        "text": "city",
+        "type": "root",
+        "meaning": "🏙️"
+      },
+      {
+        "id": "verb-walk",
+        "text": "walk",
+        "type": "root",
+        "meaning": "🚶"
+      },
+      {
+        "id": "noun-dress",
+        "text": "dress",
+        "type": "root",
+        "meaning": "👗"
+      },
+      {
+        "id": "noun-moon",
+        "text": "moon",
+        "type": "root",
+        "meaning": "🌙"
+      },
+      {
+        "id": "verb-look",
+        "text": "look",
+        "type": "root",
+        "meaning": "👀"
+      },
+      {
+        "id": "end-s",
+        "text": "s",
+        "type": "suffix",
+        "meaning": ""
+      },
+      {
+        "id": "end-es",
+        "text": "es",
+        "type": "suffix",
+        "meaning": ""
+      },
+      {
+        "id": "end-ies",
+        "text": "ies",
+        "type": "suffix",
+        "meaning": "",
+        "replaces": "y"
+      },
+      {
+        "id": "end-ed",
+        "text": "ed",
+        "type": "suffix",
+        "meaning": ""
+      }
+    ],
+    "buildItems": [
+      {
+        "id": "f1",
+        "inflect": "plural",
+        "ways": 1,
+        "ask": "Make a word that means more than one.",
+        "examples": [
+          [
+            "noun-berry",
+            "end-ies"
+          ],
+          [
+            "noun-dish",
+            "end-es"
+          ],
+          [
+            "noun-hat",
+            "end-s"
+          ],
+          [
+            "noun-city",
+            "end-ies"
+          ],
+          [
+            "noun-dress",
+            "end-es"
+          ],
+          [
+            "noun-moon",
+            "end-s"
+          ]
+        ]
+      },
+      {
+        "id": "f2",
+        "inflect": "past",
+        "ways": 1,
+        "ask": "Make a word that tells it already happened.",
+        "examples": [
+          [
+            "verb-walk",
+            "end-ed"
+          ],
+          [
+            "verb-look",
+            "end-ed"
+          ]
+        ]
+      },
+      {
+        "id": "f3",
+        "inflect": "plural",
+        "ways": 1,
+        "bases": [
+          "noun-berry",
+          "noun-city"
+        ],
+        "baseHint": "a word that ends in y",
+        "ask": "Make a word that means more than one. Use a word that ends in y.",
+        "examples": [
+          [
+            "noun-berry",
+            "end-ies"
+          ],
+          [
+            "noun-city",
+            "end-ies"
+          ]
+        ]
+      },
+      {
+        "id": "f4",
+        "inflect": "plural",
+        "ways": 1,
+        "bases": [
+          "noun-dish",
+          "noun-dress"
+        ],
+        "baseHint": "a word that ends in sh or s",
+        "ask": "Make a word that means more than one. Use a word that ends in sh or s.",
+        "examples": [
+          [
+            "noun-dish",
+            "end-es"
+          ],
+          [
+            "noun-dress",
+            "end-es"
+          ]
+        ]
+      },
+      {
+        "id": "f5",
+        "inflect": "past",
+        "ways": 1,
+        "ask": "Make a word that tells what someone did yesterday.",
+        "examples": [
+          [
+            "verb-walk",
+            "end-ed"
+          ],
+          [
+            "verb-look",
+            "end-ed"
+          ]
+        ]
+      }
+    ],
+    "gradeLevel": "Grade 2",
+    "supportTier": "easy"
+  },
+  "oracle": {
+    "violations": [],
+    "uncheckedTypes": [],
+    "checkedChallenges": 5
+  },
+  "issues": [],
+  "logs": [
+    "🔁 Word Flip (build_inflect): {\n  topic: 'At the park',\n  bases: [\n    'moon',  'hat',\n    'dress', 'dish',\n    'city',  'berry',\n    'walk',  'look'\n  ],\n  fromModel: 12,\n  asks: [\n    'Make a word that means more than one.',\n    'Make a word that tells it already happened.',\n    'Make a word that means more than one. Use a word that ends in y.',\n    'Make a word that means more than one. Use a word that ends in sh or s.',\n    'Make a word that tells what someone did yesterday.'\n  ]\n}"
+  ]
+}

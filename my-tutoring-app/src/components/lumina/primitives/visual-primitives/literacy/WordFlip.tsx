@@ -46,6 +46,9 @@ import { COMMON_IRREGULAR_LEVER, FAMILIAR_LEVER, FLIP_EMOJI, IRREGULAR_LEVER, RU
   practiceItemFor, wordFlipLevers } from './wordFlipLevers';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { wordFlipPipPose } from '../../../pip/wordFlipPipPose';
+import WordBuildAffix from './WordBuildAffix';
+import type { AffixBuildSummary, BuildPart } from './affixBuild';
+import { inflectBuildRules, type InflectBuildItem } from './inflectBuild';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -81,10 +84,18 @@ export interface WordFlipChallenge {
 export interface WordFlipData {
   title: string;
   /** Session-level mode; mixed means the per-challenge type is authoritative. */
-  challengeType: WordFlipChallengeType | 'mixed';
-  /** 4-6 challenges. REQUIRED — assembled by the generator from Gemini's noun pool. */
+  challengeType: WordFlipChallengeType | 'mixed' | 'build_inflect';
+  /** 4-6 challenges. REQUIRED — assembled by the generator from Gemini's noun pool. Empty on the open build. */
   challenges: WordFlipChallenge[];
   gradeLevel?: string;
+  /** `build_inflect` (open build, `inflectBuild.ts`): the learner makes words from base and ending cards. */
+  task?: 'build_inflect';
+  /** The build's board: base-word cards (`noun-`/`verb-` ids, emoji as meaning) and the four ending cards. */
+  availableParts?: BuildPart[];
+  /** The build's asks, code-written (`inflectAsksFor`). */
+  buildItems?: InflectBuildItem[];
+  /** config.difficulty: the easy tier asks for one word per item. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -403,7 +414,22 @@ function WordFlipSurface({ data, className, runtimePlanItemId }: WordFlipProps) 
   );
 }
 
+/** The open build's metrics, in word-flip's shape. */
+const buildMetrics = (s: AffixBuildSummary): WordFlipMetrics => ({
+  type: 'word-flip', challengeType: 'build_inflect', task: 'build_inflect', totalChallenges: s.total, correctCount: s.solved,
+  attemptsCount: s.attemptsCount, firstTryCount: s.firstTryCorrect, hintsViewed: 0, overallAccuracy: s.accuracy,
+  averageAttemptsPerChallenge: s.total ? s.attemptsCount / s.total : 0,
+});
+
+/** One mount, one shape: the open build (`build_inflect`) runs on the word-part surface; every other mode is spoken. */
+function WordFlipMount(props: WordFlipProps) {
+  return props.data.task === 'build_inflect'
+    ? <WordBuildAffix data={props.data} className={props.className} runtimePlanItemId={props.runtimePlanItemId}
+        primitiveId="word-flip" rules={inflectBuildRules} metrics={buildMetrics} />
+    : <WordFlipSurface {...props} />;
+}
+
 // The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
-const WordFlip = withWorkspaceOnly<WordFlipProps>('word-flip', WordFlipSurface, props => props.data.title);
+const WordFlip = withWorkspaceOnly<WordFlipProps>('word-flip', WordFlipMount, props => props.data.title);
 
 export default WordFlip;

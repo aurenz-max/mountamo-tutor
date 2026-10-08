@@ -1,0 +1,1665 @@
+{
+  "summary": {
+    "tag": "r2",
+    "scored": 51,
+    "prod": 49,
+    "flash": 51,
+    "byKind": {
+      "right word": {
+        "n": 28,
+        "prod": 28,
+        "flash": 28
+      },
+      "non-word": {
+        "n": 18,
+        "prod": 16,
+        "flash": 18
+      },
+      "wrong inflection": {
+        "n": 5,
+        "prod": 5,
+        "flash": 5
+      }
+    },
+    "falseRejects": [],
+    "falseAccepts": [
+      "puppys",
+      "babyed"
+    ],
+    "reported": [
+      {
+        "made": "jumps",
+        "ask": "Make a word that means more than one.",
+        "prod": "pass",
+        "flash": "pass"
+      },
+      {
+        "made": "walks",
+        "ask": "Make a word that means more than one.",
+        "prod": "pass",
+        "flash": "pass"
+      },
+      {
+        "made": "washes",
+        "ask": "Make a word that means more than one.",
+        "prod": "pass",
+        "flash": "pass"
+      },
+      {
+        "made": "kicks",
+        "ask": "Make a word that means more than one.",
+        "prod": "pass",
+        "flash": "pass"
+      },
+      {
+        "made": "helps",
+        "ask": "Make a word that means more than one.",
+        "prod": "wrong_meaning",
+        "flash": "wrong_meaning"
+      },
+      {
+        "made": "boxed",
+        "ask": "Make a word that tells it already happened.",
+        "prod": "pass",
+        "flash": "pass"
+      },
+      {
+        "made": "brushed",
+        "ask": "Make a word that tells it already happened.",
+        "prod": "pass",
+        "flash": "pass"
+      },
+      {
+        "made": "bowled",
+        "ask": "Make a word that tells it already happened.",
+        "prod": "pass",
+        "flash": "pass"
+      },
+      {
+        "made": "dressed",
+        "ask": "Make a word that tells it already happened.",
+        "prod": "pass",
+        "flash": "pass"
+      },
+      {
+        "made": "benched",
+        "ask": "Make a word that tells it already happened.",
+        "prod": "pass",
+        "flash": "pass"
+      }
+    ]
+  },
+  "rows": [
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "cats",
+      "pieces": "cat + s",
+      "expect": "pass",
+      "kind": "right word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.99,
+        "fits": 0.93,
+        "judge": "jev",
+        "fitsOptions": {
+          "no": 0.03,
+          "fits": 0.93,
+          "partly": 0.04
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "cups",
+      "pieces": "cup + s",
+      "expect": "pass",
+      "kind": "right word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.99,
+        "fits": 0.98,
+        "judge": "jev",
+        "fitsOptions": {
+          "no": 0.01,
+          "fits": 0.98,
+          "partly": 0.01
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "bowls",
+      "pieces": "bowl + s",
+      "expect": "pass",
+      "kind": "right word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.98,
+        "fits": 0.94,
+        "judge": "jev",
+        "fitsOptions": {
+          "no": 0.04,
+          "partly": 0.02,
+          "fits": 0.94
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "boxes",
+      "pieces": "box + es",
+      "expect": "pass",
+      "kind": "right word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.98,
+        "fits": 0.98,
+        "judge": "jev",
+        "fitsOptions": {
+          "no": 0.01,
+          "partly": 0.01,
+          "fits": 0.98
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "buses",
+      "pieces": "bus + es",
+      "expect": "pass",
+      "kind": "right word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.87,
+        "fits": 0.95,
+        "judge": "jev",
+        "fitsOptions": {
+          "partly": 0.02,
+          "no": 0.03,
+          "fits": 0.95
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "dishes",
+      "pieces": "dish + es",
+      "expect": "pass",
+      "kind": "right word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.98,
+        "fits": 0.92,
+        "judge": "jev",
+        "fitsOptions": {
+          "no": 0.05,
+          "fits": 0.92,
+          "partly": 0.03
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "benches",
+      "pieces": "bench + es",
+      "expect": "pass",
+      "kind": "right word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.95,
+        "fits": 0.97,
+        "judge": "jev",
+        "fitsOptions": {
+          "fits": 0.97,
+          "partly": 0.01,
+          "no": 0.02
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "berries",
+      "pieces": "berry + ies",
+      "expect": "pass",
+      "kind": "right word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.94,
+        "fits": 0.93,
+        "judge": "jev",
+        "fitsOptions": {
+          "partly": 0.03,
+          "fits": 0.93,
+          "no": 0.04
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "babies",
+      "pieces": "baby + ies",
+      "expect": "pass",
+      "kind": "right word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.94,
+        "fits": 0.94,
+        "judge": "jev",
+        "fitsOptions": {
+          "no": 0.03,
+          "partly": 0.03,
+          "fits": 0.94
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "puppies",
+      "pieces": "puppy + ies",
+      "expect": "pass",
+      "kind": "right word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.94,
+        "fits": 0.95,
+        "judge": "jev",
+        "fitsOptions": {
+          "fits": 0.95,
+          "partly": 0.02,
+          "no": 0.03
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "flies",
+      "pieces": "fly + ies",
+      "expect": "pass",
+      "kind": "right word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.91,
+        "fits": 0.83,
+        "judge": "jev",
+        "fitsOptions": {
+          "no": 0.11,
+          "partly": 0.06,
+          "fits": 0.83
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "ponies",
+      "pieces": "pony + ies",
+      "expect": "pass",
+      "kind": "right word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.89,
+        "fits": 0.93,
+        "judge": "jev",
+        "fitsOptions": {
+          "no": 0.04,
+          "fits": 0.93,
+          "partly": 0.03
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "dresses",
+      "pieces": "dress + es",
+      "expect": "pass",
+      "kind": "right word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.97,
+        "fits": 0.94,
+        "judge": "jev",
+        "fitsOptions": {
+          "fits": 0.94,
+          "no": 0.03,
+          "partly": 0.03
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "patties",
+      "pieces": "patty + ies",
+      "expect": "pass",
+      "kind": "right word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.93,
+        "fits": 0.82,
+        "judge": "jev",
+        "fitsOptions": {
+          "partly": 0.06,
+          "fits": 0.82,
+          "no": 0.12
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "boxs",
+      "pieces": "box + s",
+      "expect": "not_a_word",
+      "kind": "non-word",
+      "scored": true,
+      "prod": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0.05,
+        "fits": 0.61,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "partly": 0.02,
+          "no": 0.37,
+          "fits": 0.61
+        }
+      },
+      "flash": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0,
+        "fits": 0,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "dishs",
+      "pieces": "dish + s",
+      "expect": "not_a_word",
+      "kind": "non-word",
+      "scored": true,
+      "prod": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0.08,
+        "fits": 0.69,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "no": 0.28,
+          "partly": 0.03,
+          "fits": 0.69
+        }
+      },
+      "flash": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0,
+        "fits": 0,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "benchs",
+      "pieces": "bench + s",
+      "expect": "not_a_word",
+      "kind": "non-word",
+      "scored": true,
+      "prod": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0.2,
+        "fits": 0.72,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "no": 0.25,
+          "fits": 0.72,
+          "partly": 0.03
+        }
+      },
+      "flash": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0,
+        "fits": 0,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "babys",
+      "pieces": "baby + s",
+      "expect": "not_a_word",
+      "kind": "non-word",
+      "scored": true,
+      "prod": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0.09,
+        "fits": 0.75,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "no": 0.22,
+          "partly": 0.03,
+          "fits": 0.75
+        }
+      },
+      "flash": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0,
+        "fits": 0,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "babyes",
+      "pieces": "baby + es",
+      "expect": "not_a_word",
+      "kind": "non-word",
+      "scored": true,
+      "prod": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0.04,
+        "fits": 0.77,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "no": 0.2,
+          "partly": 0.03,
+          "fits": 0.77
+        }
+      },
+      "flash": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0,
+        "fits": 0,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "puppys",
+      "pieces": "puppy + s",
+      "expect": "not_a_word",
+      "kind": "non-word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.95,
+        "fits": 0.95,
+        "judge": "jev",
+        "fitsOptions": {
+          "no": 0.03,
+          "fits": 0.95,
+          "partly": 0.02
+        }
+      },
+      "flash": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0,
+        "fits": 0,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "cates",
+      "pieces": "cat + es",
+      "expect": "not_a_word",
+      "kind": "non-word",
+      "scored": true,
+      "prod": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0.31,
+        "fits": 0.71,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "partly": 0.06,
+          "no": 0.23,
+          "fits": 0.71
+        }
+      },
+      "flash": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0,
+        "fits": 0,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "cupes",
+      "pieces": "cup + es",
+      "expect": "not_a_word",
+      "kind": "non-word",
+      "scored": true,
+      "prod": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0.16,
+        "fits": 0.63,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "fits": 0.63,
+          "no": 0.33,
+          "partly": 0.04
+        }
+      },
+      "flash": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0,
+        "fits": 0,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "caties",
+      "pieces": "cat + ies",
+      "expect": "not_a_word",
+      "kind": "non-word",
+      "scored": true,
+      "prod": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0.05,
+        "fits": 0.52,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "fits": 0.52,
+          "no": 0.45,
+          "partly": 0.03
+        }
+      },
+      "flash": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0,
+        "fits": 0,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "cupies",
+      "pieces": "cup + ies",
+      "expect": "not_a_word",
+      "kind": "non-word",
+      "scored": true,
+      "prod": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0.1,
+        "fits": 0.51,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "fits": 0.51,
+          "no": 0.42,
+          "partly": 0.07
+        }
+      },
+      "flash": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0,
+        "fits": 0,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "berrys",
+      "pieces": "berry + s",
+      "expect": "not_a_word",
+      "kind": "non-word",
+      "scored": true,
+      "prod": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0.18,
+        "fits": 0.85,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "no": 0.13,
+          "partly": 0.02,
+          "fits": 0.85
+        }
+      },
+      "flash": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0,
+        "fits": 0,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "flys",
+      "pieces": "fly + s",
+      "expect": "not_a_word",
+      "kind": "non-word",
+      "scored": true,
+      "prod": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0.21,
+        "fits": 0.53,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "partly": 0.06,
+          "fits": 0.53,
+          "no": 0.41
+        }
+      },
+      "flash": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0,
+        "fits": 0,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one. Use a word that ends in y.",
+      "made": "babies",
+      "pieces": "baby + ies",
+      "expect": "pass",
+      "kind": "right word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.84,
+        "fits": 0.75,
+        "judge": "jev",
+        "fitsOptions": {
+          "fits": 0.75,
+          "no": 0.21,
+          "partly": 0.04
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one. Use a word that ends in y.",
+      "made": "puppies",
+      "pieces": "puppy + ies",
+      "expect": "pass",
+      "kind": "right word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.86,
+        "fits": 0.68,
+        "judge": "jev",
+        "fitsOptions": {
+          "no": 0.27,
+          "fits": 0.68,
+          "partly": 0.05
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one. Use a word that ends in y.",
+      "made": "babys",
+      "pieces": "baby + s",
+      "expect": "not_a_word",
+      "kind": "non-word",
+      "scored": true,
+      "prod": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0.07,
+        "fits": 0.46,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "partly": 0.05,
+          "fits": 0.46,
+          "no": 0.49
+        }
+      },
+      "flash": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0,
+        "fits": 0,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that tells it already happened.",
+      "made": "jumped",
+      "pieces": "jump + ed",
+      "expect": "pass",
+      "kind": "right word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.99,
+        "fits": 0.97,
+        "judge": "jev",
+        "fitsOptions": {
+          "no": 0.02,
+          "fits": 0.97,
+          "partly": 0.01
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that tells it already happened.",
+      "made": "walked",
+      "pieces": "walk + ed",
+      "expect": "pass",
+      "kind": "right word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.99,
+        "fits": 0.99,
+        "judge": "jev",
+        "fitsOptions": {
+          "no": 0.01,
+          "partly": 0,
+          "fits": 0.99
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that tells it already happened.",
+      "made": "played",
+      "pieces": "play + ed",
+      "expect": "pass",
+      "kind": "right word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.99,
+        "fits": 0.98,
+        "judge": "jev",
+        "fitsOptions": {
+          "fits": 0.98,
+          "partly": 0.01,
+          "no": 0.01
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that tells it already happened.",
+      "made": "helped",
+      "pieces": "help + ed",
+      "expect": "pass",
+      "kind": "right word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.99,
+        "fits": 0.95,
+        "judge": "jev",
+        "fitsOptions": {
+          "fits": 0.95,
+          "no": 0.03,
+          "partly": 0.02
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that tells it already happened.",
+      "made": "opened",
+      "pieces": "open + ed",
+      "expect": "pass",
+      "kind": "right word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.99,
+        "fits": 0.93,
+        "judge": "jev",
+        "fitsOptions": {
+          "no": 0.04,
+          "fits": 0.93,
+          "partly": 0.03
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that tells it already happened.",
+      "made": "washed",
+      "pieces": "wash + ed",
+      "expect": "pass",
+      "kind": "right word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.99,
+        "fits": 0.97,
+        "judge": "jev",
+        "fitsOptions": {
+          "no": 0.02,
+          "partly": 0.01,
+          "fits": 0.97
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that tells it already happened.",
+      "made": "kicked",
+      "pieces": "kick + ed",
+      "expect": "pass",
+      "kind": "right word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.99,
+        "fits": 0.98,
+        "judge": "jev",
+        "fitsOptions": {
+          "no": 0.01,
+          "fits": 0.98,
+          "partly": 0.01
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that tells it already happened.",
+      "made": "looked",
+      "pieces": "look + ed",
+      "expect": "pass",
+      "kind": "right word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.99,
+        "fits": 0.95,
+        "judge": "jev",
+        "fitsOptions": {
+          "fits": 0.95,
+          "no": 0.03,
+          "partly": 0.02
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that tells it already happened.",
+      "made": "cleaned",
+      "pieces": "clean + ed",
+      "expect": "pass",
+      "kind": "right word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.99,
+        "fits": 0.97,
+        "judge": "jev",
+        "fitsOptions": {
+          "partly": 0.02,
+          "fits": 0.97,
+          "no": 0.01
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that tells it already happened.",
+      "made": "painted",
+      "pieces": "paint + ed",
+      "expect": "pass",
+      "kind": "right word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.99,
+        "fits": 0.98,
+        "judge": "jev",
+        "fitsOptions": {
+          "no": 0.01,
+          "partly": 0.01,
+          "fits": 0.98
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that tells it already happened.",
+      "made": "cated",
+      "pieces": "cat + ed",
+      "expect": "not_a_word",
+      "kind": "non-word",
+      "scored": true,
+      "prod": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0.11,
+        "fits": 0.42,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "partly": 0.05,
+          "no": 0.53,
+          "fits": 0.42
+        }
+      },
+      "flash": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0,
+        "fits": 0,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that tells it already happened.",
+      "made": "treeed",
+      "pieces": "tree + ed",
+      "expect": "not_a_word",
+      "kind": "non-word",
+      "scored": true,
+      "prod": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0.45,
+        "fits": 0.51,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "no": 0.31,
+          "partly": 0.18,
+          "fits": 0.51
+        }
+      },
+      "flash": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0,
+        "fits": 0,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that tells it already happened.",
+      "made": "babyed",
+      "pieces": "baby + ed",
+      "expect": "not_a_word",
+      "kind": "non-word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.92,
+        "fits": 0.75,
+        "judge": "jev",
+        "fitsOptions": {
+          "no": 0.12,
+          "fits": 0.75,
+          "partly": 0.13
+        }
+      },
+      "flash": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0,
+        "fits": 0,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that tells it already happened.",
+      "made": "cuped",
+      "pieces": "cup + ed",
+      "expect": "not_a_word",
+      "kind": "non-word",
+      "scored": true,
+      "prod": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0.28,
+        "fits": 0.7,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "no": 0.18,
+          "partly": 0.12,
+          "fits": 0.7
+        }
+      },
+      "flash": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0,
+        "fits": 0,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that tells it already happened.",
+      "made": "froged",
+      "pieces": "frog + ed",
+      "expect": "not_a_word",
+      "kind": "non-word",
+      "scored": true,
+      "prod": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0.13,
+        "fits": 0.4,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "partly": 0.09,
+          "no": 0.51,
+          "fits": 0.4
+        }
+      },
+      "flash": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0,
+        "fits": 0,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that tells what someone did yesterday.",
+      "made": "jumped",
+      "pieces": "jump + ed",
+      "expect": "pass",
+      "kind": "right word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.99,
+        "fits": 0.92,
+        "judge": "jev",
+        "fitsOptions": {
+          "partly": 0.04,
+          "fits": 0.92,
+          "no": 0.04
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that tells what someone did yesterday.",
+      "made": "walked",
+      "pieces": "walk + ed",
+      "expect": "pass",
+      "kind": "right word",
+      "scored": true,
+      "prod": {
+        "met": true,
+        "realWord": 0.99,
+        "fits": 0.97,
+        "judge": "jev",
+        "fitsOptions": {
+          "no": 0.01,
+          "fits": 0.97,
+          "partly": 0.02
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "jumped",
+      "pieces": "jump + ed",
+      "expect": "wrong_meaning",
+      "kind": "wrong inflection",
+      "scored": true,
+      "prod": {
+        "met": false,
+        "miss": "wrong_meaning",
+        "realWord": 0.98,
+        "fits": 0,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "no": 1,
+          "fits": 0,
+          "partly": 0
+        }
+      },
+      "flash": {
+        "met": false,
+        "miss": "wrong_meaning",
+        "realWord": 1,
+        "fits": 0,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "walked",
+      "pieces": "walk + ed",
+      "expect": "wrong_meaning",
+      "kind": "wrong inflection",
+      "scored": true,
+      "prod": {
+        "met": false,
+        "miss": "wrong_meaning",
+        "realWord": 0.98,
+        "fits": 0,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "partly": 0.01,
+          "no": 0.99,
+          "fits": 0
+        }
+      },
+      "flash": {
+        "met": false,
+        "miss": "wrong_meaning",
+        "realWord": 1,
+        "fits": 0,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that tells it already happened.",
+      "made": "cats",
+      "pieces": "cat + s",
+      "expect": "wrong_meaning",
+      "kind": "wrong inflection",
+      "scored": true,
+      "prod": {
+        "met": false,
+        "miss": "wrong_meaning",
+        "realWord": 0.98,
+        "fits": 0,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "no": 0.99,
+          "fits": 0,
+          "partly": 0.01
+        }
+      },
+      "flash": {
+        "met": false,
+        "miss": "wrong_meaning",
+        "realWord": 1,
+        "fits": 0,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that tells it already happened.",
+      "made": "boxes",
+      "pieces": "box + es",
+      "expect": "wrong_meaning",
+      "kind": "wrong inflection",
+      "scored": true,
+      "prod": {
+        "met": false,
+        "miss": "wrong_meaning",
+        "realWord": 0.94,
+        "fits": 0,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "no": 0.98,
+          "fits": 0,
+          "partly": 0.02
+        }
+      },
+      "flash": {
+        "met": false,
+        "miss": "wrong_meaning",
+        "realWord": 1,
+        "fits": 0,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that tells it already happened.",
+      "made": "babies",
+      "pieces": "baby + ies",
+      "expect": "wrong_meaning",
+      "kind": "wrong inflection",
+      "scored": true,
+      "prod": {
+        "met": false,
+        "miss": "wrong_meaning",
+        "realWord": 0.9,
+        "fits": 0,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "no": 1,
+          "fits": 0,
+          "partly": 0
+        }
+      },
+      "flash": {
+        "met": false,
+        "miss": "wrong_meaning",
+        "realWord": 1,
+        "fits": 0,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "jumps",
+      "pieces": "jump + s",
+      "expect": "either",
+      "kind": "action word + plural ending (code lets it through)",
+      "scored": false,
+      "prod": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "no": 0.71,
+          "partly": 0.1,
+          "fits": 0.19
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "walks",
+      "pieces": "walk + s",
+      "expect": "either",
+      "kind": "action word + plural ending (code lets it through)",
+      "scored": false,
+      "prod": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "partly": 0.13,
+          "fits": 0.24,
+          "no": 0.63
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "washes",
+      "pieces": "wash + es",
+      "expect": "either",
+      "kind": "action word + plural ending (code lets it through)",
+      "scored": false,
+      "prod": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "no": 0.83,
+          "fits": 0.1,
+          "partly": 0.07
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "kicks",
+      "pieces": "kick + s",
+      "expect": "either",
+      "kind": "action word + plural ending (code lets it through)",
+      "scored": false,
+      "prod": {
+        "met": true,
+        "realWord": 0.97,
+        "fits": 0.8099999999999999,
+        "judge": "jev",
+        "fitsOptions": {
+          "no": 0.13,
+          "partly": 0.06,
+          "fits": 0.8099999999999999
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that means more than one.",
+      "made": "helps",
+      "pieces": "help + s",
+      "expect": "either",
+      "kind": "action word + plural ending (code lets it through)",
+      "scored": false,
+      "prod": {
+        "met": false,
+        "miss": "wrong_meaning",
+        "realWord": 0.91,
+        "fits": 0.04,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "fits": 0.04,
+          "partly": 0.06,
+          "no": 0.9
+        }
+      },
+      "flash": {
+        "met": false,
+        "miss": "wrong_meaning",
+        "realWord": 1,
+        "fits": 0,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that tells it already happened.",
+      "made": "boxed",
+      "pieces": "box + ed",
+      "expect": "either",
+      "kind": "thing word + ed that is also a verb (code lets it through)",
+      "scored": false,
+      "prod": {
+        "met": true,
+        "realWord": 0.94,
+        "fits": 0.89,
+        "judge": "jev",
+        "fitsOptions": {
+          "fits": 0.89,
+          "no": 0.06,
+          "partly": 0.05
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that tells it already happened.",
+      "made": "brushed",
+      "pieces": "brush + ed",
+      "expect": "either",
+      "kind": "thing word + ed that is also a verb (code lets it through)",
+      "scored": false,
+      "prod": {
+        "met": true,
+        "realWord": 0.98,
+        "fits": 0.94,
+        "judge": "jev",
+        "fitsOptions": {
+          "partly": 0.02,
+          "fits": 0.94,
+          "no": 0.04
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that tells it already happened.",
+      "made": "bowled",
+      "pieces": "bowl + ed",
+      "expect": "either",
+      "kind": "thing word + ed that is also a verb (code lets it through)",
+      "scored": false,
+      "prod": {
+        "met": true,
+        "realWord": 0.96,
+        "fits": 0.9,
+        "judge": "jev",
+        "fitsOptions": {
+          "partly": 0.03,
+          "no": 0.07,
+          "fits": 0.9
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that tells it already happened.",
+      "made": "dressed",
+      "pieces": "dress + ed",
+      "expect": "either",
+      "kind": "thing word + ed that is also a verb (code lets it through)",
+      "scored": false,
+      "prod": {
+        "met": true,
+        "realWord": 0.98,
+        "fits": 0.89,
+        "judge": "jev",
+        "fitsOptions": {
+          "partly": 0.04,
+          "no": 0.07,
+          "fits": 0.89
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "ask": "Make a word that tells it already happened.",
+      "made": "benched",
+      "pieces": "bench + ed",
+      "expect": "either",
+      "kind": "thing word + ed that is also a verb (code lets it through)",
+      "scored": false,
+      "prod": {
+        "met": true,
+        "realWord": 0.96,
+        "fits": 0.68,
+        "judge": "jev",
+        "fitsOptions": {
+          "fits": 0.68,
+          "partly": 0.14,
+          "no": 0.18
+        }
+      },
+      "flash": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    }
+  ]
+}

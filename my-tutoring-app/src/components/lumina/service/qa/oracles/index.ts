@@ -53,6 +53,7 @@ import { tapeDiagramOracle } from './tape-diagram';
 import { tenFrameOracle } from './ten-frame';
 import { twoWayTableOracle } from './two-way-table';
 import { vocabularyExplorerOracle } from './vocabulary-explorer';
+import { wordFlipOracle } from './word-flip';
 
 export type { ContentOracle, OracleContext, OracleResult, OracleViolation } from './types';
 
@@ -115,6 +116,7 @@ export const CONTENT_ORACLES: ContentOracle[] = [
   tenFrameOracle,
   twoWayTableOracle,
   vocabularyExplorerOracle,
+  wordFlipOracle,
 ];
 
 export function getOracle(componentId: string): ContentOracle | undefined {

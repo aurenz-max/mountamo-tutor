@@ -1,0 +1,208 @@
+{
+  "generatedAt": "2026-10-08T09:29:43.824Z",
+  "case": {
+    "targetEvalMode": "build_inflect",
+    "grade": "1",
+    "topic": "Animals at the farm",
+    "intent": "Make words that mean more than one, and words that tell it already happened"
+  },
+  "data": {
+    "title": "Amazing Animal Farm Fun with Words!",
+    "challengeType": "build_inflect",
+    "task": "build_inflect",
+    "challenges": [],
+    "availableParts": [
+      {
+        "id": "noun-brush",
+        "text": "brush",
+        "type": "root",
+        "meaning": "🖌️"
+      },
+      {
+        "id": "noun-box",
+        "text": "box",
+        "type": "root",
+        "meaning": "📦"
+      },
+      {
+        "id": "verb-walk",
+        "text": "walk",
+        "type": "root",
+        "meaning": "🚶"
+      },
+      {
+        "id": "noun-duck",
+        "text": "duck",
+        "type": "root",
+        "meaning": "🦆"
+      },
+      {
+        "id": "noun-frog",
+        "text": "frog",
+        "type": "root",
+        "meaning": "🐸"
+      },
+      {
+        "id": "noun-puppy",
+        "text": "puppy",
+        "type": "root",
+        "meaning": "🐶"
+      },
+      {
+        "id": "noun-bunny",
+        "text": "bunny",
+        "type": "root",
+        "meaning": "🐰"
+      },
+      {
+        "id": "verb-help",
+        "text": "help",
+        "type": "root",
+        "meaning": "🤝"
+      },
+      {
+        "id": "end-s",
+        "text": "s",
+        "type": "suffix",
+        "meaning": ""
+      },
+      {
+        "id": "end-es",
+        "text": "es",
+        "type": "suffix",
+        "meaning": ""
+      },
+      {
+        "id": "end-ies",
+        "text": "ies",
+        "type": "suffix",
+        "meaning": "",
+        "replaces": "y"
+      },
+      {
+        "id": "end-ed",
+        "text": "ed",
+        "type": "suffix",
+        "meaning": ""
+      }
+    ],
+    "buildItems": [
+      {
+        "id": "f1",
+        "inflect": "plural",
+        "ways": 1,
+        "ask": "Make a word that means more than one.",
+        "examples": [
+          [
+            "noun-brush",
+            "end-es"
+          ],
+          [
+            "noun-box",
+            "end-es"
+          ],
+          [
+            "noun-duck",
+            "end-s"
+          ],
+          [
+            "noun-frog",
+            "end-s"
+          ],
+          [
+            "noun-puppy",
+            "end-ies"
+          ],
+          [
+            "noun-bunny",
+            "end-ies"
+          ]
+        ]
+      },
+      {
+        "id": "f2",
+        "inflect": "past",
+        "ways": 2,
+        "ask": "Make a word that tells it already happened.",
+        "examples": [
+          [
+            "verb-walk",
+            "end-ed"
+          ],
+          [
+            "verb-help",
+            "end-ed"
+          ]
+        ]
+      },
+      {
+        "id": "f3",
+        "inflect": "plural",
+        "ways": 1,
+        "bases": [
+          "noun-puppy",
+          "noun-bunny"
+        ],
+        "baseHint": "a word that ends in y",
+        "ask": "Make a word that means more than one. Use a word that ends in y.",
+        "examples": [
+          [
+            "noun-puppy",
+            "end-ies"
+          ],
+          [
+            "noun-bunny",
+            "end-ies"
+          ]
+        ]
+      },
+      {
+        "id": "f4",
+        "inflect": "plural",
+        "ways": 2,
+        "bases": [
+          "noun-brush",
+          "noun-box"
+        ],
+        "baseHint": "a word that ends in sh or x",
+        "ask": "Make a word that means more than one. Use a word that ends in sh or x.",
+        "examples": [
+          [
+            "noun-brush",
+            "end-es"
+          ],
+          [
+            "noun-box",
+            "end-es"
+          ]
+        ]
+      },
+      {
+        "id": "f5",
+        "inflect": "past",
+        "ways": 1,
+        "ask": "Make a word that tells what someone did yesterday.",
+        "examples": [
+          [
+            "verb-walk",
+            "end-ed"
+          ],
+          [
+            "verb-help",
+            "end-ed"
+          ]
+        ]
+      }
+    ],
+    "gradeLevel": "Grade 1"
+  },
+  "oracle": {
+    "violations": [],
+    "uncheckedTypes": [],
+    "checkedChallenges": 5
+  },
+  "issues": [],
+  "logs": [
+    "🔁 Word Flip (build_inflect): {\n  topic: 'Animals at the farm',\n  bases: [\n    'duck',  'frog',\n    'box',   'brush',\n    'puppy', 'bunny',\n    'walk',  'help'\n  ],\n  fromModel: 12,\n  asks: [\n    'Make a word that means more than one.',\n    'Make a word that tells it already happened.',\n    'Make a word that means more than one. Use a word that ends in y.',\n    'Make a word that means more than one. Use a word that ends in sh or x.',\n    'Make a word that tells what someone did yesterday.'\n  ]\n}"
+  ]
+}

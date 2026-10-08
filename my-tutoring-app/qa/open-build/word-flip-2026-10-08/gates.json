@@ -1,0 +1,22 @@
+{
+ "date": "2026-10-08",
+ "mode": "word-flip build_inflect (OB-8L)",
+ "worktree_base": "1f2e7854",
+ "vitest": {
+  "WordFlip.buildInflect.workspace.test.tsx": "11/11",
+  "literacy primitives + WordBuilder.buildAffix + oracles + build-layer": "167 files, 3291/3291",
+  "components/live-activity (incl. journeySweep, workspaceContract) + build test": "36 files, 2447 pass, 406 skipped, 0 fail"
+ },
+ "typecheck_lumina": 0,
+ "tsc_full": { "baseline": 770, "after": 770 },
+ "journey_sweep": "word-flip.build_inflect: J1-drivable by design (judge is a model), recorded in journey-sweep-baseline.json; lever inventory: every miss but same_word answered",
+ "generator_oracle": "5 real generations (pinned G1, G2, G2 easy, intent-routed G2, blend G1): 4 build sessions x 5 items, 0 oracle violations, 0 adapter rejections; the blend stayed spoken",
+ "judge_labelled_set": {
+  "scored": 51,
+  "judge_alone_r1": "49/51 (false accepts: puppys, babyed; 0 false rejects)",
+  "judge_alone_r2": "49/51 (same)",
+  "flash_alone_r1_r2": "51/51",
+  "code_then_judge_r1_r2": "51/51 (20 decided in code)",
+  "reported_unscored": "action word + plural ending: jumps, walks, washes, kicks pass, helps rejected; thing word + ed: boxed, brushed, bowled, dressed, benched pass"
+ }
+}

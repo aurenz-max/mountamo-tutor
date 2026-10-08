@@ -530,6 +530,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "plural_s":   PriorConfig(1.5, "Spoken production: regular plurals formed by adding -s"),
         "plural_es":  PriorConfig(3.0, "Spoken production: regular plurals formed by adding -es after s/x/ch/sh"),
         "past_ed":    PriorConfig(3.5, "Spoken production: regular past forms made by adding -ed"),
+        "build_inflect": PriorConfig(3.6, "Open build: make any plural or past word from base and ending cards (s, es, ies, ed)"),
         "plural_y":   PriorConfig(4.0, "Spoken production: consonant-y plurals formed by changing y to -ies"),
         "irregulars": PriorConfig(5.0, "Spoken production: recall common irregular plural forms"),
         "past_irregular": PriorConfig(5.5, "Spoken production: recall common irregular past forms"),

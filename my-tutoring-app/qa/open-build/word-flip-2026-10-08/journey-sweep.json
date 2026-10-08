@@ -1,0 +1,665 @@
+{
+ "note": "dry journey sweep, word-flip payloads only (JOURNEY_SWEEP_OUT, -t word-flip)",
+ "results": [
+  {
+   "payload": "word-flip.build_inflect",
+   "items": 1,
+   "findings": [
+    {
+     "invariant": "J1-drivable",
+     "detail": "f1 wrong: word-flip build_inflect is judged by the word judge, not driven at W1"
+    },
+    {
+     "invariant": "J1-drivable",
+     "detail": "f1 correct: word-flip build_inflect is judged by the word judge, not driven at W1"
+    },
+    {
+     "invariant": "J1-drivable",
+     "detail": "clean program: f1 correct: word-flip build_inflect is judged by the word judge, not driven at W1"
+    }
+   ],
+   "advisories": [],
+   "misses": {
+    "checked": 0,
+    "named": 0,
+    "declared": true,
+    "spoken": {
+     "answered": 0,
+     "named": 0
+    }
+   },
+   "records": {
+    "recover": {
+     "sent": 0
+    },
+    "clean": {
+     "sent": 0
+    }
+   }
+  },
+  {
+   "payload": "word-flip.irregulars",
+   "items": 5,
+   "findings": [],
+   "advisories": [],
+   "misses": {
+    "checked": 0,
+    "named": 0,
+    "declared": true,
+    "spoken": {
+     "answered": 5,
+     "named": 5
+    }
+   },
+   "records": {
+    "recover": {
+     "sent": 1,
+     "success": true,
+     "score": 67,
+     "firstResponseScore": 0,
+     "attempts": 10
+    },
+    "clean": {
+     "sent": 1,
+     "success": true,
+     "score": 100,
+     "firstResponseScore": 100,
+     "attempts": 5
+    }
+   }
+  },
+  {
+   "payload": "word-flip.past_ed",
+   "items": 5,
+   "findings": [],
+   "advisories": [],
+   "misses": {
+    "checked": 0,
+    "named": 0,
+    "declared": true,
+    "spoken": {
+     "answered": 5,
+     "named": 5
+    }
+   },
+   "records": {
+    "recover": {
+     "sent": 1,
+     "success": true,
+     "score": 67,
+     "firstResponseScore": 0,
+     "attempts": 10
+    },
+    "clean": {
+     "sent": 1,
+     "success": true,
+     "score": 100,
+     "firstResponseScore": 100,
+     "attempts": 5
+    }
+   }
+  },
+  {
+   "payload": "word-flip.past_irregular",
+   "items": 5,
+   "findings": [],
+   "advisories": [],
+   "misses": {
+    "checked": 0,
+    "named": 0,
+    "declared": true,
+    "spoken": {
+     "answered": 5,
+     "named": 5
+    }
+   },
+   "records": {
+    "recover": {
+     "sent": 1,
+     "success": true,
+     "score": 67,
+     "firstResponseScore": 0,
+     "attempts": 10
+    },
+    "clean": {
+     "sent": 1,
+     "success": true,
+     "score": 100,
+     "firstResponseScore": 100,
+     "attempts": 5
+    }
+   }
+  },
+  {
+   "payload": "word-flip.plural_es",
+   "items": 5,
+   "findings": [],
+   "advisories": [],
+   "misses": {
+    "checked": 0,
+    "named": 0,
+    "declared": true,
+    "spoken": {
+     "answered": 5,
+     "named": 5
+    }
+   },
+   "records": {
+    "recover": {
+     "sent": 1,
+     "success": true,
+     "score": 67,
+     "firstResponseScore": 0,
+     "attempts": 10
+    },
+    "clean": {
+     "sent": 1,
+     "success": true,
+     "score": 100,
+     "firstResponseScore": 100,
+     "attempts": 5
+    }
+   }
+  },
+  {
+   "payload": "word-flip.plural_s",
+   "items": 5,
+   "findings": [],
+   "advisories": [],
+   "misses": {
+    "checked": 0,
+    "named": 0,
+    "declared": true,
+    "spoken": {
+     "answered": 5,
+     "named": 5
+    }
+   },
+   "records": {
+    "recover": {
+     "sent": 1,
+     "success": true,
+     "score": 67,
+     "firstResponseScore": 0,
+     "attempts": 10
+    },
+    "clean": {
+     "sent": 1,
+     "success": true,
+     "score": 100,
+     "firstResponseScore": 100,
+     "attempts": 5
+    }
+   }
+  },
+  {
+   "payload": "word-flip.plural_y",
+   "items": 5,
+   "findings": [],
+   "advisories": [],
+   "misses": {
+    "checked": 0,
+    "named": 0,
+    "declared": true,
+    "spoken": {
+     "answered": 5,
+     "named": 5
+    }
+   },
+   "records": {
+    "recover": {
+     "sent": 1,
+     "success": true,
+     "score": 67,
+     "firstResponseScore": 0,
+     "attempts": 10
+    },
+    "clean": {
+     "sent": 1,
+     "success": true,
+     "score": 100,
+     "firstResponseScore": 100,
+     "attempts": 5
+    }
+   }
+  }
+ ],
+ "leverInventory": [
+  {
+   "primitiveId": "word-flip",
+   "evalMode": "build_inflect",
+   "declaresLevers": true,
+   "payloads": [
+    "word-flip.build_inflect"
+   ],
+   "status": "levers",
+   "levers": [
+    {
+     "id": "word_frame",
+     "kind": "help",
+     "answers": [
+      "base_only",
+      "ending_only",
+      "parts_out_of_order",
+      "double_ending",
+      "other_base"
+     ]
+    },
+    {
+     "id": "ending_chart",
+     "kind": "help",
+     "answers": [
+      "wrong_ending",
+      "missed_y_change",
+      "wrong_ending_kind",
+      "not_a_word",
+      "wrong_meaning"
+     ]
+    },
+    {
+     "id": "fewer_endings",
+     "kind": "simplify",
+     "answers": [
+      "wrong_ending",
+      "missed_y_change",
+      "wrong_ending_kind",
+      "not_a_word",
+      "wrong_meaning"
+     ]
+    }
+   ],
+   "misses": [
+    {
+     "miss": "base_only",
+     "answeredBy": [
+      "word_frame"
+     ],
+     "unanswered": false
+    },
+    {
+     "miss": "ending_only",
+     "answeredBy": [
+      "word_frame"
+     ],
+     "unanswered": false
+    },
+    {
+     "miss": "parts_out_of_order",
+     "answeredBy": [
+      "word_frame"
+     ],
+     "unanswered": false
+    },
+    {
+     "miss": "double_ending",
+     "answeredBy": [
+      "word_frame"
+     ],
+     "unanswered": false
+    },
+    {
+     "miss": "wrong_ending_kind",
+     "answeredBy": [
+      "ending_chart",
+      "fewer_endings"
+     ],
+     "unanswered": false
+    },
+    {
+     "miss": "other_base",
+     "answeredBy": [
+      "word_frame"
+     ],
+     "unanswered": false
+    },
+    {
+     "miss": "wrong_ending",
+     "answeredBy": [
+      "ending_chart",
+      "fewer_endings"
+     ],
+     "unanswered": false
+    },
+    {
+     "miss": "missed_y_change",
+     "answeredBy": [
+      "ending_chart",
+      "fewer_endings"
+     ],
+     "unanswered": false
+    },
+    {
+     "miss": "same_word",
+     "answeredBy": [],
+     "unanswered": true
+    },
+    {
+     "miss": "not_a_word",
+     "answeredBy": [
+      "ending_chart",
+      "fewer_endings"
+     ],
+     "unanswered": false
+    },
+    {
+     "miss": "wrong_meaning",
+     "answeredBy": [
+      "ending_chart",
+      "fewer_endings"
+     ],
+     "unanswered": false
+    }
+   ]
+  },
+  {
+   "primitiveId": "word-flip",
+   "evalMode": "plural_s",
+   "declaresLevers": true,
+   "payloads": [
+    "word-flip.plural_s"
+   ],
+   "status": "levers",
+   "levers": [
+    {
+     "id": "rule_model_cards",
+     "kind": "help",
+     "answers": [
+      "unchanged",
+      "wrong_ending",
+      "double_ending"
+     ]
+    },
+    {
+     "id": "familiar_noun",
+     "kind": "simplify",
+     "answers": [
+      "unchanged",
+      "wrong_ending",
+      "double_ending"
+     ]
+    }
+   ],
+   "misses": [
+    {
+     "miss": "unchanged",
+     "answeredBy": [
+      "rule_model_cards",
+      "familiar_noun"
+     ],
+     "unanswered": true
+    },
+    {
+     "miss": "wrong_ending",
+     "answeredBy": [
+      "rule_model_cards",
+      "familiar_noun"
+     ],
+     "unanswered": true
+    },
+    {
+     "miss": "double_ending",
+     "answeredBy": [
+      "rule_model_cards",
+      "familiar_noun"
+     ],
+     "unanswered": true
+    }
+   ]
+  },
+  {
+   "primitiveId": "word-flip",
+   "evalMode": "plural_es",
+   "declaresLevers": true,
+   "payloads": [
+    "word-flip.plural_es"
+   ],
+   "status": "levers",
+   "levers": [
+    {
+     "id": "rule_model_cards",
+     "kind": "help",
+     "answers": [
+      "unchanged",
+      "wrong_ending",
+      "double_ending"
+     ]
+    },
+    {
+     "id": "familiar_noun",
+     "kind": "simplify",
+     "answers": [
+      "unchanged",
+      "wrong_ending",
+      "double_ending"
+     ]
+    }
+   ],
+   "misses": [
+    {
+     "miss": "unchanged",
+     "answeredBy": [
+      "rule_model_cards",
+      "familiar_noun"
+     ],
+     "unanswered": true
+    },
+    {
+     "miss": "wrong_ending",
+     "answeredBy": [
+      "rule_model_cards",
+      "familiar_noun"
+     ],
+     "unanswered": true
+    },
+    {
+     "miss": "double_ending",
+     "answeredBy": [
+      "rule_model_cards",
+      "familiar_noun"
+     ],
+     "unanswered": true
+    }
+   ]
+  },
+  {
+   "primitiveId": "word-flip",
+   "evalMode": "past_ed",
+   "declaresLevers": true,
+   "payloads": [
+    "word-flip.past_ed"
+   ],
+   "status": "levers",
+   "levers": [
+    {
+     "id": "rule_model_cards",
+     "kind": "help",
+     "answers": [
+      "unchanged",
+      "wrong_ending",
+      "double_ending"
+     ]
+    },
+    {
+     "id": "familiar_noun",
+     "kind": "simplify",
+     "answers": [
+      "unchanged",
+      "wrong_ending",
+      "double_ending"
+     ]
+    }
+   ],
+   "misses": [
+    {
+     "miss": "unchanged",
+     "answeredBy": [
+      "rule_model_cards",
+      "familiar_noun"
+     ],
+     "unanswered": true
+    },
+    {
+     "miss": "wrong_ending",
+     "answeredBy": [
+      "rule_model_cards",
+      "familiar_noun"
+     ],
+     "unanswered": true
+    },
+    {
+     "miss": "double_ending",
+     "answeredBy": [
+      "rule_model_cards",
+      "familiar_noun"
+     ],
+     "unanswered": true
+    }
+   ]
+  },
+  {
+   "primitiveId": "word-flip",
+   "evalMode": "plural_y",
+   "declaresLevers": true,
+   "payloads": [
+    "word-flip.plural_y"
+   ],
+   "status": "levers",
+   "levers": [
+    {
+     "id": "rule_model_cards",
+     "kind": "help",
+     "answers": [
+      "unchanged",
+      "wrong_ending",
+      "double_ending"
+     ]
+    },
+    {
+     "id": "familiar_noun",
+     "kind": "simplify",
+     "answers": [
+      "unchanged",
+      "wrong_ending",
+      "double_ending"
+     ]
+    }
+   ],
+   "misses": [
+    {
+     "miss": "unchanged",
+     "answeredBy": [
+      "rule_model_cards",
+      "familiar_noun"
+     ],
+     "unanswered": true
+    },
+    {
+     "miss": "wrong_ending",
+     "answeredBy": [
+      "rule_model_cards",
+      "familiar_noun"
+     ],
+     "unanswered": true
+    },
+    {
+     "miss": "double_ending",
+     "answeredBy": [
+      "rule_model_cards",
+      "familiar_noun"
+     ],
+     "unanswered": true
+    }
+   ]
+  },
+  {
+   "primitiveId": "word-flip",
+   "evalMode": "irregulars",
+   "declaresLevers": true,
+   "payloads": [
+    "word-flip.irregulars"
+   ],
+   "status": "levers",
+   "levers": [
+    {
+     "id": "irregular_model",
+     "kind": "help",
+     "answers": [
+      "regularized",
+      "unchanged"
+     ]
+    },
+    {
+     "id": "common_irregular",
+     "kind": "simplify",
+     "answers": [
+      "regularized",
+      "unchanged"
+     ]
+    }
+   ],
+   "misses": [
+    {
+     "miss": "regularized",
+     "answeredBy": [
+      "irregular_model",
+      "common_irregular"
+     ],
+     "unanswered": true
+    },
+    {
+     "miss": "unchanged",
+     "answeredBy": [
+      "irregular_model",
+      "common_irregular"
+     ],
+     "unanswered": true
+    }
+   ]
+  },
+  {
+   "primitiveId": "word-flip",
+   "evalMode": "past_irregular",
+   "declaresLevers": true,
+   "payloads": [
+    "word-flip.past_irregular"
+   ],
+   "status": "levers",
+   "levers": [
+    {
+     "id": "irregular_model",
+     "kind": "help",
+     "answers": [
+      "regularized",
+      "unchanged"
+     ]
+    },
+    {
+     "id": "common_irregular",
+     "kind": "simplify",
+     "answers": [
+      "regularized",
+      "unchanged"
+     ]
+    }
+   ],
+   "misses": [
+    {
+     "miss": "regularized",
+     "answeredBy": [
+      "irregular_model",
+      "common_irregular"
+     ],
+     "unanswered": true
+    },
+    {
+     "miss": "unchanged",
+     "answeredBy": [
+      "irregular_model",
+      "common_irregular"
+     ],
+     "unanswered": true
+    }
+   ]
+  }
+ ]
+}

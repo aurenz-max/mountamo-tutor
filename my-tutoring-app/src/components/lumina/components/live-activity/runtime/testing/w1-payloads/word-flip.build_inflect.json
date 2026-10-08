@@ -1,0 +1,195 @@
+{
+ "source": "qa/open-build/word-flip-2026-10-08/pinned-g2.json",
+ "primitiveId": "word-flip",
+ "evalMode": "build_inflect",
+ "data": {
+  "title": "Fun in the Kitchen with Words!",
+  "challengeType": "build_inflect",
+  "task": "build_inflect",
+  "challenges": [],
+  "availableParts": [
+   {
+    "id": "noun-bowl",
+    "text": "bowl",
+    "type": "root",
+    "meaning": "🥣"
+   },
+   {
+    "id": "noun-box",
+    "text": "box",
+    "type": "root",
+    "meaning": "📦"
+   },
+   {
+    "id": "noun-patty",
+    "text": "patty",
+    "type": "root",
+    "meaning": "🥩"
+   },
+   {
+    "id": "noun-cup",
+    "text": "cup",
+    "type": "root",
+    "meaning": "🥤"
+   },
+   {
+    "id": "noun-berry",
+    "text": "berry",
+    "type": "root",
+    "meaning": "🍓"
+   },
+   {
+    "id": "verb-wash",
+    "text": "wash",
+    "type": "root",
+    "meaning": "🧼"
+   },
+   {
+    "id": "noun-bench",
+    "text": "bench",
+    "type": "root",
+    "meaning": "🪑"
+   },
+   {
+    "id": "verb-open",
+    "text": "open",
+    "type": "root",
+    "meaning": "🚪"
+   },
+   {
+    "id": "end-s",
+    "text": "s",
+    "type": "suffix",
+    "meaning": ""
+   },
+   {
+    "id": "end-es",
+    "text": "es",
+    "type": "suffix",
+    "meaning": ""
+   },
+   {
+    "id": "end-ies",
+    "text": "ies",
+    "type": "suffix",
+    "meaning": "",
+    "replaces": "y"
+   },
+   {
+    "id": "end-ed",
+    "text": "ed",
+    "type": "suffix",
+    "meaning": ""
+   }
+  ],
+  "buildItems": [
+   {
+    "id": "f1",
+    "inflect": "plural",
+    "ways": 1,
+    "ask": "Make a word that means more than one.",
+    "examples": [
+     [
+      "noun-bowl",
+      "end-s"
+     ],
+     [
+      "noun-box",
+      "end-es"
+     ],
+     [
+      "noun-patty",
+      "end-ies"
+     ],
+     [
+      "noun-cup",
+      "end-s"
+     ],
+     [
+      "noun-berry",
+      "end-ies"
+     ],
+     [
+      "noun-bench",
+      "end-es"
+     ]
+    ]
+   },
+   {
+    "id": "f2",
+    "inflect": "past",
+    "ways": 2,
+    "ask": "Make a word that tells it already happened.",
+    "examples": [
+     [
+      "verb-wash",
+      "end-ed"
+     ],
+     [
+      "verb-open",
+      "end-ed"
+     ]
+    ]
+   },
+   {
+    "id": "f3",
+    "inflect": "plural",
+    "ways": 1,
+    "bases": [
+     "noun-patty",
+     "noun-berry"
+    ],
+    "baseHint": "a word that ends in y",
+    "ask": "Make a word that means more than one. Use a word that ends in y.",
+    "examples": [
+     [
+      "noun-patty",
+      "end-ies"
+     ],
+     [
+      "noun-berry",
+      "end-ies"
+     ]
+    ]
+   },
+   {
+    "id": "f4",
+    "inflect": "plural",
+    "ways": 2,
+    "bases": [
+     "noun-box",
+     "noun-bench"
+    ],
+    "baseHint": "a word that ends in x or ch",
+    "ask": "Make a word that means more than one. Use a word that ends in x or ch.",
+    "examples": [
+     [
+      "noun-box",
+      "end-es"
+     ],
+     [
+      "noun-bench",
+      "end-es"
+     ]
+    ]
+   },
+   {
+    "id": "f5",
+    "inflect": "past",
+    "ways": 1,
+    "ask": "Make a word that tells what someone did yesterday.",
+    "examples": [
+     [
+      "verb-wash",
+      "end-ed"
+     ],
+     [
+      "verb-open",
+      "end-ed"
+     ]
+    ]
+   }
+  ],
+  "gradeLevel": "Grade 2"
+ }
+}

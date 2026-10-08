@@ -1191,12 +1191,15 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // One spoken word per item: the changed word, or the source word said back unchanged.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
+      // build_inflect is checked in code, then by the shared literacy judge (a model), which the dry sweep has none of;
+      // WordFlip.buildInflect.workspace.test.tsx drives the commit with a stubbed judge.
+      if (ctx.data.task === 'build_inflect') throw new Error('word-flip build_inflect is judged by the word judge, not driven at W1');
       const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
       if (!c) throw new Error('No current word-flip challenge');
       const answers = flipHarnessAnswers(c);
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
-    probes: { mounted: { selector: '[data-pip-object="frame"]' }, reward: { selector: '[data-flip-reward]', kind: 'count' } },
+    probes: { mounted: { selector: '[data-pip-object="frame"], [data-testid="wb-row"]' }, reward: { selector: '[data-flip-reward]', kind: 'count' } },
   },
   'sound-swap': {
     execution: 'workspace',

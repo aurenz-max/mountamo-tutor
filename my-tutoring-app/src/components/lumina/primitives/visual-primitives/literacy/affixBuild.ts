@@ -16,7 +16,11 @@ import type { WordBuildJudgeRequest } from '../../../service/build-layer/wordBui
 import { POOL, type PoolWord } from './wordBuilderLevers';
 import type { MorphemeType } from './wordBuilderScript';
 
-export interface BuildPart { id: string; text: string; type: MorphemeType; meaning: string }
+export interface BuildPart {
+  id: string; text: string; type: MorphemeType; meaning: string;
+  /** An ending that takes the place of these last letters of the part before it (word-flip's "ies" after baby: babies). */
+  replaces?: string;
+}
 
 export interface AffixBuildItem {
   id: string;
@@ -51,7 +55,14 @@ export function affixShapeMiss(row: readonly BuildPart[], made: readonly string[
   return undefined;
 }
 
-export const joined = (row: readonly BuildPart[]) => row.map(p => p.text).join('').toLowerCase();
+export const joined = (row: readonly BuildPart[]) => row.reduce((w, p) =>
+  p.replaces && w.endsWith(p.replaces) ? w.slice(0, -p.replaces.length) + p.text : w + p.text, '').toLowerCase();
+
+/** How many last letters of `row[i]` the next part takes the place of (shown struck through in the row). */
+export const droppedBy = (row: readonly BuildPart[], i: number): number => {
+  const next = row[i + 1];
+  return next?.replaces && row[i].text.toLowerCase().endsWith(next.replaces) ? next.replaces.length : 0;
+};
 export const pieces = (row: readonly BuildPart[]) => row.map(p => p.text).join(' + ');
 
 const partsOf = (ids: readonly string[], board: readonly BuildPart[]) => {
@@ -77,7 +88,8 @@ export function askableBuildItem(item: AffixBuildItem, board: readonly BuildPart
   }
   const lower = ask.toLowerCase();
   if (examples.length < 2 || Array.from(words).some(w => new RegExp(`\\b${w}\\b`).test(lower))) return null;
-  return { id: item.id, ask, examples, ways: item.ways === 2 ? 2 : 1 };
+  // A host's own item fields (word-flip's ask kind) ride along; the board is never the generator's.
+  return { ...item, board: undefined, id: item.id, ask, examples, ways: item.ways === 2 ? 2 : 1 };
 }
 
 /** The session's items: askable, distinct asks, every second one asking for two words (none at the easy tier). */
@@ -189,3 +201,66 @@ export function affixMissWords(miss: AffixBuildMiss | undefined): string {
     default: return 'Not quite. Try again.';
   }
 }
+
+// ── The surface's rules (shared with word-flip `build_inflect`, OB-8L) ─────────
+
+/** One labelled empty box of the frame lever. */
+export interface FrameBox { type: MorphemeType; label: string }
+/** A help panel: a heading, an optional note, and solved rows ("re (again) + play" = "replay"). */
+export interface LeverPanel { lever: string; heading: string; note?: string; rows: [string, string][] }
+/** What a host is told when the session ends; it builds its own metrics from it. */
+export interface AffixBuildSummary { solved: number; total: number; accuracy: number; attemptsCount: number; firstTryCorrect: number }
+
+/**
+ * Everything `WordBuildAffix` asks of its host's domain. word-builder's rules are the default; word-flip passes
+ * `inflectBuildRules` (`inflectBuild.ts`). The surface owns the interaction (tap in, tap out, "I'm done!", Try again
+ * keeps the row, a two-way item keeps the first word), the judge call and the evaluation; the rules own the words.
+ */
+export interface AffixBuildRules {
+  phase: { key: string; label: string; icon: string };
+  badge: string;
+  summary: { heading: string; celebration: string };
+  emptyRow: string;
+  /** How a card's type is printed (word-flip: "word", "ending"). */
+  partLabel: Record<MorphemeType, string>;
+  items: (raw: readonly AffixBuildItem[], board: readonly BuildPart[], tier?: string) => AffixBuildItem[];
+  assignment: (item: AffixBuildItem) => TeachingAssignment;
+  /** The code check before any judge; undefined sends the word to the judge. */
+  shapeMiss: (item: AffixBuildItem, row: readonly BuildPart[], made: readonly string[]) => string | undefined;
+  missWords: (miss: string | undefined, item: AffixBuildItem) => string;
+  judgeRequest: (item: AffixBuildItem, view: AffixBuildView, board: readonly BuildPart[], grade?: string) => WordBuildJudgeRequest;
+  describe: (view: AffixBuildView) => string;
+  scene: (item: AffixBuildItem, board: readonly BuildPart[], view: AffixBuildView, said?: string) => WorkspaceScene;
+  levers: (item: AffixBuildItem | null, board: readonly BuildPart[], pulled: readonly string[]) => WorkspaceLever[];
+  leverFacts: (pulled: readonly string[], item: AffixBuildItem, board: readonly BuildPart[]) => string | undefined;
+  smallBoardFor: (item: AffixBuildItem, board: readonly BuildPart[]) => AffixBuildItem | null;
+  /** The frame lever's boxes, empty when it is not pulled. */
+  frame: (item: AffixBuildItem, board: readonly BuildPart[], pulled: readonly string[]) => FrameBox[];
+  /** The model lever's panel, null when it is not pulled. */
+  panel: (item: AffixBuildItem, board: readonly BuildPart[], pulled: readonly string[]) => LeverPanel | null;
+}
+
+/** word-builder `build_affix`: the rules above this section. */
+export const wordBuilderAffixRules: AffixBuildRules = {
+  phase: { key: 'build_affix', label: 'Make a word', icon: '🧩' },
+  badge: '🧩 Make a word',
+  summary: { heading: 'Words made!', celebration: 'You put word parts together to make new words.' },
+  emptyRow: 'Tap parts below to make your word.',
+  partLabel: { prefix: 'prefix', root: 'root', suffix: 'suffix' },
+  items: buildItemsFrom,
+  assignment: affixBuildAssignment,
+  shapeMiss: (_item, row, made) => affixShapeMiss(row, made),
+  missWords: miss => affixMissWords(miss as AffixBuildMiss | undefined),
+  judgeRequest: affixJudgeRequest,
+  describe: describeAffixBuild,
+  scene: affixBuildScene,
+  levers: affixBuildLevers,
+  leverFacts: affixLeverFacts,
+  smallBoardFor,
+  frame: (item, board, pulled) => pulled.includes(FRAME_LEVER) ? frameFor(item, board).map(type => ({ type, label: type })) : [],
+  panel: (_item, board, pulled) => {
+    const m = pulled.includes(MODEL_LEVER) ? modelFor(board) : null;
+    return m ? { lever: 'model-word', heading: 'Another word', note: m.clue,
+      rows: [[m.parts.map(([t, , meaning]) => `${t} (${meaning})`).join(' + '), m.word]] } : null;
+  },
+};

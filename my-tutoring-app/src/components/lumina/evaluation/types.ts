@@ -2554,7 +2554,9 @@ export interface StoryTalkMetrics extends BasePrimitiveMetrics {
 
 export interface WordFlipMetrics extends BasePrimitiveMetrics {
   type: 'word-flip';
-  challengeType: 'plural_s' | 'plural_es' | 'plural_y' | 'irregulars' | 'past_ed' | 'past_irregular' | 'mixed';
+  challengeType: 'plural_s' | 'plural_es' | 'plural_y' | 'irregulars' | 'past_ed' | 'past_irregular' | 'mixed' | 'build_inflect';
+  /** Set on the open build (`build_inflect`), where each word is made from base and ending cards and judged. */
+  task?: 'build_inflect';
   totalChallenges: number;
   correctCount: number;
   attemptsCount: number;          // total tries across all challenges

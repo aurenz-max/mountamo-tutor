@@ -1,0 +1,68 @@
+{
+  "generatedAt": "2026-10-08T09:29:50.381Z",
+  "case": {
+    "targetEvalMode": "plural_s|build_inflect",
+    "grade": "1",
+    "topic": "Pets",
+    "intent": "Plurals"
+  },
+  "data": {
+    "title": "Playful Pets Plural Party!",
+    "challengeType": "plural_s",
+    "challenges": [
+      {
+        "id": "word-flip-1",
+        "type": "plural_s",
+        "sourceWord": "bug",
+        "answer": "bugs",
+        "emoji": "🐛",
+        "count": 4
+      },
+      {
+        "id": "word-flip-2",
+        "type": "plural_s",
+        "sourceWord": "pig",
+        "answer": "pigs",
+        "emoji": "🐷",
+        "count": 2
+      },
+      {
+        "id": "word-flip-3",
+        "type": "plural_s",
+        "sourceWord": "cow",
+        "answer": "cows",
+        "emoji": "🐮",
+        "count": 2
+      },
+      {
+        "id": "word-flip-4",
+        "type": "plural_s",
+        "sourceWord": "bird",
+        "answer": "birds",
+        "emoji": "🐦",
+        "count": 5
+      },
+      {
+        "id": "word-flip-5",
+        "type": "plural_s",
+        "sourceWord": "goat",
+        "answer": "goats",
+        "emoji": "🐐",
+        "count": 3
+      }
+    ],
+    "gradeLevel": "Grade 1"
+  },
+  "oracle": {
+    "violations": [],
+    "uncheckedTypes": [
+      "plural_s"
+    ],
+    "checkedChallenges": 0
+  },
+  "issues": [],
+  "logs": [
+    "[WordFlip] modes: plural_s (explicit) -> types [plural_s]",
+    "Word Flip Generated: {\n  title: 'Playful Pets Plural Party!',\n  poolSize: 12,\n  challengeCount: 5,\n  words: [ 'bug', 'pig', 'cow', 'bird', 'goat' ],\n  types: [ 'plural_s', 'plural_s', 'plural_s', 'plural_s', 'plural_s' ],\n  counts: [ 4, 2, 2, 5, 3 ]\n}"
+  ]
+}

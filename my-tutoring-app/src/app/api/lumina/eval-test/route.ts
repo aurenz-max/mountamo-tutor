@@ -357,7 +357,7 @@ export function validateChallengeTypes(
 
   // An open build payload (qa/open-build/ROADMAP.md, OB-3L) names its task at the root and holds its items in its own
   // array; the whole session is the pinned mode's one challenge type.
-  const buildArray = { build_affix: 'buildItems', letter_build: 'buildItems', pair_build: 'pairItems',
+  const buildArray = { build_affix: 'buildItems', build_inflect: 'buildItems', letter_build: 'buildItems', pair_build: 'pairItems',
     paragraph_build: 'paragraphs', sentence_build: 'sentences' }[String(data.task ?? '')];
   if (buildArray) {
     const n = Array.isArray(data[buildArray]) ? (data[buildArray] as unknown[]).length : 0;

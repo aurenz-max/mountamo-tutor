@@ -45,6 +45,9 @@
  "sentence-builder.build_sentence": {
   "J1-drivable": "by design: the sentence is checked by the shared literacy judge (a model) after code checks; SentenceBuild.workspace.test.tsx drives the commit with a stubbed judge"
  },
+ "word-flip.build_inflect": {
+  "J1-drivable": "by design: the word is checked in code, then by the shared literacy judge (Jev, flash-latest), which the dry sweep has no model for; WordFlip.buildInflect.workspace.test.tsx drives every code miss and the commit with a stubbed judge"
+ },
  "word-builder.build_affix": {
   "J1-drivable": "by design: the word is checked by the shared literacy judge (Jev, flash-latest), which the dry sweep has no model for; WordBuilder.buildAffix.workspace.test.tsx drives the commit with a stubbed judge"
  },

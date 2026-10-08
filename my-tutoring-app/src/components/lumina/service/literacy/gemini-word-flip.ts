@@ -11,7 +11,12 @@ import {
   constrainChallengeTypeEnum,
   resolveEvalModes,
   type ChallengeTypeDoc,
+  type EvalModeResolution,
 } from '../evalMode';
+import {
+  ENDING_CARDS, basePart, inflectAsksFor, inflectItemsFrom,
+} from '../../primitives/visual-primitives/literacy/inflectBuild';
+import type { BuildPart } from '../../primitives/visual-primitives/literacy/affixBuild';
 
 // ---------------------------------------------------------------------------
 // WORD FLIP generator (K-2: spoken morphology transformations).
@@ -352,16 +357,89 @@ const selectSessionNouns = (
   );
 };
 
+// ── build_inflect (open build, OB-8L) ───────────────────────────────────────
+
+/** The open build has its own generator; its doc only routes intent to it (never in the spoken prompt). */
+const BUILD_DOC: Record<string, ChallengeTypeDoc> = {
+  build_inflect: {
+    promptDoc: `"build_inflect": The learner MAKES a word that means more than one, or that tells it already happened, by `
+      + `tapping a base-word card and an ending card (s, es, ies, ed); many words can fit one ask.`,
+    schemaDescription: "'build_inflect' (make an inflected word from word and ending cards)",
+  },
+};
+
+/** The resolution without the open build: what the spoken prompt and schema may use. Null when nothing spoken is left. */
+const spokenOnly = (r: EvalModeResolution | null): EvalModeResolution | null => {
+  if (!r) return null;
+  const modes = r.modes.filter(m => !m.challengeTypes.includes('build_inflect'));
+  if (!modes.length) return null;
+  const allowedTypes = Array.from(new Set(modes.flatMap(m => m.challengeTypes)));
+  return { ...r, modes, allowedTypes,
+    promptDocs: allowedTypes.filter(t => t in CHALLENGE_TYPE_DOCS)
+      .map(t => `- ${CHALLENGE_TYPE_DOCS[t as WordFlipChallengeType].promptDoc}`).join('\n') };
+};
+
+/** The regular rules a build board draws its bases from, and how many of each. */
+const BUILD_DRAW: readonly [WordFlipChallengeType, 'noun' | 'verb', number][] =
+  [['plural_s', 'noun', 2], ['plural_es', 'noun', 2], ['plural_y', 'noun', 2], ['past_ed', 'verb', 2]];
+
+/**
+ * The board and asks for `build_inflect`. Flash-lite offers topic-fitting words for the four regular rules (the same
+ * typed pool the spoken modes use, validated by `deriveWordFlipAnswer`); code picks two bases per rule, fills any gap
+ * from the code-owned seeds, adds the four ending cards, and writes every ask (`inflectAsksFor`). The model writes no
+ * ask, no ending and no answer. If the draw fails, the seeds alone make the board.
+ */
+async function generateInflectBuild(ctx: GenerationContext): Promise<WordFlipData> {
+  const types = BUILD_DRAW.map(([t]) => t);
+  let pool: ValidNoun[] = [];
+  let title = '';
+  try {
+    const schema = buildNounPoolSchema();
+    const nouns = (schema.properties as Record<string, Schema>).nouns;
+    ((nouns.items as Schema).properties as Record<string, Schema>).type.enum = types;
+    const modeSection = `ALLOWED TYPES (use each at least three times):\n${types.map(t => `- ${CHALLENGE_TYPE_DOCS[t].promptDoc}`).join('\n')}`;
+    const seedHint = shuffle(types.flatMap(t => SEEDS_BY_TYPE[t])).slice(0, 12).map(s => `${s.word} ${s.emoji}`).join(', ');
+    const raw = await callGemini(schema, buildPrompt(ctx.topic, ctx.intent, ctx.gradeContext, seedHint, modeSection));
+    pool = validateNounPool(raw);
+    title = raw.title?.trim() ?? '';
+  } catch (err) {
+    console.warn('[WordFlip] build_inflect word draw failed, using the seed words:', err instanceof Error ? err.message : err);
+  }
+  const used = new Set<string>();
+  const bases: BuildPart[] = [];
+  for (const [type, kind, n] of BUILD_DRAW) {
+    // A word that is irregular in any form, or already on the board as the other kind, is never a base.
+    const fresh = (w: string) => !used.has(w) && !IRREGULAR_WORDS.has(w);
+    const drawn = shuffle(pool.filter(p => p.type === type && fresh(p.word)));
+    const seeds = shuffle(SEEDS_BY_TYPE[type].filter(s => fresh(s.word) && deriveWordFlipAnswer(type, s.word)));
+    for (const w of [...drawn, ...seeds].slice(0, n)) { used.add(w.word); bases.push(basePart(w.word, kind, w.emoji)); }
+  }
+  const board = [...shuffle(bases), ...ENDING_CARDS];
+  const supportTier = ctx.supportTier === 'easy' || ctx.supportTier === 'medium' || ctx.supportTier === 'hard' ? ctx.supportTier : undefined;
+  const buildItems = inflectItemsFrom(inflectAsksFor(board), board, supportTier);
+  if (buildItems.length < 3) throw new Error(`[WordFlip] build_inflect has only ${buildItems.length} askable items`);
+  console.log('🔁 Word Flip (build_inflect):', { topic: ctx.topic, bases: bases.map(b => b.text), fromModel: pool.length,
+    asks: buildItems.map(i => i.ask) });
+  return {
+    title: title || 'Make New Words', challengeType: 'build_inflect', task: 'build_inflect', challenges: [],
+    availableParts: board, buildItems, gradeLevel: ctx.gradeContext, ...(supportTier ? { supportTier } : {}),
+  };
+}
+
 export const generateWordFlip = async (ctx: GenerationContext): Promise<WordFlipData> => {
-  const resolution = await resolveEvalModes(
+  // Pinned, or resolved from the intent. The open build is its own session shape: alone it goes to its generator; in a
+  // blend with spoken modes it is left out (one mount is one shape) and the spoken modes run.
+  const resolved = await resolveEvalModes(
     'word-flip',
     {
       targetEvalMode: ctx.targetEvalMode,
       intent: ctx.intent,
       objectiveText: ctx.objective?.text,
     },
-    CHALLENGE_TYPE_DOCS,
+    { ...CHALLENGE_TYPE_DOCS, ...BUILD_DOC },
   );
+  if (resolved?.allowedTypes.length === 1 && resolved.allowedTypes[0] === 'build_inflect') return generateInflectBuild(ctx);
+  const resolution = spokenOnly(resolved);
   const activeTypes = (resolution?.allowedTypes ?? ALL_CHALLENGE_TYPES) as WordFlipChallengeType[];
   const sessionSize = Math.max(5, activeTypes.length);
   const baseSchema = buildNounPoolSchema();

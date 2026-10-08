@@ -1,0 +1,83 @@
+[
+  {
+    "name": "pinned-g1",
+    "task": "build_inflect",
+    "title": "Amazing Animal Farm Fun with Words!",
+    "board": "brush box walk duck frog puppy bunny help s es ies ed",
+    "asks": [
+      "Make a word that means more than one.",
+      "Make a word that tells it already happened. (x2)",
+      "Make a word that means more than one. Use a word that ends in y.",
+      "Make a word that means more than one. Use a word that ends in sh or x. (x2)",
+      "Make a word that tells what someone did yesterday."
+    ],
+    "oracleChecked": 5,
+    "unchecked": [],
+    "issues": []
+  },
+  {
+    "name": "pinned-g2",
+    "task": "build_inflect",
+    "title": "Fun in the Kitchen with Words!",
+    "board": "bowl box patty cup berry wash bench open s es ies ed",
+    "asks": [
+      "Make a word that means more than one.",
+      "Make a word that tells it already happened. (x2)",
+      "Make a word that means more than one. Use a word that ends in y.",
+      "Make a word that means more than one. Use a word that ends in x or ch. (x2)",
+      "Make a word that tells what someone did yesterday."
+    ],
+    "oracleChecked": 5,
+    "unchecked": [],
+    "issues": []
+  },
+  {
+    "name": "pinned-g2-easy",
+    "task": "build_inflect",
+    "title": "Playground Fun at the Park!",
+    "board": "berry dish hat city walk dress moon look s es ies ed",
+    "asks": [
+      "Make a word that means more than one.",
+      "Make a word that tells it already happened.",
+      "Make a word that means more than one. Use a word that ends in y.",
+      "Make a word that means more than one. Use a word that ends in sh or s.",
+      "Make a word that tells what someone did yesterday."
+    ],
+    "oracleChecked": 5,
+    "unchecked": [],
+    "issues": []
+  },
+  {
+    "name": "intent-g2",
+    "task": "build_inflect",
+    "title": "Fun Grammar Word Builder with Plurals and Past Tense!",
+    "board": "walk brush family tree baby dress jump cat s es ies ed",
+    "asks": [
+      "Make a word that means more than one.",
+      "Make a word that tells it already happened. (x2)",
+      "Make a word that means more than one. Use a word that ends in y.",
+      "Make a word that means more than one. Use a word that ends in sh or s. (x2)",
+      "Make a word that tells what someone did yesterday."
+    ],
+    "oracleChecked": 5,
+    "unchecked": [],
+    "issues": []
+  },
+  {
+    "name": "blend-g1",
+    "task": "spoken",
+    "title": "Playful Pets Plural Party!",
+    "asks": [
+      "plural_s:bug",
+      "plural_s:pig",
+      "plural_s:cow",
+      "plural_s:bird",
+      "plural_s:goat"
+    ],
+    "oracleChecked": 0,
+    "unchecked": [
+      "plural_s"
+    ],
+    "issues": []
+  }
+]

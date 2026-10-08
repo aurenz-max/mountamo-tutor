@@ -1,0 +1,208 @@
+{
+  "generatedAt": "2026-10-08T09:29:48.968Z",
+  "case": {
+    "grade": "2",
+    "topic": "Plural nouns and past tense",
+    "intent": "Build plural and past-tense words by putting an ending card on a base word"
+  },
+  "data": {
+    "title": "Fun Grammar Word Builder with Plurals and Past Tense!",
+    "challengeType": "build_inflect",
+    "task": "build_inflect",
+    "challenges": [],
+    "availableParts": [
+      {
+        "id": "verb-walk",
+        "text": "walk",
+        "type": "root",
+        "meaning": "🚶"
+      },
+      {
+        "id": "noun-brush",
+        "text": "brush",
+        "type": "root",
+        "meaning": "🪥"
+      },
+      {
+        "id": "noun-family",
+        "text": "family",
+        "type": "root",
+        "meaning": "👪"
+      },
+      {
+        "id": "noun-tree",
+        "text": "tree",
+        "type": "root",
+        "meaning": "🌳"
+      },
+      {
+        "id": "noun-baby",
+        "text": "baby",
+        "type": "root",
+        "meaning": "👶"
+      },
+      {
+        "id": "noun-dress",
+        "text": "dress",
+        "type": "root",
+        "meaning": "👗"
+      },
+      {
+        "id": "verb-jump",
+        "text": "jump",
+        "type": "root",
+        "meaning": "🦘"
+      },
+      {
+        "id": "noun-cat",
+        "text": "cat",
+        "type": "root",
+        "meaning": "🐱"
+      },
+      {
+        "id": "end-s",
+        "text": "s",
+        "type": "suffix",
+        "meaning": ""
+      },
+      {
+        "id": "end-es",
+        "text": "es",
+        "type": "suffix",
+        "meaning": ""
+      },
+      {
+        "id": "end-ies",
+        "text": "ies",
+        "type": "suffix",
+        "meaning": "",
+        "replaces": "y"
+      },
+      {
+        "id": "end-ed",
+        "text": "ed",
+        "type": "suffix",
+        "meaning": ""
+      }
+    ],
+    "buildItems": [
+      {
+        "id": "f1",
+        "inflect": "plural",
+        "ways": 1,
+        "ask": "Make a word that means more than one.",
+        "examples": [
+          [
+            "noun-brush",
+            "end-es"
+          ],
+          [
+            "noun-family",
+            "end-ies"
+          ],
+          [
+            "noun-tree",
+            "end-s"
+          ],
+          [
+            "noun-baby",
+            "end-ies"
+          ],
+          [
+            "noun-dress",
+            "end-es"
+          ],
+          [
+            "noun-cat",
+            "end-s"
+          ]
+        ]
+      },
+      {
+        "id": "f2",
+        "inflect": "past",
+        "ways": 2,
+        "ask": "Make a word that tells it already happened.",
+        "examples": [
+          [
+            "verb-walk",
+            "end-ed"
+          ],
+          [
+            "verb-jump",
+            "end-ed"
+          ]
+        ]
+      },
+      {
+        "id": "f3",
+        "inflect": "plural",
+        "ways": 1,
+        "bases": [
+          "noun-family",
+          "noun-baby"
+        ],
+        "baseHint": "a word that ends in y",
+        "ask": "Make a word that means more than one. Use a word that ends in y.",
+        "examples": [
+          [
+            "noun-family",
+            "end-ies"
+          ],
+          [
+            "noun-baby",
+            "end-ies"
+          ]
+        ]
+      },
+      {
+        "id": "f4",
+        "inflect": "plural",
+        "ways": 2,
+        "bases": [
+          "noun-brush",
+          "noun-dress"
+        ],
+        "baseHint": "a word that ends in sh or s",
+        "ask": "Make a word that means more than one. Use a word that ends in sh or s.",
+        "examples": [
+          [
+            "noun-brush",
+            "end-es"
+          ],
+          [
+            "noun-dress",
+            "end-es"
+          ]
+        ]
+      },
+      {
+        "id": "f5",
+        "inflect": "past",
+        "ways": 1,
+        "ask": "Make a word that tells what someone did yesterday.",
+        "examples": [
+          [
+            "verb-walk",
+            "end-ed"
+          ],
+          [
+            "verb-jump",
+            "end-ed"
+          ]
+        ]
+      }
+    ],
+    "gradeLevel": "Grade 2"
+  },
+  "oracle": {
+    "violations": [],
+    "uncheckedTypes": [],
+    "checkedChallenges": 5
+  },
+  "issues": [],
+  "logs": [
+    "[resolveEvalModes] word-flip: intent → [build_inflect]",
+    "🔁 Word Flip (build_inflect): {\n  topic: 'Plural nouns and past tense',\n  bases: [\n    'cat',   'tree',\n    'dress', 'brush',\n    'baby',  'family',\n    'walk',  'jump'\n  ],\n  fromModel: 14,\n  asks: [\n    'Make a word that means more than one.',\n    'Make a word that tells it already happened.',\n    'Make a word that means more than one. Use a word that ends in y.',\n    'Make a word that means more than one. Use a word that ends in sh or s.',\n    'Make a word that tells what someone did yesterday.'\n  ]\n}"
+  ]
+}

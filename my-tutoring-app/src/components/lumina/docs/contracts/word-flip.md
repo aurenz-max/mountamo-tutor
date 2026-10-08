@@ -41,6 +41,12 @@ Static derivation for the word-flip slice of handoff 22 L2.
 - **Evidence:** `qa/eval-reports/levers-literacy-L2-2026-09-28.md`.
 - **Probe:** `npm test -- wordFlipLevers WordFlip.levers.workspace`.
 
+### R5 — `build_inflect` is a fork · OBSERVED
+- **Property:** `build_inflect` (open build: base + ending cards, "I'm done!", many words pass) is its own challenge type and mounts its own surface (`WordBuildAffix` with the inflect rules). R1 and R2 do not apply to it: the answer is made from cards, not said, and the board shows the cards from the start. The six spoken modes are unchanged; a blend with a spoken mode leaves the build out.
+- **Demanded by:** OB-8L (`qa/open-build/ROADMAP.md`).
+- **Evidence:** `qa/open-build/word-flip-2026-10-08/REPORT.md`.
+- **Probe:** `npm test -- WordFlip.buildInflect.workspace`.
+
 ## Conflicts
 
 None open.
@@ -48,3 +54,4 @@ None open.
 ## Changelog
 
 - 2026-09-28 — derived (initial) with R4 (levers). `MODEL_PAIRS` exported for the levers. --check COMPATIBLE: `WordFlip.workspace`, `WordFlip.reader-fit` pass.
+- 2026-10-08 — R5 added: `build_inflect` open build is a fork; R1-R4 unchanged (`WordFlip.workspace` and levers tests pass).
