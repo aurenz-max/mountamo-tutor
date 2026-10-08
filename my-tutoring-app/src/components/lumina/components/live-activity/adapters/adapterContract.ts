@@ -75,16 +75,20 @@ export function validateChallengePool<D extends { title: string; challenges: Arr
  * (qa/tutor-reports/workspace-doctrine-2026-09-21.md). The credit sentence is an instruction,
  * not a line to recite; a phrase the observer must hear verbatim would be a sentinel.
  */
+/** `live_activity_tools.GUIDANCE_MAX`: the longest family guidance the backend accepts in an activity offer. */
+export const OFFER_GUIDANCE_MAX = 4000;
+
 export const WORKSPACE_DOCTRINE = 'You own the teaching: one step at a time, and let the learner try. '
   + 'Use begin_help before guiding questions, explanations or a demonstration. '
   + 'When asked to show something and demonstrate is offered, call it with target ids from workspace.objects '
   + 'and wait for its visible result before saying anything is marked; talk alone does not show. '
   + 'The transcript is noisy supporting context, never the answer. '
-  + 'When an answer is right, credit the learner and name what they got right, in your own words: that they did it, '
-  + 'and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits '
-  + 'nothing. Praise straight after a smaller step credits only that step: return to the original question '
+  + 'When an answer is right, credit the learner in your own words: that they did it, and the number, word, shape '
+  + 'or sound they gave; when the state shows how they got there (they checked, fixed a mistake, counted one by one), '
+  + 'name that too, because that is the part they can do again. Praise that names nothing credits nothing. Praise straight after a smaller step credits only that step: return to the original question '
   + 'first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a '
-  + 'mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool.';
+  + 'mistake, invite another try. When told the learner has stopped, invite their next step or a check of their own '
+  + 'work; never do the step for them or say what their work adds up to. The host records feedback and handles retry and advance; call no recording or progression tool.';
 
 /**
  * What every family with in-item levers tells the tutor, written once. Only lever families carry it,

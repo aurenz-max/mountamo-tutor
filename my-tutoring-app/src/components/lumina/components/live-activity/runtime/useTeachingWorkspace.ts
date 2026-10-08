@@ -92,6 +92,21 @@ const scoreAttempt = postObservation<ItemScoreRequest, ItemScoreDecision>('/api/
 const nameSpokenMiss = postObservation<SpokenMissRequest, SpokenMissDecision>('/api/lumina/observe-spoken-miss', abstainSpokenMiss);
 /** The whole scoring pass waits at most this long; an attempt not graded by then keeps its flow verdict. */
 export const SCORING_BUDGET_MS = 5000;
+/**
+ * A number's path through its turning points: a move in the same direction extends the last step, a reversal adds
+ * one, and the host's own change (a lever, a demonstration) replaces the last value without making a turn. Six at most.
+ */
+export const turnTo = (path: number[], value: number, host = false): number[] => {
+  const last = path.at(-1);
+  if (last === undefined) return [value];
+  if (value === last) return path;
+  if (host) return [...path.slice(0, -1), value];
+  const before = path.at(-2);
+  const next = before !== undefined && Math.sign(last - before) === Math.sign(value - last) ? [...path.slice(0, -1), value] : [...path, value];
+  return next.slice(-6);
+};
+/** How long the learner's changed work sits still before the tutor is told they stopped. */
+export const WORK_PAUSE_MS = 5000;
 
 /** Shared live teaching lifecycle. Domain bindings provide tasks, scene facts and a response checker. */
 export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
@@ -127,6 +142,13 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
     s.practice && practiceItem.current?.id === s.practice ? practiceItem.current : latest.current.items[s.index];
   const item = state.practice && practiceItem.current?.id === state.practice ? practiceItem.current : options.items[state.index];
   const currentItem = () => itemAt(session.getSnapshot());
+  /**
+   * The learner's work on the open item, for the pause fact below: the objects' signature, whether the learner has
+   * changed it since the item opened or was last checked, and the signature the tutor was last told about. A change
+   * within a moment of a runtime action (a lever, a demonstration) is the host's, not the learner's.
+   */
+  const work = useRef({ key: '', sig: '', touched: false, noted: '', hostAt: 0, history: {} as Record<string, number[]> });
+  const [workTick, setWorkTick] = useState(0);
   const lastSpeech = () => {
     if (aiRef.current.sharedVoiceTurns?.isVoiceActive()) return null;
     return latestLearnerUtterance(aiRef.current.conversation, speechFloor.current);
@@ -135,6 +157,7 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
   const commit = (fn: () => boolean) => {
     if (!mounted.current || !activeRef.current || suspended.current) return false;
     let applied = false;
+    work.current.hostAt = Date.now();
     flushSync(() => { applied = fn(); });
     return applied;
   };
@@ -177,7 +200,8 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
           evidence: { attemptNumber: s.attempts.filter(a => a.itemId === i.id).length,
             correctness: response ? response.correct ? 'correct' : 'incorrect' : 'unknown',
             recentResponses: response ? [{ response: response.response, source: response.source, recognition: 'clear' }] : [] },
-          demand: { ...w?.facts, response: i.response, presentation: isReady(w) ? 'ready' : 'not ready' },
+          demand: { ...w?.facts, ...(workHistory() ? { workHistory: workHistory() } : {}), response: i.response,
+            presentation: isReady(w) ? 'ready' : 'not ready' },
           support: { level: s.assisted ? 2 : 0, answerExposure: s.answerExposure },
           workspace: { progression: 'observer', objects: w?.objects ?? [], demonstration: w?.demonstration ?? [],
             ...(w?.levers?.length ? { levers: w.levers } : {}),
@@ -382,8 +406,50 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
           scope: { instanceId: latest.current.instanceId, itemId: currentItem().id } } });
       observeSpokenMiss(speech);
     }
+    trackWork();
     changed();
   };
+  const trackWork = () => {
+    const s = session.getSnapshot(), w = work.current, scene = latest.current.workspace.current;
+    // Objects and facts both: Ten Frame, Number Bond and Place Value publish no objects and carry the work in facts.
+    // A lever's note and the practice flag are the host's, not the learner's.
+    const { onScreen: _onScreen, practice: _practice, ...facts } = scene?.facts ?? {};
+    const sig = JSON.stringify([(scene?.objects ?? []).map(o => [o.id, o.label, o.selected, o.group ?? '']), facts]);
+    const key = `${currentItem().id}:${s.practice ?? ''}`;
+    const numbers = Object.entries(facts).filter((e): e is [string, number] => typeof e[1] === 'number');
+    if (w.key !== key) {
+      Object.assign(w, { key, sig, touched: false, noted: '', history: Object.fromEntries(numbers.map(([k, v]) => [k, [v]])) });
+      return;
+    }
+    if (s.phase !== 'working') { Object.assign(w, { sig, touched: false, noted: '' }); return; }
+    if (sig === w.sig) return;
+    w.sig = sig;
+    const host = Date.now() - w.hostAt < 1500;
+    for (const [k, v] of numbers) w.history[k] = turnTo(w.history[k] ?? [], v, host);
+    if (host) return;
+    w.touched = true;
+    setWorkTick(t => t + 1);
+  };
+  /** How the learner's numbers moved on this item, where they turned back: "markedOnBoard 0 → 10 → 9". Every family
+   *  gets it from the facts it already publishes, so the credit rule can name a self-correction. */
+  const workHistory = () => Object.entries(work.current.history).filter(([, path]) => path.length >= 3)
+    .map(([k, path]) => `${k} ${path.join(' → ')}`).join('; ');
+  // The learner changed their work and then stopped without submitting it: a moment to teach, so the tutor is told
+  // it happened, once per state of the work, after it has finished speaking. A fact, no instruction; the doctrine
+  // keeps the step with the learner. Nothing is sent before the learner has touched the work (reading and thinking
+  // time), on spoken items, or on a one-tap answer (the tap submits). Counting-board build_n, text replay and Live
+  // A/B 2026-10-07: with the fact the tutor taught during the build; without a rule it did the counting itself.
+  useEffect(() => {
+    const w = work.current;
+    if (!w.touched || w.noted === w.sig || state.phase !== 'working' || ai.isAudioPlaying || item.response !== 'gesture') return;
+    const sig = w.sig;
+    const timer = setTimeout(() => {
+      if (work.current.sig !== sig || !work.current.touched || aiRef.current.isAudioPlaying) return;
+      work.current.noted = sig;
+      noteLearner(`The learner changed their work and has stopped for ${WORK_PAUSE_MS / 1000} seconds without submitting it.`);
+    }, WORK_PAUSE_MS);
+    return () => clearTimeout(timer);
+  }, [workTick, state.phase, ai.isAudioPlaying, item.id, item.response]);
 
   /**
    * Handoff 20 Part B: which of the item's known wrong answers this pending answer is, read from the learner's
@@ -416,11 +482,20 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
     const correct = checkResponse(response);
     if (correct === null || !session.submit(`gesture:${++gestureSequence.current}`, response, 'gesture', correct, false, undefined, miss)) return;
     if (correct && !session.getSnapshot().practice) latest.current.onSolved?.(session.getSnapshot().index, response);
-    // Facts trigger the live conversation. No prescribed words; the browser has already checked the response.
-    const facts = `The learner submitted their selection. Current workspace response: ${JSON.stringify(session.getSnapshot().lastResponse)}. Respond to the learner using the current task and workspace.`;
+    // Facts trigger the live conversation: what the learner did and what the board found, no instruction. A tail
+    // telling the tutor to respond changed no reply in a text replay (2026-10-07); how they got there rides in the
+    // packet's demand, which the doctrine's credit rule reads.
+    const facts = `The learner submitted ${JSON.stringify(response)}. The board checked it: ${correct ? 'right' : 'not right'}.`;
     aiRef.current.sendText(facts, { scripted: false, author: 'host' });
   };
-  return { state, item, summary, scored, submitGestureResponse, publishWorkspace, present: () => currentItem().id === item.id && present(),
+  /** A fact about what the learner is doing on the open item (a build that has stopped, say), for the tutor to act
+   *  on. Facts only, as with a submission: what the tutor says is its own. */
+  const noteLearner = (facts: string) => {
+    if (!mounted.current || !activeRef.current || suspended.current || currentItem().id !== item.id
+      || session.getSnapshot().phase !== 'working') return;
+    aiRef.current.sendText(facts, { scripted: false, author: 'host' });
+  };
+  return { state, item, summary, scored, submitGestureResponse, noteLearner, publishWorkspace, present: () => currentItem().id === item.id && present(),
     currentItemId: () => currentItem().id,
     canAttempt: active && state.phase === 'working' && !suspended.current,
     isBlocked: () => !mounted.current || !activeRef.current || suspended.current || currentItem().id !== item.id || session.getSnapshot().phase !== 'working',

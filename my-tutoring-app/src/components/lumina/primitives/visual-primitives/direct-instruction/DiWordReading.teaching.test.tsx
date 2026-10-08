@@ -41,6 +41,7 @@ import { DI_WORD_READING_WORKSPACE_MODES, buildWordReadingItems, workspaceAssign
   type DiWordReadingChallenge, type DiWordReadingChallengeType } from './diWordReadingDomain';
 import { validateDiWordReadingData } from '../../../components/live-activity/adapters/diWordReadingLive';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
+import { OFFER_GUIDANCE_MAX } from '../../../components/live-activity/adapters/adapterContract';
 const diWordReadingLive = LIVE_ADAPTERS['di-word-reading'];
 
 beforeEach(() => { vi.useFakeTimers(); vi.clearAllMocks(); seam.conversation = []; seam.voiceActive = false;
@@ -350,10 +351,10 @@ it('advertises exactly the four workspace modes under tutor ownership', () => {
 });
 
 it('keeps guidance inside the backend offer cap, with no sentence for the tutor to recite', () => {
-  // `live_activity_tools.parse_activity_spec` rejects an offer above 2000
+  // `live_activity_tools.parse_activity_spec` rejects an offer above OFFER_GUIDANCE_MAX
   // characters and closes the socket with `Invalid activity offer`, which does
   // not read as a length problem from the frontend.
-  expect(diWordReadingLive.guidance.length).toBeLessThanOrEqual(2000);
+  expect(diWordReadingLive.guidance.length).toBeLessThanOrEqual(OFFER_GUIDANCE_MAX);
   expect(diWordReadingLive.guidance).not.toMatch(/say exactly|Speak exactly|"[A-Z][^"]{12,}"/);
 });
 

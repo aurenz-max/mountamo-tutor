@@ -64,6 +64,8 @@ export interface WorkspaceRun<Item extends WorkspaceRunItem> {
   tutorSpeaking: boolean;
   cuedItemId: string;
   summary: null;
+  /** A fact about the learner's work on the open item, sent to the tutor as host text. */
+  noteLearner?: (facts: string) => void;
   practiceSummary: TeachingSummary | null;
   teachingResult: TeachingEvaluationResult | null;
   start: () => Promise<void>;
@@ -108,6 +110,7 @@ export interface LiveRun<Item> {
   commitGesture?: (gesture: GestureCommit) => void;
   presentStimulus?: () => boolean;
   publishWorkspace?: () => void;
+  noteLearner?: (facts: string) => void;
   practiceSummary?: TeachingSummary | null;
   teachingResult?: TeachingEvaluationResult | null;
   /** Runner only. */
@@ -203,7 +206,7 @@ export function useWorkspaceRunner<Item extends WorkspaceRunItem>(options: Works
       checked.current = { itemId: lesson.currentItemId(), correct };
       lesson.submitGestureResponse(response, miss);
     },
-    presentStimulus: () => !!lesson.present(), publishWorkspace: lesson.publishWorkspace,
+    presentStimulus: () => !!lesson.present(), publishWorkspace: lesson.publishWorkspace, noteLearner: lesson.noteLearner,
     submitGestureAttempt: () => { throw new Error('Tutor-owned work accepts structured learner responses, never script cues'); },
     micState: 'armed', statusLine: state.phase === 'checked' ? 'Let us talk about your answer.' : 'We can work on this together.',
     cancelListening: lesson.stop };

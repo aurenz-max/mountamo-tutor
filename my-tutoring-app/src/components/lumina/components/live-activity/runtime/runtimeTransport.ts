@@ -146,8 +146,8 @@ export class RuntimeTransport {
     if (status !== 'visible' || this.closed) return;
     const next = this.runtime.getSnapshot();
     if (next.status === 'active' && next.task?.phase === 'working') this.send({ type: 'text', scripted: false,
-      content: type === 'advance' ? 'The learner opened the next task. Introduce the visible task naturally.'
-        : 'The learner chose to try this task again. Invite their new attempt.' });
+      content: type === 'advance' ? 'The learner opened the next task. It is on screen.'
+        : 'The learner chose to try this task again.' });
   }
   /**
    * A newly committed wrong attempt on a session item is a rung of the ladder (`leverTrigger`): the second

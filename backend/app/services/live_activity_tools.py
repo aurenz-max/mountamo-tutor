@@ -69,6 +69,12 @@ def parse_plan(value, enabled_primitives):
     return {"topic": value["topic"], "items": [dict(item) for item in items]}
 
 
+# A bound on client input, not a model limit: the Live model takes state notes three times this long. At 2000 it
+# had become the binding constraint on what the tutor is told (2026-10-07: one tested doctrine sentence put 20
+# families over and closed their sessions). The envelope's 32000 bound still holds the whole offer list.
+GUIDANCE_MAX = 4000
+
+
 def parse_activity_spec(value):
     """Validate a bounded host capability envelope, without a Python primitive catalog."""
     if (not isinstance(value, dict) or set(value) - {"activities", "visuals", "plan"}
@@ -85,7 +91,7 @@ def parse_activity_spec(value):
                 or len(set(offer["modes"])) != len(offer["modes"])
                 or offer["teachingOwner"] not in ("tutor", "di-runner") or type(offer["canAdvance"]) is not bool
                 or (offer["teachingOwner"] == "di-runner" and offer["canAdvance"])
-                or not isinstance(offer["guidance"], str) or not 1 <= len(offer["guidance"]) <= 2000):
+                or not isinstance(offer["guidance"], str) or not 1 <= len(offer["guidance"]) <= GUIDANCE_MAX):
             raise ValueError("Invalid activity offer")
         activities[offer["primitiveId"]] = offer
     reserved = {"perform_runtime_action", "request_activity", "advance_activity", "start_plan_item", "highlight_visual"}

@@ -42,6 +42,7 @@ import { DI_SENTENCE_READING_WORKSPACE_MODES, buildSentenceReadingItems, workspa
 import { validateDiSentenceReadingData }
   from '../../../components/live-activity/adapters/diSentenceReadingLive';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
+import { OFFER_GUIDANCE_MAX } from '../../../components/live-activity/adapters/adapterContract';
 const diSentenceReadingLive = LIVE_ADAPTERS['di-sentence-reading'];
 
 beforeEach(() => { vi.useFakeTimers(); vi.clearAllMocks(); seam.conversation = []; seam.voiceActive = false;
@@ -335,10 +336,10 @@ it('advertises exactly the four workspace modes under tutor ownership', () => {
 });
 
 it('keeps guidance inside the backend offer cap, with no sentence for the tutor to recite', () => {
-  // `live_activity_tools.parse_activity_spec` rejects an offer above 2000
+  // `live_activity_tools.parse_activity_spec` rejects an offer above OFFER_GUIDANCE_MAX
   // characters and closes the socket with `Invalid activity offer`, which does
   // not read as a length problem from the frontend.
-  expect(diSentenceReadingLive.guidance.length).toBeLessThanOrEqual(2000);
+  expect(diSentenceReadingLive.guidance.length).toBeLessThanOrEqual(OFFER_GUIDANCE_MAX);
   expect(diSentenceReadingLive.guidance).not.toMatch(/say exactly|Speak exactly|"[A-Z][^"]{12,}"/);
 });
 

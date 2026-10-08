@@ -35,6 +35,7 @@ import ShapeSorter, { type ShapeSorterData } from './ShapeSorter';
 import { itemsFromChallenges, workspaceAssignment, workspaceScene } from './shapeSorterDomain';
 import { validateShapeSorterData } from '../../../components/live-activity/adapters/shapeSorterLive';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
+import { OFFER_GUIDANCE_MAX } from '../../../components/live-activity/adapters/adapterContract';
 const shapeSorterLive = LIVE_ADAPTERS['shape-sorter'];
 
 beforeEach(() => { vi.useFakeTimers(); vi.clearAllMocks(); seam.conversation = []; seam.voiceActive = false;
@@ -279,7 +280,7 @@ it('advertises every catalog mode under tutor ownership', () => {
 });
 
 it('keeps guidance inside the backend offer cap, with no sentence for the tutor to recite', () => {
-  expect(shapeSorterLive.guidance.length).toBeLessThanOrEqual(2000);
+  expect(shapeSorterLive.guidance.length).toBeLessThanOrEqual(OFFER_GUIDANCE_MAX);
   expect(shapeSorterLive.guidance).not.toMatch(/say exactly|Say exactly/);
 });
 

@@ -114,7 +114,7 @@ export function useTeachingSurface(options: TeachingSurfaceOptions): TeachingSur
     learnerOpened: what => {
       if (!mounted.current || !activeRef.current) return;
       changed();
-      aiRef.current.sendText(`The learner opened ${what} themselves. Respond using the current workspace.`,
+      aiRef.current.sendText(`The learner opened ${what} themselves.`,
         { scripted: false, author: 'host' });
     },
   };

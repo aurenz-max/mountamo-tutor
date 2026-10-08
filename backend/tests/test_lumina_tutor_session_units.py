@@ -756,3 +756,11 @@ def test_output_transcript_boundary_resets_each_turn():
     assert boundary.spoken('Nice.', 3) and not boundary.spoken('---', 3) and not boundary.spoken('more', 3)
     boundary.turn_start()
     assert boundary.spoken('Next one!', 2)
+
+
+def test_output_transcript_drops_transcriber_placeholders_only():
+    # Session 2026-10-07-110428 (counting-board build_n): a turn of wordless audio transcribed as "<no speech>{pause}",
+    # split across two chunks, reached the screen as the tutor's words.
+    assert _spoken([('<no ', 0), ('speech>{pause}', 17)]) == []
+    # Words around a placeholder in the same turn are kept.
+    assert _spoken([('Ooh, look ', 3), ('{pause}', 5), ('at your butterflies!', 9)]) == ['Ooh, look ', 'at your butterflies!']

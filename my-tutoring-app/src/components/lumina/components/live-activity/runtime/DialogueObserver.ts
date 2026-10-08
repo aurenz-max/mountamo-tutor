@@ -149,7 +149,7 @@ export class DialogueObserver {
           if (next.status === 'active' && next.task?.phase === 'working' && next.instanceId === request.scope.instanceId
               && next.task.itemId !== request.scope.itemId)
             this.report({ type: 'text', scripted: false, source: 'dialogue_progression',
-              content: 'The next task is now visible in liveRuntime. Introduce that task naturally and wait for the learner.' });
+              content: 'The next task is on screen.' });
         }
       }
       // RP-2 (user ruling 09-28): the reply credited nothing, so nothing above committed.

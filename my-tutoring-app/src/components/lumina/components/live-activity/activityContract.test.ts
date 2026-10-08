@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { initialActivityState, parseActivityRequest, validateActivityData, validateTenFrameData, validateShapeSorterData,
   generatedActivityState, LIVE_ADAPTERS, LIVE_PRIMITIVE_IDS, type LiveActivityAdapter } from './activityContract';
 import { getComponentById } from '../../service/manifest/catalog';
+import { OFFER_GUIDANCE_MAX } from './adapters/adapterContract';
 
 export const fixture = () => ({ title: 'Subtraction within 10', range: { min: 0, max: 10 },
   interactionMode: 'jump' as const, challenges: [{ id: 'c1', type: 'show_jump' as const,
@@ -49,8 +50,8 @@ describe('live activity boundary', () => {
     // The picker can only offer what the route accepts, and the route only what the catalog defines.
     for (const [mode] of adapter.copy.lessons) expect(adapter.modes).toContain(mode);
     for (const mode of adapter.modes) expect(catalogModes).toContain(mode);
-    // `live_activity_tools.parse_activity_spec` closes the socket above this length.
-    expect(adapter.guidance.length).toBeLessThanOrEqual(2000);
+    // `live_activity_tools.parse_activity_spec` (GUIDANCE_MAX) refuses the offer above this length.
+    expect(adapter.guidance.length).toBeLessThanOrEqual(OFFER_GUIDANCE_MAX);
   });
   it('accepts only declared capabilities and bounded intent', () => {
     expect(parseActivityRequest({ primitiveId: 'number-line', topic: ' subtract ', intent: 'Move left', mode: 'jump' }).topic).toBe('subtract');

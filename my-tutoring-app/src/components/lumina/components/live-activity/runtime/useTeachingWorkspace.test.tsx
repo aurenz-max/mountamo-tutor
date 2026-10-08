@@ -109,6 +109,6 @@ it('judges a checked gesture with no learner words: the host message is not the 
   await act(async () => { await Promise.resolve(); });
   expect(classify).toHaveBeenCalledTimes(1);
   expect(requests[0]).toMatchObject({ learner: '', phase: 'checked', lastResponse: { response: 'blue', correct: false } });
-  expect(JSON.stringify(requests[0])).not.toMatch(/submitted their selection|is it the blue one/);
+  expect(JSON.stringify(requests[0])).not.toMatch(/The learner submitted|is it the blue one/);
   transport.close();
 });

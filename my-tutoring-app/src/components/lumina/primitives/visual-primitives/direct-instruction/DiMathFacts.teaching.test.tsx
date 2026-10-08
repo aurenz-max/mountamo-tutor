@@ -43,6 +43,7 @@ import { DI_MATH_FACTS_WORKSPACE_MODES, buildMathFactItems, workspaceAssignment,
 import { mathFactLeverFacts, startingLevers } from './diMathFactsLevers';
 import { validateDiMathFactsData } from '../../../components/live-activity/adapters/diMathFactsLive';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
+import { OFFER_GUIDANCE_MAX } from '../../../components/live-activity/adapters/adapterContract';
 const diMathFactsLive = LIVE_ADAPTERS['di-math-facts'];
 
 beforeEach(() => { vi.useFakeTimers(); vi.clearAllMocks(); seam.conversation = []; seam.voiceActive = false;
@@ -485,10 +486,10 @@ it('advertises exactly the five workspace modes under tutor ownership', () => {
 });
 
 it('keeps guidance inside the backend offer cap, with no sentence for the tutor to recite', () => {
-  // `live_activity_tools.parse_activity_spec` rejects an offer above 2000
+  // `live_activity_tools.parse_activity_spec` rejects an offer above OFFER_GUIDANCE_MAX
   // characters and closes the socket with `Invalid activity offer`, which does
   // not read as a length problem from the frontend.
-  expect(diMathFactsLive.guidance.length).toBeLessThanOrEqual(2000);
+  expect(diMathFactsLive.guidance.length).toBeLessThanOrEqual(OFFER_GUIDANCE_MAX);
   expect(diMathFactsLive.guidance).not.toMatch(/say exactly|Speak exactly|"[A-Z][^"]{12,}"/);
 });
 

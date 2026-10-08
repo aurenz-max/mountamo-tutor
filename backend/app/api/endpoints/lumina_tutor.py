@@ -282,6 +282,21 @@ class FloorGate:
 STATE_NOTE_OPEN = "(For you only, never to be spoken. Where the student is right now:"
 
 
+def note_seed(primitive_data: Optional[Dict[str, Any]], runtime: bool) -> Dict[str, Any]:
+    """What of a primitive's data belongs in the state note.
+
+    With a live runtime, `liveRuntime` is the learner's state and the board's generated data is not: it carried
+    every challenge with its `targetAnswer`, and because attach() writes the whole state each time any of it
+    changes, all of it (about 6k characters, five answers) rode out on every turn of a counting-board lesson
+    (2026-10-07, session 29136cc55d5c) beside a prompt that told the tutor never to say the answer. A text
+    replay with and without it gave the same replies. Only the bound family's guidance stays.
+    """
+    data = dict(primitive_data or {})
+    if not runtime:
+        return data
+    return {k: data[k] for k in ("teachingGuidance",) if k in data}
+
+
 class PrimitiveState:
     """The student's CURRENT state inside the primitive they are on.
 
@@ -424,6 +439,9 @@ class InputTranscriptBoundary:
 _UNSPOKEN_MARKUP = re.compile(r'(^|\n)[ \t]*(-{3,}|#{1,6}\s|\|)|\n[ \t]*(\*\*|\d+\.\s+\*\*|[-*]\s+\*\*)')
 
 
+_TRANSCRIBER_PLACEHOLDER = re.compile(r"[<>{}]")
+
+
 class OutputTranscriptBoundary:
     """Keep the tutor transcript to what was spoken (LB-15).
 
@@ -446,6 +464,11 @@ class OutputTranscriptBoundary:
         if not self.derailed and audio_frames == self.audio_at_last and _UNSPOKEN_MARKUP.search(text):
             self.derailed = True
         self.audio_at_last = audio_frames
+        # The transcriber's own placeholders for audio with no words in it ("<no speech>{pause}", arriving split
+        # as "<no " + "speech>{pause}"; counting-board build_n 10-07, session 29136cc55d5c). Speech never
+        # transcribes to angle or curly brackets, so the chunk is dropped; the rest of the turn is kept.
+        if _TRANSCRIBER_PLACEHOLDER.search(text):
+            return False
         return not self.derailed
 
 
@@ -1223,7 +1246,7 @@ async def lumina_tutor_session(websocket: WebSocket):
         # Within-primitive state: kept here, never pushed. Seeded from the
         # primitive the session opened on — the greeting's scaffold carries it.
         primitive_state = PrimitiveState()
-        primitive_state.reset(primitive_data)
+        primitive_state.reset(note_seed(primitive_data, bool(runtime_bridge)))
         if runtime_bridge:
             primitive_state.merge({"liveRuntime": runtime_bridge.state})
 
@@ -1379,7 +1402,7 @@ async def lumina_tutor_session(websocket: WebSocket):
                             instance_id = message["instanceId"]
                             primitive_data = message["data"]
                             tutoring_scaffold = message.get("tutoring")
-                            primitive_state.reset(primitive_data)
+                            primitive_state.reset(note_seed(primitive_data, bool(runtime_bridge)))
                         ledger.write("activity-result", call_id=message.get("callId"),
                                      status=message.get("status"), accepted=mounted)
 
@@ -1425,7 +1448,7 @@ async def lumina_tutor_session(websocket: WebSocket):
                         # tutor mid-sentence. The state rides out on the
                         # next message that genuinely asks for a turn (see
                         # PrimitiveState), fresher than this push ever was.
-                        primitive_state.merge(new_state)
+                        primitive_state.merge(note_seed(new_state, bool(runtime_bridge)))
                         if sandbox:
                             await sandbox.state(instance_id, new_state)
                         if progress_update:
@@ -1462,7 +1485,7 @@ async def lumina_tutor_session(websocket: WebSocket):
                         # The old primitive's state does not describe this
                         # one. The announcement below carries the new data
                         # in its scaffold, so it counts as already conveyed.
-                        primitive_state.reset(primitive_data)
+                        primitive_state.reset(note_seed(primitive_data, bool(runtime_bridge)))
                         if runtime_bridge:
                             primitive_state.merge({"liveRuntime": runtime_bridge.state})
 
@@ -1879,6 +1902,8 @@ async def lumina_tutor_session(websocket: WebSocket):
                                 await tool_bridge.cancelled_by_model(cancellation.ids or [])
                             tool_call = getattr(response, "tool_call", None)
                             if tool_call:
+                                if runtime_bridge:
+                                    runtime_bridge.spoke_this_turn = audio_frames > 0
                                 for function_call in tool_call.function_calls or []:
                                     await tool_bridge.call(function_call)
                                     ledger.write("activity-tool-call", call_id=function_call.id,

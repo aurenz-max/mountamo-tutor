@@ -183,6 +183,11 @@ class LiveRuntimeTools:
         self.demonstrations = bool(spec.get("demonstrations"))
         self.lesson = bool(spec.get("lesson"))
         self.observation_call = None
+        # Set by the session before each tool call: has the tutor already spoken in the turn that made it? The lesson
+        # opener poses the task and then calls observe_runtime in the same turn; a WHEN_IDLE first answer then gave
+        # the model a second turn with nothing new in it, which Live voiced as wordless audio ("<no speech>{pause}",
+        # 3 of 4 lesson openings on 2026-10-07). Answered SILENT when the turn already spoke.
+        self.spoke_this_turn = False
         self.moves = bool(spec.get("teachingMoves"))
         self.epoch = spec["sessionEpoch"]
         self.state = spec["initialState"]
@@ -222,7 +227,7 @@ class LiveRuntimeTools:
                 await self.reply(types.FunctionResponse(id=self.observation_call.id, name="observe_runtime",
                     response={"status": "replaced"}, will_continue=False, scheduling="SILENT"))
             self.observation_call = call
-            await self.publish_observation(initial=True)
+            await self.publish_observation(initial=not self.spoke_this_turn)
             return
         if call.name == "compose_move":
             await self.compose(call, args)
