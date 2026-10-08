@@ -1,0 +1,243 @@
+{
+ "summary": {
+  "lines": 24,
+  "kept": 24,
+  "leaks": 0
+ },
+ "results": [
+  {
+   "task": "Make a food chain with 3 living things that ends at the Hawk.",
+   "build": "two cards, no arrow",
+   "scene": [
+    "Grass",
+    "Rabbit"
+   ],
+   "arrows": [],
+   "pictureText": "GrassRabbit",
+   "seeing": [
+    "Ooh, green cards for Grass and Rabbit are appearing on screen!",
+    "Ooh, the green Grass card and Rabbit card are looking great!"
+   ],
+   "kept": 2,
+   "leaks": []
+  },
+  {
+   "task": "Make a food chain with 3 living things that ends at the Hawk.",
+   "build": "right chain",
+   "scene": [
+    "Grass",
+    "Rabbit",
+    "Hawk"
+   ],
+   "arrows": [
+    "Grass -> Rabbit",
+    "Rabbit -> Hawk"
+   ],
+   "pictureText": "GrassRabbitHawk",
+   "seeing": [
+    "Ooh, green cards with white arrows are connecting Grass, Rabbit, and Hawk!",
+    "Ooh, green name cards and white arrows are linking the animals!"
+   ],
+   "kept": 2,
+   "leaks": []
+  },
+  {
+   "task": "Make a food chain with 3 living things that ends at the Hawk.",
+   "build": "backwards chain",
+   "scene": [
+    "Grass",
+    "Rabbit",
+    "Hawk"
+   ],
+   "arrows": [
+    "Rabbit -> Grass",
+    "Hawk -> Rabbit"
+   ],
+   "pictureText": "GrassRabbitHawk",
+   "seeing": [
+    "Ooh, green cards with white arrows are appearing!",
+    "Ooh, bright green cards are connected with shiny arrows!"
+   ],
+   "kept": 2,
+   "leaks": []
+  },
+  {
+   "task": "Make a food chain with 3 living things that ends at the Hawk.",
+   "build": "right chain, arrow_words + food_tags pulled",
+   "scene": [
+    "Grass",
+    "Rabbit",
+    "Hawk"
+   ],
+   "arrows": [
+    "Grass -> Rabbit",
+    "Rabbit -> Hawk"
+   ],
+   "pictureText": "GrassRabbitHawk",
+   "seeing": [
+    "Ooh, green name cards and arrows are connecting Grass, Rabbit, and Hawk!",
+    "Ooh, green cards with white arrows connect Grass, Rabbit, and Hawk!"
+   ],
+   "kept": 2,
+   "leaks": []
+  },
+  {
+   "task": "Make a food chain with 3 living things that ends at the Snake.",
+   "build": "two cards, no arrow",
+   "scene": [
+    "Grass",
+    "Mouse"
+   ],
+   "arrows": [],
+   "pictureText": "GrassMouse",
+   "seeing": [
+    "Ooh, bright green name cards are appearing on the dark screen!",
+    "Ooh, bright green cards for grass and mouse are appearing!"
+   ],
+   "kept": 2,
+   "leaks": []
+  },
+  {
+   "task": "Make a food chain with 3 living things that ends at the Snake.",
+   "build": "right chain",
+   "scene": [
+    "Grass",
+    "Mouse",
+    "Snake"
+   ],
+   "arrows": [
+    "Grass -> Mouse",
+    "Mouse -> Snake"
+   ],
+   "pictureText": "GrassMouseSnake",
+   "seeing": [
+    "Ooh, green cards with white arrows connect Grass, Mouse, and Snake!",
+    "Ooh, green name cards and white arrows are appearing on the dark screen!"
+   ],
+   "kept": 2,
+   "leaks": []
+  },
+  {
+   "task": "Make a food chain with 3 living things that ends at the Snake.",
+   "build": "backwards chain",
+   "scene": [
+    "Grass",
+    "Mouse",
+    "Snake"
+   ],
+   "arrows": [
+    "Mouse -> Grass",
+    "Snake -> Mouse"
+   ],
+   "pictureText": "GrassMouseSnake",
+   "seeing": [
+    "Ooh, green name cards and glowing lines are appearing in the dark!",
+    "Ooh, green cards for Grass, Mouse, and Snake are appearing!"
+   ],
+   "kept": 2,
+   "leaks": []
+  },
+  {
+   "task": "Make a food chain with 3 living things that ends at the Snake.",
+   "build": "right chain, arrow_words + food_tags pulled",
+   "scene": [
+    "Grass",
+    "Mouse",
+    "Snake"
+   ],
+   "arrows": [
+    "Grass -> Mouse",
+    "Mouse -> Snake"
+   ],
+   "pictureText": "GrassMouseSnake",
+   "seeing": [
+    "Ooh, green cards with white arrows connect Grass and Mouse and Snake!",
+    "Ooh, green cards with white arrows connect Grass, Mouse, and Snake!"
+   ],
+   "kept": 2,
+   "leaks": []
+  },
+  {
+   "task": "Make a food chain with 4 living things that ends at the Hawk.",
+   "build": "two cards, no arrow",
+   "scene": [
+    "Grass",
+    "Grasshopper"
+   ],
+   "arrows": [],
+   "pictureText": "GrassGrasshopper",
+   "seeing": [
+    "Ooh, green cards for Grass and Grasshopper are appearing on screen!",
+    "Ooh, bright green rectangles are appearing on the dark screen!"
+   ],
+   "kept": 2,
+   "leaks": []
+  },
+  {
+   "task": "Make a food chain with 4 living things that ends at the Hawk.",
+   "build": "right chain",
+   "scene": [
+    "Grass",
+    "Grasshopper",
+    "Frog",
+    "Hawk"
+   ],
+   "arrows": [
+    "Grass -> Grasshopper",
+    "Grasshopper -> Frog",
+    "Frog -> Hawk"
+   ],
+   "pictureText": "GrassGrasshopperFrogHawk",
+   "seeing": [
+    "Ooh, bright green cards are linking with shiny white lines!",
+    "Ooh, green name cards and white arrows are linking the animals!"
+   ],
+   "kept": 2,
+   "leaks": []
+  },
+  {
+   "task": "Make a food chain with 4 living things that ends at the Hawk.",
+   "build": "backwards chain",
+   "scene": [
+    "Grass",
+    "Grasshopper",
+    "Frog",
+    "Hawk"
+   ],
+   "arrows": [
+    "Grasshopper -> Grass",
+    "Frog -> Grasshopper",
+    "Hawk -> Frog"
+   ],
+   "pictureText": "GrassGrasshopperFrogHawk",
+   "seeing": [
+    "Ooh, green cards with shiny connecting lines are growing here!",
+    "Ooh, green name cards and white arrows are connecting nicely!"
+   ],
+   "kept": 2,
+   "leaks": []
+  },
+  {
+   "task": "Make a food chain with 4 living things that ends at the Hawk.",
+   "build": "right chain, arrow_words + food_tags pulled",
+   "scene": [
+    "Grass",
+    "Grasshopper",
+    "Frog",
+    "Hawk"
+   ],
+   "arrows": [
+    "Grass -> Grasshopper",
+    "Grasshopper -> Frog",
+    "Frog -> Hawk"
+   ],
+   "pictureText": "GrassGrasshopperFrogHawk",
+   "seeing": [
+    "Ooh, green name cards and glowing white arrows are appearing!",
+    "Ooh, green cards are connecting with glowing white lines!"
+   ],
+   "kept": 2,
+   "leaks": []
+  }
+ ]
+}

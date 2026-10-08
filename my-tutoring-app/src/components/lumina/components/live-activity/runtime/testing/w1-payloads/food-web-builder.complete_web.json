@@ -1,0 +1,116 @@
+{
+ "source": "qa/open-build/food-web-builder-2026-10-07/generator-run.json",
+ "primitiveId": "food-web-builder",
+ "evalMode": "complete_web",
+ "data": {
+  "primitiveType": "food-web-builder",
+  "ecosystem": "Grassland",
+  "organisms": [
+   {
+    "id": "org1",
+    "name": "Prairie Grass",
+    "imagePrompt": "Tall green prairie grass blades swaying in the wind",
+    "trophicLevel": "producer",
+    "position": {
+     "x": "20%",
+     "y": "75%"
+    }
+   },
+   {
+    "id": "org2",
+    "name": "Rabbit",
+    "imagePrompt": "Cute fluffy wild rabbit sitting in the grass",
+    "trophicLevel": "primary-consumer",
+    "position": {
+     "x": "30%",
+     "y": "55%"
+    }
+   },
+   {
+    "id": "org3",
+    "name": "Grasshopper",
+    "imagePrompt": "Bright green grasshopper on a leaf",
+    "trophicLevel": "primary-consumer",
+    "position": {
+     "x": "55%",
+     "y": "55%"
+    }
+   },
+   {
+    "id": "org4",
+    "name": "Frog",
+    "imagePrompt": "Small green frog resting on a stone",
+    "trophicLevel": "secondary-consumer",
+    "position": {
+     "x": "55%",
+     "y": "35%"
+    }
+   },
+   {
+    "id": "org5",
+    "name": "Fox",
+    "imagePrompt": "Red fox with a bushy tail standing alert",
+    "trophicLevel": "secondary-consumer",
+    "position": {
+     "x": "30%",
+     "y": "35%"
+    }
+   },
+   {
+    "id": "org6",
+    "name": "Hawk",
+    "imagePrompt": "Majestic hawk flying with wings spread",
+    "trophicLevel": "tertiary-consumer",
+    "position": {
+     "x": "75%",
+     "y": "20%"
+    }
+   },
+   {
+    "id": "org7",
+    "name": "Fungi",
+    "imagePrompt": "Mushroom cluster growing on rich soil",
+    "trophicLevel": "decomposer",
+    "position": {
+     "x": "80%",
+     "y": "85%"
+    }
+   }
+  ],
+  "correctConnections": [
+   {
+    "fromId": "org1",
+    "toId": "org2",
+    "relationship": "Rabbits eat prairie grass"
+   },
+   {
+    "fromId": "org1",
+    "toId": "org3",
+    "relationship": "Grasshoppers eat prairie grass"
+   },
+   {
+    "fromId": "org2",
+    "toId": "org5",
+    "relationship": "Foxes hunt rabbits"
+   },
+   {
+    "fromId": "org3",
+    "toId": "org4",
+    "relationship": "Frogs eat grasshoppers"
+   },
+   {
+    "fromId": "org4",
+    "toId": "org6",
+    "relationship": "Hawks hunt frogs"
+   },
+   {
+    "fromId": "org5",
+    "toId": "org7",
+    "relationship": "Fungi decompose dead foxes"
+   }
+  ],
+  "gradeBand": "3-5",
+  "intent": "Draw who eats whom in a grassland",
+  "challengeType": "complete_web"
+ }
+}

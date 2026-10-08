@@ -1,0 +1,192 @@
+{
+ "run": "journeySweep.test.tsx -t food (JOURNEY_SWEEP_OUT), 2026-10-08",
+ "results": [
+  {
+   "payload": "food-web-builder.build_chain",
+   "items": 3,
+   "findings": [],
+   "advisories": [],
+   "misses": {
+    "checked": 3,
+    "named": 3,
+    "declared": true,
+    "spoken": {
+     "answered": 0,
+     "named": 0
+    }
+   },
+   "records": {
+    "recover": {
+     "sent": 1,
+     "success": true,
+     "score": 67,
+     "firstResponseScore": 0,
+     "attempts": 6
+    },
+    "clean": {
+     "sent": 1,
+     "success": true,
+     "score": 100,
+     "firstResponseScore": 100,
+     "attempts": 3
+    }
+   }
+  },
+  {
+   "payload": "food-web-builder.complete_web",
+   "items": 1,
+   "findings": [],
+   "advisories": [],
+   "misses": {
+    "checked": 1,
+    "named": 1,
+    "declared": true,
+    "spoken": {
+     "answered": 0,
+     "named": 0
+    }
+   },
+   "records": {
+    "recover": {
+     "sent": 1,
+     "success": true,
+     "score": 67,
+     "firstResponseScore": 0,
+     "attempts": 2
+    },
+    "clean": {
+     "sent": 1,
+     "success": true,
+     "score": 100,
+     "firstResponseScore": 100,
+     "attempts": 1
+    }
+   }
+  }
+ ],
+ "leverInventory": [
+  {
+   "primitiveId": "food-web-builder",
+   "evalMode": "complete_web",
+   "declaresLevers": true,
+   "payloads": [
+    "food-web-builder.complete_web"
+   ],
+   "status": "none",
+   "levers": [],
+   "misses": [
+    {
+     "miss": "backwards_arrows",
+     "answeredBy": [],
+     "unanswered": false
+    },
+    {
+     "miss": "wrong_arrows",
+     "answeredBy": [],
+     "unanswered": false
+    },
+    {
+     "miss": "missing_arrows",
+     "answeredBy": [],
+     "unanswered": false
+    }
+   ]
+  },
+  {
+   "primitiveId": "food-web-builder",
+   "evalMode": "build_chain",
+   "declaresLevers": true,
+   "payloads": [
+    "food-web-builder.build_chain"
+   ],
+   "status": "levers",
+   "levers": [
+    {
+     "id": "arrow_words",
+     "kind": "help",
+     "answers": [
+      "arrow_backwards",
+      "broken_chain"
+     ]
+    },
+    {
+     "id": "food_tags",
+     "kind": "help",
+     "answers": [
+      "no_producer",
+      "not_a_feeding_pair"
+     ]
+    },
+    {
+     "id": "chain_count",
+     "kind": "help",
+     "answers": [
+      "too_short",
+      "too_long"
+     ]
+    },
+    {
+     "id": "shorter_chain",
+     "kind": "simplify",
+     "answers": [
+      "broken_chain",
+      "not_a_feeding_pair",
+      "too_long"
+     ]
+    }
+   ],
+   "misses": [
+    {
+     "miss": "arrow_backwards",
+     "answeredBy": [
+      "arrow_words"
+     ],
+     "unanswered": false
+    },
+    {
+     "miss": "not_a_feeding_pair",
+     "answeredBy": [
+      "food_tags",
+      "shorter_chain"
+     ],
+     "unanswered": false
+    },
+    {
+     "miss": "broken_chain",
+     "answeredBy": [
+      "arrow_words",
+      "shorter_chain"
+     ],
+     "unanswered": false
+    },
+    {
+     "miss": "wrong_end",
+     "answeredBy": [],
+     "unanswered": true
+    },
+    {
+     "miss": "no_producer",
+     "answeredBy": [
+      "food_tags"
+     ],
+     "unanswered": false
+    },
+    {
+     "miss": "too_short",
+     "answeredBy": [
+      "chain_count"
+     ],
+     "unanswered": false
+    },
+    {
+     "miss": "too_long",
+     "answeredBy": [
+      "chain_count",
+      "shorter_chain"
+     ],
+     "unanswered": false
+    }
+   ]
+  }
+ ]
+}

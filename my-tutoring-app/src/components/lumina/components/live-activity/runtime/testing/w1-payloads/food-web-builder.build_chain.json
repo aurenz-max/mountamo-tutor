@@ -1,0 +1,193 @@
+{
+ "source": "qa/open-build/food-web-builder-2026-10-07/generator-run.json",
+ "primitiveId": "food-web-builder",
+ "evalMode": "build_chain",
+ "data": {
+  "primitiveType": "food-web-builder",
+  "ecosystem": "Grassland",
+  "organisms": [
+   {
+    "id": "org1",
+    "name": "Grass",
+    "imagePrompt": "Green grass blades growing in soil",
+    "trophicLevel": "producer",
+    "position": {
+     "x": "20%",
+     "y": "80%"
+    }
+   },
+   {
+    "id": "org2",
+    "name": "Wildflower",
+    "imagePrompt": "Colorful wildflower with green stem and leaves",
+    "trophicLevel": "producer",
+    "position": {
+     "x": "40%",
+     "y": "80%"
+    }
+   },
+   {
+    "id": "org3",
+    "name": "Grasshopper",
+    "imagePrompt": "Green grasshopper perched on a stem",
+    "trophicLevel": "primary-consumer",
+    "position": {
+     "x": "20%",
+     "y": "55%"
+    }
+   },
+   {
+    "id": "org4",
+    "name": "Rabbit",
+    "imagePrompt": "Fluffy brown rabbit sitting",
+    "trophicLevel": "primary-consumer",
+    "position": {
+     "x": "50%",
+     "y": "55%"
+    }
+   },
+   {
+    "id": "org5",
+    "name": "Mouse",
+    "imagePrompt": "Small brown mouse with whiskers",
+    "trophicLevel": "primary-consumer",
+    "position": {
+     "x": "80%",
+     "y": "55%"
+    }
+   },
+   {
+    "id": "org6",
+    "name": "Frog",
+    "imagePrompt": "Green frog sitting on the ground",
+    "trophicLevel": "secondary-consumer",
+    "position": {
+     "x": "20%",
+     "y": "30%"
+    }
+   },
+   {
+    "id": "org7",
+    "name": "Snake",
+    "imagePrompt": "Slithering brown snake",
+    "trophicLevel": "secondary-consumer",
+    "position": {
+     "x": "80%",
+     "y": "30%"
+    }
+   },
+   {
+    "id": "org8",
+    "name": "Hawk",
+    "imagePrompt": "Hawk flying with wings spread",
+    "trophicLevel": "tertiary-consumer",
+    "position": {
+     "x": "50%",
+     "y": "10%"
+    }
+   },
+   {
+    "id": "org9",
+    "name": "Fungus",
+    "imagePrompt": "Small mushrooms growing on soil",
+    "trophicLevel": "decomposer",
+    "position": {
+     "x": "80%",
+     "y": "80%"
+    }
+   }
+  ],
+  "correctConnections": [
+   {
+    "fromId": "org1",
+    "toId": "org3",
+    "relationship": "Grasshoppers eat grass"
+   },
+   {
+    "fromId": "org1",
+    "toId": "org4",
+    "relationship": "Rabbits eat grass"
+   },
+   {
+    "fromId": "org1",
+    "toId": "org5",
+    "relationship": "Mice eat grass"
+   },
+   {
+    "fromId": "org2",
+    "toId": "org5",
+    "relationship": "Mice eat wildflowers"
+   },
+   {
+    "fromId": "org3",
+    "toId": "org6",
+    "relationship": "Frogs eat grasshoppers"
+   },
+   {
+    "fromId": "org5",
+    "toId": "org7",
+    "relationship": "Snakes eat mice"
+   },
+   {
+    "fromId": "org4",
+    "toId": "org8",
+    "relationship": "Hawks hunt rabbits"
+   },
+   {
+    "fromId": "org7",
+    "toId": "org8",
+    "relationship": "Hawks hunt snakes"
+   },
+   {
+    "fromId": "org6",
+    "toId": "org8",
+    "relationship": "Hawks hunt frogs"
+   },
+   {
+    "fromId": "org4",
+    "toId": "org9",
+    "relationship": "Fungus decomposes dead rabbits"
+   },
+   {
+    "fromId": "org5",
+    "toId": "org9",
+    "relationship": "Fungus decomposes dead mice"
+   },
+   {
+    "fromId": "org2",
+    "toId": "org4",
+    "relationship": "Rabbit eats Wildflower"
+   },
+   {
+    "fromId": "org5",
+    "toId": "org8",
+    "relationship": "Hawk eats Mouse"
+   }
+  ],
+  "gradeBand": "3-5",
+  "challengeType": "build_chain",
+  "challenges": [
+   {
+    "id": "chain-1",
+    "type": "build_chain",
+    "length": 3,
+    "endId": "org8",
+    "instruction": "Make a food chain with 3 living things that ends at the Hawk."
+   },
+   {
+    "id": "chain-2",
+    "type": "build_chain",
+    "length": 3,
+    "endId": "org7",
+    "instruction": "Make a food chain with 3 living things that ends at the Snake."
+   },
+   {
+    "id": "chain-3",
+    "type": "build_chain",
+    "length": 4,
+    "endId": "org8",
+    "instruction": "Make a food chain with 4 living things that ends at the Hawk."
+   }
+  ]
+ }
+}

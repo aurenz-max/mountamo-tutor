@@ -961,7 +961,12 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "dna-explorer":               {"default": PriorConfig(5.0, "DNA structure exploration")},
     "protein-folder":             {"default": PriorConfig(5.5, "Protein folding and mutation effects")},
     "energy-cycle-engine":        {"default": PriorConfig(4.5, "Photosynthesis/respiration coupling")},
-    "food-web-builder":           {"default": PriorConfig(3.5, "Construct food web")},
+    "food-web-builder": {
+        "complete_web": PriorConfig(3.5, "Construct food web: draw every feeding relationship"),
+        "build_chain":  PriorConfig(3.6, "Open build: make a food chain of N living things ending at a named consumer"),
+        # Sessions generated before the eval modes were split (no pinned mode) are the whole-web task.
+        "default":      PriorConfig(3.5, "Construct food web"),
+    },
     "evolution-timeline":         {"default": PriorConfig(4.0, "Navigate deep-time evolutionary events")},
     # -----------------------------------------------------------------
     # Chemistry primitives

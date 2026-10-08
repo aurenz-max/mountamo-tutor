@@ -55,6 +55,7 @@ import { threeDShapeExplorerLiveDomain } from './adapters/threeDShapeExplorerLiv
 import { calendarExplorerLiveDomain } from './adapters/calendarExplorerLive';
 import { pushPullArenaLiveDomain } from './adapters/pushPullArenaLive';
 import { habitatDioramaLiveDomain } from './adapters/habitatDioramaLive';
+import { foodWebBuilderLiveDomain } from './adapters/foodWebBuilderLive';
 import { matterExplorerLiveDomain } from './adapters/matterExplorerLive';
 import { moleculeConstructorLiveDomain } from './adapters/moleculeConstructorLive';
 import { genreExplorerLiveDomain } from './adapters/genreExplorerLive';
@@ -147,6 +148,7 @@ export const LIVE_ADAPTERS = {
   'calendar-explorer': workspaceAdapter('calendar-explorer', calendarExplorerLiveDomain),
   'push-pull-arena': workspaceAdapter('push-pull-arena', pushPullArenaLiveDomain),
   'habitat-diorama': workspaceAdapter('habitat-diorama', habitatDioramaLiveDomain),
+  'food-web-builder': workspaceAdapter('food-web-builder', foodWebBuilderLiveDomain),
   'matter-explorer': workspaceAdapter('matter-explorer', matterExplorerLiveDomain),
   'molecule-constructor': workspaceAdapter('molecule-constructor', moleculeConstructorLiveDomain),
   'genre-explorer': workspaceAdapter('genre-explorer', genreExplorerLiveDomain),

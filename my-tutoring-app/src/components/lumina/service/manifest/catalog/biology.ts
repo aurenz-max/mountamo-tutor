@@ -9,6 +9,7 @@ import { ComponentDefinition } from '../../../types';
 import type { HabitatMiss, SpokenHabitatMiss } from '../../../primitives/visual-primitives/biology/habitatDioramaWorkspace';
 import type { HabitatBuildMiss } from '../../../primitives/visual-primitives/biology/habitatBuild';
 import { missLists } from './missLists';
+import type { FoodChainMiss, FoodWebMiss } from '../../../primitives/visual-primitives/biology/foodWebWorkspace';
 
 export const BIOLOGY_CATALOG: ComponentDefinition[] = [
   {
@@ -509,6 +510,49 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
     constraints: 'Use for grades 3-8 students learning food chains, food webs, trophic levels, or ecosystem dynamics. Grade 3-5: Simple food chains with 6-8 organisms, clear linear relationships (grass → rabbit → fox), focus on basic producer/consumer/predator progression, optional simple disruption scenario showing predictable effects. Grade 6-8: Complex food webs with 8-10 organisms showing interconnected relationships, organisms with multiple prey and predators, REQUIRED disruption scenarios demonstrating trophic cascades and keystone species effects, emphasis on systems thinking and indirect effects. Perfect for teaching: producers/consumers/decomposers, energy flow, food chains vs food webs, trophic levels, predator-prey relationships, ecosystem balance, keystone species, trophic cascades, population dynamics. Works for any ecosystem: grassland, forest, ocean, coral reef, desert, tundra, pond, wetland. Students click organisms to draw connections showing energy flow direction (arrow from prey → predator). Evaluation tracks connection accuracy, identifies missing/extra connections, and can include disruption prediction assessment for 6-8.',
     affordances: { representation: 'pictorial', answers: ['build'], role: 'apply', minutes: 7 },
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
+      guidance: 'On the whole web the learner taps one living thing and then another to draw an arrow for every feeding '
+        + 'relationship, then presses Check. On make a food chain the scene starts empty: the learner puts living things in '
+        + 'from the list, joins them with arrows and presses I’m done!; many chains pass. Either way the activity checks every '
+        + 'arrow against the lesson’s feeding relations, which you are not told. Never name a living thing the chain still '
+        + 'needs, never say which way an arrow should point or which arrow is wrong, and never say how many living things are '
+        + 'in the chain. Asking the learner to read one of their own arrows aloud as a sentence is teaching; saying what it '
+        + 'should say is not. You cannot tap, place or draw for the learner.',
+      // build_chain publishes levers (`foodWebLevers.ts`); the whole web has none yet.
+      levers: true,
+      // The activity's own checks (`foodWebMiss`, `foodChainMiss`).
+      misses: missLists<FoodWebMiss | FoodChainMiss>({
+        complete_web: ['backwards_arrows', 'wrong_arrows', 'missing_arrows'],
+        build_chain: ['arrow_backwards', 'not_a_feeding_pair', 'broken_chain', 'wrong_end', 'no_producer', 'too_short', 'too_long'],
+      }),
+      // build_chain `wrong_end` has no lever: the ask on screen names the living thing the chain ends at.
+      unanswered: { build_chain: ['wrong_end'] },
+    },
+    evalModes: [
+      {
+        evalMode: 'complete_web',
+        label: 'Complete the Web',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['complete_web'],
+        description: 'Draw every feeding relationship among the organisms shown, laid out by trophic level (the original task).',
+      },
+      {
+        // Open build (`/add-eval-modes` references/build-mode.md): the web's feeding relations as the judge, with no
+        // organism on screen until the learner puts it in.
+        evalMode: 'build_chain',
+        affordances: { answers: ['build'] },
+        label: 'Make a Food Chain (open build)',
+        beta: 3.6,
+        scaffoldingMode: 3,
+        challengeTypes: ['build_chain'],
+        description: 'Open build: "Make a food chain with 4 living things that ends at the Hawk." The scene starts EMPTY; '
+          + 'the student puts living things in from a list (no trophic labels) and draws the arrows, then presses “I’m done!”. '
+          + 'Any chain passes that starts at a producer, ends at the named consumer, has the stated length and whose every '
+          + 'arrow is a real feeding relation. 3-LS, 5-LS2-1, MS-LS2-3.',
+      },
+    ],
   },
   {
     id: 'adaptation-investigator',

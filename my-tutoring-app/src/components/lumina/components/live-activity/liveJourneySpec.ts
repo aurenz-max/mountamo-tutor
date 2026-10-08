@@ -120,6 +120,9 @@ import { itemsFromChallenges as habitatItems } from '../../primitives/visual-pri
 import { fewerNeedsItem as habitatFewerNeedsItem, habitatJourneyAnswers } from '../../primitives/visual-primitives/biology/habitatDioramaWorkspace';
 import { FEWER_SUFFIX as HABITAT_FEWER, animalById as habitatAnimalById, pieceById as habitatPieceById }
   from '../../primitives/visual-primitives/biology/habitatBuild';
+import { feedingRelations as foodWebRelations, foodWebHarnessInputs } from '../../primitives/visual-primitives/biology/foodWebWorkspace';
+import { shorterChain } from '../../primitives/visual-primitives/biology/foodWebLevers';
+import type { FoodWebChallenge } from '../../primitives/visual-primitives/biology/FoodWebBuilder';
 import { matterItems } from './adapters/matterExplorerLive';
 import { matterJourneyAnswers } from '../../primitives/visual-primitives/chemistry/matterExplorerWorkspace';
 import { moleculeHarnessInputs } from '../../primitives/visual-primitives/chemistry/moleculeConstructorWorkspace';
@@ -1849,6 +1852,30 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [item.answerKind === 'gesture' ? { type: 'choose', label: pick } : { type: 'answer', text: pick }];
     },
     probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
+  },
+  'food-web-builder': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/biology/FoodWebBuilder.tsx',
+    instanceId: 'food-web',
+    defaults: { grade: 'Grade 5', mode: 'build_chain', di: false, topic: 'Food chains: energy moves from producers to consumers' },
+    leakTokens: [],
+    prompts: WORKSPACE_PROMPTS,
+    // build_chain clears a kept scene, puts in a chain the lesson's relations make, draws its arrows and presses I'm
+    // done! (wrong: every arrow turned round). complete_web taps each relation food then eater and presses Check (wrong:
+    // the first turned round). The easier practice chain is rebuilt from its parent.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      if (ctx.data.challengeType !== 'build_chain') {
+        return foodWebHarnessInputs(ctx.data as never, { id: 'web', type: 'complete_web' }, intent === 'wrong', ctx.demand);
+      }
+      const all: FoodWebChallenge[] = ctx.data.challenges ?? [];
+      const parent = ctx.itemId?.endsWith('~shorter') ? all.find(x => `${x.id}~shorter` === ctx.itemId) : undefined;
+      const c = parent ? shorterChain(parent, ctx.data.organisms ?? [], foodWebRelations(ctx.data.organisms ?? [], ctx.data.correctConnections ?? []))
+        : all.find(x => x.id === ctx.itemId);
+      if (!c) throw new Error('No current food-web-builder challenge');
+      return foodWebHarnessInputs(ctx.data as never, c, intent === 'wrong', ctx.demand);
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
   'matter-explorer': {
     execution: 'workspace',

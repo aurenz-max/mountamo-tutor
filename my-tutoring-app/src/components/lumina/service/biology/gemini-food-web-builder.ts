@@ -4,7 +4,32 @@ import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection } from '../scopeContext';
 
 // Import the data type from the component (single source of truth)
-import { FoodWebBuilderData } from "../../primitives/visual-primitives/biology/FoodWebBuilder";
+import { FoodWebBuilderData, type FoodWebChallenge } from "../../primitives/visual-primitives/biology/FoodWebBuilder";
+import { feedingChains, feedingRelations, pickChainTargets } from "../../primitives/visual-primitives/biology/foodWebWorkspace";
+import {
+  resolveEvalModeConstraint,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from "../evalMode";
+
+/**
+ * Eval modes. `complete_web` is the original whole-web task. `build_chain` is the open build: the model writes the
+ * ecology (organisms and EVERY feeding relation), code cleans the relations and writes the chain targets and asks.
+ */
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  complete_web: {
+    promptDoc: `"complete_web": Student draws every feeding relationship among the organisms shown, by trophic level.`,
+    schemaDescription: "'complete_web' (draw the whole food web)",
+  },
+  build_chain: {
+    promptDoc: `"build_chain": Open build. Student makes a food chain of a stated length that ends at a named consumer, `
+      + `on an empty scene, from a list of the ecosystem's organisms. Many chains pass.`,
+    schemaDescription: "'build_chain' (make a food chain to a named consumer)",
+  },
+};
+
+/** build_chain: how many chains a session asks for. */
+const CHAIN_ITEMS = 3;
 
 /**
  * Schema definition for Food Web Builder Data
@@ -145,7 +170,13 @@ export const generateFoodWebBuilder = async (
 ): Promise<FoodWebBuilderData> => {
   const { topic } = ctx;
   const scopeSection = buildScopePromptSection(ctx.scope);
-  const config = ctx.raw as Partial<FoodWebBuilderData>;
+  const config = ctx.raw as Partial<FoodWebBuilderData> & { targetEvalMode?: string };
+  const pin = config.targetEvalMode ?? ctx.targetEvalMode;
+  const evalConstraint = resolveEvalModeConstraint('food-web-builder', pin, CHALLENGE_TYPE_DOCS);
+  logEvalModeResolution('FoodWebBuilder', pin, evalConstraint);
+  if (evalConstraint?.allowedTypes.length === 1 && evalConstraint.allowedTypes[0] === 'build_chain') {
+    return generateFoodChainBuild(ctx);
+  }
 
   // Map grade context to grade band
   const gradeBandMap: Record<string, '3-5' | '6-8'> = {
@@ -583,10 +614,13 @@ Now generate a food web builder for "${topic}" at grade level ${gradeBand}.`;
 
     const result = JSON.parse(text) as FoodWebBuilderData;
 
-    // Merge with any config overrides
+    // Merge with any config overrides. A pinned whole-web session says so; unpinned stays the legacy shape.
+    const overrides: Partial<FoodWebBuilderData> & { targetEvalMode?: string } = { ...config };
+    delete overrides.targetEvalMode;
     const finalData: FoodWebBuilderData = {
       ...result,
-      ...config,
+      ...overrides,
+      ...(evalConstraint ? { challengeType: 'complete_web' as const } : {}),
     };
 
     console.log('🕸️ Food Web Builder Generated:', {
@@ -604,3 +638,133 @@ Now generate a food web builder for "${topic}" at grade level ${gradeBand}.`;
     throw error;
   }
 };
+
+// ---------------------------------------------------------------------------
+// build_chain (open build): the model writes the ecology, code writes every target
+// ---------------------------------------------------------------------------
+
+const chainBuildPrompt = (topic: string, scopeSection: string, gradeBand: '3-5' | '6-8') => `Create the organisms and feeding relationships of ONE ecosystem for: "${topic}"
+${scopeSection}.
+
+TARGET GRADE BAND: ${gradeBand}
+
+Students will build food chains from these organisms on an empty screen, and every arrow they draw is checked against
+YOUR list of feeding relationships. So the list must be COMPLETE and TRUE: if an animal in your list eats another
+organism in your list in real life, that relationship MUST be listed. A missing relationship marks a correct student wrong.
+
+ORGANISMS (${gradeBand === '3-5' ? '7-9' : '8-10'}):
+- Familiar, real organisms of one ecosystem, with clear common names of at most 2 words.
+- At least 2 producers (plants or algae), at least 3 primary consumers (plant-eaters),
+  at least 2 secondary consumers, at least 1 top consumer that eats more than one other animal, and exactly 1 decomposer.
+- trophicLevel: producer | primary-consumer | secondary-consumer | tertiary-consumer | decomposer.
+- position: any percentages (they are not shown).
+
+FEEDING RELATIONSHIPS (correctConnections, ${gradeBand === '3-5' ? '10-16' : '14-22'}):
+- fromId = the organism that is EATEN (the food), toId = the organism that EATS it. Energy flows from food to eater.
+- List EVERY real feeding relationship among your organisms, not just one chain.
+- Food chains of ${gradeBand === '3-5' ? '3 and 4' : '4 and 5'} organisms from a producer up to a top consumer must exist, ideally several.
+- The decomposer feeds on dead organisms: list it as the eater of 2-3 organisms. Nothing eats the decomposer.
+- Nothing eats a producer except plant-eaters (and omnivores).
+- relationship: a short sentence, e.g. "Mice eat seeds".
+
+Do NOT write disruptionChallenges. Set gradeBand to "${gradeBand}".`;
+
+/** Rank on the chain: a relation goes strictly up (plants to plant-eaters, then to a consumer ranked above). */
+const RANK: Record<string, number> = { producer: 0, 'primary-consumer': 1, 'secondary-consumer': 2, 'tertiary-consumer': 3 };
+
+type Relation = FoodWebBuilderData['correctConnections'][number];
+
+/**
+ * The truth review. Every arrow is checked against the relations, so a real relation left out marks a right chain
+ * wrong, and a false one lets a wrong chain pass. Code enumerates every pair a chain could use (plant to plant-eater,
+ * or a consumer to a consumer ranked above it, listed or not; decomposers never sit in a chain) and flash-latest rates
+ * each: the eater eats the food commonly, sometimes, or never. Code adds an unlisted pair rated common and drops a
+ * listed pair rated never; everything else stands. A failed read changes nothing.
+ * Measured 2026-10-07: an open "list what is missing" read on flash-lite added kelp -> seal and oak tree -> wolf, and
+ * the first pass listed deer -> hawk.
+ */
+async function reviewRelations(organisms: FoodWebBuilderData['organisms'], listed: Relation[]): Promise<{ relations: Relation[]; added: Relation[]; dropped: Relation[] }> {
+  const name = (id: string) => organisms.find(o => o.id === id)?.name ?? id;
+  const isListed = (a: string, b: string) => listed.some(r => r.fromId === a && r.toId === b);
+  const pairs = organisms.flatMap(food => organisms
+    .filter(eater => food.id !== eater.id && food.trophicLevel in RANK && eater.trophicLevel in RANK
+      && (food.trophicLevel === 'producer' ? eater.trophicLevel === 'primary-consumer' : RANK[eater.trophicLevel] > RANK[food.trophicLevel]))
+    .map(eater => ({ fromId: food.id, toId: eater.id })))
+    .concat(listed.filter(r => organisms.find(o => o.id === r.toId)?.trophicLevel !== 'decomposer')
+      .filter(r => !(organisms.find(o => o.id === r.fromId)?.trophicLevel === 'producer'
+        ? organisms.find(o => o.id === r.toId)?.trophicLevel === 'primary-consumer'
+        : RANK[organisms.find(o => o.id === r.toId)?.trophicLevel ?? ''] > RANK[organisms.find(o => o.id === r.fromId)?.trophicLevel ?? '']))
+      .map(r => ({ fromId: r.fromId, toId: r.toId })));
+  if (!pairs.length) return { relations: listed, added: [], dropped: [] };
+  const prompt = `Ecosystem organisms: ${organisms.map(o => o.name).join(', ')}.
+
+For each numbered pair, rate how the EATER eats the FOOD in real life:
+- "common": a well-known, everyday diet fact a grade-school science teacher would mark right in a food chain (a hawk eats mice);
+- "sometimes": it happens but is not a typical food (a fox eats berries);
+- "never": the eater does not eat it (a wolf eats oak trees, a seal eats kelp, a hawk eats a deer).
+${pairs.map((c, i) => `${i + 1}. FOOD: ${name(c.fromId)} | EATER: ${name(c.toId)}`).join('\n')}`;
+  try {
+    const res = await ai.models.generateContent({
+      model: 'gemini-flash-latest',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: { type: Type.OBJECT, properties: { answers: { type: Type.ARRAY, items: { type: Type.OBJECT,
+          properties: { pair: { type: Type.INTEGER }, eats: { type: Type.STRING, enum: ['common', 'sometimes', 'never'] } },
+          required: ['pair', 'eats'] } } }, required: ['answers'] },
+      },
+    });
+    const parsed = JSON.parse(res.text ?? '{}') as { answers?: Array<{ pair: number; eats: string }> };
+    const rated = (parsed.answers ?? []).filter(a => pairs[a.pair - 1]).map(a => ({ ...pairs[a.pair - 1], eats: a.eats }));
+    const added = rated.filter(a => a.eats === 'common' && !isListed(a.fromId, a.toId))
+      .map(a => ({ fromId: a.fromId, toId: a.toId, relationship: `${name(a.toId)} eats ${name(a.fromId)}` }));
+    const dropped = listed.filter(r => rated.some(a => a.eats === 'never' && a.fromId === r.fromId && a.toId === r.toId));
+    return { relations: [...listed.filter(r => !dropped.includes(r)), ...added], added, dropped };
+  } catch {
+    return { relations: listed, added: [], dropped: [] };
+  }
+}
+
+/** How many chains reach each target; a session needs at least one target many chains reach. */
+const waysTo = (organisms: FoodWebBuilderData['organisms'], relations: Relation[], c: FoodWebChallenge) =>
+  c.type !== 'build_chain' ? 0 : feedingChains(organisms, relations, c.length).filter(p => p.length === c.length && p[p.length - 1] === c.endId).length;
+
+async function generateFoodChainBuild(ctx: GenerationContext): Promise<FoodWebBuilderData> {
+  const config = ctx.raw as Partial<FoodWebBuilderData>;
+  const bands: Record<string, '3-5' | '6-8'> = { '3': '3-5', '4': '3-5', '5': '3-5', '6': '6-8', '7': '6-8', '8': '6-8', '3-5': '3-5', '6-8': '6-8' };
+  const gradeBand: '3-5' | '6-8' = config.gradeBand ?? bands[ctx.grade ?? ''] ?? bands[ctx.gradeContext] ?? '3-5';
+  const prompt = chainBuildPrompt(ctx.topic, buildScopePromptSection(ctx.scope), gradeBand);
+  let best: { data: FoodWebBuilderData; score: number } | null = null;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const response = await ai.models.generateContent({
+      model: 'gemini-flash-lite-latest',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: foodWebBuilderSchema,
+        systemInstruction: 'You are an expert ecology educator. You write complete, scientifically accurate lists of who eats whom in one ecosystem.',
+      },
+    });
+    if (!response.text) continue;
+    const raw = JSON.parse(response.text) as FoodWebBuilderData;
+    const organisms = (raw.organisms ?? []).filter(o => o?.id && o.name && o.trophicLevel);
+    const review = await reviewRelations(organisms, feedingRelations(organisms, raw.correctConnections ?? []));
+    const relations = feedingRelations(organisms, review.relations);
+    const name = (id: string) => organisms.find(o => o.id === id)?.name ?? id;
+    const words = (rs: Relation[]) => rs.map(r => `${name(r.fromId)} -> ${name(r.toId)}`).join(', ') || 'none';
+    console.log(`[FoodWebBuilder] build_chain review added: ${words(review.added)}; dropped: ${words(review.dropped)}`);
+    const challenges = pickChainTargets(organisms, relations, gradeBand, CHAIN_ITEMS);
+    const manyWays = challenges.some(c => waysTo(organisms, relations, c) > 1);
+    const data: FoodWebBuilderData = {
+      primitiveType: 'food-web-builder', ecosystem: raw.ecosystem || 'Ecosystem', organisms, correctConnections: relations,
+      gradeBand, challengeType: 'build_chain', challenges,
+    };
+    const score = challenges.length * 2 + (manyWays ? 1 : 0);
+    if (!best || score > best.score) best = { data, score };
+    if (challenges.length >= CHAIN_ITEMS && manyWays) break;
+    console.warn(`[FoodWebBuilder] build_chain attempt ${attempt}: ${challenges.length} chain target(s), many ways: ${manyWays}; retrying`);
+  }
+  if (!best || (best.data.challenges?.length ?? 0) < 2) throw new Error('Food web builder: the generated web makes too few food chains to ask.');
+  console.log('[FoodWebBuilder] build_chain:', best.data.ecosystem, (best.data.challenges ?? []).map(c => (c.type === 'build_chain' ? `${c.length}->${c.endId}` : c.id)));
+  return best.data;
+}

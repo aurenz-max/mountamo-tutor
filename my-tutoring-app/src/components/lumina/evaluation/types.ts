@@ -1742,6 +1742,12 @@ export interface CellBuilderMetrics extends BasePrimitiveMetrics {
 
 export interface FoodWebBuilderMetrics extends BasePrimitiveMetrics {
   type: 'food-web-builder';
+  /** The session's eval mode. On `build_chain` the connection counts below count chains (one per target). */
+  challengeType?: 'complete_web' | 'build_chain';
+  /** build_chain: chains built right, all attempts, chains right on the first try. */
+  chainsBuilt?: number;
+  attemptsCount?: number;
+  firstTryCount?: number;
 
   // Web construction performance
   totalConnections: number;         // Number of correct connections in the food web

@@ -1,0 +1,1777 @@
+{
+ "results": [
+  {
+   "lesson": {
+    "mode": "build_chain",
+    "grade": "3",
+    "topic": "Food chains in a grassland",
+    "intent": "Build a food chain that shows energy moving from a producer to a top consumer"
+   },
+   "ecosystem": "Grassland",
+   "gradeBand": "3-5",
+   "organisms": [
+    "Grass (producer)",
+    "Wildflower (producer)",
+    "Grasshopper (primary-consumer)",
+    "Rabbit (primary-consumer)",
+    "Mouse (primary-consumer)",
+    "Frog (secondary-consumer)",
+    "Snake (secondary-consumer)",
+    "Hawk (tertiary-consumer)",
+    "Fungus (decomposer)"
+   ],
+   "relations": [
+    "Grass → Grasshopper",
+    "Grass → Rabbit",
+    "Grass → Mouse",
+    "Wildflower → Mouse",
+    "Grasshopper → Frog",
+    "Mouse → Snake",
+    "Rabbit → Hawk",
+    "Snake → Hawk",
+    "Frog → Hawk",
+    "Rabbit → Fungus",
+    "Mouse → Fungus",
+    "Wildflower → Rabbit",
+    "Mouse → Hawk"
+   ],
+   "droppedRelations": 0,
+   "oracle": [],
+   "uncheckedTypes": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "chain-1",
+     "length": 3,
+     "end": "Hawk",
+     "instruction": "Make a food chain with 3 living things that ends at the Hawk.",
+     "chainsThatPass": [
+      "Grass → Rabbit → Hawk",
+      "Grass → Mouse → Hawk",
+      "Wildflower → Mouse → Hawk",
+      "Wildflower → Rabbit → Hawk"
+     ],
+     "everyChainPasses": true,
+     "reversedMiss": "arrow_backwards",
+     "dropFirstMiss": "no_producer",
+     "dropLastMiss": "wrong_end",
+     "shorter": null,
+     "levers": [
+      "arrow_words",
+      "food_tags",
+      "chain_count"
+     ],
+     "sceneFacts": {
+      "kind": "build_chain",
+      "ecosystem": "Grassland",
+      "livingThingsListed": "Frog, Fungus, Grass, Grasshopper, Hawk, Mouse, Rabbit, Snake, Wildflower",
+      "scene": "an empty scene; the learner taps a living thing in the list to put it in (again to take it out), then taps one living thing in the scene and then another to draw an arrow from the first to the second; tapping an arrow removes it",
+      "livingThingsPlaced": 3,
+      "arrowsDrawn": 2,
+      "chainLength": 3,
+      "learnerWork": "Put in Grass, Rabbit, Hawk. Arrows: Grass → Rabbit, Rabbit → Hawk",
+      "constraints": "The learner builds the chain and presses \"I'm done!\"; the activity checks every arrow against the lesson's feeding relations. You cannot tap, place or draw for the learner."
+     }
+    },
+    {
+     "id": "chain-2",
+     "length": 3,
+     "end": "Snake",
+     "instruction": "Make a food chain with 3 living things that ends at the Snake.",
+     "chainsThatPass": [
+      "Grass → Mouse → Snake",
+      "Wildflower → Mouse → Snake"
+     ],
+     "everyChainPasses": true,
+     "reversedMiss": "arrow_backwards",
+     "dropFirstMiss": "no_producer",
+     "dropLastMiss": "wrong_end",
+     "shorter": null,
+     "levers": [
+      "arrow_words",
+      "food_tags",
+      "chain_count"
+     ],
+     "sceneFacts": {
+      "kind": "build_chain",
+      "ecosystem": "Grassland",
+      "livingThingsListed": "Frog, Fungus, Grass, Grasshopper, Hawk, Mouse, Rabbit, Snake, Wildflower",
+      "scene": "an empty scene; the learner taps a living thing in the list to put it in (again to take it out), then taps one living thing in the scene and then another to draw an arrow from the first to the second; tapping an arrow removes it",
+      "livingThingsPlaced": 3,
+      "arrowsDrawn": 2,
+      "chainLength": 3,
+      "learnerWork": "Put in Grass, Mouse, Snake. Arrows: Grass → Mouse, Mouse → Snake",
+      "constraints": "The learner builds the chain and presses \"I'm done!\"; the activity checks every arrow against the lesson's feeding relations. You cannot tap, place or draw for the learner."
+     }
+    },
+    {
+     "id": "chain-3",
+     "length": 4,
+     "end": "Hawk",
+     "instruction": "Make a food chain with 4 living things that ends at the Hawk.",
+     "chainsThatPass": [
+      "Grass → Grasshopper → Frog → Hawk",
+      "Grass → Mouse → Snake → Hawk",
+      "Wildflower → Mouse → Snake → Hawk"
+     ],
+     "everyChainPasses": true,
+     "reversedMiss": "arrow_backwards",
+     "dropFirstMiss": "no_producer",
+     "dropLastMiss": "wrong_end",
+     "shorter": "Make a food chain with 3 living things that ends at the Hawk.",
+     "levers": [
+      "arrow_words",
+      "food_tags",
+      "chain_count",
+      "shorter_chain"
+     ],
+     "sceneFacts": {
+      "kind": "build_chain",
+      "ecosystem": "Grassland",
+      "livingThingsListed": "Frog, Fungus, Grass, Grasshopper, Hawk, Mouse, Rabbit, Snake, Wildflower",
+      "scene": "an empty scene; the learner taps a living thing in the list to put it in (again to take it out), then taps one living thing in the scene and then another to draw an arrow from the first to the second; tapping an arrow removes it",
+      "livingThingsPlaced": 4,
+      "arrowsDrawn": 3,
+      "chainLength": 4,
+      "learnerWork": "Put in Grass, Grasshopper, Frog, Hawk. Arrows: Grass → Grasshopper, Grasshopper → Frog, Frog → Hawk",
+      "constraints": "The learner builds the chain and presses \"I'm done!\"; the activity checks every arrow against the lesson's feeding relations. You cannot tap, place or draw for the learner."
+     }
+    }
+   ],
+   "data": {
+    "primitiveType": "food-web-builder",
+    "ecosystem": "Grassland",
+    "organisms": [
+     {
+      "id": "org1",
+      "name": "Grass",
+      "imagePrompt": "Green grass blades growing in soil",
+      "trophicLevel": "producer",
+      "position": {
+       "x": "20%",
+       "y": "80%"
+      }
+     },
+     {
+      "id": "org2",
+      "name": "Wildflower",
+      "imagePrompt": "Colorful wildflower with green stem and leaves",
+      "trophicLevel": "producer",
+      "position": {
+       "x": "40%",
+       "y": "80%"
+      }
+     },
+     {
+      "id": "org3",
+      "name": "Grasshopper",
+      "imagePrompt": "Green grasshopper perched on a stem",
+      "trophicLevel": "primary-consumer",
+      "position": {
+       "x": "20%",
+       "y": "55%"
+      }
+     },
+     {
+      "id": "org4",
+      "name": "Rabbit",
+      "imagePrompt": "Fluffy brown rabbit sitting",
+      "trophicLevel": "primary-consumer",
+      "position": {
+       "x": "50%",
+       "y": "55%"
+      }
+     },
+     {
+      "id": "org5",
+      "name": "Mouse",
+      "imagePrompt": "Small brown mouse with whiskers",
+      "trophicLevel": "primary-consumer",
+      "position": {
+       "x": "80%",
+       "y": "55%"
+      }
+     },
+     {
+      "id": "org6",
+      "name": "Frog",
+      "imagePrompt": "Green frog sitting on the ground",
+      "trophicLevel": "secondary-consumer",
+      "position": {
+       "x": "20%",
+       "y": "30%"
+      }
+     },
+     {
+      "id": "org7",
+      "name": "Snake",
+      "imagePrompt": "Slithering brown snake",
+      "trophicLevel": "secondary-consumer",
+      "position": {
+       "x": "80%",
+       "y": "30%"
+      }
+     },
+     {
+      "id": "org8",
+      "name": "Hawk",
+      "imagePrompt": "Hawk flying with wings spread",
+      "trophicLevel": "tertiary-consumer",
+      "position": {
+       "x": "50%",
+       "y": "10%"
+      }
+     },
+     {
+      "id": "org9",
+      "name": "Fungus",
+      "imagePrompt": "Small mushrooms growing on soil",
+      "trophicLevel": "decomposer",
+      "position": {
+       "x": "80%",
+       "y": "80%"
+      }
+     }
+    ],
+    "correctConnections": [
+     {
+      "fromId": "org1",
+      "toId": "org3",
+      "relationship": "Grasshoppers eat grass"
+     },
+     {
+      "fromId": "org1",
+      "toId": "org4",
+      "relationship": "Rabbits eat grass"
+     },
+     {
+      "fromId": "org1",
+      "toId": "org5",
+      "relationship": "Mice eat grass"
+     },
+     {
+      "fromId": "org2",
+      "toId": "org5",
+      "relationship": "Mice eat wildflowers"
+     },
+     {
+      "fromId": "org3",
+      "toId": "org6",
+      "relationship": "Frogs eat grasshoppers"
+     },
+     {
+      "fromId": "org5",
+      "toId": "org7",
+      "relationship": "Snakes eat mice"
+     },
+     {
+      "fromId": "org4",
+      "toId": "org8",
+      "relationship": "Hawks hunt rabbits"
+     },
+     {
+      "fromId": "org7",
+      "toId": "org8",
+      "relationship": "Hawks hunt snakes"
+     },
+     {
+      "fromId": "org6",
+      "toId": "org8",
+      "relationship": "Hawks hunt frogs"
+     },
+     {
+      "fromId": "org4",
+      "toId": "org9",
+      "relationship": "Fungus decomposes dead rabbits"
+     },
+     {
+      "fromId": "org5",
+      "toId": "org9",
+      "relationship": "Fungus decomposes dead mice"
+     },
+     {
+      "fromId": "org2",
+      "toId": "org4",
+      "relationship": "Rabbit eats Wildflower"
+     },
+     {
+      "fromId": "org5",
+      "toId": "org8",
+      "relationship": "Hawk eats Mouse"
+     }
+    ],
+    "gradeBand": "3-5",
+    "challengeType": "build_chain",
+    "challenges": [
+     {
+      "id": "chain-1",
+      "type": "build_chain",
+      "length": 3,
+      "endId": "org8",
+      "instruction": "Make a food chain with 3 living things that ends at the Hawk."
+     },
+     {
+      "id": "chain-2",
+      "type": "build_chain",
+      "length": 3,
+      "endId": "org7",
+      "instruction": "Make a food chain with 3 living things that ends at the Snake."
+     },
+     {
+      "id": "chain-3",
+      "type": "build_chain",
+      "length": 4,
+      "endId": "org8",
+      "instruction": "Make a food chain with 4 living things that ends at the Hawk."
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "mode": "build_chain",
+    "grade": "4",
+    "topic": "Pond food chains",
+    "intent": "Arrows in a food chain show who is eaten by whom"
+   },
+   "ecosystem": "Pond",
+   "gradeBand": "3-5",
+   "organisms": [
+    "Algae (producer)",
+    "Water Lily (producer)",
+    "Tadpole (primary-consumer)",
+    "Water Snail (primary-consumer)",
+    "Dragonfly Nymph (primary-consumer)",
+    "Small Fish (secondary-consumer)",
+    "Frog (secondary-consumer)",
+    "Heron (tertiary-consumer)",
+    "Bacteria (decomposer)"
+   ],
+   "relations": [
+    "Algae → Tadpole",
+    "Algae → Water Snail",
+    "Water Lily → Water Snail",
+    "Tadpole → Small Fish",
+    "Tadpole → Frog",
+    "Water Snail → Small Fish",
+    "Dragonfly Nymph → Small Fish",
+    "Dragonfly Nymph → Frog",
+    "Small Fish → Heron",
+    "Frog → Heron",
+    "Tadpole → Bacteria",
+    "Small Fish → Bacteria",
+    "Frog → Bacteria",
+    "Tadpole → Heron"
+   ],
+   "droppedRelations": 0,
+   "oracle": [],
+   "uncheckedTypes": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "chain-1",
+     "length": 3,
+     "end": "Small Fish",
+     "instruction": "Make a food chain with 3 living things that ends at the Small Fish.",
+     "chainsThatPass": [
+      "Algae → Tadpole → Small Fish",
+      "Algae → Water Snail → Small Fish",
+      "Water Lily → Water Snail → Small Fish"
+     ],
+     "everyChainPasses": true,
+     "reversedMiss": "arrow_backwards",
+     "dropFirstMiss": "no_producer",
+     "dropLastMiss": "wrong_end",
+     "shorter": null,
+     "levers": [
+      "arrow_words",
+      "food_tags",
+      "chain_count"
+     ],
+     "sceneFacts": {
+      "kind": "build_chain",
+      "ecosystem": "Pond",
+      "livingThingsListed": "Algae, Bacteria, Dragonfly Nymph, Frog, Heron, Small Fish, Tadpole, Water Lily, Water Snail",
+      "scene": "an empty scene; the learner taps a living thing in the list to put it in (again to take it out), then taps one living thing in the scene and then another to draw an arrow from the first to the second; tapping an arrow removes it",
+      "livingThingsPlaced": 3,
+      "arrowsDrawn": 2,
+      "chainLength": 3,
+      "learnerWork": "Put in Algae, Tadpole, Small Fish. Arrows: Algae → Tadpole, Tadpole → Small Fish",
+      "constraints": "The learner builds the chain and presses \"I'm done!\"; the activity checks every arrow against the lesson's feeding relations. You cannot tap, place or draw for the learner."
+     }
+    },
+    {
+     "id": "chain-2",
+     "length": 3,
+     "end": "Frog",
+     "instruction": "Make a food chain with 3 living things that ends at the Frog.",
+     "chainsThatPass": [
+      "Algae → Tadpole → Frog"
+     ],
+     "everyChainPasses": true,
+     "reversedMiss": "arrow_backwards",
+     "dropFirstMiss": "no_producer",
+     "dropLastMiss": "wrong_end",
+     "shorter": null,
+     "levers": [
+      "arrow_words",
+      "food_tags",
+      "chain_count"
+     ],
+     "sceneFacts": {
+      "kind": "build_chain",
+      "ecosystem": "Pond",
+      "livingThingsListed": "Algae, Bacteria, Dragonfly Nymph, Frog, Heron, Small Fish, Tadpole, Water Lily, Water Snail",
+      "scene": "an empty scene; the learner taps a living thing in the list to put it in (again to take it out), then taps one living thing in the scene and then another to draw an arrow from the first to the second; tapping an arrow removes it",
+      "livingThingsPlaced": 3,
+      "arrowsDrawn": 2,
+      "chainLength": 3,
+      "learnerWork": "Put in Algae, Tadpole, Frog. Arrows: Algae → Tadpole, Tadpole → Frog",
+      "constraints": "The learner builds the chain and presses \"I'm done!\"; the activity checks every arrow against the lesson's feeding relations. You cannot tap, place or draw for the learner."
+     }
+    },
+    {
+     "id": "chain-3",
+     "length": 4,
+     "end": "Heron",
+     "instruction": "Make a food chain with 4 living things that ends at the Heron.",
+     "chainsThatPass": [
+      "Algae → Tadpole → Small Fish → Heron",
+      "Algae → Tadpole → Frog → Heron",
+      "Algae → Water Snail → Small Fish → Heron",
+      "Water Lily → Water Snail → Small Fish → Heron"
+     ],
+     "everyChainPasses": true,
+     "reversedMiss": "arrow_backwards",
+     "dropFirstMiss": "no_producer",
+     "dropLastMiss": "wrong_end",
+     "shorter": "Make a food chain with 3 living things that ends at the Heron.",
+     "levers": [
+      "arrow_words",
+      "food_tags",
+      "chain_count",
+      "shorter_chain"
+     ],
+     "sceneFacts": {
+      "kind": "build_chain",
+      "ecosystem": "Pond",
+      "livingThingsListed": "Algae, Bacteria, Dragonfly Nymph, Frog, Heron, Small Fish, Tadpole, Water Lily, Water Snail",
+      "scene": "an empty scene; the learner taps a living thing in the list to put it in (again to take it out), then taps one living thing in the scene and then another to draw an arrow from the first to the second; tapping an arrow removes it",
+      "livingThingsPlaced": 4,
+      "arrowsDrawn": 3,
+      "chainLength": 4,
+      "learnerWork": "Put in Algae, Tadpole, Small Fish, Heron. Arrows: Algae → Tadpole, Tadpole → Small Fish, Small Fish → Heron",
+      "constraints": "The learner builds the chain and presses \"I'm done!\"; the activity checks every arrow against the lesson's feeding relations. You cannot tap, place or draw for the learner."
+     }
+    }
+   ],
+   "data": {
+    "primitiveType": "food-web-builder",
+    "ecosystem": "Pond",
+    "organisms": [
+     {
+      "id": "org1",
+      "name": "Algae",
+      "imagePrompt": "Green microscopic algae floating in pond water",
+      "trophicLevel": "producer",
+      "position": {
+       "x": "15%",
+       "y": "80%"
+      }
+     },
+     {
+      "id": "org2",
+      "name": "Water Lily",
+      "imagePrompt": "A green water lily plant with broad leaves floating on water",
+      "trophicLevel": "producer",
+      "position": {
+       "x": "35%",
+       "y": "80%"
+      }
+     },
+     {
+      "id": "org3",
+      "name": "Tadpole",
+      "imagePrompt": "Small brown tadpole swimming in pond water",
+      "trophicLevel": "primary-consumer",
+      "position": {
+       "x": "15%",
+       "y": "55%"
+      }
+     },
+     {
+      "id": "org4",
+      "name": "Water Snail",
+      "imagePrompt": "Small pond snail with a spiral shell on a plant stem",
+      "trophicLevel": "primary-consumer",
+      "position": {
+       "x": "35%",
+       "y": "55%"
+      }
+     },
+     {
+      "id": "org5",
+      "name": "Dragonfly Nymph",
+      "imagePrompt": "Aquatic dragonfly nymph resting underwater",
+      "trophicLevel": "primary-consumer",
+      "position": {
+       "x": "55%",
+       "y": "55%"
+      }
+     },
+     {
+      "id": "org6",
+      "name": "Small Fish",
+      "imagePrompt": "Silver minnow fish swimming near pond plants",
+      "trophicLevel": "secondary-consumer",
+      "position": {
+       "x": "35%",
+       "y": "30%"
+      }
+     },
+     {
+      "id": "org7",
+      "name": "Frog",
+      "imagePrompt": "Green frog sitting on a rock near the water",
+      "trophicLevel": "secondary-consumer",
+      "position": {
+       "x": "65%",
+       "y": "30%"
+      }
+     },
+     {
+      "id": "org8",
+      "name": "Heron",
+      "imagePrompt": "Large wading heron bird standing by the pond",
+      "trophicLevel": "tertiary-consumer",
+      "position": {
+       "x": "50%",
+       "y": "10%"
+      }
+     },
+     {
+      "id": "org9",
+      "name": "Bacteria",
+      "imagePrompt": "Microscopic view of pond bacteria breaking down organic matter",
+      "trophicLevel": "decomposer",
+      "position": {
+       "x": "85%",
+       "y": "80%"
+      }
+     }
+    ],
+    "correctConnections": [
+     {
+      "fromId": "org1",
+      "toId": "org3",
+      "relationship": "Tadpoles eat algae"
+     },
+     {
+      "fromId": "org1",
+      "toId": "org4",
+      "relationship": "Water snails eat algae"
+     },
+     {
+      "fromId": "org2",
+      "toId": "org4",
+      "relationship": "Water snails eat water lily"
+     },
+     {
+      "fromId": "org3",
+      "toId": "org6",
+      "relationship": "Small fish eat tadpoles"
+     },
+     {
+      "fromId": "org3",
+      "toId": "org7",
+      "relationship": "Frogs eat tadpoles"
+     },
+     {
+      "fromId": "org4",
+      "toId": "org6",
+      "relationship": "Small fish eat water snails"
+     },
+     {
+      "fromId": "org5",
+      "toId": "org6",
+      "relationship": "Small fish eat dragonfly nymphs"
+     },
+     {
+      "fromId": "org5",
+      "toId": "org7",
+      "relationship": "Frogs eat dragonfly nymphs"
+     },
+     {
+      "fromId": "org6",
+      "toId": "org8",
+      "relationship": "Herons eat small fish"
+     },
+     {
+      "fromId": "org7",
+      "toId": "org8",
+      "relationship": "Herons eat frogs"
+     },
+     {
+      "fromId": "org3",
+      "toId": "org9",
+      "relationship": "Bacteria decompose dead tadpoles"
+     },
+     {
+      "fromId": "org6",
+      "toId": "org9",
+      "relationship": "Bacteria decompose dead small fish"
+     },
+     {
+      "fromId": "org7",
+      "toId": "org9",
+      "relationship": "Bacteria decompose dead frogs"
+     },
+     {
+      "fromId": "org3",
+      "toId": "org8",
+      "relationship": "Heron eats Tadpole"
+     }
+    ],
+    "gradeBand": "3-5",
+    "challengeType": "build_chain",
+    "challenges": [
+     {
+      "id": "chain-1",
+      "type": "build_chain",
+      "length": 3,
+      "endId": "org6",
+      "instruction": "Make a food chain with 3 living things that ends at the Small Fish."
+     },
+     {
+      "id": "chain-2",
+      "type": "build_chain",
+      "length": 3,
+      "endId": "org7",
+      "instruction": "Make a food chain with 3 living things that ends at the Frog."
+     },
+     {
+      "id": "chain-3",
+      "type": "build_chain",
+      "length": 4,
+      "endId": "org8",
+      "instruction": "Make a food chain with 4 living things that ends at the Heron."
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "mode": "build_chain",
+    "grade": "5",
+    "topic": "Energy flow in an ocean ecosystem",
+    "intent": "Model how energy moves from producers to consumers (5-LS2-1)"
+   },
+   "ecosystem": "Ocean",
+   "gradeBand": "3-5",
+   "organisms": [
+    "Phytoplankton (producer)",
+    "Kelp (producer)",
+    "Zooplankton (primary-consumer)",
+    "Sea Urchin (primary-consumer)",
+    "Small Fish (primary-consumer)",
+    "Seal (secondary-consumer)",
+    "Shark (tertiary-consumer)",
+    "Crab (decomposer)"
+   ],
+   "relations": [
+    "Phytoplankton → Zooplankton",
+    "Phytoplankton → Small Fish",
+    "Kelp → Sea Urchin",
+    "Zooplankton → Small Fish",
+    "Small Fish → Seal",
+    "Small Fish → Shark",
+    "Seal → Shark",
+    "Sea Urchin → Crab",
+    "Seal → Crab"
+   ],
+   "droppedRelations": 0,
+   "oracle": [],
+   "uncheckedTypes": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "chain-1",
+     "length": 3,
+     "end": "Seal",
+     "instruction": "Make a food chain with 3 living things that ends at the Seal.",
+     "chainsThatPass": [
+      "Phytoplankton → Small Fish → Seal"
+     ],
+     "everyChainPasses": true,
+     "reversedMiss": "arrow_backwards",
+     "dropFirstMiss": "no_producer",
+     "dropLastMiss": "wrong_end",
+     "shorter": null,
+     "levers": [
+      "arrow_words",
+      "food_tags",
+      "chain_count"
+     ],
+     "sceneFacts": {
+      "kind": "build_chain",
+      "ecosystem": "Ocean",
+      "livingThingsListed": "Crab, Kelp, Phytoplankton, Sea Urchin, Seal, Shark, Small Fish, Zooplankton",
+      "scene": "an empty scene; the learner taps a living thing in the list to put it in (again to take it out), then taps one living thing in the scene and then another to draw an arrow from the first to the second; tapping an arrow removes it",
+      "livingThingsPlaced": 3,
+      "arrowsDrawn": 2,
+      "chainLength": 3,
+      "learnerWork": "Put in Phytoplankton, Small Fish, Seal. Arrows: Phytoplankton → Small Fish, Small Fish → Seal",
+      "constraints": "The learner builds the chain and presses \"I'm done!\"; the activity checks every arrow against the lesson's feeding relations. You cannot tap, place or draw for the learner."
+     }
+    },
+    {
+     "id": "chain-2",
+     "length": 3,
+     "end": "Small Fish",
+     "instruction": "Make a food chain with 3 living things that ends at the Small Fish.",
+     "chainsThatPass": [
+      "Phytoplankton → Zooplankton → Small Fish"
+     ],
+     "everyChainPasses": true,
+     "reversedMiss": "arrow_backwards",
+     "dropFirstMiss": "no_producer",
+     "dropLastMiss": "wrong_end",
+     "shorter": "Make a food chain with 2 living things that ends at the Small Fish.",
+     "levers": [
+      "arrow_words",
+      "food_tags",
+      "chain_count",
+      "shorter_chain"
+     ],
+     "sceneFacts": {
+      "kind": "build_chain",
+      "ecosystem": "Ocean",
+      "livingThingsListed": "Crab, Kelp, Phytoplankton, Sea Urchin, Seal, Shark, Small Fish, Zooplankton",
+      "scene": "an empty scene; the learner taps a living thing in the list to put it in (again to take it out), then taps one living thing in the scene and then another to draw an arrow from the first to the second; tapping an arrow removes it",
+      "livingThingsPlaced": 3,
+      "arrowsDrawn": 2,
+      "chainLength": 3,
+      "learnerWork": "Put in Phytoplankton, Zooplankton, Small Fish. Arrows: Phytoplankton → Zooplankton, Zooplankton → Small Fish",
+      "constraints": "The learner builds the chain and presses \"I'm done!\"; the activity checks every arrow against the lesson's feeding relations. You cannot tap, place or draw for the learner."
+     }
+    },
+    {
+     "id": "chain-3",
+     "length": 4,
+     "end": "Shark",
+     "instruction": "Make a food chain with 4 living things that ends at the Shark.",
+     "chainsThatPass": [
+      "Phytoplankton → Zooplankton → Small Fish → Shark",
+      "Phytoplankton → Small Fish → Seal → Shark"
+     ],
+     "everyChainPasses": true,
+     "reversedMiss": "arrow_backwards",
+     "dropFirstMiss": "no_producer",
+     "dropLastMiss": "wrong_end",
+     "shorter": "Make a food chain with 3 living things that ends at the Shark.",
+     "levers": [
+      "arrow_words",
+      "food_tags",
+      "chain_count",
+      "shorter_chain"
+     ],
+     "sceneFacts": {
+      "kind": "build_chain",
+      "ecosystem": "Ocean",
+      "livingThingsListed": "Crab, Kelp, Phytoplankton, Sea Urchin, Seal, Shark, Small Fish, Zooplankton",
+      "scene": "an empty scene; the learner taps a living thing in the list to put it in (again to take it out), then taps one living thing in the scene and then another to draw an arrow from the first to the second; tapping an arrow removes it",
+      "livingThingsPlaced": 4,
+      "arrowsDrawn": 3,
+      "chainLength": 4,
+      "learnerWork": "Put in Phytoplankton, Zooplankton, Small Fish, Shark. Arrows: Phytoplankton → Zooplankton, Zooplankton → Small Fish, Small Fish → Shark",
+      "constraints": "The learner builds the chain and presses \"I'm done!\"; the activity checks every arrow against the lesson's feeding relations. You cannot tap, place or draw for the learner."
+     }
+    }
+   ],
+   "data": {
+    "primitiveType": "food-web-builder",
+    "ecosystem": "Ocean",
+    "organisms": [
+     {
+      "id": "org1",
+      "name": "Phytoplankton",
+      "imagePrompt": "Microscopic green algae floating in ocean water",
+      "trophicLevel": "producer",
+      "position": {
+       "x": "15%",
+       "y": "80%"
+      }
+     },
+     {
+      "id": "org2",
+      "name": "Kelp",
+      "imagePrompt": "Tall brown seaweed growing from the ocean floor",
+      "trophicLevel": "producer",
+      "position": {
+       "x": "35%",
+       "y": "80%"
+      }
+     },
+     {
+      "id": "org3",
+      "name": "Zooplankton",
+      "imagePrompt": "Tiny aquatic animals drifting in the sea",
+      "trophicLevel": "primary-consumer",
+      "position": {
+       "x": "15%",
+       "y": "55%"
+      }
+     },
+     {
+      "id": "org4",
+      "name": "Sea Urchin",
+      "imagePrompt": "Spiny round sea urchin on a rock",
+      "trophicLevel": "primary-consumer",
+      "position": {
+       "x": "35%",
+       "y": "55%"
+      }
+     },
+     {
+      "id": "org5",
+      "name": "Small Fish",
+      "imagePrompt": "Small silver fish swimming in a school",
+      "trophicLevel": "primary-consumer",
+      "position": {
+       "x": "55%",
+       "y": "55%"
+      }
+     },
+     {
+      "id": "org6",
+      "name": "Seal",
+      "imagePrompt": "Playful brown seal swimming near the surface",
+      "trophicLevel": "secondary-consumer",
+      "position": {
+       "x": "60%",
+       "y": "30%"
+      }
+     },
+     {
+      "id": "org7",
+      "name": "Shark",
+      "imagePrompt": "Large grey shark swimming in the deep ocean",
+      "trophicLevel": "tertiary-consumer",
+      "position": {
+       "x": "80%",
+       "y": "15%"
+      }
+     },
+     {
+      "id": "org8",
+      "name": "Crab",
+      "imagePrompt": "Red crab crawling on the ocean floor",
+      "trophicLevel": "decomposer",
+      "position": {
+       "x": "80%",
+       "y": "80%"
+      }
+     }
+    ],
+    "correctConnections": [
+     {
+      "fromId": "org1",
+      "toId": "org3",
+      "relationship": "Zooplankton eat phytoplankton"
+     },
+     {
+      "fromId": "org1",
+      "toId": "org5",
+      "relationship": "Small fish eat phytoplankton"
+     },
+     {
+      "fromId": "org2",
+      "toId": "org4",
+      "relationship": "Sea urchins eat kelp"
+     },
+     {
+      "fromId": "org3",
+      "toId": "org5",
+      "relationship": "Small fish eat zooplankton"
+     },
+     {
+      "fromId": "org5",
+      "toId": "org6",
+      "relationship": "Seals eat small fish"
+     },
+     {
+      "fromId": "org5",
+      "toId": "org7",
+      "relationship": "Sharks eat small fish"
+     },
+     {
+      "fromId": "org6",
+      "toId": "org7",
+      "relationship": "Sharks eat seals"
+     },
+     {
+      "fromId": "org4",
+      "toId": "org8",
+      "relationship": "Crabs eat dead sea urchins"
+     },
+     {
+      "fromId": "org6",
+      "toId": "org8",
+      "relationship": "Crabs eat dead seals"
+     }
+    ],
+    "gradeBand": "3-5",
+    "challengeType": "build_chain",
+    "challenges": [
+     {
+      "id": "chain-1",
+      "type": "build_chain",
+      "length": 3,
+      "endId": "org6",
+      "instruction": "Make a food chain with 3 living things that ends at the Seal."
+     },
+     {
+      "id": "chain-2",
+      "type": "build_chain",
+      "length": 3,
+      "endId": "org5",
+      "instruction": "Make a food chain with 3 living things that ends at the Small Fish."
+     },
+     {
+      "id": "chain-3",
+      "type": "build_chain",
+      "length": 4,
+      "endId": "org7",
+      "instruction": "Make a food chain with 4 living things that ends at the Shark."
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "mode": "build_chain",
+    "grade": "7",
+    "topic": "Forest food webs and trophic levels",
+    "intent": "Construct a food chain across several trophic levels"
+   },
+   "ecosystem": "Forest",
+   "gradeBand": "6-8",
+   "organisms": [
+    "Oak Tree (producer)",
+    "Berry Bush (producer)",
+    "Deer (primary-consumer)",
+    "Mouse (primary-consumer)",
+    "Rabbit (primary-consumer)",
+    "Red Fox (secondary-consumer)",
+    "Snake (secondary-consumer)",
+    "Hawk (tertiary-consumer)",
+    "Fungi (decomposer)"
+   ],
+   "relations": [
+    "Oak Tree → Deer",
+    "Oak Tree → Mouse",
+    "Berry Bush → Deer",
+    "Berry Bush → Mouse",
+    "Berry Bush → Rabbit",
+    "Mouse → Red Fox",
+    "Rabbit → Red Fox",
+    "Mouse → Snake",
+    "Rabbit → Snake",
+    "Snake → Hawk",
+    "Mouse → Hawk",
+    "Deer → Fungi",
+    "Red Fox → Fungi",
+    "Rabbit → Hawk"
+   ],
+   "droppedRelations": 0,
+   "oracle": [],
+   "uncheckedTypes": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "chain-1",
+     "length": 3,
+     "end": "Snake",
+     "instruction": "Make a food chain with 3 living things that ends at the Snake.",
+     "chainsThatPass": [
+      "Oak Tree → Mouse → Snake",
+      "Berry Bush → Mouse → Snake",
+      "Berry Bush → Rabbit → Snake"
+     ],
+     "everyChainPasses": true,
+     "reversedMiss": "arrow_backwards",
+     "dropFirstMiss": "no_producer",
+     "dropLastMiss": "wrong_end",
+     "shorter": null,
+     "levers": [
+      "arrow_words",
+      "food_tags",
+      "chain_count"
+     ],
+     "sceneFacts": {
+      "kind": "build_chain",
+      "ecosystem": "Forest",
+      "livingThingsListed": "Berry Bush, Deer, Fungi, Hawk, Mouse, Oak Tree, Rabbit, Red Fox, Snake",
+      "scene": "an empty scene; the learner taps a living thing in the list to put it in (again to take it out), then taps one living thing in the scene and then another to draw an arrow from the first to the second; tapping an arrow removes it",
+      "livingThingsPlaced": 3,
+      "arrowsDrawn": 2,
+      "chainLength": 3,
+      "learnerWork": "Put in Oak Tree, Mouse, Snake. Arrows: Oak Tree → Mouse, Mouse → Snake",
+      "constraints": "The learner builds the chain and presses \"I'm done!\"; the activity checks every arrow against the lesson's feeding relations. You cannot tap, place or draw for the learner."
+     }
+    },
+    {
+     "id": "chain-2",
+     "length": 3,
+     "end": "Red Fox",
+     "instruction": "Make a food chain with 3 living things that ends at the Red Fox.",
+     "chainsThatPass": [
+      "Oak Tree → Mouse → Red Fox",
+      "Berry Bush → Mouse → Red Fox",
+      "Berry Bush → Rabbit → Red Fox"
+     ],
+     "everyChainPasses": true,
+     "reversedMiss": "arrow_backwards",
+     "dropFirstMiss": "no_producer",
+     "dropLastMiss": "wrong_end",
+     "shorter": null,
+     "levers": [
+      "arrow_words",
+      "food_tags",
+      "chain_count"
+     ],
+     "sceneFacts": {
+      "kind": "build_chain",
+      "ecosystem": "Forest",
+      "livingThingsListed": "Berry Bush, Deer, Fungi, Hawk, Mouse, Oak Tree, Rabbit, Red Fox, Snake",
+      "scene": "an empty scene; the learner taps a living thing in the list to put it in (again to take it out), then taps one living thing in the scene and then another to draw an arrow from the first to the second; tapping an arrow removes it",
+      "livingThingsPlaced": 3,
+      "arrowsDrawn": 2,
+      "chainLength": 3,
+      "learnerWork": "Put in Oak Tree, Mouse, Red Fox. Arrows: Oak Tree → Mouse, Mouse → Red Fox",
+      "constraints": "The learner builds the chain and presses \"I'm done!\"; the activity checks every arrow against the lesson's feeding relations. You cannot tap, place or draw for the learner."
+     }
+    },
+    {
+     "id": "chain-3",
+     "length": 4,
+     "end": "Hawk",
+     "instruction": "Make a food chain with 4 living things that ends at the Hawk.",
+     "chainsThatPass": [
+      "Oak Tree → Mouse → Snake → Hawk",
+      "Berry Bush → Mouse → Snake → Hawk",
+      "Berry Bush → Rabbit → Snake → Hawk"
+     ],
+     "everyChainPasses": true,
+     "reversedMiss": "arrow_backwards",
+     "dropFirstMiss": "no_producer",
+     "dropLastMiss": "wrong_end",
+     "shorter": "Make a food chain with 3 living things that ends at the Hawk.",
+     "levers": [
+      "arrow_words",
+      "food_tags",
+      "chain_count",
+      "shorter_chain"
+     ],
+     "sceneFacts": {
+      "kind": "build_chain",
+      "ecosystem": "Forest",
+      "livingThingsListed": "Berry Bush, Deer, Fungi, Hawk, Mouse, Oak Tree, Rabbit, Red Fox, Snake",
+      "scene": "an empty scene; the learner taps a living thing in the list to put it in (again to take it out), then taps one living thing in the scene and then another to draw an arrow from the first to the second; tapping an arrow removes it",
+      "livingThingsPlaced": 4,
+      "arrowsDrawn": 3,
+      "chainLength": 4,
+      "learnerWork": "Put in Oak Tree, Mouse, Snake, Hawk. Arrows: Oak Tree → Mouse, Mouse → Snake, Snake → Hawk",
+      "constraints": "The learner builds the chain and presses \"I'm done!\"; the activity checks every arrow against the lesson's feeding relations. You cannot tap, place or draw for the learner."
+     }
+    }
+   ],
+   "data": {
+    "primitiveType": "food-web-builder",
+    "ecosystem": "Forest",
+    "organisms": [
+     {
+      "id": "org1",
+      "name": "Oak Tree",
+      "imagePrompt": "A large green oak tree with acorns.",
+      "trophicLevel": "producer",
+      "position": {
+       "x": "15%",
+       "y": "80%"
+      }
+     },
+     {
+      "id": "org2",
+      "name": "Berry Bush",
+      "imagePrompt": "A lush green bush with red berries.",
+      "trophicLevel": "producer",
+      "position": {
+       "x": "35%",
+       "y": "80%"
+      }
+     },
+     {
+      "id": "org3",
+      "name": "Deer",
+      "imagePrompt": "A brown deer grazing in the forest.",
+      "trophicLevel": "primary-consumer",
+      "position": {
+       "x": "20%",
+       "y": "55%"
+      }
+     },
+     {
+      "id": "org4",
+      "name": "Mouse",
+      "imagePrompt": "A small brown mouse foraging on the forest floor.",
+      "trophicLevel": "primary-consumer",
+      "position": {
+       "x": "40%",
+       "y": "55%"
+      }
+     },
+     {
+      "id": "org5",
+      "name": "Rabbit",
+      "imagePrompt": "A fluffy rabbit sitting near bushes.",
+      "trophicLevel": "primary-consumer",
+      "position": {
+       "x": "60%",
+       "y": "55%"
+      }
+     },
+     {
+      "id": "org6",
+      "name": "Red Fox",
+      "imagePrompt": "A sleek red fox standing alert.",
+      "trophicLevel": "secondary-consumer",
+      "position": {
+       "x": "30%",
+       "y": "30%"
+      }
+     },
+     {
+      "id": "org7",
+      "name": "Snake",
+      "imagePrompt": "A patterned snake slithering through grass.",
+      "trophicLevel": "secondary-consumer",
+      "position": {
+       "x": "70%",
+       "y": "30%"
+      }
+     },
+     {
+      "id": "org8",
+      "name": "Hawk",
+      "imagePrompt": "A hawk soaring high with sharp talons.",
+      "trophicLevel": "tertiary-consumer",
+      "position": {
+       "x": "50%",
+       "y": "10%"
+      }
+     },
+     {
+      "id": "org9",
+      "name": "Fungi",
+      "imagePrompt": "Mushroom fungi growing on decaying wood.",
+      "trophicLevel": "decomposer",
+      "position": {
+       "x": "85%",
+       "y": "80%"
+      }
+     }
+    ],
+    "correctConnections": [
+     {
+      "fromId": "org1",
+      "toId": "org3",
+      "relationship": "Deer eat oak leaves and acorns"
+     },
+     {
+      "fromId": "org1",
+      "toId": "org4",
+      "relationship": "Mice eat oak acorns"
+     },
+     {
+      "fromId": "org2",
+      "toId": "org3",
+      "relationship": "Deer eat berries"
+     },
+     {
+      "fromId": "org2",
+      "toId": "org4",
+      "relationship": "Mice eat berries"
+     },
+     {
+      "fromId": "org2",
+      "toId": "org5",
+      "relationship": "Rabbits eat berries"
+     },
+     {
+      "fromId": "org4",
+      "toId": "org6",
+      "relationship": "Red foxes eat mice"
+     },
+     {
+      "fromId": "org5",
+      "toId": "org6",
+      "relationship": "Red foxes eat rabbits"
+     },
+     {
+      "fromId": "org4",
+      "toId": "org7",
+      "relationship": "Snakes eat mice"
+     },
+     {
+      "fromId": "org5",
+      "toId": "org7",
+      "relationship": "Snakes eat rabbits"
+     },
+     {
+      "fromId": "org7",
+      "toId": "org8",
+      "relationship": "Hawks hunt snakes"
+     },
+     {
+      "fromId": "org4",
+      "toId": "org8",
+      "relationship": "Hawks hunt mice"
+     },
+     {
+      "fromId": "org3",
+      "toId": "org9",
+      "relationship": "Fungi decompose dead deer"
+     },
+     {
+      "fromId": "org6",
+      "toId": "org9",
+      "relationship": "Fungi decompose dead foxes"
+     },
+     {
+      "fromId": "org5",
+      "toId": "org8",
+      "relationship": "Hawk eats Rabbit"
+     }
+    ],
+    "gradeBand": "6-8",
+    "challengeType": "build_chain",
+    "challenges": [
+     {
+      "id": "chain-1",
+      "type": "build_chain",
+      "length": 3,
+      "endId": "org7",
+      "instruction": "Make a food chain with 3 living things that ends at the Snake."
+     },
+     {
+      "id": "chain-2",
+      "type": "build_chain",
+      "length": 3,
+      "endId": "org6",
+      "instruction": "Make a food chain with 3 living things that ends at the Red Fox."
+     },
+     {
+      "id": "chain-3",
+      "type": "build_chain",
+      "length": 4,
+      "endId": "org8",
+      "instruction": "Make a food chain with 4 living things that ends at the Hawk."
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "mode": "build_chain",
+    "grade": "8",
+    "topic": "Desert ecosystem energy transfer",
+    "intent": "Trace energy from producers through consumers"
+   },
+   "ecosystem": "Desert",
+   "gradeBand": "6-8",
+   "organisms": [
+    "Prickly Pear (producer)",
+    "Desert Grass (producer)",
+    "Kangaroo Rat (primary-consumer)",
+    "Desert Locust (primary-consumer)",
+    "Desert Tortoise (primary-consumer)",
+    "Scorpion (secondary-consumer)",
+    "Sidewinder Snake (secondary-consumer)",
+    "Hawk (tertiary-consumer)",
+    "Desert Beetle (decomposer)"
+   ],
+   "relations": [
+    "Prickly Pear → Kangaroo Rat",
+    "Prickly Pear → Desert Locust",
+    "Prickly Pear → Desert Tortoise",
+    "Desert Grass → Kangaroo Rat",
+    "Desert Grass → Desert Tortoise",
+    "Desert Locust → Scorpion",
+    "Kangaroo Rat → Sidewinder Snake",
+    "Kangaroo Rat → Hawk",
+    "Scorpion → Hawk",
+    "Sidewinder Snake → Hawk",
+    "Prickly Pear → Desert Beetle",
+    "Kangaroo Rat → Desert Beetle",
+    "Sidewinder Snake → Desert Beetle",
+    "Desert Grass → Desert Locust"
+   ],
+   "droppedRelations": 0,
+   "oracle": [],
+   "uncheckedTypes": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "chain-1",
+     "length": 3,
+     "end": "Scorpion",
+     "instruction": "Make a food chain with 3 living things that ends at the Scorpion.",
+     "chainsThatPass": [
+      "Prickly Pear → Desert Locust → Scorpion",
+      "Desert Grass → Desert Locust → Scorpion"
+     ],
+     "everyChainPasses": true,
+     "reversedMiss": "arrow_backwards",
+     "dropFirstMiss": "no_producer",
+     "dropLastMiss": "wrong_end",
+     "shorter": null,
+     "levers": [
+      "arrow_words",
+      "food_tags",
+      "chain_count"
+     ],
+     "sceneFacts": {
+      "kind": "build_chain",
+      "ecosystem": "Desert",
+      "livingThingsListed": "Desert Beetle, Desert Grass, Desert Locust, Desert Tortoise, Hawk, Kangaroo Rat, Prickly Pear, Scorpion, Sidewinder Snake",
+      "scene": "an empty scene; the learner taps a living thing in the list to put it in (again to take it out), then taps one living thing in the scene and then another to draw an arrow from the first to the second; tapping an arrow removes it",
+      "livingThingsPlaced": 3,
+      "arrowsDrawn": 2,
+      "chainLength": 3,
+      "learnerWork": "Put in Prickly Pear, Desert Locust, Scorpion. Arrows: Prickly Pear → Desert Locust, Desert Locust → Scorpion",
+      "constraints": "The learner builds the chain and presses \"I'm done!\"; the activity checks every arrow against the lesson's feeding relations. You cannot tap, place or draw for the learner."
+     }
+    },
+    {
+     "id": "chain-2",
+     "length": 3,
+     "end": "Sidewinder Snake",
+     "instruction": "Make a food chain with 3 living things that ends at the Sidewinder Snake.",
+     "chainsThatPass": [
+      "Prickly Pear → Kangaroo Rat → Sidewinder Snake",
+      "Desert Grass → Kangaroo Rat → Sidewinder Snake"
+     ],
+     "everyChainPasses": true,
+     "reversedMiss": "arrow_backwards",
+     "dropFirstMiss": "no_producer",
+     "dropLastMiss": "wrong_end",
+     "shorter": null,
+     "levers": [
+      "arrow_words",
+      "food_tags",
+      "chain_count"
+     ],
+     "sceneFacts": {
+      "kind": "build_chain",
+      "ecosystem": "Desert",
+      "livingThingsListed": "Desert Beetle, Desert Grass, Desert Locust, Desert Tortoise, Hawk, Kangaroo Rat, Prickly Pear, Scorpion, Sidewinder Snake",
+      "scene": "an empty scene; the learner taps a living thing in the list to put it in (again to take it out), then taps one living thing in the scene and then another to draw an arrow from the first to the second; tapping an arrow removes it",
+      "livingThingsPlaced": 3,
+      "arrowsDrawn": 2,
+      "chainLength": 3,
+      "learnerWork": "Put in Prickly Pear, Kangaroo Rat, Sidewinder Snake. Arrows: Prickly Pear → Kangaroo Rat, Kangaroo Rat → Sidewinder Snake",
+      "constraints": "The learner builds the chain and presses \"I'm done!\"; the activity checks every arrow against the lesson's feeding relations. You cannot tap, place or draw for the learner."
+     }
+    },
+    {
+     "id": "chain-3",
+     "length": 4,
+     "end": "Hawk",
+     "instruction": "Make a food chain with 4 living things that ends at the Hawk.",
+     "chainsThatPass": [
+      "Prickly Pear → Kangaroo Rat → Sidewinder Snake → Hawk",
+      "Prickly Pear → Desert Locust → Scorpion → Hawk",
+      "Desert Grass → Kangaroo Rat → Sidewinder Snake → Hawk",
+      "Desert Grass → Desert Locust → Scorpion → Hawk"
+     ],
+     "everyChainPasses": true,
+     "reversedMiss": "arrow_backwards",
+     "dropFirstMiss": "no_producer",
+     "dropLastMiss": "wrong_end",
+     "shorter": "Make a food chain with 3 living things that ends at the Hawk.",
+     "levers": [
+      "arrow_words",
+      "food_tags",
+      "chain_count",
+      "shorter_chain"
+     ],
+     "sceneFacts": {
+      "kind": "build_chain",
+      "ecosystem": "Desert",
+      "livingThingsListed": "Desert Beetle, Desert Grass, Desert Locust, Desert Tortoise, Hawk, Kangaroo Rat, Prickly Pear, Scorpion, Sidewinder Snake",
+      "scene": "an empty scene; the learner taps a living thing in the list to put it in (again to take it out), then taps one living thing in the scene and then another to draw an arrow from the first to the second; tapping an arrow removes it",
+      "livingThingsPlaced": 4,
+      "arrowsDrawn": 3,
+      "chainLength": 4,
+      "learnerWork": "Put in Prickly Pear, Kangaroo Rat, Sidewinder Snake, Hawk. Arrows: Prickly Pear → Kangaroo Rat, Kangaroo Rat → Sidewinder Snake, Sidewinder Snake → Hawk",
+      "constraints": "The learner builds the chain and presses \"I'm done!\"; the activity checks every arrow against the lesson's feeding relations. You cannot tap, place or draw for the learner."
+     }
+    }
+   ],
+   "data": {
+    "primitiveType": "food-web-builder",
+    "ecosystem": "Desert",
+    "organisms": [
+     {
+      "id": "org1",
+      "name": "Prickly Pear",
+      "imagePrompt": "A vibrant green desert cactus with flat pads and yellow flowers.",
+      "trophicLevel": "producer",
+      "position": {
+       "x": "15%",
+       "y": "80%"
+      }
+     },
+     {
+      "id": "org2",
+      "name": "Desert Grass",
+      "imagePrompt": "Dry tufts of golden desert grass blowing in the wind.",
+      "trophicLevel": "producer",
+      "position": {
+       "x": "35%",
+       "y": "80%"
+      }
+     },
+     {
+      "id": "org3",
+      "name": "Kangaroo Rat",
+      "imagePrompt": "A small cute desert rodent with large hind legs and a long tail.",
+      "trophicLevel": "primary-consumer",
+      "position": {
+       "x": "25%",
+       "y": "55%"
+      }
+     },
+     {
+      "id": "org4",
+      "name": "Desert Locust",
+      "imagePrompt": "A green and brown desert grasshopper.",
+      "trophicLevel": "primary-consumer",
+      "position": {
+       "x": "10%",
+       "y": "55%"
+      }
+     },
+     {
+      "id": "org5",
+      "name": "Desert Tortoise",
+      "imagePrompt": "A sturdy brown land turtle eating vegetation.",
+      "trophicLevel": "primary-consumer",
+      "position": {
+       "x": "40%",
+       "y": "55%"
+      }
+     },
+     {
+      "id": "org6",
+      "name": "Scorpion",
+      "imagePrompt": "A brown desert scorpion with its stinger raised.",
+      "trophicLevel": "secondary-consumer",
+      "position": {
+       "x": "55%",
+       "y": "40%"
+      }
+     },
+     {
+      "id": "org7",
+      "name": "Sidewinder Snake",
+      "imagePrompt": "A tan rattlesnake coiled in the desert sand.",
+      "trophicLevel": "secondary-consumer",
+      "position": {
+       "x": "70%",
+       "y": "40%"
+      }
+     },
+     {
+      "id": "org8",
+      "name": "Hawk",
+      "imagePrompt": "A majestic bird of prey soaring high in the sky.",
+      "trophicLevel": "tertiary-consumer",
+      "position": {
+       "x": "85%",
+       "y": "15%"
+      }
+     },
+     {
+      "id": "org9",
+      "name": "Desert Beetle",
+      "imagePrompt": "A dark shiny darkling beetle walking on sand.",
+      "trophicLevel": "decomposer",
+      "position": {
+       "x": "50%",
+       "y": "85%"
+      }
+     }
+    ],
+    "correctConnections": [
+     {
+      "fromId": "org1",
+      "toId": "org3",
+      "relationship": "Kangaroo rats eat prickly pear cactus pads"
+     },
+     {
+      "fromId": "org1",
+      "toId": "org4",
+      "relationship": "Desert locusts eat prickly pear cactus"
+     },
+     {
+      "fromId": "org1",
+      "toId": "org5",
+      "relationship": "Desert tortoises eat prickly pear cactus"
+     },
+     {
+      "fromId": "org2",
+      "toId": "org3",
+      "relationship": "Kangaroo rats eat desert grass"
+     },
+     {
+      "fromId": "org2",
+      "toId": "org5",
+      "relationship": "Desert tortoises eat desert grass"
+     },
+     {
+      "fromId": "org4",
+      "toId": "org6",
+      "relationship": "Scorpions eat desert locusts"
+     },
+     {
+      "fromId": "org3",
+      "toId": "org7",
+      "relationship": "Sidewinder snakes eat kangaroo rats"
+     },
+     {
+      "fromId": "org3",
+      "toId": "org8",
+      "relationship": "Hawks hunt kangaroo rats"
+     },
+     {
+      "fromId": "org6",
+      "toId": "org8",
+      "relationship": "Hawks eat scorpions"
+     },
+     {
+      "fromId": "org7",
+      "toId": "org8",
+      "relationship": "Hawks hunt sidewinder snakes"
+     },
+     {
+      "fromId": "org1",
+      "toId": "org9",
+      "relationship": "Desert beetles decompose dead prickly pear cactus"
+     },
+     {
+      "fromId": "org3",
+      "toId": "org9",
+      "relationship": "Desert beetles consume dead kangaroo rats"
+     },
+     {
+      "fromId": "org7",
+      "toId": "org9",
+      "relationship": "Desert beetles consume dead sidewinder snakes"
+     },
+     {
+      "fromId": "org2",
+      "toId": "org4",
+      "relationship": "Desert Locust eats Desert Grass"
+     }
+    ],
+    "gradeBand": "6-8",
+    "challengeType": "build_chain",
+    "challenges": [
+     {
+      "id": "chain-1",
+      "type": "build_chain",
+      "length": 3,
+      "endId": "org6",
+      "instruction": "Make a food chain with 3 living things that ends at the Scorpion."
+     },
+     {
+      "id": "chain-2",
+      "type": "build_chain",
+      "length": 3,
+      "endId": "org7",
+      "instruction": "Make a food chain with 3 living things that ends at the Sidewinder Snake."
+     },
+     {
+      "id": "chain-3",
+      "type": "build_chain",
+      "length": 4,
+      "endId": "org8",
+      "instruction": "Make a food chain with 4 living things that ends at the Hawk."
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "mode": "complete_web",
+    "grade": "4",
+    "topic": "Grassland food web",
+    "intent": "Draw who eats whom in a grassland"
+   },
+   "ecosystem": "Grassland",
+   "gradeBand": "3-5",
+   "organisms": [
+    "Prairie Grass (producer)",
+    "Rabbit (primary-consumer)",
+    "Grasshopper (primary-consumer)",
+    "Frog (secondary-consumer)",
+    "Fox (secondary-consumer)",
+    "Hawk (tertiary-consumer)",
+    "Fungi (decomposer)"
+   ],
+   "relations": [
+    "Prairie Grass → Rabbit",
+    "Prairie Grass → Grasshopper",
+    "Rabbit → Fox",
+    "Grasshopper → Frog",
+    "Frog → Hawk",
+    "Fox → Fungi"
+   ],
+   "droppedRelations": 0,
+   "oracle": [],
+   "uncheckedTypes": [],
+   "adapter": "ok",
+   "items": [],
+   "data": {
+    "primitiveType": "food-web-builder",
+    "ecosystem": "Grassland",
+    "organisms": [
+     {
+      "id": "org1",
+      "name": "Prairie Grass",
+      "imagePrompt": "Tall green prairie grass blades swaying in the wind",
+      "trophicLevel": "producer",
+      "position": {
+       "x": "20%",
+       "y": "75%"
+      }
+     },
+     {
+      "id": "org2",
+      "name": "Rabbit",
+      "imagePrompt": "Cute fluffy wild rabbit sitting in the grass",
+      "trophicLevel": "primary-consumer",
+      "position": {
+       "x": "30%",
+       "y": "55%"
+      }
+     },
+     {
+      "id": "org3",
+      "name": "Grasshopper",
+      "imagePrompt": "Bright green grasshopper on a leaf",
+      "trophicLevel": "primary-consumer",
+      "position": {
+       "x": "55%",
+       "y": "55%"
+      }
+     },
+     {
+      "id": "org4",
+      "name": "Frog",
+      "imagePrompt": "Small green frog resting on a stone",
+      "trophicLevel": "secondary-consumer",
+      "position": {
+       "x": "55%",
+       "y": "35%"
+      }
+     },
+     {
+      "id": "org5",
+      "name": "Fox",
+      "imagePrompt": "Red fox with a bushy tail standing alert",
+      "trophicLevel": "secondary-consumer",
+      "position": {
+       "x": "30%",
+       "y": "35%"
+      }
+     },
+     {
+      "id": "org6",
+      "name": "Hawk",
+      "imagePrompt": "Majestic hawk flying with wings spread",
+      "trophicLevel": "tertiary-consumer",
+      "position": {
+       "x": "75%",
+       "y": "20%"
+      }
+     },
+     {
+      "id": "org7",
+      "name": "Fungi",
+      "imagePrompt": "Mushroom cluster growing on rich soil",
+      "trophicLevel": "decomposer",
+      "position": {
+       "x": "80%",
+       "y": "85%"
+      }
+     }
+    ],
+    "correctConnections": [
+     {
+      "fromId": "org1",
+      "toId": "org2",
+      "relationship": "Rabbits eat prairie grass"
+     },
+     {
+      "fromId": "org1",
+      "toId": "org3",
+      "relationship": "Grasshoppers eat prairie grass"
+     },
+     {
+      "fromId": "org2",
+      "toId": "org5",
+      "relationship": "Foxes hunt rabbits"
+     },
+     {
+      "fromId": "org3",
+      "toId": "org4",
+      "relationship": "Frogs eat grasshoppers"
+     },
+     {
+      "fromId": "org4",
+      "toId": "org6",
+      "relationship": "Hawks hunt frogs"
+     },
+     {
+      "fromId": "org5",
+      "toId": "org7",
+      "relationship": "Fungi decompose dead foxes"
+     }
+    ],
+    "gradeBand": "3-5",
+    "intent": "Draw who eats whom in a grassland",
+    "challengeType": "complete_web"
+   }
+  }
+ ],
+ "logs": [
+  "[FoodWebBuilder] evalMode: \"build_chain\" → schema enum: [build_chain] (β=3.6)",
+  "[FoodWebBuilder] build_chain review added: Wildflower -> Rabbit, Mouse -> Hawk; dropped: none",
+  "[FoodWebBuilder] build_chain: Grassland [ '3->org8', '3->org7', '4->org8' ]",
+  "[FoodWebBuilder] evalMode: \"build_chain\" → schema enum: [build_chain] (β=3.6)",
+  "[FoodWebBuilder] build_chain review added: Tadpole -> Heron; dropped: Water Lily -> Dragonfly Nymph",
+  "[FoodWebBuilder] build_chain: Pond [ '3->org6', '3->org7', '4->org8' ]",
+  "[FoodWebBuilder] evalMode: \"build_chain\" → schema enum: [build_chain] (β=3.6)",
+  "[FoodWebBuilder] build_chain review added: none; dropped: none",
+  "[FoodWebBuilder] build_chain: Ocean [ '3->org6', '3->org5', '4->org7' ]",
+  "[FoodWebBuilder] evalMode: \"build_chain\" → schema enum: [build_chain] (β=3.6)",
+  "[FoodWebBuilder] build_chain review added: Rabbit -> Hawk; dropped: Red Fox -> Hawk",
+  "[FoodWebBuilder] build_chain: Forest [ '3->org7', '3->org6', '4->org8' ]",
+  "[FoodWebBuilder] evalMode: \"build_chain\" → schema enum: [build_chain] (β=3.6)",
+  "[FoodWebBuilder] build_chain review added: Desert Grass -> Desert Locust; dropped: Desert Locust -> Sidewinder Snake, Scorpion -> Sidewinder Snake",
+  "[FoodWebBuilder] build_chain: Desert [ '3->org6', '3->org7', '4->org8' ]",
+  "[FoodWebBuilder] evalMode: \"complete_web\" → schema enum: [complete_web] (β=3.5)"
+ ]
+}
