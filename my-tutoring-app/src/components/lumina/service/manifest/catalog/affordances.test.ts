@@ -89,10 +89,12 @@ describe('affordances — catalog consistency', () => {
     }
   });
 
-  it('a spoken answer needs a tutoring scaffold (the tutor is the judge)', () => {
+  it('a spoken answer needs a tutor to judge it (a tutoring scaffold or a teaching workspace)', () => {
+    // Re-based 2026-10-04 (WB-5): a workspace-only family sends `tutoring: null`, and its
+    // `teachingWorkspace` declaration is what puts a judging tutor in the session.
     for (const c of tagged) {
       if (resolveAffordances(c).answers.includes('spoken')) {
-        expect(c.tutoring, c.id).toBeDefined();
+        expect(c.tutoring ?? c.teachingWorkspace, c.id).toBeDefined();
       }
     }
   });

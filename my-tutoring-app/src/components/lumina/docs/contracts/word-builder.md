@@ -43,3 +43,4 @@ None open.
 ## Changelog
 
 - 2026-10-04: derived (initial, static) with the lever slice. 6 requirements, 0 conflicts.
+- 2026-10-04: WB-5. Catalog `tutoring` block removed (runner protocol, dead on the workspace path). Re-based: the runner-era catalog pins in `WordBuilder.di-script.test.ts` §9 (scripted-correction rungs, sentinel scan, contextKeys) now assert no block. Their property, that the tutor never names the word, is carried by `teachingWorkspace.guidance` and R2/R3.

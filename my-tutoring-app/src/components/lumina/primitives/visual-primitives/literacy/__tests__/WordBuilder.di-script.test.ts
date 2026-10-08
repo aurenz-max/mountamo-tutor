@@ -53,7 +53,6 @@ import {
   type JudgedScriptPack,
 } from '../../../../hooks/judgedScriptContract';
 import {
-  checkDiCatalogEntry,
   checkPackGates,
 } from '../../../../hooks/judgedScriptContract.testkit';
 import { LITERACY_CATALOG } from '../../../../service/manifest/catalog/literacy';
@@ -605,8 +604,12 @@ describe('word-builder pack · the DI wire', () => {
 describe('word-builder catalog · DI frame', () => {
   const entry = LITERACY_CATALOG.find((p) => p.id === 'word-builder')!;
 
-  it('keeps its side: audio mode, contextKeys, template keys, sentinel scan', () => {
-    expect(checkDiCatalogEntry(entry, pack, UNHELP)).toEqual([]);
+  it('carries no tutoring block: the workspace sends `tutoring: null` (WB-5)', () => {
+    // The runner-era block ordered [WB_ITEM] turns and "the scripted correction
+    // line". Word-builder is workspace-only, so it reached no tutor; the
+    // no-answer rule lives in teachingWorkspace.guidance.
+    expect(entry.tutoring).toBeUndefined();
+    expect(entry.teachingWorkspace?.guidance).toMatch(/Never say the word/);
   });
 
   it('carries no steering for the deleted drag-and-Check channel', () => {
@@ -618,27 +621,6 @@ describe('word-builder catalog · DI frame', () => {
     }
     expect(prose).toContain('microphone');
     expect(prose).toContain('says the whole word');
-  });
-
-  it('18d: no rung answers an ATTEMPT with a re-spoken ask', () => {
-    const rungs = Object.values(entry.tutoring?.scaffoldingLevels ?? {});
-    expect(rungs).toHaveLength(3);
-    for (const rung of rungs) {
-      expect(rung).toContain('scripted correction line');
-      expect(rung.toLowerCase()).not.toMatch(/say the (question|clue) (once more|again)/);
-    }
-    // The "goes quiet" struggle is NOT this defect — silence is not an attempt,
-    // so no verdict is owed and a re-spoken clue is the right move there.
-    const quiet = (entry.tutoring?.commonStruggles ?? []).find((s) => /goes quiet/i.test(s.pattern));
-    expect(quiet?.response).toContain('say the clue one more time');
-  });
-
-  it('every struggle response is a PERFORMABLE script move', () => {
-    for (const struggle of entry.tutoring?.commonStruggles ?? []) {
-      // Meta-commentary in this field gets recited verbatim to a child.
-      expect(struggle.response.toLowerCase()).not.toContain('the student is');
-      expect(struggle.response).toMatch(/scripted correction line|wait|clue/i);
-    }
   });
 
   it('keeps every eval mode identity and moves β only for the structural change', () => {

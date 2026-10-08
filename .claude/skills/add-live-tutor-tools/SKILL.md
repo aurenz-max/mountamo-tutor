@@ -149,9 +149,13 @@ below instead of step 2; steps 1, 3, 4, 5 and the checks are the same.
    with `initialState` from `workspaceOpening({ title, task, total })`. Delete the old mode list,
    copy and `RUNNER_GUIDANCE`. Register `workspaceAdapter('<id>', <x>LiveDomain)` in
    `activityContract.ts`.
-4. **Catalog**: `teachingWorkspace: { grades, guidance }` on the entry. Leave the entry's
-   `description`, `constraints` and `tutoring` alone unless the workspace makes a sentence false
-   (the manifest reads the description; the workspace adapter sets `tutoring: null`). Guidance is the
+4. **Catalog**: `teachingWorkspace: { grades, guidance }` on the entry. Leave `description` and
+   `constraints` alone unless the workspace makes a sentence false (the manifest reads the description).
+   The `tutoring` block follows the export: with `withWorkspaceOnly` no session receives it, so move
+   anything still true into guidance, misses or levers and delete it in this slice; with
+   `withWorkspaceController` the scripted fallback still sends it, so keep it until that fallback is
+   retired. Mapping and test re-base: `.claude/skills/add-tutoring-scaffold/references/workspace-migration.md`
+   (WB-5: a block left "alone" stayed a month after word-builder went workspace-only). Guidance is the
    domain's sentences only: what checks the answer, what is hidden and why, what the tutor must
    say that the screen does not show, and what the tutor cannot do.
 5. **Journey row** in `liveJourneySpec.ts`: `execution: 'workspace'`, `defaults.di: false`, `prompts:

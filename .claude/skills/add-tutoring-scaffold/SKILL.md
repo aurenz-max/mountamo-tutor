@@ -1,16 +1,32 @@
 ---
 name: add-tutoring-scaffold
 description: >-
-  Add the AI tutoring block — context keys, hints, struggle responses — that lets
-  the Gemini Live tutor speak about a specific primitive instead of falling back
-  to generic responses. Use on an L0 primitive after birth, or when tutor
-  responses feel generic. Not for building the primitive itself (/primitive) or
-  the judged DI loop (/add-di-loop).
+  Add or repair the catalog tutoring block (context keys, hints, struggle
+  responses) on a LEGACY primitive that has no teachingWorkspace, when its tutor
+  responses feel generic. Not for new primitives (/primitive binds the teaching
+  workspace at birth), for a primitive that declares teachingWorkspace (the tutor
+  never receives the block; see references/workspace-migration.md), or for the
+  shared tutor workspace itself (/add-live-tutor-tools).
 ---
 
 # Add AI Tutoring Scaffold to a Primitive
 
 This skill guides adding AI tutoring support to Lumina primitives so the AI tutor can provide context-aware scaffolding, hints, and struggle responses during student interactions.
+
+## First: does the tutor receive this block?
+
+This skill and `/add-live-tutor-tools` are two channels, not two steps of one workflow. The
+`tutoring` block reaches the tutor only on an **unbound** session. A session bound to the teaching
+workspace sends `tutoring: null`; the tutor works from `teachingWorkspace.guidance`, the shared
+doctrine and the `liveRuntime` packet instead.
+
+Check the component's export before writing anything:
+
+- **No `teachingWorkspace` in the catalog entry:** this skill applies. Continue below.
+- **`withWorkspaceOnly`:** the block is dead. Do not add or edit one; delete an existing one with
+  `/add-live-tutor-tools` (field-by-field mapping: [references/workspace-migration.md](references/workspace-migration.md)).
+- **`withWorkspaceController`:** the block serves only the scripted fallback. Fix only a defect
+  that fallback actually shows; new teaching goes into the workspace.
 
 ## Required Reading
 
@@ -25,7 +41,7 @@ Use this skill when:
 - Adding pedagogical speech triggers (`sendText`) to a primitive component
 - Improving AI responses for a primitive that currently uses the generic fallback
 
-**Newborn scaffolding (the standard entry path):** `/primitive` births primitives at lifecycle **L0** with `useLuminaAI` + `sendText` hooks already wired in the component but NO catalog `tutoring:` block — the newborn runs on the generic tutor until this skill adds it (the **L2** layer; ladder: `my-tutoring-app/src/components/lumina/docs/PRIMITIVE_LIFECYCLE.md`). Read the birth certificate first (`my-tutoring-app/qa/eval-reports/<id>-birth.md`) — it lists contextKeys candidates and struggles observed during birth QA.
+**Not for newborns.** Since 2026-10-05 `/primitive` births every interactive primitive bound to the teaching workspace (`withWorkspaceOnly`, `teachingWorkspace` in the catalog), with no `useLuminaAI` hooks and no `tutoring:` block. This skill serves only the legacy entries that still run on a block.
 
 **DO NOT use this skill for:**
 - Building the primitive itself (that's `/primitive` — it deliberately ships no `tutoring:` block; this skill is the single source of truth for it)
@@ -342,6 +358,7 @@ Add tutoring to the appropriate domain file:
 - Scaffolding guide: `my-tutoring-app/src/components/lumina/docs/ADDING_TUTORING_SCAFFOLD.md`
 - Types: `my-tutoring-app/src/components/lumina/types.ts` — `TutoringScaffold` interface
 - Catalog lookup: `my-tutoring-app/src/components/lumina/service/manifest/catalog/index.ts`
-- AI context: `my-tutoring-app/src/components/lumina/LuminaAIContext.tsx`
+- AI context: `my-tutoring-app/src/contexts/LuminaAIContext.tsx`
+- Workspace primitives, and what replaces each scaffold field: [references/workspace-migration.md](references/workspace-migration.md)
 - Backend formatter: `backend/app/api/endpoints/lumina_tutor.py`
 - Example primitive with scaffolding: PhonicsBlender in `catalog/literacy.ts`
