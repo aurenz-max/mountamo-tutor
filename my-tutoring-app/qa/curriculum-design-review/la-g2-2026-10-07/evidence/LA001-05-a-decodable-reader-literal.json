@@ -1,0 +1,337 @@
+{
+  "id": "LA001-05-a",
+  "primitive": "decodable-reader",
+  "mode": "literal",
+  "requirement": "Students read short, phonetically controlled passages to demonstrate accurate word recognition. Focus: Building accuracy in reading grade-level decodable text. Examples: 'The cat sat on the mat.', 'Sam had a fast car.', 'The bird can sing.', 'I like to play with my toy.', 'The clouds are big.', 'Help the girl find her book.', 'They will reach the top.', 'The sun is hot today.' Constraints: Measure accuracy and word-reading time automatically within the decodable-reader.",
+  "params": {
+    "componentId": "decodable-reader",
+    "evalMode": "literal",
+    "topic": "Students read short, phonetically controlled passages to demonstrate accurate word recognition. Focus: Building accuracy in reading grade-level decodable text. Examples: 'The cat sat on the mat.', 'Sam had a fast car.', 'The bird can sing.', 'I like to play with my toy.', 'The clouds are big.', 'Help the girl find her book.', 'They will reach the top.', 'The sun is hot today.' Constraints: Measure accuracy and word-reading time automatically within the decodable-reader.",
+    "intent": "Students read short, phonetically controlled passages to demonstrate accurate word recognition. Focus: Building accuracy in reading grade-level decodable text. Examples: 'The cat sat on the mat.', 'Sam had a fast car.', 'The bird can sing.', 'I like to play with my toy.', 'The clouds are big.', 'Help the girl find her book.', 'They will reach the top.', 'The sun is hot today.' Constraints: Measure accuracy and word-reading time automatically within the decodable-reader.",
+    "grade": "2",
+    "gradeLevel": "Grade 2",
+    "difficulty": "medium"
+  },
+  "requestedAt": "2026-10-08T02:44:44.111Z",
+  "httpStatus": 200,
+  "response": {
+    "status": "fail",
+    "componentId": "decodable-reader",
+    "evalMode": "literal",
+    "duration": 4183,
+    "catalogMeta": {
+      "label": "Literal Recall (Tier 1)",
+      "beta": 3,
+      "scaffoldingMode": 1,
+      "allowedChallengeTypes": [
+        "literal"
+      ],
+      "description": "Read the story aloud, then say the one word that answers a fact stated directly in it."
+    },
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No challenge array found (checked: challenges, words, instances, questions, items, problems). Data keys: [title, gradeLevel, passage, phonicsPatternsInPassage, comprehensionQuestions, comprehensionType, difficulty, intent, objectiveGrade, readingMode]",
+      "payloadBytes": 3698,
+      "longestStringLength": 474,
+      "longestStringPath": "intent",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "The Bird and the Fern",
+      "gradeLevel": "2",
+      "passage": {
+        "sentences": [
+          {
+            "id": "s1",
+            "words": [
+              {
+                "id": "s1_w1",
+                "text": "The",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s1_w2",
+                "text": "bird",
+                "phonicsPattern": "r-controlled"
+              },
+              {
+                "id": "s1_w3",
+                "text": "sat",
+                "phonicsPattern": "cvc"
+              },
+              {
+                "id": "s1_w4",
+                "text": "on",
+                "phonicsPattern": "cvc"
+              },
+              {
+                "id": "s1_w5",
+                "text": "a",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s1_w6",
+                "text": "green",
+                "phonicsPattern": "digraph"
+              },
+              {
+                "id": "s1_w7",
+                "text": "fern.",
+                "phonicsPattern": "r-controlled"
+              }
+            ]
+          },
+          {
+            "id": "s2",
+            "words": [
+              {
+                "id": "s2_w1",
+                "text": "He",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s2_w2",
+                "text": "sang",
+                "phonicsPattern": "blend"
+              },
+              {
+                "id": "s2_w3",
+                "text": "a",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s2_w4",
+                "text": "sweet",
+                "phonicsPattern": "digraph"
+              },
+              {
+                "id": "s2_w5",
+                "text": "song",
+                "phonicsPattern": "cvc"
+              },
+              {
+                "id": "s2_w6",
+                "text": "today.",
+                "phonicsPattern": "sight"
+              }
+            ]
+          },
+          {
+            "id": "s3",
+            "words": [
+              {
+                "id": "s3_w1",
+                "text": "Dark",
+                "phonicsPattern": "r-controlled"
+              },
+              {
+                "id": "s3_w2",
+                "text": "clouds",
+                "phonicsPattern": "diphthong"
+              },
+              {
+                "id": "s3_w3",
+                "text": "came",
+                "phonicsPattern": "cvce"
+              },
+              {
+                "id": "s3_w4",
+                "text": "over",
+                "phonicsPattern": "other"
+              },
+              {
+                "id": "s3_w5",
+                "text": "the",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s3_w6",
+                "text": "town.",
+                "phonicsPattern": "diphthong"
+              }
+            ]
+          },
+          {
+            "id": "s4",
+            "words": [
+              {
+                "id": "s4_w1",
+                "text": "Rain",
+                "phonicsPattern": "diphthong"
+              },
+              {
+                "id": "s4_w2",
+                "text": "fell",
+                "phonicsPattern": "cvc"
+              },
+              {
+                "id": "s4_w3",
+                "text": "on",
+                "phonicsPattern": "cvc"
+              },
+              {
+                "id": "s4_w4",
+                "text": "the",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s4_w5",
+                "text": "garden",
+                "phonicsPattern": "other"
+              },
+              {
+                "id": "s4_w6",
+                "text": "dirt.",
+                "phonicsPattern": "r-controlled"
+              }
+            ]
+          },
+          {
+            "id": "s5",
+            "words": [
+              {
+                "id": "s5_w1",
+                "text": "The",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s5_w2",
+                "text": "smart",
+                "phonicsPattern": "blend"
+              },
+              {
+                "id": "s5_w3",
+                "text": "rabbit",
+                "phonicsPattern": "other"
+              },
+              {
+                "id": "s5_w4",
+                "text": "ran",
+                "phonicsPattern": "cvc"
+              },
+              {
+                "id": "s5_w5",
+                "text": "to",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s5_w6",
+                "text": "dig",
+                "phonicsPattern": "cvc"
+              }
+            ]
+          },
+          {
+            "id": "s6",
+            "words": [
+              {
+                "id": "s6_w1",
+                "text": "Soon",
+                "phonicsPattern": "digraph"
+              },
+              {
+                "id": "s6_w2",
+                "text": "the",
+                "phonicsPattern": "sight"
+              },
+              {
+                "id": "s6_w3",
+                "text": "bright",
+                "phonicsPattern": "blend"
+              },
+              {
+                "id": "s6_w4",
+                "text": "sun",
+                "phonicsPattern": "cvc"
+              },
+              {
+                "id": "s6_w5",
+                "text": "shone",
+                "phonicsPattern": "cvce"
+              },
+              {
+                "id": "s6_w6",
+                "text": "again.",
+                "phonicsPattern": "sight"
+              }
+            ]
+          }
+        ],
+        "imageDescription": "A cute bird sitting on a green fern while rain clouds gather above the garden."
+      },
+      "phonicsPatternsInPassage": [
+        "cvc",
+        "cvce",
+        "sight",
+        "blend",
+        "digraph",
+        "r-controlled",
+        "diphthong",
+        "other"
+      ],
+      "comprehensionQuestions": [
+        {
+          "question": "Where did the bird sit?",
+          "options": [
+            {
+              "id": "A",
+              "text": "The bird sat on a fern.",
+              "emoji": "🌿"
+            },
+            {
+              "id": "B",
+              "text": "The bird sat on a rock.",
+              "emoji": "🪨"
+            },
+            {
+              "id": "C",
+              "text": "The bird sat on a desk.",
+              "emoji": "🪑"
+            },
+            {
+              "id": "D",
+              "text": "The bird sat on a car.",
+              "emoji": "🚗"
+            }
+          ],
+          "correctOptionId": "A",
+          "answerWord": "fern"
+        },
+        {
+          "question": "What animal ran to dig?",
+          "options": [
+            {
+              "id": "A",
+              "text": "The smart frog ran to jump.",
+              "emoji": "🐸"
+            },
+            {
+              "id": "B",
+              "text": "The smart rabbit ran to dig.",
+              "emoji": "🐇"
+            },
+            {
+              "id": "C",
+              "text": "The smart cat ran to nap.",
+              "emoji": "🐱"
+            },
+            {
+              "id": "D",
+              "text": "The smart dog ran to run.",
+              "emoji": "🐕"
+            }
+          ],
+          "correctOptionId": "B",
+          "answerWord": "rabbit"
+        }
+      ],
+      "comprehensionType": "literal",
+      "difficulty": "medium",
+      "intent": "Students read short, phonetically controlled passages to demonstrate accurate word recognition. Focus: Building accuracy in reading grade-level decodable text. Examples: 'The cat sat on the mat.', 'Sam had a fast car.', 'The bird can sing.', 'I like to play with my toy.', 'The clouds are big.', 'Help the girl find her book.', 'They will reach the top.', 'The sun is hot today.' Constraints: Measure accuracy and word-reading time automatically within the decodable-reader.",
+      "objectiveGrade": "2",
+      "readingMode": "decode"
+    }
+  },
+  "durationMs": 4261
+}

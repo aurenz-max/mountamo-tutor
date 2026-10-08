@@ -1,0 +1,88 @@
+{
+  "id": "LA002-02-c",
+  "primitive": "paragraph-architect",
+  "mode": "informational",
+  "requirement": "Draft a concluding statement that effectively brings the informative paragraph to a close. Focus: Creating a summary sentence that reinforces the topic without introducing new facts. Examples: Now you know about sharks, These are facts about insects, That is how seeds grow, This is why the sun is important, So clouds are very helpful, That is how maps work, Now you know all about planets, These are things to know about mammals. Constraints: Provide a body paragraph and offer three concluding options for the student to select the most appropriate one.",
+  "params": {
+    "componentId": "paragraph-architect",
+    "evalMode": "informational",
+    "topic": "Draft a concluding statement that effectively brings the informative paragraph to a close. Focus: Creating a summary sentence that reinforces the topic without introducing new facts. Examples: Now you know about sharks, These are facts about insects, That is how seeds grow, This is why the sun is important, So clouds are very helpful, That is how maps work, Now you know all about planets, These are things to know about mammals. Constraints: Provide a body paragraph and offer three concluding options for the student to select the most appropriate one.",
+    "intent": "Draft a concluding statement that effectively brings the informative paragraph to a close. Focus: Creating a summary sentence that reinforces the topic without introducing new facts. Examples: Now you know about sharks, These are facts about insects, That is how seeds grow, This is why the sun is important, So clouds are very helpful, That is how maps work, Now you know all about planets, These are things to know about mammals. Constraints: Provide a body paragraph and offer three concluding options for the student to select the most appropriate one.",
+    "grade": "2",
+    "gradeLevel": "Grade 2",
+    "difficulty": "medium"
+  },
+  "requestedAt": "2026-10-08T02:44:29.730Z",
+  "httpStatus": 200,
+  "response": {
+    "status": "fail",
+    "componentId": "paragraph-architect",
+    "evalMode": "informational",
+    "duration": 2173,
+    "catalogMeta": {
+      "label": "Informational (Tier 2)",
+      "beta": 2.5,
+      "scaffoldingMode": 2,
+      "allowedChallengeTypes": [
+        "informational"
+      ],
+      "description": "Structured informational paragraph."
+    },
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No challenge array found (checked: challenges, words, instances, questions, items, problems). Data keys: [title, paragraphType, gradeLevel, topic, topicSentenceFrames, detailSentenceFrames, concludingSentenceFrames, linkingWords, modelParagraph, intent, objectiveGrade, supportTier]",
+      "payloadBytes": 1860,
+      "longestStringLength": 556,
+      "longestStringPath": "intent",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Build a Paragraph About Honeybees",
+      "paragraphType": "informational",
+      "gradeLevel": "2",
+      "topic": "How honeybees help plants and make honey",
+      "topicSentenceFrames": [
+        "Honeybees are very important insects because ___.",
+        "Did you know that honeybees ___?",
+        "One amazing thing about honeybees is ___.",
+        "Honeybees spend their days ___."
+      ],
+      "detailSentenceFrames": [
+        "First, honeybees fly from flower to flower to find ___.",
+        "Next, they collect sweet nectar and yellow ___.",
+        "Then, the bees carry these things back to their ___.",
+        "For example, they help flowers grow by spreading ___.",
+        "Another reason they are helpful is because they make ___."
+      ],
+      "concludingSentenceFrames": [
+        "In the end, ___.",
+        "As you can see, ___.",
+        "These are things to know about ___."
+      ],
+      "linkingWords": [
+        "because",
+        "also",
+        "for example",
+        "first",
+        "next",
+        "then",
+        "finally",
+        "another"
+      ],
+      "modelParagraph": {
+        "topicSentence": "Honeybees are very important insects because they help our world.",
+        "detailSentences": [
+          "First, honeybees fly from flower to flower to find sweet food.",
+          "Next, they collect pollen on their fuzzy bodies and spread it to other plants.",
+          "Then, they use nectar to make sweet honey in their hives."
+        ],
+        "concludingSentence": "These are facts about how helpful honeybees are to nature."
+      },
+      "intent": "Draft a concluding statement that effectively brings the informative paragraph to a close. Focus: Creating a summary sentence that reinforces the topic without introducing new facts. Examples: Now you know about sharks, These are facts about insects, That is how seeds grow, This is why the sun is important, So clouds are very helpful, That is how maps work, Now you know all about planets, These are things to know about mammals. Constraints: Provide a body paragraph and offer three concluding options for the student to select the most appropriate one.",
+      "objectiveGrade": "2",
+      "supportTier": "medium"
+    }
+  },
+  "durationMs": 11039
+}

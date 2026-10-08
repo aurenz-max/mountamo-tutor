@@ -1,0 +1,378 @@
+{
+  "subject": "LANGUAGE_ARTS",
+  "grade": "2",
+  "seed": 15159444561285816396,
+  "algorithm": "Python random.Random(seed); ID-sorted eligible skills then ID-sorted children; sample without replacement; no redraw",
+  "pythonVersion": "3.9.19",
+  "requestedSkills": 5,
+  "requestedSubskillsPerSkill": 2,
+  "scopedSkillCount": 28,
+  "eligibleSkillIds": [
+    "LA001-01",
+    "LA001-02",
+    "LA001-03",
+    "LA001-05",
+    "LA002-01",
+    "LA002-02",
+    "LA002-03",
+    "LA002-04",
+    "LA003-01",
+    "LA003-02",
+    "LA003-03",
+    "LA004-01",
+    "LA004-02",
+    "LA004-03",
+    "LA004-04",
+    "LA005-01",
+    "LA005-02",
+    "LA005-04",
+    "LA006-01",
+    "LA006-02",
+    "LA006-04",
+    "LA007-01",
+    "LA007-02",
+    "LA007-04"
+  ],
+  "excludedSkills": [
+    {
+      "id": "LA001-04",
+      "subskillCount": 1,
+      "reason": "fewer children than requested"
+    },
+    {
+      "id": "LA005-03",
+      "subskillCount": 1,
+      "reason": "fewer children than requested"
+    },
+    {
+      "id": "LA006-03",
+      "subskillCount": 1,
+      "reason": "fewer children than requested"
+    },
+    {
+      "id": "LA007-03",
+      "subskillCount": 1,
+      "reason": "fewer children than requested"
+    }
+  ],
+  "outOfScopeUnitIds": [],
+  "selected": [
+    {
+      "unitId": "LA002",
+      "unitTitle": "Writing",
+      "skill": {
+        "id": "LA002-02",
+        "description": "Informative Writing",
+        "subskills": [
+          {
+            "id": "LA002-02-a",
+            "description": "Introduce a specific topic using a clear introductory sentence paired with a simple definition. Focus: Defining a subject clearly at the start of an informative text. Examples: A mammal is an animal with fur, Sharks are fish that live in the ocean, The sun is a star that gives us light, An insect is a small bug with six legs, Seeds are what grow into plants, Clouds are made of water vapor, Planets move around the sun, Maps help us find places. Constraints: Use fill-in-the-blanks to complete topic introduction sentences.",
+            "difficulty_range": {
+              "start": 1.0,
+              "end": 3.0,
+              "target": 2.0
+            },
+            "target_primitive": "paragraph-architect",
+            "parent_summary": "Introduces a topic with a clear starting sentence and simple definition."
+          },
+          {
+            "id": "LA002-02-b",
+            "description": "Organize related facts into a cohesive paragraph structure containing a topic sentence and supporting details. Focus: Grouping logically connected information to support a central claim. Examples: Sharks hunt for food, They have sharp teeth, They live in deep water, They have gills, They have fins, They are fast swimmers, They breathe underwater, They come in many sizes. Constraints: Use a sorting-station to categorize facts under a given topic sentence before arranging them into a paragraph.",
+            "difficulty_range": {
+              "start": 1.5,
+              "end": 4.0,
+              "target": 3.0
+            },
+            "target_primitive": "paragraph-architect",
+            "parent_summary": "Groups related facts into a clear paragraph with a main topic sentence."
+          },
+          {
+            "id": "LA002-02-c",
+            "description": "Draft a concluding statement that effectively brings the informative paragraph to a close. Focus: Creating a summary sentence that reinforces the topic without introducing new facts. Examples: Now you know about sharks, These are facts about insects, That is how seeds grow, This is why the sun is important, So clouds are very helpful, That is how maps work, Now you know all about planets, These are things to know about mammals. Constraints: Provide a body paragraph and offer three concluding options for the student to select the most appropriate one.",
+            "difficulty_range": {
+              "start": 2.0,
+              "end": 5.0,
+              "target": 4.0
+            },
+            "target_primitive": "paragraph-architect",
+            "parent_summary": "Writes a closing sentence that summarizes an informative paragraph."
+          }
+        ]
+      },
+      "selectedSubskills": [
+        {
+          "id": "LA002-02-a",
+          "description": "Introduce a specific topic using a clear introductory sentence paired with a simple definition. Focus: Defining a subject clearly at the start of an informative text. Examples: A mammal is an animal with fur, Sharks are fish that live in the ocean, The sun is a star that gives us light, An insect is a small bug with six legs, Seeds are what grow into plants, Clouds are made of water vapor, Planets move around the sun, Maps help us find places. Constraints: Use fill-in-the-blanks to complete topic introduction sentences.",
+          "difficulty_range": {
+            "start": 1.0,
+            "end": 3.0,
+            "target": 2.0
+          },
+          "target_primitive": "paragraph-architect",
+          "parent_summary": "Introduces a topic with a clear starting sentence and simple definition."
+        },
+        {
+          "id": "LA002-02-c",
+          "description": "Draft a concluding statement that effectively brings the informative paragraph to a close. Focus: Creating a summary sentence that reinforces the topic without introducing new facts. Examples: Now you know about sharks, These are facts about insects, That is how seeds grow, This is why the sun is important, So clouds are very helpful, That is how maps work, Now you know all about planets, These are things to know about mammals. Constraints: Provide a body paragraph and offer three concluding options for the student to select the most appropriate one.",
+          "difficulty_range": {
+            "start": 2.0,
+            "end": 5.0,
+            "target": 4.0
+          },
+          "target_primitive": "paragraph-architect",
+          "parent_summary": "Writes a closing sentence that summarizes an informative paragraph."
+        }
+      ]
+    },
+    {
+      "unitId": "LA001",
+      "unitTitle": "Reading Foundations",
+      "skill": {
+        "id": "LA001-03",
+        "description": "Multi-Syllable Words",
+        "subskills": [
+          {
+            "id": "LA001-03-a",
+            "description": "Students listen to words and interact with a visual interface to segment the word into individual syllables. Focus: Developing auditory and visual awareness of syllable counts in words. Examples: apple, tiger, rabbit, basket, tunnel, magnet, button, winter, candle, napkin. Constraints: Provide visual feedback for every correct syllable clap in the syllable-clapper primitive.",
+            "difficulty_range": {
+              "start": 1.5,
+              "end": 3.5,
+              "target": 2.5
+            },
+            "target_primitive": "syllable-clapper",
+            "parent_summary": "Counts and breaks words into separate syllables, like in rab-bit."
+          },
+          {
+            "id": "LA001-03-b",
+            "description": "Students build two-syllable words by combining components that follow long-vowel syllable rules. Focus: Decoding two-syllable words where vowels maintain long sounds. Examples: baby, spider, robot, donut, paper, pilot, super, final, local, basic. Constraints: Use a split-screen approach to show the two syllable parts coming together in the word-builder.",
+            "difficulty_range": {
+              "start": 2.5,
+              "end": 5.0,
+              "target": 3.5
+            },
+            "target_primitive": "word-builder",
+            "parent_summary": "Reads two-syllable words with long vowel sounds, like baby and robot."
+          },
+          {
+            "id": "LA001-03-c",
+            "description": "Students analyze words with affixes by identifying and attaching common prefixes and suffixes to base words. Focus: Decoding words using knowledge of prefixes (un-, re-, pre-) and suffixes (-ed, -ing, -ly). Examples: unhappy, rewrite, preview, jumped, playing, quickly, redo, dislike, walker, helpful. Constraints: Highlight the base word and affix in different colors in the word-builder.",
+            "difficulty_range": {
+              "start": 3.0,
+              "end": 6.0,
+              "target": 4.0
+            },
+            "target_primitive": "word-builder",
+            "parent_summary": "Reads words with prefixes like un- and suffixes like -ed or -ing."
+          }
+        ]
+      },
+      "selectedSubskills": [
+        {
+          "id": "LA001-03-c",
+          "description": "Students analyze words with affixes by identifying and attaching common prefixes and suffixes to base words. Focus: Decoding words using knowledge of prefixes (un-, re-, pre-) and suffixes (-ed, -ing, -ly). Examples: unhappy, rewrite, preview, jumped, playing, quickly, redo, dislike, walker, helpful. Constraints: Highlight the base word and affix in different colors in the word-builder.",
+          "difficulty_range": {
+            "start": 3.0,
+            "end": 6.0,
+            "target": 4.0
+          },
+          "target_primitive": "word-builder",
+          "parent_summary": "Reads words with prefixes like un- and suffixes like -ed or -ing."
+        },
+        {
+          "id": "LA001-03-a",
+          "description": "Students listen to words and interact with a visual interface to segment the word into individual syllables. Focus: Developing auditory and visual awareness of syllable counts in words. Examples: apple, tiger, rabbit, basket, tunnel, magnet, button, winter, candle, napkin. Constraints: Provide visual feedback for every correct syllable clap in the syllable-clapper primitive.",
+          "difficulty_range": {
+            "start": 1.5,
+            "end": 3.5,
+            "target": 2.5
+          },
+          "target_primitive": "syllable-clapper",
+          "parent_summary": "Counts and breaks words into separate syllables, like in rab-bit."
+        }
+      ]
+    },
+    {
+      "unitId": "LA001",
+      "unitTitle": "Reading Foundations",
+      "skill": {
+        "id": "LA001-05",
+        "description": "Reading Fluency",
+        "subskills": [
+          {
+            "id": "LA001-05-a",
+            "description": "Students read short, phonetically controlled passages to demonstrate accurate word recognition. Focus: Building accuracy in reading grade-level decodable text. Examples: 'The cat sat on the mat.', 'Sam had a fast car.', 'The bird can sing.', 'I like to play with my toy.', 'The clouds are big.', 'Help the girl find her book.', 'They will reach the top.', 'The sun is hot today.' Constraints: Measure accuracy and word-reading time automatically within the decodable-reader.",
+            "difficulty_range": {
+              "start": 2.0,
+              "end": 4.5,
+              "target": 3.0
+            },
+            "target_primitive": "decodable-reader",
+            "parent_summary": "Reads short grade-level sentences accurately."
+          },
+          {
+            "id": "LA001-05-b",
+            "description": "Students record themselves reading aloud, practicing appropriate pacing, intonation, and expression. Focus: Enhancing oral reading expression and rate. Examples: Reading a dialogue between characters, reading an enthusiastic informative paragraph, reading a short poem, reading an empathetic narrative, reading a persuasive sentence, reading a list of exclamatory remarks. Constraints: Use audio analysis in the read-aloud-studio to compare against a model reading.",
+            "difficulty_range": {
+              "start": 2.5,
+              "end": 6.0,
+              "target": 4.0
+            },
+            "target_primitive": "read-aloud-studio",
+            "parent_summary": "Reads aloud with good pacing, tone, and expression."
+          },
+          {
+            "id": "LA001-05-c",
+            "description": "Students identify and correct their own word recognition errors using context clues provided in the sentences they read. Focus: Self-correction and monitoring reading fluency. Examples: 'The boy (ride/rode) his bike to the park.', 'She (read/red) a book about space.', 'The (wind/wine) blew hard.', 'He (lead/led) the way.', 'They (find/found) a gold coin.', 'The (tear/tier) fell from her eye.' Constraints: Provide context-based prompts in the read-aloud-studio for ambiguous or commonly misread words.",
+            "difficulty_range": {
+              "start": 3.0,
+              "end": 7.0,
+              "target": 4.5
+            },
+            "target_primitive": "read-aloud-studio",
+            "parent_summary": "Notices and fixes mistakes while reading using sentence clues."
+          }
+        ]
+      },
+      "selectedSubskills": [
+        {
+          "id": "LA001-05-a",
+          "description": "Students read short, phonetically controlled passages to demonstrate accurate word recognition. Focus: Building accuracy in reading grade-level decodable text. Examples: 'The cat sat on the mat.', 'Sam had a fast car.', 'The bird can sing.', 'I like to play with my toy.', 'The clouds are big.', 'Help the girl find her book.', 'They will reach the top.', 'The sun is hot today.' Constraints: Measure accuracy and word-reading time automatically within the decodable-reader.",
+          "difficulty_range": {
+            "start": 2.0,
+            "end": 4.5,
+            "target": 3.0
+          },
+          "target_primitive": "decodable-reader",
+          "parent_summary": "Reads short grade-level sentences accurately."
+        },
+        {
+          "id": "LA001-05-b",
+          "description": "Students record themselves reading aloud, practicing appropriate pacing, intonation, and expression. Focus: Enhancing oral reading expression and rate. Examples: Reading a dialogue between characters, reading an enthusiastic informative paragraph, reading a short poem, reading an empathetic narrative, reading a persuasive sentence, reading a list of exclamatory remarks. Constraints: Use audio analysis in the read-aloud-studio to compare against a model reading.",
+          "difficulty_range": {
+            "start": 2.5,
+            "end": 6.0,
+            "target": 4.0
+          },
+          "target_primitive": "read-aloud-studio",
+          "parent_summary": "Reads aloud with good pacing, tone, and expression."
+        }
+      ]
+    },
+    {
+      "unitId": "LA003",
+      "unitTitle": "Listening Comprehension and Oral Language",
+      "skill": {
+        "id": "LA003-01",
+        "description": "Recounting Key Details",
+        "subskills": [
+          {
+            "id": "LA003-01-a",
+            "description": "Students listen to short audio passages and select the most important facts to summarize the core events. Focus: Identifying specific key details in informational and narrative text. Examples: The main goal of the scientist, the steps taken by the character, the final outcome of the experiment, the location of the event, the time period described, the reason for the character's choice, the central problem encountered, the solution reached. Constraints: The passage-studio will present a 100-word audio track followed by multiple-choice options to identify the top three key facts, ensuring all answers are directly supported by the text.",
+            "difficulty_range": {
+              "start": 2.0,
+              "end": 4.0,
+              "target": 3.0
+            },
+            "target_primitive": "passage-studio",
+            "parent_summary": "Listens to a passage and picks out the most important facts."
+          },
+          {
+            "id": "LA003-01-b",
+            "description": "Students analyze a read-aloud passage to extract the main idea or central message through systematic text evidence collection. Focus: Determining the overall point or central message of the narrative or text. Examples: The importance of kindness, the lesson learned by the protagonist, the significance of the invention, the moral of the fable, the primary topic of the report, why the animal adapted to its habitat, how weather affects the local ecosystem, the reason for the city festival. Constraints: The passage-studio must provide a short text segment where the student chooses the one best sentence that summarizes the entire passage from a list of distractors.",
+            "difficulty_range": {
+              "start": 2.5,
+              "end": 5.0,
+              "target": 3.5
+            },
+            "target_primitive": "passage-studio",
+            "parent_summary": "Finds the main idea or central lesson in a story read aloud."
+          }
+        ]
+      },
+      "selectedSubskills": [
+        {
+          "id": "LA003-01-b",
+          "description": "Students analyze a read-aloud passage to extract the main idea or central message through systematic text evidence collection. Focus: Determining the overall point or central message of the narrative or text. Examples: The importance of kindness, the lesson learned by the protagonist, the significance of the invention, the moral of the fable, the primary topic of the report, why the animal adapted to its habitat, how weather affects the local ecosystem, the reason for the city festival. Constraints: The passage-studio must provide a short text segment where the student chooses the one best sentence that summarizes the entire passage from a list of distractors.",
+          "difficulty_range": {
+            "start": 2.5,
+            "end": 5.0,
+            "target": 3.5
+          },
+          "target_primitive": "passage-studio",
+          "parent_summary": "Finds the main idea or central lesson in a story read aloud."
+        },
+        {
+          "id": "LA003-01-a",
+          "description": "Students listen to short audio passages and select the most important facts to summarize the core events. Focus: Identifying specific key details in informational and narrative text. Examples: The main goal of the scientist, the steps taken by the character, the final outcome of the experiment, the location of the event, the time period described, the reason for the character's choice, the central problem encountered, the solution reached. Constraints: The passage-studio will present a 100-word audio track followed by multiple-choice options to identify the top three key facts, ensuring all answers are directly supported by the text.",
+          "difficulty_range": {
+            "start": 2.0,
+            "end": 4.0,
+            "target": 3.0
+          },
+          "target_primitive": "passage-studio",
+          "parent_summary": "Listens to a passage and picks out the most important facts."
+        }
+      ]
+    },
+    {
+      "unitId": "LA001",
+      "unitTitle": "Reading Foundations",
+      "skill": {
+        "id": "LA001-02",
+        "description": "Digraphs and Blends",
+        "subskills": [
+          {
+            "id": "LA001-02-a",
+            "description": "Students practice reading words that begin or end with consonant digraphs by blending sounds together to form recognizable words. Focus: Decoding words featuring the sh, ch, th, wh, and ph consonant digraphs. Examples: ship, chop, thin, whip, phone, dash, rich, path, moth, graph. Constraints: Isolate the digraph sound at the start of words first, then advance to final position usage in the phonics-blender.",
+            "difficulty_range": {
+              "start": 1.5,
+              "end": 4.0,
+              "target": 2.5
+            },
+            "target_primitive": "phonics-blender",
+            "parent_summary": "Reads words with letter pairs like sh, ch, th, wh, and ph."
+          },
+          {
+            "id": "LA001-02-b",
+            "description": "Students blend sounds into complex words by combining initial and final consonant clusters in various word structures. Focus: Reading words with common initial and final consonant blends like bl, st, mp, and nd. Examples: blue, stop, lamp, sand, blow, star, jump, wind, black, fast. Constraints: Use visual cues to identify the blend segment separately from the vowel-consonant core in the phonics-blender.",
+            "difficulty_range": {
+              "start": 2.0,
+              "end": 4.5,
+              "target": 3.0
+            },
+            "target_primitive": "phonics-blender",
+            "parent_summary": "Reads words with consonant blends like bl, st, mp, and nd."
+          }
+        ]
+      },
+      "selectedSubskills": [
+        {
+          "id": "LA001-02-b",
+          "description": "Students blend sounds into complex words by combining initial and final consonant clusters in various word structures. Focus: Reading words with common initial and final consonant blends like bl, st, mp, and nd. Examples: blue, stop, lamp, sand, blow, star, jump, wind, black, fast. Constraints: Use visual cues to identify the blend segment separately from the vowel-consonant core in the phonics-blender.",
+          "difficulty_range": {
+            "start": 2.0,
+            "end": 4.5,
+            "target": 3.0
+          },
+          "target_primitive": "phonics-blender",
+          "parent_summary": "Reads words with consonant blends like bl, st, mp, and nd."
+        },
+        {
+          "id": "LA001-02-a",
+          "description": "Students practice reading words that begin or end with consonant digraphs by blending sounds together to form recognizable words. Focus: Decoding words featuring the sh, ch, th, wh, and ph consonant digraphs. Examples: ship, chop, thin, whip, phone, dash, rich, path, moth, graph. Constraints: Isolate the digraph sound at the start of words first, then advance to final position usage in the phonics-blender.",
+          "difficulty_range": {
+            "start": 1.5,
+            "end": 4.0,
+            "target": 2.5
+          },
+          "target_primitive": "phonics-blender",
+          "parent_summary": "Reads words with letter pairs like sh, ch, th, wh, and ph."
+        }
+      ]
+    }
+  ],
+  "sourceFile": "C:\\Users\\xbox3\\claude web tutor\\my-tutoring-app\\qa\\curriculum-design-review\\la-g2-2026-10-07\\snapshot.json",
+  "sourceUrl": null,
+  "sourceSha256": "ca7f0bfeb97d873429651f1c6b6f71cf1b5cc642d6271a23dcc48e9e7fc968d7",
+  "sampledAt": "2026-10-08T02:42:06.081214+00:00"
+}

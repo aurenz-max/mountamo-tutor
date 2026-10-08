@@ -1,0 +1,168 @@
+{
+  "id": "LA001-02-a",
+  "primitive": "phonics-blender",
+  "mode": "digraph",
+  "requirement": "Students practice reading words that begin or end with consonant digraphs by blending sounds together to form recognizable words. Focus: Decoding words featuring the sh, ch, th, wh, and ph consonant digraphs. Examples: ship, chop, thin, whip, phone, dash, rich, path, moth, graph. Constraints: Isolate the digraph sound at the start of words first, then advance to final position usage in the phonics-blender.",
+  "params": {
+    "componentId": "phonics-blender",
+    "evalMode": "digraph",
+    "topic": "Students practice reading words that begin or end with consonant digraphs by blending sounds together to form recognizable words. Focus: Decoding words featuring the sh, ch, th, wh, and ph consonant digraphs. Examples: ship, chop, thin, whip, phone, dash, rich, path, moth, graph. Constraints: Isolate the digraph sound at the start of words first, then advance to final position usage in the phonics-blender.",
+    "intent": "Students practice reading words that begin or end with consonant digraphs by blending sounds together to form recognizable words. Focus: Decoding words featuring the sh, ch, th, wh, and ph consonant digraphs. Examples: ship, chop, thin, whip, phone, dash, rich, path, moth, graph. Constraints: Isolate the digraph sound at the start of words first, then advance to final position usage in the phonics-blender.",
+    "grade": "2",
+    "gradeLevel": "Grade 2",
+    "difficulty": "medium"
+  },
+  "requestedAt": "2026-10-08T02:45:08.214Z",
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "phonics-blender",
+    "evalMode": "digraph",
+    "duration": 2541,
+    "catalogMeta": {
+      "label": "Digraphs (Tier 3)",
+      "beta": 3.5,
+      "scaffoldingMode": 3,
+      "allowedChallengeTypes": [
+        "digraph"
+      ],
+      "description": "Two letters, one sound (sh, ch, th)."
+    },
+    "validation": {
+      "challengeCount": 5,
+      "typesFound": [],
+      "payloadBytes": 1404,
+      "longestStringLength": 42,
+      "longestStringPath": "title",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Digraph Blending Fun with Consonant Sounds",
+      "gradeLevel": "2",
+      "patternType": "digraph",
+      "words": [
+        {
+          "id": "w1",
+          "targetWord": "ship",
+          "phonemes": [
+            {
+              "id": "w1_p1",
+              "sound": "/sh/",
+              "letters": "sh"
+            },
+            {
+              "id": "w1_p2",
+              "sound": "/ĭ/",
+              "letters": "i"
+            },
+            {
+              "id": "w1_p3",
+              "sound": "/p/",
+              "letters": "p"
+            }
+          ],
+          "emoji": "🚢",
+          "imageDescription": "a large ship on the ocean"
+        },
+        {
+          "id": "w2",
+          "targetWord": "chop",
+          "phonemes": [
+            {
+              "id": "w2_p1",
+              "sound": "/ch/",
+              "letters": "ch"
+            },
+            {
+              "id": "w2_p2",
+              "sound": "/ŏ/",
+              "letters": "o"
+            },
+            {
+              "id": "w2_p3",
+              "sound": "/p/",
+              "letters": "p"
+            }
+          ],
+          "emoji": "🪓",
+          "imageDescription": "an axe used to chop wood"
+        },
+        {
+          "id": "w3",
+          "targetWord": "thin",
+          "phonemes": [
+            {
+              "id": "w3_p1",
+              "sound": "/th/",
+              "letters": "th"
+            },
+            {
+              "id": "w3_p2",
+              "sound": "/ĭ/",
+              "letters": "i"
+            },
+            {
+              "id": "w3_p3",
+              "sound": "/n/",
+              "letters": "n"
+            }
+          ],
+          "emoji": "📏",
+          "imageDescription": "a thin ruler"
+        },
+        {
+          "id": "w4",
+          "targetWord": "dash",
+          "phonemes": [
+            {
+              "id": "w4_p1",
+              "sound": "/d/",
+              "letters": "d"
+            },
+            {
+              "id": "w4_p2",
+              "sound": "/ă/",
+              "letters": "a"
+            },
+            {
+              "id": "w4_p3",
+              "sound": "/sh/",
+              "letters": "sh"
+            }
+          ],
+          "emoji": "🏃",
+          "imageDescription": "a runner doing a fast dash"
+        },
+        {
+          "id": "w5",
+          "targetWord": "rich",
+          "phonemes": [
+            {
+              "id": "w5_p1",
+              "sound": "/r/",
+              "letters": "r"
+            },
+            {
+              "id": "w5_p2",
+              "sound": "/ĭ/",
+              "letters": "i"
+            },
+            {
+              "id": "w5_p3",
+              "sound": "/ch/",
+              "letters": "ch"
+            }
+          ],
+          "emoji": "💰",
+          "imageDescription": "a bag of money representing being rich"
+        }
+      ],
+      "supportTier": "medium",
+      "showBlendPreview": "word",
+      "showSlotCount": true,
+      "showTileLetters": true,
+      "nameTargetPhonemes": true
+    }
+  },
+  "durationMs": 2608
+}

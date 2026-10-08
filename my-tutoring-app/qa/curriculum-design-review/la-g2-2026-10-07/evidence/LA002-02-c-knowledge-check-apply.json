@@ -1,0 +1,96 @@
+{
+  "id": "LA002-02-c",
+  "primitive": "knowledge-check",
+  "mode": "apply",
+  "requirement": "Draft a concluding statement that effectively brings the informative paragraph to a close. Focus: Creating a summary sentence that reinforces the topic without introducing new facts. Examples: Now you know about sharks, These are facts about insects, That is how seeds grow, This is why the sun is important, So clouds are very helpful, That is how maps work, Now you know all about planets, These are things to know about mammals. Constraints: Provide a body paragraph and offer three concluding options for the student to select the most appropriate one.",
+  "params": {
+    "componentId": "knowledge-check",
+    "evalMode": "apply",
+    "topic": "Draft a concluding statement that effectively brings the informative paragraph to a close. Focus: Creating a summary sentence that reinforces the topic without introducing new facts. Examples: Now you know about sharks, These are facts about insects, That is how seeds grow, This is why the sun is important, So clouds are very helpful, That is how maps work, Now you know all about planets, These are things to know about mammals. Constraints: Provide a body paragraph and offer three concluding options for the student to select the most appropriate one.",
+    "intent": "Draft a concluding statement that effectively brings the informative paragraph to a close. Focus: Creating a summary sentence that reinforces the topic without introducing new facts. Examples: Now you know about sharks, These are facts about insects, That is how seeds grow, This is why the sun is important, So clouds are very helpful, That is how maps work, Now you know all about planets, These are things to know about mammals. Constraints: Provide a body paragraph and offer three concluding options for the student to select the most appropriate one.",
+    "grade": "2",
+    "gradeLevel": "Grade 2",
+    "difficulty": "medium"
+  },
+  "requestedAt": "2026-10-08T02:44:29.731Z",
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "knowledge-check",
+    "evalMode": "apply",
+    "duration": 11383,
+    "catalogMeta": {
+      "label": "Apply (Tier 2)",
+      "beta": 3,
+      "scaffoldingMode": 2,
+      "allowedChallengeTypes": [
+        "multiple_choice",
+        "true_false",
+        "fill_in_blanks",
+        "matching_activity",
+        "sequencing_activity"
+      ],
+      "description": "Application: \"Use X to solve Y\" — standard problems, plausible procedural-error distractors."
+    },
+    "validation": {
+      "challengeCount": 1,
+      "typesFound": [
+        "multiple_choice"
+      ],
+      "payloadBytes": 2289,
+      "longestStringLength": 556,
+      "longestStringPath": "topic",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "problems": [
+        {
+          "type": "multiple_choice",
+          "id": "mc_1",
+          "difficulty": "medium",
+          "gradeLevel": "elementary",
+          "question": "Which sentence is the best concluding statement to wrap up this paragraph?",
+          "options": [
+            {
+              "id": "A",
+              "text": "Honeybees also have two clear wings and a sharp stinger.",
+              "distance": "near"
+            },
+            {
+              "id": "B",
+              "text": "Now you know how honeybees collect nectar from flowers.",
+              "distance": "key"
+            },
+            {
+              "id": "C",
+              "text": "That is why butterflies love bright sunny days.",
+              "distance": "far"
+            },
+            {
+              "id": "D",
+              "text": "Spiders build strong webs between the garden bushes.",
+              "distance": "far"
+            }
+          ],
+          "correctOptionId": "B",
+          "rationale": "A strong concluding statement wraps up the main idea of the paragraph without adding new facts. Option B sums up the paragraph's focus on how honeybees gather nectar. Option A adds a brand-new detail instead of concluding, while Options C and D talk about different creatures.",
+          "teachingNote": "Remind students that a concluding sentence acts like a ribbon on a present—it ties together the ideas already shared instead of putting a new gift inside the box.",
+          "successCriteria": [
+            "Identify a concluding sentence that reinforces the main topic of an informative paragraph.",
+            "Distinguish between a summarizing conclusion and a new detail sentence."
+          ],
+          "inset": {
+            "insetType": "passage",
+            "text": "Honeybees are very busy insects in the garden. They fly from flower to flower all day long. As they visit each blossom, they sip sweet nectar to make food for their hive.",
+            "format": "prose"
+          },
+          "subject": "LANGUAGE_ARTS"
+        }
+      ],
+      "problemType": "orchestrated",
+      "topic": "Draft a concluding statement that effectively brings the informative paragraph to a close. Focus: Creating a summary sentence that reinforces the topic without introducing new facts. Examples: Now you know about sharks, These are facts about insects, That is how seeds grow, This is why the sun is important, So clouds are very helpful, That is how maps work, Now you know all about planets, These are things to know about mammals. Constraints: Provide a body paragraph and offer three concluding options for the student to select the most appropriate one.",
+      "gradeContext": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+    }
+  },
+  "durationMs": 20243
+}

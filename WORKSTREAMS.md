@@ -79,6 +79,18 @@ its vitest gate; Live is 1-2 runs per class, never per primitive.
 | 3.2 | Lever bench misses from Live runs | row executor · `qa/lever-bench/QUEUE.md` | 21 rows; open from handoff 26: LB-18, LB-21 |
 | 3.3 | Class Live pair (text + `--audio`, mixed payload), only when every mode of every primitive in the class has misses and levers (user 09-28) | `/add-live-tutor-tools` · handoff 21 | PASSED 09-29: M1, L1, L2, L3, knowledge-check. Next: M2 (23 step 3). L4 waits on a ruling. DI class READY 10-03 (3.1d; plan step 9). Literacy G2-6 class READY 10-04 (3.1b; `qa/support-levers/literacy-lever-plan-2026-10-03.md` step 5) |
 
+## Phase 4 — Open build: build is a modality (CURRENT, user 10-07)
+
+| # | Item | Executor · queue | State |
+|---|---|---|---|
+| 4.1 | Build modes across primitives, by wave (OB-0..6); rulings R1 (stillness auto-submit), R2 (watcher voice) | `/add-eval-modes` · `my-tutoring-app/qa/open-build/ROADMAP.md` | waves 1-2 BUILT 10-07 (10 math build modes, c162eda0); wave 3 literacy PLANNED 10-07 (OB-3L: L0 word judge, L1 word-builder pilot, then L2-L7); ruling R11 owed before L1 (R10 withdrawn: Jev judge, no word list). Waves 1-2 must `/ship` first; handoff `my-tutoring-app/qa/HANDOFF-open-build-wave3-2026-10-07.md` |
+
+## Phase 5 — Parent report: "how is my child doing?" (CURRENT, user 10-07)
+
+| # | Item | Executor · queue | State |
+|---|---|---|---|
+| 5.1 | Parent report: facts endpoint, Gemini narrative, parent skill text, at-home tips, report panel atop My Progress | `/student-data-loop` · `my-tutoring-app/qa/parent-report/ROADMAP.md` | PR-1..4 DONE 10-08 (65b072b3), verified in app; open: PR-R1/R2 rulings, PR-D2 cleanup (user) |
+
 ## Later (proposed, user to confirm) — misses reach the next lesson
 
 Store misses and lever pulls as observations (other session has started); a Lesson Builder

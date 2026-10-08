@@ -1,0 +1,164 @@
+{
+  "id": "LA001-03-c",
+  "primitive": "word-builder",
+  "mode": "simple_affix",
+  "requirement": "Students analyze words with affixes by identifying and attaching common prefixes and suffixes to base words. Focus: Decoding words using knowledge of prefixes (un-, re-, pre-) and suffixes (-ed, -ing, -ly). Examples: unhappy, rewrite, preview, jumped, playing, quickly, redo, dislike, walker, helpful. Constraints: Highlight the base word and affix in different colors in the word-builder.",
+  "params": {
+    "componentId": "word-builder",
+    "evalMode": "simple_affix",
+    "topic": "Students analyze words with affixes by identifying and attaching common prefixes and suffixes to base words. Focus: Decoding words using knowledge of prefixes (un-, re-, pre-) and suffixes (-ed, -ing, -ly). Examples: unhappy, rewrite, preview, jumped, playing, quickly, redo, dislike, walker, helpful. Constraints: Highlight the base word and affix in different colors in the word-builder.",
+    "intent": "Students analyze words with affixes by identifying and attaching common prefixes and suffixes to base words. Focus: Decoding words using knowledge of prefixes (un-, re-, pre-) and suffixes (-ed, -ing, -ly). Examples: unhappy, rewrite, preview, jumped, playing, quickly, redo, dislike, walker, helpful. Constraints: Highlight the base word and affix in different colors in the word-builder.",
+    "grade": "2",
+    "gradeLevel": "Grade 2",
+    "difficulty": "medium"
+  },
+  "requestedAt": "2026-10-08T02:44:40.770Z",
+  "httpStatus": 200,
+  "response": {
+    "status": "fail",
+    "componentId": "word-builder",
+    "evalMode": "simple_affix",
+    "duration": 20971,
+    "catalogMeta": {
+      "label": "Simple Affixes (Tier 1)",
+      "beta": 2,
+      "scaffoldingMode": 1,
+      "allowedChallengeTypes": [
+        "simple_affix"
+      ],
+      "description": "Single prefix or suffix with a common root (un+happy, play+ful), said aloud from its meaning. β 1.5 → 2.0 on the 2026-08-16 DI port: unlimited drag-and-Check became one spoken attempt plus two judged corrections, which is a STRUCTURAL change to what a correct response costs."
+    },
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No challenge array found (checked: challenges, words, instances, questions, items, problems). Data keys: [title, complexityLevel, availableParts, targets, gradeLevel, supportTier]",
+      "payloadBytes": 1874,
+      "longestStringLength": 60,
+      "longestStringPath": "targets[3].sentenceContext",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Building Words with Prefixes and Suffixes",
+      "complexityLevel": "simple_affix",
+      "availableParts": [
+        {
+          "id": "pre-re",
+          "text": "re",
+          "type": "prefix",
+          "meaning": "again"
+        },
+        {
+          "id": "pre-pre",
+          "text": "pre",
+          "type": "prefix",
+          "meaning": "before"
+        },
+        {
+          "id": "pre-un",
+          "text": "un",
+          "type": "prefix",
+          "meaning": "not"
+        },
+        {
+          "id": "root-jump",
+          "text": "jump",
+          "type": "root",
+          "meaning": "leap"
+        },
+        {
+          "id": "root-write",
+          "text": "write",
+          "type": "root",
+          "meaning": "record in words"
+        },
+        {
+          "id": "root-quick",
+          "text": "quick",
+          "type": "root",
+          "meaning": "speedy"
+        },
+        {
+          "id": "root-view",
+          "text": "view",
+          "type": "root",
+          "meaning": "see"
+        },
+        {
+          "id": "root-help",
+          "text": "help",
+          "type": "root",
+          "meaning": "assist"
+        },
+        {
+          "id": "suf-ed",
+          "text": "ed",
+          "type": "suffix",
+          "meaning": "in the past"
+        },
+        {
+          "id": "suf-ly",
+          "text": "ly",
+          "type": "suffix",
+          "meaning": "in a manner"
+        },
+        {
+          "id": "suf-ing",
+          "text": "ing",
+          "type": "suffix",
+          "meaning": "happening now"
+        },
+        {
+          "id": "suf-ful",
+          "text": "ful",
+          "type": "suffix",
+          "meaning": "full of"
+        }
+      ],
+      "targets": [
+        {
+          "word": "jumped",
+          "parts": [
+            "root-jump",
+            "suf-ed"
+          ],
+          "hint": "Pushed off the ground with both feet in the past.",
+          "definition": "Leaped off the ground in the past.",
+          "sentenceContext": "The green frog ___ into the pond when it was startled."
+        },
+        {
+          "word": "rewrite",
+          "parts": [
+            "pre-re",
+            "root-write"
+          ],
+          "hint": "To produce text on a page a second time.",
+          "definition": "To write something again.",
+          "sentenceContext": "Please ___ your messy paragraph so that others can read it."
+        },
+        {
+          "word": "quickly",
+          "parts": [
+            "root-quick",
+            "suf-ly"
+          ],
+          "hint": "In a rapid and hurried manner.",
+          "definition": "With great speed.",
+          "sentenceContext": "We walked ___ toward shelter before the heavy rain started."
+        },
+        {
+          "word": "preview",
+          "parts": [
+            "pre-pre",
+            "root-view"
+          ],
+          "hint": "To inspect a movie or book before it is released.",
+          "definition": "An advance look at something before it starts.",
+          "sentenceContext": "The students watched a short film ___ before the show began."
+        }
+      ],
+      "gradeLevel": "Grade 3",
+      "supportTier": "medium"
+    }
+  },
+  "durationMs": 21046
+}

@@ -1,0 +1,110 @@
+{
+  "lessonId": "lesson-06",
+  "curriculum": {
+    "subject": "LANGUAGE_ARTS",
+    "grade": "2",
+    "unitId": "LA001",
+    "skillId": "LA001-05",
+    "subskillId": "LA001-05-b",
+    "description": "Students record themselves reading aloud, practicing appropriate pacing, intonation, and expression. Focus: Enhancing oral reading expression and rate. Examples: Reading a dialogue between characters, reading an enthusiastic informative paragraph, reading a short poem, reading an empathetic narrative, reading a persuasive sentence, reading a list of exclamatory remarks. Constraints: Use audio analysis in the read-aloud-studio to compare against a model reading.",
+    "targetPrimitive": "read-aloud-studio",
+    "targetEvalModes": null
+  },
+  "status": "authored; catalog-checked; each binding generator-probed once; not hydrated as a lesson; not runtime-tested",
+  "learnerAction": "Reread a short expressive text (dialogue, exclamations, a question) with pacing and expression after hearing a model.",
+  "estimatedMinutes": 14,
+  "manifest": {
+    "topic": "Read It Like You Mean It",
+    "gradeLevel": "Grade 2",
+    "themeColor": "#2f6f5e",
+    "subject": "LANGUAGE_ARTS",
+    "objectiveBlocks": [
+      {
+        "objectiveId": "obj1",
+        "objectiveText": "Students record themselves reading aloud, practicing appropriate pacing, intonation, and expression. Focus: Enhancing oral reading expression and rate. Examples: Reading a dialogue between characters, reading an enthusiastic informative paragraph, reading a short poem, reading an empathetic narrative, reading a persuasive sentence, reading a list of exclamatory remarks. Constraints: Use audio analysis in the read-aloud-studio to compare against a model reading.",
+        "objectiveVerb": "apply",
+        "components": [
+          {
+            "componentId": "read-aloud-studio",
+            "instanceId": "la001-05-b-1-read-aloud-studio",
+            "title": "Read Like the Characters",
+            "intent": "Grade 2 dialogue between two characters with real end punctuation: at least one ?, one ! and one statement; feelings stated in the story.",
+            "config": {
+              "targetEvalMode": "dialogue",
+              "subject": "Language Arts",
+              "unitTitle": "Reading Foundations"
+            }
+          },
+          {
+            "componentId": "read-aloud-studio",
+            "instanceId": "la001-05-b-2-read-aloud-studio",
+            "title": "Mark the Pauses, Then Read",
+            "intent": "Grade 2 short connected passage about something exciting (not about reading or recording). Lines carry commas, ! and ? the child can use for phrasing.",
+            "config": {
+              "targetEvalMode": "expression",
+              "subject": "Language Arts",
+              "unitTitle": "Reading Foundations"
+            }
+          }
+        ]
+      }
+    ],
+    "layout": [
+      {
+        "componentId": "read-aloud-studio",
+        "instanceId": "la001-05-b-1-read-aloud-studio",
+        "title": "Read Like the Characters",
+        "intent": "Grade 2 dialogue between two characters with real end punctuation: at least one ?, one ! and one statement; feelings stated in the story.",
+        "config": {
+          "targetEvalMode": "dialogue",
+          "subject": "Language Arts",
+          "unitTitle": "Reading Foundations"
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "read-aloud-studio",
+        "instanceId": "la001-05-b-2-read-aloud-studio",
+        "title": "Mark the Pauses, Then Read",
+        "intent": "Grade 2 short connected passage about something exciting (not about reading or recording). Lines carry commas, ! and ? the child can use for phrasing.",
+        "config": {
+          "targetEvalMode": "expression",
+          "subject": "Language Arts",
+          "unitTitle": "Reading Foundations"
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      }
+    ]
+  },
+  "sequence": [
+    {
+      "step": 1,
+      "componentId": "read-aloud-studio",
+      "evalMode": "dialogue",
+      "role": "modeled practice"
+    },
+    {
+      "step": 2,
+      "componentId": "read-aloud-studio",
+      "evalMode": "expression",
+      "role": "main practice"
+    }
+  ],
+  "evidenceCriteria": [
+    "Word accuracy on the reread after the model (scored).",
+    "Expression, pacing and intonation are coached only. \"There is no prosody response class, so nothing grades how it sounded\" (ReadAloudStudio.tsx:29-38). Mastery of expression needs an adult listening: external review protocol."
+  ],
+  "coverageLimits": [
+    "expression draw: lines were about the objective's own words (\"Clear intonation sounds so good.\").",
+    "dialogue draw: no line had end punctuation.",
+    "No comparison to the model reading exists; reads are judged against the print."
+  ],
+  "recommendation": {
+    "kind": "repair",
+    "rationale": "Repair content (RAS-1 meta-topic, RAS-3 missing punctuation). Do not build prosody scoring: the project rules out judging live audio quality, so expression remains coached practice with an external check."
+  }
+}

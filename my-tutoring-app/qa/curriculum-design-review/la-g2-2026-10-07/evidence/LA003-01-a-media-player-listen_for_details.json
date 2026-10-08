@@ -1,0 +1,105 @@
+{
+  "id": "LA003-01-a",
+  "primitive": "media-player",
+  "mode": "listen_for_details",
+  "requirement": "Students listen to short audio passages and select the most important facts to summarize the core events. Focus: Identifying specific key details in informational and narrative text. Examples: The main goal of the scientist, the steps taken by the character, the final outcome of the experiment, the location of the event, the time period described, the reason for the character's choice, the central problem encountered, the solution reached. Constraints: The passage-studio will present a 100-word audio track followed by multiple-choice options to identify the top three key facts, ensuring all answers are directly supported by the text.",
+  "params": {
+    "componentId": "media-player",
+    "evalMode": "listen_for_details",
+    "topic": "Students listen to short audio passages and select the most important facts to summarize the core events. Focus: Identifying specific key details in informational and narrative text. Examples: The main goal of the scientist, the steps taken by the character, the final outcome of the experiment, the location of the event, the time period described, the reason for the character's choice, the central problem encountered, the solution reached. Constraints: The passage-studio will present a 100-word audio track followed by multiple-choice options to identify the top three key facts, ensuring all answers are directly supported by the text.",
+    "intent": "Students listen to short audio passages and select the most important facts to summarize the core events. Focus: Identifying specific key details in informational and narrative text. Examples: The main goal of the scientist, the steps taken by the character, the final outcome of the experiment, the location of the event, the time period described, the reason for the character's choice, the central problem encountered, the solution reached. Constraints: The passage-studio will present a 100-word audio track followed by multiple-choice options to identify the top three key facts, ensuring all answers are directly supported by the text.",
+    "grade": "2",
+    "gradeLevel": "Grade 2",
+    "difficulty": "medium"
+  },
+  "requestedAt": "2026-10-08T02:44:56.821Z",
+  "httpStatus": 200,
+  "response": {
+    "status": "fail",
+    "componentId": "media-player",
+    "evalMode": "listen_for_details",
+    "duration": 20979,
+    "catalogMeta": {
+      "label": "Listen for Details (Tier 2)",
+      "beta": -0.5,
+      "scaffoldingMode": 2,
+      "allowedChallengeTypes": [
+        "listen_for_details"
+      ],
+      "description": "Emerging reader (grade 1): identify a SPECIFIC detail heard in the narrated segment. Short (1-4 word) options, also read aloud. 3 attempts then reveal."
+    },
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No challenge array found (checked: challenges, words, instances, questions, items, problems). Data keys: [title, description, segments, imageResolution, gradeLevel, evalMode]",
+      "payloadBytes": 2549,
+      "longestStringLength": 221,
+      "longestStringPath": "segments[0].imagePrompt",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Listening for Key Story Details",
+      "description": "A 3-part narrated walkthrough with a check after each part.",
+      "segments": [
+        {
+          "title": "Spotting the Main Goal",
+          "script": "Dr. Elena packed her silver rover to explore a red canyon on Mars. Her main goal was to find underground ice hidden beneath the dry rocks. She turned on her engine as soon as the sun rose.",
+          "imagePrompt": "A friendly female astronaut in a sleek white spacesuit standing beside a futuristic six-wheeled silver rover on the dusty red surface of Mars, with rocky canyon walls and a soft pink sky in a colorful storybook art style.",
+          "knowledgeCheck": {
+            "question": "What was Dr. Elena's main goal?",
+            "options": [
+              "Build a home",
+              "Paint the rover",
+              "Collect alien fossils",
+              "Find underground ice"
+            ],
+            "correctOptionIndex": 3,
+            "explanation": "The story explains that her main goal was to find underground ice hidden beneath the rocks."
+          },
+          "audioBase64": null,
+          "imageUrl": null
+        },
+        {
+          "title": "Solving a Sand Trap",
+          "script": "While rolling through the canyon, the rover's back wheel got stuck in deep sand. Dr. Elena used a small robot arm to push away a heavy rock. Then, she gently steered the wheels in reverse to break free.",
+          "imagePrompt": "A close-up of a silver rover with its rear tire partially buried in reddish sand on Mars, while a gentle robotic mechanical arm pushes away a dark rock, vibrant cartoon digital illustration.",
+          "knowledgeCheck": {
+            "question": "What got stuck in the deep sand?",
+            "options": [
+              "The back wheel",
+              "Her space helmet",
+              "A camera",
+              "A heavy rock"
+            ],
+            "correctOptionIndex": 0,
+            "explanation": "The narration states that the rover's back wheel got stuck in deep sand."
+          },
+          "audioBase64": null,
+          "imageUrl": null
+        },
+        {
+          "title": "Finding the Big Outcome",
+          "script": "After escaping the sand, Dr. Elena drilled into the cool canyon wall. Her machine beeped happily when it scooped up sparkling frozen ice crystals! Her mission was a giant success before the evening stars appeared.",
+          "imagePrompt": "A smiling astronaut holding up a transparent glowing sensor tube filled with sparkling blue ice crystals inside a Martian canyon, bright stars appearing in the twilight sky, cheerful educational book illustration.",
+          "knowledgeCheck": {
+            "question": "What did Dr. Elena find in the canyon wall?",
+            "options": [
+              "Ancient stone tools",
+              "Sparkling ice crystals",
+              "Green moss",
+              "Red dust only"
+            ],
+            "correctOptionIndex": 1,
+            "explanation": "The narration explains that her machine scooped up sparkling frozen ice crystals."
+          },
+          "audioBase64": null,
+          "imageUrl": null
+        }
+      ],
+      "imageResolution": "1K",
+      "gradeLevel": "2",
+      "evalMode": "listen_for_details"
+    }
+  },
+  "durationMs": 21075
+}

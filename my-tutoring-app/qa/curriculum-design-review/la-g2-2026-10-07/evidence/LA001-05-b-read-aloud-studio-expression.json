@@ -1,0 +1,90 @@
+{
+  "id": "LA001-05-b",
+  "primitive": "read-aloud-studio",
+  "mode": "expression",
+  "requirement": "Students record themselves reading aloud, practicing appropriate pacing, intonation, and expression. Focus: Enhancing oral reading expression and rate. Examples: Reading a dialogue between characters, reading an enthusiastic informative paragraph, reading a short poem, reading an empathetic narrative, reading a persuasive sentence, reading a list of exclamatory remarks. Constraints: Use audio analysis in the read-aloud-studio to compare against a model reading.",
+  "params": {
+    "componentId": "read-aloud-studio",
+    "evalMode": "expression",
+    "topic": "Students record themselves reading aloud, practicing appropriate pacing, intonation, and expression. Focus: Enhancing oral reading expression and rate. Examples: Reading a dialogue between characters, reading an enthusiastic informative paragraph, reading a short poem, reading an empathetic narrative, reading a persuasive sentence, reading a list of exclamatory remarks. Constraints: Use audio analysis in the read-aloud-studio to compare against a model reading.",
+    "intent": "Students record themselves reading aloud, practicing appropriate pacing, intonation, and expression. Focus: Enhancing oral reading expression and rate. Examples: Reading a dialogue between characters, reading an enthusiastic informative paragraph, reading a short poem, reading an empathetic narrative, reading a persuasive sentence, reading a list of exclamatory remarks. Constraints: Use audio analysis in the read-aloud-studio to compare against a model reading.",
+    "grade": "2",
+    "gradeLevel": "Grade 2",
+    "difficulty": "medium"
+  },
+  "requestedAt": "2026-10-08T02:44:49.975Z",
+  "httpStatus": 200,
+  "response": {
+    "status": "fail",
+    "componentId": "read-aloud-studio",
+    "evalMode": "expression",
+    "duration": 1570,
+    "catalogMeta": {
+      "label": "Phrase and Read (Tier 3)",
+      "beta": 4.5,
+      "scaffoldingMode": 3,
+      "allowedChallengeTypes": [
+        "expression"
+      ],
+      "description": "Mark phrase breaks, read the line, hear a suggested phrasing model, and reread. Planning and expression receive coaching; only modeled reread word accuracy is scored."
+    },
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No challenge array found (checked: challenges, words, instances, questions, items, problems). Data keys: [difficulty, intent, objectiveGrade, title, gradeLevel, fluencyFocus, lexileLevel, lines]",
+      "payloadBytes": 1214,
+      "longestStringLength": 465,
+      "longestStringPath": "intent",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "difficulty": "medium",
+      "intent": "Students record themselves reading aloud, practicing appropriate pacing, intonation, and expression. Focus: Enhancing oral reading expression and rate. Examples: Reading a dialogue between characters, reading an enthusiastic informative paragraph, reading a short poem, reading an empathetic narrative, reading a persuasive sentence, reading a list of exclamatory remarks. Constraints: Use audio analysis in the read-aloud-studio to compare against a model reading.",
+      "objectiveGrade": "2",
+      "title": "Recording Our Reading",
+      "gradeLevel": "2",
+      "fluencyFocus": "expression",
+      "lexileLevel": "400L",
+      "lines": [
+        {
+          "text": "Listen to the model voice.",
+          "stressWord": "model",
+          "phraseGroups": [
+            "Listen to the model voice."
+          ]
+        },
+        {
+          "text": "With steady pacing, we record.",
+          "stressWord": "pacing",
+          "phraseGroups": [
+            "With steady pacing,",
+            "we record."
+          ]
+        },
+        {
+          "text": "Clear intonation sounds so good.",
+          "stressWord": "intonation",
+          "phraseGroups": [
+            "Clear intonation sounds so good."
+          ]
+        },
+        {
+          "text": "Into the studio, students speak.",
+          "stressWord": "studio",
+          "phraseGroups": [
+            "Into the studio,",
+            "students speak."
+          ]
+        },
+        {
+          "text": "Great expression wins the prize.",
+          "stressWord": "expression",
+          "phraseGroups": [
+            "Great expression wins the prize."
+          ]
+        }
+      ]
+    }
+  },
+  "durationMs": 1652
+}

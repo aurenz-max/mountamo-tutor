@@ -1,0 +1,123 @@
+{
+  "id": "LA003-01-b",
+  "primitive": "media-player",
+  "mode": "story_analysis",
+  "requirement": "Students analyze a read-aloud passage to extract the main idea or central message through systematic text evidence collection. Focus: Determining the overall point or central message of the narrative or text. Examples: The importance of kindness, the lesson learned by the protagonist, the significance of the invention, the moral of the fable, the primary topic of the report, why the animal adapted to its habitat, how weather affects the local ecosystem, the reason for the city festival. Constraints: The passage-studio must provide a short text segment where the student chooses the one best sentence that summarizes the entire passage from a list of distractors.",
+  "params": {
+    "componentId": "media-player",
+    "evalMode": "story_analysis",
+    "topic": "Students analyze a read-aloud passage to extract the main idea or central message through systematic text evidence collection. Focus: Determining the overall point or central message of the narrative or text. Examples: The importance of kindness, the lesson learned by the protagonist, the significance of the invention, the moral of the fable, the primary topic of the report, why the animal adapted to its habitat, how weather affects the local ecosystem, the reason for the city festival. Constraints: The passage-studio must provide a short text segment where the student chooses the one best sentence that summarizes the entire passage from a list of distractors.",
+    "intent": "Students analyze a read-aloud passage to extract the main idea or central message through systematic text evidence collection. Focus: Determining the overall point or central message of the narrative or text. Examples: The importance of kindness, the lesson learned by the protagonist, the significance of the invention, the moral of the fable, the primary topic of the report, why the animal adapted to its habitat, how weather affects the local ecosystem, the reason for the city festival. Constraints: The passage-studio must provide a short text segment where the student chooses the one best sentence that summarizes the entire passage from a list of distractors.",
+    "grade": "2",
+    "gradeLevel": "Grade 2",
+    "difficulty": "medium"
+  },
+  "requestedAt": "2026-10-08T02:44:51.628Z",
+  "httpStatus": 200,
+  "response": {
+    "status": "fail",
+    "componentId": "media-player",
+    "evalMode": "story_analysis",
+    "duration": 25910,
+    "catalogMeta": {
+      "label": "Story Analysis (Tier 3)",
+      "beta": 0.5,
+      "scaffoldingMode": 3,
+      "allowedChallengeTypes": [
+        "story_analysis"
+      ],
+      "description": "Established reader (grade 2+): reason about the narration — why/how, which detail supports an idea, what order events happened. Full-sentence options."
+    },
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No challenge array found (checked: challenges, words, instances, questions, items, problems). Data keys: [title, description, segments, imageResolution, gradeLevel, evalMode]",
+      "payloadBytes": 4540,
+      "longestStringLength": 322,
+      "longestStringPath": "segments[1].script",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Uncovering the Big Story Message",
+      "description": "A 4-part narrated walkthrough with a check after each part.",
+      "segments": [
+        {
+          "title": "Searching for the Big Idea",
+          "script": "Every story has a central message, which is the main lesson or big idea the author wants us to learn. We can act like detectives by collecting clues called text evidence as we listen carefully. When we connect those clues together, they reveal the author's overall point!",
+          "imagePrompt": "A friendly young girl and boy wearing detective hats in a cozy classroom reading nook, holding colorful magnifying glasses over an open storybook with glowing golden clue symbols floating upward, warm storybook illustration style, bright cheerful colors.",
+          "knowledgeCheck": {
+            "question": "What clues do readers collect from sentences to find the central message?",
+            "options": [
+              "Guesses about how the book ends",
+              "Clues called text evidence",
+              "Illustrations painted in secret codes",
+              "New vocabulary words to spell"
+            ],
+            "correctOptionIndex": 1,
+            "explanation": "The script explains that readers act like detectives by collecting clues called text evidence to find the central message."
+          },
+          "audioBase64": null,
+          "imageUrl": null
+        },
+        {
+          "title": "Pip's Helpful Choice",
+          "script": "Listen to this short passage: Pip the squirrel collected a giant pile of acorns, but his neighbor Ollie had a hurt paw and could not search for food. Pip noticed Ollie looking hungry and sad, so Pip carried half of his own acorns over to Ollie's hollow tree. Ollie smiled with relief, and Pip felt a warm joy in his heart.",
+          "imagePrompt": "A cute fluffy squirrel named Pip gently placing golden acorns in front of another squirrel with a bandaged paw outside a cozy hollow tree nest, autumnal forest background with falling leaves, warm and friendly children's picture book art style.",
+          "knowledgeCheck": {
+            "question": "Why did Pip carry his acorns over to Ollie's tree?",
+            "options": [
+              "A heavy rainstorm washed the acorns away",
+              "Pip wanted to trade his acorns for sweet berries",
+              "Ollie had a hurt paw and could not search for food",
+              "Pip had too many acorns to keep in his nest"
+            ],
+            "correctOptionIndex": 2,
+            "explanation": "The passage states that Ollie had a hurt paw and could not search for food, which is why Pip decided to help him."
+          },
+          "audioBase64": null,
+          "imageUrl": null
+        },
+        {
+          "title": "Gathering Text Evidence",
+          "script": "Let us review our evidence: Ollie was in trouble, Pip gave away his food, and both squirrels ended up happy. Acorns and trees are just tiny details, but helping a friend is the big idea that ties them all together. A true central message must explain the whole story rather than just one small part.",
+          "imagePrompt": "A three-step evidence board in a sunny classroom showing drawn cards of Ollie needing help, Pip sharing his acorns, and both squirrels smiling together under an umbrella labeled Central Message, clean 2D vector educational art.",
+          "knowledgeCheck": {
+            "question": "According to the script, what must a true central message do?",
+            "options": [
+              "Change the ending to make it surprising",
+              "Explain the whole story rather than just one small part",
+              "Name every single tree in the forest",
+              "Focus only on one tiny detail like acorns"
+            ],
+            "correctOptionIndex": 1,
+            "explanation": "The script teaches that a true central message must explain the whole story rather than focusing on just one small detail."
+          },
+          "audioBase64": null,
+          "imageUrl": null
+        },
+        {
+          "title": "Finding the Best Summary",
+          "script": "Now we test our sentences to find the one best summary for the whole passage. Sentences like 'Acorns are crunchy' or 'Ollie hurt his paw' only tell tiny facts from one moment. The sentence that truly summarizes the entire passage is: Kind actions and sharing bring happiness to everyone.",
+          "imagePrompt": "A friendly animal teacher pointing to a chalkboard with three sentences crossed out and one glowing sentence highlighted in bright yellow that says sharing brings joy, whimsical elementary school classroom setting, gentle pastel tones.",
+          "knowledgeCheck": {
+            "question": "Which sentence best summarizes the entire passage about Pip and Ollie?",
+            "options": [
+              "Ollie hurt his paw in the woods.",
+              "Squirrels make homes inside hollow forest trees.",
+              "Kind actions and sharing bring happiness to everyone.",
+              "Acorns make crunchy autumn snacks."
+            ],
+            "correctOptionIndex": 2,
+            "explanation": "The script identifies 'Kind actions and sharing bring happiness to everyone' as the sentence that summarizes the entire story rather than just a small detail."
+          },
+          "audioBase64": null,
+          "imageUrl": null
+        }
+      ],
+      "imageResolution": "1K",
+      "gradeLevel": "2",
+      "evalMode": "story_analysis"
+    }
+  },
+  "durationMs": 26011
+}

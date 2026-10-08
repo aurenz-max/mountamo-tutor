@@ -1,0 +1,110 @@
+{
+  "lessonId": "lesson-01",
+  "curriculum": {
+    "subject": "LANGUAGE_ARTS",
+    "grade": "2",
+    "unitId": "LA002",
+    "skillId": "LA002-02",
+    "subskillId": "LA002-02-a",
+    "description": "Introduce a specific topic using a clear introductory sentence paired with a simple definition. Focus: Defining a subject clearly at the start of an informative text. Examples: A mammal is an animal with fur, Sharks are fish that live in the ocean, The sun is a star that gives us light, An insect is a small bug with six legs, Seeds are what grow into plants, Clouds are made of water vapor, Planets move around the sun, Maps help us find places. Constraints: Use fill-in-the-blanks to complete topic introduction sentences.",
+    "targetPrimitive": "paragraph-architect",
+    "targetEvalModes": null
+  },
+  "status": "authored; catalog-checked; each binding generator-probed once; not hydrated as a lesson; not runtime-tested",
+  "learnerAction": "Write a first sentence that names the topic and says what kind of thing it is plus one feature (\"A mammal is an animal with fur\").",
+  "estimatedMinutes": 15,
+  "manifest": {
+    "topic": "What Is It? Start With a Definition",
+    "gradeLevel": "Grade 2",
+    "themeColor": "#2f6f5e",
+    "subject": "LANGUAGE_ARTS",
+    "objectiveBlocks": [
+      {
+        "objectiveId": "obj1",
+        "objectiveText": "Introduce a specific topic using a clear introductory sentence paired with a simple definition. Focus: Defining a subject clearly at the start of an informative text. Examples: A mammal is an animal with fur, Sharks are fish that live in the ocean, The sun is a star that gives us light, An insect is a small bug with six legs, Seeds are what grow into plants, Clouds are made of water vapor, Planets move around the sun, Maps help us find places. Constraints: Use fill-in-the-blanks to complete topic introduction sentences.",
+        "objectiveVerb": "write",
+        "components": [
+          {
+            "componentId": "paragraph-architect",
+            "instanceId": "la002-02-a-1-paragraph-architect",
+            "title": "Meet a Topic Sentence",
+            "intent": "Grade 2 informational paragraph about one animal or object. The model topic sentence must define the topic: name its category and one feature (A ___ is a ___ that ___). Child taps the topic sentence in the model, then writes their own with a frame.",
+            "config": {
+              "targetEvalMode": "informational",
+              "subject": "Language Arts",
+              "unitTitle": "Writing"
+            }
+          },
+          {
+            "componentId": "knowledge-check",
+            "instanceId": "la002-02-a-2-knowledge-check",
+            "title": "Which Sentence Starts the Paragraph?",
+            "intent": "Grade 2. Show a short informative paragraph with its first sentence missing. Options: one definition sentence (category + feature), one detail sentence from the body, one opinion, one off-topic sentence.",
+            "config": {
+              "targetEvalMode": "apply",
+              "subject": "Language Arts",
+              "unitTitle": "Writing"
+            }
+          }
+        ]
+      }
+    ],
+    "layout": [
+      {
+        "componentId": "paragraph-architect",
+        "instanceId": "la002-02-a-1-paragraph-architect",
+        "title": "Meet a Topic Sentence",
+        "intent": "Grade 2 informational paragraph about one animal or object. The model topic sentence must define the topic: name its category and one feature (A ___ is a ___ that ___). Child taps the topic sentence in the model, then writes their own with a frame.",
+        "config": {
+          "targetEvalMode": "informational",
+          "subject": "Language Arts",
+          "unitTitle": "Writing"
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "knowledge-check",
+        "instanceId": "la002-02-a-2-knowledge-check",
+        "title": "Which Sentence Starts the Paragraph?",
+        "intent": "Grade 2. Show a short informative paragraph with its first sentence missing. Options: one definition sentence (category + feature), one detail sentence from the body, one opinion, one off-topic sentence.",
+        "config": {
+          "targetEvalMode": "apply",
+          "subject": "Language Arts",
+          "unitTitle": "Writing"
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      }
+    ]
+  },
+  "sequence": [
+    {
+      "step": 1,
+      "componentId": "paragraph-architect",
+      "evalMode": "informational",
+      "role": "introduction + supported practice"
+    },
+    {
+      "step": 2,
+      "componentId": "knowledge-check",
+      "evalMode": "apply",
+      "role": "independent check (recognition)"
+    }
+  ],
+  "evidenceCriteria": [
+    "Picks the defining sentence over a body detail (knowledge-check).",
+    "Writes \"A/An [topic] is a [category] that/with [feature]\" with a true category and feature. NOT currently judged by any primitive."
+  ],
+  "coverageLimits": [
+    "paragraph-architect scores parts present, not quality: an empty frame counts as content (ParagraphArchitect.tsx:540-545, 693-697).",
+    "Its modes change only the prompt. Task and score are identical across informational, narrative and opinion.",
+    "The only scored right/wrong act is tapping the topic sentence in the model."
+  ],
+  "recommendation": {
+    "kind": "new-mode",
+    "rationale": "Add a judged \"define the topic\" mode to paragraph-architect. The writing surface exists; what is missing is a check that the sentence names a category and a true feature. See brief 1."
+  }
+}

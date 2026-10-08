@@ -1,0 +1,88 @@
+{
+  "id": "LA002-02-a",
+  "primitive": "paragraph-architect",
+  "mode": "informational",
+  "requirement": "Introduce a specific topic using a clear introductory sentence paired with a simple definition. Focus: Defining a subject clearly at the start of an informative text. Examples: A mammal is an animal with fur, Sharks are fish that live in the ocean, The sun is a star that gives us light, An insect is a small bug with six legs, Seeds are what grow into plants, Clouds are made of water vapor, Planets move around the sun, Maps help us find places. Constraints: Use fill-in-the-blanks to complete topic introduction sentences.",
+  "params": {
+    "componentId": "paragraph-architect",
+    "evalMode": "informational",
+    "topic": "Introduce a specific topic using a clear introductory sentence paired with a simple definition. Focus: Defining a subject clearly at the start of an informative text. Examples: A mammal is an animal with fur, Sharks are fish that live in the ocean, The sun is a star that gives us light, An insect is a small bug with six legs, Seeds are what grow into plants, Clouds are made of water vapor, Planets move around the sun, Maps help us find places. Constraints: Use fill-in-the-blanks to complete topic introduction sentences.",
+    "intent": "Introduce a specific topic using a clear introductory sentence paired with a simple definition. Focus: Defining a subject clearly at the start of an informative text. Examples: A mammal is an animal with fur, Sharks are fish that live in the ocean, The sun is a star that gives us light, An insect is a small bug with six legs, Seeds are what grow into plants, Clouds are made of water vapor, Planets move around the sun, Maps help us find places. Constraints: Use fill-in-the-blanks to complete topic introduction sentences.",
+    "grade": "2",
+    "gradeLevel": "Grade 2",
+    "difficulty": "medium"
+  },
+  "requestedAt": "2026-10-08T02:44:29.686Z",
+  "httpStatus": 200,
+  "response": {
+    "status": "fail",
+    "componentId": "paragraph-architect",
+    "evalMode": "informational",
+    "duration": 2274,
+    "catalogMeta": {
+      "label": "Informational (Tier 2)",
+      "beta": 2.5,
+      "scaffoldingMode": 2,
+      "allowedChallengeTypes": [
+        "informational"
+      ],
+      "description": "Structured informational paragraph."
+    },
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No challenge array found (checked: challenges, words, instances, questions, items, problems). Data keys: [title, paragraphType, gradeLevel, topic, topicSentenceFrames, detailSentenceFrames, concludingSentenceFrames, linkingWords, modelParagraph, intent, objectiveGrade, supportTier]",
+      "payloadBytes": 1592,
+      "longestStringLength": 525,
+      "longestStringPath": "intent",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Build a Paragraph About Sharks",
+      "paragraphType": "informational",
+      "gradeLevel": "2",
+      "topic": "Sharks and how they live in the ocean",
+      "topicSentenceFrames": [
+        "___ are fish that live in the ___.",
+        "The most important thing to know is that ___.",
+        "___ are amazing ocean animals because ___.",
+        "Have you ever wondered what ___ are?"
+      ],
+      "detailSentenceFrames": [
+        "First, ___.",
+        "Next, ___.",
+        "Then, ___.",
+        "For example, ___.",
+        "Also, ___."
+      ],
+      "concludingSentenceFrames": [
+        "In the end, ___.",
+        "As you can see, ___.",
+        "This is why ___."
+      ],
+      "linkingWords": [
+        "because",
+        "also",
+        "for example",
+        "first",
+        "next",
+        "then",
+        "finally",
+        "another"
+      ],
+      "modelParagraph": {
+        "topicSentence": "Sharks are fish that live in the ocean and breathe with gills.",
+        "detailSentences": [
+          "First, sharks swim very fast to catch their food.",
+          "Next, they have strong teeth that help them eat.",
+          "For example, a great white shark can hunt fish and other ocean animals."
+        ],
+        "concludingSentence": "As you can see, sharks are special animals that fit right into their ocean home."
+      },
+      "intent": "Introduce a specific topic using a clear introductory sentence paired with a simple definition. Focus: Defining a subject clearly at the start of an informative text. Examples: A mammal is an animal with fur, Sharks are fish that live in the ocean, The sun is a star that gives us light, An insect is a small bug with six legs, Seeds are what grow into plants, Clouds are made of water vapor, Planets move around the sun, Maps help us find places. Constraints: Use fill-in-the-blanks to complete topic introduction sentences.",
+      "objectiveGrade": "2",
+      "supportTier": "medium"
+    }
+  },
+  "durationMs": 11184
+}

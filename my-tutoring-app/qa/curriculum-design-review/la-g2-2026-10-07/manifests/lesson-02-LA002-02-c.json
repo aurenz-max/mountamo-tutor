@@ -1,0 +1,140 @@
+{
+  "lessonId": "lesson-02",
+  "curriculum": {
+    "subject": "LANGUAGE_ARTS",
+    "grade": "2",
+    "unitId": "LA002",
+    "skillId": "LA002-02",
+    "subskillId": "LA002-02-c",
+    "description": "Draft a concluding statement that effectively brings the informative paragraph to a close. Focus: Creating a summary sentence that reinforces the topic without introducing new facts. Examples: Now you know about sharks, These are facts about insects, That is how seeds grow, This is why the sun is important, So clouds are very helpful, That is how maps work, Now you know all about planets, These are things to know about mammals. Constraints: Provide a body paragraph and offer three concluding options for the student to select the most appropriate one.",
+    "targetPrimitive": "paragraph-architect",
+    "targetEvalModes": null
+  },
+  "status": "authored; catalog-checked; each binding generator-probed once; not hydrated as a lesson; not runtime-tested",
+  "learnerAction": "Read a short body paragraph and choose (then write) a closing sentence that restates the topic without adding a new fact.",
+  "estimatedMinutes": 14,
+  "manifest": {
+    "topic": "Wrap It Up: Choosing a Closing Sentence",
+    "gradeLevel": "Grade 2",
+    "themeColor": "#2f6f5e",
+    "subject": "LANGUAGE_ARTS",
+    "objectiveBlocks": [
+      {
+        "objectiveId": "obj1",
+        "objectiveText": "Draft a concluding statement that effectively brings the informative paragraph to a close. Focus: Creating a summary sentence that reinforces the topic without introducing new facts. Examples: Now you know about sharks, These are facts about insects, That is how seeds grow, This is why the sun is important, So clouds are very helpful, That is how maps work, Now you know all about planets, These are things to know about mammals. Constraints: Provide a body paragraph and offer three concluding options for the student to select the most appropriate one.",
+        "objectiveVerb": "evaluate",
+        "components": [
+          {
+            "componentId": "paragraph-architect",
+            "instanceId": "la002-02-c-1-paragraph-architect",
+            "title": "See How a Paragraph Ends",
+            "intent": "Grade 2 informational paragraph. The model concluding sentence restates the topic with a closing phrase (Now you know..., That is how...) and adds no new fact.",
+            "config": {
+              "targetEvalMode": "informational",
+              "subject": "Language Arts",
+              "unitTitle": "Writing"
+            }
+          },
+          {
+            "componentId": "knowledge-check",
+            "instanceId": "la002-02-c-2-knowledge-check",
+            "title": "Pick the Best Ending",
+            "intent": "Grade 2. Show a 3-sentence informative paragraph. Options: one closing sentence that restates the topic; one that adds a NEW fact about the same topic; one that repeats only a single detail; one about a different topic.",
+            "config": {
+              "targetEvalMode": "apply",
+              "subject": "Language Arts",
+              "unitTitle": "Writing"
+            }
+          },
+          {
+            "componentId": "knowledge-check",
+            "instanceId": "la002-02-c-3-knowledge-check",
+            "title": "Pick the Best Ending Again",
+            "intent": "Grade 2, new topic. Same structure as before: restating close vs. new-fact sentence vs. single-detail sentence vs. off-topic.",
+            "config": {
+              "targetEvalMode": "apply",
+              "subject": "Language Arts",
+              "unitTitle": "Writing"
+            }
+          }
+        ]
+      }
+    ],
+    "layout": [
+      {
+        "componentId": "paragraph-architect",
+        "instanceId": "la002-02-c-1-paragraph-architect",
+        "title": "See How a Paragraph Ends",
+        "intent": "Grade 2 informational paragraph. The model concluding sentence restates the topic with a closing phrase (Now you know..., That is how...) and adds no new fact.",
+        "config": {
+          "targetEvalMode": "informational",
+          "subject": "Language Arts",
+          "unitTitle": "Writing"
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "knowledge-check",
+        "instanceId": "la002-02-c-2-knowledge-check",
+        "title": "Pick the Best Ending",
+        "intent": "Grade 2. Show a 3-sentence informative paragraph. Options: one closing sentence that restates the topic; one that adds a NEW fact about the same topic; one that repeats only a single detail; one about a different topic.",
+        "config": {
+          "targetEvalMode": "apply",
+          "subject": "Language Arts",
+          "unitTitle": "Writing"
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "knowledge-check",
+        "instanceId": "la002-02-c-3-knowledge-check",
+        "title": "Pick the Best Ending Again",
+        "intent": "Grade 2, new topic. Same structure as before: restating close vs. new-fact sentence vs. single-detail sentence vs. off-topic.",
+        "config": {
+          "targetEvalMode": "apply",
+          "subject": "Language Arts",
+          "unitTitle": "Writing"
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      }
+    ]
+  },
+  "sequence": [
+    {
+      "step": 1,
+      "componentId": "paragraph-architect",
+      "evalMode": "informational",
+      "role": "introduction"
+    },
+    {
+      "step": 2,
+      "componentId": "knowledge-check",
+      "evalMode": "apply",
+      "role": "independent check"
+    },
+    {
+      "step": 3,
+      "componentId": "knowledge-check",
+      "evalMode": "apply",
+      "role": "fresh review"
+    }
+  ],
+  "evidenceCriteria": [
+    "Chooses the restating close over a same-topic new-fact sentence on two fresh paragraphs.",
+    "Writing their own close is practiced in paragraph-architect but not scored."
+  ],
+  "coverageLimits": [
+    "knowledge-check gives an honest choose-the-ending item (probe), but left alone it writes two off-topic distractors. The intent above asks for same-topic distractors; not re-probed.",
+    "Grade 2 has no length cap on the passage inset (prompt only)."
+  ],
+  "recommendation": {
+    "kind": "reuse",
+    "rationale": "Reuse knowledge-check for the choice task the curriculum asks for. Writing a close is covered by brief 1 (same judged-sentence mode family)."
+  }
+}

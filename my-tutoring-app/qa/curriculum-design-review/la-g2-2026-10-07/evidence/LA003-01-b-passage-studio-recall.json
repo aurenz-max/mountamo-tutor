@@ -1,0 +1,134 @@
+{
+  "id": "LA003-01-b",
+  "primitive": "passage-studio",
+  "mode": "recall",
+  "requirement": "Students analyze a read-aloud passage to extract the main idea or central message through systematic text evidence collection. Focus: Determining the overall point or central message of the narrative or text. Examples: The importance of kindness, the lesson learned by the protagonist, the significance of the invention, the moral of the fable, the primary topic of the report, why the animal adapted to its habitat, how weather affects the local ecosystem, the reason for the city festival. Constraints: The passage-studio must provide a short text segment where the student chooses the one best sentence that summarizes the entire passage from a list of distractors.",
+  "params": {
+    "componentId": "passage-studio",
+    "evalMode": "recall",
+    "topic": "Students analyze a read-aloud passage to extract the main idea or central message through systematic text evidence collection. Focus: Determining the overall point or central message of the narrative or text. Examples: The importance of kindness, the lesson learned by the protagonist, the significance of the invention, the moral of the fable, the primary topic of the report, why the animal adapted to its habitat, how weather affects the local ecosystem, the reason for the city festival. Constraints: The passage-studio must provide a short text segment where the student chooses the one best sentence that summarizes the entire passage from a list of distractors.",
+    "intent": "Students analyze a read-aloud passage to extract the main idea or central message through systematic text evidence collection. Focus: Determining the overall point or central message of the narrative or text. Examples: The importance of kindness, the lesson learned by the protagonist, the significance of the invention, the moral of the fable, the primary topic of the report, why the animal adapted to its habitat, how weather affects the local ecosystem, the reason for the city festival. Constraints: The passage-studio must provide a short text segment where the student chooses the one best sentence that summarizes the entire passage from a list of distractors.",
+    "grade": "2",
+    "gradeLevel": "Grade 2",
+    "difficulty": "medium"
+  },
+  "requestedAt": "2026-10-08T02:44:52.180Z",
+  "httpStatus": 200,
+  "response": {
+    "status": "fail",
+    "componentId": "passage-studio",
+    "evalMode": "recall",
+    "duration": 4569,
+    "catalogMeta": {
+      "label": "Recall (Tier 2)",
+      "beta": -0.5,
+      "scaffoldingMode": 2,
+      "allowedChallengeTypes": [
+        "recall"
+      ],
+      "description": "2–3 comprehension-mcq + 1 vocab-in-context. Direct retrieval from the passage."
+    },
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No challenge array found (checked: challenges, words, instances, questions, items, problems). Data keys: [title, subtitle, gradeLevel, stimulus, blocks, layout, narrativeArc]",
+      "payloadBytes": 4797,
+      "longestStringLength": 711,
+      "longestStringPath": "stimulus.text",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Finding the Big Message: Leo's Garden Lesson",
+      "subtitle": "Students discover the central message of a story by looking at text clues.",
+      "gradeLevel": "grade 2 student",
+      "stimulus": {
+        "kind": "prose",
+        "title": "Leo's Garden",
+        "author": "Maya Lin",
+        "source": "Neighborhood Tales for Young Readers",
+        "text": "Leo loved to watch things grow. When he saw the empty, dusty lot behind his apartment building, he decided to make a change. Every afternoon after school, Leo carried heavy buckets of water and tiny green sprouts to the lot. At first, neighbors walked right past the dry dirt without looking. But soon, bright yellow sunflowers and sweet-smelling tomatoes popped up from the earth. Seeing the sudden burst of color, the neighbors started coming over with shovels and seeds of their own. Within a month, the dusty space became a lush green community garden where everyone gathered to share laughs and vegetables. Leo smiled, realizing that a single small effort can inspire a whole neighborhood to work together."
+      },
+      "blocks": [
+        {
+          "id": "block-0",
+          "blockType": "passage-display",
+          "label": "Read the Story",
+          "tutoringBrief": "Encourage the student to read the story carefully and pay attention to what Leo does and how the neighbors react.",
+          "transitionCue": "Now that you have read the story, let's check your understanding of what happened.",
+          "showAttribution": false
+        },
+        {
+          "id": "block-1",
+          "blockType": "comprehension-mcq",
+          "label": "Comprehension Check",
+          "tutoringBrief": "If the student struggles, remind them to look back at the second sentence of the story.",
+          "transitionCue": "Great job remembering the details. Now let's test a vocabulary word from the text.",
+          "question": "What did Leo first bring to the dusty lot after school every afternoon?",
+          "options": [
+            "Bright yellow sunflowers and sweet-smelling tomatoes",
+            "Shovels and seeds for the neighbors to use",
+            "Tiny green sprouts and heavy buckets of water",
+            "A large sign inviting people to the garden"
+          ],
+          "correctIndex": 2,
+          "explanation": "The text states that Leo carried specific items to the lot every afternoon to begin his project. Looking at the story, we can see he brought tiny green sprouts and heavy buckets of water."
+        },
+        {
+          "id": "block-2",
+          "blockType": "vocab-in-context",
+          "label": "Word in Context",
+          "tutoringBrief": "Guide the student to think about how Leo made the neighbors want to help out too.",
+          "transitionCue": "You understand the vocabulary! Now let's find the main message of the story.",
+          "word": "inspire",
+          "targetAnchor": {
+            "start": 665,
+            "end": 672
+          },
+          "meanings": [
+            "to breathe in or draw air into the lungs",
+            "to fill someone with the urge or ability to do or feel something",
+            "to officially sign a legal document or contract",
+            "to expire or reach an end date"
+          ],
+          "correctIndex": 1,
+          "explanation": "In the story, Leo's hard work makes the neighbors want to join in and help, which means he filled them with the desire to do something good. While 'inspire' can sometimes mean breathing in, the context here is about motivating people."
+        },
+        {
+          "id": "block-3",
+          "blockType": "inference-builder",
+          "label": "Find the Central Message",
+          "tutoringBrief": "Help the student compare the options. Remind them that a good summary captures the big point of the whole story, not just one small part.",
+          "transitionCue": "You have found the main idea! You are ready to wrap up your learning.",
+          "question": "What does Leo's garden show us about how people in a neighborhood react to change?",
+          "candidates": [
+            {
+              "inference": "Leo had to do all the heavy lifting by himself because his neighbors refused to help him plant the tomatoes.",
+              "rationale": ""
+            },
+            {
+              "inference": "Everyone in the apartment building always wanted to plant a garden but just forgot to buy the seeds.",
+              "rationale": ""
+            },
+            {
+              "inference": "A single person's small acts of kindness and hard work can spark big changes and bring a community together.",
+              "evidenceAnchor": {
+                "start": 639,
+                "end": 710
+              },
+              "rationale": ""
+            },
+            {
+              "inference": "People are usually too busy to care about empty dirt lots until someone else does the hard work for them.",
+              "rationale": ""
+            }
+          ],
+          "correctIndex": 2,
+          "explanation": "Candidate 1 is the best-supported inference because it captures the main theme of how Leo's initial individual effort inspired his neighbors to join in, transforming the dusty space together. Candidate 2 is incorrect because there is no evidence that the neighbors wanted to garden beforehand; they were initially ignoring the lot. Candidate 3 is too cynical and paints the neighbors in an overly negative light, whereas the story shows they were simply inspired by the sudden burst of color and Leo's hard work."
+        }
+      ],
+      "layout": "stack",
+      "narrativeArc": "Students first read a short story about Leo planting a community garden, then check their literal understanding with comprehension questions, and finally choose the single best sentence that captures the main message of the entire text."
+    }
+  },
+  "durationMs": 4640
+}

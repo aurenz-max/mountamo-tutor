@@ -1,0 +1,109 @@
+{
+  "lessonId": "lesson-08",
+  "curriculum": {
+    "subject": "LANGUAGE_ARTS",
+    "grade": "2",
+    "unitId": "LA003",
+    "skillId": "LA003-01",
+    "subskillId": "LA003-01-a",
+    "description": "Students listen to short audio passages and select the most important facts to summarize the core events. Focus: Identifying specific key details in informational and narrative text. Examples: The main goal of the scientist, the steps taken by the character, the final outcome of the experiment, the location of the event, the time period described, the reason for the character's choice, the central problem encountered, the solution reached. Constraints: The passage-studio will present a 100-word audio track followed by multiple-choice options to identify the top three key facts, ensuring all answers are directly supported by the text.",
+    "targetPrimitive": "passage-studio",
+    "targetEvalModes": null
+  },
+  "status": "authored; catalog-checked; each binding generator-probed once; not hydrated as a lesson; not runtime-tested",
+  "learnerAction": "Listen to a ~100-word passage and pick the three most important facts, leaving out true but minor ones.",
+  "estimatedMinutes": 13,
+  "manifest": {
+    "topic": "Which Facts Matter Most?",
+    "gradeLevel": "Grade 2",
+    "themeColor": "#2f6f5e",
+    "subject": "LANGUAGE_ARTS",
+    "objectiveBlocks": [
+      {
+        "objectiveId": "obj1",
+        "objectiveText": "Students listen to short audio passages and select the most important facts to summarize the core events. Focus: Identifying specific key details in informational and narrative text. Examples: The main goal of the scientist, the steps taken by the character, the final outcome of the experiment, the location of the event, the time period described, the reason for the character's choice, the central problem encountered, the solution reached. Constraints: The passage-studio will present a 100-word audio track followed by multiple-choice options to identify the top three key facts, ensuring all answers are directly supported by the text.",
+        "objectiveVerb": "identify",
+        "components": [
+          {
+            "componentId": "media-player",
+            "instanceId": "la003-01-a-1-media-player",
+            "title": "Listen for Details",
+            "intent": "Grade 2 narrated passage in 3 segments about one event (goal, problem, outcome); one detail question per segment.",
+            "config": {
+              "targetEvalMode": "listen_for_details",
+              "subject": "Language Arts",
+              "unitTitle": "Listening Comprehension and Oral Language"
+            }
+          },
+          {
+            "componentId": "story-talk",
+            "instanceId": "la003-01-a-2-story-talk",
+            "title": "Tell Me Who, What, Where",
+            "intent": "Grade 2 read-aloud stories; the child says the stated detail.",
+            "config": {
+              "targetEvalMode": "who_what_where",
+              "subject": "Language Arts",
+              "unitTitle": "Listening Comprehension and Oral Language"
+            }
+          }
+        ]
+      }
+    ],
+    "layout": [
+      {
+        "componentId": "media-player",
+        "instanceId": "la003-01-a-1-media-player",
+        "title": "Listen for Details",
+        "intent": "Grade 2 narrated passage in 3 segments about one event (goal, problem, outcome); one detail question per segment.",
+        "config": {
+          "targetEvalMode": "listen_for_details",
+          "subject": "Language Arts",
+          "unitTitle": "Listening Comprehension and Oral Language"
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "story-talk",
+        "instanceId": "la003-01-a-2-story-talk",
+        "title": "Tell Me Who, What, Where",
+        "intent": "Grade 2 read-aloud stories; the child says the stated detail.",
+        "config": {
+          "targetEvalMode": "who_what_where",
+          "subject": "Language Arts",
+          "unitTitle": "Listening Comprehension and Oral Language"
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      }
+    ]
+  },
+  "sequence": [
+    {
+      "step": 1,
+      "componentId": "media-player",
+      "evalMode": "listen_for_details",
+      "role": "supported practice"
+    },
+    {
+      "step": 2,
+      "componentId": "story-talk",
+      "evalMode": "who_what_where",
+      "role": "independent check (single detail)"
+    }
+  ],
+  "evidenceCriteria": [
+    "Recalls single stated details (both bindings).",
+    "Choosing the three MOST important facts is not elicited anywhere: no multi-select importance task exists; passage-studio evidence-highlight asks \"supports a claim\", not \"matters most\"."
+  ],
+  "coverageLimits": [
+    "media-player shows the script text during questions at grade 1+, so a listening detail can be looked up.",
+    "story-talk passages are about a quarter of the objective's 100 words."
+  ],
+  "recommendation": {
+    "kind": "new-mode",
+    "rationale": "Same new listening mode family as LA003-01-b: a \"key details\" task where the child keeps 3 important facts and leaves out 2-3 minor true ones. See brief 2."
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "id": "LA001-05-a",
+  "primitive": "read-aloud-studio",
+  "mode": "accuracy",
+  "requirement": "Students read short, phonetically controlled passages to demonstrate accurate word recognition. Focus: Building accuracy in reading grade-level decodable text. Examples: 'The cat sat on the mat.', 'Sam had a fast car.', 'The bird can sing.', 'I like to play with my toy.', 'The clouds are big.', 'Help the girl find her book.', 'They will reach the top.', 'The sun is hot today.' Constraints: Measure accuracy and word-reading time automatically within the decodable-reader.",
+  "params": {
+    "componentId": "read-aloud-studio",
+    "evalMode": "accuracy",
+    "topic": "Students read short, phonetically controlled passages to demonstrate accurate word recognition. Focus: Building accuracy in reading grade-level decodable text. Examples: 'The cat sat on the mat.', 'Sam had a fast car.', 'The bird can sing.', 'I like to play with my toy.', 'The clouds are big.', 'Help the girl find her book.', 'They will reach the top.', 'The sun is hot today.' Constraints: Measure accuracy and word-reading time automatically within the decodable-reader.",
+    "intent": "Students read short, phonetically controlled passages to demonstrate accurate word recognition. Focus: Building accuracy in reading grade-level decodable text. Examples: 'The cat sat on the mat.', 'Sam had a fast car.', 'The bird can sing.', 'I like to play with my toy.', 'The clouds are big.', 'Help the girl find her book.', 'They will reach the top.', 'The sun is hot today.' Constraints: Measure accuracy and word-reading time automatically within the decodable-reader.",
+    "grade": "2",
+    "gradeLevel": "Grade 2",
+    "difficulty": "medium"
+  },
+  "requestedAt": "2026-10-08T02:44:48.372Z",
+  "httpStatus": 200,
+  "response": {
+    "status": "fail",
+    "componentId": "read-aloud-studio",
+    "evalMode": "accuracy",
+    "duration": 1333,
+    "catalogMeta": {
+      "label": "Read It (Tier 2)",
+      "beta": 3,
+      "scaffoldingMode": 1,
+      "allowedChallengeTypes": [
+        "accuracy"
+      ],
+      "description": "Decode the printed line COLD and read it aloud, every word in order. Nothing speaks it first."
+    },
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No challenge array found (checked: challenges, words, instances, questions, items, problems). Data keys: [difficulty, intent, objectiveGrade, title, gradeLevel, fluencyFocus, lexileLevel, lines]",
+      "payloadBytes": 1001,
+      "longestStringLength": 474,
+      "longestStringPath": "intent",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "difficulty": "medium",
+      "intent": "Students read short, phonetically controlled passages to demonstrate accurate word recognition. Focus: Building accuracy in reading grade-level decodable text. Examples: 'The cat sat on the mat.', 'Sam had a fast car.', 'The bird can sing.', 'I like to play with my toy.', 'The clouds are big.', 'Help the girl find her book.', 'They will reach the top.', 'The sun is hot today.' Constraints: Measure accuracy and word-reading time automatically within the decodable-reader.",
+      "objectiveGrade": "2",
+      "title": "The Fast Car",
+      "gradeLevel": "2",
+      "fluencyFocus": "accuracy",
+      "lexileLevel": "400L",
+      "lines": [
+        {
+          "text": "Sam had a fast car.",
+          "phraseGroups": [
+            "Sam had a fast car."
+          ]
+        },
+        {
+          "text": "The cat sat on it.",
+          "phraseGroups": [
+            "The cat sat on it."
+          ]
+        },
+        {
+          "text": "They will reach the top.",
+          "phraseGroups": [
+            "They will reach the top."
+          ]
+        },
+        {
+          "text": "The sun is hot today.",
+          "phraseGroups": [
+            "The sun is hot today."
+          ]
+        },
+        {
+          "text": "Help the girl find books.",
+          "phraseGroups": [
+            "Help the girl find books."
+          ]
+        }
+      ]
+    }
+  },
+  "durationMs": 1419
+}

@@ -1,0 +1,194 @@
+{
+  "id": "LA001-02-b",
+  "primitive": "phonics-blender",
+  "mode": "cvce_blend",
+  "requirement": "Students blend sounds into complex words by combining initial and final consonant clusters in various word structures. Focus: Reading words with common initial and final consonant blends like bl, st, mp, and nd. Examples: blue, stop, lamp, sand, blow, star, jump, wind, black, fast. Constraints: Use visual cues to identify the blend segment separately from the vowel-consonant core in the phonics-blender.",
+  "params": {
+    "componentId": "phonics-blender",
+    "evalMode": "cvce_blend",
+    "topic": "Students blend sounds into complex words by combining initial and final consonant clusters in various word structures. Focus: Reading words with common initial and final consonant blends like bl, st, mp, and nd. Examples: blue, stop, lamp, sand, blow, star, jump, wind, black, fast. Constraints: Use visual cues to identify the blend segment separately from the vowel-consonant core in the phonics-blender.",
+    "intent": "Students blend sounds into complex words by combining initial and final consonant clusters in various word structures. Focus: Reading words with common initial and final consonant blends like bl, st, mp, and nd. Examples: blue, stop, lamp, sand, blow, star, jump, wind, black, fast. Constraints: Use visual cues to identify the blend segment separately from the vowel-consonant core in the phonics-blender.",
+    "grade": "2",
+    "gradeLevel": "Grade 2",
+    "difficulty": "medium"
+  },
+  "requestedAt": "2026-10-08T02:45:05.521Z",
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "phonics-blender",
+    "evalMode": "cvce_blend",
+    "duration": 2624,
+    "catalogMeta": {
+      "label": "CVCE & Blends (Tier 2)",
+      "beta": 2.5,
+      "scaffoldingMode": 2,
+      "allowedChallengeTypes": [
+        "cvce",
+        "blend"
+      ],
+      "description": "Silent-e and consonant blends."
+    },
+    "validation": {
+      "challengeCount": 5,
+      "typesFound": [],
+      "payloadBytes": 1584,
+      "longestStringLength": 45,
+      "longestStringPath": "title",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Mastering Consonant Blends and Silent-E Words",
+      "gradeLevel": "2",
+      "patternType": "cvce",
+      "words": [
+        {
+          "id": "w1",
+          "targetWord": "cake",
+          "phonemes": [
+            {
+              "id": "w1_p1",
+              "sound": "/k/",
+              "letters": "c"
+            },
+            {
+              "id": "w1_p2",
+              "sound": "/ā/",
+              "letters": "a"
+            },
+            {
+              "id": "w1_p3",
+              "sound": "/k/",
+              "letters": "k"
+            },
+            {
+              "id": "w1_p4",
+              "sound": "//",
+              "letters": "e"
+            }
+          ],
+          "emoji": "🎂",
+          "imageDescription": "a sweet frosted birthday cake"
+        },
+        {
+          "id": "w2",
+          "targetWord": "bike",
+          "phonemes": [
+            {
+              "id": "w2_p1",
+              "sound": "/b/",
+              "letters": "b"
+            },
+            {
+              "id": "w2_p2",
+              "sound": "/ī/",
+              "letters": "i"
+            },
+            {
+              "id": "w2_p3",
+              "sound": "/k/",
+              "letters": "k"
+            },
+            {
+              "id": "w2_p4",
+              "sound": "//",
+              "letters": "e"
+            }
+          ],
+          "emoji": "🚲",
+          "imageDescription": "a bicycle with two wheels"
+        },
+        {
+          "id": "w3",
+          "targetWord": "bone",
+          "phonemes": [
+            {
+              "id": "w3_p1",
+              "sound": "/b/",
+              "letters": "b"
+            },
+            {
+              "id": "w3_p2",
+              "sound": "/ō/",
+              "letters": "o"
+            },
+            {
+              "id": "w3_p3",
+              "sound": "/n/",
+              "letters": "n"
+            },
+            {
+              "id": "w3_p4",
+              "sound": "//",
+              "letters": "e"
+            }
+          ],
+          "emoji": "🦴",
+          "imageDescription": "a white dog bone"
+        },
+        {
+          "id": "w4",
+          "targetWord": "cute",
+          "phonemes": [
+            {
+              "id": "w4_p1",
+              "sound": "/k/",
+              "letters": "c"
+            },
+            {
+              "id": "w4_p2",
+              "sound": "/ū/",
+              "letters": "u"
+            },
+            {
+              "id": "w4_p3",
+              "sound": "/t/",
+              "letters": "t"
+            },
+            {
+              "id": "w4_p4",
+              "sound": "//",
+              "letters": "e"
+            }
+          ],
+          "emoji": "🐰",
+          "imageDescription": "a cute little bunny"
+        },
+        {
+          "id": "w5",
+          "targetWord": "nine",
+          "phonemes": [
+            {
+              "id": "w5_p1",
+              "sound": "/n/",
+              "letters": "n"
+            },
+            {
+              "id": "w5_p2",
+              "sound": "/ī/",
+              "letters": "i"
+            },
+            {
+              "id": "w5_p3",
+              "sound": "/n/",
+              "letters": "n"
+            },
+            {
+              "id": "w5_p4",
+              "sound": "//",
+              "letters": "e"
+            }
+          ],
+          "emoji": "9️⃣",
+          "imageDescription": "the number nine"
+        }
+      ],
+      "supportTier": "medium",
+      "showBlendPreview": "word",
+      "showSlotCount": true,
+      "showTileLetters": true,
+      "nameTargetPhonemes": true
+    }
+  },
+  "durationMs": 2692
+}

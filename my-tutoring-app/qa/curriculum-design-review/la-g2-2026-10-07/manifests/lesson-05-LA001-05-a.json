@@ -1,0 +1,142 @@
+{
+  "lessonId": "lesson-05",
+  "curriculum": {
+    "subject": "LANGUAGE_ARTS",
+    "grade": "2",
+    "unitId": "LA001",
+    "skillId": "LA001-05",
+    "subskillId": "LA001-05-a",
+    "description": "Students read short, phonetically controlled passages to demonstrate accurate word recognition. Focus: Building accuracy in reading grade-level decodable text. Examples: 'The cat sat on the mat.', 'Sam had a fast car.', 'The bird can sing.', 'I like to play with my toy.', 'The clouds are big.', 'Help the girl find her book.', 'They will reach the top.', 'The sun is hot today.' Constraints: Measure accuracy and word-reading time automatically within the decodable-reader.",
+    "targetPrimitive": "decodable-reader",
+    "targetEvalModes": null
+  },
+  "status": "authored; catalog-checked; each binding generator-probed once; not hydrated as a lesson; not runtime-tested",
+  "learnerAction": "Read a short decodable passage aloud with accurate word recognition.",
+  "estimatedMinutes": 15,
+  "manifest": {
+    "topic": "Read the Story Accurately",
+    "gradeLevel": "Grade 2",
+    "themeColor": "#2f6f5e",
+    "subject": "LANGUAGE_ARTS",
+    "objectiveBlocks": [
+      {
+        "objectiveId": "obj1",
+        "objectiveText": "Students read short, phonetically controlled passages to demonstrate accurate word recognition. Focus: Building accuracy in reading grade-level decodable text. Examples: 'The cat sat on the mat.', 'Sam had a fast car.', 'The bird can sing.', 'I like to play with my toy.', 'The clouds are big.', 'Help the girl find her book.', 'They will reach the top.', 'The sun is hot today.' Constraints: Measure accuracy and word-reading time automatically within the decodable-reader.",
+        "objectiveVerb": "apply",
+        "components": [
+          {
+            "componentId": "di-sentence-reading",
+            "instanceId": "la001-05-a-1-di-sentence-reading",
+            "title": "Warm-Up Sentences",
+            "intent": "Grade 2 decodable sentences with vowel teams and blends, read alone after a model.",
+            "config": {
+              "targetEvalMode": "read_sentence",
+              "subject": "Language Arts",
+              "unitTitle": "Reading Foundations"
+            }
+          },
+          {
+            "componentId": "decodable-reader",
+            "instanceId": "la001-05-a-2-decodable-reader",
+            "title": "Read the Story",
+            "intent": "Grade 2 decodable story of 6-8 connected sentences about ONE event; every sentence ends with punctuation; then one literal question.",
+            "config": {
+              "targetEvalMode": "literal",
+              "subject": "Language Arts",
+              "unitTitle": "Reading Foundations"
+            }
+          },
+          {
+            "componentId": "read-aloud-studio",
+            "instanceId": "la001-05-a-3-read-aloud-studio",
+            "title": "Cold Read a New Passage",
+            "intent": "Grade 2 connected 5-line passage the child has not seen; not the curriculum example sentences.",
+            "config": {
+              "targetEvalMode": "accuracy",
+              "subject": "Language Arts",
+              "unitTitle": "Reading Foundations"
+            }
+          }
+        ]
+      }
+    ],
+    "layout": [
+      {
+        "componentId": "di-sentence-reading",
+        "instanceId": "la001-05-a-1-di-sentence-reading",
+        "title": "Warm-Up Sentences",
+        "intent": "Grade 2 decodable sentences with vowel teams and blends, read alone after a model.",
+        "config": {
+          "targetEvalMode": "read_sentence",
+          "subject": "Language Arts",
+          "unitTitle": "Reading Foundations"
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "decodable-reader",
+        "instanceId": "la001-05-a-2-decodable-reader",
+        "title": "Read the Story",
+        "intent": "Grade 2 decodable story of 6-8 connected sentences about ONE event; every sentence ends with punctuation; then one literal question.",
+        "config": {
+          "targetEvalMode": "literal",
+          "subject": "Language Arts",
+          "unitTitle": "Reading Foundations"
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "read-aloud-studio",
+        "instanceId": "la001-05-a-3-read-aloud-studio",
+        "title": "Cold Read a New Passage",
+        "intent": "Grade 2 connected 5-line passage the child has not seen; not the curriculum example sentences.",
+        "config": {
+          "targetEvalMode": "accuracy",
+          "subject": "Language Arts",
+          "unitTitle": "Reading Foundations"
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      }
+    ]
+  },
+  "sequence": [
+    {
+      "step": 1,
+      "componentId": "di-sentence-reading",
+      "evalMode": "read_sentence",
+      "role": "warm-up"
+    },
+    {
+      "step": 2,
+      "componentId": "decodable-reader",
+      "evalMode": "literal",
+      "role": "main practice + mastery evidence"
+    },
+    {
+      "step": 3,
+      "componentId": "read-aloud-studio",
+      "evalMode": "accuracy",
+      "role": "fresh review"
+    }
+  ],
+  "evidenceCriteria": [
+    "Reads each sentence of a connected decodable passage cold, judged word by word (decodable-reader).",
+    "Reading time / rate is not measured anywhere; the old WPM stat was removed as fake (ReadAloudStudio.tsx:12-18)."
+  ],
+  "coverageLimits": [
+    "Every judged read is capped at 8 words per utterance (benched ASR limit).",
+    "decodable-reader draw: story did not hold together, one sentence missing its period, phonics tags wrong.",
+    "read-aloud-studio draw: copied the curriculum example sentences verbatim, not one passage.",
+    "di-sentence-reading draw ignored grade 2 and gave kindergarten CVC sentences."
+  ],
+  "recommendation": {
+    "kind": "repair",
+    "rationale": "Reuse decodable-reader as the honest binding; repair passage coherence and the copy-the-examples habit (DR-G2-1, RAS-2). The time constraint stays unmet on purpose: the project removed fake WPM, and a real rate needs measured audio timing."
+  }
+}

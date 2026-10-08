@@ -1,0 +1,186 @@
+{
+  "id": "LA003-01-a",
+  "primitive": "story-talk",
+  "mode": "who_what_where",
+  "requirement": "Students listen to short audio passages and select the most important facts to summarize the core events. Focus: Identifying specific key details in informational and narrative text. Examples: The main goal of the scientist, the steps taken by the character, the final outcome of the experiment, the location of the event, the time period described, the reason for the character's choice, the central problem encountered, the solution reached. Constraints: The passage-studio will present a 100-word audio track followed by multiple-choice options to identify the top three key facts, ensuring all answers are directly supported by the text.",
+  "params": {
+    "componentId": "story-talk",
+    "evalMode": "who_what_where",
+    "topic": "Students listen to short audio passages and select the most important facts to summarize the core events. Focus: Identifying specific key details in informational and narrative text. Examples: The main goal of the scientist, the steps taken by the character, the final outcome of the experiment, the location of the event, the time period described, the reason for the character's choice, the central problem encountered, the solution reached. Constraints: The passage-studio will present a 100-word audio track followed by multiple-choice options to identify the top three key facts, ensuring all answers are directly supported by the text.",
+    "intent": "Students listen to short audio passages and select the most important facts to summarize the core events. Focus: Identifying specific key details in informational and narrative text. Examples: The main goal of the scientist, the steps taken by the character, the final outcome of the experiment, the location of the event, the time period described, the reason for the character's choice, the central problem encountered, the solution reached. Constraints: The passage-studio will present a 100-word audio track followed by multiple-choice options to identify the top three key facts, ensuring all answers are directly supported by the text.",
+    "grade": "2",
+    "gradeLevel": "Grade 2",
+    "difficulty": "medium"
+  },
+  "requestedAt": "2026-10-08T02:45:01.817Z",
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "story-talk",
+    "evalMode": "who_what_where",
+    "duration": 3629,
+    "catalogMeta": {
+      "label": "Listen & Tell (Tier 1)",
+      "beta": 2.5,
+      "scaffoldingMode": 2,
+      "allowedChallengeTypes": [
+        "who_what_where"
+      ],
+      "description": "Literal recall — hear a story, then SAY the who/what/where detail the story stated. The guess floor is gone with the picture menu; β raised for unaided production."
+    },
+    "validation": {
+      "challengeCount": 5,
+      "typesFound": [
+        "who_what_where"
+      ],
+      "payloadBytes": 2505,
+      "longestStringLength": 176,
+      "longestStringPath": "gradeLevel",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Story Time in the Lab and Forest!",
+      "description": "Listen to a short story, then tell your tutor the answer out loud.",
+      "challengeType": "who_what_where",
+      "challenges": [
+        {
+          "id": "story-talk-1",
+          "type": "who_what_where",
+          "storyTitle": "The Forest Hike",
+          "story": "Leo went on a long walk to explore the forest. He walked down a narrow dirt trail. He stopped to look at a tall tree.",
+          "question": "Where did Leo go on his walk?",
+          "answer": "forest",
+          "answerEmoji": "🌲",
+          "options": [
+            {
+              "word": "beach",
+              "emoji": "🏖️"
+            },
+            {
+              "word": "store",
+              "emoji": "🛒"
+            },
+            {
+              "word": "forest",
+              "emoji": "🌲"
+            },
+            {
+              "word": "kitchen",
+              "emoji": "🍳"
+            }
+          ]
+        },
+        {
+          "id": "story-talk-2",
+          "type": "who_what_where",
+          "storyTitle": "The Plant",
+          "story": "The scientist needed a plant for her experiment. She walked outside to the garden. She carefully dug up a tiny green fern.",
+          "question": "What did the scientist need for her experiment?",
+          "answer": "plant",
+          "answerEmoji": "🌱",
+          "options": [
+            {
+              "word": "toy",
+              "emoji": "🧸"
+            },
+            {
+              "word": "rock",
+              "emoji": "🪨"
+            },
+            {
+              "word": "plant",
+              "emoji": "🌱"
+            },
+            {
+              "word": "shoe",
+              "emoji": "👟"
+            }
+          ]
+        },
+        {
+          "id": "story-talk-3",
+          "type": "who_what_where",
+          "storyTitle": "The Turtle's Goal",
+          "story": "Sammy the turtle wanted to cross the big road. He walked very slowly in the warm afternoon sun. He finally reached the grass.",
+          "question": "Who wanted to cross the big road?",
+          "answer": "turtle",
+          "answerEmoji": "🐢",
+          "options": [
+            {
+              "word": "monkey",
+              "emoji": "🐵"
+            },
+            {
+              "word": "bunny",
+              "emoji": "🐰"
+            },
+            {
+              "word": "duck",
+              "emoji": "🦆"
+            },
+            {
+              "word": "turtle",
+              "emoji": "🐢"
+            }
+          ]
+        },
+        {
+          "id": "story-talk-4",
+          "type": "who_what_where",
+          "storyTitle": "The Science Lab",
+          "story": "Dr. Maya worked hard inside her lab all day. She poured blue liquid into a glass tube. The liquid started to bubble and fizz.",
+          "question": "Where did Dr. Maya work all day?",
+          "answer": "lab",
+          "answerEmoji": "🧪",
+          "options": [
+            {
+              "word": "pool",
+              "emoji": "🏊"
+            },
+            {
+              "word": "park",
+              "emoji": "🛝"
+            },
+            {
+              "word": "farm",
+              "emoji": "🚜"
+            },
+            {
+              "word": "lab",
+              "emoji": "🧪"
+            }
+          ]
+        },
+        {
+          "id": "story-talk-5",
+          "type": "who_what_where",
+          "storyTitle": "The Park Bench",
+          "story": "Ben felt tired after running around the park. He sat down on a wooden bench to rest his legs. He drank some cool water from his cup.",
+          "question": "Where did Ben sit down to rest?",
+          "answer": "bench",
+          "answerEmoji": "🪑",
+          "options": [
+            {
+              "word": "bench",
+              "emoji": "🪑"
+            },
+            {
+              "word": "sandbox",
+              "emoji": "🏖️"
+            },
+            {
+              "word": "swing",
+              "emoji": "🎠"
+            },
+            {
+              "word": "slide",
+              "emoji": "🛝"
+            }
+          ]
+        }
+      ],
+      "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+    }
+  },
+  "durationMs": 3704
+}

@@ -1,0 +1,88 @@
+{
+  "id": "LA001-05-b",
+  "primitive": "read-aloud-studio",
+  "mode": "dialogue",
+  "requirement": "Students record themselves reading aloud, practicing appropriate pacing, intonation, and expression. Focus: Enhancing oral reading expression and rate. Examples: Reading a dialogue between characters, reading an enthusiastic informative paragraph, reading a short poem, reading an empathetic narrative, reading a persuasive sentence, reading a list of exclamatory remarks. Constraints: Use audio analysis in the read-aloud-studio to compare against a model reading.",
+  "params": {
+    "componentId": "read-aloud-studio",
+    "evalMode": "dialogue",
+    "topic": "Students record themselves reading aloud, practicing appropriate pacing, intonation, and expression. Focus: Enhancing oral reading expression and rate. Examples: Reading a dialogue between characters, reading an enthusiastic informative paragraph, reading a short poem, reading an empathetic narrative, reading a persuasive sentence, reading a list of exclamatory remarks. Constraints: Use audio analysis in the read-aloud-studio to compare against a model reading.",
+    "intent": "Students record themselves reading aloud, practicing appropriate pacing, intonation, and expression. Focus: Enhancing oral reading expression and rate. Examples: Reading a dialogue between characters, reading an enthusiastic informative paragraph, reading a short poem, reading an empathetic narrative, reading a persuasive sentence, reading a list of exclamatory remarks. Constraints: Use audio analysis in the read-aloud-studio to compare against a model reading.",
+    "grade": "2",
+    "gradeLevel": "Grade 2",
+    "difficulty": "medium"
+  },
+  "requestedAt": "2026-10-08T02:44:50.710Z",
+  "httpStatus": 200,
+  "response": {
+    "status": "fail",
+    "componentId": "read-aloud-studio",
+    "evalMode": "dialogue",
+    "duration": 1387,
+    "catalogMeta": {
+      "label": "Character Voice (Tier 4)",
+      "beta": 5.5,
+      "scaffoldingMode": 4,
+      "allowedChallengeTypes": [
+        "dialogue"
+      ],
+      "description": "The tutor models one character's line in that character's voice; the child reads it back their way."
+    },
+    "validation": {
+      "challengeCount": 0,
+      "typesFound": [],
+      "error": "No challenge array found (checked: challenges, words, instances, questions, items, problems). Data keys: [difficulty, intent, objectiveGrade, title, gradeLevel, fluencyFocus, lexileLevel, lines]",
+      "payloadBytes": 1164,
+      "longestStringLength": 465,
+      "longestStringPath": "intent",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "difficulty": "medium",
+      "intent": "Students record themselves reading aloud, practicing appropriate pacing, intonation, and expression. Focus: Enhancing oral reading expression and rate. Examples: Reading a dialogue between characters, reading an enthusiastic informative paragraph, reading a short poem, reading an empathetic narrative, reading a persuasive sentence, reading a list of exclamatory remarks. Constraints: Use audio analysis in the read-aloud-studio to compare against a model reading.",
+      "objectiveGrade": "2",
+      "title": "The Big Play",
+      "gradeLevel": "2",
+      "fluencyFocus": "dialogue",
+      "lexileLevel": "400L",
+      "lines": [
+        {
+          "text": "Look at my shiny silver shield",
+          "speaker": "Leo",
+          "phraseGroups": [
+            "Look at my shiny silver shield"
+          ]
+        },
+        {
+          "text": "That costume looks truly amazing today",
+          "speaker": "Max",
+          "phraseGroups": [
+            "That costume looks truly amazing today"
+          ]
+        },
+        {
+          "text": "I will protect the castle gates",
+          "speaker": "Leo",
+          "phraseGroups": [
+            "I will protect the castle gates"
+          ]
+        },
+        {
+          "text": "Then I shall help you defend",
+          "speaker": "Max",
+          "phraseGroups": [
+            "Then I shall help you defend"
+          ]
+        },
+        {
+          "text": "We make a very strong team",
+          "speaker": "Leo",
+          "phraseGroups": [
+            "We make a very strong team"
+          ]
+        }
+      ]
+    }
+  },
+  "durationMs": 1470
+}

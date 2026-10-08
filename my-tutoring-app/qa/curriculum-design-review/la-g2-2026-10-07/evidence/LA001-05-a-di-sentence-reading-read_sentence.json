@@ -1,0 +1,112 @@
+{
+  "id": "LA001-05-a",
+  "primitive": "di-sentence-reading",
+  "mode": "read_sentence",
+  "requirement": "Students read short, phonetically controlled passages to demonstrate accurate word recognition. Focus: Building accuracy in reading grade-level decodable text. Examples: 'The cat sat on the mat.', 'Sam had a fast car.', 'The bird can sing.', 'I like to play with my toy.', 'The clouds are big.', 'Help the girl find her book.', 'They will reach the top.', 'The sun is hot today.' Constraints: Measure accuracy and word-reading time automatically within the decodable-reader.",
+  "params": {
+    "componentId": "di-sentence-reading",
+    "evalMode": "read_sentence",
+    "topic": "Students read short, phonetically controlled passages to demonstrate accurate word recognition. Focus: Building accuracy in reading grade-level decodable text. Examples: 'The cat sat on the mat.', 'Sam had a fast car.', 'The bird can sing.', 'I like to play with my toy.', 'The clouds are big.', 'Help the girl find her book.', 'They will reach the top.', 'The sun is hot today.' Constraints: Measure accuracy and word-reading time automatically within the decodable-reader.",
+    "intent": "Students read short, phonetically controlled passages to demonstrate accurate word recognition. Focus: Building accuracy in reading grade-level decodable text. Examples: 'The cat sat on the mat.', 'Sam had a fast car.', 'The bird can sing.', 'I like to play with my toy.', 'The clouds are big.', 'Help the girl find her book.', 'They will reach the top.', 'The sun is hot today.' Constraints: Measure accuracy and word-reading time automatically within the decodable-reader.",
+    "grade": "2",
+    "gradeLevel": "Grade 2",
+    "difficulty": "medium"
+  },
+  "requestedAt": "2026-10-08T02:44:49.792Z",
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "di-sentence-reading",
+    "evalMode": "read_sentence",
+    "duration": 832,
+    "catalogMeta": {
+      "label": "Read a Sentence",
+      "beta": 3,
+      "scaffoldingMode": 3,
+      "allowedChallengeTypes": [
+        "read_sentence"
+      ],
+      "description": "See one printed short sentence, read it aloud — every word, in order. Modeled and read together first, then read alone and judged for accuracy. The base skill over mixed vocabulary."
+    },
+    "validation": {
+      "challengeCount": 4,
+      "typesFound": [
+        "read_sentence"
+      ],
+      "payloadBytes": 1234,
+      "longestStringLength": 176,
+      "longestStringPath": "gradeLevel",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Reading Practice",
+      "description": "Let us practice reading some sentences together out loud!",
+      "challengeType": "read_sentence",
+      "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding.",
+      "challenges": [
+        {
+          "id": "disr-1-red-cup",
+          "challengeType": "read_sentence",
+          "text": "Sam has a red cup.",
+          "wordCount": 5,
+          "vowels": [
+            "a",
+            "e",
+            "u"
+          ],
+          "emoji": "🥤",
+          "asrAliases": [
+            "sam has a red cup"
+          ],
+          "supportTier": "medium"
+        },
+        {
+          "id": "disr-2-ben-pen",
+          "challengeType": "read_sentence",
+          "text": "Ben has a red pen.",
+          "wordCount": 5,
+          "vowels": [
+            "e"
+          ],
+          "emoji": "🖊️",
+          "asrAliases": [
+            "ben has a red pen"
+          ],
+          "supportTier": "medium"
+        },
+        {
+          "id": "disr-3-dog-sun",
+          "challengeType": "read_sentence",
+          "text": "The dog is in the sun.",
+          "wordCount": 6,
+          "vowels": [
+            "o",
+            "u"
+          ],
+          "emoji": "🐶",
+          "asrAliases": [
+            "the dog is in the sun",
+            "the dog is in the son"
+          ],
+          "supportTier": "medium"
+        },
+        {
+          "id": "disr-4-big-pig",
+          "challengeType": "read_sentence",
+          "text": "I can see the big pig.",
+          "wordCount": 6,
+          "vowels": [
+            "i"
+          ],
+          "emoji": "🐷",
+          "asrAliases": [
+            "i can see the big pig"
+          ],
+          "supportTier": "medium"
+        }
+      ],
+      "sentences": "Sam has a red cup. | Ben has a red pen. | The dog is in the sun. | I can see the big pig."
+    }
+  },
+  "durationMs": 917
+}

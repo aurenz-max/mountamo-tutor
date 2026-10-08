@@ -1,0 +1,78 @@
+{
+  "id": "LA001-03-c",
+  "primitive": "word-workout",
+  "mode": "read_inflected",
+  "requirement": "Students analyze words with affixes by identifying and attaching common prefixes and suffixes to base words. Focus: Decoding words using knowledge of prefixes (un-, re-, pre-) and suffixes (-ed, -ing, -ly). Examples: unhappy, rewrite, preview, jumped, playing, quickly, redo, dislike, walker, helpful. Constraints: Highlight the base word and affix in different colors in the word-builder.",
+  "params": {
+    "componentId": "word-workout",
+    "evalMode": "read_inflected",
+    "topic": "Students analyze words with affixes by identifying and attaching common prefixes and suffixes to base words. Focus: Decoding words using knowledge of prefixes (un-, re-, pre-) and suffixes (-ed, -ing, -ly). Examples: unhappy, rewrite, preview, jumped, playing, quickly, redo, dislike, walker, helpful. Constraints: Highlight the base word and affix in different colors in the word-builder.",
+    "intent": "Students analyze words with affixes by identifying and attaching common prefixes and suffixes to base words. Focus: Decoding words using knowledge of prefixes (un-, re-, pre-) and suffixes (-ed, -ing, -ly). Examples: unhappy, rewrite, preview, jumped, playing, quickly, redo, dislike, walker, helpful. Constraints: Highlight the base word and affix in different colors in the word-builder.",
+    "grade": "2",
+    "gradeLevel": "Grade 2",
+    "difficulty": "medium"
+  },
+  "requestedAt": "2026-10-08T02:44:40.871Z",
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "word-workout",
+    "evalMode": "read_inflected",
+    "duration": 970,
+    "catalogMeta": {
+      "label": "Read Common Endings",
+      "beta": 4.5,
+      "scaffoldingMode": 4,
+      "allowedChallengeTypes": [
+        "inflected-word"
+      ],
+      "description": "Cold-read code-bounded early words with -s, -ing, and -ed. After the attempt the tutor models base + ending; a new word checks transfer. A separate meaning turn appears only for an explicit comprehension objective."
+    },
+    "validation": {
+      "challengeCount": 4,
+      "typesFound": [
+        "inflected-word"
+      ],
+      "payloadBytes": 766,
+      "longestStringLength": 403,
+      "longestStringPath": "title",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Word Workout: Students analyze words with affixes by identifying and attaching common prefixes and suffixes to base words. Focus: Decoding words using knowledge of prefixes (un-, re-, pre-) and suffixes (-ed, -ing, -ly). Examples: unhappy, rewrite, preview, jumped, playing, quickly, redo, dislike, walker, helpful. Constraints: Highlight the base word and affix in different colors in the word-builder.",
+      "mode": "inflected-word",
+      "masteredVowels": [
+        "a",
+        "e",
+        "i",
+        "o",
+        "u"
+      ],
+      "gradeLevel": "2",
+      "supportTier": "medium",
+      "challenges": [
+        {
+          "id": "c1",
+          "mode": "inflected-word",
+          "targetWord": "mixing"
+        },
+        {
+          "id": "c2",
+          "mode": "inflected-word",
+          "targetWord": "jumping"
+        },
+        {
+          "id": "c3",
+          "mode": "inflected-word",
+          "targetWord": "jumped"
+        },
+        {
+          "id": "c4",
+          "mode": "inflected-word",
+          "targetWord": "rested"
+        }
+      ]
+    }
+  },
+  "durationMs": 1040
+}

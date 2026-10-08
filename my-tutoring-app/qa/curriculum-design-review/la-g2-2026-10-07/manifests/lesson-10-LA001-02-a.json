@@ -1,0 +1,108 @@
+{
+  "lessonId": "lesson-10",
+  "curriculum": {
+    "subject": "LANGUAGE_ARTS",
+    "grade": "2",
+    "unitId": "LA001",
+    "skillId": "LA001-02",
+    "subskillId": "LA001-02-a",
+    "description": "Students practice reading words that begin or end with consonant digraphs by blending sounds together to form recognizable words. Focus: Decoding words featuring the sh, ch, th, wh, and ph consonant digraphs. Examples: ship, chop, thin, whip, phone, dash, rich, path, moth, graph. Constraints: Isolate the digraph sound at the start of words first, then advance to final position usage in the phonics-blender.",
+    "targetPrimitive": "phonics-blender",
+    "targetEvalModes": null
+  },
+  "status": "authored; catalog-checked; each binding generator-probed once; not hydrated as a lesson; not runtime-tested",
+  "learnerAction": "Blend words with sh, ch, th, wh, ph at the start, then at the end.",
+  "estimatedMinutes": 12,
+  "manifest": {
+    "topic": "Two Letters, One Sound",
+    "gradeLevel": "Grade 2",
+    "themeColor": "#2f6f5e",
+    "subject": "LANGUAGE_ARTS",
+    "objectiveBlocks": [
+      {
+        "objectiveId": "obj1",
+        "objectiveText": "Students practice reading words that begin or end with consonant digraphs by blending sounds together to form recognizable words. Focus: Decoding words featuring the sh, ch, th, wh, and ph consonant digraphs. Examples: ship, chop, thin, whip, phone, dash, rich, path, moth, graph. Constraints: Isolate the digraph sound at the start of words first, then advance to final position usage in the phonics-blender.",
+        "objectiveVerb": "apply",
+        "components": [
+          {
+            "componentId": "phonics-blender",
+            "instanceId": "la001-02-a-1-phonics-blender",
+            "title": "Digraphs at the Start",
+            "intent": "Grade 2 words with sh, ch, th, wh, ph at the START (ship, chop, thin, whip, phone).",
+            "config": {
+              "targetEvalMode": "digraph",
+              "subject": "Language Arts",
+              "unitTitle": "Reading Foundations"
+            }
+          },
+          {
+            "componentId": "phonics-blender",
+            "instanceId": "la001-02-a-2-phonics-blender",
+            "title": "Digraphs at the End",
+            "intent": "Grade 2 words with sh, ch, th, ph at the END (dash, rich, path, moth, graph).",
+            "config": {
+              "targetEvalMode": "digraph",
+              "subject": "Language Arts",
+              "unitTitle": "Reading Foundations"
+            }
+          }
+        ]
+      }
+    ],
+    "layout": [
+      {
+        "componentId": "phonics-blender",
+        "instanceId": "la001-02-a-1-phonics-blender",
+        "title": "Digraphs at the Start",
+        "intent": "Grade 2 words with sh, ch, th, wh, ph at the START (ship, chop, thin, whip, phone).",
+        "config": {
+          "targetEvalMode": "digraph",
+          "subject": "Language Arts",
+          "unitTitle": "Reading Foundations"
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "phonics-blender",
+        "instanceId": "la001-02-a-2-phonics-blender",
+        "title": "Digraphs at the End",
+        "intent": "Grade 2 words with sh, ch, th, ph at the END (dash, rich, path, moth, graph).",
+        "config": {
+          "targetEvalMode": "digraph",
+          "subject": "Language Arts",
+          "unitTitle": "Reading Foundations"
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      }
+    ]
+  },
+  "sequence": [
+    {
+      "step": 1,
+      "componentId": "phonics-blender",
+      "evalMode": "digraph",
+      "role": "introduction + practice"
+    },
+    {
+      "step": 2,
+      "componentId": "phonics-blender",
+      "evalMode": "digraph",
+      "role": "practice + fresh review"
+    }
+  ],
+  "evidenceCriteria": [
+    "Says each digraph word aloud from tiles that show the digraph as one tile."
+  ],
+  "coverageLimits": [
+    "The prompt names sh, ch, th, wh only; ph is never mentioned and wh did not appear in the probe.",
+    "Position order (initial first) is set by the two intents above, not by the mode."
+  ],
+  "recommendation": {
+    "kind": "reuse",
+    "rationale": "Reuse. Adding ph to the digraph prompt is a one-line generator change worth doing alongside PHB-1."
+  }
+}

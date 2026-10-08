@@ -1,0 +1,141 @@
+{
+  "lessonId": "lesson-03",
+  "curriculum": {
+    "subject": "LANGUAGE_ARTS",
+    "grade": "2",
+    "unitId": "LA001",
+    "skillId": "LA001-03",
+    "subskillId": "LA001-03-c",
+    "description": "Students analyze words with affixes by identifying and attaching common prefixes and suffixes to base words. Focus: Decoding words using knowledge of prefixes (un-, re-, pre-) and suffixes (-ed, -ing, -ly). Examples: unhappy, rewrite, preview, jumped, playing, quickly, redo, dislike, walker, helpful. Constraints: Highlight the base word and affix in different colors in the word-builder.",
+    "targetPrimitive": "word-builder",
+    "targetEvalModes": null
+  },
+  "status": "authored; catalog-checked; each binding generator-probed once; not hydrated as a lesson; not runtime-tested",
+  "learnerAction": "Read and build words from a base word plus one prefix or suffix, and say what the affix changes.",
+  "estimatedMinutes": 15,
+  "manifest": {
+    "topic": "Word Parts: un-, re-, pre-, -ed, -ing, -ly",
+    "gradeLevel": "Grade 2",
+    "themeColor": "#2f6f5e",
+    "subject": "LANGUAGE_ARTS",
+    "objectiveBlocks": [
+      {
+        "objectiveId": "obj1",
+        "objectiveText": "Students analyze words with affixes by identifying and attaching common prefixes and suffixes to base words. Focus: Decoding words using knowledge of prefixes (un-, re-, pre-) and suffixes (-ed, -ing, -ly). Examples: unhappy, rewrite, preview, jumped, playing, quickly, redo, dislike, walker, helpful. Constraints: Highlight the base word and affix in different colors in the word-builder.",
+        "objectiveVerb": "apply",
+        "components": [
+          {
+            "componentId": "word-workout",
+            "instanceId": "la001-03-c-1-word-workout",
+            "title": "Read Words With Endings",
+            "intent": "Grade 2. Cold-read base words with -ing and -ed; after each read the tutor shows base + ending.",
+            "config": {
+              "targetEvalMode": "read_inflected",
+              "subject": "Language Arts",
+              "unitTitle": "Reading Foundations"
+            }
+          },
+          {
+            "componentId": "word-builder",
+            "instanceId": "la001-03-c-2-word-builder",
+            "title": "Build a Word From Its Meaning",
+            "intent": "Grade 2 prefixes un-, re-, pre- and suffixes -ed, -ing, -ly on familiar base words with no spelling change (unhappy, redo, preview, jumped, playing, quickly).",
+            "config": {
+              "targetEvalMode": "simple_affix",
+              "subject": "Language Arts",
+              "unitTitle": "Reading Foundations"
+            }
+          },
+          {
+            "componentId": "word-builder",
+            "instanceId": "la001-03-c-3-word-builder",
+            "title": "New Words, Same Parts",
+            "intent": "Grade 2, fresh base words; same affixes. No word from the previous activity.",
+            "config": {
+              "targetEvalMode": "simple_affix",
+              "subject": "Language Arts",
+              "unitTitle": "Reading Foundations"
+            }
+          }
+        ]
+      }
+    ],
+    "layout": [
+      {
+        "componentId": "word-workout",
+        "instanceId": "la001-03-c-1-word-workout",
+        "title": "Read Words With Endings",
+        "intent": "Grade 2. Cold-read base words with -ing and -ed; after each read the tutor shows base + ending.",
+        "config": {
+          "targetEvalMode": "read_inflected",
+          "subject": "Language Arts",
+          "unitTitle": "Reading Foundations"
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "word-builder",
+        "instanceId": "la001-03-c-2-word-builder",
+        "title": "Build a Word From Its Meaning",
+        "intent": "Grade 2 prefixes un-, re-, pre- and suffixes -ed, -ing, -ly on familiar base words with no spelling change (unhappy, redo, preview, jumped, playing, quickly).",
+        "config": {
+          "targetEvalMode": "simple_affix",
+          "subject": "Language Arts",
+          "unitTitle": "Reading Foundations"
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "word-builder",
+        "instanceId": "la001-03-c-3-word-builder",
+        "title": "New Words, Same Parts",
+        "intent": "Grade 2, fresh base words; same affixes. No word from the previous activity.",
+        "config": {
+          "targetEvalMode": "simple_affix",
+          "subject": "Language Arts",
+          "unitTitle": "Reading Foundations"
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      }
+    ]
+  },
+  "sequence": [
+    {
+      "step": 1,
+      "componentId": "word-workout",
+      "evalMode": "read_inflected",
+      "role": "warm-up (suffixes only)"
+    },
+    {
+      "step": 2,
+      "componentId": "word-builder",
+      "evalMode": "simple_affix",
+      "role": "main practice"
+    },
+    {
+      "step": 3,
+      "componentId": "word-builder",
+      "evalMode": "simple_affix",
+      "role": "fresh review"
+    }
+  ],
+  "evidenceCriteria": [
+    "Says the target word from its meaning with the parts board visible (word-builder).",
+    "The objective says \"attaching\": the child never puts parts together; they only say the finished word."
+  ],
+  "coverageLimits": [
+    "word-builder raises simple_affix to a grade 3 floor (gemini-word-builder.ts:197-199) and the workspace says grades 3-8, so the grade 2 vocabulary request is overridden (probe returned \"Grade 3\").",
+    "word-workout read_inflected is a code-owned list of 12 CVC words with -s/-ing/-ed. No prefixes and no -ly.",
+    "word-workout prints the whole curriculum objective as its title (probe)."
+  ],
+  "recommendation": {
+    "kind": "new-mode",
+    "rationale": "Give word-builder a grade 2 band and a build response: the child taps prefix/root/suffix cards to make the word for a meaning. This is the open-build modality (OB-3 already lists word-builder). See brief 3."
+  }
+}

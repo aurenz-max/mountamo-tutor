@@ -1,0 +1,108 @@
+{
+  "lessonId": "lesson-09",
+  "curriculum": {
+    "subject": "LANGUAGE_ARTS",
+    "grade": "2",
+    "unitId": "LA001",
+    "skillId": "LA001-02",
+    "subskillId": "LA001-02-b",
+    "description": "Students blend sounds into complex words by combining initial and final consonant clusters in various word structures. Focus: Reading words with common initial and final consonant blends like bl, st, mp, and nd. Examples: blue, stop, lamp, sand, blow, star, jump, wind, black, fast. Constraints: Use visual cues to identify the blend segment separately from the vowel-consonant core in the phonics-blender.",
+    "targetPrimitive": "phonics-blender",
+    "targetEvalModes": null
+  },
+  "status": "authored; catalog-checked; each binding generator-probed once; not hydrated as a lesson; not runtime-tested",
+  "learnerAction": "Read words with initial and final consonant blends, hearing each consonant in the cluster.",
+  "estimatedMinutes": 12,
+  "manifest": {
+    "topic": "Blend It: bl, st, mp, nd",
+    "gradeLevel": "Grade 2",
+    "themeColor": "#2f6f5e",
+    "subject": "LANGUAGE_ARTS",
+    "objectiveBlocks": [
+      {
+        "objectiveId": "obj1",
+        "objectiveText": "Students blend sounds into complex words by combining initial and final consonant clusters in various word structures. Focus: Reading words with common initial and final consonant blends like bl, st, mp, and nd. Examples: blue, stop, lamp, sand, blow, star, jump, wind, black, fast. Constraints: Use visual cues to identify the blend segment separately from the vowel-consonant core in the phonics-blender.",
+        "objectiveVerb": "apply",
+        "components": [
+          {
+            "componentId": "phonics-blender",
+            "instanceId": "la001-02-b-1-phonics-blender",
+            "title": "Warm Up With Short Words",
+            "intent": "Grade 2 CVC review words that become blend words when one consonant is added (lap > clap, sad > sand).",
+            "config": {
+              "targetEvalMode": "cvc",
+              "subject": "Language Arts",
+              "unitTitle": "Reading Foundations"
+            }
+          },
+          {
+            "componentId": "phonics-blender",
+            "instanceId": "la001-02-b-2-phonics-blender",
+            "title": "Blend the Clusters",
+            "intent": "Grade 2 words with initial blends (bl, st, cl, fr) and final blends (mp, nd, st): blue, stop, lamp, sand, jump, fast. No silent-e words.",
+            "config": {
+              "targetEvalMode": "cvce_blend",
+              "subject": "Language Arts",
+              "unitTitle": "Reading Foundations"
+            }
+          }
+        ]
+      }
+    ],
+    "layout": [
+      {
+        "componentId": "phonics-blender",
+        "instanceId": "la001-02-b-1-phonics-blender",
+        "title": "Warm Up With Short Words",
+        "intent": "Grade 2 CVC review words that become blend words when one consonant is added (lap > clap, sad > sand).",
+        "config": {
+          "targetEvalMode": "cvc",
+          "subject": "Language Arts",
+          "unitTitle": "Reading Foundations"
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "phonics-blender",
+        "instanceId": "la001-02-b-2-phonics-blender",
+        "title": "Blend the Clusters",
+        "intent": "Grade 2 words with initial blends (bl, st, cl, fr) and final blends (mp, nd, st): blue, stop, lamp, sand, jump, fast. No silent-e words.",
+        "config": {
+          "targetEvalMode": "cvce_blend",
+          "subject": "Language Arts",
+          "unitTitle": "Reading Foundations"
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      }
+    ]
+  },
+  "sequence": [
+    {
+      "step": 1,
+      "componentId": "phonics-blender",
+      "evalMode": "cvc",
+      "role": "warm-up"
+    },
+    {
+      "step": 2,
+      "componentId": "phonics-blender",
+      "evalMode": "cvce_blend",
+      "role": "main practice"
+    }
+  ],
+  "evidenceCriteria": [
+    "Says each blend word aloud from its tiles, judged against the target."
+  ],
+  "coverageLimits": [
+    "As built, cvce_blend can never serve a blend: the generator pins the pattern to allowedTypes[0] = cvce (gemini-phonics-blender.ts:318). The probe got cake, bike, bone, cute, nine.",
+    "There are no final-blend examples in the prompt, and the UI never groups the blend apart from the vowel-consonant core."
+  ],
+  "recommendation": {
+    "kind": "repair",
+    "rationale": "Fork the mode: split cvce_blend into cvce and blend (initial + final), the contract-first route for a mode that cannot serve half its name. Route to /eval-fix (PHB-1)."
+  }
+}

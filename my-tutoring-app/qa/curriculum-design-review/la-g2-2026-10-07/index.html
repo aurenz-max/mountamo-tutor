@@ -1,0 +1,1208 @@
+<title>LA Grade 2 Design Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,650&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column with a sticky section nav; lesson cards carry the detail. */
+:root {
+  --bg:#f5f6f3; --surface:#ffffff; --fg:#1e2522; --muted:#5d6762; --line:#d9ddd8;
+  --accent:#2f6f5e; --accent-soft:#e2eee9;
+  --ok:#2c6e3f; --ok-bg:#e1f0e4; --warn:#8a5a00; --warn-bg:#f7ebcf; --bad:#a3322a; --bad-bg:#f6dfdc; --new:#2f4f9a; --new-bg:#e1e7f6;
+  --display:"Source Serif 4", Georgia, serif; --body:"IBM Plex Sans", system-ui, sans-serif; --mono:"IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg:#141917; --surface:#1c2320; --fg:#e4e9e6; --muted:#9aa5a0; --line:#2f3935;
+  --accent:#7cc4ad; --accent-soft:#1f3a32;
+  --ok:#8fd3a0; --ok-bg:#1d3324; --warn:#e9c071; --warn-bg:#3a2f14; --bad:#f0a199; --bad-bg:#3d2220; --new:#a9bdf0; --new-bg:#22294a; color-scheme:dark; } }
+:root[data-theme="dark"] {
+  --bg:#141917; --surface:#1c2320; --fg:#e4e9e6; --muted:#9aa5a0; --line:#2f3935;
+  --accent:#7cc4ad; --accent-soft:#1f3a32;
+  --ok:#8fd3a0; --ok-bg:#1d3324; --warn:#e9c071; --warn-bg:#3a2f14; --bad:#f0a199; --bad-bg:#3d2220; --new:#a9bdf0; --new-bg:#22294a; color-scheme:dark; }
+* { box-sizing:border-box }
+body { background:var(--bg); color:var(--fg); font:15px/1.6 var(--body); }
+.wrap { max-width:980px; margin:0 auto; padding-inline:16px; padding-block:28px 64px; }
+h1,h2,h3 { font-family:var(--display); text-wrap:balance; line-height:1.2; margin:0 }
+h1 { font-size:2.1rem; font-weight:650 }
+h2 { font-size:1.45rem; font-weight:650; margin-top:2.6rem; margin-bottom:.8rem }
+h3 { font-size:1.2rem; font-weight:650 }
+h4 { font-size:.78rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:1rem 0 .35rem }
+p, li { max-width:70ch }
+a { color:var(--accent) }
+a:focus-visible, summary:focus-visible { outline:2px solid var(--accent); outline-offset:2px }
+.mono { font-family:var(--mono); font-size:.86em }
+.muted, .meta { color:var(--muted) }
+.meta { font-size:.85rem }
+.eyebrow { font-size:.74rem; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-bottom:.25rem }
+nav { position:sticky; top:env(safe-area-inset-top,0px); z-index:2; background:var(--bg); border-bottom:1px solid var(--line); padding-block:.5rem; display:flex; flex-wrap:wrap; gap:.4rem 1rem; font-size:.88rem }
+.lede { font-size:1.05rem; margin-top:.8rem }
+.stats { display:flex; flex-wrap:wrap; gap:.5rem; margin-top:1rem }
+.chip { display:inline-block; padding:.08rem .55rem; border-radius:999px; font-size:.76rem; font-weight:600; white-space:nowrap }
+.chip.ok { background:var(--ok-bg); color:var(--ok) } .chip.warn { background:var(--warn-bg); color:var(--warn) }
+.chip.bad { background:var(--bad-bg); color:var(--bad) } .chip.new { background:var(--new-bg); color:var(--new) }
+.tw { overflow-x:auto }
+table { border-collapse:collapse; width:100%; font-size:.9rem }
+th, td { text-align:left; vertical-align:top; padding:.5rem .6rem; border-bottom:1px solid var(--line) }
+th { font-size:.75rem; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:600 }
+.lesson { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:1.1rem 1.2rem; margin-top:1.2rem; scroll-margin-top:3.5rem }
+.lh { display:flex; justify-content:space-between; align-items:flex-start; gap:1rem }
+.cur { font-size:.9rem; background:var(--accent-soft); padding:.6rem .75rem; border-radius:6px; margin:.8rem 0 .4rem; max-width:none }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 1.6rem }
+.grid2 > div { min-width:0 }
+@media (max-width:720px) { .grid2 { grid-template-columns:1fr } }
+ul, ol { padding-left:1.2rem; margin:.2rem 0 }
+.seq li { margin-bottom:.45rem }
+.role { color:var(--muted); font-size:.8rem }
+.bt { font-size:.86rem }
+.decision { border-left:3px solid var(--accent); padding:.4rem .8rem; margin:1rem 0 .2rem; background:var(--accent-soft); border-radius:0 6px 6px 0 }
+details { margin-top:.8rem }
+summary { cursor:pointer; color:var(--muted); font-size:.88rem }
+pre { background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:.7rem; overflow-x:auto; font:12.5px/1.5 var(--mono); max-height:420px }
+pre.md { white-space:pre-wrap; font-family:var(--body); font-size:.88rem; max-height:none }
+.brief { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:.7rem 1rem }
+.brief summary { color:var(--fg) }
+dl { display:grid; grid-template-columns:max-content 1fr; gap:.3rem 1rem; font-size:.88rem }
+dt { color:var(--muted) } dd { margin:0; min-width:0; overflow-wrap:anywhere }
+@media (max-width:520px) { dl { grid-template-columns:1fr } .lh { flex-direction:column } }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior:auto } }
+</style>
+<div class="wrap">
+<div class="eyebrow">Curriculum design review · LANGUAGE_ARTS · Grade 2 · 2026-10-07</div>
+<h1>LA Grade 2 Design Review</h1>
+<p class="lede">A seeded random draw of 5 published skills and 10 subskills, each planned as a 12-15 minute Lumina lesson from the live catalog. Every binding was drawn once through the production generator with the exact curriculum text. Two lessons can run on existing modes today, four need a repair to an existing mode, and four need a new mode in a primitive that already exists. No new primitive is warranted: every gap is a missing check or a missing task inside a primitive that already has the right surface.</p>
+<div class="stats"><span class="chip ok">2 reuse</span><span class="chip warn">4 repair</span><span class="chip new">4 new mode</span><span class="chip ok">3 probes usable</span><span class="chip warn">9 partial</span><span class="chip bad">5 defects</span></div>
+<nav><a href="#findings">Findings</a><a href="#sample">Sample</a><a href="#lessons">Lessons</a><a href="#issues">Defects</a><a href="#briefs">Build briefs</a><a href="#provenance">Provenance</a></nav>
+
+<h2 id="findings">What the sweep found</h2>
+<ul>
+<li><strong>Writing is scored as present or absent, not judged.</strong> paragraph-architect checks only that each field is non-empty, and its three modes change only the prompt. Neither writing objective can be shown as mastered by writing. knowledge-check covers the choose-the-conclusion form honestly. Brief 1.</li>
+<li><strong>Listening comprehension stops at single details.</strong> No primitive asks a grade 2 listener for the whole-story message or the facts that matter most. The nearest mode (media-player story_analysis) narrated its own answer in the probe. Brief 2 + MP-SA1.</li>
+<li><strong>Two modes cannot do what their names say.</strong> phonics-blender cvce_blend never produces a blend (pinned in code), and syllable-clapper count_parts drew a session where every answer was 2.</li>
+<li><strong>Several generators copied the curriculum examples word for word</strong> (syllable-clapper, read-aloud-studio accuracy), and read-aloud-studio expression took the objective's own words as its topic. The examples and constraints in the published text reach the generator as content.</li>
+<li><strong>Grade 2 falls between bands.</strong> word-builder floors to grade 3; di-sentence-reading and story-talk serve kindergarten-sized content. Affixes at grade 2 fit the open-build modality. Brief 3.</li>
+<li><strong>Fluency and expression stay partly unmeasured on purpose.</strong> Reading rate and prosody are not judged anywhere, and that matches the project's rules on live audio. Those parts of LA001-05 are marked for adult review rather than proposed as builds.</li>
+</ul>
+
+<h2 id="sample">Sample</h2>
+<p>Seed <span class="mono">15159444561285816396</span>, 28 eligible skills, sampled without replacement at both levels.</p>
+<ul><li><span class='mono'>LA002-02</span> Informative Writing: <span class=mono>LA002-02-a</span>, <span class=mono>LA002-02-c</span> <span class='muted'>(of 3)</span></li><li><span class='mono'>LA001-03</span> Multi-Syllable Words: <span class=mono>LA001-03-c</span>, <span class=mono>LA001-03-a</span> <span class='muted'>(of 3)</span></li><li><span class='mono'>LA001-05</span> Reading Fluency: <span class=mono>LA001-05-a</span>, <span class=mono>LA001-05-b</span> <span class='muted'>(of 3)</span></li><li><span class='mono'>LA003-01</span> Recounting Key Details: <span class=mono>LA003-01-b</span>, <span class=mono>LA003-01-a</span> <span class='muted'>(of 2)</span></li><li><span class='mono'>LA001-02</span> Digraphs and Blends: <span class=mono>LA001-02-b</span>, <span class=mono>LA001-02-a</span> <span class='muted'>(of 2)</span></li></ul>
+<div class="tw"><table><thead><tr><th>Subskill</th><th>Skill</th><th>Lesson</th><th>Decision</th></tr></thead><tbody><tr><td class='mono'><a href='#LA002-02-a'>LA002-02-a</a></td><td>Informative Writing</td><td>What Is It? Start With a Definition</td><td><span class='chip new'>New mode</span></td></tr><tr><td class='mono'><a href='#LA002-02-c'>LA002-02-c</a></td><td>Informative Writing</td><td>Wrap It Up: Choosing a Closing Sentence</td><td><span class='chip ok'>Reuse</span></td></tr><tr><td class='mono'><a href='#LA001-03-c'>LA001-03-c</a></td><td>Multi-Syllable Words</td><td>Word Parts: un-, re-, pre-, -ed, -ing, -ly</td><td><span class='chip new'>New mode</span></td></tr><tr><td class='mono'><a href='#LA001-03-a'>LA001-03-a</a></td><td>Multi-Syllable Words</td><td>Clap the Parts</td><td><span class='chip warn'>Repair existing</span></td></tr><tr><td class='mono'><a href='#LA001-05-a'>LA001-05-a</a></td><td>Reading Fluency</td><td>Read the Story Accurately</td><td><span class='chip warn'>Repair existing</span></td></tr><tr><td class='mono'><a href='#LA001-05-b'>LA001-05-b</a></td><td>Reading Fluency</td><td>Read It Like You Mean It</td><td><span class='chip warn'>Repair existing</span></td></tr><tr><td class='mono'><a href='#LA003-01-b'>LA003-01-b</a></td><td>Recounting Key Details</td><td>What Is the Big Message?</td><td><span class='chip new'>New mode</span></td></tr><tr><td class='mono'><a href='#LA003-01-a'>LA003-01-a</a></td><td>Recounting Key Details</td><td>Which Facts Matter Most?</td><td><span class='chip new'>New mode</span></td></tr><tr><td class='mono'><a href='#LA001-02-b'>LA001-02-b</a></td><td>Digraphs and Blends</td><td>Blend It: bl, st, mp, nd</td><td><span class='chip warn'>Repair existing</span></td></tr><tr><td class='mono'><a href='#LA001-02-a'>LA001-02-a</a></td><td>Digraphs and Blends</td><td>Two Letters, One Sound</td><td><span class='chip ok'>Reuse</span></td></tr></tbody></table></div>
+
+<h2 id="lessons">Lessons</h2>
+
+<section class="lesson" id="LA002-02-a">
+  <header class="lh">
+    <div><div class="eyebrow">Lesson 1 · Writing · Informative Writing</div>
+    <h3>What Is It? Start With a Definition</h3></div>
+    <span class="chip new">New mode</span>
+  </header>
+  <p class="cur"><span class="mono">LA002-02-a</span> Introduce a specific topic using a clear introductory sentence paired with a simple definition. Focus: Defining a subject clearly at the start of an informative text. Examples: A mammal is an animal with fur, Sharks are fish that live in the ocean, The sun is a star that gives us light, An insect is a small bug with six legs, Seeds are what grow into plants, Clouds are made of water vapor, Planets move around the sun, Maps help us find places. Constraints: Use fill-in-the-blanks to complete topic introduction sentences.</p>
+  <p class="meta">Published target: <span class="mono">paragraph-architect</span> (provenance only) · Planned length 15 min</p>
+  <div class="grid2">
+    <div><h4>Learner action</h4><p>Write a first sentence that names the topic and says what kind of thing it is plus one feature (&quot;A mammal is an animal with fur&quot;).</p>
+      <h4>Sequence</h4><ol class="seq"><li><span class='mono'>paragraph-architect</span> · <span class='mono'>informational</span> <span class='role'>introduction + supported practice</span><div class='bt'>Meet a Topic Sentence</div></li><li><span class='mono'>knowledge-check</span> · <span class='mono'>apply</span> <span class='role'>independent check (recognition)</span><div class='bt'>Which Sentence Starts the Paragraph?</div></li></ol></div>
+    <div><h4>Evidence of mastery</h4><ul><li>Picks the defining sentence over a body detail (knowledge-check).</li><li>Writes &quot;A/An [topic] is a [category] that/with [feature]&quot; with a true category and feature. NOT currently judged by any primitive.</li></ul>
+      <h4>Limits found</h4><ul><li>paragraph-architect scores parts present, not quality: an empty frame counts as content (ParagraphArchitect.tsx:540-545, 693-697).</li><li>Its modes change only the prompt. Task and score are identical across informational, narrative and opinion.</li><li>The only scored right/wrong act is tapping the topic sentence in the model.</li></ul></div>
+  </div>
+  <div class="decision"><strong>New mode.</strong> Add a judged &quot;define the topic&quot; mode to paragraph-architect. The writing surface exists; what is missing is a check that the sentence names a category and a true feature. See brief 1.</div>
+  <h4>Generator probes (one draw per binding, exact curriculum text, grade 2)</h4>
+  <div class="tw"><table class="probes"><tbody><tr><td class='mono'>paragraph-architect<br>informational</td><td><span class='chip warn'>partial</span></td><td>Shark paragraph with four topic frames and a model paragraph. Only one frame has the form the objective asks for (&quot;___ are fish that live in the ___.&quot;). Nothing the child types is checked.</td></tr></tbody></table></div>
+  <details><summary>Manifest JSON · <a href="manifests/lesson-01-LA002-02-a.json">manifests/lesson-01-LA002-02-a.json</a></summary><pre>{
+  &quot;topic&quot;: &quot;What Is It? Start With a Definition&quot;,
+  &quot;gradeLevel&quot;: &quot;Grade 2&quot;,
+  &quot;themeColor&quot;: &quot;#2f6f5e&quot;,
+  &quot;subject&quot;: &quot;LANGUAGE_ARTS&quot;,
+  &quot;objectiveBlocks&quot;: [
+    {
+      &quot;objectiveId&quot;: &quot;obj1&quot;,
+      &quot;objectiveText&quot;: &quot;Introduce a specific topic using a clear introductory sentence paired with a simple definition. Focus: Defining a subject clearly at the start of an informative text. Examples: A mammal is an animal with fur, Sharks are fish that live in the ocean, The sun is a star that gives us light, An insect is a small bug with six legs, Seeds are what grow into plants, Clouds are made of water vapor, Planets move around the sun, Maps help us find places. Constraints: Use fill-in-the-blanks to complete topic introduction sentences.&quot;,
+      &quot;objectiveVerb&quot;: &quot;write&quot;,
+      &quot;components&quot;: [
+        {
+          &quot;componentId&quot;: &quot;paragraph-architect&quot;,
+          &quot;instanceId&quot;: &quot;la002-02-a-1-paragraph-architect&quot;,
+          &quot;title&quot;: &quot;Meet a Topic Sentence&quot;,
+          &quot;intent&quot;: &quot;Grade 2 informational paragraph about one animal or object. The model topic sentence must define the topic: name its category and one feature (A ___ is a ___ that ___). Child taps the topic sentence in the model, then writes their own with a frame.&quot;,
+          &quot;config&quot;: {
+            &quot;targetEvalMode&quot;: &quot;informational&quot;,
+            &quot;subject&quot;: &quot;Language Arts&quot;,
+            &quot;unitTitle&quot;: &quot;Writing&quot;
+          }
+        },
+        {
+          &quot;componentId&quot;: &quot;knowledge-check&quot;,
+          &quot;instanceId&quot;: &quot;la002-02-a-2-knowledge-check&quot;,
+          &quot;title&quot;: &quot;Which Sentence Starts the Paragraph?&quot;,
+          &quot;intent&quot;: &quot;Grade 2. Show a short informative paragraph with its first sentence missing. Options: one definition sentence (category + feature), one detail sentence from the body, one opinion, one off-topic sentence.&quot;,
+          &quot;config&quot;: {
+            &quot;targetEvalMode&quot;: &quot;apply&quot;,
+            &quot;subject&quot;: &quot;Language Arts&quot;,
+            &quot;unitTitle&quot;: &quot;Writing&quot;
+          }
+        }
+      ]
+    }
+  ],
+  &quot;layout&quot;: [
+    {
+      &quot;componentId&quot;: &quot;paragraph-architect&quot;,
+      &quot;instanceId&quot;: &quot;la002-02-a-1-paragraph-architect&quot;,
+      &quot;title&quot;: &quot;Meet a Topic Sentence&quot;,
+      &quot;intent&quot;: &quot;Grade 2 informational paragraph about one animal or object. The model topic sentence must define the topic: name its category and one feature (A ___ is a ___ that ___). Child taps the topic sentence in the model, then writes their own with a frame.&quot;,
+      &quot;config&quot;: {
+        &quot;targetEvalMode&quot;: &quot;informational&quot;,
+        &quot;subject&quot;: &quot;Language Arts&quot;,
+        &quot;unitTitle&quot;: &quot;Writing&quot;
+      },
+      &quot;objectiveIds&quot;: [
+        &quot;obj1&quot;
+      ]
+    },
+    {
+      &quot;componentId&quot;: &quot;knowledge-check&quot;,
+      &quot;instanceId&quot;: &quot;la002-02-a-2-knowledge-check&quot;,
+      &quot;title&quot;: &quot;Which Sentence Starts the Paragraph?&quot;,
+      &quot;intent&quot;: &quot;Grade 2. Show a short informative paragraph with its first sentence missing. Options: one definition sentence (category + feature), one detail sentence from the body, one opinion, one off-topic sentence.&quot;,
+      &quot;config&quot;: {
+        &quot;targetEvalMode&quot;: &quot;apply&quot;,
+        &quot;subject&quot;: &quot;Language Arts&quot;,
+        &quot;unitTitle&quot;: &quot;Writing&quot;
+      },
+      &quot;objectiveIds&quot;: [
+        &quot;obj1&quot;
+      ]
+    }
+  ]
+}</pre></details>
+</section>
+<section class="lesson" id="LA002-02-c">
+  <header class="lh">
+    <div><div class="eyebrow">Lesson 2 · Writing · Informative Writing</div>
+    <h3>Wrap It Up: Choosing a Closing Sentence</h3></div>
+    <span class="chip ok">Reuse</span>
+  </header>
+  <p class="cur"><span class="mono">LA002-02-c</span> Draft a concluding statement that effectively brings the informative paragraph to a close. Focus: Creating a summary sentence that reinforces the topic without introducing new facts. Examples: Now you know about sharks, These are facts about insects, That is how seeds grow, This is why the sun is important, So clouds are very helpful, That is how maps work, Now you know all about planets, These are things to know about mammals. Constraints: Provide a body paragraph and offer three concluding options for the student to select the most appropriate one.</p>
+  <p class="meta">Published target: <span class="mono">paragraph-architect</span> (provenance only) · Planned length 14 min</p>
+  <div class="grid2">
+    <div><h4>Learner action</h4><p>Read a short body paragraph and choose (then write) a closing sentence that restates the topic without adding a new fact.</p>
+      <h4>Sequence</h4><ol class="seq"><li><span class='mono'>paragraph-architect</span> · <span class='mono'>informational</span> <span class='role'>introduction</span><div class='bt'>See How a Paragraph Ends</div></li><li><span class='mono'>knowledge-check</span> · <span class='mono'>apply</span> <span class='role'>independent check</span><div class='bt'>Pick the Best Ending</div></li><li><span class='mono'>knowledge-check</span> · <span class='mono'>apply</span> <span class='role'>fresh review</span><div class='bt'>Pick the Best Ending Again</div></li></ol></div>
+    <div><h4>Evidence of mastery</h4><ul><li>Chooses the restating close over a same-topic new-fact sentence on two fresh paragraphs.</li><li>Writing their own close is practiced in paragraph-architect but not scored.</li></ul>
+      <h4>Limits found</h4><ul><li>knowledge-check gives an honest choose-the-ending item (probe), but left alone it writes two off-topic distractors. The intent above asks for same-topic distractors; not re-probed.</li><li>Grade 2 has no length cap on the passage inset (prompt only).</li></ul></div>
+  </div>
+  <div class="decision"><strong>Reuse.</strong> Reuse knowledge-check for the choice task the curriculum asks for. Writing a close is covered by brief 1 (same judged-sentence mode family).</div>
+  <h4>Generator probes (one draw per binding, exact curriculum text, grade 2)</h4>
+  <div class="tw"><table class="probes"><tbody><tr><td class='mono'>paragraph-architect<br>informational</td><td><span class='chip warn'>partial</span></td><td>Honeybee frames; one conclusion frame matches the objective (&quot;These are things to know about ___.&quot;). The task is to write a whole paragraph, so there is no choose-the-conclusion task.</td></tr><tr><td class='mono'>knowledge-check<br>apply</td><td><span class='chip ok'>usable</span></td><td>One honeybee paragraph and four conclusions. The key (&quot;Now you know how honeybees collect nectar&quot;) is right and the near miss adds a new fact. The other two distractors are about other animals, so they are too easy.</td></tr></tbody></table></div>
+  <details><summary>Manifest JSON · <a href="manifests/lesson-02-LA002-02-c.json">manifests/lesson-02-LA002-02-c.json</a></summary><pre>{
+  &quot;topic&quot;: &quot;Wrap It Up: Choosing a Closing Sentence&quot;,
+  &quot;gradeLevel&quot;: &quot;Grade 2&quot;,
+  &quot;themeColor&quot;: &quot;#2f6f5e&quot;,
+  &quot;subject&quot;: &quot;LANGUAGE_ARTS&quot;,
+  &quot;objectiveBlocks&quot;: [
+    {
+      &quot;objectiveId&quot;: &quot;obj1&quot;,
+      &quot;objectiveText&quot;: &quot;Draft a concluding statement that effectively brings the informative paragraph to a close. Focus: Creating a summary sentence that reinforces the topic without introducing new facts. Examples: Now you know about sharks, These are facts about insects, That is how seeds grow, This is why the sun is important, So clouds are very helpful, That is how maps work, Now you know all about planets, These are things to know about mammals. Constraints: Provide a body paragraph and offer three concluding options for the student to select the most appropriate one.&quot;,
+      &quot;objectiveVerb&quot;: &quot;evaluate&quot;,
+      &quot;components&quot;: [
+        {
+          &quot;componentId&quot;: &quot;paragraph-architect&quot;,
+          &quot;instanceId&quot;: &quot;la002-02-c-1-paragraph-architect&quot;,
+          &quot;title&quot;: &quot;See How a Paragraph Ends&quot;,
+          &quot;intent&quot;: &quot;Grade 2 informational paragraph. The model concluding sentence restates the topic with a closing phrase (Now you know..., That is how...) and adds no new fact.&quot;,
+          &quot;config&quot;: {
+            &quot;targetEvalMode&quot;: &quot;informational&quot;,
+            &quot;subject&quot;: &quot;Language Arts&quot;,
+            &quot;unitTitle&quot;: &quot;Writing&quot;
+          }
+        },
+        {
+          &quot;componentId&quot;: &quot;knowledge-check&quot;,
+          &quot;instanceId&quot;: &quot;la002-02-c-2-knowledge-check&quot;,
+          &quot;title&quot;: &quot;Pick the Best Ending&quot;,
+          &quot;intent&quot;: &quot;Grade 2. Show a 3-sentence informative paragraph. Options: one closing sentence that restates the topic; one that adds a NEW fact about the same topic; one that repeats only a single detail; one about a different topic.&quot;,
+          &quot;config&quot;: {
+            &quot;targetEvalMode&quot;: &quot;apply&quot;,
+            &quot;subject&quot;: &quot;Language Arts&quot;,
+            &quot;unitTitle&quot;: &quot;Writing&quot;
+          }
+        },
+        {
+          &quot;componentId&quot;: &quot;knowledge-check&quot;,
+          &quot;instanceId&quot;: &quot;la002-02-c-3-knowledge-check&quot;,
+          &quot;title&quot;: &quot;Pick the Best Ending Again&quot;,
+          &quot;intent&quot;: &quot;Grade 2, new topic. Same structure as before: restating close vs. new-fact sentence vs. single-detail sentence vs. off-topic.&quot;,
+          &quot;config&quot;: {
+            &quot;targetEvalMode&quot;: &quot;apply&quot;,
+            &quot;subject&quot;: &quot;Language Arts&quot;,
+            &quot;unitTitle&quot;: &quot;Writing&quot;
+          }
+        }
+      ]
+    }
+  ],
+  &quot;layout&quot;: [
+    {
+      &quot;componentId&quot;: &quot;paragraph-architect&quot;,
+      &quot;instanceId&quot;: &quot;la002-02-c-1-paragraph-architect&quot;,
+      &quot;title&quot;: &quot;See How a Paragraph Ends&quot;,
+      &quot;intent&quot;: &quot;Grade 2 informational paragraph. The model concluding sentence restates the topic with a closing phrase (Now you know..., That is how...) and adds no new fact.&quot;,
+      &quot;config&quot;: {
+        &quot;targetEvalMode&quot;: &quot;informational&quot;,
+        &quot;subject&quot;: &quot;Language Arts&quot;,
+        &quot;unitTitle&quot;: &quot;Writing&quot;
+      },
+      &quot;objectiveIds&quot;: [
+        &quot;obj1&quot;
+      ]
+    },
+    {
+      &quot;componentId&quot;: &quot;knowledge-check&quot;,
+      &quot;instanceId&quot;: &quot;la002-02-c-2-knowledge-check&quot;,
+      &quot;title&quot;: &quot;Pick the Best Ending&quot;,
+      &quot;intent&quot;: &quot;Grade 2. Show a 3-sentence informative paragraph. Options: one closing sentence that restates the topic; one that adds a NEW fact about the same topic; one that repeats only a single detail; one about a different topic.&quot;,
+      &quot;config&quot;: {
+        &quot;targetEvalMode&quot;: &quot;apply&quot;,
+        &quot;subject&quot;: &quot;Language Arts&quot;,
+        &quot;unitTitle&quot;: &quot;Writing&quot;
+      },
+      &quot;objectiveIds&quot;: [
+        &quot;obj1&quot;
+      ]
+    },
+    {
+      &quot;componentId&quot;: &quot;knowledge-check&quot;,
+      &quot;instanceId&quot;: &quot;la002-02-c-3-knowledge-check&quot;,
+      &quot;title&quot;: &quot;Pick the Best Ending Again&quot;,
+      &quot;intent&quot;: &quot;Grade 2, new topic. Same structure as before: restating close vs. new-fact sentence vs. single-detail sentence vs. off-topic.&quot;,
+      &quot;config&quot;: {
+        &quot;targetEvalMode&quot;: &quot;apply&quot;,
+        &quot;subject&quot;: &quot;Language Arts&quot;,
+        &quot;unitTitle&quot;: &quot;Writing&quot;
+      },
+      &quot;objectiveIds&quot;: [
+        &quot;obj1&quot;
+      ]
+    }
+  ]
+}</pre></details>
+</section>
+<section class="lesson" id="LA001-03-c">
+  <header class="lh">
+    <div><div class="eyebrow">Lesson 3 · Reading Foundations · Multi-Syllable Words</div>
+    <h3>Word Parts: un-, re-, pre-, -ed, -ing, -ly</h3></div>
+    <span class="chip new">New mode</span>
+  </header>
+  <p class="cur"><span class="mono">LA001-03-c</span> Students analyze words with affixes by identifying and attaching common prefixes and suffixes to base words. Focus: Decoding words using knowledge of prefixes (un-, re-, pre-) and suffixes (-ed, -ing, -ly). Examples: unhappy, rewrite, preview, jumped, playing, quickly, redo, dislike, walker, helpful. Constraints: Highlight the base word and affix in different colors in the word-builder.</p>
+  <p class="meta">Published target: <span class="mono">word-builder</span> (provenance only) · Planned length 15 min</p>
+  <div class="grid2">
+    <div><h4>Learner action</h4><p>Read and build words from a base word plus one prefix or suffix, and say what the affix changes.</p>
+      <h4>Sequence</h4><ol class="seq"><li><span class='mono'>word-workout</span> · <span class='mono'>read_inflected</span> <span class='role'>warm-up (suffixes only)</span><div class='bt'>Read Words With Endings</div></li><li><span class='mono'>word-builder</span> · <span class='mono'>simple_affix</span> <span class='role'>main practice</span><div class='bt'>Build a Word From Its Meaning</div></li><li><span class='mono'>word-builder</span> · <span class='mono'>simple_affix</span> <span class='role'>fresh review</span><div class='bt'>New Words, Same Parts</div></li></ol></div>
+    <div><h4>Evidence of mastery</h4><ul><li>Says the target word from its meaning with the parts board visible (word-builder).</li><li>The objective says &quot;attaching&quot;: the child never puts parts together; they only say the finished word.</li></ul>
+      <h4>Limits found</h4><ul><li>word-builder raises simple_affix to a grade 3 floor (gemini-word-builder.ts:197-199) and the workspace says grades 3-8, so the grade 2 vocabulary request is overridden (probe returned &quot;Grade 3&quot;).</li><li>word-workout read_inflected is a code-owned list of 12 CVC words with -s/-ing/-ed. No prefixes and no -ly.</li><li>word-workout prints the whole curriculum objective as its title (probe).</li></ul></div>
+  </div>
+  <div class="decision"><strong>New mode.</strong> Give word-builder a grade 2 band and a build response: the child taps prefix/root/suffix cards to make the word for a meaning. This is the open-build modality (OB-3 already lists word-builder). See brief 3.</div>
+  <h4>Generator probes (one draw per binding, exact curriculum text, grade 2)</h4>
+  <div class="tw"><table class="probes"><tbody><tr><td class='mono'>word-builder<br>simple_affix</td><td><span class='chip warn'>partial</span></td><td>Targets jumped, rewrite, quickly, preview, which match the objective exactly. The payload grade is &quot;Grade 3&quot;: the generator raises simple_affix to a grade 3 floor, and the hints use grade 3 words (&quot;inspect&quot;, &quot;released&quot;).</td></tr><tr><td class='mono'>word-workout<br>read_inflected</td><td><span class='chip warn'>partial</span></td><td>mixing, jumping, jumped, rested come from a code-owned list of 12 words with -s/-ing/-ed only. No prefixes, no -ly. The title prints the whole curriculum objective on screen.</td></tr></tbody></table></div>
+  <details><summary>Manifest JSON · <a href="manifests/lesson-03-LA001-03-c.json">manifests/lesson-03-LA001-03-c.json</a></summary><pre>{
+  &quot;topic&quot;: &quot;Word Parts: un-, re-, pre-, -ed, -ing, -ly&quot;,
+  &quot;gradeLevel&quot;: &quot;Grade 2&quot;,
+  &quot;themeColor&quot;: &quot;#2f6f5e&quot;,
+  &quot;subject&quot;: &quot;LANGUAGE_ARTS&quot;,
+  &quot;objectiveBlocks&quot;: [
+    {
+      &quot;objectiveId&quot;: &quot;obj1&quot;,
+      &quot;objectiveText&quot;: &quot;Students analyze words with affixes by identifying and attaching common prefixes and suffixes to base words. Focus: Decoding words using knowledge of prefixes (un-, re-, pre-) and suffixes (-ed, -ing, -ly). Examples: unhappy, rewrite, preview, jumped, playing, quickly, redo, dislike, walker, helpful. Constraints: Highlight the base word and affix in different colors in the word-builder.&quot;,
+      &quot;objectiveVerb&quot;: &quot;apply&quot;,
+      &quot;components&quot;: [
+        {
+          &quot;componentId&quot;: &quot;word-workout&quot;,
+          &quot;instanceId&quot;: &quot;la001-03-c-1-word-workout&quot;,
+          &quot;title&quot;: &quot;Read Words With Endings&quot;,
+          &quot;intent&quot;: &quot;Grade 2. Cold-read base words with -ing and -ed; after each read the tutor shows base + ending.&quot;,
+          &quot;config&quot;: {
+            &quot;targetEvalMode&quot;: &quot;read_inflected&quot;,
+            &quot;subject&quot;: &quot;Language Arts&quot;,
+            &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+          }
+        },
+        {
+          &quot;componentId&quot;: &quot;word-builder&quot;,
+          &quot;instanceId&quot;: &quot;la001-03-c-2-word-builder&quot;,
+          &quot;title&quot;: &quot;Build a Word From Its Meaning&quot;,
+          &quot;intent&quot;: &quot;Grade 2 prefixes un-, re-, pre- and suffixes -ed, -ing, -ly on familiar base words with no spelling change (unhappy, redo, preview, jumped, playing, quickly).&quot;,
+          &quot;config&quot;: {
+            &quot;targetEvalMode&quot;: &quot;simple_affix&quot;,
+            &quot;subject&quot;: &quot;Language Arts&quot;,
+            &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+          }
+        },
+        {
+          &quot;componentId&quot;: &quot;word-builder&quot;,
+          &quot;instanceId&quot;: &quot;la001-03-c-3-word-builder&quot;,
+          &quot;title&quot;: &quot;New Words, Same Parts&quot;,
+          &quot;intent&quot;: &quot;Grade 2, fresh base words; same affixes. No word from the previous activity.&quot;,
+          &quot;config&quot;: {
+            &quot;targetEvalMode&quot;: &quot;simple_affix&quot;,
+            &quot;subject&quot;: &quot;Language Arts&quot;,
+            &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+          }
+        }
+      ]
+    }
+  ],
+  &quot;layout&quot;: [
+    {
+      &quot;componentId&quot;: &quot;word-workout&quot;,
+      &quot;instanceId&quot;: &quot;la001-03-c-1-word-workout&quot;,
+      &quot;title&quot;: &quot;Read Words With Endings&quot;,
+      &quot;intent&quot;: &quot;Grade 2. Cold-read base words with -ing and -ed; after each read the tutor shows base + ending.&quot;,
+      &quot;config&quot;: {
+        &quot;targetEvalMode&quot;: &quot;read_inflected&quot;,
+        &quot;subject&quot;: &quot;Language Arts&quot;,
+        &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+      },
+      &quot;objectiveIds&quot;: [
+        &quot;obj1&quot;
+      ]
+    },
+    {
+      &quot;componentId&quot;: &quot;word-builder&quot;,
+      &quot;instanceId&quot;: &quot;la001-03-c-2-word-builder&quot;,
+      &quot;title&quot;: &quot;Build a Word From Its Meaning&quot;,
+      &quot;intent&quot;: &quot;Grade 2 prefixes un-, re-, pre- and suffixes -ed, -ing, -ly on familiar base words with no spelling change (unhappy, redo, preview, jumped, playing, quickly).&quot;,
+      &quot;config&quot;: {
+        &quot;targetEvalMode&quot;: &quot;simple_affix&quot;,
+        &quot;subject&quot;: &quot;Language Arts&quot;,
+        &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+      },
+      &quot;objectiveIds&quot;: [
+        &quot;obj1&quot;
+      ]
+    },
+    {
+      &quot;componentId&quot;: &quot;word-builder&quot;,
+      &quot;instanceId&quot;: &quot;la001-03-c-3-word-builder&quot;,
+      &quot;title&quot;: &quot;New Words, Same Parts&quot;,
+      &quot;intent&quot;: &quot;Grade 2, fresh base words; same affixes. No word from the previous activity.&quot;,
+      &quot;config&quot;: {
+        &quot;targetEvalMode&quot;: &quot;simple_affix&quot;,
+        &quot;subject&quot;: &quot;Language Arts&quot;,
+        &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+      },
+      &quot;objectiveIds&quot;: [
+        &quot;obj1&quot;
+      ]
+    }
+  ]
+}</pre></details>
+</section>
+<section class="lesson" id="LA001-03-a">
+  <header class="lh">
+    <div><div class="eyebrow">Lesson 4 · Reading Foundations · Multi-Syllable Words</div>
+    <h3>Clap the Parts</h3></div>
+    <span class="chip warn">Repair existing</span>
+  </header>
+  <p class="cur"><span class="mono">LA001-03-a</span> Students listen to words and interact with a visual interface to segment the word into individual syllables. Focus: Developing auditory and visual awareness of syllable counts in words. Examples: apple, tiger, rabbit, basket, tunnel, magnet, button, winter, candle, napkin. Constraints: Provide visual feedback for every correct syllable clap in the syllable-clapper primitive.</p>
+  <p class="meta">Published target: <span class="mono">syllable-clapper</span> (provenance only) · Planned length 12 min</p>
+  <div class="grid2">
+    <div><h4>Learner action</h4><p>Hear a word and clap and count its syllables (1-3), then say the parts.</p>
+      <h4>Sequence</h4><ol class="seq"><li><span class='mono'>syllable-clapper</span> · <span class='mono'>blend_syllables</span> <span class='role'>warm-up</span><div class='bt'>Put the Parts Together</div></li><li><span class='mono'>syllable-clapper</span> · <span class='mono'>count_parts</span> <span class='role'>main practice</span><div class='bt'>Clap and Count</div></li><li><span class='mono'>syllable-clapper</span> · <span class='mono'>count_parts</span> <span class='role'>fresh review</span><div class='bt'>Count New Words</div></li></ol></div>
+    <div><h4>Evidence of mastery</h4><ul><li>Says the correct syllable count across words whose counts differ.</li></ul>
+      <h4>Limits found</h4><ul><li>The probe drew eight 2-syllable words copied from the curriculum examples, so &quot;two&quot; is always right. The generator has no code rule that spreads the counts.</li><li>The workspace lists grades K-1; the objective is grade 2 (the act is the same).</li></ul></div>
+  </div>
+  <div class="decision"><strong>Repair existing.</strong> Repair, not new: count_parts needs a code rule that a session spans at least two different counts. Route to /eval-fix (SYC-1).</div>
+  <h4>Generator probes (one draw per binding, exact curriculum text, grade 2)</h4>
+  <div class="tw"><table class="probes"><tbody><tr><td class='mono'>syllable-clapper<br>count_parts</td><td><span class='chip bad'>defect</span></td><td>Eight words copied from the curriculum examples. Every one has 2 syllables (rabbit, tiger, basket, tunnel, magnet, button, candle, napkin), so &quot;two&quot; is always right and the count cannot discriminate.</td></tr></tbody></table></div>
+  <details><summary>Manifest JSON · <a href="manifests/lesson-04-LA001-03-a.json">manifests/lesson-04-LA001-03-a.json</a></summary><pre>{
+  &quot;topic&quot;: &quot;Clap the Parts&quot;,
+  &quot;gradeLevel&quot;: &quot;Grade 2&quot;,
+  &quot;themeColor&quot;: &quot;#2f6f5e&quot;,
+  &quot;subject&quot;: &quot;LANGUAGE_ARTS&quot;,
+  &quot;objectiveBlocks&quot;: [
+    {
+      &quot;objectiveId&quot;: &quot;obj1&quot;,
+      &quot;objectiveText&quot;: &quot;Students listen to words and interact with a visual interface to segment the word into individual syllables. Focus: Developing auditory and visual awareness of syllable counts in words. Examples: apple, tiger, rabbit, basket, tunnel, magnet, button, winter, candle, napkin. Constraints: Provide visual feedback for every correct syllable clap in the syllable-clapper primitive.&quot;,
+      &quot;objectiveVerb&quot;: &quot;identify&quot;,
+      &quot;components&quot;: [
+        {
+          &quot;componentId&quot;: &quot;syllable-clapper&quot;,
+          &quot;instanceId&quot;: &quot;la001-03-a-1-syllable-clapper&quot;,
+          &quot;title&quot;: &quot;Put the Parts Together&quot;,
+          &quot;intent&quot;: &quot;Grade 2 picturable words of 1-3 syllables; the tutor says the parts, the child says the word.&quot;,
+          &quot;config&quot;: {
+            &quot;targetEvalMode&quot;: &quot;blend_syllables&quot;,
+            &quot;subject&quot;: &quot;Language Arts&quot;,
+            &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+          }
+        },
+        {
+          &quot;componentId&quot;: &quot;syllable-clapper&quot;,
+          &quot;instanceId&quot;: &quot;la001-03-a-2-syllable-clapper&quot;,
+          &quot;title&quot;: &quot;Clap and Count&quot;,
+          &quot;intent&quot;: &quot;Grade 2 picturable words; MIX 1-, 2- and 3-syllable words so the count changes from word to word (cat, rabbit, banana, basket, elephant).&quot;,
+          &quot;config&quot;: {
+            &quot;targetEvalMode&quot;: &quot;count_parts&quot;,
+            &quot;subject&quot;: &quot;Language Arts&quot;,
+            &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+          }
+        },
+        {
+          &quot;componentId&quot;: &quot;syllable-clapper&quot;,
+          &quot;instanceId&quot;: &quot;la001-03-a-3-syllable-clapper&quot;,
+          &quot;title&quot;: &quot;Count New Words&quot;,
+          &quot;intent&quot;: &quot;Grade 2, fresh words, mixed 1-3 syllables; no words from the previous activity.&quot;,
+          &quot;config&quot;: {
+            &quot;targetEvalMode&quot;: &quot;count_parts&quot;,
+            &quot;subject&quot;: &quot;Language Arts&quot;,
+            &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+          }
+        }
+      ]
+    }
+  ],
+  &quot;layout&quot;: [
+    {
+      &quot;componentId&quot;: &quot;syllable-clapper&quot;,
+      &quot;instanceId&quot;: &quot;la001-03-a-1-syllable-clapper&quot;,
+      &quot;title&quot;: &quot;Put the Parts Together&quot;,
+      &quot;intent&quot;: &quot;Grade 2 picturable words of 1-3 syllables; the tutor says the parts, the child says the word.&quot;,
+      &quot;config&quot;: {
+        &quot;targetEvalMode&quot;: &quot;blend_syllables&quot;,
+        &quot;subject&quot;: &quot;Language Arts&quot;,
+        &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+      },
+      &quot;objectiveIds&quot;: [
+        &quot;obj1&quot;
+      ]
+    },
+    {
+      &quot;componentId&quot;: &quot;syllable-clapper&quot;,
+      &quot;instanceId&quot;: &quot;la001-03-a-2-syllable-clapper&quot;,
+      &quot;title&quot;: &quot;Clap and Count&quot;,
+      &quot;intent&quot;: &quot;Grade 2 picturable words; MIX 1-, 2- and 3-syllable words so the count changes from word to word (cat, rabbit, banana, basket, elephant).&quot;,
+      &quot;config&quot;: {
+        &quot;targetEvalMode&quot;: &quot;count_parts&quot;,
+        &quot;subject&quot;: &quot;Language Arts&quot;,
+        &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+      },
+      &quot;objectiveIds&quot;: [
+        &quot;obj1&quot;
+      ]
+    },
+    {
+      &quot;componentId&quot;: &quot;syllable-clapper&quot;,
+      &quot;instanceId&quot;: &quot;la001-03-a-3-syllable-clapper&quot;,
+      &quot;title&quot;: &quot;Count New Words&quot;,
+      &quot;intent&quot;: &quot;Grade 2, fresh words, mixed 1-3 syllables; no words from the previous activity.&quot;,
+      &quot;config&quot;: {
+        &quot;targetEvalMode&quot;: &quot;count_parts&quot;,
+        &quot;subject&quot;: &quot;Language Arts&quot;,
+        &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+      },
+      &quot;objectiveIds&quot;: [
+        &quot;obj1&quot;
+      ]
+    }
+  ]
+}</pre></details>
+</section>
+<section class="lesson" id="LA001-05-a">
+  <header class="lh">
+    <div><div class="eyebrow">Lesson 5 · Reading Foundations · Reading Fluency</div>
+    <h3>Read the Story Accurately</h3></div>
+    <span class="chip warn">Repair existing</span>
+  </header>
+  <p class="cur"><span class="mono">LA001-05-a</span> Students read short, phonetically controlled passages to demonstrate accurate word recognition. Focus: Building accuracy in reading grade-level decodable text. Examples: &#x27;The cat sat on the mat.&#x27;, &#x27;Sam had a fast car.&#x27;, &#x27;The bird can sing.&#x27;, &#x27;I like to play with my toy.&#x27;, &#x27;The clouds are big.&#x27;, &#x27;Help the girl find her book.&#x27;, &#x27;They will reach the top.&#x27;, &#x27;The sun is hot today.&#x27; Constraints: Measure accuracy and word-reading time automatically within the decodable-reader.</p>
+  <p class="meta">Published target: <span class="mono">decodable-reader</span> (provenance only) · Planned length 15 min</p>
+  <div class="grid2">
+    <div><h4>Learner action</h4><p>Read a short decodable passage aloud with accurate word recognition.</p>
+      <h4>Sequence</h4><ol class="seq"><li><span class='mono'>di-sentence-reading</span> · <span class='mono'>read_sentence</span> <span class='role'>warm-up</span><div class='bt'>Warm-Up Sentences</div></li><li><span class='mono'>decodable-reader</span> · <span class='mono'>literal</span> <span class='role'>main practice + mastery evidence</span><div class='bt'>Read the Story</div></li><li><span class='mono'>read-aloud-studio</span> · <span class='mono'>accuracy</span> <span class='role'>fresh review</span><div class='bt'>Cold Read a New Passage</div></li></ol></div>
+    <div><h4>Evidence of mastery</h4><ul><li>Reads each sentence of a connected decodable passage cold, judged word by word (decodable-reader).</li><li>Reading time / rate is not measured anywhere; the old WPM stat was removed as fake (ReadAloudStudio.tsx:12-18).</li></ul>
+      <h4>Limits found</h4><ul><li>Every judged read is capped at 8 words per utterance (benched ASR limit).</li><li>decodable-reader draw: story did not hold together, one sentence missing its period, phonics tags wrong.</li><li>read-aloud-studio draw: copied the curriculum example sentences verbatim, not one passage.</li><li>di-sentence-reading draw ignored grade 2 and gave kindergarten CVC sentences.</li></ul></div>
+  </div>
+  <div class="decision"><strong>Repair existing.</strong> Reuse decodable-reader as the honest binding; repair passage coherence and the copy-the-examples habit (DR-G2-1, RAS-2). The time constraint stays unmet on purpose: the project removed fake WPM, and a real rate needs measured audio timing.</div>
+  <h4>Generator probes (one draw per binding, exact curriculum text, grade 2)</h4>
+  <div class="tw"><table class="probes"><tbody><tr><td class='mono'>decodable-reader<br>literal</td><td><span class='chip warn'>partial</span></td><td>Six sentences read cold and judged word by word. The story does not hold together (a bird sings, clouds come, &quot;The smart rabbit ran to dig&quot; with no period, the sun shines). Phonics tags are wrong: green and sweet are tagged digraph, song CVC, rain diphthong.</td></tr><tr><td class='mono'>read-aloud-studio<br>accuracy</td><td><span class='chip warn'>partial</span></td><td>Five lines, four of them the curriculum example sentences copied word for word (&quot;Sam had a fast car.&quot;, &quot;They will reach the top.&quot;). The lines are not a connected passage even though the generator asks for one.</td></tr><tr><td class='mono'>di-sentence-reading<br>read_sentence</td><td><span class='chip warn'>partial</span></td><td>Four separate CVC sentences (&quot;Sam has a red cup.&quot;, &quot;I can see the big pig.&quot;). This is kindergarten decoding; the grade 2 setting had no effect (gradeLevel came back &quot;elementary&quot;).</td></tr></tbody></table></div>
+  <details><summary>Manifest JSON · <a href="manifests/lesson-05-LA001-05-a.json">manifests/lesson-05-LA001-05-a.json</a></summary><pre>{
+  &quot;topic&quot;: &quot;Read the Story Accurately&quot;,
+  &quot;gradeLevel&quot;: &quot;Grade 2&quot;,
+  &quot;themeColor&quot;: &quot;#2f6f5e&quot;,
+  &quot;subject&quot;: &quot;LANGUAGE_ARTS&quot;,
+  &quot;objectiveBlocks&quot;: [
+    {
+      &quot;objectiveId&quot;: &quot;obj1&quot;,
+      &quot;objectiveText&quot;: &quot;Students read short, phonetically controlled passages to demonstrate accurate word recognition. Focus: Building accuracy in reading grade-level decodable text. Examples: &#x27;The cat sat on the mat.&#x27;, &#x27;Sam had a fast car.&#x27;, &#x27;The bird can sing.&#x27;, &#x27;I like to play with my toy.&#x27;, &#x27;The clouds are big.&#x27;, &#x27;Help the girl find her book.&#x27;, &#x27;They will reach the top.&#x27;, &#x27;The sun is hot today.&#x27; Constraints: Measure accuracy and word-reading time automatically within the decodable-reader.&quot;,
+      &quot;objectiveVerb&quot;: &quot;apply&quot;,
+      &quot;components&quot;: [
+        {
+          &quot;componentId&quot;: &quot;di-sentence-reading&quot;,
+          &quot;instanceId&quot;: &quot;la001-05-a-1-di-sentence-reading&quot;,
+          &quot;title&quot;: &quot;Warm-Up Sentences&quot;,
+          &quot;intent&quot;: &quot;Grade 2 decodable sentences with vowel teams and blends, read alone after a model.&quot;,
+          &quot;config&quot;: {
+            &quot;targetEvalMode&quot;: &quot;read_sentence&quot;,
+            &quot;subject&quot;: &quot;Language Arts&quot;,
+            &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+          }
+        },
+        {
+          &quot;componentId&quot;: &quot;decodable-reader&quot;,
+          &quot;instanceId&quot;: &quot;la001-05-a-2-decodable-reader&quot;,
+          &quot;title&quot;: &quot;Read the Story&quot;,
+          &quot;intent&quot;: &quot;Grade 2 decodable story of 6-8 connected sentences about ONE event; every sentence ends with punctuation; then one literal question.&quot;,
+          &quot;config&quot;: {
+            &quot;targetEvalMode&quot;: &quot;literal&quot;,
+            &quot;subject&quot;: &quot;Language Arts&quot;,
+            &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+          }
+        },
+        {
+          &quot;componentId&quot;: &quot;read-aloud-studio&quot;,
+          &quot;instanceId&quot;: &quot;la001-05-a-3-read-aloud-studio&quot;,
+          &quot;title&quot;: &quot;Cold Read a New Passage&quot;,
+          &quot;intent&quot;: &quot;Grade 2 connected 5-line passage the child has not seen; not the curriculum example sentences.&quot;,
+          &quot;config&quot;: {
+            &quot;targetEvalMode&quot;: &quot;accuracy&quot;,
+            &quot;subject&quot;: &quot;Language Arts&quot;,
+            &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+          }
+        }
+      ]
+    }
+  ],
+  &quot;layout&quot;: [
+    {
+      &quot;componentId&quot;: &quot;di-sentence-reading&quot;,
+      &quot;instanceId&quot;: &quot;la001-05-a-1-di-sentence-reading&quot;,
+      &quot;title&quot;: &quot;Warm-Up Sentences&quot;,
+      &quot;intent&quot;: &quot;Grade 2 decodable sentences with vowel teams and blends, read alone after a model.&quot;,
+      &quot;config&quot;: {
+        &quot;targetEvalMode&quot;: &quot;read_sentence&quot;,
+        &quot;subject&quot;: &quot;Language Arts&quot;,
+        &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+      },
+      &quot;objectiveIds&quot;: [
+        &quot;obj1&quot;
+      ]
+    },
+    {
+      &quot;componentId&quot;: &quot;decodable-reader&quot;,
+      &quot;instanceId&quot;: &quot;la001-05-a-2-decodable-reader&quot;,
+      &quot;title&quot;: &quot;Read the Story&quot;,
+      &quot;intent&quot;: &quot;Grade 2 decodable story of 6-8 connected sentences about ONE event; every sentence ends with punctuation; then one literal question.&quot;,
+      &quot;config&quot;: {
+        &quot;targetEvalMode&quot;: &quot;literal&quot;,
+        &quot;subject&quot;: &quot;Language Arts&quot;,
+        &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+      },
+      &quot;objectiveIds&quot;: [
+        &quot;obj1&quot;
+      ]
+    },
+    {
+      &quot;componentId&quot;: &quot;read-aloud-studio&quot;,
+      &quot;instanceId&quot;: &quot;la001-05-a-3-read-aloud-studio&quot;,
+      &quot;title&quot;: &quot;Cold Read a New Passage&quot;,
+      &quot;intent&quot;: &quot;Grade 2 connected 5-line passage the child has not seen; not the curriculum example sentences.&quot;,
+      &quot;config&quot;: {
+        &quot;targetEvalMode&quot;: &quot;accuracy&quot;,
+        &quot;subject&quot;: &quot;Language Arts&quot;,
+        &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+      },
+      &quot;objectiveIds&quot;: [
+        &quot;obj1&quot;
+      ]
+    }
+  ]
+}</pre></details>
+</section>
+<section class="lesson" id="LA001-05-b">
+  <header class="lh">
+    <div><div class="eyebrow">Lesson 6 · Reading Foundations · Reading Fluency</div>
+    <h3>Read It Like You Mean It</h3></div>
+    <span class="chip warn">Repair existing</span>
+  </header>
+  <p class="cur"><span class="mono">LA001-05-b</span> Students record themselves reading aloud, practicing appropriate pacing, intonation, and expression. Focus: Enhancing oral reading expression and rate. Examples: Reading a dialogue between characters, reading an enthusiastic informative paragraph, reading a short poem, reading an empathetic narrative, reading a persuasive sentence, reading a list of exclamatory remarks. Constraints: Use audio analysis in the read-aloud-studio to compare against a model reading.</p>
+  <p class="meta">Published target: <span class="mono">read-aloud-studio</span> (provenance only) · Planned length 14 min</p>
+  <div class="grid2">
+    <div><h4>Learner action</h4><p>Reread a short expressive text (dialogue, exclamations, a question) with pacing and expression after hearing a model.</p>
+      <h4>Sequence</h4><ol class="seq"><li><span class='mono'>read-aloud-studio</span> · <span class='mono'>dialogue</span> <span class='role'>modeled practice</span><div class='bt'>Read Like the Characters</div></li><li><span class='mono'>read-aloud-studio</span> · <span class='mono'>expression</span> <span class='role'>main practice</span><div class='bt'>Mark the Pauses, Then Read</div></li></ol></div>
+    <div><h4>Evidence of mastery</h4><ul><li>Word accuracy on the reread after the model (scored).</li><li>Expression, pacing and intonation are coached only. &quot;There is no prosody response class, so nothing grades how it sounded&quot; (ReadAloudStudio.tsx:29-38). Mastery of expression needs an adult listening: external review protocol.</li></ul>
+      <h4>Limits found</h4><ul><li>expression draw: lines were about the objective&#x27;s own words (&quot;Clear intonation sounds so good.&quot;).</li><li>dialogue draw: no line had end punctuation.</li><li>No comparison to the model reading exists; reads are judged against the print.</li></ul></div>
+  </div>
+  <div class="decision"><strong>Repair existing.</strong> Repair content (RAS-1 meta-topic, RAS-3 missing punctuation). Do not build prosody scoring: the project rules out judging live audio quality, so expression remains coached practice with an external check.</div>
+  <h4>Generator probes (one draw per binding, exact curriculum text, grade 2)</h4>
+  <div class="tw"><table class="probes"><tbody><tr><td class='mono'>read-aloud-studio<br>expression</td><td><span class='chip bad'>defect</span></td><td>The lines are about the objective wording: &quot;Listen to the model voice.&quot;, &quot;With steady pacing, we record.&quot;, &quot;Clear intonation sounds so good.&quot;, &quot;Great expression wins the prize.&quot; There is no dialogue, exclamation or feeling to express.</td></tr><tr><td class='mono'>read-aloud-studio<br>dialogue</td><td><span class='chip bad'>defect</span></td><td>A Leo/Max knight dialogue, but no line has end punctuation, no ! and no ?. Punctuation is the main cue for expression, and every line reads as flat.</td></tr></tbody></table></div>
+  <details><summary>Manifest JSON · <a href="manifests/lesson-06-LA001-05-b.json">manifests/lesson-06-LA001-05-b.json</a></summary><pre>{
+  &quot;topic&quot;: &quot;Read It Like You Mean It&quot;,
+  &quot;gradeLevel&quot;: &quot;Grade 2&quot;,
+  &quot;themeColor&quot;: &quot;#2f6f5e&quot;,
+  &quot;subject&quot;: &quot;LANGUAGE_ARTS&quot;,
+  &quot;objectiveBlocks&quot;: [
+    {
+      &quot;objectiveId&quot;: &quot;obj1&quot;,
+      &quot;objectiveText&quot;: &quot;Students record themselves reading aloud, practicing appropriate pacing, intonation, and expression. Focus: Enhancing oral reading expression and rate. Examples: Reading a dialogue between characters, reading an enthusiastic informative paragraph, reading a short poem, reading an empathetic narrative, reading a persuasive sentence, reading a list of exclamatory remarks. Constraints: Use audio analysis in the read-aloud-studio to compare against a model reading.&quot;,
+      &quot;objectiveVerb&quot;: &quot;apply&quot;,
+      &quot;components&quot;: [
+        {
+          &quot;componentId&quot;: &quot;read-aloud-studio&quot;,
+          &quot;instanceId&quot;: &quot;la001-05-b-1-read-aloud-studio&quot;,
+          &quot;title&quot;: &quot;Read Like the Characters&quot;,
+          &quot;intent&quot;: &quot;Grade 2 dialogue between two characters with real end punctuation: at least one ?, one ! and one statement; feelings stated in the story.&quot;,
+          &quot;config&quot;: {
+            &quot;targetEvalMode&quot;: &quot;dialogue&quot;,
+            &quot;subject&quot;: &quot;Language Arts&quot;,
+            &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+          }
+        },
+        {
+          &quot;componentId&quot;: &quot;read-aloud-studio&quot;,
+          &quot;instanceId&quot;: &quot;la001-05-b-2-read-aloud-studio&quot;,
+          &quot;title&quot;: &quot;Mark the Pauses, Then Read&quot;,
+          &quot;intent&quot;: &quot;Grade 2 short connected passage about something exciting (not about reading or recording). Lines carry commas, ! and ? the child can use for phrasing.&quot;,
+          &quot;config&quot;: {
+            &quot;targetEvalMode&quot;: &quot;expression&quot;,
+            &quot;subject&quot;: &quot;Language Arts&quot;,
+            &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+          }
+        }
+      ]
+    }
+  ],
+  &quot;layout&quot;: [
+    {
+      &quot;componentId&quot;: &quot;read-aloud-studio&quot;,
+      &quot;instanceId&quot;: &quot;la001-05-b-1-read-aloud-studio&quot;,
+      &quot;title&quot;: &quot;Read Like the Characters&quot;,
+      &quot;intent&quot;: &quot;Grade 2 dialogue between two characters with real end punctuation: at least one ?, one ! and one statement; feelings stated in the story.&quot;,
+      &quot;config&quot;: {
+        &quot;targetEvalMode&quot;: &quot;dialogue&quot;,
+        &quot;subject&quot;: &quot;Language Arts&quot;,
+        &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+      },
+      &quot;objectiveIds&quot;: [
+        &quot;obj1&quot;
+      ]
+    },
+    {
+      &quot;componentId&quot;: &quot;read-aloud-studio&quot;,
+      &quot;instanceId&quot;: &quot;la001-05-b-2-read-aloud-studio&quot;,
+      &quot;title&quot;: &quot;Mark the Pauses, Then Read&quot;,
+      &quot;intent&quot;: &quot;Grade 2 short connected passage about something exciting (not about reading or recording). Lines carry commas, ! and ? the child can use for phrasing.&quot;,
+      &quot;config&quot;: {
+        &quot;targetEvalMode&quot;: &quot;expression&quot;,
+        &quot;subject&quot;: &quot;Language Arts&quot;,
+        &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+      },
+      &quot;objectiveIds&quot;: [
+        &quot;obj1&quot;
+      ]
+    }
+  ]
+}</pre></details>
+</section>
+<section class="lesson" id="LA003-01-b">
+  <header class="lh">
+    <div><div class="eyebrow">Lesson 7 · Listening Comprehension and Oral Language · Recounting Key Details</div>
+    <h3>What Is the Big Message?</h3></div>
+    <span class="chip new">New mode</span>
+  </header>
+  <p class="cur"><span class="mono">LA003-01-b</span> Students analyze a read-aloud passage to extract the main idea or central message through systematic text evidence collection. Focus: Determining the overall point or central message of the narrative or text. Examples: The importance of kindness, the lesson learned by the protagonist, the significance of the invention, the moral of the fable, the primary topic of the report, why the animal adapted to its habitat, how weather affects the local ecosystem, the reason for the city festival. Constraints: The passage-studio must provide a short text segment where the student chooses the one best sentence that summarizes the entire passage from a list of distractors.</p>
+  <p class="meta">Published target: <span class="mono">passage-studio</span> (provenance only) · Planned length 15 min</p>
+  <div class="grid2">
+    <div><h4>Learner action</h4><p>Listen to a read-aloud story and choose the one sentence that sums up the whole story, not a single detail.</p>
+      <h4>Sequence</h4><ol class="seq"><li><span class='mono'>story-talk</span> · <span class='mono'>why_because</span> <span class='role'>listening warm-up</span><div class='bt'>Why Did It Happen?</div></li><li><span class='mono'>passage-studio</span> · <span class='mono'>recall</span> <span class='role'>main practice (partial fit)</span><div class='bt'>Read and Listen: The Garden</div></li></ol></div>
+    <div><h4>Evidence of mastery</h4><ul><li>Chooses the whole-story summary over true-but-narrow details. No listening primitive asks this today: passage-studio is text-first and its recall mode has no main-idea item; decodable-reader main_idea needs the child to read.</li></ul>
+      <h4>Limits found</h4><ul><li>media-player story_analysis is not usable as drawn: segment 4 narrates the answer, and the script stays printed during questions at grade 1+.</li><li>story-talk stories are 3-5 sentences and its answers are single words, so it cannot carry a summary sentence choice.</li></ul></div>
+  </div>
+  <div class="decision"><strong>New mode.</strong> New listening mode: hear an 80-120 word story audio-only, choose or say the best whole-story sentence against detail distractors. See brief 2. Separately fix the media-player leak (MP-SA1).</div>
+  <h4>Generator probes (one draw per binding, exact curriculum text, grade 2)</h4>
+  <div class="tw"><table class="probes"><tbody><tr><td class='mono'>media-player<br>story_analysis</td><td><span class='chip bad'>defect</span></td><td>Segment 4&#x27;s narration says &quot;The sentence that truly summarizes the entire passage is: Kind actions and sharing bring happiness to everyone&quot;, and its question asks which sentence summarizes the passage. Segments 1 and 3 teach the method and quiz the script&#x27;s own definitions. Source check: at grade 1+ the script stays printed during the question.</td></tr><tr><td class='mono'>passage-studio<br>recall</td><td><span class='chip warn'>partial</span></td><td>A 118-word story with a clear central message, shown as text (listening is optional). The questions are a detail, a vocabulary item and an inference. There is no main-idea or best-summary item, which is the objective.</td></tr></tbody></table></div>
+  <details><summary>Manifest JSON · <a href="manifests/lesson-07-LA003-01-b.json">manifests/lesson-07-LA003-01-b.json</a></summary><pre>{
+  &quot;topic&quot;: &quot;What Is the Big Message?&quot;,
+  &quot;gradeLevel&quot;: &quot;Grade 2&quot;,
+  &quot;themeColor&quot;: &quot;#2f6f5e&quot;,
+  &quot;subject&quot;: &quot;LANGUAGE_ARTS&quot;,
+  &quot;objectiveBlocks&quot;: [
+    {
+      &quot;objectiveId&quot;: &quot;obj1&quot;,
+      &quot;objectiveText&quot;: &quot;Students analyze a read-aloud passage to extract the main idea or central message through systematic text evidence collection. Focus: Determining the overall point or central message of the narrative or text. Examples: The importance of kindness, the lesson learned by the protagonist, the significance of the invention, the moral of the fable, the primary topic of the report, why the animal adapted to its habitat, how weather affects the local ecosystem, the reason for the city festival. Constraints: The passage-studio must provide a short text segment where the student chooses the one best sentence that summarizes the entire passage from a list of distractors.&quot;,
+      &quot;objectiveVerb&quot;: &quot;identify&quot;,
+      &quot;components&quot;: [
+        {
+          &quot;componentId&quot;: &quot;story-talk&quot;,
+          &quot;instanceId&quot;: &quot;la003-01-b-1-story-talk&quot;,
+          &quot;title&quot;: &quot;Why Did It Happen?&quot;,
+          &quot;intent&quot;: &quot;Grade 2 read-aloud stories where a character makes a choice; the child says why.&quot;,
+          &quot;config&quot;: {
+            &quot;targetEvalMode&quot;: &quot;why_because&quot;,
+            &quot;subject&quot;: &quot;Language Arts&quot;,
+            &quot;unitTitle&quot;: &quot;Listening Comprehension and Oral Language&quot;
+          }
+        },
+        {
+          &quot;componentId&quot;: &quot;passage-studio&quot;,
+          &quot;instanceId&quot;: &quot;la003-01-b-2-passage-studio&quot;,
+          &quot;title&quot;: &quot;Read and Listen: The Garden&quot;,
+          &quot;intent&quot;: &quot;Grade 2 story of 80-120 words with one clear central message; tutor reads it aloud. Include one question asking which sentence best tells what the whole story is about, with detail-only distractors.&quot;,
+          &quot;config&quot;: {
+            &quot;targetEvalMode&quot;: &quot;recall&quot;,
+            &quot;subject&quot;: &quot;Language Arts&quot;,
+            &quot;unitTitle&quot;: &quot;Listening Comprehension and Oral Language&quot;
+          }
+        }
+      ]
+    }
+  ],
+  &quot;layout&quot;: [
+    {
+      &quot;componentId&quot;: &quot;story-talk&quot;,
+      &quot;instanceId&quot;: &quot;la003-01-b-1-story-talk&quot;,
+      &quot;title&quot;: &quot;Why Did It Happen?&quot;,
+      &quot;intent&quot;: &quot;Grade 2 read-aloud stories where a character makes a choice; the child says why.&quot;,
+      &quot;config&quot;: {
+        &quot;targetEvalMode&quot;: &quot;why_because&quot;,
+        &quot;subject&quot;: &quot;Language Arts&quot;,
+        &quot;unitTitle&quot;: &quot;Listening Comprehension and Oral Language&quot;
+      },
+      &quot;objectiveIds&quot;: [
+        &quot;obj1&quot;
+      ]
+    },
+    {
+      &quot;componentId&quot;: &quot;passage-studio&quot;,
+      &quot;instanceId&quot;: &quot;la003-01-b-2-passage-studio&quot;,
+      &quot;title&quot;: &quot;Read and Listen: The Garden&quot;,
+      &quot;intent&quot;: &quot;Grade 2 story of 80-120 words with one clear central message; tutor reads it aloud. Include one question asking which sentence best tells what the whole story is about, with detail-only distractors.&quot;,
+      &quot;config&quot;: {
+        &quot;targetEvalMode&quot;: &quot;recall&quot;,
+        &quot;subject&quot;: &quot;Language Arts&quot;,
+        &quot;unitTitle&quot;: &quot;Listening Comprehension and Oral Language&quot;
+      },
+      &quot;objectiveIds&quot;: [
+        &quot;obj1&quot;
+      ]
+    }
+  ]
+}</pre></details>
+</section>
+<section class="lesson" id="LA003-01-a">
+  <header class="lh">
+    <div><div class="eyebrow">Lesson 8 · Listening Comprehension and Oral Language · Recounting Key Details</div>
+    <h3>Which Facts Matter Most?</h3></div>
+    <span class="chip new">New mode</span>
+  </header>
+  <p class="cur"><span class="mono">LA003-01-a</span> Students listen to short audio passages and select the most important facts to summarize the core events. Focus: Identifying specific key details in informational and narrative text. Examples: The main goal of the scientist, the steps taken by the character, the final outcome of the experiment, the location of the event, the time period described, the reason for the character&#x27;s choice, the central problem encountered, the solution reached. Constraints: The passage-studio will present a 100-word audio track followed by multiple-choice options to identify the top three key facts, ensuring all answers are directly supported by the text.</p>
+  <p class="meta">Published target: <span class="mono">passage-studio</span> (provenance only) · Planned length 13 min</p>
+  <div class="grid2">
+    <div><h4>Learner action</h4><p>Listen to a ~100-word passage and pick the three most important facts, leaving out true but minor ones.</p>
+      <h4>Sequence</h4><ol class="seq"><li><span class='mono'>media-player</span> · <span class='mono'>listen_for_details</span> <span class='role'>supported practice</span><div class='bt'>Listen for Details</div></li><li><span class='mono'>story-talk</span> · <span class='mono'>who_what_where</span> <span class='role'>independent check (single detail)</span><div class='bt'>Tell Me Who, What, Where</div></li></ol></div>
+    <div><h4>Evidence of mastery</h4><ul><li>Recalls single stated details (both bindings).</li><li>Choosing the three MOST important facts is not elicited anywhere: no multi-select importance task exists; passage-studio evidence-highlight asks &quot;supports a claim&quot;, not &quot;matters most&quot;.</li></ul>
+      <h4>Limits found</h4><ul><li>media-player shows the script text during questions at grade 1+, so a listening detail can be looked up.</li><li>story-talk passages are about a quarter of the objective&#x27;s 100 words.</li></ul></div>
+  </div>
+  <div class="decision"><strong>New mode.</strong> Same new listening mode family as LA003-01-b: a &quot;key details&quot; task where the child keeps 3 important facts and leaves out 2-3 minor true ones. See brief 2.</div>
+  <h4>Generator probes (one draw per binding, exact curriculum text, grade 2)</h4>
+  <div class="tw"><table class="probes"><tbody><tr><td class='mono'>media-player<br>listen_for_details</td><td><span class='chip ok'>usable</span></td><td>Three 3-sentence Mars segments, each with one detail question (goal, problem, outcome). The details are well chosen, but one per question; nothing asks the child to judge which facts matter most.</td></tr><tr><td class='mono'>story-talk<br>who_what_where</td><td><span class='chip warn'>partial</span></td><td>Five audio-only stories of 22 to 27 words, each asking one who/what/where answer word. Honest listening, but kindergarten length, a quarter of the objective&#x27;s 100-word passages.</td></tr></tbody></table></div>
+  <details><summary>Manifest JSON · <a href="manifests/lesson-08-LA003-01-a.json">manifests/lesson-08-LA003-01-a.json</a></summary><pre>{
+  &quot;topic&quot;: &quot;Which Facts Matter Most?&quot;,
+  &quot;gradeLevel&quot;: &quot;Grade 2&quot;,
+  &quot;themeColor&quot;: &quot;#2f6f5e&quot;,
+  &quot;subject&quot;: &quot;LANGUAGE_ARTS&quot;,
+  &quot;objectiveBlocks&quot;: [
+    {
+      &quot;objectiveId&quot;: &quot;obj1&quot;,
+      &quot;objectiveText&quot;: &quot;Students listen to short audio passages and select the most important facts to summarize the core events. Focus: Identifying specific key details in informational and narrative text. Examples: The main goal of the scientist, the steps taken by the character, the final outcome of the experiment, the location of the event, the time period described, the reason for the character&#x27;s choice, the central problem encountered, the solution reached. Constraints: The passage-studio will present a 100-word audio track followed by multiple-choice options to identify the top three key facts, ensuring all answers are directly supported by the text.&quot;,
+      &quot;objectiveVerb&quot;: &quot;identify&quot;,
+      &quot;components&quot;: [
+        {
+          &quot;componentId&quot;: &quot;media-player&quot;,
+          &quot;instanceId&quot;: &quot;la003-01-a-1-media-player&quot;,
+          &quot;title&quot;: &quot;Listen for Details&quot;,
+          &quot;intent&quot;: &quot;Grade 2 narrated passage in 3 segments about one event (goal, problem, outcome); one detail question per segment.&quot;,
+          &quot;config&quot;: {
+            &quot;targetEvalMode&quot;: &quot;listen_for_details&quot;,
+            &quot;subject&quot;: &quot;Language Arts&quot;,
+            &quot;unitTitle&quot;: &quot;Listening Comprehension and Oral Language&quot;
+          }
+        },
+        {
+          &quot;componentId&quot;: &quot;story-talk&quot;,
+          &quot;instanceId&quot;: &quot;la003-01-a-2-story-talk&quot;,
+          &quot;title&quot;: &quot;Tell Me Who, What, Where&quot;,
+          &quot;intent&quot;: &quot;Grade 2 read-aloud stories; the child says the stated detail.&quot;,
+          &quot;config&quot;: {
+            &quot;targetEvalMode&quot;: &quot;who_what_where&quot;,
+            &quot;subject&quot;: &quot;Language Arts&quot;,
+            &quot;unitTitle&quot;: &quot;Listening Comprehension and Oral Language&quot;
+          }
+        }
+      ]
+    }
+  ],
+  &quot;layout&quot;: [
+    {
+      &quot;componentId&quot;: &quot;media-player&quot;,
+      &quot;instanceId&quot;: &quot;la003-01-a-1-media-player&quot;,
+      &quot;title&quot;: &quot;Listen for Details&quot;,
+      &quot;intent&quot;: &quot;Grade 2 narrated passage in 3 segments about one event (goal, problem, outcome); one detail question per segment.&quot;,
+      &quot;config&quot;: {
+        &quot;targetEvalMode&quot;: &quot;listen_for_details&quot;,
+        &quot;subject&quot;: &quot;Language Arts&quot;,
+        &quot;unitTitle&quot;: &quot;Listening Comprehension and Oral Language&quot;
+      },
+      &quot;objectiveIds&quot;: [
+        &quot;obj1&quot;
+      ]
+    },
+    {
+      &quot;componentId&quot;: &quot;story-talk&quot;,
+      &quot;instanceId&quot;: &quot;la003-01-a-2-story-talk&quot;,
+      &quot;title&quot;: &quot;Tell Me Who, What, Where&quot;,
+      &quot;intent&quot;: &quot;Grade 2 read-aloud stories; the child says the stated detail.&quot;,
+      &quot;config&quot;: {
+        &quot;targetEvalMode&quot;: &quot;who_what_where&quot;,
+        &quot;subject&quot;: &quot;Language Arts&quot;,
+        &quot;unitTitle&quot;: &quot;Listening Comprehension and Oral Language&quot;
+      },
+      &quot;objectiveIds&quot;: [
+        &quot;obj1&quot;
+      ]
+    }
+  ]
+}</pre></details>
+</section>
+<section class="lesson" id="LA001-02-b">
+  <header class="lh">
+    <div><div class="eyebrow">Lesson 9 · Reading Foundations · Digraphs and Blends</div>
+    <h3>Blend It: bl, st, mp, nd</h3></div>
+    <span class="chip warn">Repair existing</span>
+  </header>
+  <p class="cur"><span class="mono">LA001-02-b</span> Students blend sounds into complex words by combining initial and final consonant clusters in various word structures. Focus: Reading words with common initial and final consonant blends like bl, st, mp, and nd. Examples: blue, stop, lamp, sand, blow, star, jump, wind, black, fast. Constraints: Use visual cues to identify the blend segment separately from the vowel-consonant core in the phonics-blender.</p>
+  <p class="meta">Published target: <span class="mono">phonics-blender</span> (provenance only) · Planned length 12 min</p>
+  <div class="grid2">
+    <div><h4>Learner action</h4><p>Read words with initial and final consonant blends, hearing each consonant in the cluster.</p>
+      <h4>Sequence</h4><ol class="seq"><li><span class='mono'>phonics-blender</span> · <span class='mono'>cvc</span> <span class='role'>warm-up</span><div class='bt'>Warm Up With Short Words</div></li><li><span class='mono'>phonics-blender</span> · <span class='mono'>cvce_blend</span> <span class='role'>main practice</span><div class='bt'>Blend the Clusters</div></li></ol></div>
+    <div><h4>Evidence of mastery</h4><ul><li>Says each blend word aloud from its tiles, judged against the target.</li></ul>
+      <h4>Limits found</h4><ul><li>As built, cvce_blend can never serve a blend: the generator pins the pattern to allowedTypes[0] = cvce (gemini-phonics-blender.ts:318). The probe got cake, bike, bone, cute, nine.</li><li>There are no final-blend examples in the prompt, and the UI never groups the blend apart from the vowel-consonant core.</li></ul></div>
+  </div>
+  <div class="decision"><strong>Repair existing.</strong> Fork the mode: split cvce_blend into cvce and blend (initial + final), the contract-first route for a mode that cannot serve half its name. Route to /eval-fix (PHB-1).</div>
+  <h4>Generator probes (one draw per binding, exact curriculum text, grade 2)</h4>
+  <div class="tw"><table class="probes"><tbody><tr><td class='mono'>phonics-blender<br>cvce_blend</td><td><span class='chip bad'>defect</span></td><td>cake, bike, bone, cute, nine: zero blends. Source check: the generator pins the pattern to allowedTypes[0] = &quot;cvce&quot; (gemini-phonics-blender.ts:318), so this mode can never serve a blend.</td></tr></tbody></table></div>
+  <details><summary>Manifest JSON · <a href="manifests/lesson-09-LA001-02-b.json">manifests/lesson-09-LA001-02-b.json</a></summary><pre>{
+  &quot;topic&quot;: &quot;Blend It: bl, st, mp, nd&quot;,
+  &quot;gradeLevel&quot;: &quot;Grade 2&quot;,
+  &quot;themeColor&quot;: &quot;#2f6f5e&quot;,
+  &quot;subject&quot;: &quot;LANGUAGE_ARTS&quot;,
+  &quot;objectiveBlocks&quot;: [
+    {
+      &quot;objectiveId&quot;: &quot;obj1&quot;,
+      &quot;objectiveText&quot;: &quot;Students blend sounds into complex words by combining initial and final consonant clusters in various word structures. Focus: Reading words with common initial and final consonant blends like bl, st, mp, and nd. Examples: blue, stop, lamp, sand, blow, star, jump, wind, black, fast. Constraints: Use visual cues to identify the blend segment separately from the vowel-consonant core in the phonics-blender.&quot;,
+      &quot;objectiveVerb&quot;: &quot;apply&quot;,
+      &quot;components&quot;: [
+        {
+          &quot;componentId&quot;: &quot;phonics-blender&quot;,
+          &quot;instanceId&quot;: &quot;la001-02-b-1-phonics-blender&quot;,
+          &quot;title&quot;: &quot;Warm Up With Short Words&quot;,
+          &quot;intent&quot;: &quot;Grade 2 CVC review words that become blend words when one consonant is added (lap &gt; clap, sad &gt; sand).&quot;,
+          &quot;config&quot;: {
+            &quot;targetEvalMode&quot;: &quot;cvc&quot;,
+            &quot;subject&quot;: &quot;Language Arts&quot;,
+            &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+          }
+        },
+        {
+          &quot;componentId&quot;: &quot;phonics-blender&quot;,
+          &quot;instanceId&quot;: &quot;la001-02-b-2-phonics-blender&quot;,
+          &quot;title&quot;: &quot;Blend the Clusters&quot;,
+          &quot;intent&quot;: &quot;Grade 2 words with initial blends (bl, st, cl, fr) and final blends (mp, nd, st): blue, stop, lamp, sand, jump, fast. No silent-e words.&quot;,
+          &quot;config&quot;: {
+            &quot;targetEvalMode&quot;: &quot;cvce_blend&quot;,
+            &quot;subject&quot;: &quot;Language Arts&quot;,
+            &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+          }
+        }
+      ]
+    }
+  ],
+  &quot;layout&quot;: [
+    {
+      &quot;componentId&quot;: &quot;phonics-blender&quot;,
+      &quot;instanceId&quot;: &quot;la001-02-b-1-phonics-blender&quot;,
+      &quot;title&quot;: &quot;Warm Up With Short Words&quot;,
+      &quot;intent&quot;: &quot;Grade 2 CVC review words that become blend words when one consonant is added (lap &gt; clap, sad &gt; sand).&quot;,
+      &quot;config&quot;: {
+        &quot;targetEvalMode&quot;: &quot;cvc&quot;,
+        &quot;subject&quot;: &quot;Language Arts&quot;,
+        &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+      },
+      &quot;objectiveIds&quot;: [
+        &quot;obj1&quot;
+      ]
+    },
+    {
+      &quot;componentId&quot;: &quot;phonics-blender&quot;,
+      &quot;instanceId&quot;: &quot;la001-02-b-2-phonics-blender&quot;,
+      &quot;title&quot;: &quot;Blend the Clusters&quot;,
+      &quot;intent&quot;: &quot;Grade 2 words with initial blends (bl, st, cl, fr) and final blends (mp, nd, st): blue, stop, lamp, sand, jump, fast. No silent-e words.&quot;,
+      &quot;config&quot;: {
+        &quot;targetEvalMode&quot;: &quot;cvce_blend&quot;,
+        &quot;subject&quot;: &quot;Language Arts&quot;,
+        &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+      },
+      &quot;objectiveIds&quot;: [
+        &quot;obj1&quot;
+      ]
+    }
+  ]
+}</pre></details>
+</section>
+<section class="lesson" id="LA001-02-a">
+  <header class="lh">
+    <div><div class="eyebrow">Lesson 10 · Reading Foundations · Digraphs and Blends</div>
+    <h3>Two Letters, One Sound</h3></div>
+    <span class="chip ok">Reuse</span>
+  </header>
+  <p class="cur"><span class="mono">LA001-02-a</span> Students practice reading words that begin or end with consonant digraphs by blending sounds together to form recognizable words. Focus: Decoding words featuring the sh, ch, th, wh, and ph consonant digraphs. Examples: ship, chop, thin, whip, phone, dash, rich, path, moth, graph. Constraints: Isolate the digraph sound at the start of words first, then advance to final position usage in the phonics-blender.</p>
+  <p class="meta">Published target: <span class="mono">phonics-blender</span> (provenance only) · Planned length 12 min</p>
+  <div class="grid2">
+    <div><h4>Learner action</h4><p>Blend words with sh, ch, th, wh, ph at the start, then at the end.</p>
+      <h4>Sequence</h4><ol class="seq"><li><span class='mono'>phonics-blender</span> · <span class='mono'>digraph</span> <span class='role'>introduction + practice</span><div class='bt'>Digraphs at the Start</div></li><li><span class='mono'>phonics-blender</span> · <span class='mono'>digraph</span> <span class='role'>practice + fresh review</span><div class='bt'>Digraphs at the End</div></li></ol></div>
+    <div><h4>Evidence of mastery</h4><ul><li>Says each digraph word aloud from tiles that show the digraph as one tile.</li></ul>
+      <h4>Limits found</h4><ul><li>The prompt names sh, ch, th, wh only; ph is never mentioned and wh did not appear in the probe.</li><li>Position order (initial first) is set by the two intents above, not by the mode.</li></ul></div>
+  </div>
+  <div class="decision"><strong>Reuse.</strong> Reuse. Adding ph to the digraph prompt is a one-line generator change worth doing alongside PHB-1.</div>
+  <h4>Generator probes (one draw per binding, exact curriculum text, grade 2)</h4>
+  <div class="tw"><table class="probes"><tbody><tr><td class='mono'>phonics-blender<br>digraph</td><td><span class='chip ok'>usable</span></td><td>ship, chop, thin, dash, rich: initial and final digraphs, each digraph one tile. wh and ph do not appear; the prompt never mentions ph.</td></tr></tbody></table></div>
+  <details><summary>Manifest JSON · <a href="manifests/lesson-10-LA001-02-a.json">manifests/lesson-10-LA001-02-a.json</a></summary><pre>{
+  &quot;topic&quot;: &quot;Two Letters, One Sound&quot;,
+  &quot;gradeLevel&quot;: &quot;Grade 2&quot;,
+  &quot;themeColor&quot;: &quot;#2f6f5e&quot;,
+  &quot;subject&quot;: &quot;LANGUAGE_ARTS&quot;,
+  &quot;objectiveBlocks&quot;: [
+    {
+      &quot;objectiveId&quot;: &quot;obj1&quot;,
+      &quot;objectiveText&quot;: &quot;Students practice reading words that begin or end with consonant digraphs by blending sounds together to form recognizable words. Focus: Decoding words featuring the sh, ch, th, wh, and ph consonant digraphs. Examples: ship, chop, thin, whip, phone, dash, rich, path, moth, graph. Constraints: Isolate the digraph sound at the start of words first, then advance to final position usage in the phonics-blender.&quot;,
+      &quot;objectiveVerb&quot;: &quot;apply&quot;,
+      &quot;components&quot;: [
+        {
+          &quot;componentId&quot;: &quot;phonics-blender&quot;,
+          &quot;instanceId&quot;: &quot;la001-02-a-1-phonics-blender&quot;,
+          &quot;title&quot;: &quot;Digraphs at the Start&quot;,
+          &quot;intent&quot;: &quot;Grade 2 words with sh, ch, th, wh, ph at the START (ship, chop, thin, whip, phone).&quot;,
+          &quot;config&quot;: {
+            &quot;targetEvalMode&quot;: &quot;digraph&quot;,
+            &quot;subject&quot;: &quot;Language Arts&quot;,
+            &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+          }
+        },
+        {
+          &quot;componentId&quot;: &quot;phonics-blender&quot;,
+          &quot;instanceId&quot;: &quot;la001-02-a-2-phonics-blender&quot;,
+          &quot;title&quot;: &quot;Digraphs at the End&quot;,
+          &quot;intent&quot;: &quot;Grade 2 words with sh, ch, th, ph at the END (dash, rich, path, moth, graph).&quot;,
+          &quot;config&quot;: {
+            &quot;targetEvalMode&quot;: &quot;digraph&quot;,
+            &quot;subject&quot;: &quot;Language Arts&quot;,
+            &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+          }
+        }
+      ]
+    }
+  ],
+  &quot;layout&quot;: [
+    {
+      &quot;componentId&quot;: &quot;phonics-blender&quot;,
+      &quot;instanceId&quot;: &quot;la001-02-a-1-phonics-blender&quot;,
+      &quot;title&quot;: &quot;Digraphs at the Start&quot;,
+      &quot;intent&quot;: &quot;Grade 2 words with sh, ch, th, wh, ph at the START (ship, chop, thin, whip, phone).&quot;,
+      &quot;config&quot;: {
+        &quot;targetEvalMode&quot;: &quot;digraph&quot;,
+        &quot;subject&quot;: &quot;Language Arts&quot;,
+        &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+      },
+      &quot;objectiveIds&quot;: [
+        &quot;obj1&quot;
+      ]
+    },
+    {
+      &quot;componentId&quot;: &quot;phonics-blender&quot;,
+      &quot;instanceId&quot;: &quot;la001-02-a-2-phonics-blender&quot;,
+      &quot;title&quot;: &quot;Digraphs at the End&quot;,
+      &quot;intent&quot;: &quot;Grade 2 words with sh, ch, th, ph at the END (dash, rich, path, moth, graph).&quot;,
+      &quot;config&quot;: {
+        &quot;targetEvalMode&quot;: &quot;digraph&quot;,
+        &quot;subject&quot;: &quot;Language Arts&quot;,
+        &quot;unitTitle&quot;: &quot;Reading Foundations&quot;
+      },
+      &quot;objectiveIds&quot;: [
+        &quot;obj1&quot;
+      ]
+    }
+  ]
+}</pre></details>
+</section>
+
+<h2 id="issues">Defects found (filed to EVAL_TRACKER.md)</h2>
+<div class="tw"><table><thead><tr><th>ID</th><th>Primitive · mode</th><th>Severity</th><th>Finding</th></tr></thead><tbody><tr><td class='mono'>PHB-1</td><td class='mono'>phonics-blender<br>cvce_blend</td><td><span class='chip bad'>HIGH</span></td><td><strong>Mode never serves blends.</strong> Generator pins Pattern Type to evalConstraint.allowedTypes[0] (= cvce) at gemini-phonics-blender.ts:318/396-398, so cvce_blend returns silent-e words only (G2 probe 2026-10-07: cake, bike, bone, cute, nine). Blend objectives (LA001-02-b) get no blend items. Fork into cvce + blend (initial and final). Also: digraph prompt omits ph.</td></tr><tr><td class='mono'>SYC-1</td><td class='mono'>syllable-clapper<br>count_parts</td><td><span class='chip bad'>HIGH</span></td><td><strong>Constant answer.</strong> G2 probe 2026-10-07 copied the curriculum examples: 8/8 words have 2 syllables, so &quot;two&quot; is always right. No code rule spreads counts across a session. Require at least two distinct counts per session.</td></tr><tr><td class='mono'>MP-SA1</td><td class='mono'>media-player<br>story_analysis</td><td><span class='chip bad'>HIGH</span></td><td><strong>Answer leak.</strong> G2 probe 2026-10-07: segment 4 narration states the summary sentence that its question then asks for; segments 1 and 3 quiz the script&#x27;s own definitions of &quot;text evidence&quot;. Separately, at grade 1+ the script stays printed during the knowledge check (MediaPlayer.tsx:875-879), so listening questions can be answered by reading back.</td></tr><tr><td class='mono'>RAS-1</td><td class='mono'>read-aloud-studio<br>expression</td><td><span class='chip warn'>MEDIUM</span></td><td><strong>Topic is the objective wording.</strong> G2 probe 2026-10-07: lines are about reading itself (&quot;Clear intonation sounds so good.&quot;, &quot;Great expression wins the prize.&quot;), with nothing to express. Intent words (pacing, intonation, model reading) are being used as content.</td></tr><tr><td class='mono'>RAS-3</td><td class='mono'>read-aloud-studio<br>dialogue</td><td><span class='chip warn'>MEDIUM</span></td><td><strong>No end punctuation.</strong> G2 probe 2026-10-07: 5/5 dialogue lines have no . ! or ?, removing the main cue for expression.</td></tr><tr><td class='mono'>RAS-2</td><td class='mono'>read-aloud-studio<br>accuracy</td><td><span class='chip warn'>LOW</span></td><td><strong>Copies curriculum examples.</strong> G2 probe 2026-10-07: 4/5 lines are the objective&#x27;s example sentences verbatim, not one connected passage although the prompt asks for one.</td></tr><tr><td class='mono'>DR-G2-1</td><td class='mono'>decodable-reader<br>literal</td><td><span class='chip warn'>LOW</span></td><td><strong>Incoherent passage + wrong tags.</strong> G2 probe 2026-10-07: six sentences with no single event, one missing its period; phonicsPattern tags wrong (green/sweet = digraph, song = cvc, rain = diphthong). Whether tags render is unconfirmed.</td></tr><tr><td class='mono'>WW-T1</td><td class='mono'>word-workout<br>read_inflected</td><td><span class='chip warn'>LOW</span></td><td><strong>Objective printed as title.</strong> G2 probe 2026-10-07: title is &quot;Word Workout: &quot; + the full curriculum objective text.</td></tr></tbody></table></div>
+<p class="meta">Each is from a single draw plus a source read. Rates are unmeasured except where the code makes the outcome certain (PHB-1).</p>
+
+<h2 id="briefs">Build briefs</h2>
+<p>Each brief stands alone for a new session and leaves schema, naming and build order to that session.</p>
+<details class='brief'><summary><strong>Judged topic and closing sentences in paragraph-architect</strong> · LA002-02-a, LA002-02-c · <a href='briefs/1-paragraph-judged-sentences.md'>briefs/1-paragraph-judged-sentences.md</a></summary><pre class='md'># Judged topic and closing sentences in paragraph-architect
+
+Curriculum IDs: LA002-02-a, LA002-02-c (LANGUAGE_ARTS, grade 2). Source: design review la-g2-2026-10-07.
+
+## Learning goal and gap
+
+Grade 2 writers (LANGUAGE_ARTS, unit LA002 Writing, skill LA002-02 Informative Writing) learn to open an informative paragraph with a sentence that defines the topic, and to close it with a sentence that restates the topic without adding a new fact.
+
+- **LA002-02-a:** &quot;Introduce a specific topic using a clear introductory sentence paired with a simple definition... Examples: A mammal is an animal with fur, Sharks are fish that live in the ocean... Constraints: Use fill-in-the-blanks to complete topic introduction sentences.&quot;
+- **LA002-02-c:** &quot;Draft a concluding statement that effectively brings the informative paragraph to a close... reinforces the topic without introducing new facts.&quot;
+
+paragraph-architect already gives the child the writing surface: frames, a model paragraph, and typed topic, detail and closing sentences. It never checks what the child wrote. Practice passes when the fields are non-empty, and picking a frame while leaving the blank empty already counts (ParagraphArchitect.tsx:540-545). The score adds points for parts being present (:693-697). Its three modes change only the prompt. So a child can earn credit with &quot;Sharks are ___.&quot; or a closing sentence that adds a new fact. knowledge-check can test recognition (choose the best ending), but nothing tests production.
+
+**Recommendation:** extend paragraph-architect with judged sentence modes rather than build a new primitive. The implementing session should confirm this after reading the component.
+
+## Essential behavior
+
+- **Define the topic.** The child completes or writes one opening sentence that names the topic, gives a category it belongs to, and gives one true feature.
+- **Close the paragraph.** Given a body paragraph, the child writes (or, at a simpler level, chooses) a closing sentence that refers back to the topic and adds no new fact.
+- **Feedback names what is missing:** the category, the feature, or &quot;that is a new fact&quot;.
+
+## Worked examples
+
+- **Define:** topic *insect*.
+  - Success: &quot;An insect is a small animal with six legs.&quot;
+  - Misconception: &quot;Insects are cool.&quot; This is an opinion with no category or feature.
+  - Misconception: &quot;A bee is an insect.&quot; This gives an example instead of a definition.
+- **Close:** a body paragraph about how bees collect nectar.
+  - Success: &quot;Now you know how bees make food for their hive.&quot;
+  - Misconception: &quot;Bees also have stingers.&quot; This is a new fact, not a close.
+
+## Evidence of success
+
+- **Independent evidence:** across 3 fresh topics, the opening sentence has a category and a true feature, and the closing sentence restates the topic with no new fact.
+- **Should not earn credit:** an empty frame, an unchanged frame, a sentence about a different topic, or a close that adds a fact.
+- **Uncertain cases:** loose categories (&quot;a thing that...&quot;). Decide whether a category that is true but very broad counts.
+
+## Constraints and open questions
+
+- Grade 2 spelling is unreliable. Judge the meaning, not the spelling.
+- A spoken version (oral-sentence-studio already judges a spoken sentence by meaning) may suit weaker writers.
+- Do not show the model paragraph&#x27;s own opening or closing sentence while the child writes theirs.
+
+## Handoff
+
+Read the repository&#x27;s current guidance (/add-eval-modes, the paragraph-architect contract if one exists) and related capabilities, then design, build and verify the mode with your own process. Schema, naming, judging approach and build order are yours to choose.
+</pre></details><details class='brief'><summary><strong>Listening for the big message and the key details</strong> · LA003-01-b, LA003-01-a · <a href='briefs/2-listening-main-message-key-details.md'>briefs/2-listening-main-message-key-details.md</a></summary><pre class='md'># Listening for the big message and the key details
+
+Curriculum IDs: LA003-01-b, LA003-01-a (LANGUAGE_ARTS, grade 2). Source: design review la-g2-2026-10-07.
+
+## Learning goal and gap
+
+Grade 2 listeners (LANGUAGE_ARTS, unit LA003 Listening Comprehension and Oral Language, skill LA003-01 Recounting Key Details) learn to tell the whole-story message apart from single details, and to pick the details that matter most.
+
+- **LA003-01-b:** &quot;Students analyze a read-aloud passage to extract the main idea or central message... the student chooses the one best sentence that summarizes the entire passage from a list of distractors.&quot;
+- **LA003-01-a:** &quot;Students listen to short audio passages and select the most important facts to summarize the core events... a 100-word audio track followed by multiple-choice options to identify the top three key facts.&quot;
+
+What exists now:
+- **story-talk:** listening-only, but its stories are 3-5 sentences, the answers are single words, and it has no main-idea mode.
+- **media-player `story_analysis`:** has no main-idea question type. In the grade 2 probe it narrated the summary sentence before asking for it, and it keeps the script printed during questions at grade 1+.
+- **passage-studio:** text-first.
+- **decodable-reader `main_idea`:** requires the child to read the passage.
+- **Importance:** nothing asks the child to choose which facts matter most.
+
+**Recommendation:** add two listening modes to one owner. story-talk is the likely owner because it is already audio-only and tutor-read. The implementing session may choose a different owner.
+
+## Essential behavior
+
+- The passage is heard, not shown, while the child answers. A re-listen control is fine.
+- Passages are 80-120 words, one coherent story or short report.
+- **Main message:** the child chooses (or says) the sentence that fits the WHOLE passage. The distractors are true but narrow details plus one off-topic sentence.
+- **Key details:** the child keeps the 3 facts needed to retell the core events and leaves out 2-3 facts that are true but minor.
+
+## Worked example
+
+Passage: Pip the squirrel shares acorns with a hurt neighbor, and both end up happy.
+- **Main message:**
+  - Success: &quot;Being kind to a friend in need makes everyone happier.&quot;
+  - Misconception: &quot;Ollie hurt his paw.&quot; This is true but only one detail.
+- **Key details:**
+  - Keep: Ollie was hurt and hungry; Pip shared his acorns; both were happy.
+  - Leave out: the acorn pile was giant; the tree was hollow.
+
+## Evidence of success
+
+- **Independent evidence:** over several fresh passages, the child picks the whole-story sentence and an important-facts set without the text visible.
+- **Should not earn credit:** an answer visible in the narration or on screen, or a set that includes a minor fact. Decide whether 2 of 3 earns partial credit.
+- **Uncertainty:** &quot;important&quot; is a judgment. The generator must make the minor facts clearly minor (decorative, not causal) so the key is defensible.
+
+## Constraints and open questions
+
+- No narration may state the answer or the summary.
+- Tap or spoken response? Choosing three items by voice is harder; tapping cards with picture support may suit grade 2.
+- Fix the media-player leak separately (tracker MP-SA1); do not route around it.
+
+## Handoff
+
+Read the repository&#x27;s current guidance (/add-eval-modes, /add-live-tutor-tools, story-talk and media-player contracts) and decide the owner, response form and scoring yourself. Build and verify with your own process.
+</pre></details><details class='brief'><summary><strong>Grade 2 affix building in word-builder</strong> · LA001-03-c · <a href='briefs/3-word-builder-grade2-build.md'>briefs/3-word-builder-grade2-build.md</a></summary><pre class='md'># Grade 2 affix building in word-builder
+
+Curriculum IDs: LA001-03-c (LANGUAGE_ARTS, grade 2). Source: design review la-g2-2026-10-07.
+
+## Learning goal and gap
+
+Grade 2 readers (LANGUAGE_ARTS, unit LA001 Reading Foundations, skill LA001-03 Multi-Syllable Words) learn that a prefix or suffix changes a base word in a predictable way.
+
+- **LA001-03-c:** &quot;Students analyze words with affixes by identifying and attaching common prefixes and suffixes to base words. Focus: Decoding words using knowledge of prefixes (un-, re-, pre-) and suffixes (-ed, -ing, -ly). Examples: unhappy, rewrite, preview, jumped, playing, quickly, redo... Constraints: Highlight the base word and affix in different colors.&quot;
+
+word-builder `simple_affix` already shows color-coded prefix, root and suffix cards with meanings, and the grade 2 probe drew exactly the curriculum&#x27;s words (jumped, rewrite, quickly, preview). Two things stop it from serving this objective:
+- **Grade floor:** the generator raises simple_affix to grade 3 (gemini-word-builder.ts:197-199), and the hints used grade 3 vocabulary.
+- **No building:** the child only SAYS the finished word. The objective asks them to attach the parts.
+
+word-workout `read_inflected` covers -ing and -ed only, from a fixed list of 12 CVC words.
+
+**Recommendation:** extend word-builder rather than build a new primitive.
+- Allow a grade 2 band for simple_affix (un, re, pre, ed, ing, ly on familiar bases with no spelling change).
+- Add a build response: the child taps or drags parts to make the word for a meaning, and code checks the parts. This matches the open-build roadmap (qa/open-build/ROADMAP.md, OB-3 lists word-builder).
+
+## Essential behavior
+
+- **Build:** the child sees a meaning (&quot;to do it again&quot;) and a board of parts, and makes the word (re + do).
+- **Many correct builds where honest:** for &quot;something you can do again&quot;, redo, replay and rewrite all count.
+- **Read back:** after building, the child reads the word and the tutor names what the affix changed.
+
+## Worked example
+
+- **Target:** &quot;not happy&quot;.
+  - Success: un + happy.
+  - Misconception: happy + ly. A real affix, but the wrong meaning.
+- **Target:** &quot;jumped in the past&quot;.
+  - Success: jump + ed.
+  - Misconception: jump + ing. Wrong time.
+
+## Evidence of success
+
+- **Independent evidence:** builds the right parts for fresh meanings without the finished word shown, across both prefixes and suffixes.
+- **Should not earn credit:** a word built by trying every part (watch the attempt count), or a nonsense combination.
+- **Uncertain cases:** decide whether attaching parts that change the spelling (hop + ing) belongs in grade 2.
+
+## Constraints and open questions
+
+- The current grade 3 floor exists for a reason (the parts board is printed text). Check the reader-fit record before lowering it, and keep grade 3+ behavior unchanged (contract-first: fork by band).
+- Base words must be decodable at grade 2.
+
+## Handoff
+
+Read the current guidance (/add-eval-modes build-mode reference, the word-builder contract, reader-fit notes) and choose the band mechanism, response form and scoring. Build and verify with your own process.
+</pre></details>
+
+<h2 id="provenance">Provenance and validation</h2>
+<dl>
+<dt>Curriculum</dt><dd>GET http://127.0.0.1:8000/api/curriculum/curriculum/LANGUAGE_ARTS?grade=2, saved as snapshot.json, sha256 <span class="mono">ca7f0bfeb97d873429651f1c6b6f71cf1b5cc642d6271a23dcc48e9e7fc968d7</span>, 7 units</dd>
+<dt>Sampler</dt><dd>.agents/skills/curriculum-design-review/scripts/sample_curriculum.py, Python random.Random(seed); ID-sorted eligible skills then ID-sorted children; sample without replacement; no redraw, Python 3.9.19, sampled 2026-10-08T02:42:06.081214+00:00</dd>
+<dt>Catalog</dt><dd>Live export through the Vite module runner (export-catalog.mjs) at commit <span class="mono">2fbdbd1f</span> plus the uncommitted working tree; 215 primitives; catalog.json sha256 <span class="mono">9da4020c5c8e5a7605ce098d5e8ed5b46440e4a4eaade580c7b59edc86899abc</span></dd>
+<dt>Probes</dt><dd>17 draws via /api/lumina/eval-test (topic = intent = exact subskill text, grade=2, difficulty=medium), saved under evidence/. The endpoint's "fail" status on 9 draws is its challenge-array shape check; those primitives have no challenge array. Content was judged by reading each payload.</dd>
+<dt>Source checks</dt><dd>Read-only code reads of paragraph-architect, knowledge-check, revision-workshop, sentence-builder, oral-sentence-studio, phonics-blender, syllable-clapper, word-builder, word-workout, decodable-reader, read-aloud-studio, di-sentence-reading, reading-repair-studio, media-player, passage-studio and story-talk. File:line citations are in the lesson limits and the defects table.</dd>
+<dt>Validated</dt><dd>10 distinct subskills under 5 distinct skills with parent membership; every binding's component and eval mode exists in the live catalog; instance IDs unique; every probe file present; manifests are valid JSON.</dd>
+<dt>Not done</dt><dd>No lesson was hydrated or run end to end, no Live/microphone session was driven, and each binding has one draw only. The authored intents were not re-probed. Teaching effectiveness is not claimed.</dd>
+</dl>
+<p class="meta">Files: <a href="manifest-bundle.json">manifest-bundle.json</a> · <a href="sample.json">sample.json</a> · manifests/ · briefs/ · in the repo only: snapshot.json, catalog.json, evidence/ (qa/curriculum-design-review/la-g2-2026-10-07/)</p>
+</div>

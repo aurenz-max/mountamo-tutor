@@ -1,0 +1,108 @@
+{
+  "lessonId": "lesson-07",
+  "curriculum": {
+    "subject": "LANGUAGE_ARTS",
+    "grade": "2",
+    "unitId": "LA003",
+    "skillId": "LA003-01",
+    "subskillId": "LA003-01-b",
+    "description": "Students analyze a read-aloud passage to extract the main idea or central message through systematic text evidence collection. Focus: Determining the overall point or central message of the narrative or text. Examples: The importance of kindness, the lesson learned by the protagonist, the significance of the invention, the moral of the fable, the primary topic of the report, why the animal adapted to its habitat, how weather affects the local ecosystem, the reason for the city festival. Constraints: The passage-studio must provide a short text segment where the student chooses the one best sentence that summarizes the entire passage from a list of distractors.",
+    "targetPrimitive": "passage-studio",
+    "targetEvalModes": null
+  },
+  "status": "authored; catalog-checked; each binding generator-probed once; not hydrated as a lesson; not runtime-tested",
+  "learnerAction": "Listen to a read-aloud story and choose the one sentence that sums up the whole story, not a single detail.",
+  "estimatedMinutes": 15,
+  "manifest": {
+    "topic": "What Is the Big Message?",
+    "gradeLevel": "Grade 2",
+    "themeColor": "#2f6f5e",
+    "subject": "LANGUAGE_ARTS",
+    "objectiveBlocks": [
+      {
+        "objectiveId": "obj1",
+        "objectiveText": "Students analyze a read-aloud passage to extract the main idea or central message through systematic text evidence collection. Focus: Determining the overall point or central message of the narrative or text. Examples: The importance of kindness, the lesson learned by the protagonist, the significance of the invention, the moral of the fable, the primary topic of the report, why the animal adapted to its habitat, how weather affects the local ecosystem, the reason for the city festival. Constraints: The passage-studio must provide a short text segment where the student chooses the one best sentence that summarizes the entire passage from a list of distractors.",
+        "objectiveVerb": "identify",
+        "components": [
+          {
+            "componentId": "story-talk",
+            "instanceId": "la003-01-b-1-story-talk",
+            "title": "Why Did It Happen?",
+            "intent": "Grade 2 read-aloud stories where a character makes a choice; the child says why.",
+            "config": {
+              "targetEvalMode": "why_because",
+              "subject": "Language Arts",
+              "unitTitle": "Listening Comprehension and Oral Language"
+            }
+          },
+          {
+            "componentId": "passage-studio",
+            "instanceId": "la003-01-b-2-passage-studio",
+            "title": "Read and Listen: The Garden",
+            "intent": "Grade 2 story of 80-120 words with one clear central message; tutor reads it aloud. Include one question asking which sentence best tells what the whole story is about, with detail-only distractors.",
+            "config": {
+              "targetEvalMode": "recall",
+              "subject": "Language Arts",
+              "unitTitle": "Listening Comprehension and Oral Language"
+            }
+          }
+        ]
+      }
+    ],
+    "layout": [
+      {
+        "componentId": "story-talk",
+        "instanceId": "la003-01-b-1-story-talk",
+        "title": "Why Did It Happen?",
+        "intent": "Grade 2 read-aloud stories where a character makes a choice; the child says why.",
+        "config": {
+          "targetEvalMode": "why_because",
+          "subject": "Language Arts",
+          "unitTitle": "Listening Comprehension and Oral Language"
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      },
+      {
+        "componentId": "passage-studio",
+        "instanceId": "la003-01-b-2-passage-studio",
+        "title": "Read and Listen: The Garden",
+        "intent": "Grade 2 story of 80-120 words with one clear central message; tutor reads it aloud. Include one question asking which sentence best tells what the whole story is about, with detail-only distractors.",
+        "config": {
+          "targetEvalMode": "recall",
+          "subject": "Language Arts",
+          "unitTitle": "Listening Comprehension and Oral Language"
+        },
+        "objectiveIds": [
+          "obj1"
+        ]
+      }
+    ]
+  },
+  "sequence": [
+    {
+      "step": 1,
+      "componentId": "story-talk",
+      "evalMode": "why_because",
+      "role": "listening warm-up"
+    },
+    {
+      "step": 2,
+      "componentId": "passage-studio",
+      "evalMode": "recall",
+      "role": "main practice (partial fit)"
+    }
+  ],
+  "evidenceCriteria": [
+    "Chooses the whole-story summary over true-but-narrow details. No listening primitive asks this today: passage-studio is text-first and its recall mode has no main-idea item; decodable-reader main_idea needs the child to read."
+  ],
+  "coverageLimits": [
+    "media-player story_analysis is not usable as drawn: segment 4 narrates the answer, and the script stays printed during questions at grade 1+.",
+    "story-talk stories are 3-5 sentences and its answers are single words, so it cannot carry a summary sentence choice."
+  ],
+  "recommendation": {
+    "kind": "new-mode",
+    "rationale": "New listening mode: hear an 80-120 word story audio-only, choose or say the best whole-story sentence against detail distractors. See brief 2. Separately fix the media-player leak (MP-SA1)."
+  }
+}

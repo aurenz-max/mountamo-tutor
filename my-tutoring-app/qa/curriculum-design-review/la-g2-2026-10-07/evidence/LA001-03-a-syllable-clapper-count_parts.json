@@ -1,0 +1,161 @@
+{
+  "id": "LA001-03-a",
+  "primitive": "syllable-clapper",
+  "mode": "count_parts",
+  "requirement": "Students listen to words and interact with a visual interface to segment the word into individual syllables. Focus: Developing auditory and visual awareness of syllable counts in words. Examples: apple, tiger, rabbit, basket, tunnel, magnet, button, winter, candle, napkin. Constraints: Provide visual feedback for every correct syllable clap in the syllable-clapper primitive.",
+  "params": {
+    "componentId": "syllable-clapper",
+    "evalMode": "count_parts",
+    "topic": "Students listen to words and interact with a visual interface to segment the word into individual syllables. Focus: Developing auditory and visual awareness of syllable counts in words. Examples: apple, tiger, rabbit, basket, tunnel, magnet, button, winter, candle, napkin. Constraints: Provide visual feedback for every correct syllable clap in the syllable-clapper primitive.",
+    "intent": "Students listen to words and interact with a visual interface to segment the word into individual syllables. Focus: Developing auditory and visual awareness of syllable counts in words. Examples: apple, tiger, rabbit, basket, tunnel, magnet, button, winter, candle, napkin. Constraints: Provide visual feedback for every correct syllable clap in the syllable-clapper primitive.",
+    "grade": "2",
+    "gradeLevel": "Grade 2",
+    "difficulty": "medium"
+  },
+  "requestedAt": "2026-10-08T02:44:41.912Z",
+  "httpStatus": 200,
+  "response": {
+    "status": "pass",
+    "componentId": "syllable-clapper",
+    "evalMode": "count_parts",
+    "duration": 2116,
+    "catalogMeta": {
+      "label": "Clap and Count",
+      "beta": 2.5,
+      "scaffoldingMode": 2,
+      "allowedChallengeTypes": [
+        "count_parts"
+      ],
+      "description": "Syllable segmenting. The tutor says a word as one joined stream, the child claps its parts with their own hands and says how many parts they heard. The count is spoken, never tapped: a tally the child does not have to hold is the count done for them."
+    },
+    "validation": {
+      "challengeCount": 8,
+      "typesFound": [
+        "count_parts"
+      ],
+      "payloadBytes": 1696,
+      "longestStringLength": 29,
+      "longestStringPath": "challenges[0].imageDescription",
+      "runawaySuspect": false
+    },
+    "fullData": {
+      "title": "Clap It Out: Animal Safari!",
+      "supportTier": "medium",
+      "challenges": [
+        {
+          "id": "c1",
+          "word": "rabbit",
+          "challengeType": "count_parts",
+          "syllableCount": 2,
+          "syllables": [
+            "rab",
+            "bit"
+          ],
+          "imageDescription": "a fluffy white rabbit hopping",
+          "difficulty": 3,
+          "echoWordSlowly": false,
+          "inviteClap": true
+        },
+        {
+          "id": "c2",
+          "word": "tiger",
+          "challengeType": "count_parts",
+          "syllableCount": 2,
+          "syllables": [
+            "ti",
+            "ger"
+          ],
+          "imageDescription": "a striped orange tiger",
+          "difficulty": 3,
+          "echoWordSlowly": false,
+          "inviteClap": true
+        },
+        {
+          "id": "c3",
+          "word": "basket",
+          "challengeType": "count_parts",
+          "syllableCount": 2,
+          "syllables": [
+            "bas",
+            "ket"
+          ],
+          "imageDescription": "a woven picnic basket",
+          "difficulty": 3,
+          "echoWordSlowly": false,
+          "inviteClap": true
+        },
+        {
+          "id": "c4",
+          "word": "tunnel",
+          "challengeType": "count_parts",
+          "syllableCount": 2,
+          "syllables": [
+            "tun",
+            "nel"
+          ],
+          "imageDescription": "a dark train tunnel",
+          "difficulty": 3,
+          "echoWordSlowly": false,
+          "inviteClap": true
+        },
+        {
+          "id": "c5",
+          "word": "magnet",
+          "challengeType": "count_parts",
+          "syllableCount": 2,
+          "syllables": [
+            "mag",
+            "net"
+          ],
+          "imageDescription": "a horseshoe shaped magnet",
+          "difficulty": 3,
+          "echoWordSlowly": false,
+          "inviteClap": true
+        },
+        {
+          "id": "c6",
+          "word": "button",
+          "challengeType": "count_parts",
+          "syllableCount": 2,
+          "syllables": [
+            "but",
+            "ton"
+          ],
+          "imageDescription": "a shiny clothing button",
+          "difficulty": 3,
+          "echoWordSlowly": false,
+          "inviteClap": true
+        },
+        {
+          "id": "c7",
+          "word": "candle",
+          "challengeType": "count_parts",
+          "syllableCount": 2,
+          "syllables": [
+            "can",
+            "dle"
+          ],
+          "imageDescription": "a lit birthday candle",
+          "difficulty": 3,
+          "echoWordSlowly": false,
+          "inviteClap": true
+        },
+        {
+          "id": "c8",
+          "word": "napkin",
+          "challengeType": "count_parts",
+          "syllableCount": 2,
+          "syllables": [
+            "nap",
+            "kin"
+          ],
+          "imageDescription": "a folded paper napkin",
+          "difficulty": 3,
+          "echoWordSlowly": false,
+          "inviteClap": true
+        }
+      ]
+    }
+  },
+  "durationMs": 2198
+}
