@@ -18,6 +18,7 @@ from .api.endpoints import (
     daily_briefing_live,
     practice_tutor,
     lumina_tutor,
+    lumina_lab_screen,
     assessments,
     parent_portal,
     weekly_planner,
@@ -201,6 +202,13 @@ app.include_router(
     lumina_tutor.router,
     prefix="/api",
     tags=["lumina-tutor"]
+)
+
+# Screen-share Live lab (dev-only; gated inside the websocket)
+app.include_router(
+    lumina_lab_screen.router,
+    prefix="/api",
+    tags=["lumina-lab"]
 )
 
 # Assessment Router
