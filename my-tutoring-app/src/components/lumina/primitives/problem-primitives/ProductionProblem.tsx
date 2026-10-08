@@ -55,6 +55,7 @@ export const ProductionProblem: React.FC<ProductionProblemProps> = ({ data }) =>
     resetAttempt: resetEvaluationAttempt,
   } = usePrimitiveEvaluation<MultipleChoiceMetrics>({
     primitiveType: 'knowledge-check',
+    localOnly: (data as { localOnly?: boolean }).localOnly === true,
     instanceId: instanceId || `production-${data.id}-${Date.now()}`,
     skillId,
     subskillId,

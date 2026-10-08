@@ -307,3 +307,14 @@ problem needs a picture.
   20-word read-aloud stem bound (R3's direction; Grade 1 keeps 16), and each K-5 problem the workspace cannot ask is redrawn
   once. R1/R2/R7/R8/R10-R12 untouched; R4 identities held in the probe (analyze = why/predict, evaluate = judge).
   `--check` **COMPATIBLE** (`qa/primitive-contracts/knowledge-check-check-2026-09-29.md`, second section). Probe 9/9 sets.
+- 2026-10-06 — per-problem fallback (user ruling 10-06). The all-or-nothing fork is gone: a problem with no spoken item
+  is one `on_screen` item, its own problem surface rendered inside the session with `localOnly` (the session's `::pN`
+  bridge is the only submitter), its check the gesture verdict, remounted fresh on retry. The tap flow renders only for an
+  empty set. The 2026-09-29 generator half (Grade 2-5 stem bound and the one redraw) is reverted; the `[blank_N]` reader
+  and the quoted-sentence exemption stay. R7/R8 hold (one record per problem, pinned in
+  `KnowledgeCheck.on-screen.test.tsx`). Six saved Grade K-2 sets of one topic: 2/6 -> 6/6 on the workspace.
+- 2026-10-06 (later) — Jev set review (`service/knowledge-check/reviewKnowledgeCheck.ts`): after generation, Jev judges each
+  orchestrated problem (gives the answer away, evidence agrees, repeats an earlier problem, a wrong answer is tempting);
+  code fails a problem on the calibrated cuts and redraws it once with the reviewer's notes, keeping the redraw unless it
+  reviews worse. Without Jev the set ships as generated. Calibration 62/64 against hand labels
+  (`qa/eval-reports/knowledge-check-jev-review/`). Production items are not reviewed. No requirement changed.

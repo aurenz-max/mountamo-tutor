@@ -50,6 +50,7 @@ export const FillInBlanksProblem: React.FC<FillInBlanksProblemProps> = ({ data }
     resetAttempt: resetEvaluationAttempt,
   } = usePrimitiveEvaluation<FillInBlanksMetrics>({
     primitiveType: 'knowledge-check',
+    localOnly: (data as { localOnly?: boolean }).localOnly === true,
     instanceId: instanceId || `fill-in-blanks-${data.id}-${Date.now()}`,
     skillId,
     subskillId,

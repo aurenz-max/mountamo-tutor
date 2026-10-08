@@ -2,7 +2,7 @@
  * Knowledge check on the shared tutor/JEV teaching workspace, W1 minimal binding
  * (qa/workspace-rollout/ROLLOUT.md, batch C8). A set whose every problem yields a spoken or
  * touched item runs only here (the scripted runner was retired, LA-14, user ruling 09-23: one
- * path); a set the build gates cannot run that way stays the tap flow (`KnowledgeCheckTapFlow`).
+ * path); a problem the build gates cannot ask aloud is an `on_screen` item, worked on its own surface.
  *
  * Pure: the component and the journey read the same assignment and scene. Seven item kinds are
  * spoken (true or false, a choice from a spoken menu, a match partner, a sort group, a missing
@@ -39,6 +39,7 @@ function key(item: KnowledgeCheckItem): string | undefined {
   switch (item.kind) {
     case 'choice_tap':
     case 'point_to':
+    case 'on_screen':
       return undefined; // checked by the activity
     case 'true_false':
       return `${item.correctBool ? 'true' : 'false'}: the statement is ${item.correctBool ? 'true' : 'false'}. `
@@ -180,6 +181,7 @@ export function knowledgeCheckScene(item: KnowledgeCheckItem, preReader: boolean
   if (item.wordBank?.length) facts.wordBank = `Word bank: ${item.wordBank.join(', ')}.`;
   facts.constraints = (item.kind === 'choice_tap' ? 'The learner answers by touching one choice; the activity checks the touch.'
     : item.kind === 'point_to' ? 'The learner answers by touching one sign in the number sentence; the activity checks the touch.'
+    : item.kind === 'on_screen' ? 'The learner works this problem on the screen with their hands; the problem checks the work.'
       : 'The learner answers out loud; nothing marks the answer until it is credited.')
     + (preReader ? ' The learner does not read yet: read the question and every choice aloud.' : '');
   return { objects: [], facts };

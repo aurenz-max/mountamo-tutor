@@ -1,0 +1,1804 @@
+[
+ {
+  "id": "Green Excavators and Pink Dump Trucks GK P1",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Which toy is the \"green excavator\"?",
+   "choices": [
+    "🚜 Green excavator",
+    "🚛 Pink dump truck",
+    "🚕 Yellow car"
+   ],
+   "correct_answer": "🚜 Green excavator",
+   "wrong_answers": [
+    "🚛 Pink dump truck",
+    "🚕 Yellow car"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.98,
+   "evidence": "no_evidence:0.58",
+   "repeats": "-",
+   "tempting": [
+    "🚛 Pink dump truck=0.75",
+    "🚕 Yellow car=0.28"
+   ]
+  },
+  "pass": false,
+  "notes": [
+   "The question gave its answer away"
+  ]
+ },
+ {
+  "id": "Green Excavators and Pink Dump Trucks GK P2",
+  "view": {
+   "type": "true_false",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Pink dump trucks carry rocks in the back.",
+   "correct_answer": "true"
+  },
+  "raw": {
+   "gives_away": 0.27,
+   "evidence": "no_evidence:0.91",
+   "repeats": "none:1.00",
+   "tempting": []
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Green Excavators and Pink Dump Trucks GK P3",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "What does a green excavator do at work?",
+   "choices": [
+    "🕳️ Dig a hole",
+    "🏖️ Carry sand",
+    "🪁 Fly a kite"
+   ],
+   "correct_answer": "🕳️ Dig a hole",
+   "wrong_answers": [
+    "🏖️ Carry sand",
+    "🪁 Fly a kite"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.27,
+   "evidence": "no_evidence:0.68",
+   "repeats": "none:1.00",
+   "tempting": [
+    "🏖️ Carry sand=0.77",
+    "🪁 Fly a kite=0.10"
+   ]
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Green Excavators and Pink Dump Trucks GK P4",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Which machine is best for digging a big hole?",
+   "choices": [
+    "🚜 Green excavator",
+    "🚚 Pink dump truck",
+    "🚲 Bicycle"
+   ],
+   "correct_answer": "🚜 Green excavator",
+   "wrong_answers": [
+    "🚚 Pink dump truck",
+    "🚲 Bicycle"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.47,
+   "evidence": "no_evidence:0.79",
+   "repeats": "same_as_3:0.98",
+   "tempting": [
+    "🚚 Pink dump truck=0.71",
+    "🚲 Bicycle=0.15"
+   ]
+  },
+  "pass": false,
+  "notes": [
+   "This repeats another problem in the set, which already asks"
+  ]
+ },
+ {
+  "id": "Green Excavators and Pink Dump Trucks GK P1",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Which machine digs dirt with a big scoop?",
+   "choices": [
+    "🏗️ Green excavator",
+    "🚛 Pink dump truck",
+    "🚜 Yellow tractor"
+   ],
+   "correct_answer": "🏗️ Green excavator",
+   "wrong_answers": [
+    "🚛 Pink dump truck",
+    "🚜 Yellow tractor"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.61,
+   "evidence": "no_evidence:0.62",
+   "repeats": "-",
+   "tempting": [
+    "🚛 Pink dump truck=0.72",
+    "🚜 Yellow tractor=0.56"
+   ]
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Green Excavators and Pink Dump Trucks GK P2",
+  "view": {
+   "type": "true_false",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Pink dump trucks carry heavy rocks and dirt in their big boxes.",
+   "correct_answer": "true"
+  },
+  "raw": {
+   "gives_away": 0.41,
+   "evidence": "no_evidence:0.91",
+   "repeats": "none:1.00",
+   "tempting": []
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Green Excavators and Pink Dump Trucks GK P3",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Which vehicle digs a big hole in the dirt?",
+   "choices": [
+    "🚚 Pink dump truck",
+    "🚜 Green excavator",
+    "🚲 Bicycle"
+   ],
+   "correct_answer": "🚜 Green excavator",
+   "wrong_answers": [
+    "🚚 Pink dump truck",
+    "🚲 Bicycle"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.46,
+   "evidence": "no_evidence:0.68",
+   "repeats": "same_as_1:0.99",
+   "tempting": [
+    "🚚 Pink dump truck=0.74",
+    "🚲 Bicycle=0.13"
+   ]
+  },
+  "pass": false,
+  "notes": [
+   "This repeats another problem in the set, which already asks"
+  ]
+ },
+ {
+  "id": "Green Excavators and Pink Dump Trucks GK P4",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Which machine scoops up the dirt?",
+   "choices": [
+    "🚜 Green excavator",
+    "🚚 Pink dump truck",
+    "⛵ Red sailboat"
+   ],
+   "correct_answer": "🚜 Green excavator",
+   "wrong_answers": [
+    "🚚 Pink dump truck",
+    "⛵ Red sailboat"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.38,
+   "evidence": "no_evidence:0.75",
+   "repeats": "same_as_1:0.95",
+   "tempting": [
+    "🚚 Pink dump truck=0.78",
+    "⛵ Red sailboat=0.10"
+   ]
+  },
+  "pass": false,
+  "notes": [
+   "This repeats another problem in the set, which already asks"
+  ]
+ },
+ {
+  "id": "Green Excavators and Pink Dump Trucks G1 P1",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "Pictures: 1 x Green excavator 🚜, 1 x Pink dump truck 🚛, 1 x Gray rock 🪨",
+   "ask": "Which vehicle is green?",
+   "choices": [
+    "The dump truck",
+    "The excavator",
+    "The rock",
+    "The car"
+   ],
+   "correct_answer": "The excavator",
+   "wrong_answers": [
+    "The dump truck",
+    "The rock",
+    "The car"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.83,
+   "evidence": "contradicts:0.75",
+   "repeats": "-",
+   "tempting": [
+    "The dump truck=0.77",
+    "The rock=0.42",
+    "The car=0.17"
+   ]
+  },
+  "pass": false,
+  "notes": [
+   "The question gave its answer away",
+   "What is shown on screen does not match the question"
+  ]
+ },
+ {
+  "id": "Green Excavators and Pink Dump Trucks G1 P2",
+  "view": {
+   "type": "true_false",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "The pink dump truck carries dirt in its bed.",
+   "correct_answer": "true"
+  },
+  "raw": {
+   "gives_away": 0.37,
+   "evidence": "no_evidence:0.83",
+   "repeats": "none:1.00",
+   "tempting": []
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Green Excavators and Pink Dump Trucks G1 P3",
+  "view": {
+   "type": "categorization_activity",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Sort what each truck does.",
+   "choices": [
+    "Green Excavator",
+    "Pink Dump Truck"
+   ],
+   "items_and_groups": [
+    "Digs dirt -> Green Excavator",
+    "Lifts heavy rocks -> Green Excavator",
+    "Dumps sand -> Pink Dump Truck",
+    "Has big wheels -> Pink Dump Truck"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.68,
+   "evidence": "no_evidence:0.59",
+   "repeats": "none:1.00",
+   "tempting": []
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Green Excavators and Pink Dump Trucks G1 P4",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "Two pictures side by side: \"Green Excavator\": Digging dirt 🚜; \"Pink Dump Truck\": Driving on road 🚚",
+   "ask": "Which vehicle is best to dig a big hole?",
+   "choices": [
+    "The green excavator",
+    "The pink dump truck",
+    "A small red bicycle",
+    "A blue sailboat"
+   ],
+   "correct_answer": "The green excavator",
+   "wrong_answers": [
+    "The pink dump truck",
+    "A small red bicycle",
+    "A blue sailboat"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.68,
+   "evidence": "agrees:0.55",
+   "repeats": "same_as_3:0.71",
+   "tempting": [
+    "The pink dump truck=0.80",
+    "A small red bicycle=0.58",
+    "A blue sailboat=0.06"
+   ]
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Green Excavators and Pink Dump Trucks G1 P1",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "Pictures: 1 x green excavator 🚜, 1 x pink dump truck 🚚, 3 x dirt pile 🪨",
+   "ask": "Which machine digs up the dirt?",
+   "choices": [
+    "Green excavator",
+    "Pink dump truck",
+    "Red race car",
+    "Blue airplane"
+   ],
+   "correct_answer": "Green excavator",
+   "wrong_answers": [
+    "Pink dump truck",
+    "Red race car",
+    "Blue airplane"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.38,
+   "evidence": "contradicts:0.60",
+   "repeats": "-",
+   "tempting": [
+    "Pink dump truck=0.83",
+    "Red race car=0.81",
+    "Blue airplane=0.09"
+   ]
+  },
+  "pass": false,
+  "notes": [
+   "What is shown on screen does not match the question"
+  ]
+ },
+ {
+  "id": "Green Excavators and Pink Dump Trucks G1 P2",
+  "view": {
+   "type": "categorization_activity",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Sort the trucks into groups.",
+   "choices": [
+    "Digging",
+    "Hauling"
+   ],
+   "items_and_groups": [
+    "Green excavator digs dirt -> Digging",
+    "Green excavator scoops mud -> Digging",
+    "Pink dump truck carries sand -> Hauling",
+    "Pink dump truck moves rocks -> Hauling"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.7,
+   "evidence": "no_evidence:0.64",
+   "repeats": "none:0.97",
+   "tempting": []
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Green Excavators and Pink Dump Trucks G1 P3",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "Two pictures side by side: \"Green Digger\": Excavator digging 🚜; \"Pink Truck\": Dump truck waiting 🚛",
+   "ask": "How does the green digger help the pink truck?",
+   "choices": [
+    "It loads the dirt.",
+    "It washes the wheels.",
+    "It paints the doors.",
+    "It flies high up."
+   ],
+   "correct_answer": "It loads the dirt.",
+   "wrong_answers": [
+    "It washes the wheels.",
+    "It paints the doors.",
+    "It flies high up."
+   ]
+  },
+  "raw": {
+   "gives_away": 0.43,
+   "evidence": "agrees:0.77",
+   "repeats": "none:0.95",
+   "tempting": [
+    "It washes the wheels.=0.21",
+    "It paints the doors.=0.15",
+    "It flies high up.=0.11"
+   ]
+  },
+  "pass": false,
+  "notes": [
+   "Every wrong choice is easy to rule out"
+  ]
+ },
+ {
+  "id": "Green Excavators and Pink Dump Trucks G1 P4",
+  "view": {
+   "type": "sequencing_activity",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Put the work in order.",
+   "correct_order": [
+    "Dig the dirt",
+    "Load the truck",
+    "Drive away"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.27,
+   "evidence": "no_evidence:0.79",
+   "repeats": "none:0.99",
+   "tempting": []
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Green Excavators and Pink Dump Trucks G2 P1",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "A worker says, \"Find the green excavator!\" Which one should you pick?",
+   "choices": [
+    "Green scoop digger",
+    "Pink dump truck",
+    "Yellow front loader",
+    "Blue road roller"
+   ],
+   "correct_answer": "Green scoop digger",
+   "wrong_answers": [
+    "Pink dump truck",
+    "Yellow front loader",
+    "Blue road roller"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.79,
+   "evidence": "no_evidence:0.73",
+   "repeats": "-",
+   "tempting": [
+    "Pink dump truck=0.46",
+    "Yellow front loader=0.48",
+    "Blue road roller=0.31"
+   ]
+  },
+  "pass": false,
+  "notes": [
+   "The question gave its answer away"
+  ]
+ },
+ {
+  "id": "Green Excavators and Pink Dump Trucks G2 P2",
+  "view": {
+   "type": "true_false",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Pink dump trucks are mainly used to dig deep holes in the dirt.",
+   "correct_answer": "false"
+  },
+  "raw": {
+   "gives_away": 0.35,
+   "evidence": "no_evidence:0.89",
+   "repeats": "none:1.00",
+   "tempting": []
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Green Excavators and Pink Dump Trucks G2 P3",
+  "view": {
+   "type": "fill_in_blanks",
+   "shown_on_screen": "[Figure 1] Definition — Dump Truck (noun): A large truck with an open bed used for carrying and dumping loose materials like dirt, sand, and rocks.  Example: \"The bright pink dump truck carried a big pile of dirt across the construction site.\"",
+   "ask": "According to the definition box, a dump truck is a heavy vehicle used to carry and dump [blank_1] from one place to another.",
+   "choices": [
+    "dirt",
+    "paint",
+    "tires"
+   ],
+   "correct_answer": "dirt",
+   "wrong_answers": [
+    "paint",
+    "tires"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.82,
+   "evidence": "gives_answer:0.61",
+   "repeats": "none:0.98",
+   "tempting": [
+    "paint=0.18",
+    "tires=0.21"
+   ]
+  },
+  "pass": false,
+  "notes": [
+   "The question gave its answer away",
+   "The picture or box on screen states the answer, so the learner can copy it",
+   "Every wrong choice is easy to rule out"
+  ]
+ },
+ {
+  "id": "Green Excavators and Pink Dump Trucks G2 P4",
+  "view": {
+   "type": "categorization_activity",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Sort these vehicle actions into the correct job category: Digging and Scooping or Hauling and Dumping.",
+   "choices": [
+    "Digging and Scooping",
+    "Hauling and Dumping"
+   ],
+   "items_and_groups": [
+    "scooping wet dirt -> Digging and Scooping",
+    "digging a trench -> Digging and Scooping",
+    "scraping the ground -> Digging and Scooping",
+    "carrying heavy rocks -> Hauling and Dumping",
+    "dumping sand -> Hauling and Dumping",
+    "transporting dirt across the site -> Hauling and Dumping"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.82,
+   "evidence": "no_evidence:0.69",
+   "repeats": "none:0.98",
+   "tempting": []
+  },
+  "pass": false,
+  "notes": [
+   "The question gave its answer away"
+  ]
+ },
+ {
+  "id": "Green Excavators and Pink Dump Trucks G2 P1",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Here is a row of toys: 🟢🚜 🌸🚚 🟢🚜. Which vehicle is the pink dump truck?",
+   "choices": [
+    "The first vehicle",
+    "The second vehicle",
+    "The third vehicle",
+    "The fourth vehicle"
+   ],
+   "correct_answer": "The second vehicle",
+   "wrong_answers": [
+    "The first vehicle",
+    "The third vehicle",
+    "The fourth vehicle"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.78,
+   "evidence": "contradicts:0.52",
+   "repeats": "-",
+   "tempting": [
+    "The first vehicle=0.55",
+    "The third vehicle=0.42",
+    "The fourth vehicle=0.63"
+   ]
+  },
+  "pass": false,
+  "notes": [
+   "The question gave its answer away",
+   "What is shown on screen does not match the question"
+  ]
+ },
+ {
+  "id": "Green Excavators and Pink Dump Trucks G2 P2",
+  "view": {
+   "type": "categorization_activity",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Read each task carefully. Sort the tasks into the correct group: Digging Dirt for green excavators or Carrying Rocks for pink dump trucks.",
+   "choices": [
+    "Digging Dirt",
+    "Carrying Rocks"
+   ],
+   "items_and_groups": [
+    "Scooping up wet mud -> Digging Dirt",
+    "Loading a big pile of boulders -> Carrying Rocks",
+    "Digging a deep hole in the yard -> Digging Dirt",
+    "Driving heavy stones to a new place -> Carrying Rocks",
+    "Scraping up loose sand -> Digging Dirt",
+    "Hauling a bed full of gravel -> Carrying Rocks"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.87,
+   "evidence": "no_evidence:0.70",
+   "repeats": "none:1.00",
+   "tempting": []
+  },
+  "pass": false,
+  "notes": [
+   "The question gave its answer away"
+  ]
+ },
+ {
+  "id": "Green Excavators and Pink Dump Trucks G2 P3",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "A green excavator is working on the site. What is its main job?",
+   "choices": [
+    "Carrying dirt away",
+    "Digging deep holes",
+    "Rolling roads flat",
+    "Washing dirty cars"
+   ],
+   "correct_answer": "Digging deep holes",
+   "wrong_answers": [
+    "Carrying dirt away",
+    "Rolling roads flat",
+    "Washing dirty cars"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.26,
+   "evidence": "no_evidence:0.89",
+   "repeats": "same_as_2:0.60",
+   "tempting": [
+    "Carrying dirt away=0.77",
+    "Rolling roads flat=0.41",
+    "Washing dirty cars=0.08"
+   ]
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Green Excavators and Pink Dump Trucks G2 P4",
+  "view": {
+   "type": "true_false",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "A pink dump truck should stop when people are nearby.",
+   "correct_answer": "true"
+  },
+  "raw": {
+   "gives_away": 0.53,
+   "evidence": "no_evidence:0.93",
+   "repeats": "none:1.00",
+   "tempting": []
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Adding within 10 GK P1",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "How many apples are 3 apples and 2 apples together?",
+   "choices": [
+    "4️⃣ 4 apples",
+    "5️⃣ 5 apples",
+    "1️⃣ 1 apple"
+   ],
+   "correct_answer": "5️⃣ 5 apples",
+   "wrong_answers": [
+    "4️⃣ 4 apples",
+    "1️⃣ 1 apple"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.11,
+   "evidence": "no_evidence:0.81",
+   "repeats": "-",
+   "tempting": [
+    "4️⃣ 4 apples=0.85",
+    "1️⃣ 1 apple=0.37"
+   ]
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Adding within 10 GK P2",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "[Number Line] Number line [0, 10], ticks {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}. Points: Start@0, +4@4, End@7.",
+   "ask": "What number do the jumps land on?",
+   "choices": [
+    "7️⃣ 7",
+    "6️⃣ 6",
+    "3️⃣ 3"
+   ],
+   "correct_answer": "7️⃣ 7",
+   "wrong_answers": [
+    "6️⃣ 6",
+    "3️⃣ 3"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.66,
+   "evidence": "agrees:0.58",
+   "repeats": "none:0.98",
+   "tempting": [
+    "6️⃣ 6=0.85",
+    "3️⃣ 3=0.67"
+   ]
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Adding within 10 GK P3",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "What missing number makes $5 + ? = 7$ true?",
+   "choices": [
+    "3️⃣ Three",
+    "2️⃣ Two",
+    "6️⃣ Six"
+   ],
+   "correct_answer": "2️⃣ Two",
+   "wrong_answers": [
+    "3️⃣ Three",
+    "6️⃣ Six"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.07,
+   "evidence": "agrees:0.49",
+   "repeats": "none:0.96",
+   "tempting": [
+    "3️⃣ Three=0.85",
+    "6️⃣ Six=0.47"
+   ]
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Adding within 10 GK P4",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Four frogs swim, then three more jump in: how many frogs?",
+   "choices": [
+    "6️⃣ 6 frogs",
+    "7️⃣ 7 frogs",
+    "2️⃣ 2 frogs"
+   ],
+   "correct_answer": "7️⃣ 7 frogs",
+   "wrong_answers": [
+    "6️⃣ 6 frogs",
+    "2️⃣ 2 frogs"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.08,
+   "evidence": "no_evidence:0.72",
+   "repeats": "none:0.55",
+   "tempting": [
+    "6️⃣ 6 frogs=0.88",
+    "2️⃣ 2 frogs=0.46"
+   ]
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Community helpers GK P1",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Which helper puts out fires?",
+   "choices": [
+    "👮 Police officer",
+    "🧑‍🚒 Firefighter",
+    "🧑‍🏫 Teacher"
+   ],
+   "correct_answer": "🧑‍🚒 Firefighter",
+   "wrong_answers": [
+    "👮 Police officer",
+    "🧑‍🏫 Teacher"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.68,
+   "evidence": "no_evidence:0.59",
+   "repeats": "-",
+   "tempting": [
+    "👮 Police officer=0.58",
+    "🧑‍🏫 Teacher=0.13"
+   ]
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Community helpers GK P2",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Which tool does a doctor use to check your heart?",
+   "choices": [
+    "🩺 Stethoscope",
+    "✉️ Letter",
+    "🧢 Hat"
+   ],
+   "correct_answer": "🩺 Stethoscope",
+   "wrong_answers": [
+    "✉️ Letter",
+    "🧢 Hat"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.18,
+   "evidence": "no_evidence:0.62",
+   "repeats": "none:1.00",
+   "tempting": [
+    "✉️ Letter=0.08",
+    "🧢 Hat=0.10"
+   ]
+  },
+  "pass": false,
+  "notes": [
+   "Every wrong choice is easy to rule out"
+  ]
+ },
+ {
+  "id": "Community helpers GK P3",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Who is a helper at school?",
+   "choices": [
+    "🧑‍⚕️ Doctor",
+    "🧑‍🏫 Teacher",
+    "🧑‍🌾 Farmer"
+   ],
+   "correct_answer": "🧑‍🏫 Teacher",
+   "wrong_answers": [
+    "🧑‍⚕️ Doctor",
+    "🧑‍🌾 Farmer"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.55,
+   "evidence": "no_evidence:0.70",
+   "repeats": "none:1.00",
+   "tempting": [
+    "🧑‍⚕️ Doctor=0.27",
+    "🧑‍🌾 Farmer=0.22"
+   ]
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Community helpers GK P4",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Who protects our neighborhood and keeps everyone safe?",
+   "choices": [
+    "🧑‍⚕️ Doctor",
+    "👮 Police officer",
+    "🧑‍🍳 Baker"
+   ],
+   "correct_answer": "👮 Police officer",
+   "wrong_answers": [
+    "🧑‍⚕️ Doctor",
+    "🧑‍🍳 Baker"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.38,
+   "evidence": "no_evidence:0.75",
+   "repeats": "none:0.99",
+   "tempting": [
+    "🧑‍⚕️ Doctor=0.47",
+    "🧑‍🍳 Baker=0.17"
+   ]
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Plants need sunlight and water G1 P1",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "Two pictures side by side: \"Plant A\": Green sprout 🌱; \"Plant B\": Dry wilted flower 🥀",
+   "ask": "Which plant looks healthy?",
+   "choices": [
+    "Plant A",
+    "Plant B",
+    "Both plants",
+    "Neither plant"
+   ],
+   "correct_answer": "Plant A",
+   "wrong_answers": [
+    "Plant B",
+    "Both plants",
+    "Neither plant"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.59,
+   "evidence": "agrees:0.96",
+   "repeats": "-",
+   "tempting": [
+    "Plant B=0.45",
+    "Both plants=0.47",
+    "Neither plant=0.42"
+   ]
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Plants need sunlight and water G1 P2",
+  "view": {
+   "type": "true_false",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "A plant needs water to grow.",
+   "correct_answer": "true"
+  },
+  "raw": {
+   "gives_away": 0.18,
+   "evidence": "no_evidence:0.89",
+   "repeats": "none:0.99",
+   "tempting": []
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Plants need sunlight and water G1 P3",
+  "view": {
+   "type": "categorization_activity",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Sort what plants need.",
+   "choices": [
+    "Plant Needs",
+    "No Need"
+   ],
+   "items_and_groups": [
+    "Sunlight -> Plant Needs",
+    "Water -> Plant Needs",
+    "Toy -> No Need",
+    "Rock -> No Need"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.64,
+   "evidence": "no_evidence:0.76",
+   "repeats": "none:0.88",
+   "tempting": []
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Plants need sunlight and water G1 P4",
+  "view": {
+   "type": "sequencing_activity",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Put the steps in order.",
+   "correct_order": [
+    "Put seed in dirt.",
+    "Add water.",
+    "Put in sunlight."
+   ]
+  },
+  "raw": {
+   "gives_away": 0.18,
+   "evidence": "no_evidence:0.77",
+   "repeats": "none:1.00",
+   "tempting": []
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Nouns and verbs G1 P1",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "[Word Card] Definition — Noun (noun): A word that names a person, place, or thing, like dog or box.  Example: \"The cat sat on the rug.\"",
+   "ask": "Which word is a noun?",
+   "choices": [
+    "run",
+    "cat",
+    "fast",
+    "and"
+   ],
+   "correct_answer": "cat",
+   "wrong_answers": [
+    "run",
+    "fast",
+    "and"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.58,
+   "evidence": "agrees:0.76",
+   "repeats": "-",
+   "tempting": [
+    "run=0.54",
+    "fast=0.34",
+    "and=0.15"
+   ]
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Nouns and verbs G1 P2",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Which word tells an action?",
+   "choices": [
+    "ball",
+    "jump",
+    "desk",
+    "hat"
+   ],
+   "correct_answer": "jump",
+   "wrong_answers": [
+    "ball",
+    "desk",
+    "hat"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.29,
+   "evidence": "no_evidence:0.83",
+   "repeats": "none:1.00",
+   "tempting": [
+    "ball=0.47",
+    "desk=0.32",
+    "hat=0.37"
+   ]
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Nouns and verbs G1 P3",
+  "view": {
+   "type": "categorization_activity",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Sort words into Nouns and Verbs.",
+   "choices": [
+    "Nouns",
+    "Verbs"
+   ],
+   "items_and_groups": [
+    "tree -> Nouns",
+    "sing -> Verbs",
+    "apple -> Nouns",
+    "run -> Verbs"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.17,
+   "evidence": "no_evidence:0.66",
+   "repeats": "none:0.98",
+   "tempting": []
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Nouns and verbs G1 P4",
+  "view": {
+   "type": "true_false",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "In the sentence The bird flies, flies is a noun.",
+   "correct_answer": "false"
+  },
+  "raw": {
+   "gives_away": 0.27,
+   "evidence": "no_evidence:0.63",
+   "repeats": "none:0.68",
+   "tempting": []
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Telling time to the hour and half hour G2 P1",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Look at the two clocks below. Clock A has the short hour hand pointing to 3 and the long minute hand pointing to 12. Clock B has the short hour hand pointing to 5 and the long minute hand pointing to 12. Which clock shows 3:00 (3 o'clock)?",
+   "choices": [
+    "Clock A",
+    "Clock B",
+    "Both clocks",
+    "Neither clock"
+   ],
+   "correct_answer": "Clock A",
+   "wrong_answers": [
+    "Clock B",
+    "Both clocks",
+    "Neither clock"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.52,
+   "evidence": "no_evidence:0.57",
+   "repeats": "-",
+   "tempting": [
+    "Clock B=0.82",
+    "Both clocks=0.61",
+    "Neither clock=0.47"
+   ]
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Telling time to the hour and half hour G2 P2",
+  "view": {
+   "type": "fill_in_blanks",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "When the minute hand points straight down to the 6, we say it is [blank_1].",
+   "choices": [
+    "half past",
+    "o'clock",
+    "midnight",
+    "quarter past"
+   ],
+   "correct_answer": "half past",
+   "wrong_answers": [
+    "o'clock",
+    "midnight",
+    "quarter past"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.2,
+   "evidence": "no_evidence:0.87",
+   "repeats": "none:1.00",
+   "tempting": [
+    "o'clock=0.70",
+    "midnight=0.38",
+    "quarter past=0.26"
+   ]
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Telling time to the hour and half hour G2 P3",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Look at the clocks: Clock A has the short hour hand between 1 and 2, and the long minute hand on 6. Clock B has the short hour hand on 4, and the long minute hand on 12. Clock C has the short hour hand between 4 and 5, and the long minute hand on 6. Clock D has the short hour hand between 7 and 8, and the long minute hand on 6. Which clock shows half past 4?",
+   "choices": [
+    "Clock A",
+    "Clock B",
+    "Clock C",
+    "Clock D"
+   ],
+   "correct_answer": "Clock C",
+   "wrong_answers": [
+    "Clock A",
+    "Clock B",
+    "Clock D"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.27,
+   "evidence": "no_evidence:0.76",
+   "repeats": "none:0.97",
+   "tempting": [
+    "Clock A=0.59",
+    "Clock B=0.64",
+    "Clock D=0.64"
+   ]
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Telling time to the hour and half hour G2 P4",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Soccer practice starts at 4:00. It takes half an hour to walk there. What time should you leave home to arrive right on time?",
+   "choices": [
+    "4:30",
+    "3:30",
+    "3:00",
+    "5:00"
+   ],
+   "correct_answer": "3:30",
+   "wrong_answers": [
+    "4:30",
+    "3:00",
+    "5:00"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.09,
+   "evidence": "no_evidence:0.86",
+   "repeats": "none:0.98",
+   "tempting": [
+    "4:30=0.86",
+    "3:00=0.73",
+    "5:00=0.53"
+   ]
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "States of matter G2 P1",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Look at these items: a rock, a puddle of water, and a cloud of steam. Which one is a solid?",
+   "choices": [
+    "A puddle of water",
+    "A rock",
+    "A cloud of steam",
+    "Warm sunlight"
+   ],
+   "correct_answer": "A rock",
+   "wrong_answers": [
+    "A puddle of water",
+    "A cloud of steam",
+    "Warm sunlight"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.15,
+   "evidence": "no_evidence:0.76",
+   "repeats": "-",
+   "tempting": [
+    "A puddle of water=0.52",
+    "A cloud of steam=0.39",
+    "Warm sunlight=0.39"
+   ]
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "States of matter G2 P2",
+  "view": {
+   "type": "categorization_activity",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Sort these everyday items into the correct state of matter: Solid or Liquid.",
+   "choices": [
+    "Solid",
+    "Liquid"
+   ],
+   "items_and_groups": [
+    "apple -> Solid",
+    "block -> Solid",
+    "desk -> Solid",
+    "pencil -> Solid",
+    "milk -> Liquid",
+    "juice -> Liquid",
+    "water -> Liquid",
+    "soup -> Liquid"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.14,
+   "evidence": "no_evidence:0.62",
+   "repeats": "none:0.98",
+   "tempting": []
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "States of matter G2 P3",
+  "view": {
+   "type": "true_false",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "A liquid keeps its own special shape and does not take the shape of its container.",
+   "correct_answer": "false"
+  },
+  "raw": {
+   "gives_away": 0.2,
+   "evidence": "no_evidence:0.84",
+   "repeats": "none:0.96",
+   "tempting": []
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "States of matter G2 P4",
+  "view": {
+   "type": "matching_activity",
+   "shown_on_screen": "[Word Box] Definition — Gas (noun): A state of matter that has no fixed shape and spreads out evenly to fill any container it is placed in.  Example: \"We blew invisible air, which is a gas, into the balloon until it was round and full.\"",
+   "ask": "Read the definition in the Word Box. Then, match each state of matter to its everyday example.",
+   "pairs": [
+    "Solid -> Ice cube",
+    "Liquid -> Juice in a glass",
+    "Gas -> Air inside a balloon"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.81,
+   "evidence": "gives_answer:0.45",
+   "repeats": "none:0.87",
+   "tempting": []
+  },
+  "pass": false,
+  "notes": [
+   "The question gave its answer away"
+  ]
+ },
+ {
+  "id": "Equivalent fractions G3 P1",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "[Fraction Number Line] Number line [0, 1], ticks {0, 0.25, 0.5, 0.75, 1}. Points: 1/4@0.25, 1/2@0.5, 3/4@0.75, 4/4@1.",
+   "ask": "Look at the number line in the figure. Which fraction on the line shares the exact same location as 1/2?",
+   "choices": [
+    "1/4",
+    "2/4",
+    "3/4",
+    "4/4"
+   ],
+   "correct_answer": "2/4",
+   "wrong_answers": [
+    "1/4",
+    "3/4",
+    "4/4"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.13,
+   "evidence": "contradicts:0.77",
+   "repeats": "-",
+   "tempting": [
+    "1/4=0.50",
+    "3/4=0.57",
+    "4/4=0.44"
+   ]
+  },
+  "pass": false,
+  "notes": [
+   "What is shown on screen does not match the question"
+  ]
+ },
+ {
+  "id": "Equivalent fractions G3 P2",
+  "view": {
+   "type": "categorization_activity",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Sort each fraction into the correct bucket based on whether it is equal in value to 1/2 or not.",
+   "choices": [
+    "Equivalent to 1/2",
+    "Not Equivalent to 1/2"
+   ],
+   "items_and_groups": [
+    "2/4 -> Equivalent to 1/2",
+    "3/6 -> Equivalent to 1/2",
+    "4/8 -> Equivalent to 1/2",
+    "5/10 -> Equivalent to 1/2",
+    "1/3 -> Not Equivalent to 1/2",
+    "3/4 -> Not Equivalent to 1/2",
+    "2/3 -> Not Equivalent to 1/2",
+    "2/5 -> Not Equivalent to 1/2"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.25,
+   "evidence": "no_evidence:0.69",
+   "repeats": "none:0.94",
+   "tempting": []
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Equivalent fractions G3 P3",
+  "view": {
+   "type": "fill_in_blanks",
+   "shown_on_screen": "[Equation] Equation (KaTeX): \\frac{1}{3} = \\frac{\\text{?}}{6}  — Find the missing numerator",
+   "ask": "Look at the fraction equation in the box. To make the fractions equal, the missing top number should be [blank_1].",
+   "choices": [
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   "correct_answer": "2",
+   "wrong_answers": [
+    "1",
+    "3",
+    "4"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.07,
+   "evidence": "agrees:0.95",
+   "repeats": "none:0.83",
+   "tempting": [
+    "1=0.78",
+    "3=0.76",
+    "4=0.70"
+   ]
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Equivalent fractions G3 P4",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Three same-sized pizzas are cut into equal slices: Pizza A has 1 out of 3 slices eaten (1/3), Pizza B has 2 out of 6 slices eaten (2/6), and Pizza C has 3 out of 4 slices eaten (3/4). Which two pizzas show the exact same amount eaten?",
+   "choices": [
+    "Pizza A and Pizza C",
+    "Pizza A and Pizza B",
+    "Pizza B and Pizza C",
+    "Pizza C and a whole pizza"
+   ],
+   "correct_answer": "Pizza A and Pizza B",
+   "wrong_answers": [
+    "Pizza A and Pizza C",
+    "Pizza B and Pizza C",
+    "Pizza C and a whole pizza"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.18,
+   "evidence": "no_evidence:0.51",
+   "repeats": "none:0.49",
+   "tempting": [
+    "Pizza A and Pizza C=0.54",
+    "Pizza B and Pizza C=0.62",
+    "Pizza C and a whole pizza=0.47"
+   ]
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Main idea and supporting details G3 P1",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "[Reading Passage] prose passage:\n\"Worker bees fly from flower to flower drinking sweet liquid called nectar. Next, they carry this nectar back home to their hive and store it in wax cups. Over time, the busy bees fan their wings over the liquid until it turns into thick honey.\"",
+   "ask": "What is this paragraph mostly about?",
+   "choices": [
+    "Why flowers have colorful petals",
+    "How worker bees make sweet honey",
+    "The way bees fly through garden plants",
+    "How honeycombs are shaped inside hives"
+   ],
+   "correct_answer": "How worker bees make sweet honey",
+   "wrong_answers": [
+    "Why flowers have colorful petals",
+    "The way bees fly through garden plants",
+    "How honeycombs are shaped inside hives"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.3,
+   "evidence": "agrees:0.81",
+   "repeats": "-",
+   "tempting": [
+    "Why flowers have colorful petals=0.12",
+    "The way bees fly through garden plants=0.63",
+    "How honeycombs are shaped inside hives=0.59"
+   ]
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Main idea and supporting details G3 P2",
+  "view": {
+   "type": "true_false",
+   "shown_on_screen": "[Passage 1] prose passage (Children's Animal Guide):\n\"Dogs are helpful animals that make wonderful pets for many families. Some dogs are trained to guide people who cannot see well, while other dogs use their strong noses to help find lost items. Around the house, a dog can even learn to fetch slippers or bark loudly to warn owners when someone is at the door. Because they assist people in so many different ways, dogs are truly man's best friend.\"",
+   "ask": "Based on the passage, the main idea of the story is that dogs can bark very loudly to scare away the mail carrier.",
+   "correct_answer": "false"
+  },
+  "raw": {
+   "gives_away": 0.28,
+   "evidence": "agrees:0.48",
+   "repeats": "none:0.87",
+   "tempting": []
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Main idea and supporting details G3 P3",
+  "view": {
+   "type": "matching_activity",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Match each main idea to the detail sentence that supports it.",
+   "pairs": [
+    "Honeybees are helpful insects in our gardens. -> They pollinate colorful flowers and help plants grow fruits and vegetables.",
+    "Apples are a nutritious snack to eat every day. -> They are packed with vitamins and dietary fiber that keep our bodies healthy.",
+    "Dogs make loyal and loving family pets. -> They greet their owners with wagging tails and enjoy playing together."
+   ]
+  },
+  "raw": {
+   "gives_away": 0.34,
+   "evidence": "no_evidence:0.66",
+   "repeats": "none:0.98",
+   "tempting": []
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Main idea and supporting details G3 P4",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "[Passage] prose passage (Growing Amphibians):\n\"A young tadpole undergoes remarkable changes as it develops into a full-grown frog. It begins life swimming underwater with gills and a long tail. Over several weeks, it grows strong hind legs and develops lungs to breathe air. Adult frogs often eat beetles, spiders, and earthworms.\"",
+   "ask": "The main idea of the passage is how tadpoles change as they grow into frogs. Which detail from the text does NOT support this main idea?",
+   "choices": [
+    "They begin life swimming underwater with gills and a long tail.",
+    "Adult frogs often eat beetles, spiders, and earthworms.",
+    "They grow strong hind legs over several weeks.",
+    "They develop lungs to breathe air instead of water."
+   ],
+   "correct_answer": "Adult frogs often eat beetles, spiders, and earthworms.",
+   "wrong_answers": [
+    "They begin life swimming underwater with gills and a long tail.",
+    "They grow strong hind legs over several weeks.",
+    "They develop lungs to breathe air instead of water."
+   ]
+  },
+  "raw": {
+   "gives_away": 0.38,
+   "evidence": "agrees:0.71",
+   "repeats": "none:0.86",
+   "tempting": [
+    "They begin life swimming underwater with gills and a long tail.=0.35",
+    "They grow strong hind legs over several weeks.=0.37",
+    "They develop lungs to breathe air instead of water.=0.29"
+   ]
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Food chains and ecosystems G4 P1",
+  "view": {
+   "type": "fill_in_blanks",
+   "shown_on_screen": "[Figure 1] Definition — producer (noun): An organism that makes its own food using sunlight.  Example: \"A green plant is a producer in the forest food chain.\"",
+   "ask": "According to the definition box, plants are known as [blank_1] because they make their own food using energy from the sun.",
+   "choices": [
+    "producers",
+    "consumers",
+    "decomposers"
+   ],
+   "correct_answer": "producers",
+   "wrong_answers": [
+    "consumers",
+    "decomposers"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.9,
+   "evidence": "gives_answer:0.92",
+   "repeats": "-",
+   "tempting": [
+    "consumers=0.70",
+    "decomposers=0.41"
+   ]
+  },
+  "pass": false,
+  "notes": [
+   "The question gave its answer away",
+   "The picture or box on screen states the answer, so the learner can copy it"
+  ]
+ },
+ {
+  "id": "Food chains and ecosystems G4 P2",
+  "view": {
+   "type": "sequencing_activity",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Arrange the steps to show how energy flows through this food chain from start to finish.",
+   "correct_order": [
+    "The Sun provides light energy",
+    "Grass uses sunlight to make food",
+    "A rabbit eats the grass for energy",
+    "A fox hunts and eats the rabbit"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.24,
+   "evidence": "no_evidence:0.78",
+   "repeats": "none:1.00",
+   "tempting": []
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Food chains and ecosystems G4 P3",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "[Table 1] Data table \"Diets of common animals living in a meadow ecosystem.\":\n  Meadow Animal | What It Eats\n  Garter snake | Slugs and earthworms\n  Meadow vole | Grass and clover stems\n  Red-tailed hawk | Mice and small snakes\n  Field cricket | Plant seeds, leaves, and dead insects",
+   "ask": "An herbivore is an animal that eats only plants. Based on the table, which meadow animal is an herbivore?",
+   "choices": [
+    "Red-tailed hawk",
+    "Meadow vole",
+    "Field cricket",
+    "Garter snake"
+   ],
+   "correct_answer": "Meadow vole",
+   "wrong_answers": [
+    "Red-tailed hawk",
+    "Field cricket",
+    "Garter snake"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.63,
+   "evidence": "agrees:0.96",
+   "repeats": "none:1.00",
+   "tempting": [
+    "Red-tailed hawk=0.23",
+    "Field cricket=0.82",
+    "Garter snake=0.80"
+   ]
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "Food chains and ecosystems G4 P4",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Look at the two forest scenes. Scene A shows a healthy forest food web with hawks, rabbits, and plants. Scene B shows the same forest after all the hawks are removed. What will most likely happen to the rabbit population in Scene B at first?",
+   "choices": [
+    "The rabbit population will decrease because removing an animal always harms every other animal in the forest.",
+    "The rabbit population will increase because fewer predators are hunting them.",
+    "The rabbit population will stay the same because hawks have no effect on rabbits.",
+    "The rabbit population will stop eating plants and start hunting other animals."
+   ],
+   "correct_answer": "The rabbit population will increase because fewer predators are hunting them.",
+   "wrong_answers": [
+    "The rabbit population will decrease because removing an animal always harms every other animal in the forest.",
+    "The rabbit population will stay the same because hawks have no effect on rabbits.",
+    "The rabbit population will stop eating plants and start hunting other animals."
+   ]
+  },
+  "raw": {
+   "gives_away": 0.44,
+   "evidence": "no_evidence:0.69",
+   "repeats": "none:1.00",
+   "tempting": [
+    "The rabbit population will decrease because removing an animal always harms every other animal in the forest.=0.73",
+    "The rabbit population will stay the same because hawks have no effect on rabbits.=0.64",
+    "The rabbit population will stop eating plants and start hunting other animals.=0.53"
+   ]
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "The water cycle G5 P1",
+  "view": {
+   "type": "fill_in_blanks",
+   "shown_on_screen": "[Figure 1] Definition — evaporation (noun): the process where liquid water changes into water vapor due to heat from the sun  Example: \"Puddles disappear on a sunny day because of evaporation.\"",
+   "ask": "According to the provided definition, when heat from the sun causes liquid water to change into water vapor, the process is called [blank_1].",
+   "choices": [
+    "evaporation",
+    "condensation",
+    "precipitation"
+   ],
+   "correct_answer": "evaporation",
+   "wrong_answers": [
+    "condensation",
+    "precipitation"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.96,
+   "evidence": "gives_answer:0.97",
+   "repeats": "-",
+   "tempting": [
+    "condensation=0.71",
+    "precipitation=0.40"
+   ]
+  },
+  "pass": false,
+  "notes": [
+   "The question gave its answer away",
+   "The picture or box on screen states the answer, so the learner can copy it"
+  ]
+ },
+ {
+  "id": "The water cycle G5 P2",
+  "view": {
+   "type": "sequencing_activity",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "Put the four main stages of the water cycle in order, starting with the sun warming the water on Earth.",
+   "correct_order": [
+    "Evaporation: The sun warms water in lakes and oceans, turning it into invisible water vapor that rises into the sky.",
+    "Condensation: As water vapor rises and cools, it gathers into tiny liquid drops to form clouds.",
+    "Precipitation: The water droplets in clouds become too heavy to stay in the air and fall to Earth as rain, snow, or sleet.",
+    "Collection: Water pools together in oceans, lakes, rivers, and underground, ready to be heated by the sun again."
+   ]
+  },
+  "raw": {
+   "gives_away": 0.17,
+   "evidence": "no_evidence:0.82",
+   "repeats": "none:1.00",
+   "tempting": []
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "The water cycle G5 P3",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "[Figure 1] bar chart \"Daily Rainfall Amounts\" (x=Day of the Week, y=Precipitation (mm)): Mon=5, Tue=0, Wed=18, Thu=25, Fri=12",
+   "ask": "Students tracked local precipitation during one week of their water cycle unit. Based on the bar chart, on which day did the area experience the highest amount of precipitation?",
+   "choices": [
+    "Monday",
+    "Wednesday",
+    "Thursday",
+    "Friday"
+   ],
+   "correct_answer": "Thursday",
+   "wrong_answers": [
+    "Monday",
+    "Wednesday",
+    "Friday"
+   ]
+  },
+  "raw": {
+   "gives_away": 0.37,
+   "evidence": "agrees:0.96",
+   "repeats": "none:1.00",
+   "tempting": [
+    "Monday=0.33",
+    "Wednesday=0.76",
+    "Friday=0.63"
+   ]
+  },
+  "pass": true,
+  "notes": []
+ },
+ {
+  "id": "The water cycle G5 P4",
+  "view": {
+   "type": "multiple_choice",
+   "shown_on_screen": "nothing besides the text",
+   "ask": "On a hot summer afternoon, Maya pours cold lemonade into a glass. After a few minutes, tiny beads of liquid form on the outside of the glass, even though the glass has no leaks. Which stage of the water cycle does this demonstrate, and why?",
+   "choices": [
+    "Evaporation, because heat from the sun makes the lemonade turn into a gas.",
+    "Precipitation, because tiny drops of liquid are falling from the air onto the table.",
+    "Condensation, because invisible water vapor in the warm air cools down and turns into liquid.",
+    "Transpiration, because the cold lemonade gives off moisture through tiny invisible pores in the glass."
+   ],
+   "correct_answer": "Condensation, because invisible water vapor in the warm air cools down and turns into liquid.",
+   "wrong_answers": [
+    "Evaporation, because heat from the sun makes the lemonade turn into a gas.",
+    "Precipitation, because tiny drops of liquid are falling from the air onto the table.",
+    "Transpiration, because the cold lemonade gives off moisture through tiny invisible pores in the glass."
+   ]
+  },
+  "raw": {
+   "gives_away": 0.21,
+   "evidence": "no_evidence:0.82",
+   "repeats": "none:0.98",
+   "tempting": [
+    "Evaporation, because heat from the sun makes the lemonade turn into a gas.=0.73",
+    "Precipitation, because tiny drops of liquid are falling from the air onto the table.=0.68",
+    "Transpiration, because the cold lemonade gives off moisture through tiny invisible pores in the glass.=0.53"
+   ]
+  },
+  "pass": true,
+  "notes": []
+ }
+]

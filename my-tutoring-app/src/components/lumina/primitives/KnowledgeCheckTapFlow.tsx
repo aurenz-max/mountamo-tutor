@@ -27,7 +27,7 @@ import { isPreReaderGrade } from '../utils/kindergartenMode';
  * This is the click-era container flow, extracted whole when the judged loop
  * became the primary surface (KnowledgeCheck.tsx forks between the two). It
  * renders when the judged session cannot run — no usable microphone, or a
- * problem set the judged build cannot fully ask (all-or-nothing rule). The
+ * problem set with no items. (A problem the spoken kinds cannot ask is worked on screen inside the session.) The
  * interim per-problem voice chrome (/add-voice-control) that used to live in
  * this flow is GONE — voice now means the judged loop, never a mic orb beside
  * a Verify button.

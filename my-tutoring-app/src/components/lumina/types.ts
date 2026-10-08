@@ -710,6 +710,9 @@ export interface BaseProblemData {
   /** Curriculum IDs of the tagged objective — the evaluation attribution keys. */
   subskillId?: string;
   skillId?: string;
+  /** Set by a host that submits for this problem itself (the knowledge-check workspace's `on_screen` item): the
+   *  problem reports its result through `onEvaluationSubmit` only and never updates adaptive state. */
+  localOnly?: boolean;
 }
 
 // Multiple Choice Problem

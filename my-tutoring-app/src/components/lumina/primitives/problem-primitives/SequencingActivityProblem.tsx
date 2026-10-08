@@ -63,6 +63,7 @@ export const SequencingActivityProblem: React.FC<SequencingActivityProblemProps>
     resetAttempt: resetEvaluationAttempt,
   } = usePrimitiveEvaluation<SequencingActivityMetrics>({
     primitiveType: 'knowledge-check',
+    localOnly: (data as { localOnly?: boolean }).localOnly === true,
     instanceId: instanceId || `sequencing-${data.id}-${Date.now()}`,
     skillId,
     subskillId,

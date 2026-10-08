@@ -66,6 +66,7 @@ export const TrueFalseProblem: React.FC<TrueFalseProblemProps> = ({ data }) => {
     resetAttempt: resetEvaluationAttempt,
   } = usePrimitiveEvaluation<TrueFalseMetrics>({
     primitiveType: 'knowledge-check',
+    localOnly: (data as { localOnly?: boolean }).localOnly === true,
     instanceId: instanceId || `true-false-${data.id}-${Date.now()}`,
     skillId,
     subskillId,

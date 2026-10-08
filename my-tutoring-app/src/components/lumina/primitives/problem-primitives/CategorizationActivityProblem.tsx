@@ -111,6 +111,7 @@ export const CategorizationActivityProblem: React.FC<CategorizationActivityProbl
     resetAttempt: resetEvaluationAttempt,
   } = usePrimitiveEvaluation<CategorizationActivityMetrics>({
     primitiveType: 'knowledge-check',
+    localOnly: (data as { localOnly?: boolean }).localOnly === true,
     instanceId: instanceId || `categorization-${data.id}-${Date.now()}`,
     skillId,
     subskillId,

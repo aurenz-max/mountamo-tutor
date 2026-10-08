@@ -184,19 +184,19 @@ describe('legacy evidence reaches the judged surface', () => {
 });
 
 describe('production kinds — build gates', () => {
-  it('a point_to whose target is not a token drops, failing the set (all-or-nothing)', () => {
-    const { judgedViable } = itemsFromProblems([pointToProblem({ targetTokenId: 't9', correctOptionId: 't9' }), tfProblem()]);
-    expect(judgedViable).toBe(false);
+  it('a point_to whose target is not a token drops to on screen', () => {
+    const { items } = itemsFromProblems([pointToProblem({ targetTokenId: 't9', correctOptionId: 't9' }), tfProblem()]);
+    expect(items.map((i) => i.kind)).toEqual(['on_screen', 'true_false']);
   });
 
   it('an ask that names the answer drops (the inset leak rule is the runtime gate too)', () => {
-    const { judgedViable } = itemsFromProblems([howManyProblem({ ask: 'Three apples are left. How many?' })]);
-    expect(judgedViable).toBe(false);
+    const { items } = itemsFromProblems([howManyProblem({ ask: 'Three apples are left. How many?' })]);
+    expect(items.map((i) => i.kind)).toEqual(['on_screen']);
   });
 
   it('a production item with no stimulus drops', () => {
-    const { judgedViable } = itemsFromProblems([sayItProblem({ stimulus: undefined as never })]);
-    expect(judgedViable).toBe(false);
+    const { items } = itemsFromProblems([sayItProblem({ stimulus: undefined as never })]);
+    expect(items.map((i) => i.kind)).toEqual(['on_screen']);
   });
 
   it('two how_many items with the same count are BOTH kept (the stimulus is the key, not the word)', () => {

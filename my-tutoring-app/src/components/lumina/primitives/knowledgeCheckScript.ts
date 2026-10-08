@@ -62,16 +62,16 @@
  *   sequencing_activity / scenario_question / short_answer are NOT askable in
  *   this pack: sequencing is a BUILD the judged stage does not carry yet
  *   (queued as item 23 slice 2b), and the other two are `open_set_word`
- *   (BLOCKED). A set containing one is not partially judged — see below.
+ *   (BLOCKED). Each is worked on screen instead — see below.
  *
- * ── ALL-OR-NOTHING (this pack's own rule, forced by R7) ────────────────────
+ * ── PER-PROBLEM FALLBACK (R7) ─────────────────────────────────────────────
  * Knowledge-check completion is gated per problem (`${instanceId}::pN`,
- * KindergartenStage). A judged session that silently dropped one problem
- * would strand the whole check: that problem never asks, never submits, and
- * the stage gate waits forever. So the build is all-or-nothing — if ANY
- * problem yields zero judged items, `judgedViable` is false and the component
- * renders the tap surface for the whole set. Partial drops WITHIN a problem
- * (5 of 6 sort items survive) are fine: the problem still asks and submits.
+ * KindergartenStage), so every problem must yield at least one item. A problem
+ * the spoken kinds cannot ask (sequencing, an unsayable or leaking draw)
+ * becomes ONE `on_screen` item: the tutor reads it, the child works the
+ * problem's own surface, and that surface's check is the verdict. The set
+ * stays on the workspace; the tap flow is only for a mount with no tutor.
+ * (Until 2026-10-06 one such problem sent the whole set to the tap flow.)
  *
  * ── ANSWER-LEAK RULES, PER KIND ────────────────────────────────────────────
  *  - choice/match/sort: the ask necessarily speaks the menu — that is the
@@ -141,7 +141,8 @@ export type KnowledgeCheckItemKind =
   | 'sort'
   | 'say_it'
   | 'point_to'
-  | 'how_many';
+  | 'how_many'
+  | 'on_screen';
 
 /** Standing gate 1: what each kind's answer is MADE of. `say_it` narrows per
  *  item (`responseClassForProduction`) — this is its widest class. */
@@ -152,7 +153,7 @@ export const responseClassFor = (kind: KnowledgeCheckItemKind): ResponseClassId 
       ? 'short_spoken_word'
       : kind === 'how_many'
         ? 'number_word_to_20'
-        : kind === 'choice_tap' || kind === 'point_to'
+        : kind === 'choice_tap' || kind === 'point_to' || kind === 'on_screen'
           ? 'manipulation'
           : 'closed_set_choice';
 
@@ -174,7 +175,7 @@ export const responseClassForProduction = (p: ProductionProblemData): ResponseCl
 };
 
 export const answerKindFor = (kind: KnowledgeCheckItemKind): 'voice' | 'gesture' =>
-  kind === 'choice_tap' || kind === 'point_to' ? 'gesture' : 'voice';
+  kind === 'choice_tap' || kind === 'point_to' || kind === 'on_screen' ? 'gesture' : 'voice';
 
 export const isProductionKind = (kind: KnowledgeCheckItemKind): boolean =>
   kind === 'say_it' || kind === 'point_to' || kind === 'how_many';
@@ -225,6 +226,9 @@ export interface KnowledgeCheckItem extends JudgedScriptItem {
   targetTokenId?: string;
   /** choice / choice_tap: the generated picture cue (`cue_picture` lever), shown only when pulled. */
   cue?: { picture: string; shows: string };
+  /** on_screen: the answer as the cap-reached close says it ("first dig, then load"); empty when the problem's
+   *  answer has no short spoken form. */
+  closeAnswer?: string;
 }
 
 // ── Small helpers (family idiom) ────────────────────────────────────────────
@@ -660,20 +664,54 @@ const selectToCap = (items: KnowledgeCheckItem[]): KnowledgeCheckItem[] => {
 
 export interface KnowledgeCheckBuild {
   items: KnowledgeCheckItem[];
-  /** False when ANY problem yielded zero items — the whole set falls back to
-   *  the tap surface (all-or-nothing; see the header). */
+  /** False only for an empty set: a problem with no spoken item is worked
+   *  on screen (`on_screen`; see the header). */
   judgedViable: boolean;
   dropped: number;
 }
+
+/** The answer of a problem worked on screen, as the cap-reached close says it. */
+const closeAnswerOf = (p: ProblemData): string => {
+  switch (p.type) {
+    case 'multiple_choice': return sanitize(p.options?.find((o) => o.id === p.correctOptionId)?.text ?? '');
+    case 'true_false': return p.correct ? 'true' : 'false';
+    case 'sequencing_activity': return (p.items ?? []).map((i) => stripEnd(sanitize(i))).join(', then ');
+    default: return '';
+  }
+};
+
+/**
+ * A problem the spoken kinds cannot ask (sequencing, an unsayable or leaking draw) is worked on screen INSIDE the
+ * session: the tutor reads it, the child does it with the problem's own surface, and the problem's own check is the
+ * verdict. One problem no longer sends the whole set to the tap flow.
+ */
+const onScreenItem = (p: ProblemData, problemIndex: number): KnowledgeCheckItem => {
+  const raw = 'question' in p ? p.question : 'statement' in p ? p.statement : 'instruction' in p ? p.instruction
+    : 'textWithBlanks' in p ? blankSpokenSentence(p.textWithBlanks) : '';
+  const stem = sanitize(String(raw ?? ''));
+  const closeAnswer = closeAnswerOf(p);
+  return {
+    id: `p${problemIndex}-screen`,
+    kind: 'on_screen',
+    answerKind: 'gesture',
+    responseClass: responseClassFor('on_screen'),
+    action: 'on_screen',
+    problemIndex,
+    prompt: stem && !opensWithSentinel(stem) ? stem : 'Look at this one on the screen.',
+    ...(closeAnswer ? { closeAnswer } : {}),
+  };
+};
 
 export const itemsFromProblems = (problems: ProblemData[]): KnowledgeCheckBuild => {
   if (!problems.length) return { items: [], judgedViable: false, dropped: 0 };
   const raw = problems.flatMap((p, i) => itemsFromProblem(p, i));
   const deduped = dropRepeatAnswers(raw);
-  const items = selectToCap(deduped);
-  const covered = new Set(items.map((i) => i.problemIndex));
-  const judgedViable = problems.every((_, i) => covered.has(i));
-  return { items, judgedViable, dropped: raw.length - items.length };
+  const selected = selectToCap(deduped);
+  const covered = new Set(selected.map((i) => i.problemIndex));
+  const items = problems.flatMap((p, i) => (covered.has(i)
+    ? selected.filter((item) => item.problemIndex === i)
+    : [onScreenItem(p, i)]));
+  return { items, judgedViable: true, dropped: raw.length - selected.length };
 };
 
 // ============================================================================
@@ -700,6 +738,8 @@ export const howToPlayFor = (item: KnowledgeCheckItem): string => {
       return 'I show you a picture. If some are crossed out, they were taken away. You count, and tell me how many! ';
     case 'point_to':
       return 'I name a sign, and you touch that sign in the number sentence on the screen! ';
+    case 'on_screen':
+      return 'This one is on the screen. You do it with your hands, and I watch! ';
   }
 };
 
@@ -737,6 +777,8 @@ export const askFor = (item: KnowledgeCheckItem): string => {
       return `Your turn. Look at the picture. ${item.prompt}`;
     case 'point_to':
       return `Your turn. Look at the number sentence. ${item.prompt}`;
+    case 'on_screen':
+      return `Your turn. ${item.prompt} Do it on the screen.`;
   }
 };
 
@@ -769,6 +811,8 @@ export const affirmLine = (item: KnowledgeCheckItem): string => {
       return `Yes, ${item.expectedAnswer}.`;
     case 'point_to':
       return `Yes! That is the ${item.expectedAnswer} sign.`;
+    case 'on_screen':
+      return 'Yes! You got that one.';
   }
 };
 
@@ -800,6 +844,8 @@ export const correctionLine = (item: KnowledgeCheckItem): string => {
       return `My turn: let's count again, slowly, one at a time. Your turn. ${item.prompt}`;
     case 'point_to':
       return `My turn: look at each sign, one at a time. Your turn. ${item.prompt}`;
+    case 'on_screen':
+      return `My turn: look at it again, one part at a time. Your turn. ${item.prompt} Do it on the screen.`;
   }
 };
 
@@ -824,6 +870,8 @@ export const closeLineFor = (item: KnowledgeCheckItem): string => {
       return `The answer is ${item.expectedAnswer}. `;
     case 'point_to':
       return `That one is the ${item.expectedAnswer} sign. `;
+    case 'on_screen':
+      return item.closeAnswer ? `The answer is ${item.closeAnswer}. ` : '';
   }
 };
 
@@ -963,7 +1011,7 @@ const blankContract = (item: KnowledgeCheckItem): string =>
  */
 const tapContract = (item: KnowledgeCheckItem): string =>
   `The quoted line is the ONLY thing you say on this turn. ${evidenceDescription(item)}The learner answers with their hands, `
-  + `by touching a choice on the screen — there is nothing for you to listen for, and anything you `
+  + `${item.kind === 'on_screen' ? 'by working the problem on the screen' : 'by touching a choice on the screen'} — there is nothing for you to listen for, and anything you `
   + `hear while they work is thinking out loud, not an answer. The activity tells you what they `
   + `chose and which line to say; until it does, you have nothing to judge and nothing to say. `
   + `Never say which choice is right, and never describe the choices beyond the question you just asked. `
@@ -1041,7 +1089,8 @@ const contractFor = (item: KnowledgeCheckItem): string => {
     case 'sort': return spokenChoiceContract(item);
     case 'blank': return blankContract(item);
     case 'choice_tap':
-    case 'point_to': return tapContract(item);
+    case 'point_to':
+    case 'on_screen': return tapContract(item);
     case 'say_it': return sayItContract(item);
     case 'how_many': return howManyContract(item);
   }
@@ -1145,7 +1194,8 @@ export const stimulusFor = (item: KnowledgeCheckItem): string => {
     case 'sort': return `Which group does ${item.focusText} go in?`;
     case 'say_it':
     case 'how_many':
-    case 'point_to': return item.prompt; // the stimulus description lives in the contract
+    case 'point_to':
+    case 'on_screen': return item.prompt; // the stimulus description lives in the contract
   }
 };
 

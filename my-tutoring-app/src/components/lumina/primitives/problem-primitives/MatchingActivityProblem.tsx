@@ -55,6 +55,7 @@ export const MatchingActivityProblem: React.FC<MatchingActivityProblemProps> = (
     resetAttempt: resetEvaluationAttempt,
   } = usePrimitiveEvaluation<MatchingActivityMetrics>({
     primitiveType: 'knowledge-check',
+    localOnly: (data as { localOnly?: boolean }).localOnly === true,
     instanceId: instanceId || `matching-${data.id}-${Date.now()}`,
     skillId,
     subskillId,

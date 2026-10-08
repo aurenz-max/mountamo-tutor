@@ -45,6 +45,7 @@ export const ScenarioQuestionProblem: React.FC<ScenarioQuestionProblemProps> = (
     resetAttempt: resetEvaluationAttempt,
   } = usePrimitiveEvaluation<ShortAnswerMetrics>({
     primitiveType: 'knowledge-check',
+    localOnly: (data as { localOnly?: boolean }).localOnly === true,
     instanceId: instanceId || `scenario-${data.id}-${Date.now()}`,
     skillId,
     subskillId,

@@ -69,6 +69,7 @@ export const MultipleChoiceProblem: React.FC<MultipleChoiceProblemProps> = ({ da
     resetAttempt: resetEvaluationAttempt,
   } = usePrimitiveEvaluation<MultipleChoiceMetrics>({
     primitiveType: 'knowledge-check',
+    localOnly: (data as { localOnly?: boolean }).localOnly === true,
     instanceId: instanceId || `multiple-choice-${data.id}-${Date.now()}`,
     skillId,
     subskillId,

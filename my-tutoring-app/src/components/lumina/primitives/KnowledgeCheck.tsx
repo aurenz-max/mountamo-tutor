@@ -9,13 +9,13 @@
  * Verify, no mic panel, and no printed answer anywhere before credit. An unbound
  * mount shows the shared "needs the tutor" card.
  *
- * THE FORK (all-or-nothing). Knowledge-check completion is gated per problem
- * (`${instanceId}::pN` — KindergartenStage counts them), so a judged session
- * that dropped one problem would strand the whole check. The build is
- * therefore all-or-nothing: if every problem in the set yields at least one
- * judged item, the judged surface renders; otherwise the whole set renders as
- * the tap surface (`KnowledgeCheckTapFlow`), including the slice-1
- * categorization microstep. Never both.
+ * PER-PROBLEM FALLBACK. Knowledge-check completion is gated per problem
+ * (`${instanceId}::pN` — KindergartenStage counts them), so every problem
+ * yields at least one item. A problem the spoken kinds cannot ask is an
+ * `on_screen` item: its own problem surface renders inside the session
+ * (local-only — the session submits for it), and its check is the verdict.
+ * The tap surface (`KnowledgeCheckTapFlow`) renders only for a set with no
+ * problems.
  *
  * WHAT THE JUDGED SURFACE REPLACES, per problem type — the answer-material
  * fork, gates and every spoken line live in `knowledgeCheckScript.ts`
@@ -66,6 +66,7 @@ import {
 } from '../ui';
 import { isPreReaderGrade } from '../utils/kindergartenMode';
 import { KnowledgeCheckTapFlow } from './KnowledgeCheckTapFlow';
+import { ProblemRenderer } from '../config/problemTypeRegistry';
 import { InsetRenderer, NumberSentenceTokens } from './problem-primitives/insets';
 import { ObjectCollection, ComparisonPanel } from './visual-primitives';
 import type { VisualObjectCollection, VisualComparisonData } from '../types';
@@ -113,6 +114,7 @@ const ITEM_ICONS: Record<KnowledgeCheckItem['kind'], string> = {
   say_it: '🗣️',
   how_many: '🔢',
   point_to: '👆',
+  on_screen: '✋',
 };
 
 // ─── Per-problem evaluation bridge ───────────────────────────────────────────
@@ -262,6 +264,7 @@ const KnowledgeCheckJudged: React.FC<JudgedProps> = ({
       case 'say_it':
       case 'how_many': return item.expectedAnswer ?? '';
       case 'point_to': return `${item.expectedAnswer ?? ''} sign`;
+      case 'on_screen': return item.closeAnswer ?? '';
       default: return correctOptionText(item);
     }
   };
@@ -383,6 +386,15 @@ const KnowledgeCheckJudged: React.FC<JudgedProps> = ({
       miss: knowledgeCheckMiss(item, tokenId) });
   };
 
+  /** on_screen: the problem's own surface checked the work; its verdict is the gesture. */
+  const handleOnScreenResult = (item: KnowledgeCheckItem, result: PrimitiveEvaluationResult) => {
+    if (!runner.canAttempt || runner.currentItem?.id !== item.id) return;
+    if (runner.isAwaitingGesture()) return;
+    const correct = result.success === true;
+    commitGesture(runner, { response: correct ? 'Worked the problem on the screen; its check passed.'
+      : 'Worked the problem on the screen; its check did not pass.', correct, cue: () => '' });
+  };
+
   // ── Phase summary — `solved` is not `solved alone` ────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
     if (!runner.practiceSummary) return [];
@@ -447,6 +459,23 @@ const KnowledgeCheckJudged: React.FC<JudgedProps> = ({
   };
 
   const renderStage = (item: KnowledgeCheckItem) => {
+    // The problem's own surface, remounted fresh on each retry (the lever state counts the retries).
+    if (item.kind === 'on_screen') {
+      return (
+        <div ref={pip.ref('question')} data-pip-object="question" data-on-screen={item.id}>
+          <ProblemRenderer
+            key={`${item.id}-${currentLevers.wrongs}`}
+            problemData={{
+              ...problems[item.problemIndex],
+              instanceId: `${instanceId}::p${item.problemIndex}`,
+              localOnly: true,
+              preReader,
+              onEvaluationSubmit: (result: PrimitiveEvaluationResult) => handleOnScreenResult(item, result),
+            }}
+          />
+        </div>
+      );
+    }
     const prompt = (
       <p className={`${preReader ? 'text-2xl' : 'text-xl'} font-semibold leading-snug text-white text-center`}>
         {item.kind === 'match'

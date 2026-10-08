@@ -101,15 +101,12 @@ it('Pip docks above the question card, points only at it, watches a touched choi
   expect(store.getActive()).toBeNull();
 });
 
-it('a set the judged build cannot run is the tap flow; a judged set outside a runtime shows the needs-the-tutor card', () => {
+it('a problem the spoken kinds cannot ask is worked on screen, so the set still binds; an empty set is rejected', () => {
   const adapter = LIVE_ADAPTERS['knowledge-check'];
   const unaskable = [{ ...base, type: 'true_false', id: 'bad', statement: '', correct: true }];
-  expect(knowledgeCheckItems(data(unaskable) as never).judgedViable).toBe(false);
-  expect(() => adapter.validate(data(unaskable))).toThrow();
-  expect(adapter.validate(data())).toBeTruthy();
-  const tap = render(<KnowledgeCheck data={data(unaskable) as never} />);
-  expect(tap.container.querySelector('[data-workspace-unbound]')).toBeNull();
-  tap.unmount();
-  const judged = render(<KnowledgeCheck data={data() as never} />);
+  expect(knowledgeCheckItems(data(unaskable) as never).items.map(i => i.kind)).toEqual(['on_screen']);
+  expect(adapter.validate(data(unaskable))).toBeTruthy();
+  expect(() => adapter.validate(data([]))).toThrow();
+  const judged = render(<KnowledgeCheck data={data(unaskable) as never} />);
   expect(judged.container.querySelector('[data-workspace-unbound]')).not.toBeNull();
 });

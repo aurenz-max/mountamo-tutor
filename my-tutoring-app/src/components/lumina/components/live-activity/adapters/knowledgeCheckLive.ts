@@ -4,12 +4,12 @@ import { workspaceOpening, type WorkspaceDomain } from './adapterContract';
 
 type KnowledgeCheckPayload = { problems: ProblemData[]; title?: string };
 
-/** Reject a set the judged build cannot run: every problem must yield a spoken or touched item (all-or-nothing,
- *  because completion is counted per problem); otherwise the set stays the tap flow. */
+/** Reject an empty set. Every problem yields an item (a problem the spoken kinds cannot ask is worked on screen),
+ *  because completion is counted per problem. */
 export function validateKnowledgeCheckData(value: unknown): KnowledgeCheckPayload {
   const d = value as KnowledgeCheckPayload;
   if (!d || !Array.isArray(d.problems) || !d.problems.length) throw new Error('Generated knowledge check has no problems.');
-  if (!knowledgeCheckItems(d).judgedViable) throw new Error('This knowledge check cannot be asked out loud.');
+  if (!knowledgeCheckItems(d).judgedViable) throw new Error('This knowledge check has no items.');
   return d;
 }
 

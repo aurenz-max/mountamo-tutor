@@ -56,6 +56,7 @@ export const ShortAnswerProblem: React.FC<ShortAnswerProblemProps> = ({ data }) 
     resetAttempt: resetEvaluationAttempt,
   } = usePrimitiveEvaluation<ShortAnswerMetrics>({
     primitiveType: 'knowledge-check',
+    localOnly: (data as { localOnly?: boolean }).localOnly === true,
     instanceId: instanceId || `short-answer-${data.id}-${Date.now()}`,
     skillId,
     subskillId,

@@ -38,6 +38,7 @@ import {
   knowledgeCheckPackBase,
   moveOnCue,
   closeLineFor,
+  askFor,
   correctionLine,
   affirmLine,
   stimulusFor,
@@ -169,6 +170,7 @@ describe('answer-material fork', () => {
       say_it: ['voice', 'short_spoken_word'],
       how_many: ['voice', 'number_word_to_20'],
       point_to: ['gesture', 'manipulation'],
+      on_screen: ['gesture', 'manipulation'],
     };
     for (const [kind, [answerKind, responseClass]] of Object.entries(expected)) {
       expect(answerKindFor(kind as KnowledgeCheckItemKind)).toBe(answerKind);
@@ -274,29 +276,28 @@ describe('cue contracts', () => {
   });
 });
 
-// ── Build gates: KEEP-OR-DROP + all-or-nothing ──────────────────────────────
+// ── Build gates: KEEP-OR-DROP; a dropped problem is worked on screen ──────────────────────────────
 
 describe('build gates', () => {
-  it('a sentinel-opening statement drops its problem, and the SET falls back (all-or-nothing)', () => {
-    const { judgedViable } = itemsFromProblems([
+  const kinds = (problems: ProblemData[]) => itemsFromProblems(problems).items.map((i) => i.kind);
+
+  it('a sentinel-opening statement drops its spoken item; that problem is worked on screen, the rest stay spoken', () => {
+    const { judgedViable, items } = itemsFromProblems([
       tfProblem({ statement: 'Yes, a spider has eight legs' }),
       mcProblem(),
     ]);
-    expect(judgedViable).toBe(false);
+    expect(judgedViable).toBe(true);
+    expect(items.map((i) => i.kind)).toEqual(['on_screen', 'choice']);
+    // The fallback ask never opens with a sentinel either.
+    expect(items[0].prompt).toBe('Look at this one on the screen.');
   });
 
-  it('a blank whose answer survives elsewhere in the sentence drops (leak), failing the set', () => {
-    const { judgedViable } = itemsFromProblems([
-      blankProblem({ textWithBlanks: 'The morning sun rises in the ____' }),
-    ]);
-    expect(judgedViable).toBe(false);
+  it('a blank whose answer survives elsewhere in the sentence drops (leak) to on screen', () => {
+    expect(kinds([blankProblem({ textWithBlanks: 'The morning sun rises in the ____' })])).toEqual(['on_screen']);
   });
 
-  it('an MCQ whose stem contains the answer drops (class 11), failing the set', () => {
-    const { judgedViable } = itemsFromProblems([
-      mcProblem({ question: 'Which animal is the cow that says moo?' }),
-    ]);
-    expect(judgedViable).toBe(false);
+  it('an MCQ whose stem contains the answer drops (class 11) to on screen', () => {
+    expect(kinds([mcProblem({ question: 'Which animal is the cow that says moo?' })])).toEqual(['on_screen']);
   });
 
   // KC-UB (handoff 28): the two saved literacy payloads fell to the tap flow
@@ -329,12 +330,12 @@ describe('build gates', () => {
   it('the exemption holds only when the quote contains every choice; a key named outside it still drops', () => {
     // The quote holds only the key: that is a stated answer, not a sentence to search.
     const keyOnly = mcProblem({ question: 'The book says "the cow says moo." Which animal says moo?' });
-    expect(itemsFromProblems([keyOnly]).judgedViable).toBe(false);
+    expect(kinds([keyOnly])).toEqual(['on_screen']);
     // Every choice is quoted, but the stem names the key again outside the quote.
     const outside = mcProblem({
       question: 'In "The cow and the duck and the frog", which is the cow?',
     });
-    expect(itemsFromProblems([outside]).judgedViable).toBe(false);
+    expect(kinds([outside])).toEqual(['on_screen']);
   });
 
   it('a sort item whose own text names a group is dropped; the problem survives on its siblings', () => {
@@ -361,21 +362,24 @@ describe('build gates', () => {
   });
 
   it('an answer the tutor has already NAMED may not be a later item\'s answer (class 2)', () => {
-    const { judgedViable } = itemsFromProblems([
+    // The duplicate-answer MCQ loses its spoken item; its problem is worked on
+    // screen — never a silently missing ask.
+    expect(kinds([
       mcProblem(),
       mcProblem({ id: 'mc9', question: 'Which farm animal gives milk?' }), // same answer: cow
-    ]);
-    // The duplicate-answer MCQ loses its only item, so its problem is
-    // uncovered and the whole set falls back — never a silently missing ask.
-    expect(judgedViable).toBe(false);
+    ])).toEqual(['choice', 'on_screen']);
   });
 
-  it('sequencing / scenario / short_answer sets fall back whole (slice 2b)', () => {
-    const { judgedViable } = itemsFromProblems([
+  it('a sequencing problem is worked on screen inside the session; its close names the order', () => {
+    const { judgedViable, items } = itemsFromProblems([
       mcProblem(),
       { ...base, type: 'sequencing_activity', id: 'sq1', instruction: 'Put the steps in order', items: ['wake', 'eat', 'play'] },
     ]);
-    expect(judgedViable).toBe(false);
+    expect(judgedViable).toBe(true);
+    expect(items.map((i) => i.kind)).toEqual(['choice', 'on_screen']);
+    expect(items[1]).toMatchObject({ problemIndex: 1, answerKind: 'gesture', prompt: 'Put the steps in order' });
+    expect(closeLineFor(items[1])).toBe('The answer is wake, then eat, then play. ');
+    expect(askFor(items[1])).toBe('Your turn. Put the steps in order Do it on the screen.');
   });
 
   it('SELECTS to the session cap with every problem still covered', () => {
