@@ -15,6 +15,7 @@ import {
 import { buildRemediationPrompt } from '../generation/remediationPrompt';
 import { isSingleEmojiPicture } from '../../utils/emojiPicture';
 import { clueLeak } from '../../primitives/visual-primitives/literacy/pictureVocabularyScript';
+import { makePicturePairItems } from '../../primitives/visual-primitives/literacy/picturePairBuild';
 
 export type PictureVocabularyRemediationMove =
   | 'semantic_contrast'
@@ -951,6 +952,15 @@ export const generatePictureVocabulary = async (
   const intent = ctx.intent;
   const grade = ctx.gradeContext;
   const config = ctx.raw as PictureVocabularyConfig;
+
+  // pair_build (open build, qa/open-build/ROADMAP.md OB-8L): code-owned picture boards (opposites, goes together),
+  // judged in code from the pictures' known relations. No model call. The intent picks the relation when it names one.
+  if ((ctx.targetEvalMode ?? config?.targetEvalMode) === 'pair_build') {
+    const pairItems = makePicturePairItems(4, `${intent ?? ''} ${topic ?? ''}`);
+    console.log('[PictureVocabulary] pair_build boards', pairItems.map(i => `${i.relation}: ${i.board.join(' ')}`));
+    return { title: 'Picture Pairs', description: 'Find two pictures that belong together as a pair.', challengeType: 'pair_build',
+      challenges: [], gradeLevel: grade, task: 'pair_build', pairItems, ...(ctx.supportTier ? { supportTier: ctx.supportTier } : {}) };
+  }
 
   // ── Eval mode resolution — the challenge TYPE is decided in CODE (Gemini
   //    only emits a word pool), so the constraint picks which sub-generator runs.

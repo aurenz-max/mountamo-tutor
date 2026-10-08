@@ -2493,7 +2493,8 @@ export interface CvcSpellerMetrics extends BasePrimitiveMetrics {
 
 export interface PictureVocabularyMetrics extends BasePrimitiveMetrics {
   type: 'picture-vocabulary';
-  challengeType: 'receptive_match' | 'naming' | 'association' | 'opposite' | 'sentence_frame' | 'gradable_scale';
+  /** `pair_build` is the open build: two pictures that are opposites or go together, found on a board of eight. */
+  challengeType: 'receptive_match' | 'naming' | 'association' | 'opposite' | 'sentence_frame' | 'gradable_scale' | 'pair_build';
   totalChallenges: number;
   correctCount: number;
   attemptsCount: number;

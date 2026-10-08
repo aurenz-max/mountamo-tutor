@@ -1,0 +1,75 @@
+{
+ "source": "qa/open-build/picture-vocabulary-2026-10-08/gen-neutral-K.json",
+ "primitiveId": "picture-vocabulary",
+ "evalMode": "pair_build",
+ "data": {
+  "title": "Picture Pairs",
+  "description": "Find two pictures that belong together as a pair.",
+  "challengeType": "pair_build",
+  "challenges": [],
+  "gradeLevel": "Kindergarten",
+  "task": "pair_build",
+  "pairItems": [
+   {
+    "id": "p1",
+    "board": [
+     "light",
+     "slow",
+     "loud",
+     "heavy",
+     "dry",
+     "quiet",
+     "quick",
+     "noisy"
+    ],
+    "ways": 1,
+    "relation": "opposite"
+   },
+   {
+    "id": "p2",
+    "board": [
+     "thread",
+     "ball",
+     "tooth",
+     "needle",
+     "goal",
+     "ear",
+     "nose",
+     "toothbrush"
+    ],
+    "ways": 1,
+    "relation": "goes_with"
+   },
+   {
+    "id": "p3",
+    "board": [
+     "small",
+     "wet",
+     "left",
+     "dry",
+     "sweet",
+     "huge",
+     "big",
+     "right"
+    ],
+    "ways": 1,
+    "relation": "opposite"
+   },
+   {
+    "id": "p4",
+    "board": [
+     "candle",
+     "paint",
+     "honey",
+     "pencil",
+     "wheel",
+     "cake",
+     "notebook",
+     "car"
+    ],
+    "ways": 1,
+    "relation": "goes_with"
+   }
+  ]
+ }
+}

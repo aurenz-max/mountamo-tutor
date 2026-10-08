@@ -1,0 +1,33 @@
+[
+ {
+  "payload": "picture-vocabulary.pair_build",
+  "items": 4,
+  "findings": [],
+  "advisories": [],
+  "misses": {
+   "checked": 4,
+   "named": 4,
+   "declared": true,
+   "spoken": {
+    "answered": 0,
+    "named": 0
+   }
+  },
+  "records": {
+   "recover": {
+    "sent": 1,
+    "success": true,
+    "score": 67,
+    "firstResponseScore": 0,
+    "attempts": 8
+   },
+   "clean": {
+    "sent": 1,
+    "success": true,
+    "score": 100,
+    "firstResponseScore": 100,
+    "attempts": 4
+   }
+  }
+ }
+]

@@ -69,6 +69,8 @@ import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSu
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { pictureVocabularyPipPose } from '../../../pip/pictureVocabularyPipPose';
+import RhymePairSurface from './RhymePairSurface';
+import { PICTURE_PAIR_RULES, type PicturePairItem } from './picturePairBuild';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -126,11 +128,15 @@ export interface PictureVocabChallenge {
 export interface PictureVocabularyData {
   title: string;
   description: string;
-  /** Session-level mode; mixed sessions still render per challenge.type. */
-  challengeType: PictureVocabChallengeType;
-  /** 4-6 challenges. REQUIRED — built by the generator from the word pool. */
+  /** Session-level mode; mixed sessions still render per challenge.type. `pair_build` is the open build. */
+  challengeType: PictureVocabChallengeType | 'pair_build';
+  /** 4-6 challenges. REQUIRED — built by the generator from the word pool. Empty on `pair_build`. */
   challenges: PictureVocabChallenge[];
   gradeLevel?: string;
+  /** `pair_build` (open build): the shared pair surface runs the session from `pairItems` (`picturePairBuild.ts`). */
+  task?: 'pair_build';
+  pairItems?: PicturePairItem[];
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -706,8 +712,19 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
   );
 }
 
+/** One mount, one shape: the open build (`pair_build`) runs on the shared pair surface with the picture-pair rules. */
+function PictureVocabularyHost(props: PictureVocabularyProps) {
+  const { data } = props;
+  if (data.task === 'pair_build') {
+    return <RhymePairSurface<PicturePairItem> className={props.className} runtimePlanItemId={props.runtimePlanItemId}
+      rules={PICTURE_PAIR_RULES}
+      data={{ ...data, task: 'pair_build', pairItems: data.pairItems ?? [] }} />;
+  }
+  return <PictureVocabularySurface {...props} />;
+}
+
 // The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
-const PictureVocabulary = withWorkspaceOnly<PictureVocabularyProps>('picture-vocabulary', PictureVocabularySurface,
+const PictureVocabulary = withWorkspaceOnly<PictureVocabularyProps>('picture-vocabulary', PictureVocabularyHost,
   props => props.data.title);
 
 export default PictureVocabulary;

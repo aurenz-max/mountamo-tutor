@@ -1,0 +1,1834 @@
+{
+ "generatedAt": "2026-10-08T10:16:04.969Z",
+ "grade": "Kindergarten",
+ "topic": "Word meanings with pictures",
+ "intent": "Make pairs of pictures",
+ "supportTier": null,
+ "sessions": [
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "light",
+       "slow",
+       "loud",
+       "heavy",
+       "dry",
+       "quiet",
+       "quick",
+       "noisy"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "thread",
+       "ball",
+       "tooth",
+       "needle",
+       "goal",
+       "ear",
+       "nose",
+       "toothbrush"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "small",
+       "wet",
+       "left",
+       "dry",
+       "sweet",
+       "huge",
+       "big",
+       "right"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "candle",
+       "paint",
+       "honey",
+       "pencil",
+       "wheel",
+       "cake",
+       "notebook",
+       "car"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "small",
+       "left",
+       "huge",
+       "big",
+       "dry",
+       "down",
+       "right",
+       "up"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "rabbit",
+       "hat",
+       "saw",
+       "carrot",
+       "hand",
+       "wood",
+       "glove",
+       "shoe"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "wet",
+       "big",
+       "dry",
+       "quiet",
+       "tiny",
+       "loud",
+       "noisy",
+       "sweet"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "soap",
+       "dog",
+       "bathtub",
+       "paintbrush",
+       "pencil",
+       "paint",
+       "crayon",
+       "bone"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "noisy",
+       "night",
+       "up",
+       "quiet",
+       "loud",
+       "down",
+       "quick",
+       "day"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "cheese",
+       "hand",
+       "notebook",
+       "mouse",
+       "glove",
+       "ear",
+       "hat",
+       "pencil"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "sad",
+       "freezing",
+       "light",
+       "laughing",
+       "heavy",
+       "crying",
+       "hot",
+       "happy"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "wood",
+       "goal",
+       "paintbrush",
+       "ball",
+       "crayon",
+       "kite",
+       "saw",
+       "paint"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "hot",
+       "down",
+       "cold",
+       "freezing",
+       "crying",
+       "quick",
+       "up",
+       "slow"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "needle",
+       "tooth",
+       "ear",
+       "umbrella",
+       "rain",
+       "thread",
+       "hand",
+       "toothbrush"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "young",
+       "sour",
+       "left",
+       "laughing",
+       "sad",
+       "right",
+       "happy",
+       "old"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "bone",
+       "saw",
+       "hat",
+       "dog",
+       "sock",
+       "scarf",
+       "wood",
+       "shoe"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "wet",
+       "down",
+       "big",
+       "dry",
+       "up",
+       "small",
+       "quiet",
+       "tiny"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "car",
+       "web",
+       "cow",
+       "spider",
+       "bird",
+       "wheel",
+       "monkey",
+       "nest"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "quick",
+       "fast",
+       "night",
+       "heavy",
+       "light",
+       "day",
+       "up",
+       "slow"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "wood",
+       "shoe",
+       "saw",
+       "soap",
+       "bathtub",
+       "hat",
+       "glove",
+       "sock"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "soft",
+       "dry",
+       "crying",
+       "quick",
+       "wet",
+       "laughing",
+       "hard",
+       "happy"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "rabbit",
+       "ear",
+       "glove",
+       "ball",
+       "goal",
+       "hand",
+       "carrot",
+       "sock"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "up",
+       "big",
+       "left",
+       "small",
+       "right",
+       "noisy",
+       "down",
+       "tiny"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "toothbrush",
+       "web",
+       "tooth",
+       "monkey",
+       "spider",
+       "needle",
+       "dog",
+       "thread"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "right",
+       "cold",
+       "laughing",
+       "hot",
+       "sad",
+       "heavy",
+       "left",
+       "crying"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "glove",
+       "shoe",
+       "cake",
+       "hand",
+       "candle",
+       "needle",
+       "ear",
+       "thread"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "fast",
+       "happy",
+       "night",
+       "crying",
+       "day",
+       "left",
+       "sad",
+       "slow"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "mouse",
+       "monkey",
+       "saw",
+       "ball",
+       "web",
+       "wood",
+       "goal",
+       "spider"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "hot",
+       "slow",
+       "cold",
+       "sad",
+       "happy",
+       "laughing",
+       "fast",
+       "right"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "bird",
+       "soap",
+       "mouse",
+       "nest",
+       "paint",
+       "crayon",
+       "bathtub",
+       "paintbrush"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "up",
+       "quiet",
+       "young",
+       "night",
+       "noisy",
+       "day",
+       "loud",
+       "old"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "spider",
+       "key",
+       "pig",
+       "lock",
+       "hat",
+       "shoe",
+       "web",
+       "sock"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "crying",
+       "sweet",
+       "light",
+       "laughing",
+       "right",
+       "sad",
+       "sour",
+       "left"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "spider",
+       "paint",
+       "bird",
+       "cow",
+       "paintbrush",
+       "web",
+       "monkey",
+       "nest"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "quiet",
+       "tiny",
+       "cold",
+       "big",
+       "small",
+       "hot",
+       "noisy",
+       "loud"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "banana",
+       "umbrella",
+       "shoe",
+       "monkey",
+       "rain",
+       "sock",
+       "scarf",
+       "glove"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "quiet",
+       "down",
+       "sweet",
+       "loud",
+       "sour",
+       "hot",
+       "noisy",
+       "freezing"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "shoe",
+       "scarf",
+       "soap",
+       "glove",
+       "lock",
+       "bathtub",
+       "key",
+       "sock"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "down",
+       "laughing",
+       "hot",
+       "sad",
+       "old",
+       "happy",
+       "young",
+       "up"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "needle",
+       "paint",
+       "thread",
+       "spider",
+       "web",
+       "bee",
+       "cow",
+       "paintbrush"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "old",
+       "slow",
+       "loud",
+       "quick",
+       "right",
+       "noisy",
+       "young",
+       "quiet"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "spider",
+       "shoe",
+       "glove",
+       "web",
+       "notebook",
+       "hat",
+       "pencil",
+       "hand"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "left",
+       "slow",
+       "crying",
+       "sad",
+       "night",
+       "happy",
+       "day",
+       "right"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "cow",
+       "paintbrush",
+       "crayon",
+       "needle",
+       "pencil",
+       "thread",
+       "paint",
+       "milk"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "light",
+       "day",
+       "heavy",
+       "right",
+       "quiet",
+       "left",
+       "noisy",
+       "loud"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "pencil",
+       "needle",
+       "paint",
+       "bee",
+       "honey",
+       "paintbrush",
+       "crayon",
+       "thread"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "soft",
+       "happy",
+       "old",
+       "hot",
+       "laughing",
+       "young",
+       "cold",
+       "crying"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "mouse",
+       "spider",
+       "soap",
+       "web",
+       "bird",
+       "frog",
+       "nest",
+       "bathtub"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "up",
+       "right",
+       "slow",
+       "left",
+       "fast",
+       "down",
+       "laughing",
+       "quick"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "goal",
+       "wheel",
+       "boat",
+       "kite",
+       "car",
+       "toothbrush",
+       "ball",
+       "tooth"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "wet",
+       "big",
+       "huge",
+       "quiet",
+       "small",
+       "dry",
+       "loud",
+       "left"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "rain",
+       "grapes",
+       "needle",
+       "cake",
+       "thread",
+       "candle",
+       "butter",
+       "umbrella"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "freezing",
+       "noisy",
+       "left",
+       "loud",
+       "cold",
+       "right",
+       "quiet",
+       "hot"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "nose",
+       "mailbox",
+       "butter",
+       "tooth",
+       "bread",
+       "toothbrush",
+       "banana",
+       "letter"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "huge",
+       "up",
+       "noisy",
+       "tiny",
+       "big",
+       "dry",
+       "down",
+       "wet"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "boat",
+       "wheel",
+       "banana",
+       "goal",
+       "car",
+       "kite",
+       "ball",
+       "monkey"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "old",
+       "up",
+       "young",
+       "dry",
+       "quiet",
+       "wet",
+       "loud",
+       "noisy"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "key",
+       "candle",
+       "paintbrush",
+       "cake",
+       "paint",
+       "banana",
+       "bread",
+       "lock"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "down",
+       "cold",
+       "quick",
+       "up",
+       "hot",
+       "slow",
+       "freezing",
+       "soft"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "ball",
+       "ear",
+       "tooth",
+       "kite",
+       "carrot",
+       "toothbrush",
+       "goal",
+       "rabbit"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "quiet",
+       "small",
+       "noisy",
+       "day",
+       "up",
+       "night",
+       "loud",
+       "big"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "rain",
+       "candle",
+       "butter",
+       "umbrella",
+       "paint",
+       "honey",
+       "cake",
+       "paintbrush"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "slow",
+       "down",
+       "right",
+       "up",
+       "left",
+       "quick",
+       "day",
+       "fast"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "paintbrush",
+       "goal",
+       "kite",
+       "pencil",
+       "car",
+       "notebook",
+       "wheel",
+       "ball"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "wet",
+       "quick",
+       "noisy",
+       "heavy",
+       "fast",
+       "quiet",
+       "dry",
+       "slow"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "spider",
+       "soap",
+       "notebook",
+       "paintbrush",
+       "pencil",
+       "bird",
+       "bathtub",
+       "nest"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "right",
+       "day",
+       "small",
+       "tiny",
+       "big",
+       "huge",
+       "left",
+       "night"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "wheel",
+       "paintbrush",
+       "bee",
+       "paint",
+       "honey",
+       "crayon",
+       "pencil",
+       "car"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "noisy",
+       "fast",
+       "right",
+       "freezing",
+       "quick",
+       "quiet",
+       "hot",
+       "slow"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "mouse",
+       "letter",
+       "sock",
+       "hand",
+       "mailbox",
+       "cheese",
+       "glove",
+       "tooth"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "heavy",
+       "happy",
+       "light",
+       "laughing",
+       "crying",
+       "night",
+       "sad",
+       "day"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "nest",
+       "pencil",
+       "shoe",
+       "bird",
+       "sock",
+       "hat",
+       "frog",
+       "notebook"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "huge",
+       "sweet",
+       "sad",
+       "crying",
+       "big",
+       "happy",
+       "sour",
+       "small"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "shoe",
+       "glove",
+       "key",
+       "wood",
+       "saw",
+       "hat",
+       "sock",
+       "lock"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "young",
+       "fast",
+       "left",
+       "slow",
+       "quick",
+       "right",
+       "old",
+       "loud"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "nose",
+       "paint",
+       "hat",
+       "butter",
+       "paintbrush",
+       "hand",
+       "bread",
+       "glove"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "small",
+       "sad",
+       "left",
+       "up",
+       "happy",
+       "big",
+       "down",
+       "laughing"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "sock",
+       "carrot",
+       "shoe",
+       "tooth",
+       "toothbrush",
+       "hat",
+       "hand",
+       "rabbit"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "slow",
+       "night",
+       "fast",
+       "quick",
+       "hard",
+       "sweet",
+       "soft",
+       "day"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "paint",
+       "key",
+       "milk",
+       "crayon",
+       "lock",
+       "pencil",
+       "paintbrush",
+       "cow"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "wet",
+       "tiny",
+       "right",
+       "noisy",
+       "huge",
+       "dry",
+       "quiet",
+       "big"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "sock",
+       "notebook",
+       "shoe",
+       "lock",
+       "key",
+       "hat",
+       "glove",
+       "pencil"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "hard",
+       "night",
+       "fast",
+       "day",
+       "quick",
+       "up",
+       "soft",
+       "slow"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "umbrella",
+       "bone",
+       "paintbrush",
+       "rain",
+       "paint",
+       "butter",
+       "banana",
+       "bread"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "sour",
+       "light",
+       "old",
+       "laughing",
+       "crying",
+       "sweet",
+       "heavy",
+       "happy"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "scarf",
+       "wheel",
+       "hand",
+       "sock",
+       "car",
+       "shoe",
+       "tooth",
+       "glove"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "down",
+       "freezing",
+       "young",
+       "quiet",
+       "noisy",
+       "up",
+       "loud",
+       "hot"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "paint",
+       "wood",
+       "butter",
+       "saw",
+       "bread",
+       "paintbrush",
+       "cake",
+       "crayon"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "fast",
+       "right",
+       "quiet",
+       "down",
+       "left",
+       "loud",
+       "up",
+       "noisy"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "bread",
+       "letter",
+       "banana",
+       "goal",
+       "ball",
+       "apple",
+       "mailbox",
+       "butter"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "dry",
+       "heavy",
+       "fast",
+       "old",
+       "slow",
+       "young",
+       "wet",
+       "quick"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "grapes",
+       "saw",
+       "cheese",
+       "wood",
+       "paint",
+       "candle",
+       "paintbrush",
+       "cake"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "wet",
+       "crying",
+       "dry",
+       "right",
+       "happy",
+       "hard",
+       "sad",
+       "soft"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "rabbit",
+       "pig",
+       "nest",
+       "hand",
+       "bird",
+       "umbrella",
+       "glove",
+       "rain"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "down",
+       "hot",
+       "small",
+       "up",
+       "huge",
+       "left",
+       "tiny",
+       "cold"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "pencil",
+       "paint",
+       "lock",
+       "candle",
+       "cake",
+       "key",
+       "paintbrush",
+       "banana"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "right",
+       "happy",
+       "hard",
+       "up",
+       "laughing",
+       "left",
+       "down",
+       "sad"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "bird",
+       "rabbit",
+       "nest",
+       "monkey",
+       "spider",
+       "car",
+       "web",
+       "wheel"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "big",
+       "sweet",
+       "quiet",
+       "hot",
+       "cold",
+       "tiny",
+       "small",
+       "sour"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "ball",
+       "key",
+       "butter",
+       "apple",
+       "lock",
+       "bread",
+       "goal",
+       "kite"
+      ],
+      "ways": 1,
+      "relation": "goes_with"
+     }
+    ]
+   }
+  }
+ ]
+}

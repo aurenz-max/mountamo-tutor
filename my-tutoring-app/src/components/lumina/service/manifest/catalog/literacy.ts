@@ -42,6 +42,7 @@ import type { AffixBuildMiss } from '../../../primitives/visual-primitives/liter
 import type { LetterBuildMiss } from '../../../primitives/visual-primitives/literacy/letterBuild';
 import type { SpellingMiss } from '../../../primitives/visual-primitives/literacy/spellingPatternExplorerWorkspace';
 import type { RhymePairMiss } from '../../../primitives/visual-primitives/literacy/rhymePairBuild';
+import type { PicturePairMiss } from '../../../primitives/visual-primitives/literacy/picturePairBuild';
 import type { SpokenYouAndMeMiss } from '../../../primitives/visual-primitives/literacy/youAndMeWorkspace';
 import type { SpokenOralSentenceMiss } from '../../../primitives/visual-primitives/literacy/oralSentenceStudioWorkspace';
 import type { SpokenStoryRibbonMiss } from '../../../primitives/visual-primitives/literacy/storyRibbonWorkspace';
@@ -2960,7 +2961,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'on screen prints the answer. ONE mode is ANSWERED WITH THE HANDS on emoji-only picture cards: Listen & '
       + 'Find (hear a word, tap its picture), where picking the referent out of four IS the receptive skill; the '
       + 'tap is the commit and the activity checks it. Tap-to-hear repeats the question. Requires a '
-      + 'microphone. ESSENTIAL for K-1 vocabulary development and oral language.',
+      + 'microphone. ESSENTIAL for K-1 vocabulary development and oral language. One more mode is an open build: Picture '
+      + 'Pairs, where the child MAKES a pair by tapping two of eight wordless pictures that are opposites or go together, '
+      + 'and many pairs pass.',
     constraints:
       'Use concrete, picturable words with clear emoji matches. K: everyday nouns (animals, foods, clothes, home). '
       + 'Answers are single spoken words or (receptive_match only) a picture tap. Goes Together accepts an OPEN set '
@@ -2982,16 +2985,23 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'finishes the sentence. The shown word said back, a made-up word, or a category word like "a thing" is not '
         + 'it. Before a try never say the answer or name the picture, and never hint at its first sound, letters or '
         + 'rhymes; what it does or where it is found is fair. Tapping the card asks you to repeat the question only. '
-        + 'You cannot tap a card; beyond its levers you cannot change the screen.',
+        + 'You cannot tap a card; beyond its levers you cannot change the screen. On picture pairs (the open build) the '
+        + 'learner taps two of eight wordless pictures into a pair tray, two that are opposites or two that go together, '
+        + 'and presses "I am done"; several pairs are right. A picture speaker asks you to say that picture\'s name only. '
+        + 'Never say which pictures pair up or name a pair on the board.',
       levers: true,
       // naming: spoken misses (`pictureVocabSpokenMisses`, handoff 20 Part B). receptive_match: the tap's own check
       // against the recorded kinds (`pictureVocabMiss`; `other_picture` when a payload records none). Levers in
       // `pictureVocabularyLevers.ts` answer all of them.
       // Each relation mode's one lever is a worked model on other words (`pictureVocabularyLevers.ts`, handoff 24).
-      misses: missLists<SpokenPictureVocabMiss | PictureVocabMiss>({ naming: ['category_word', 'other_thing'],
+      misses: missLists<SpokenPictureVocabMiss | PictureVocabMiss | PicturePairMiss>({ naming: ['category_word', 'other_thing'],
         opposite: ['said_base_word', 'not_opposite'], association: ['said_base_word', 'no_link'],
         gradable_scale: ['given_rung', 'off_scale'], sentence_frame: ['does_not_fit'],
-        receptive_match: ['same_category', 'other_category', 'other_picture'] }),
+        receptive_match: ['same_category', 'other_category', 'other_picture'],
+        // The open build (`picturePairBuild.ts`), checked in code from the pictures' known relations.
+        pair_build: ['alike', 'not_opposite', 'same_kind', 'no_link', 'same_pair'] }),
+      // pair_build: the pair already found stays on screen.
+      unanswered: { pair_build: ['same_pair'] },
     },
     // ── DI MODALITY (2026-08-11) — fifth literacy port, first literacy consumer
     // of useJudgedScriptRunner. The tutor owns the clock in every mode; there is
@@ -3067,6 +3077,19 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         description:
           'Word relationships — hear and see a word, say its opposite aloud. The shown word said back is the '
           + 'signature error and takes the correction.',
+      },
+      {
+        evalMode: 'pair_build',
+        affordances: { answers: ['build'] },
+        label: 'Picture Pairs (open build)',
+        beta: 3.6,
+        scaffoldingMode: 3,
+        challengeTypes: ['pair_build'],
+        description: 'Open build, pre-reader: eight pictures, no print; tap two that are opposites (hot and cold) or two '
+          + 'that go together (sock and shoe) into a pair tray and press done; some boards ask for a second pair. Several '
+          + 'pairs pass. Opposites boards hold an alike decoy (happy and laughing, named alike); goes-together boards hold '
+          + 'a same-kind decoy (sock and hat, named same_kind). Checked in code from the pictures\' known relations. The '
+          + 'intent picks opposites or goes together when it names one, else items alternate. Beta = opposite + 0.1.',
       },
       {
         evalMode: 'sentence_frame',

@@ -98,6 +98,7 @@ import { itemsFromChallenges as sorterItems } from '../../primitives/visual-prim
 import { wordSorterJourneyAnswers } from '../../primitives/visual-primitives/literacy/wordSorterWorkspace';
 import { itemsFromChallenges as vocabItems } from '../../primitives/visual-primitives/literacy/pictureVocabularyScript';
 import { pictureVocabJourneyAnswers } from '../../primitives/visual-primitives/literacy/pictureVocabularyWorkspace';
+import { passingPairs, picturePairItemsFrom, picturePairMiss } from '../../primitives/visual-primitives/literacy/picturePairBuild';
 import { itemsFromChallenges as spotterItems } from '../../primitives/visual-primitives/literacy/letterSpotterScript';
 import { letterSpotterJourneyAnswers } from '../../primitives/visual-primitives/literacy/letterSpotterWorkspace';
 import { itemsFromChallenges as decodableItems } from '../../primitives/visual-primitives/literacy/decodableReaderScript';
@@ -1670,15 +1671,18 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     leakTokens: ['PV_ITEM', 'PV_MOVE', 'PV_COMPLETE', 'PV_HEAR', 'PV_TAP'],
     prompts: WORKSPACE_PROMPTS,
     // A spoken word per item; listen and find taps a card (a wrong tap is another card).
+    // pair_build (open build) through its real pictures: wrong is the board's misconception decoy (alike / same kind);
+    // correct is a right pair not made yet, two of them on a two-pair item. Try again keeps the tray, so it is cleared.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
+      if (ctx.data.task === 'pair_build') return picturePairInputs(ctx, intent === 'wrong');
       const item = vocabItems(ctx.data.challenges ?? []).find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current picture-vocabulary item');
       const answers = pictureVocabJourneyAnswers(item);
       if (answers.tapped) return [{ type: 'touch', target: `card-${intent === 'wrong' ? answers.tapped.wrong : answers.tapped.correct}` }];
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
-    probes: { mounted: { selector: '[data-pip-object="stimulus"], [data-pip-object="cards"]' } },
+    probes: { mounted: { selector: '[data-pip-object="stimulus"], [data-pip-object="cards"], [data-testid="rp-tray"]' } },
   },
   'letter-spotter': {
     execution: 'workspace',
@@ -2318,6 +2322,28 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
 };
+
+/** picture-vocabulary pair_build through its real picture buttons (rules in `picturePairBuild.ts`). */
+function picturePairInputs(ctx: JourneyContext, wrong: boolean): DriverInput[] {
+  const item = picturePairItemsFrom(ctx.data.pairItems ?? [], ctx.data.supportTier).find(i => i.id === ctx.itemId);
+  if (!item) throw new Error('No current picture-vocabulary pair_build board');
+  const pick = (pair: string[]) => [...pair.map(w => ({ type: 'choose' as const, label: `picture ${w}` })),
+    { type: 'choose' as const, label: "I'm done!" }];
+  const clear = Number(ctx.demand?.picturesInTray ?? 0) > 0 ? [{ type: 'choose' as const, label: 'Clear' }] : [];
+  if (wrong) {
+    const want = item.relation === 'opposite' ? 'alike' : 'same_kind';
+    const decoy = item.board.flatMap((a, i) => item.board.slice(i + 1).map(b => [a, b]))
+      .find(p => picturePairMiss(p, [], item.relation) === want);
+    if (!decoy) throw new Error(`pair_build ${item.id}: no ${want} decoy on the board`);
+    return [...clear, ...pick(decoy)];
+  }
+  const made = String(ctx.demand?.madeBefore ?? '').split('; ').filter(m => m && m !== 'none')
+    .map(m => m.split(' and ').sort().join('+'));
+  const left = passingPairs(item.board, item.relation).filter(p => !made.includes(p)).map(p => p.split('+'));
+  const need = Math.max(1, item.ways - made.length);
+  if (left.length < need) throw new Error(`pair_build ${item.id}: ${left.length} right pairs left, ${need} needed`);
+  return [...clear, ...left.slice(0, need).flatMap(pick)];
+}
 
 /**
  * Polygon area builder through its real controls. A typed area goes in the Area box, then Check; wrong is the mode's

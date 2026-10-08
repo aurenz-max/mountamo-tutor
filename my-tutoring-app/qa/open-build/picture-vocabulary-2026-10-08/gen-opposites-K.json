@@ -1,0 +1,1834 @@
+{
+ "generatedAt": "2026-10-08T10:16:04.982Z",
+ "grade": "Kindergarten",
+ "topic": "Opposites",
+ "intent": "Find pictures that are opposites, like hot and cold",
+ "supportTier": null,
+ "sessions": [
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "sad",
+       "down",
+       "sour",
+       "night",
+       "day",
+       "sweet",
+       "happy",
+       "laughing"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "cold",
+       "loud",
+       "noisy",
+       "freezing",
+       "quiet",
+       "young",
+       "hot",
+       "old"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "hard",
+       "laughing",
+       "soft",
+       "crying",
+       "happy",
+       "dry",
+       "slow",
+       "wet"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "fast",
+       "quick",
+       "down",
+       "happy",
+       "light",
+       "up",
+       "slow",
+       "heavy"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "quiet",
+       "slow",
+       "night",
+       "noisy",
+       "fast",
+       "day",
+       "quick",
+       "loud"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "down",
+       "light",
+       "cold",
+       "heavy",
+       "laughing",
+       "freezing",
+       "up",
+       "hot"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "crying",
+       "tiny",
+       "sad",
+       "big",
+       "dry",
+       "small",
+       "wet",
+       "laughing"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "huge",
+       "sweet",
+       "left",
+       "sour",
+       "laughing",
+       "small",
+       "tiny",
+       "right"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "crying",
+       "quick",
+       "laughing",
+       "slow",
+       "night",
+       "soft",
+       "fast",
+       "hard"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "hot",
+       "heavy",
+       "young",
+       "light",
+       "right",
+       "old",
+       "cold",
+       "freezing"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "sweet",
+       "loud",
+       "up",
+       "small",
+       "down",
+       "huge",
+       "sour",
+       "tiny"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "left",
+       "night",
+       "big",
+       "day",
+       "loud",
+       "small",
+       "quiet",
+       "tiny"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "left",
+       "sad",
+       "right",
+       "slow",
+       "laughing",
+       "quick",
+       "fast",
+       "happy"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "quick",
+       "night",
+       "happy",
+       "young",
+       "old",
+       "crying",
+       "day",
+       "laughing"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "cold",
+       "loud",
+       "down",
+       "hot",
+       "quiet",
+       "up",
+       "tiny",
+       "noisy"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "sweet",
+       "tiny",
+       "small",
+       "dry",
+       "left",
+       "sour",
+       "wet",
+       "big"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "happy",
+       "light",
+       "quick",
+       "day",
+       "heavy",
+       "fast",
+       "night",
+       "slow"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "sweet",
+       "dry",
+       "noisy",
+       "sour",
+       "wet",
+       "loud",
+       "young",
+       "quiet"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "up",
+       "crying",
+       "huge",
+       "down",
+       "happy",
+       "tiny",
+       "cold",
+       "sad"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "hot",
+       "big",
+       "left",
+       "cold",
+       "small",
+       "right",
+       "freezing",
+       "sweet"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "happy",
+       "laughing",
+       "heavy",
+       "sour",
+       "light",
+       "sweet",
+       "sad",
+       "wet"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "loud",
+       "tiny",
+       "wet",
+       "quiet",
+       "dry",
+       "up",
+       "big",
+       "huge"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "slow",
+       "hot",
+       "hard",
+       "cold",
+       "left",
+       "soft",
+       "freezing",
+       "right"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "slow",
+       "old",
+       "fast",
+       "young",
+       "down",
+       "quick",
+       "up",
+       "heavy"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "light",
+       "dry",
+       "happy",
+       "laughing",
+       "sweet",
+       "crying",
+       "wet",
+       "sour"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "freezing",
+       "quiet",
+       "big",
+       "loud",
+       "small",
+       "hot",
+       "left",
+       "huge"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "tiny",
+       "night",
+       "up",
+       "left",
+       "down",
+       "huge",
+       "day",
+       "big"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "cold",
+       "happy",
+       "laughing",
+       "fast",
+       "sad",
+       "down",
+       "slow",
+       "hot"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "left",
+       "loud",
+       "small",
+       "night",
+       "day",
+       "tiny",
+       "quiet",
+       "big"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "sour",
+       "dry",
+       "sweet",
+       "slow",
+       "fast",
+       "hard",
+       "quick",
+       "wet"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "laughing",
+       "hot",
+       "sad",
+       "soft",
+       "right",
+       "hard",
+       "left",
+       "crying"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "hot",
+       "light",
+       "cold",
+       "freezing",
+       "sad",
+       "up",
+       "happy",
+       "heavy"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "hot",
+       "quick",
+       "left",
+       "slow",
+       "happy",
+       "fast",
+       "freezing",
+       "right"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "happy",
+       "dry",
+       "up",
+       "soft",
+       "down",
+       "sad",
+       "hard",
+       "crying"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "sour",
+       "heavy",
+       "crying",
+       "sad",
+       "dry",
+       "laughing",
+       "wet",
+       "light"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "fast",
+       "noisy",
+       "night",
+       "loud",
+       "young",
+       "day",
+       "quiet",
+       "old"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "freezing",
+       "young",
+       "left",
+       "hot",
+       "right",
+       "cold",
+       "old",
+       "sweet"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "noisy",
+       "sweet",
+       "quiet",
+       "sour",
+       "dry",
+       "loud",
+       "wet",
+       "young"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "huge",
+       "night",
+       "down",
+       "big",
+       "day",
+       "tiny",
+       "small",
+       "up"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "sad",
+       "heavy",
+       "quick",
+       "down",
+       "light",
+       "happy",
+       "laughing",
+       "slow"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "hot",
+       "young",
+       "loud",
+       "cold",
+       "old",
+       "quiet",
+       "freezing",
+       "sour"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "left",
+       "quick",
+       "night",
+       "slow",
+       "sour",
+       "fast",
+       "sweet",
+       "right"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "crying",
+       "huge",
+       "happy",
+       "small",
+       "wet",
+       "sad",
+       "big",
+       "dry"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "laughing",
+       "left",
+       "sad",
+       "up",
+       "night",
+       "crying",
+       "down",
+       "day"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "old",
+       "freezing",
+       "sweet",
+       "cold",
+       "soft",
+       "young",
+       "hot",
+       "hard"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "right",
+       "laughing",
+       "happy",
+       "heavy",
+       "crying",
+       "light",
+       "quick",
+       "left"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "laughing",
+       "tiny",
+       "small",
+       "up",
+       "down",
+       "dry",
+       "sad",
+       "big"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "old",
+       "day",
+       "sour",
+       "noisy",
+       "quiet",
+       "sweet",
+       "night",
+       "loud"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "fast",
+       "old",
+       "sad",
+       "day",
+       "night",
+       "slow",
+       "young",
+       "quick"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "huge",
+       "left",
+       "sad",
+       "crying",
+       "right",
+       "happy",
+       "night",
+       "small"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "sour",
+       "freezing",
+       "cold",
+       "sweet",
+       "up",
+       "quiet",
+       "down",
+       "hot"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "hard",
+       "wet",
+       "crying",
+       "dry",
+       "laughing",
+       "slow",
+       "sad",
+       "soft"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "wet",
+       "quiet",
+       "huge",
+       "left",
+       "tiny",
+       "dry",
+       "loud",
+       "noisy"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "dry",
+       "sweet",
+       "hard",
+       "fast",
+       "quick",
+       "soft",
+       "slow",
+       "sour"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "happy",
+       "old",
+       "night",
+       "laughing",
+       "young",
+       "crying",
+       "quick",
+       "day"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "left",
+       "light",
+       "right",
+       "sad",
+       "heavy",
+       "happy",
+       "laughing",
+       "up"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "slow",
+       "young",
+       "up",
+       "fast",
+       "down",
+       "night",
+       "quick",
+       "old"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "happy",
+       "hard",
+       "right",
+       "cold",
+       "soft",
+       "sad",
+       "hot",
+       "crying"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "noisy",
+       "loud",
+       "night",
+       "light",
+       "young",
+       "day",
+       "heavy",
+       "quiet"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "small",
+       "freezing",
+       "huge",
+       "left",
+       "hot",
+       "right",
+       "big",
+       "down"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "sour",
+       "crying",
+       "soft",
+       "laughing",
+       "hard",
+       "sweet",
+       "happy",
+       "down"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "light",
+       "laughing",
+       "happy",
+       "day",
+       "sad",
+       "left",
+       "night",
+       "right"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "big",
+       "quiet",
+       "small",
+       "loud",
+       "wet",
+       "huge",
+       "noisy",
+       "dry"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "slow",
+       "cold",
+       "fast",
+       "young",
+       "old",
+       "quick",
+       "hot",
+       "crying"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "fast",
+       "quick",
+       "sweet",
+       "cold",
+       "sour",
+       "down",
+       "slow",
+       "up"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "young",
+       "noisy",
+       "loud",
+       "old",
+       "day",
+       "left",
+       "night",
+       "quiet"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "freezing",
+       "cold",
+       "laughing",
+       "hot",
+       "small",
+       "crying",
+       "big",
+       "sweet"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "sad",
+       "sour",
+       "laughing",
+       "hard",
+       "dry",
+       "soft",
+       "happy",
+       "wet"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "sour",
+       "down",
+       "day",
+       "big",
+       "tiny",
+       "small",
+       "sweet",
+       "night"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "loud",
+       "fast",
+       "old",
+       "quiet",
+       "heavy",
+       "young",
+       "noisy",
+       "light"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "up",
+       "sweet",
+       "down",
+       "freezing",
+       "happy",
+       "hot",
+       "crying",
+       "cold"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "sweet",
+       "dry",
+       "huge",
+       "left",
+       "tiny",
+       "small",
+       "right",
+       "wet"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "fast",
+       "young",
+       "sour",
+       "old",
+       "sweet",
+       "slow",
+       "happy",
+       "quick"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "happy",
+       "light",
+       "sad",
+       "dry",
+       "heavy",
+       "crying",
+       "wet",
+       "laughing"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "noisy",
+       "small",
+       "day",
+       "big",
+       "night",
+       "quiet",
+       "down",
+       "huge"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "hot",
+       "up",
+       "cold",
+       "hard",
+       "down",
+       "slow",
+       "soft",
+       "freezing"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "dry",
+       "soft",
+       "crying",
+       "hard",
+       "happy",
+       "laughing",
+       "down",
+       "wet"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "down",
+       "big",
+       "huge",
+       "quiet",
+       "hot",
+       "up",
+       "freezing",
+       "tiny"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "sour",
+       "night",
+       "loud",
+       "small",
+       "day",
+       "big",
+       "huge",
+       "sweet"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "quick",
+       "heavy",
+       "slow",
+       "light",
+       "sad",
+       "freezing",
+       "laughing",
+       "happy"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "laughing",
+       "tiny",
+       "wet",
+       "sad",
+       "dry",
+       "happy",
+       "big",
+       "left"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "right",
+       "old",
+       "noisy",
+       "hot",
+       "quiet",
+       "freezing",
+       "young",
+       "loud"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "left",
+       "down",
+       "huge",
+       "day",
+       "big",
+       "right",
+       "up",
+       "small"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "light",
+       "happy",
+       "night",
+       "quick",
+       "slow",
+       "heavy",
+       "fast",
+       "day"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "old",
+       "noisy",
+       "young",
+       "dry",
+       "left",
+       "loud",
+       "wet",
+       "quiet"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "cold",
+       "crying",
+       "heavy",
+       "laughing",
+       "right",
+       "hot",
+       "happy",
+       "left"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "sour",
+       "laughing",
+       "sweet",
+       "slow",
+       "hard",
+       "fast",
+       "quick",
+       "soft"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "tiny",
+       "night",
+       "big",
+       "up",
+       "day",
+       "huge",
+       "down",
+       "sour"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "dry",
+       "small",
+       "left",
+       "down",
+       "tiny",
+       "right",
+       "big",
+       "wet"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "young",
+       "light",
+       "loud",
+       "cold",
+       "hot",
+       "noisy",
+       "heavy",
+       "quiet"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "old",
+       "slow",
+       "crying",
+       "hard",
+       "soft",
+       "young",
+       "fast",
+       "quick"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "day",
+       "crying",
+       "sour",
+       "night",
+       "laughing",
+       "heavy",
+       "sad",
+       "sweet"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "sour",
+       "slow",
+       "sweet",
+       "quick",
+       "hard",
+       "freezing",
+       "soft",
+       "fast"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "sad",
+       "freezing",
+       "crying",
+       "hot",
+       "up",
+       "happy",
+       "down",
+       "laughing"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "old",
+       "noisy",
+       "young",
+       "loud",
+       "quiet",
+       "heavy",
+       "cold",
+       "light"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "left",
+       "huge",
+       "wet",
+       "right",
+       "small",
+       "quiet",
+       "big",
+       "dry"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     }
+    ]
+   }
+  },
+  {
+   "issues": [],
+   "data": {
+    "title": "Picture Pairs",
+    "description": "Find two pictures that belong together as a pair.",
+    "challengeType": "pair_build",
+    "challenges": [],
+    "gradeLevel": "Kindergarten",
+    "task": "pair_build",
+    "pairItems": [
+     {
+      "id": "p1",
+      "board": [
+       "sour",
+       "young",
+       "hot",
+       "slow",
+       "fast",
+       "cold",
+       "quick",
+       "sweet"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p2",
+      "board": [
+       "down",
+       "noisy",
+       "big",
+       "up",
+       "quiet",
+       "huge",
+       "loud",
+       "small"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p3",
+      "board": [
+       "right",
+       "happy",
+       "laughing",
+       "left",
+       "soft",
+       "freezing",
+       "hard",
+       "crying"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     },
+     {
+      "id": "p4",
+      "board": [
+       "dry",
+       "happy",
+       "tiny",
+       "sad",
+       "huge",
+       "big",
+       "laughing",
+       "wet"
+      ],
+      "ways": 1,
+      "relation": "opposite"
+     }
+    ]
+   }
+  }
+ ]
+}

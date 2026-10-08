@@ -44,6 +44,7 @@ import { poetryLabOracle } from './poetry-lab';
 import { polygonAreaBuilderOracle } from './polygon-area-builder';
 import { shapeBuilderOracle } from './shape-builder';
 import { habitatDioramaOracle } from './habitat-diorama';
+import { pictureVocabularyOracle } from './picture-vocabulary';
 import { ratioTableOracle } from './ratio-table';
 import { regroupingWorkbenchOracle } from './regrouping-workbench';
 import { skipCountingRunnerOracle } from './skip-counting-runner';
@@ -108,6 +109,7 @@ export const CONTENT_ORACLES: ContentOracle[] = [
   polygonAreaBuilderOracle,
   shapeBuilderOracle,
   habitatDioramaOracle,
+  pictureVocabularyOracle,
   ratioTableOracle,
   regroupingWorkbenchOracle,
   skipCountingRunnerOracle,

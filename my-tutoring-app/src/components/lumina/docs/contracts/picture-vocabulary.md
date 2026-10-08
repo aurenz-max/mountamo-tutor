@@ -39,6 +39,13 @@ Static derivation for the picture-vocabulary slice of handoff 22 L4.
 - **Property:** catalog guidance bans it; a hint about what the thing does or where it is found is allowed.
 - **Probe:** tutor replay `qa/tutor-reports/replay/picture-vocabulary-2026-09-29.json` (0 sound hints in 40 miss and stuck samples).
 
+### R7 — `pair_build` is a fork: a tap build, code-judged · OBSERVED (10-08)
+- **Property:** `pair_build` (open build: two wordless pictures into a pair tray, "I'm done!", several pairs pass) is its own challenge type on the shared pair surface. It is the stated exception to R1 (a second tap mode): its cards carry no words, and names are spoken only on request or through `say_names`, so R1's no-words rule still holds. Judged in code from `PAIR_PICTURES`; every board carries an alike (opposites) or same-kind (goes together) decoy; no CLASH pair and no adjacent right pair on a board. Levers `say_names`, `model_pair`, `small_board`. The six other modes are unchanged.
+- **Demanded by:** OB-8L (`qa/open-build/ROADMAP.md`).
+- **Evidence:** `qa/open-build/picture-vocabulary-2026-10-08/REPORT.md`.
+- **Probe:** `npm test -- PicturePair.workspace`.
+
 ## Changelog
 
 - 2026-09-29 — R6 added (handoff 24): the four relation modes get named misses and one model lever each. R2 holds: no option list, no answer word before credit. `npm test` 64/64 on the primitive.
+- 2026-10-08 — R7 added (OB-8L): `pair_build` forks as a second tap mode with no words on its cards; R1-R6 unchanged (`PicturePair.workspace` + `RhymePair.workspace` 16/16).

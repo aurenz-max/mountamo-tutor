@@ -191,3 +191,65 @@ export function pairMissWords(miss: RhymePairMiss | undefined): string {
     default: return 'Not quite. Try again.';
   }
 }
+
+// ── The pair surface's rules (shared) ────────────────────────────────────────
+// `RhymePairSurface` hosts any "tap two pictures into the tray" build. Everything that is about rhyme sits behind this
+// interface; picture-vocabulary `pair_build` (opposites, goes together) supplies its own (`picturePairBuild.ts`).
+
+/** A board: picture words in board order, and how many different pairs the item asks for. */
+export interface PairBoardItem { id: string; board: string[]; ways: 1 | 2 }
+
+export interface PairBuildRules<I extends PairBoardItem = PairBoardItem> {
+  /** The family the surface records progress and evaluation for. */
+  primitiveId: 'rhyme-studio' | 'picture-vocabulary';
+  badge: { label: string; icon: string };
+  pictureOf(word: string): { word: string; emoji: string } | undefined;
+  itemsFrom(items: readonly I[], tier?: string): I[];
+  /** The ask on screen (the second-pair line is added by the surface). */
+  ask(item: I): string;
+  assignment(item: I): TeachingAssignment;
+  /** The pair's miss, or undefined when it passes and was not made before. */
+  miss(pair: readonly string[], made: readonly string[], item: I): string | undefined;
+  missWords(miss: string | undefined): string;
+  rightWords(pair: readonly string[], item: I): string;
+  describe(pair: readonly string[]): string;
+  scene(item: I, pair: readonly string[], made: readonly string[], inspectorSaid?: string): WorkspaceScene;
+  levers(item: I, pulled: readonly string[]): WorkspaceLever[];
+  leverFacts(pulled: readonly string[], item: I): string | undefined;
+  modelLever: string;
+  modelFor(item: I): readonly [{ emoji: string }, { emoji: string }] | null;
+  smallBoardFor(item: I): I | null;
+  practiceNote: string;
+  sayNameRequest(word: string): string;
+  summary: { heading: string; message: string };
+  /** The evaluation metrics for a finished session, in the family's own metrics shape. */
+  metrics(items: readonly I[], m: { solved: number; total: number; accuracy: number; attempts: number; firstTry: number }): unknown;
+}
+
+export const RHYME_PAIR_RULES: PairBuildRules<RhymePairItem> = {
+  primitiveId: 'rhyme-studio',
+  badge: { label: 'Rhyme pairs', icon: '🎵' },
+  pictureOf,
+  itemsFrom: pairItemsFrom,
+  ask: () => ASK,
+  assignment: pairAssignment,
+  miss: (pair, made) => pairMiss(pair, made),
+  missWords: miss => pairMissWords(miss as RhymePairMiss | undefined),
+  rightWords: pair => `Yes! ${pair[0]} and ${pair[1]} rhyme.`,
+  describe: describePair,
+  scene: pairScene,
+  levers: pairLevers,
+  leverFacts: pairLeverFacts,
+  modelLever: MODEL_LEVER,
+  modelFor: modelPairFor,
+  smallBoardFor,
+  practiceNote: 'A smaller board of four pictures with one rhyming pair, ungraded. The full board comes back after it.',
+  sayNameRequest,
+  summary: { heading: 'Rhymes found!', message: 'You found pictures whose names end the same.' },
+  metrics: (items, m) => ({
+    type: 'rhyme-studio', challengeMode: 'pair_build', challengesCorrect: m.solved, challengesTotal: m.total,
+    recognitionAccuracy: m.accuracy, identificationAccuracy: 0, productionAccuracy: 0, collectionAccuracy: 0,
+    rhymeFamiliesPracticed: Array.from(new Set(items.flatMap(i => i.board.map(b => pictureOf(b)!.rime)))),
+    attemptsCount: m.attempts,
+  }),
+};

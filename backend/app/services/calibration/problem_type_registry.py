@@ -837,6 +837,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "opposite":        PriorConfig(3.5, "Word relationships — produce the opposite aloud (live-judged; base word said back = signature error)"),
         "sentence_frame":  PriorConfig(5.0, "Vocabulary in context — say the missing word of a spoken sentence frame (live-judged)"),
         "gradable_scale":  PriorConfig(6.0, "Gradable vocabulary — say the missing rung of a spoken low→high word gradient (live-judged)"),
+        "pair_build":      PriorConfig(3.6, "Open build: tap two of eight pictures that are opposites or go together; alike / same-kind decoys"),
     },
     "oral-sentence-studio": {
         "describe_scene":           PriorConfig(3.5, "Spoken production: describe a visible scene in one sentence using two shown words"),

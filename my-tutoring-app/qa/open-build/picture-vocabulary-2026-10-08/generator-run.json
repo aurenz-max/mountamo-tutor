@@ -1,0 +1,83 @@
+{
+ "generatedAt": "2026-10-08T10:16:05.011Z",
+ "summary": [
+  {
+   "name": "neutral-K",
+   "sessions": 25,
+   "boards": 100,
+   "relations": [
+    "opposite,goes_with,opposite,goes_with"
+   ],
+   "issues": []
+  },
+  {
+   "name": "opposites-K",
+   "sessions": 25,
+   "boards": 100,
+   "relations": [
+    "opposite,opposite,opposite,opposite"
+   ],
+   "issues": []
+  },
+  {
+   "name": "goes-with-1",
+   "sessions": 25,
+   "boards": 100,
+   "relations": [
+    "goes_with,goes_with,goes_with,goes_with"
+   ],
+   "issues": []
+  },
+  {
+   "name": "easy-K",
+   "sessions": 25,
+   "boards": 100,
+   "relations": [
+    "opposite,goes_with,opposite,goes_with"
+   ],
+   "issues": []
+  }
+ ],
+ "logs": [
+  "[PictureVocabulary] pair_build boards [\n  'opposite: light slow loud heavy dry quiet quick noisy',\n  'goes_with: thread ball tooth needle goal ear nose toothbrush',\n  'opposite: small wet left dry sweet huge big right',\n  'goes_with: candle paint honey pencil wheel cake notebook car'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: small left huge big dry down right up',\n  'goes_with: rabbit hat saw carrot hand wood glove shoe',\n  'opposite: wet big dry quiet tiny loud noisy sweet',\n  'goes_with: soap dog bathtub paintbrush pencil paint crayon bone'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: noisy night up quiet loud down quick day',\n  'goes_with: cheese hand notebook mouse glove ear hat pencil',\n  'opposite: sad freezing light laughing heavy crying hot happy',\n  'goes_with: wood goal paintbrush ball crayon kite saw paint'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: hot down cold freezing crying quick up slow',\n  'goes_with: needle tooth ear umbrella rain thread hand toothbrush',\n  'opposite: young sour left laughing sad right happy old',\n  'goes_with: bone saw hat dog sock scarf wood shoe'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: wet down big dry up small quiet tiny',\n  'goes_with: car web cow spider bird wheel monkey nest',\n  'opposite: quick fast night heavy light day up slow',\n  'goes_with: wood shoe saw soap bathtub hat glove sock'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: soft dry crying quick wet laughing hard happy',\n  'goes_with: rabbit ear glove ball goal hand carrot sock',\n  'opposite: up big left small right noisy down tiny',\n  'goes_with: toothbrush web tooth monkey spider needle dog thread'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: right cold laughing hot sad heavy left crying',\n  'goes_with: glove shoe cake hand candle needle ear thread',\n  'opposite: fast happy night crying day left sad slow',\n  'goes_with: mouse monkey saw ball web wood goal spider'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: hot slow cold sad happy laughing fast right',\n  'goes_with: bird soap mouse nest paint crayon bathtub paintbrush',\n  'opposite: up quiet young night noisy day loud old',\n  'goes_with: spider key pig lock hat shoe web sock'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: crying sweet light laughing right sad sour left',\n  'goes_with: spider paint bird cow paintbrush web monkey nest',\n  'opposite: quiet tiny cold big small hot noisy loud',\n  'goes_with: banana umbrella shoe monkey rain sock scarf glove'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: quiet down sweet loud sour hot noisy freezing',\n  'goes_with: shoe scarf soap glove lock bathtub key sock',\n  'opposite: down laughing hot sad old happy young up',\n  'goes_with: needle paint thread spider web bee cow paintbrush'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: old slow loud quick right noisy young quiet',\n  'goes_with: spider shoe glove web notebook hat pencil hand',\n  'opposite: left slow crying sad night happy day right',\n  'goes_with: cow paintbrush crayon needle pencil thread paint milk'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: light day heavy right quiet left noisy loud',\n  'goes_with: pencil needle paint bee honey paintbrush crayon thread',\n  'opposite: soft happy old hot laughing young cold crying',\n  'goes_with: mouse spider soap web bird frog nest bathtub'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: up right slow left fast down laughing quick',\n  'goes_with: goal wheel boat kite car toothbrush ball tooth',\n  'opposite: wet big huge quiet small dry loud left',\n  'goes_with: rain grapes needle cake thread candle butter umbrella'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: freezing noisy left loud cold right quiet hot',\n  'goes_with: nose mailbox butter tooth bread toothbrush banana letter',\n  'opposite: huge up noisy tiny big dry down wet',\n  'goes_with: boat wheel banana goal car kite ball monkey'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: old up young dry quiet wet loud noisy',\n  'goes_with: key candle paintbrush cake paint banana bread lock',\n  'opposite: down cold quick up hot slow freezing soft',\n  'goes_with: ball ear tooth kite carrot toothbrush goal rabbit'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: quiet small noisy day up night loud big',\n  'goes_with: rain candle butter umbrella paint honey cake paintbrush',\n  'opposite: slow down right up left quick day fast',\n  'goes_with: paintbrush goal kite pencil car notebook wheel ball'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: wet quick noisy heavy fast quiet dry slow',\n  'goes_with: spider soap notebook paintbrush pencil bird bathtub nest',\n  'opposite: right day small tiny big huge left night',\n  'goes_with: wheel paintbrush bee paint honey crayon pencil car'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: noisy fast right freezing quick quiet hot slow',\n  'goes_with: mouse letter sock hand mailbox cheese glove tooth',\n  'opposite: heavy happy light laughing crying night sad day',\n  'goes_with: nest pencil shoe bird sock hat frog notebook'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: huge sweet sad crying big happy sour small',\n  'goes_with: shoe glove key wood saw hat sock lock',\n  'opposite: young fast left slow quick right old loud',\n  'goes_with: nose paint hat butter paintbrush hand bread glove'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: small sad left up happy big down laughing',\n  'goes_with: sock carrot shoe tooth toothbrush hat hand rabbit',\n  'opposite: slow night fast quick hard sweet soft day',\n  'goes_with: paint key milk crayon lock pencil paintbrush cow'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: wet tiny right noisy huge dry quiet big',\n  'goes_with: sock notebook shoe lock key hat glove pencil',\n  'opposite: hard night fast day quick up soft slow',\n  'goes_with: umbrella bone paintbrush rain paint butter banana bread'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: sour light old laughing crying sweet heavy happy',\n  'goes_with: scarf wheel hand sock car shoe tooth glove',\n  'opposite: down freezing young quiet noisy up loud hot',\n  'goes_with: paint wood butter saw bread paintbrush cake crayon'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: fast right quiet down left loud up noisy',\n  'goes_with: bread letter banana goal ball apple mailbox butter',\n  'opposite: dry heavy fast old slow young wet quick',\n  'goes_with: grapes saw cheese wood paint candle paintbrush cake'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: wet crying dry right happy hard sad soft',\n  'goes_with: rabbit pig nest hand bird umbrella glove rain',\n  'opposite: down hot small up huge left tiny cold',\n  'goes_with: pencil paint lock candle cake key paintbrush banana'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: right happy hard up laughing left down sad',\n  'goes_with: bird rabbit nest monkey spider car web wheel',\n  'opposite: big sweet quiet hot cold tiny small sour',\n  'goes_with: ball key butter apple lock bread goal kite'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: sad down sour night day sweet happy laughing',\n  'opposite: cold loud noisy freezing quiet young hot old',\n  'opposite: hard laughing soft crying happy dry slow wet',\n  'opposite: fast quick down happy light up slow heavy'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: quiet slow night noisy fast day quick loud',\n  'opposite: down light cold heavy laughing freezing up hot',\n  'opposite: crying tiny sad big dry small wet laughing',\n  'opposite: huge sweet left sour laughing small tiny right'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: crying quick laughing slow night soft fast hard',\n  'opposite: hot heavy young light right old cold freezing',\n  'opposite: sweet loud up small down huge sour tiny',\n  'opposite: left night big day loud small quiet tiny'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: left sad right slow laughing quick fast happy',\n  'opposite: quick night happy young old crying day laughing',\n  'opposite: cold loud down hot quiet up tiny noisy',\n  'opposite: sweet tiny small dry left sour wet big'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: happy light quick day heavy fast night slow',\n  'opposite: sweet dry noisy sour wet loud young quiet',\n  'opposite: up crying huge down happy tiny cold sad',\n  'opposite: hot big left cold small right freezing sweet'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: happy laughing heavy sour light sweet sad wet',\n  'opposite: loud tiny wet quiet dry up big huge',\n  'opposite: slow hot hard cold left soft freezing right',\n  'opposite: slow old fast young down quick up heavy'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: light dry happy laughing sweet crying wet sour',\n  'opposite: freezing quiet big loud small hot left huge',\n  'opposite: tiny night up left down huge day big',\n  'opposite: cold happy laughing fast sad down slow hot'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: left loud small night day tiny quiet big',\n  'opposite: sour dry sweet slow fast hard quick wet',\n  'opposite: laughing hot sad soft right hard left crying',\n  'opposite: hot light cold freezing sad up happy heavy'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: hot quick left slow happy fast freezing right',\n  'opposite: happy dry up soft down sad hard crying',\n  'opposite: sour heavy crying sad dry laughing wet light',\n  'opposite: fast noisy night loud young day quiet old'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: freezing young left hot right cold old sweet',\n  'opposite: noisy sweet quiet sour dry loud wet young',\n  'opposite: huge night down big day tiny small up',\n  'opposite: sad heavy quick down light happy laughing slow'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: hot young loud cold old quiet freezing sour',\n  'opposite: left quick night slow sour fast sweet right',\n  'opposite: crying huge happy small wet sad big dry',\n  'opposite: laughing left sad up night crying down day'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: old freezing sweet cold soft young hot hard',\n  'opposite: right laughing happy heavy crying light quick left',\n  'opposite: laughing tiny small up down dry sad big',\n  'opposite: old day sour noisy quiet sweet night loud'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: fast old sad day night slow young quick',\n  'opposite: huge left sad crying right happy night small',\n  'opposite: sour freezing cold sweet up quiet down hot',\n  'opposite: hard wet crying dry laughing slow sad soft'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: wet quiet huge left tiny dry loud noisy',\n  'opposite: dry sweet hard fast quick soft slow sour',\n  'opposite: happy old night laughing young crying quick day',\n  'opposite: left light right sad heavy happy laughing up'\n]",
+  "[PictureVocabulary] pair_build boards [\n  'opposite: slow young up fast down night quick old',\n  'opposite: happy hard right cold soft sad hot crying',\n  'opposite: noisy loud night light young day heavy quiet',\n  'opposite: small freezing huge left hot right big down'\n]"
+ ]
+}
