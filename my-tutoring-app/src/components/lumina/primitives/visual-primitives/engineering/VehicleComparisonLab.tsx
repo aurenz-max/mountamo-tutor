@@ -10,6 +10,7 @@ import {
   Leaf,
   Lightbulb,
   Loader2,
+  Package,
   Play,
   Route,
   Scale,
@@ -66,6 +67,7 @@ export type ComparisonMetricKey =
   | 'topSpeed'
   | 'weight'
   | 'passengerCapacity'
+  | 'cargoCapacity'
   | 'range'
   | 'yearIntroduced'
   | 'co2PerPassengerKm';
@@ -88,6 +90,8 @@ export interface ComparisonVehicle {
     topSpeed: VehicleMetric;
     weight: VehicleMetric;
     passengerCapacity: VehicleMetric;
+    /** Tons of freight per trip; 0 for a people-only vehicle. Absent on older data. */
+    cargoCapacity?: VehicleMetric;
     range: VehicleMetric;
     fuelType: string;
     yearIntroduced: number;
@@ -107,7 +111,7 @@ export interface ComparisonChallenge {
     passengers: number;
     distance: number;
     maxTime: string | null;
-    priority?: 'speed' | 'capacity' | 'range' | 'weight' | 'environment';
+    priority?: 'speed' | 'capacity' | 'cargo' | 'range' | 'weight' | 'environment';
   };
   bestVehicleId: string;
   acceptableAlternatives: string[];
@@ -196,6 +200,10 @@ const METRIC_META: Record<ComparisonMetricKey, {
     label: 'Passenger capacity', shortLabel: 'Capacity', prompt: 'Which vehicle carries the most people?',
     accent: 'purple', icon: <Users className="h-4 w-4" />,
   },
+  cargoCapacity: {
+    label: 'Cargo capacity', shortLabel: 'Cargo', prompt: 'Which vehicle hauls the most freight?',
+    accent: 'amber', icon: <Package className="h-4 w-4" />,
+  },
   range: {
     label: 'Travel range', shortLabel: 'Range', prompt: 'Which vehicle can travel farthest?',
     accent: 'blue', icon: <Route className="h-4 w-4" />,
@@ -219,6 +227,7 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
 function metricValue(vehicle: ComparisonVehicle, metric: ComparisonMetricKey): number | null {
   if (metric === 'yearIntroduced') return vehicle.metrics.yearIntroduced;
   if (metric === 'co2PerPassengerKm') return vehicle.metrics.co2PerPassengerKm;
+  if (metric === 'cargoCapacity') return vehicle.metrics.cargoCapacity?.value ?? null;
   return vehicle.metrics[metric].value;
 }
 
@@ -228,6 +237,7 @@ function metricDisplay(vehicle: ComparisonVehicle, metric: ComparisonMetricKey):
     const value = vehicle.metrics.co2PerPassengerKm;
     return value == null ? 'Not available' : `${value} g CO₂/pkm`;
   }
+  if (metric === 'cargoCapacity') return vehicle.metrics.cargoCapacity?.display ?? 'Not available';
   return vehicle.metrics[metric].display;
 }
 

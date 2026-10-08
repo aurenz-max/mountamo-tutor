@@ -8871,7 +8871,7 @@
     "origin": "Pine Hill Station",
     "destination": "County General Hospital",
     "distanceKm": 45,
-    "peopleToTransport": 35,
+    "load": { "kind": "people", "amount": 35, "unit": "people", "name": "people" },
     "constraints": [
      {
       "type": "time",
@@ -8936,7 +8936,7 @@
     "origin": "Oak Creek Village",
     "destination": "Metro Medical Center",
     "distanceKm": 80,
-    "peopleToTransport": 50,
+    "load": { "kind": "people", "amount": 50, "unit": "people", "name": "people" },
     "constraints": [
      {
       "type": "co2",
@@ -8998,7 +8998,7 @@
     "origin": "Pine Tree Park",
     "destination": "Community Center",
     "distanceKm": 40,
-    "peopleToTransport": 80,
+    "load": { "kind": "people", "amount": 80, "unit": "people", "name": "people" },
     "constraints": [
      {
       "type": "budget",
@@ -9079,7 +9079,7 @@
     "origin": "Westside School",
     "destination": "Highland Hill",
     "distanceKm": 60,
-    "peopleToTransport": 100,
+    "load": { "kind": "people", "amount": 100, "unit": "people", "name": "people" },
     "constraints": [
      {
       "type": "time",
@@ -9159,7 +9159,7 @@
     "origin": "Old Town Library",
     "destination": "New Branch",
     "distanceKm": 50,
-    "peopleToTransport": 60,
+    "load": { "kind": "people", "amount": 60, "unit": "people", "name": "people" },
     "constraints": [
      {
       "type": "budget",
@@ -9240,7 +9240,7 @@
     "origin": "Greenfield Town",
     "destination": "Harmony Valley",
     "distanceKm": 120,
-    "peopleToTransport": 150,
+    "load": { "kind": "people", "amount": 150, "unit": "people", "name": "people" },
     "constraints": [
      {
       "type": "budget",
@@ -9323,7 +9323,7 @@
     "origin": "Bay City",
     "destination": "Rockshore Beach",
     "distanceKm": 250,
-    "peopleToTransport": 200,
+    "load": { "kind": "people", "amount": 200, "unit": "people", "name": "people" },
     "constraints": [
      {
       "type": "budget",
@@ -9406,7 +9406,7 @@
     "origin": "Pine Valley",
     "destination": "Peak Summit",
     "distanceKm": 80,
-    "peopleToTransport": 100,
+    "load": { "kind": "people", "amount": 100, "unit": "people", "name": "people" },
     "constraints": [
      {
       "type": "budget",

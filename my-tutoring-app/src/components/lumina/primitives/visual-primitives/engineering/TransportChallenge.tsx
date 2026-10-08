@@ -48,14 +48,30 @@ export interface TransportConstraint {
   unit: string;
 }
 
+/**
+ * What a scenario moves. Vehicle `capacity` is per trip in `unit`, so a
+ * freight job (tons of lumber) and a passenger job (festival visitors) run on
+ * the same trip/cost/time math.
+ */
+export interface TransportLoad {
+  kind: 'people' | 'cargo';
+  amount: number;
+  /** Count unit shown next to numbers: "people", "tons". */
+  unit: string;
+  /** What is being moved, e.g. "festival visitors", "lumber". */
+  name: string;
+}
+
 export interface TransportScenario {
   id: string;
   type: 'single_constraint' | 'multi_constraint' | 'full_optimization';
   title: string;
   origin: string;
   destination: string;
+  originEmoji?: string;
+  destinationEmoji?: string;
   distanceKm: number;
-  peopleToTransport: number;
+  load: TransportLoad;
   constraints: TransportConstraint[];
   vehicles: VehicleOption[];
   bestVehicleId: string;
@@ -88,8 +104,8 @@ interface VehicleState {
 
 interface SimSnapshot {
   vehicles: VehicleState[];
-  peopleDelivered: number;
-  peopleRemaining: number;
+  delivered: number;
+  remaining: number;
   totalCost: number;
   totalCO2: number;
   elapsedMinutes: number;
@@ -118,8 +134,8 @@ function computeVehicleOutcome(
   scenario: TransportScenario,
   vehicle: VehicleOption,
 ): VehicleOutcome {
-  const { distanceKm, peopleToTransport, constraints } = scenario;
-  const totalTrips = Math.ceil(peopleToTransport / vehicle.capacity);
+  const { distanceKm, constraints } = scenario;
+  const totalTrips = Math.ceil(scenario.load.amount / vehicle.capacity);
   const fleetSize = Math.min(totalTrips, MAX_FLEET_SIZE);
   const outboundMinutes = (distanceKm / vehicle.speedKmh) * 60;
   const roundTripMinutes = outboundMinutes * 2 + vehicle.turnaroundMinutes;
@@ -185,8 +201,9 @@ function computeSimSnapshot(
   scenario: TransportScenario,
   vehicle: VehicleOption,
 ): SimSnapshot {
-  const { distanceKm, peopleToTransport } = scenario;
-  const totalTripsNeeded = Math.ceil(peopleToTransport / vehicle.capacity);
+  const { distanceKm } = scenario;
+  const amount = scenario.load.amount;
+  const totalTripsNeeded = Math.ceil(amount / vehicle.capacity);
   const fleetSize = Math.min(totalTripsNeeded, MAX_FLEET_SIZE);
   const outboundMin = (distanceKm / vehicle.speedKmh) * 60;
   const unloadMin = vehicle.turnaroundMinutes / 2;
@@ -216,20 +233,20 @@ function computeSimSnapshot(
   }
 
   const effectiveTrips = Math.min(totalDeliveries, totalTripsNeeded);
-  const peopleDelivered = Math.min(effectiveTrips * vehicle.capacity, peopleToTransport);
+  const delivered = Math.min(effectiveTrips * vehicle.capacity, amount);
   const totalCost = effectiveTrips * vehicle.costPerTrip + (vehicle.infrastructureCost ?? 0);
   const totalCO2 = effectiveTrips * vehicle.co2PerTrip;
 
   return {
     vehicles,
-    peopleDelivered,
-    peopleRemaining: peopleToTransport - peopleDelivered,
+    delivered,
+    remaining: amount - delivered,
     totalCost,
     totalCO2,
     elapsedMinutes: simMinutes,
     tripsCompleted: effectiveTrips,
     totalTripsNeeded,
-    isComplete: peopleDelivered >= peopleToTransport,
+    isComplete: delivered >= amount,
   };
 }
 
@@ -241,6 +258,15 @@ function formatConstraintValue(value: number, type: string): string {
   }
   if (type === 'co2') return `${Math.round(value)}kg`;
   return String(Math.round(value));
+}
+
+/** "40 people", "2,000 tons of lumber" */
+function describeLoad(load: TransportLoad, amount = load.amount): string {
+  const n = Math.round(amount).toLocaleString();
+  if (load.kind === 'people') {
+    return load.name && load.name !== load.unit ? `${n} ${load.name}` : `${n} ${load.unit}`;
+  }
+  return `${n} ${load.unit} of ${load.name}`;
 }
 
 function constraintIcon(type: string): string {
@@ -325,7 +351,8 @@ const TransportChallenge: React.FC<TransportChallengeProps> = ({ data, className
       currentScenario: currentScenario?.title,
       origin: currentScenario?.origin,
       destination: currentScenario?.destination,
-      people: currentScenario?.peopleToTransport,
+      load: currentScenario ? describeLoad(currentScenario.load) : undefined,
+      loadUnit: currentScenario?.load.unit,
       constraints: currentScenario?.constraints?.map(c => `${c.type}: ${c.limit} ${c.unit}`).join(', '),
     },
     gradeLevel: 'K-5',
@@ -431,10 +458,10 @@ const TransportChallenge: React.FC<TransportChallengeProps> = ({ data, className
 
   const handleStartSimulation = useCallback(() => {
     if (!selectedVehicle || !currentScenario) return;
-    const totalTrips = Math.ceil(currentScenario.peopleToTransport / selectedVehicle.capacity);
+    const totalTrips = Math.ceil(currentScenario.load.amount / selectedVehicle.capacity);
     sendText(
       `[VEHICLE_SELECTED] Student chose ${selectedVehicle.name} (${selectedVehicle.emoji}, ` +
-      `capacity ${selectedVehicle.capacity}) for ${currentScenario.peopleToTransport} people. ` +
+      `carries ${selectedVehicle.capacity} ${currentScenario.load.unit} per trip) for ${describeLoad(currentScenario.load)}. ` +
       `That's ${totalTrips} trips needed. Ask them: "How many trips do you think that'll take?"`,
       { silent: true },
     );
@@ -630,7 +657,7 @@ const TransportChallenge: React.FC<TransportChallengeProps> = ({ data, className
               <div className="flex items-start justify-between gap-2 mb-1">
                 <h3 className="text-slate-100 font-semibold text-lg">{scenario.title}</h3>
                 <ReadMeButton
-                  instruction={`${scenario.title}. Move ${scenario.peopleToTransport} people from ${scenario.origin} to ${scenario.destination}, about ${scenario.distanceKm} kilometers away.`}
+                  instruction={`${scenario.title}. Move ${describeLoad(scenario.load)} from ${scenario.origin} to ${scenario.destination}, about ${scenario.distanceKm} kilometers away.`}
                   ask="Look at the rules, then choose a vehicle for the job."
                   speaking={isAudioPlaying}
                   onAskTutor={(m) => sendText(m)}
@@ -640,7 +667,8 @@ const TransportChallenge: React.FC<TransportChallengeProps> = ({ data, className
                 />
               </div>
               <p className="text-slate-300 text-sm mb-3">
-                Transport <span className="text-blue-300 font-bold">{scenario.peopleToTransport} people</span> from{' '}
+                {scenario.load.kind === 'cargo' ? 'Haul' : 'Move'}{' '}
+                <span className="text-blue-300 font-bold">{describeLoad(scenario.load)}</span> from{' '}
                 <span className="text-amber-300">{scenario.origin}</span> to{' '}
                 <span className="text-emerald-300">{scenario.destination}</span>{' '}
                 <span className="text-slate-500">({scenario.distanceKm} km)</span>
@@ -660,7 +688,8 @@ const TransportChallenge: React.FC<TransportChallengeProps> = ({ data, className
                 <h4 className="text-slate-300 text-sm font-medium">Choose your vehicle:</h4>
                 <div className="grid grid-cols-2 gap-3">
                   {scenario.vehicles.map(v => {
-                    const tripsNeeded = Math.ceil(scenario.peopleToTransport / v.capacity);
+                    // Trips needed is the student's own math (the tutor's hints
+                    // ask for it); the results table shows it after the run.
                     return (
                       <button
                         key={v.id}
@@ -677,9 +706,8 @@ const TransportChallenge: React.FC<TransportChallengeProps> = ({ data, className
                           <span className="text-slate-100 font-medium">{v.name}</span>
                         </div>
                         <div className="text-slate-400 text-xs space-y-0.5">
-                          <div>{v.capacity} people/trip • {v.speedKmh} km/h</div>
+                          <div>{v.capacity.toLocaleString()} {scenario.load.unit}/trip • {v.speedKmh} km/h</div>
                           <div>${v.costPerTrip}/trip • {v.co2PerTrip}kg CO₂/trip</div>
-                          <div className="text-slate-500">{tripsNeeded} trip{tripsNeeded !== 1 ? 's' : ''} needed</div>
                           {v.requiresInfrastructure && (
                             <div className="text-amber-400/80">Requires {v.requiresInfrastructure}</div>
                           )}
@@ -720,22 +748,22 @@ const TransportChallenge: React.FC<TransportChallengeProps> = ({ data, className
 
                   {/* Origin */}
                   <div className="absolute left-1 top-1/2 -translate-y-1/2 text-center" style={{ width: routeMargin - 8 }}>
-                    <div className="text-xl">🏙️</div>
+                    <div className="text-xl">{scenario.originEmoji || '📍'}</div>
                     <div className="text-[10px] text-amber-300 font-medium truncate">{scenario.origin}</div>
-                    <div className="text-base font-bold text-slate-100">
-                      {simSnapshot ? simSnapshot.peopleRemaining : scenario.peopleToTransport}
+                    <div className="text-base font-bold text-slate-100 tabular-nums">
+                      {Math.round(simSnapshot ? simSnapshot.remaining : scenario.load.amount).toLocaleString()}
                     </div>
-                    <div className="text-[10px] text-slate-500">waiting</div>
+                    <div className="text-[10px] text-slate-500">{scenario.load.unit} waiting</div>
                   </div>
 
                   {/* Destination */}
                   <div className="absolute right-1 top-1/2 -translate-y-1/2 text-center" style={{ width: routeMargin - 8 }}>
-                    <div className="text-xl">🏙️</div>
+                    <div className="text-xl">{scenario.destinationEmoji || '🏁'}</div>
                     <div className="text-[10px] text-emerald-300 font-medium truncate">{scenario.destination}</div>
-                    <div className="text-base font-bold text-slate-100">
-                      {simSnapshot ? simSnapshot.peopleDelivered : 0}
+                    <div className="text-base font-bold text-slate-100 tabular-nums">
+                      {Math.round(simSnapshot ? simSnapshot.delivered : 0).toLocaleString()}
                     </div>
-                    <div className="text-[10px] text-slate-500">arrived</div>
+                    <div className="text-[10px] text-slate-500">{scenario.load.unit} arrived</div>
                   </div>
 
                   {/* Animated Vehicles */}

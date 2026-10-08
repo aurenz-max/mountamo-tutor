@@ -667,7 +667,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'transport-challenge',
-    description: 'Living transport simulation where students pick vehicles and watch animated trips play out. Students see 50 cars making round trips vs 2 buses vs 1 plane — the visual IS the explanation. Constraint bars (budget, time, CO₂) fill in real-time. Comparison tables reveal trade-offs. Perfect for K-5 engineering, logistics, and data-driven decision making. ESSENTIAL for teaching constraint analysis and transport planning.',
+    description: 'Living transport simulation where students pick a vehicle for a job and watch animated trips play out. A job moves people OR tons of cargo (freight trains vs semi trucks vs cargo planes; passenger trains vs buses vs cars). Students see 50 cars making round trips vs 2 buses vs 1 train — the visual IS the explanation. Constraint bars (budget, time, CO₂) fill in real-time. Comparison tables reveal trade-offs. Perfect for K-5 engineering, logistics, and data-driven decision making. ESSENTIAL for teaching constraint analysis and transport planning.',
     constraints: 'Best for grades 3-5. Use for transport logistics, constraint-based decisions, trade-off analysis, data comparison. Easy: single constraint, obvious answer. Medium: 2-3 constraints, multiple viable options. Hard: all constraints active, no perfect answer. Vehicles include cars, buses, vans, trains, planes with realistic capacity/speed/cost/CO2 data.',
     affordances: { representation: ['pictorial', 'symbolic'], reader: 'developing', answers: ['tap'], role: ['visualize', 'apply'], minutes: 7 },
     evalModes: [
@@ -697,12 +697,12 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
       },
     ],
     tutoring: {
-      taskDescription: 'Student is choosing vehicles to transport {{peopleToTransport}} people from {{origin}} to {{destination}} under constraints: {{constraints}}. They watch an animated simulation showing vehicles making round trips.',
-      contextKeys: ['currentScenario', 'origin', 'destination', 'people', 'constraints'],
+      taskDescription: 'Student is choosing a vehicle to move {{load}} from {{origin}} to {{destination}} under constraints: {{constraints}}. The load is people or tons of cargo. They watch an animated simulation showing vehicles making round trips.',
+      contextKeys: ['currentScenario', 'origin', 'destination', 'load', 'loadUnit', 'constraints'],
       scaffoldingLevels: {
-        level1: '"How many trips do you think that vehicle would need? Look at its capacity."',
-        level2: '"Let\'s check the numbers: {{capacity}} people per trip for {{peopleToTransport}} people means... how many trips? Now multiply by the cost per trip."',
-        level3: '"This vehicle carries {{capacity}} people. For {{peopleToTransport}} people, that\'s {{trips}} trips. Each trip costs ${{costPerTrip}}, so total = {{trips}} × ${{costPerTrip}} = ${{totalCost}}. Does that fit the budget?"',
+        level1: '"How many trips do you think that vehicle would need? Look at how much it carries each trip."',
+        level2: '"Let\'s check the numbers: how much does one trip carry, and how much do we need to move ({{load}})? How many trips is that? Now multiply by the cost per trip."',
+        level3: '"Divide what we need to move ({{load}}) by what one trip carries, and round up: that is the number of trips. Multiply trips by the cost per trip for the total. Does that fit the budget?"',
       },
       commonStruggles: [
         { pattern: 'Student picks the fastest vehicle without checking budget', response: 'Ask: "That vehicle is fast! But how much will all those trips cost? Let\'s check the budget constraint."' },

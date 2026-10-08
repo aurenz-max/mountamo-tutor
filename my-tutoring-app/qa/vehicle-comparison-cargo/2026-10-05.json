@@ -1,0 +1,72 @@
+{
+  "summary": [
+    {
+      "case": "trains",
+      "metrics": [
+        "topSpeed",
+        "passengerCapacity",
+        "cargoCapacity",
+        "range"
+      ],
+      "vehicles": [
+        "Shinkansen N700: 1,323 passengers | cargo 0 tons | 300 km/h",
+        "Freight Train (100 cars): 2 crew | cargo 10,000 tons | 100 km/h",
+        "Commuter Train (8 cars): 1,200 passengers | cargo 0 tons | 130 km/h",
+        "Semi Truck: 1 driver | cargo 22 tons | 105 km/h"
+      ],
+      "challenges": [
+        {
+          "type": "evidence_choice",
+          "scenario": "A transit authority needs to transport over a thousand daily commuters between two major cities as fast as possible.",
+          "key": "Shinkansen N700 via topSpeed"
+        },
+        {
+          "type": "evidence_choice",
+          "scenario": "A mining company needs to move thousands of tons of raw materials across the continent in a single trip.",
+          "key": "Freight Train (100 cars) via cargoCapacity"
+        },
+        {
+          "type": "evidence_choice",
+          "scenario": "A major sporting event is ending, and a massive crowd of over a thousand people needs to board a single vehicle to head downtown.",
+          "key": "Shinkansen N700 via passengerCapacity"
+        }
+      ]
+    },
+    {
+      "case": "airplanes",
+      "metrics": [
+        "topSpeed",
+        "passengerCapacity",
+        "cargoCapacity",
+        "range"
+      ],
+      "vehicles": [
+        "Boeing 747-400: 416 passengers | cargo 15 tons | 920 km/h",
+        "Boeing 747-8F: 4 crew | cargo 134 tons | 900 km/h",
+        "Wright Flyer: 1 pilot | cargo 0 tons | 48 km/h",
+        "Space Shuttle: 7 crew | cargo 24 tons | 28,000 km/h"
+      ],
+      "challenges": [
+        {
+          "type": "evidence_choice",
+          "scenario": "An international airline needs an aircraft capable of bringing hundreds of passengers across the ocean on a single long-haul flight.",
+          "key": "Boeing 747-400 via passengerCapacity"
+        },
+        {
+          "type": "evidence_choice",
+          "scenario": "A delivery has to arrive as soon as possible. Which vehicle should do the job, and which number proves it?",
+          "key": "Space Shuttle via topSpeed"
+        },
+        {
+          "type": "evidence_choice",
+          "scenario": "A freight logistics company needs to fly massive heavy machinery and oversized industrial equipment across continents in one trip.",
+          "key": "Boeing 747-8F via cargoCapacity"
+        }
+      ]
+    }
+  ],
+  "logs": [
+    "[VehicleComparisonLab] modes: evidence_choice (explicit) -> types [evidence_choice]",
+    "[VehicleComparisonLab] modes: evidence_choice (explicit) -> types [evidence_choice]"
+  ]
+}

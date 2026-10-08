@@ -35,7 +35,7 @@ const CHALLENGE_TYPE_DOCS: Record<ComparisonChallengeType, ChallengeTypeDoc> = {
   },
   evidence_choice: {
     promptDoc:
-      '"evidence_choice": Ask the student to choose the best vehicle for a one-priority scenario AND choose which visible metric supports the claim. The keyed vehicle must be the mathematical leader on bestEvidenceMetric; keep the scenario answer-free.',
+      '"evidence_choice": Write a real job from the world of the lesson with ONE need (e.g. "The grain co-op must ship 9,000 tons of wheat to the port in one go"). The student picks the vehicle for the job AND the visible metric that proves it — working out which number matters is the task. The keyed vehicle must be the mathematical leader on bestEvidenceMetric. The scenario must NOT name the winner or the metric (no "capacity", "speed", "range" words); describe the need, not the column.',
     schemaDescription: "'evidence_choice' (choose a vehicle and cite its supporting metric)",
   },
   constraint_tradeoff: {
@@ -81,13 +81,17 @@ const comparisonVehicleSchema: Schema = {
         topSpeed: vehicleMetricSchema,
         weight: vehicleMetricSchema,
         passengerCapacity: vehicleMetricSchema,
+        cargoCapacity: {
+          ...vehicleMetricSchema,
+          description: "Freight this vehicle hauls per trip, in tons (unit 'tons'). 0 for a vehicle that carries only people.",
+        },
         range: vehicleMetricSchema,
         fuelType: { type: Type.STRING, description: "Type of fuel or energy source." },
         yearIntroduced: { type: Type.NUMBER, description: "Year this vehicle was first introduced." },
         costPerTrip: { type: Type.STRING, nullable: true, description: "Approximate cost per trip or per passenger." },
         co2PerPassengerKm: { type: Type.NUMBER, nullable: true, description: "CO2 emissions per passenger-kilometer in grams." },
       },
-      required: ["topSpeed", "weight", "passengerCapacity", "range", "fuelType", "yearIntroduced"]
+      required: ["topSpeed", "weight", "passengerCapacity", "cargoCapacity", "range", "fuelType", "yearIntroduced"]
     },
     funFact: { type: Type.STRING, description: "An engaging fun fact about this vehicle that kids will want to share." },
   },
@@ -111,15 +115,15 @@ const comparisonChallengeSchema: Schema = {
         passengers: { type: Type.NUMBER, description: "Number of passengers to transport." },
         distance: { type: Type.NUMBER, description: "Distance in kilometers." },
         maxTime: { type: Type.STRING, nullable: true, description: "Maximum acceptable travel time." },
-        priority: { type: Type.STRING, enum: ["speed", "capacity", "range", "weight", "environment"] },
+        priority: { type: Type.STRING, enum: ["speed", "capacity", "cargo", "range", "weight", "environment"] },
       },
       required: ["passengers", "distance", "maxTime", "priority"]
     },
     bestVehicleId: { type: Type.STRING, description: "ID of the best vehicle for this scenario." },
     explanation: { type: Type.STRING, description: "Why this vehicle is the best choice, using data." },
     acceptableAlternatives: { type: Type.ARRAY, items: { type: Type.STRING }, description: "IDs of other acceptable vehicle choices." },
-    bestEvidenceMetric: { type: Type.STRING, enum: ["topSpeed", "weight", "passengerCapacity", "range", "yearIntroduced", "co2PerPassengerKm"] },
-    acceptableEvidenceMetrics: { type: Type.ARRAY, items: { type: Type.STRING, enum: ["topSpeed", "weight", "passengerCapacity", "range", "yearIntroduced", "co2PerPassengerKm"] } },
+    bestEvidenceMetric: { type: Type.STRING, enum: ["topSpeed", "weight", "passengerCapacity", "cargoCapacity", "range", "yearIntroduced", "co2PerPassengerKm"] },
+    acceptableEvidenceMetrics: { type: Type.ARRAY, items: { type: Type.STRING, enum: ["topSpeed", "weight", "passengerCapacity", "cargoCapacity", "range", "yearIntroduced", "co2PerPassengerKm"] } },
   },
   required: ["id", "type", "scenario", "origin", "destination", "constraints", "bestVehicleId", "explanation", "acceptableAlternatives", "bestEvidenceMetric", "acceptableEvidenceMetrics"]
 };
@@ -152,7 +156,7 @@ const vehicleComparisonLabSchema: Schema = {
       maxItems: "6",
       description: "Array of 4-6 topic-specific vehicles to compare.",
     },
-    comparisonMetrics: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Which metrics to show in the comparison chart (e.g., 'topSpeed', 'weight', 'passengerCapacity', 'range')." },
+    comparisonMetrics: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Which metrics to show in the comparison chart (e.g., 'topSpeed', 'passengerCapacity', 'cargoCapacity', 'range'). Include cargoCapacity whenever the topic involves moving goods or freight." },
     chartType: { type: Type.STRING, enum: ["bar", "radar", "scatter", "table"], description: "Default chart type for the comparison." },
     challengeType: { type: Type.STRING, enum: CHALLENGE_TYPES },
     challenges: { type: Type.ARRAY, items: comparisonChallengeSchema, description: "2-3 transportation scenario challenges." },
@@ -216,7 +220,10 @@ TOPIC FIDELITY — AUTHORITATIVE:
 
 CONTEXT — VEHICLE COMPARISON:
 A Vehicle Comparison Lab lets students compare real vehicles across multiple dimensions:
-speed, weight, passenger capacity, range, fuel type, and environmental impact.
+speed, weight, passenger capacity, cargo capacity (tons of freight), range, fuel type, and environmental impact.
+Pick the metrics that answer the lesson's question. A lesson about moving goods (freight trains, trucks, ships)
+must show cargoCapacity; a lesson comparing people-movers with goods-movers shows BOTH passengerCapacity and cargoCapacity.
+Weight and year introduced are rarely what a job depends on; use them only when the lesson is about them.
 
 ${challengeTypeSection}
 
@@ -225,11 +232,15 @@ Include 4-6 real vehicles that form the coherent topic-specific comparison set d
 
 REFERENCE DATA (use only entries relevant to the authoritative topic; do not import unrelated examples):
 - Boeing 747: 920 km/h, 178,756 kg, 416 pax, 14,200 km range
-- Shinkansen N700: 300 km/h, 715,000 kg, 1,323 pax, 500 km/trip
+- Shinkansen N700: 300 km/h, 715,000 kg, 1,323 pax, 0 t cargo, 500 km/trip
+- Freight train (100 cars): 100 km/h, about 13,000,000 kg loaded, 2 crew, about 10,000 t cargo, 1,000+ km
+- Semi truck: 105 km/h, 36,000 kg loaded, 1 driver, about 22 t cargo, 1,000 km
+- Commuter train (8 cars): 130 km/h, 400,000 kg, 1,200 pax, 0 t cargo, 300 km
+- Cargo plane (747-8F): 900 km/h, 448,000 kg, 4 crew, 134 t cargo, 8,000 km
 - Tesla Model 3: 225 km/h, 1,760 kg, 5 pax, 580 km
 - School Bus: 90 km/h, 10,000 kg, 72 pax, 450 km
 - Bicycle: 25 km/h, 10 kg, 1 pax, unlimited range
-- Container Ship: 46 km/h, 55,000,000 kg, 0 pax (15,000 TEU), 24,000 km
+- Container Ship: 46 km/h, 55,000,000 kg, 0 pax, about 150,000 t cargo, 24,000 km
 - Space Shuttle: 28,000 km/h, 2,030,000 kg, 7 crew, LEO
 - Wright Flyer: 48 km/h, 274 kg, 1 pilot, 260 m
 
@@ -248,7 +259,7 @@ GRADES K-2:
 GRADES 3-5:
 - Trade-off analysis: "No vehicle is best at everything"
 - 5-6 topic-specific vehicles; include environmental data only when it is meaningfully comparable
-- comparisonMetrics: ["topSpeed", "weight", "passengerCapacity", "range", "co2PerPassengerKm"]
+- comparisonMetrics: the 4-5 metrics the lesson's jobs depend on, e.g. ["topSpeed", "passengerCapacity", "cargoCapacity", "range", "co2PerPassengerKm"]
 - chartType: "bar" (can toggle to table)
 - Complex challenges with constraints
 - gradeBand: "3-5"
@@ -263,7 +274,7 @@ FOR ALL GRADES:
 - Return exactly 3 challenges with unique IDs.
 - Every challenge needs bestEvidenceMetric from comparisonMetrics.
 - For metric_leader and evidence_choice, bestVehicleId is the mathematical maximum on bestEvidenceMetric, except CO2 where it is the minimum non-null value.
-- For constraint_tradeoff, map priority to bestEvidenceMetric (speed=topSpeed, capacity=passengerCapacity, range=range, environment=co2PerPassengerKm). First filter to vehicles whose passengerCapacity and range meet the scenario minimums, then key the mathematical leader among those feasible vehicles. Do not use priority "weight" for this type.
+- For constraint_tradeoff, map priority to bestEvidenceMetric (speed=topSpeed, capacity=passengerCapacity, cargo=cargoCapacity, range=range, environment=co2PerPassengerKm). First filter to vehicles whose passengerCapacity and range meet the scenario minimums, then key the mathematical leader among those feasible vehicles. Do not use priority "weight" for this type.
 - Make the pre-answer scenario answer-free: never name the best vehicle or its exact winning number.
 - The post-answer explanation names the winner and quotes its exact visible value.
 - Set topicFocus to the actual requested comparison focus and chartType to "bar". Set challengeType to the first challenge's type as representative metadata.
@@ -293,7 +304,7 @@ Return a complete Vehicle Comparison Lab configuration.
   }
 
   const metricKeys: ComparisonMetricKey[] = [
-    'topSpeed', 'weight', 'passengerCapacity', 'range', 'yearIntroduced', 'co2PerPassengerKm',
+    'topSpeed', 'weight', 'passengerCapacity', 'cargoCapacity', 'range', 'yearIntroduced', 'co2PerPassengerKm',
   ];
   const isMetricKey = (value: unknown): value is ComparisonMetricKey =>
     typeof value === 'string' && metricKeys.includes(value as ComparisonMetricKey);
@@ -325,7 +336,10 @@ Return a complete Vehicle Comparison Lab configuration.
     .filter(isMetricKey)
     .filter((metric: ComparisonMetricKey, index: number, all: ComparisonMetricKey[]) => all.indexOf(metric) === index)
     .filter((metric: ComparisonMetricKey) => metric !== 'co2PerPassengerKm'
-      || data.vehicles.filter((vehicle: ComparisonVehicle) => vehicle.metrics.co2PerPassengerKm != null).length >= 2);
+      || data.vehicles.filter((vehicle: ComparisonVehicle) => vehicle.metrics.co2PerPassengerKm != null).length >= 2)
+    // A cargo column only compares something when at least two vehicles haul freight.
+    .filter((metric: ComparisonMetricKey) => metric !== 'cargoCapacity'
+      || data.vehicles.filter((vehicle: ComparisonVehicle) => (vehicle.metrics.cargoCapacity?.value ?? 0) > 0).length >= 2);
   for (const fallbackMetric of ['topSpeed', 'passengerCapacity', 'range'] as ComparisonMetricKey[]) {
     if (data.comparisonMetrics.length >= 3) break;
     if (!data.comparisonMetrics.includes(fallbackMetric)) data.comparisonMetrics.push(fallbackMetric);
@@ -334,6 +348,7 @@ Return a complete Vehicle Comparison Lab configuration.
   const valueFor = (vehicle: ComparisonVehicle, metric: ComparisonMetricKey): number | null => {
     if (metric === 'yearIntroduced') return vehicle.metrics.yearIntroduced;
     if (metric === 'co2PerPassengerKm') return vehicle.metrics.co2PerPassengerKm;
+    if (metric === 'cargoCapacity') return vehicle.metrics.cargoCapacity?.value ?? null;
     return vehicle.metrics[metric].value;
   };
   const winnerFor = (
@@ -353,20 +368,41 @@ Return a complete Vehicle Comparison Lab configuration.
   const displayFor = (vehicle: ComparisonVehicle, metric: ComparisonMetricKey): string => {
     if (metric === 'yearIntroduced') return String(vehicle.metrics.yearIntroduced);
     if (metric === 'co2PerPassengerKm') return `${vehicle.metrics.co2PerPassengerKm} g CO2/pkm`;
+    if (metric === 'cargoCapacity') return vehicle.metrics.cargoCapacity?.display ?? 'not available';
     return vehicle.metrics[metric].display;
   };
   const metricName = (metric: ComparisonMetricKey): string => ({
     topSpeed: 'top speed',
     weight: 'weight',
     passengerCapacity: 'passenger capacity',
+    cargoCapacity: 'cargo capacity',
     range: 'range',
     yearIntroduced: 'year introduced',
     co2PerPassengerKm: 'CO2 per passenger-kilometer',
   })[metric];
+  // What a job needs, phrased without naming the column, so an evidence_choice
+  // item asks the student to connect the need to the metric.
+  const metricNeed: Partial<Record<ComparisonMetricKey, string>> = {
+    topSpeed: 'A delivery has to arrive as soon as possible. Which vehicle should do the job, and which number proves it?',
+    passengerCapacity: 'A huge crowd has to travel together, all in one trip. Which vehicle should do the job, and which number proves it?',
+    cargoCapacity: 'A mountain of goods has to move in as few trips as possible. Which vehicle should do the job, and which number proves it?',
+    range: 'The trip is very long, with nowhere to stop and refuel. Which vehicle should do the job, and which number proves it?',
+    co2PerPassengerKm: 'The town wants the trip that puts the least pollution in the air for each rider. Which vehicle should do the job, and which number proves it?',
+  };
+  const metricWords: Record<ComparisonMetricKey, RegExp> = {
+    topSpeed: /\b(top speed|speed)\b/i,
+    weight: /\bweigh(t|s)?\b/i,
+    passengerCapacity: /\b(passenger capacity|capacity)\b/i,
+    cargoCapacity: /\b(cargo capacity|capacity)\b/i,
+    range: /\brange\b/i,
+    yearIntroduced: /\b(year introduced|introduced)\b/i,
+    co2PerPassengerKm: /\b(co2|co₂|emissions?)\b/i,
+  };
   const priorityMetric = (priority: ComparisonChallenge['constraints']['priority']): ComparisonMetricKey | null => {
     switch (priority) {
       case 'speed': return 'topSpeed';
       case 'capacity': return 'passengerCapacity';
+      case 'cargo': return 'cargoCapacity';
       case 'range': return 'range';
       case 'environment': return 'co2PerPassengerKm';
       default: return null;
@@ -441,11 +477,24 @@ Return a complete Vehicle Comparison Lab configuration.
         }
         const derivedWinner = winnerFor(evidenceMetric);
         if (derivedWinner) {
+          // evidence_choice keeps the model's real-world job when it is honest:
+          // keyed to the computed winner and naming neither the winner nor the
+          // metric. Otherwise the scenario becomes a need sentence that still
+          // leaves the metric for the student to find.
+          const modelScenario = typeof normalizedChallenge.scenario === 'string' ? normalizedChallenge.scenario.trim() : '';
+          const honestModelScenario = normalizedChallenge.type === 'evidence_choice'
+            && !!modelScenario
+            && normalizedChallenge.bestVehicleId === derivedWinner.id
+            && !modelScenario.toLowerCase().includes(derivedWinner.name.toLowerCase())
+            && !metricWords[evidenceMetric].test(modelScenario);
           normalizedChallenge = {
             ...normalizedChallenge,
             scenario: normalizedChallenge.type === 'metric_leader'
               ? `Which vehicle leads on ${metricName(evidenceMetric)}? Read the visible values and choose.`
-              : `Which vehicle leads on ${metricName(evidenceMetric)}? Choose the visible data that proves it.`,
+              : honestModelScenario
+                ? modelScenario
+                : metricNeed[evidenceMetric]
+                  ?? `Which vehicle leads on ${metricName(evidenceMetric)}? Choose the visible data that proves it.`,
             bestVehicleId: derivedWinner.id,
             bestEvidenceMetric: evidenceMetric,
             explanation: `${derivedWinner.name} leads this comparison on ${metricName(evidenceMetric)} with ${displayFor(derivedWinner, evidenceMetric)}.`,
@@ -510,6 +559,7 @@ Return a complete Vehicle Comparison Lab configuration.
     let passengers = 1;
     let distance = 1;
     let priority: ComparisonChallenge['constraints']['priority'] = evidenceMetric === 'passengerCapacity' ? 'capacity'
+      : evidenceMetric === 'cargoCapacity' ? 'cargo'
       : evidenceMetric === 'range' ? 'range'
         : evidenceMetric === 'co2PerPassengerKm' ? 'environment' : 'speed';
     let candidates = data.vehicles;
@@ -531,7 +581,8 @@ Return a complete Vehicle Comparison Lab configuration.
       ? `Which vehicle leads on ${metricName(evidenceMetric)}? Read the visible values and choose.`
       : type === 'constraint_tradeoff'
         ? `Move at least ${passengers} passengers for ${distance} km, then choose the fastest vehicle that qualifies.`
-        : `Which vehicle leads on ${metricName(evidenceMetric)}? Choose the visible data that proves it.`;
+        : metricNeed[evidenceMetric as ComparisonMetricKey]
+          ?? `Which vehicle leads on ${metricName(evidenceMetric)}? Choose the visible data that proves it.`;
     return {
       id: `derived-${type}-${idSuffix}`,
       type,

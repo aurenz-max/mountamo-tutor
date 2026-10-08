@@ -2,6 +2,7 @@ import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection } from '../scopeContext';
+import { shuffleIndexedChoices, stableShuffle } from '../../utils/choiceOrder';
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -15,6 +16,7 @@ import type {
   TransportScenario,
   VehicleOption,
   TransportConstraint,
+  TransportLoad,
 } from "../../primitives/visual-primitives/engineering/TransportChallenge";
 
 // Re-export for convenience
@@ -25,7 +27,14 @@ export type { TransportChallengeData, TransportScenario };
 // ============================================================================
 
 const VALID_CONSTRAINT_TYPES = ["budget", "time", "co2"] as const;
-const VALID_EMOJIS = ["🚗", "🚌", "🚐", "🚂", "✈️", "🚢", "🚲", "🏍️"] as const;
+const VALID_EMOJIS = [
+  "🚗", "🚌", "🚐", "🚲", "🏍️", "🚚", "🚛", "🚜",
+  "🚂", "🚆", "🚄", "🚇", "🚋", "✈️", "🚁", "🚢", "⛴️", "🛶",
+] as const;
+const VALID_PLACE_EMOJIS = [
+  "🏙️", "🏘️", "🏡", "🏭", "🏗️", "🌲", "🌾", "⛏️", "⚓", "🏥",
+  "🏫", "🏟️", "🎡", "🏬", "🛒", "🏔️", "🏖️", "🚉", "📦", "⛽",
+] as const;
 const VALID_COLORS = ["#3b82f6", "#ef4444", "#22c55e", "#f59e0b", "#8b5cf6"] as const;
 const MAX_FLEET_SIZE = 15;
 
@@ -58,22 +67,30 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ============================================================================
-// Scenario themes for variety
+// Lesson grounding
 // ============================================================================
 
-const SCENARIO_THEMES = [
-  "a school field trip",
-  "a company office relocation",
-  "a music festival shuttle",
-  "a sports team travel day",
-  "a community evacuation drill",
-  "a tourist group excursion",
-  "a summer camp transfer",
-  "a hospital patient transport",
-];
+/**
+ * The lesson's own words for what these scenarios are about. Scenarios used to
+ * be themed from a fixed list (field trip, hospital transport...), which
+ * overrode the topic: a "passenger and freight trains" lesson got "move 60
+ * people to a hospital". The intent and objective now set the theme.
+ */
+function buildLessonSection(ctx: GenerationContext): string {
+  const lines = [`LESSON TOPIC: ${ctx.topic}`];
+  if (ctx.title) lines.push(`ACTIVITY TITLE: ${ctx.title}`);
+  if (ctx.intent) lines.push(`ACTIVITY INTENT (what the lesson asked this activity to do): ${ctx.intent}`);
+  if (ctx.objective?.text) lines.push(`LEARNING OBJECTIVE: ${ctx.objective.text}`);
+  return `${lines.join("\n")}
 
-function randomTheme(): string {
-  return SCENARIO_THEMES[Math.floor(Math.random() * SCENARIO_THEMES.length)];
+GROUNDING:
+- Every scenario must be about this lesson. If the intent names vehicles, loads, places or numbers, use them.
+- The vehicles must include the ones the lesson is about (a trains lesson has trains among the choices). The other choices are realistic alternatives for the same job: trucks or a cargo plane for freight, buses or cars for people.
+- Choose loadKind per scenario: "people" for passengers, "cargo" for goods. Use cargo only when the lesson is about moving goods or freight; a lesson about moving people stays with people. If the lesson covers both (e.g. passenger AND freight), include both kinds across the scenarios.
+- Each vehicle's capacity is what that real vehicle carries, never sized to the load. loadAmount must NOT equal any vehicle's capacity. Realism wins over trip count: a big vehicle may move the whole load in one trip while a small one needs dozens — that contrast is the lesson (one freight train does the work of about 100+ semi trucks). Never shrink a vehicle below its real capacity to make the trips harder.
+- Cargo amounts are in TONS and must be realistic for the goods. Realistic capacities: freight train 3,000-15,000 tons; semi truck 20-25 tons; delivery truck 5-10 tons; cargo plane about 100 tons; cargo ship tens of thousands of tons.
+- Passenger capacities must be realistic: car 4-5; minivan 7-8; bus about 50; commuter or intercity train 300-1,300; plane 150-400.
+- The scenarios must differ from each other in route, load and which vehicle wins.`;
 }
 
 // ============================================================================
@@ -101,6 +118,20 @@ function extractConstraints(flat: FlatScenario, maxSlots: number): TransportCons
     }
   }
   return constraints;
+}
+
+function extractLoad(flat: FlatScenario): TransportLoad | null {
+  const kind = flat.loadKind as string | undefined;
+  const amount = flat.loadAmount as number | undefined;
+  const name = (flat.loadName as string | undefined)?.trim();
+  if ((kind !== "people" && kind !== "cargo") || typeof amount !== "number" || amount <= 0 || !name) {
+    return null;
+  }
+  return { kind, amount, unit: kind === "people" ? "people" : "tons", name };
+}
+
+function placeEmoji(raw: unknown, fallback: string): string {
+  return VALID_PLACE_EMOJIS.includes(raw as typeof VALID_PLACE_EMOJIS[number]) ? (raw as string) : fallback;
 }
 
 function extractVehicles(flat: FlatScenario, maxSlots: number): VehicleOption[] {
@@ -176,10 +207,10 @@ interface VehicleOutcome {
 function computeOutcome(
   vehicle: VehicleOption,
   distanceKm: number,
-  peopleToTransport: number,
+  loadAmount: number,
   constraints: TransportConstraint[],
 ): VehicleOutcome {
-  const totalTrips = Math.ceil(peopleToTransport / vehicle.capacity);
+  const totalTrips = Math.ceil(loadAmount / vehicle.capacity);
   const fleetSize = Math.min(totalTrips, MAX_FLEET_SIZE);
   const outboundMinutes = (distanceKm / vehicle.speedKmh) * 60;
   const batches = Math.ceil(totalTrips / fleetSize);
@@ -217,11 +248,11 @@ function computeOutcome(
 function recomputeBestVehicle(
   vehicles: VehicleOption[],
   distanceKm: number,
-  peopleToTransport: number,
+  loadAmount: number,
   constraints: TransportConstraint[],
 ): string {
   const outcomes = vehicles.map((v) =>
-    computeOutcome(v, distanceKm, peopleToTransport, constraints),
+    computeOutcome(v, distanceKm, loadAmount, constraints),
   );
 
   // Prefer vehicles meeting all constraints, then sort by total cost
@@ -249,13 +280,13 @@ function computeAcceptableVehicles(
   vehicles: VehicleOption[],
   bestVehicleId: string,
   distanceKm: number,
-  peopleToTransport: number,
+  loadAmount: number,
   constraints: TransportConstraint[],
 ): string[] {
   return vehicles
     .filter((v) => v.id !== bestVehicleId)
     .filter((v) =>
-      computeOutcome(v, distanceKm, peopleToTransport, constraints).allConstraintsMet,
+      computeOutcome(v, distanceKm, loadAmount, constraints).allConstraintsMet,
     )
     .map((v) => v.id);
 }
@@ -275,7 +306,7 @@ function reconstructScenario(
   const origin = flat.origin as string | undefined;
   const destination = flat.destination as string | undefined;
   const distanceKm = flat.distanceKm as number | undefined;
-  const peopleToTransport = flat.peopleToTransport as number | undefined;
+  const load = extractLoad(flat);
   const explanation = flat.explanation as string | undefined;
   const tradeOffQuestion = flat.tradeOffQuestion as string | undefined;
   const tradeOffCorrectIndex = flat.tradeOffCorrectIndex as number | undefined;
@@ -284,7 +315,7 @@ function reconstructScenario(
   if (
     !title || !origin || !destination || !explanation || !tradeOffQuestion ||
     typeof distanceKm !== "number" || distanceKm <= 0 ||
-    typeof peopleToTransport !== "number" || peopleToTransport <= 0 ||
+    !load ||
     typeof tradeOffCorrectIndex !== "number"
   ) {
     console.warn(`[TransportChallenge] Scenario ${index}: missing required scalar fields`);
@@ -317,18 +348,36 @@ function reconstructScenario(
   const bestVehicleId = recomputeBestVehicle(
     vehicles,
     distanceKm,
-    peopleToTransport,
+    load.amount,
     constraints,
   );
+
+  // The trade-off question and explanation are written about the vehicle the
+  // model meant to win. If the real math picks a different one, the keyed
+  // answer describes the wrong vehicle ("everyone in one trip" under a bus
+  // that needs six), so the scenario is dropped rather than shipped.
+  const intendedIndex = flat.bestVehicleIndex as number | undefined;
+  if (typeof intendedIndex !== "number" || `v${Math.round(intendedIndex)}` !== bestVehicleId) {
+    console.warn(
+      `[TransportChallenge] Scenario ${index}: model's intended winner v${intendedIndex} != computed ${bestVehicleId}`,
+    );
+    return null;
+  }
 
   // Compute acceptable vehicles
   const acceptableVehicleIds = computeAcceptableVehicles(
     vehicles,
     bestVehicleId,
     distanceKm,
-    peopleToTransport,
+    load.amount,
     constraints,
   );
+
+  // The model lists the intended winner first (vehicle0) and tends to key the
+  // same trade-off slot, so card and option order are shuffled here. Vehicle
+  // ids keep their slot names, so bestVehicleId still points at the winner.
+  const seed = `${scenarioType}:${title}:${index}`;
+  const shuffledOptions = shuffleIndexedChoices(tradeOffOptions, safeCorrectIndex, `${seed}:options`);
 
   return {
     id: `s${index}`,
@@ -336,15 +385,17 @@ function reconstructScenario(
     title,
     origin,
     destination,
+    originEmoji: placeEmoji(flat.originEmoji, "📍"),
+    destinationEmoji: placeEmoji(flat.destinationEmoji, "🏁"),
     distanceKm,
-    peopleToTransport,
+    load,
     constraints,
-    vehicles,
+    vehicles: stableShuffle(vehicles, `${seed}:vehicles`),
     bestVehicleId,
     acceptableVehicleIds,
     tradeOffQuestion,
-    tradeOffOptions,
-    tradeOffCorrectIndex: safeCorrectIndex,
+    tradeOffOptions: shuffledOptions.options,
+    tradeOffCorrectIndex: shuffledOptions.correctIndex,
     explanation,
   };
 }
@@ -360,7 +411,12 @@ const constraintTypeEnum = {
 
 const vehicleEmojiEnum = {
   type: Type.STRING,
-  enum: ["🚗", "🚌", "🚐", "🚂", "✈️", "🚢", "🚲", "🏍️"],
+  enum: [...VALID_EMOJIS],
+};
+
+const placeEmojiEnum = {
+  type: Type.STRING,
+  enum: [...VALID_PLACE_EMOJIS],
 };
 
 const vehicleColorEnum = {
@@ -372,7 +428,7 @@ function makeVehicleFields(index: number): Record<string, Schema> {
   return {
     [`vehicle${index}Name`]: { type: Type.STRING, description: `Vehicle ${index} display name` },
     [`vehicle${index}Emoji`]: { ...vehicleEmojiEnum, description: `Vehicle ${index} emoji icon` },
-    [`vehicle${index}Capacity`]: { type: Type.NUMBER, description: `Vehicle ${index} passenger capacity per trip` },
+    [`vehicle${index}Capacity`]: { type: Type.NUMBER, description: `Vehicle ${index} capacity per trip in the scenario's load unit (people for a people load, tons for a cargo load). Only offer vehicles that can carry this load.` },
     [`vehicle${index}SpeedKmh`]: { type: Type.NUMBER, description: `Vehicle ${index} speed in km/h` },
     [`vehicle${index}CostPerTrip`]: { type: Type.NUMBER, description: `Vehicle ${index} cost per trip in dollars` },
     [`vehicle${index}Co2PerTrip`]: { type: Type.NUMBER, description: `Vehicle ${index} CO2 per trip in kg` },
@@ -391,16 +447,21 @@ function makeConstraintFields(index: number): Record<string, Schema> {
 
 const sharedScenarioFields: Record<string, Schema> = {
   title: { type: Type.STRING, description: "Engaging scenario description" },
-  origin: { type: Type.STRING, description: "Origin city/location" },
-  destination: { type: Type.STRING, description: "Destination city/location" },
+  origin: { type: Type.STRING, description: "Where the load starts, a named place (a grain farm, a lumber mill, a suburb station)" },
+  originEmoji: { ...placeEmojiEnum, description: "Icon for the origin" },
+  destination: { type: Type.STRING, description: "Where the load goes" },
+  destinationEmoji: { ...placeEmojiEnum, description: "Icon for the destination" },
   distanceKm: { type: Type.NUMBER, description: "Realistic distance in kilometers" },
-  peopleToTransport: { type: Type.NUMBER, description: "Number of people to move (10-500)" },
+  loadKind: { type: Type.STRING, enum: ["people", "cargo"], description: "people = passengers; cargo = goods measured in tons" },
+  loadAmount: { type: Type.NUMBER, description: "How many people, or how many tons of cargo, must be moved" },
+  loadName: { type: Type.STRING, description: "What is moved, as a short noun: 'commuters', 'festival visitors', 'lumber', 'grain', 'new cars'" },
   tradeOffQuestion: { type: Type.STRING, description: "Multiple choice question about trade-offs" },
   tradeOffOption0: { type: Type.STRING, description: "Trade-off answer option 1" },
   tradeOffOption1: { type: Type.STRING, description: "Trade-off answer option 2" },
   tradeOffOption2: { type: Type.STRING, description: "Trade-off answer option 3" },
   tradeOffOption3: { type: Type.STRING, description: "Trade-off answer option 4" },
   tradeOffCorrectIndex: { type: Type.NUMBER, description: "Index (0-3) of the correct trade-off option" },
+  bestVehicleIndex: { type: Type.NUMBER, description: "Index of the vehicle (vehicle0 = 0, vehicle1 = 1, ...) that wins under the MATH rules. The question and explanation must be about this vehicle." },
   explanation: { type: Type.STRING, description: "Explanation of why the best vehicle is optimal" },
 };
 
@@ -421,7 +482,8 @@ const singleConstraintSchema: Schema = {
           ...makeVehicleFields(3),
         },
         required: [
-          "title", "origin", "destination", "distanceKm", "peopleToTransport",
+          "title", "origin", "originEmoji", "destination", "destinationEmoji", "distanceKm",
+          "loadKind", "loadAmount", "loadName",
           "constraint0Type", "constraint0Limit", "constraint0Unit",
           "vehicle0Name", "vehicle0Emoji", "vehicle0Capacity", "vehicle0SpeedKmh",
           "vehicle0CostPerTrip", "vehicle0Co2PerTrip", "vehicle0TurnaroundMinutes", "vehicle0Color",
@@ -430,10 +492,10 @@ const singleConstraintSchema: Schema = {
           "vehicle2Name", "vehicle2Emoji", "vehicle2Capacity", "vehicle2SpeedKmh",
           "vehicle2CostPerTrip", "vehicle2Co2PerTrip", "vehicle2TurnaroundMinutes", "vehicle2Color",
           "tradeOffQuestion", "tradeOffOption0", "tradeOffOption1", "tradeOffOption2", "tradeOffOption3",
-          "tradeOffCorrectIndex", "explanation",
+          "tradeOffCorrectIndex", "bestVehicleIndex", "explanation",
         ],
       },
-      description: "3 single-constraint transport scenarios",
+      description: "4 single-constraint transport scenarios",
     },
   },
   required: ["scenarios"],
@@ -458,7 +520,8 @@ const multiConstraintSchema: Schema = {
           ...makeVehicleFields(3),
         },
         required: [
-          "title", "origin", "destination", "distanceKm", "peopleToTransport",
+          "title", "origin", "originEmoji", "destination", "destinationEmoji", "distanceKm",
+          "loadKind", "loadAmount", "loadName",
           "constraint0Type", "constraint0Limit", "constraint0Unit",
           "constraint1Type", "constraint1Limit", "constraint1Unit",
           "vehicle0Name", "vehicle0Emoji", "vehicle0Capacity", "vehicle0SpeedKmh",
@@ -470,10 +533,10 @@ const multiConstraintSchema: Schema = {
           "vehicle3Name", "vehicle3Emoji", "vehicle3Capacity", "vehicle3SpeedKmh",
           "vehicle3CostPerTrip", "vehicle3Co2PerTrip", "vehicle3TurnaroundMinutes", "vehicle3Color",
           "tradeOffQuestion", "tradeOffOption0", "tradeOffOption1", "tradeOffOption2", "tradeOffOption3",
-          "tradeOffCorrectIndex", "explanation",
+          "tradeOffCorrectIndex", "bestVehicleIndex", "explanation",
         ],
       },
-      description: "3 multi-constraint transport scenarios",
+      description: "4 multi-constraint transport scenarios",
     },
   },
   required: ["scenarios"],
@@ -500,7 +563,8 @@ const fullOptimizationSchema: Schema = {
           ...makeVehicleFields(4),
         },
         required: [
-          "title", "origin", "destination", "distanceKm", "peopleToTransport",
+          "title", "origin", "originEmoji", "destination", "destinationEmoji", "distanceKm",
+          "loadKind", "loadAmount", "loadName",
           "constraint0Type", "constraint0Limit", "constraint0Unit",
           "constraint1Type", "constraint1Limit", "constraint1Unit",
           "constraint2Type", "constraint2Limit", "constraint2Unit",
@@ -513,10 +577,10 @@ const fullOptimizationSchema: Schema = {
           "vehicle3Name", "vehicle3Emoji", "vehicle3Capacity", "vehicle3SpeedKmh",
           "vehicle3CostPerTrip", "vehicle3Co2PerTrip", "vehicle3TurnaroundMinutes", "vehicle3Color",
           "tradeOffQuestion", "tradeOffOption0", "tradeOffOption1", "tradeOffOption2", "tradeOffOption3",
-          "tradeOffCorrectIndex", "explanation",
+          "tradeOffCorrectIndex", "bestVehicleIndex", "explanation",
         ],
       },
-      description: "3 full-optimization transport scenarios",
+      description: "4 full-optimization transport scenarios",
     },
   },
   required: ["scenarios"],
@@ -533,8 +597,10 @@ const FALLBACKS: Record<string, TransportScenario> = {
     title: "School Museum Trip",
     origin: "Maple Elementary School",
     destination: "City Science Museum",
+    originEmoji: "🏫",
+    destinationEmoji: "🏬",
     distanceKm: 15,
-    peopleToTransport: 30,
+    load: { kind: "people", amount: 30, unit: "people", name: "students" },
     constraints: [{ type: "budget", limit: 200, unit: "dollars" }],
     vehicles: [
       { id: "v0", name: "Sedan", emoji: "🚗", capacity: 4, speedKmh: 50, costPerTrip: 15, co2PerTrip: 3, turnaroundMinutes: 10, color: "#3b82f6" },
@@ -559,8 +625,10 @@ const FALLBACKS: Record<string, TransportScenario> = {
     title: "Commuter Rush Hour Challenge",
     origin: "Oakville Suburbs",
     destination: "Downtown Business District",
+    originEmoji: "🏘️",
+    destinationEmoji: "🏙️",
     distanceKm: 50,
-    peopleToTransport: 100,
+    load: { kind: "people", amount: 100, unit: "people", name: "commuters" },
     constraints: [
       { type: "budget", limit: 500, unit: "dollars" },
       { type: "time", limit: 180, unit: "minutes" },
@@ -589,8 +657,10 @@ const FALLBACKS: Record<string, TransportScenario> = {
     title: "London to Paris Tourist Transfer",
     origin: "London Victoria",
     destination: "Paris Gare du Nord",
+    originEmoji: "🚉",
+    destinationEmoji: "🚉",
     distanceKm: 450,
-    peopleToTransport: 200,
+    load: { kind: "people", amount: 200, unit: "people", name: "tourists" },
     constraints: [
       { type: "budget", limit: 3000, unit: "dollars" },
       { type: "time", limit: 300, unit: "minutes" },
@@ -620,134 +690,90 @@ const FALLBACKS: Record<string, TransportScenario> = {
 // Per-Type Sub-Generators
 // ============================================================================
 
-async function generateSingleConstraintScenarios(
-  topic: string,
-  scopeSection: string,
-  gradeLevel: string,
-): Promise<TransportScenario[]> {
-  const prompt = `
-Create 3 educational TRANSPORT CHALLENGE scenarios for "${topic}" (${gradeLevel} students).
-${scopeSection}
-Theme: ${randomTheme()}.
-
-Each scenario has ONE constraint and 3-4 vehicles. ONE vehicle must clearly be the best choice.
-
-RULES:
-- distanceKm: realistic (5-100km for local, 100-500km for regional)
-- peopleToTransport: 10-100
-- Each vehicle needs realistic: capacity (2-50), speedKmh (10-120), costPerTrip (5-200), co2PerTrip (1-50), turnaroundMinutes (5-30)
-- ONE constraint only: budget OR time OR co2
-- Set constraint limits so exactly 1-2 vehicles clearly satisfy it, with one being obviously best
-- The tradeOffQuestion should test understanding of WHY the best vehicle wins
-- tradeOffCorrectIndex: 0-3 index into the 4 options
-- Make scenarios varied: different origins, destinations, group sizes
-
-CRITICAL MATH CHECK:
-For budget constraint: totalTrips = ceil(people/capacity), totalCost = totalTrips * costPerTrip
-For time constraint: approximate totalTime = (distanceKm/speedKmh)*60*2 * ceil(totalTrips/15) minutes
-For co2 constraint: totalCO2 = totalTrips * co2PerTrip
-Set the constraint limit so only 1-2 vehicles pass.
-
-Generate 3 scenarios with increasing difficulty.
-`;
-
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
-    contents: prompt,
-    config: { responseMimeType: "application/json", responseSchema: singleConstraintSchema },
-  });
-
-  const data = result.text ? JSON.parse(result.text) : null;
-  if (!data?.scenarios?.length) return [];
-
-  return (data.scenarios as FlatScenario[])
-    .map((flat, i) => reconstructScenario(flat, "single_constraint", i, 4, 1))
-    .filter((s): s is TransportScenario => s !== null);
+interface TypeSpec {
+  schema: Schema;
+  maxVehicles: number;
+  maxConstraints: number;
+  rules: string;
 }
 
-async function generateMultiConstraintScenarios(
-  topic: string,
+/**
+ * Difficulty is structural: how many constraints bind and whether any vehicle
+ * clears them all. Numbers (capacity, speed, cost) come from the real vehicles
+ * the lesson is about, not from per-tier ranges — the old ranges capped
+ * capacity at 50-200, which made a freight train impossible to describe.
+ */
+const TYPE_SPECS: Record<TransportScenario["type"], TypeSpec> = {
+  single_constraint: {
+    schema: singleConstraintSchema,
+    maxVehicles: 4,
+    maxConstraints: 1,
+    rules: `Each scenario has ONE constraint (budget OR time OR co2) and 3-4 vehicles.
+Set the limit so only 1-2 vehicles meet it and one is clearly best.
+The tradeOffQuestion tests WHY the best vehicle wins.`,
+  },
+  multi_constraint: {
+    schema: multiConstraintSchema,
+    maxVehicles: 4,
+    maxConstraints: 3,
+    rules: `Each scenario has 2-3 different constraints (budget, time, co2) and 4 vehicles.
+At least 2 vehicles meet all constraints, with real trade-offs (the cheapest is slow, the fastest pollutes most).
+The tradeOffQuestion tests understanding of the trade-off.`,
+  },
+  full_optimization: {
+    schema: fullOptimizationSchema,
+    maxVehicles: 5,
+    maxConstraints: 4,
+    rules: `Each scenario has 3-4 constraints and 4-5 vehicles. Set limits TIGHT so NO vehicle meets every constraint:
+each has a weakness, and the student must find the least-bad option.
+The tradeOffQuestion explores why there is no perfect choice.`,
+  },
+};
+
+/** Ask for 4 and ship 3, so the intended-winner and load guards can drop one. */
+const SHIPPED_PER_TYPE = 3;
+
+async function generateScenarios(
+  type: TransportScenario["type"],
+  lessonSection: string,
   scopeSection: string,
   gradeLevel: string,
 ): Promise<TransportScenario[]> {
+  const spec = TYPE_SPECS[type];
   const prompt = `
-Create 3 educational TRANSPORT CHALLENGE scenarios for "${topic}" (${gradeLevel} students).
+Create 4 educational TRANSPORT CHALLENGE scenarios for ${gradeLevel} students.
+${lessonSection}
 ${scopeSection}
-Theme: ${randomTheme()}.
 
-Each scenario has 2-3 constraints and 4 vehicles. At least 2 vehicles should meet all constraints.
+${spec.rules}
 
 RULES:
-- distanceKm: 20-200km
-- peopleToTransport: 30-200
-- Each vehicle needs realistic: capacity (4-100), speedKmh (20-300), costPerTrip (10-500), co2PerTrip (2-100), turnaroundMinutes (5-30)
-- Use 2-3 different constraint types (budget, time, co2)
-- Set limits so there are TRADE-OFFS: e.g., cheapest vehicle is slowest, fastest pollutes most
-- tradeOffQuestion tests understanding of the trade-off
-- tradeOffCorrectIndex: 0-3
+- Vehicle numbers are realistic for that real vehicle. capacity is per trip in the scenario's load unit.
+- costPerTrip, co2PerTrip and turnaroundMinutes are per trip for ONE vehicle on this route.
+- tradeOffCorrectIndex: 0-3 index into the 4 options. Options must not repeat the question's wording.
+- bestVehicleIndex is the winner by the MATH below: among vehicles meeting every constraint, the lowest total cost; if none meets every constraint, the one failing the fewest. Check it before writing the question.
+- The explanation names the numbers that decide it (trips needed, total cost, total time, total CO2).
 
-CRITICAL MATH CHECK:
-totalTrips = ceil(people/capacity)
+MATH (the app recomputes these; set limits that work with them):
+totalTrips = ceil(loadAmount / capacity)
 totalCost = totalTrips * costPerTrip
 totalCO2 = totalTrips * co2PerTrip
-Approximate time: (distance/speed)*60 for outbound, plus turnaround per batch
-
-Generate 3 scenarios with realistic trade-offs.
+totalTime ~ (distanceKm / speedKmh) * 60 * 2 * ceil(totalTrips / 15) minutes (up to 15 vehicles run at once)
 `;
 
   const result = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
     contents: prompt,
-    config: { responseMimeType: "application/json", responseSchema: multiConstraintSchema },
+    config: { responseMimeType: "application/json", responseSchema: spec.schema },
   });
 
   const data = result.text ? JSON.parse(result.text) : null;
   if (!data?.scenarios?.length) return [];
 
   return (data.scenarios as FlatScenario[])
-    .map((flat, i) => reconstructScenario(flat, "multi_constraint", i, 4, 3))
-    .filter((s): s is TransportScenario => s !== null);
-}
-
-async function generateFullOptimizationScenarios(
-  topic: string,
-  scopeSection: string,
-  gradeLevel: string,
-): Promise<TransportScenario[]> {
-  const prompt = `
-Create 3 educational TRANSPORT CHALLENGE scenarios for "${topic}" (${gradeLevel} students).
-${scopeSection}
-Theme: ${randomTheme()}.
-
-Each scenario has 3-4 constraints and 4-5 vehicles. NO vehicle should perfectly satisfy all constraints.
-Every vehicle should fail at least one constraint or be suboptimal — students must find the LEAST BAD option.
-
-RULES:
-- distanceKm: 50-500km
-- peopleToTransport: 50-500
-- Each vehicle needs realistic: capacity (4-200), speedKmh (20-800), costPerTrip (10-3000), co2PerTrip (2-500), turnaroundMinutes (5-60)
-- Use 3-4 different constraint types (budget, time, co2)
-- Set limits TIGHT so no vehicle meets all — each has a weakness
-- tradeOffQuestion explores the optimization challenge
-- tradeOffCorrectIndex: 0-3
-
-CRITICAL: Design so every vehicle busts at least one constraint. The "best" is the one that comes closest overall.
-
-Generate 3 complex optimization scenarios.
-`;
-
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
-    contents: prompt,
-    config: { responseMimeType: "application/json", responseSchema: fullOptimizationSchema },
-  });
-
-  const data = result.text ? JSON.parse(result.text) : null;
-  if (!data?.scenarios?.length) return [];
-
-  return (data.scenarios as FlatScenario[])
-    .map((flat, i) => reconstructScenario(flat, "full_optimization", i, 5, 4))
-    .filter((s): s is TransportScenario => s !== null);
+    .map((flat, i) => reconstructScenario(flat, type, i, spec.maxVehicles, spec.maxConstraints))
+    .filter((s): s is TransportScenario => s !== null)
+    .slice(0, SHIPPED_PER_TYPE);
 }
 
 // ============================================================================
@@ -759,7 +785,6 @@ type TransportChallengeConfig = Partial<{ targetEvalMode?: string }>;
 export const generateTransportChallenge = async (
   ctx: GenerationContext,
 ): Promise<TransportChallengeData> => {
-  const { topic } = ctx;
   const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as TransportChallengeConfig;
@@ -777,19 +802,13 @@ export const generateTransportChallenge = async (
   const generators: Promise<TransportScenario[]>[] = [];
   const typeOrder: string[] = [];
 
+  const lessonSection = buildLessonSection(ctx);
   for (const type of allowedTypes) {
+    if (!(type in TYPE_SPECS)) continue;
     typeOrder.push(type);
-    switch (type) {
-      case "single_constraint":
-        generators.push(generateSingleConstraintScenarios(topic, scopeSection, gradeLevel));
-        break;
-      case "multi_constraint":
-        generators.push(generateMultiConstraintScenarios(topic, scopeSection, gradeLevel));
-        break;
-      case "full_optimization":
-        generators.push(generateFullOptimizationScenarios(topic, scopeSection, gradeLevel));
-        break;
-    }
+    generators.push(
+      generateScenarios(type as TransportScenario["type"], lessonSection, scopeSection, gradeLevel),
+    );
   }
 
   const results = await Promise.all(generators);
@@ -828,7 +847,7 @@ export const generateTransportChallenge = async (
 
   return {
     title: `Transport Challenge: ${activeLabels}`,
-    description: `Pick the best vehicle for each scenario. Consider cost, time, and environmental impact to transport everyone safely!`,
+    description: `Pick the best vehicle for each job. Watch the trips play out, then weigh cost, time, and pollution.`,
     scenarios,
   };
 };

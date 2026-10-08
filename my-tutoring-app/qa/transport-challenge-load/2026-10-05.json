@@ -1,0 +1,137 @@
+{
+  "summary": [
+    {
+      "case": "trains",
+      "mode": "multi_constraint",
+      "scenarios": [
+        {
+          "title": "Festival Tourist Express",
+          "route": "🚉 suburb station -> 🏟️ town square (45 km)",
+          "load": "500 people (people: tourists)",
+          "bestPosition": 2,
+          "answerPosition": 2,
+          "vehicles": [
+            "🚐 Minivan Fleet cap 7 @80km/h $60",
+            "🚌 Charter Bus cap 50 @70km/h $250",
+            "🚆 Passenger Train cap 500 @90km/h $1200",
+            "🚗 Commuter Cars cap 4 @80km/h $40"
+          ],
+          "constraints": [
+            "budget<=3000",
+            "time<=120",
+            "co2<=500"
+          ],
+          "best": "Passenger Train",
+          "question": "Why is the Passenger Train the best choice for moving all 500 tourists to the festival within the limits?",
+          "answer": "It moves everyone in a single trip while staying under budget and time limits."
+        },
+        {
+          "title": "Building Lumber Supply",
+          "route": "🌲 lumber mill -> 🏗️ construction site (120 km)",
+          "load": "2000 tons (cargo: lumber)",
+          "bestPosition": 1,
+          "answerPosition": 0,
+          "vehicles": [
+            "🚛 Semi Truck cap 20 @80km/h $120",
+            "🚂 Freight Train cap 2500 @60km/h $8000",
+            "✈️ Cargo Plane cap 100 @300km/h $2500",
+            "🚚 Delivery Truck cap 5 @75km/h $40"
+          ],
+          "constraints": [
+            "budget<=15000",
+            "co2<=2500",
+            "time<=600"
+          ],
+          "best": "Freight Train",
+          "question": "Why does the Freight Train succeed at delivering 2,000 tons of lumber?",
+          "answer": "Its massive capacity carries the entire load in a single trip within budget and emissions limits."
+        },
+        {
+          "title": "Suburban Commuter Rush",
+          "route": "🏡 residential suburb -> 🏙️ city center (30 km)",
+          "load": "1200 people (people: commuters)",
+          "bestPosition": 0,
+          "answerPosition": 1,
+          "vehicles": [
+            "🚆 Intercity Train cap 600 @100km/h $1500",
+            "🚐 Vans cap 8 @60km/h $40",
+            "🚌 City Buses cap 50 @50km/h $200",
+            "🚗 Passenger Cars cap 4 @60km/h $25"
+          ],
+          "constraints": [
+            "budget<=5000",
+            "time<=90",
+            "co2<=500"
+          ],
+          "best": "Intercity Train",
+          "question": "How does the Intercity Train efficiently handle 1,200 commuters?",
+          "answer": "It uses only 2 trips while staying well within the cost and time limits."
+        }
+      ]
+    },
+    {
+      "case": "field-trip",
+      "mode": "single_constraint",
+      "scenarios": [
+        {
+          "title": "Suburban School Trip to the Science Museum",
+          "route": "🏫 Greenwood Elementary School -> 🏬 City Science Museum (15 km)",
+          "load": "95 people (people: students and teachers)",
+          "bestPosition": 1,
+          "answerPosition": 2,
+          "vehicles": [
+            "🚗 Standard Cars cap 4 @50km/h $30",
+            "🚌 School Buses cap 50 @40km/h $250",
+            "🚐 Minivans cap 7 @50km/h $45"
+          ],
+          "constraints": [
+            "budget<=600"
+          ],
+          "best": "School Buses",
+          "question": "Why is taking the School Buses the best choice to stay under our $600 budget?",
+          "answer": "They have the largest capacity, meaning we only need 2 trips for 95 people, keeping total cost at $500."
+        },
+        {
+          "title": "Uptown Academy Excursion",
+          "route": "🏫 Oakridge Middle School -> 🏬 National History Museum (25 km)",
+          "load": "140 people (people: fourth grade students)",
+          "bestPosition": 2,
+          "answerPosition": 3,
+          "vehicles": [
+            "🚗 Compact Cars cap 4 @60km/h $40",
+            "🚐 Passenger Vans cap 8 @55km/h $60",
+            "🚌 Large Coach Buses cap 50 @50km/h $250"
+          ],
+          "constraints": [
+            "budget<=800"
+          ],
+          "best": "Large Coach Buses",
+          "question": "Which option keeps our total expense below the $800 limit while moving all 140 students?",
+          "answer": "Large Coach Buses, because 3 trips cost $750, whereas cars and vans cost over $1,000."
+        },
+        {
+          "title": "West End Field Trip",
+          "route": "🏫 Pinecrest Primary -> 🏬 Art and Culture Museum (10 km)",
+          "load": "45 people (people: class members)",
+          "bestPosition": 1,
+          "answerPosition": 2,
+          "vehicles": [
+            "🚗 Private Sedans cap 4 @40km/h $20",
+            "🚌 Shuttle Bus cap 50 @35km/h $220",
+            "🚐 Passenger Vans cap 7 @40km/h $35"
+          ],
+          "constraints": [
+            "budget<=300"
+          ],
+          "best": "Shuttle Bus",
+          "question": "Why is the Shuttle Bus a smart choice for keeping within the $300 budget for this smaller group?",
+          "answer": "It requires only 1 trip carrying all 45 passengers for $220, which is less than $300."
+        }
+      ]
+    }
+  ],
+  "logs": [
+    "[TransportChallenge] evalMode: \"multi_constraint\" → schema enum: [multi_constraint] (β=0)",
+    "[TransportChallenge] evalMode: \"single_constraint\" → schema enum: [single_constraint] (β=-1.5)"
+  ]
+}

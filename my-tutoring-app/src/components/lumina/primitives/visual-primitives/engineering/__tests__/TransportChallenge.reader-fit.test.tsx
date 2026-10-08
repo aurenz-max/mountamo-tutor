@@ -52,7 +52,7 @@ const data = (): TransportChallengeData => ({
       origin: 'Riverside',
       destination: 'Stadium',
       distanceKm: 30,
-      peopleToTransport: 40,
+      load: { kind: 'people', amount: 40, unit: 'people', name: 'fans' },
       constraints: [
         { type: 'budget', limit: 500, unit: 'dollars' },
         { type: 'time', limit: 120, unit: 'minutes' },
