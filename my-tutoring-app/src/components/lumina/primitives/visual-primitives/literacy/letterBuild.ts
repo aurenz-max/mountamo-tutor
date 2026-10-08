@@ -20,7 +20,9 @@ import {
   syllableLeverFacts, syllableMissWords, syllableModelFor, syllableShapeMiss,
 } from './syllableBuild';
 
-export type LetterAskKind = 'vowel' | 'rhyme' | 'swap' | 'blend_start' | 'blend_end' | 'syllables';
+import { isPatternId, packedWord, patternBoxes, patternCard, patternMiss, patternMissWords, patternModel, type PatternId } from './spellingPatternBuild';
+
+export type LetterAskKind = 'vowel' | 'rhyme' | 'swap' | 'blend_start' | 'blend_end' | 'syllables' | 'pattern';
 /** The blend kinds build from two tiles, a start and an ending (bl + ack), not three single letters. */
 export const isChunk = (kind: LetterAskKind) => kind === 'blend_start' || kind === 'blend_end';
 /** syllables (syllable-clapper `build_parts`, `syllableBuild.ts`): the row grows card by card; how many is the task. */
@@ -35,6 +37,8 @@ export interface LetterBuildItem {
   vowel?: string;
   /** rhyme / swap: the given word. */
   word?: string;
+  /** pattern (spelling-pattern-explorer `pattern_build`): the spelling the ask names (`spellingPatternBuild.ts`). */
+  pattern?: PatternId;
   /** The letters the learner can use (each is unlimited). */
   bank: string[];
   /** Words that answer the ask from the bank (hidden: the gate, the oracle and the levers read them). */
@@ -53,7 +57,8 @@ export interface LetterBuildData {
 }
 
 export type LetterBuildMiss = 'not_cvc' | 'wrong_vowel' | 'wrong_family' | 'same_as_given' | 'changed_more' | 'same_word'
-  | 'pick_another' | 'not_a_word' | 'no_blend' | 'wrong_order' | 'too_few_parts' | 'too_many_parts' | 'counted_letters';
+  | 'pick_another' | 'not_a_word' | 'no_blend' | 'wrong_order' | 'too_few_parts' | 'too_many_parts' | 'counted_letters'
+  | 'other_spelling' | 'wrong_place' | 'no_pattern' | 'not_the_sound';
 export const LETTER_BUILD_MISSES: Record<LetterAskKind, readonly LetterBuildMiss[]> = {
   vowel: ['not_cvc', 'wrong_vowel', 'same_word', 'pick_another', 'not_a_word'],
   rhyme: ['not_cvc', 'same_as_given', 'wrong_family', 'same_word', 'pick_another', 'not_a_word'],
@@ -61,6 +66,7 @@ export const LETTER_BUILD_MISSES: Record<LetterAskKind, readonly LetterBuildMiss
   blend_start: ['wrong_order', 'no_blend', 'same_word', 'pick_another', 'not_a_word'],
   blend_end: ['wrong_order', 'no_blend', 'same_word', 'pick_another', 'not_a_word'],
   syllables: SYLLABLE_BUILD_MISSES,
+  pattern: ['other_spelling', 'wrong_place', 'no_pattern', 'not_the_sound', 'same_word', 'pick_another', 'not_a_word'],
 };
 
 const VOWELS = 'aeiou';
@@ -69,12 +75,13 @@ export const KEYWORD: Record<string, string> = { a: 'apple', e: 'egg', i: 'itch'
 
 /** What the boxes show when an item opens: empty, or the given word on a swap. */
 export const startRow = (item: LetterBuildItem): string[] => isOpenRow(item.kind) ? [] :
-  item.kind === 'swap' && item.word ? item.word.split('') : isChunk(item.kind) ? ['', ''] : ['', '', ''];
+  item.kind === 'pattern' ? Array<string>(patternBoxes(item)).fill('') : item.kind === 'swap' && item.word ? item.word.split('') : isChunk(item.kind) ? ['', ''] : ['', '', ''];
 
 /** Everything the ask states, checked in code before any judge. Undefined: a well-made word, waiting on "is it real?". */
 export function letterShapeMiss(item: LetterBuildItem, row: readonly string[], made: readonly string[] = []): LetterBuildMiss | undefined {
   if (item.kind === 'syllables') return syllableShapeMiss(item, row, made);
   const w = row.join('').toLowerCase();
+  if (item.kind === 'pattern') return patternMiss(item, w, made);
   if (isChunk(item.kind)) {
     const [start, end] = row;
     if (row.length !== 2 || !start || !end || start.split('').some(isVowel) || !isVowel(end[0])) return 'wrong_order';
@@ -99,7 +106,9 @@ export function askableLetterItem(item: LetterBuildItem): LetterBuildItem | null
   if (!item?.ask || !Array.isArray(item.bank) || !Array.isArray(item.examples)) return null;
   if (item.kind === 'syllables') return askableSyllableItem(item);
   const bank = new Set(item.bank);
-  const buildable = (w: string) => isChunk(item.kind)
+  const buildable = (w: string) => item.kind === 'pattern'
+    ? w.length <= startRow(item).length && w.split('').every(l => bank.has(l)) && !letterShapeMiss({ ...item, ways: 1 }, w.split(''))
+    : isChunk(item.kind)
     ? [1, 2, 3].some(i => bank.has(w.slice(0, i)) && bank.has(w.slice(i)) && !letterShapeMiss({ ...item, ways: 1 }, [w.slice(0, i), w.slice(i)]))
     : w.length === 3 && w.split('').every(l => bank.has(l)) && !letterShapeMiss({ ...item, ways: 1 }, w.split(''));
   const examples = Array.from(new Set(item.examples)).filter(buildable);
@@ -107,6 +116,7 @@ export function askableLetterItem(item: LetterBuildItem): LetterBuildItem | null
   if (examples.length < 2 || examples.some(w => new RegExp(`\\b${w}\\b`).test(ask))) return null;
   if ((item.kind === 'rhyme' || item.kind === 'swap') && !/^[a-z]{3}$/.test(item.word ?? '')) return null;
   if (item.kind === 'vowel' && !isVowel(item.vowel ?? '')) return null;
+  if (item.kind === 'pattern' && !isPatternId(item.pattern)) return null;
   return { ...item, examples };
 }
 
@@ -200,8 +210,14 @@ const waysLine = (item: LetterBuildItem) => item.ways === 2 ? ' Then make a diff
 export const letterAssignment = (item: LetterBuildItem): TeachingAssignment =>
   ({ id: item.id, task: `${item.ask}${waysLine(item)}`, response: 'gesture' });
 
+/** Trailing empty boxes (a pattern word shorter than its row) are not part of the word. */
 export const describeLetterBuild = (row: readonly string[], kind?: LetterAskKind) => kind === 'syllables' ? describeSyllableBuild(row) :
-  row.some(Boolean) ? `Built "${row.map(l => l || '_').join('')}"` : 'Built nothing';
+  row.some(Boolean) ? `Built "${row.slice(0, row.map(Boolean).lastIndexOf(true) + 1).map(l => l || '_').join('')}"` : 'Built nothing';
+
+/** "I'm done!" is open: an open row (syllables) with a card in it; a pattern ask with a word of 2+ letters packed from
+ *  the left; otherwise every box filled. */
+export const rowReady = (item: LetterBuildItem, row: readonly string[]) => isOpenRow(item.kind) ? row.length > 0
+  : item.kind === 'pattern' ? packedWord(row) !== null : row.length === startRow(item).length && row.every(Boolean);
 
 export const letterJudgeRequest = (item: LetterBuildItem, row: readonly string[], grade?: string): WordBuildJudgeRequest =>
   ({ ask: item.ask, made: row.join(''), only: 'real_word', ...(grade ? { grade } : {}) });
@@ -230,6 +246,7 @@ export const SMALL_BANK_LEVER = 'small_bank';
 
 /** What the pattern card shows: the shape the ask fixes, never a letter the learner must choose. */
 export function patternFor(item: LetterBuildItem): string {
+  if (item.kind === 'pattern') return patternCard(item);
   if (item.kind === 'blend_start') return 'two consonants + an ending   (start the word with a blend tile)';
   if (item.kind === 'blend_end') return 'a start + an ending that finishes with two consonants';
   if (item.kind === 'vowel') return `_ ${item.vowel} _   (${item.vowel} as in ${KEYWORD[item.vowel!]})`;
@@ -239,6 +256,7 @@ export function patternFor(item: LetterBuildItem): string {
 
 /** A solved item of the same kind on other letters: a different vowel, family or word. */
 export function modelFor(item: LetterBuildItem): string | null {
+  if (item.kind === 'pattern') return patternModel(item);
   const other = (w: string) => !item.examples.includes(w) && w !== item.word && (item.kind !== 'vowel' || w[1] !== item.vowel)
     && (item.kind !== 'rhyme' || w.slice(1) !== item.word!.slice(1));
   if (item.kind === 'syllables') { const m = syllableModelFor(item); return m ? `${m.cards.join(' + ')} = ${m.word}` : null; }
@@ -282,6 +300,10 @@ export function letterBuildLevers(item: LetterBuildItem | null, pulled: readonly
   // The card shows the part the ask fixes, which answers every shape miss whatever the ask's kind.
   const shapeMisses: LetterBuildMiss[] = ['not_cvc', 'wrong_vowel', 'wrong_family', 'same_as_given', 'changed_more', 'no_blend', 'wrong_order'];
   return [
+    item.kind === 'pattern' ? lever(PATTERN_LEVER, 'help', ['other_spelling', 'wrong_place', 'no_pattern', 'not_the_sound'],
+      'The learner spells the sound another way, puts the letters of the pattern in the wrong place, leaves the pattern out, or uses the letters in a word where they make a different sound.',
+      'Shows a pattern card above the boxes: the asked spelling in its place with blanks for the other letters, and the sound it makes, such as _ a i _ (ai says long a). No other letter is filled in.',
+      pulled) :
     lever(PATTERN_LEVER, 'help', shapeMisses,
       'The learner\'s word does not have the shape the ask needs (the wrong middle sound, a different ending, more than one letter changed, or the given word back).',
       'Shows a pattern card above the boxes with the part the ask fixes and blanks for the rest, such as _ a _ or _ a t. No letter the learner must choose is filled in.',
@@ -306,8 +328,10 @@ export function letterLeverFacts(pulled: readonly string[], item: LetterBuildIte
   return notes.length ? notes.join(' ') : undefined;
 }
 
-export function letterMissWords(miss: LetterBuildMiss | undefined, item: LetterBuildItem): string {
+export function letterMissWords(miss: LetterBuildMiss | undefined, item: LetterBuildItem, made = ''): string {
   if (item.kind === 'syllables') return syllableMissWords(miss, item);
+  const onPattern = item.kind === 'pattern' ? patternMissWords(miss, item, made) : undefined;
+  if (onPattern) return onPattern;
   switch (miss) {
     case 'not_cvc': return 'A word here has a vowel in the middle box and other letters on each side.';
     case 'wrong_vowel': return `Listen to the middle sound. The ask wants the short ${item.vowel} sound.`;

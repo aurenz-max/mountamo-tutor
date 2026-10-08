@@ -1,0 +1,123 @@
+{
+ "source": "qa/open-build/spelling-pattern-explorer-2026-10-08/generations.json",
+ "primitiveId": "spelling-pattern-explorer",
+ "evalMode": "pattern_build",
+ "data": {
+  "title": "Make Pattern Words",
+  "gradeLevel": "2",
+  "patternType": "long-vowel",
+  "patternWords": [],
+  "highlightPattern": "",
+  "ruleTemplate": "",
+  "correctRule": "",
+  "dictationWords": [],
+  "task": "letter_build",
+  "buildItems": [
+   {
+    "id": "p1",
+    "kind": "pattern",
+    "pattern": "ai",
+    "ask": "Make a real word with the long a sound spelled ai.",
+    "bank": [
+     "a",
+     "e",
+     "i",
+     "d",
+     "l",
+     "m",
+     "n",
+     "t",
+     "w",
+     "y"
+    ],
+    "examples": [
+     "wait",
+     "tail",
+     "aim",
+     "mail",
+     "maid"
+    ],
+    "ways": 1
+   },
+   {
+    "id": "p2",
+    "kind": "pattern",
+    "pattern": "ay",
+    "ask": "Make a real word with the long a sound spelled ay.",
+    "bank": [
+     "a",
+     "e",
+     "i",
+     "d",
+     "h",
+     "k",
+     "l",
+     "p",
+     "s",
+     "y"
+    ],
+    "examples": [
+     "day",
+     "say",
+     "hay",
+     "pay",
+     "play"
+    ],
+    "ways": 1
+   },
+   {
+    "id": "p3",
+    "kind": "pattern",
+    "pattern": "a_e",
+    "ask": "Make a real word with the long a sound spelled a_e.",
+    "bank": [
+     "a",
+     "e",
+     "i",
+     "c",
+     "d",
+     "k",
+     "m",
+     "n",
+     "s",
+     "v",
+     "y"
+    ],
+    "examples": [
+     "same",
+     "made",
+     "save",
+     "cave",
+     "cake"
+    ],
+    "ways": 1
+   },
+   {
+    "id": "p4",
+    "kind": "pattern",
+    "pattern": "ai",
+    "ask": "Make a real word with the long a sound spelled ai.",
+    "bank": [
+     "a",
+     "e",
+     "i",
+     "f",
+     "g",
+     "l",
+     "m",
+     "n",
+     "r",
+     "y"
+    ],
+    "examples": [
+     "gain",
+     "rain",
+     "aim",
+     "main",
+     "mail"
+    ],
+    "ways": 1
+   }
+  ]
+ }
+}

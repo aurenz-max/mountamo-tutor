@@ -1,0 +1,104 @@
+{
+ "payloads": 408,
+ "withFindings": 23,
+ "spellingPatternExplorer": [
+  {
+   "payload": "spelling-pattern-explorer.long_vowel",
+   "items": 4,
+   "findings": [],
+   "advisories": [],
+   "misses": {
+    "checked": 4,
+    "named": 4,
+    "declared": true,
+    "spoken": {
+     "answered": 0,
+     "named": 0
+    }
+   },
+   "records": {
+    "recover": {
+     "sent": 1,
+     "success": true,
+     "score": 67,
+     "firstResponseScore": 0,
+     "attempts": 8
+    },
+    "clean": {
+     "sent": 1,
+     "success": true,
+     "score": 100,
+     "firstResponseScore": 100,
+     "attempts": 4
+    }
+   }
+  },
+  {
+   "payload": "spelling-pattern-explorer.pattern_build",
+   "items": 1,
+   "findings": [
+    {
+     "invariant": "J1-drivable",
+     "detail": "p1 wrong: spelling-pattern-explorer pattern_build is judged by the word judge, not driven at W1"
+    },
+    {
+     "invariant": "J1-drivable",
+     "detail": "p1 correct: spelling-pattern-explorer pattern_build is judged by the word judge, not driven at W1"
+    },
+    {
+     "invariant": "J1-drivable",
+     "detail": "clean program: p1 correct: spelling-pattern-explorer pattern_build is judged by the word judge, not driven at W1"
+    }
+   ],
+   "advisories": [],
+   "misses": {
+    "checked": 0,
+    "named": 0,
+    "declared": true,
+    "spoken": {
+     "answered": 0,
+     "named": 0
+    }
+   },
+   "records": {
+    "recover": {
+     "sent": 0
+    },
+    "clean": {
+     "sent": 0
+    }
+   }
+  },
+  {
+   "payload": "spelling-pattern-explorer.r_controlled",
+   "items": 5,
+   "findings": [],
+   "advisories": [],
+   "misses": {
+    "checked": 5,
+    "named": 5,
+    "declared": true,
+    "spoken": {
+     "answered": 0,
+     "named": 0
+    }
+   },
+   "records": {
+    "recover": {
+     "sent": 1,
+     "success": true,
+     "score": 67,
+     "firstResponseScore": 0,
+     "attempts": 10
+    },
+    "clean": {
+     "sent": 1,
+     "success": true,
+     "score": 100,
+     "firstResponseScore": 100,
+     "attempts": 5
+    }
+   }
+  }
+ ]
+}

@@ -1,0 +1,1047 @@
+{
+ "summary": {
+  "total": 80,
+  "agree": 79,
+  "code": {
+   "cases": 36,
+   "agree": 36
+  },
+  "judge": {
+   "realWords": 34,
+   "passed": 34,
+   "madeUp": 10,
+   "rejected": 9
+  }
+ },
+ "rows": [
+  {
+   "pattern": "ai",
+   "made": "rain",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.97,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "ai",
+   "made": "paint",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.98,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "ai",
+   "made": "chain",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.96,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "ai",
+   "made": "brain",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.97,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "ai",
+   "made": "snail",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.98,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "ai",
+   "made": "said",
+   "expect": "not_the_sound",
+   "got": "not_the_sound",
+   "ok": true,
+   "code": "not_the_sound",
+   "judge": null,
+   "words": "In that word, ai does not make the long a. Say it out loud and listen."
+  },
+  {
+   "pattern": "ai",
+   "made": "hair",
+   "expect": "not_the_sound",
+   "got": "not_the_sound",
+   "ok": true,
+   "code": "not_the_sound",
+   "judge": null,
+   "words": "In that word, ai does not make the long a. Say it out loud and listen."
+  },
+  {
+   "pattern": "ai",
+   "made": "rane",
+   "expect": "other_spelling",
+   "got": "other_spelling",
+   "ok": true,
+   "code": "other_spelling",
+   "judge": null,
+   "words": "Your word uses a_e, not ai. This ask wants ai."
+  },
+  {
+   "pattern": "ai",
+   "made": "play",
+   "expect": "other_spelling",
+   "got": "other_spelling",
+   "ok": true,
+   "code": "other_spelling",
+   "judge": null,
+   "words": "Your word uses ay, not ai. This ask wants ai."
+  },
+  {
+   "pattern": "ai",
+   "made": "rian",
+   "expect": "wrong_place",
+   "got": "wrong_place",
+   "ok": true,
+   "code": "wrong_place",
+   "judge": null,
+   "words": "The letters ai are not in the right place. Put a then i, side by side, with a letter after them."
+  },
+  {
+   "pattern": "ai",
+   "made": "mait",
+   "expect": "not_a_word",
+   "got": "not_a_word",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": false,
+    "miss": "not_a_word",
+    "realWord": 0.12,
+    "fits": 1,
+    "judge": "jev+flash"
+   },
+   "words": null
+  },
+  {
+   "pattern": "ai",
+   "made": "taip",
+   "expect": "not_a_word",
+   "got": "not_a_word",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": false,
+    "miss": "not_a_word",
+    "realWord": 0.09,
+    "fits": 1,
+    "judge": "jev+flash"
+   },
+   "words": null
+  },
+  {
+   "pattern": "ai",
+   "made": "ran",
+   "expect": "no_pattern",
+   "got": "no_pattern",
+   "ok": true,
+   "code": "no_pattern",
+   "judge": null,
+   "words": "Your word does not have ai. Look at the ask again."
+  },
+  {
+   "pattern": "a_e",
+   "made": "cake",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.99,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "a_e",
+   "made": "grape",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.98,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "a_e",
+   "made": "have",
+   "expect": "not_the_sound",
+   "got": "not_the_sound",
+   "ok": true,
+   "code": "not_the_sound",
+   "judge": null,
+   "words": "In that word, ae does not make the long a. Say it out loud and listen."
+  },
+  {
+   "pattern": "a_e",
+   "made": "care",
+   "expect": "not_the_sound",
+   "got": "not_the_sound",
+   "ok": true,
+   "code": "not_the_sound",
+   "judge": null,
+   "words": "In that word, ae does not make the long a. Say it out loud and listen."
+  },
+  {
+   "pattern": "a_e",
+   "made": "rain",
+   "expect": "other_spelling",
+   "got": "other_spelling",
+   "ok": true,
+   "code": "other_spelling",
+   "judge": null,
+   "words": "Your word uses ai, not a_e. This ask wants a_e."
+  },
+  {
+   "pattern": "a_e",
+   "made": "caek",
+   "expect": "wrong_place",
+   "got": "wrong_place",
+   "ok": true,
+   "code": "wrong_place",
+   "judge": null,
+   "words": "The letters a_e are not in the right place. Put a, then one letter, then e at the very end."
+  },
+  {
+   "pattern": "a_e",
+   "made": "kace",
+   "expect": "not_a_word",
+   "got": "not_a_word",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": false,
+    "miss": "not_a_word",
+    "realWord": 0.03,
+    "fits": 1,
+    "judge": "jev+flash"
+   },
+   "words": null
+  },
+  {
+   "pattern": "a_e",
+   "made": "mabe",
+   "expect": "not_a_word",
+   "got": "not_a_word",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": false,
+    "miss": "not_a_word",
+    "realWord": 0.09,
+    "fits": 1,
+    "judge": "jev+flash"
+   },
+   "words": null
+  },
+  {
+   "pattern": "ar",
+   "made": "car",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.99,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "ar",
+   "made": "farm",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.99,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "ar",
+   "made": "shark",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.99,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "ar",
+   "made": "warm",
+   "expect": "not_the_sound",
+   "got": "not_the_sound",
+   "ok": true,
+   "code": "not_the_sound",
+   "judge": null,
+   "words": "In that word, ar does not make the ar sound. Say it out loud and listen."
+  },
+  {
+   "pattern": "ar",
+   "made": "crab",
+   "expect": "wrong_place",
+   "got": "wrong_place",
+   "ok": true,
+   "code": "wrong_place",
+   "judge": null,
+   "words": "The letters ar are not in the right place. Put a then r, side by side."
+  },
+  {
+   "pattern": "ar",
+   "made": "cat",
+   "expect": "no_pattern",
+   "got": "no_pattern",
+   "ok": true,
+   "code": "no_pattern",
+   "judge": null,
+   "words": "Your word does not have ar. Look at the ask again."
+  },
+  {
+   "pattern": "ar",
+   "made": "darp",
+   "expect": "not_a_word",
+   "got": "not_a_word",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": false,
+    "miss": "not_a_word",
+    "realWord": 0.08,
+    "fits": 1,
+    "judge": "jev+flash"
+   },
+   "words": null
+  },
+  {
+   "pattern": "ar",
+   "made": "scary",
+   "expect": "not_the_sound",
+   "got": "not_the_sound",
+   "ok": true,
+   "code": "not_the_sound",
+   "judge": null,
+   "words": "In that word, ar does not make the ar sound. Say it out loud and listen."
+  },
+  {
+   "pattern": "kn",
+   "made": "knot",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.98,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "kn",
+   "made": "knee",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.99,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "kn",
+   "made": "knit",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.99,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "kn",
+   "made": "not",
+   "expect": "other_spelling",
+   "got": "other_spelling",
+   "ok": true,
+   "code": "other_spelling",
+   "judge": null,
+   "words": "Your word uses n alone, not kn. This ask wants kn."
+  },
+  {
+   "pattern": "kn",
+   "made": "sink",
+   "expect": "wrong_place",
+   "got": "wrong_place",
+   "ok": true,
+   "code": "wrong_place",
+   "judge": null,
+   "words": "The letters kn are not in the right place. Put k then n, at the very start."
+  },
+  {
+   "pattern": "kn",
+   "made": "knat",
+   "expect": "not_a_word",
+   "got": "pass",
+   "ok": false,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.71,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "igh",
+   "made": "light",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.99,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "igh",
+   "made": "night",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.99,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "igh",
+   "made": "height",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.74,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "igh",
+   "made": "eight",
+   "expect": "not_the_sound",
+   "got": "not_the_sound",
+   "ok": true,
+   "code": "not_the_sound",
+   "judge": null,
+   "words": "In that word, igh does not make the long i. Say it out loud and listen."
+  },
+  {
+   "pattern": "igh",
+   "made": "bite",
+   "expect": "other_spelling",
+   "got": "other_spelling",
+   "ok": true,
+   "code": "other_spelling",
+   "judge": null,
+   "words": "Your word uses i_e, not igh. This ask wants igh."
+  },
+  {
+   "pattern": "igh",
+   "made": "ligh",
+   "expect": "not_a_word",
+   "got": "not_a_word",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": false,
+    "miss": "not_a_word",
+    "realWord": 0.08,
+    "fits": 1,
+    "judge": "jev+flash"
+   },
+   "words": null
+  },
+  {
+   "pattern": "ee",
+   "made": "tree",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.99,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "ee",
+   "made": "sheep",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.99,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "ee",
+   "made": "deer",
+   "expect": "not_the_sound",
+   "got": "not_the_sound",
+   "ok": true,
+   "code": "not_the_sound",
+   "judge": null,
+   "words": "In that word, ee does not make the long e. Say it out loud and listen."
+  },
+  {
+   "pattern": "ee",
+   "made": "seat",
+   "expect": "other_spelling",
+   "got": "other_spelling",
+   "ok": true,
+   "code": "other_spelling",
+   "judge": null,
+   "words": "Your word uses ea, not ee. This ask wants ee."
+  },
+  {
+   "pattern": "ee",
+   "made": "bleem",
+   "expect": "not_a_word",
+   "got": "not_a_word",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": false,
+    "miss": "not_a_word",
+    "realWord": 0.06,
+    "fits": 1,
+    "judge": "jev+flash"
+   },
+   "words": null
+  },
+  {
+   "pattern": "ea",
+   "made": "leaf",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.98,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "ea",
+   "made": "beak",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.97,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "ea",
+   "made": "bread",
+   "expect": "not_the_sound",
+   "got": "not_the_sound",
+   "ok": true,
+   "code": "not_the_sound",
+   "judge": null,
+   "words": "In that word, ea does not make the long e. Say it out loud and listen."
+  },
+  {
+   "pattern": "ea",
+   "made": "heart",
+   "expect": "not_the_sound",
+   "got": "not_the_sound",
+   "ok": true,
+   "code": "not_the_sound",
+   "judge": null,
+   "words": "In that word, ea does not make the long e. Say it out loud and listen."
+  },
+  {
+   "pattern": "ea",
+   "made": "feel",
+   "expect": "other_spelling",
+   "got": "other_spelling",
+   "ok": true,
+   "code": "other_spelling",
+   "judge": null,
+   "words": "Your word uses ee, not ea. This ask wants ea."
+  },
+  {
+   "pattern": "oa",
+   "made": "boat",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.99,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "oa",
+   "made": "road",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.99,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "oa",
+   "made": "board",
+   "expect": "not_the_sound",
+   "got": "not_the_sound",
+   "ok": true,
+   "code": "not_the_sound",
+   "judge": null,
+   "words": "In that word, oa does not make the long o. Say it out loud and listen."
+  },
+  {
+   "pattern": "oa",
+   "made": "home",
+   "expect": "other_spelling",
+   "got": "other_spelling",
+   "ok": true,
+   "code": "other_spelling",
+   "judge": null,
+   "words": "Your word uses o_e, not oa. This ask wants oa."
+  },
+  {
+   "pattern": "oa",
+   "made": "toab",
+   "expect": "not_a_word",
+   "got": "not_a_word",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": false,
+    "miss": "not_a_word",
+    "realWord": 0.02,
+    "fits": 1,
+    "judge": "jev+flash"
+   },
+   "words": null
+  },
+  {
+   "pattern": "o_e",
+   "made": "home",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.94,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "o_e",
+   "made": "stone",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.98,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "o_e",
+   "made": "come",
+   "expect": "not_the_sound",
+   "got": "not_the_sound",
+   "ok": true,
+   "code": "not_the_sound",
+   "judge": null,
+   "words": "In that word, oe does not make the long o. Say it out loud and listen."
+  },
+  {
+   "pattern": "o_e",
+   "made": "more",
+   "expect": "not_the_sound",
+   "got": "not_the_sound",
+   "ok": true,
+   "code": "not_the_sound",
+   "judge": null,
+   "words": "In that word, oe does not make the long o. Say it out loud and listen."
+  },
+  {
+   "pattern": "o_e",
+   "made": "hoem",
+   "expect": "wrong_place",
+   "got": "wrong_place",
+   "ok": true,
+   "code": "wrong_place",
+   "judge": null,
+   "words": "The letters o_e are not in the right place. Put o, then one letter, then e at the very end."
+  },
+  {
+   "pattern": "ir",
+   "made": "bird",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.99,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "ir",
+   "made": "girl",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.99,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "ir",
+   "made": "fire",
+   "expect": "not_the_sound",
+   "got": "not_the_sound",
+   "ok": true,
+   "code": "not_the_sound",
+   "judge": null,
+   "words": "In that word, ir does not make the er sound. Say it out loud and listen."
+  },
+  {
+   "pattern": "ir",
+   "made": "brid",
+   "expect": "wrong_place",
+   "got": "wrong_place",
+   "ok": true,
+   "code": "wrong_place",
+   "judge": null,
+   "words": "The letters ir are not in the right place. Put i then r, side by side."
+  },
+  {
+   "pattern": "ir",
+   "made": "hurt",
+   "expect": "other_spelling",
+   "got": "other_spelling",
+   "ok": true,
+   "code": "other_spelling",
+   "judge": null,
+   "words": "Your word uses ur, not ir. This ask wants ir."
+  },
+  {
+   "pattern": "ur",
+   "made": "turn",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.98,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "ur",
+   "made": "purr",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.97,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "ur",
+   "made": "pure",
+   "expect": "not_the_sound",
+   "got": "not_the_sound",
+   "ok": true,
+   "code": "not_the_sound",
+   "judge": null,
+   "words": "In that word, ur does not make the er sound. Say it out loud and listen."
+  },
+  {
+   "pattern": "ur",
+   "made": "burd",
+   "expect": "not_a_word",
+   "got": "not_a_word",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": false,
+    "miss": "not_a_word",
+    "realWord": 0.43,
+    "fits": 1,
+    "judge": "jev+flash"
+   },
+   "words": null
+  },
+  {
+   "pattern": "mb",
+   "made": "lamb",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.99,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "mb",
+   "made": "thumb",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.99,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "mb",
+   "made": "lam",
+   "expect": "other_spelling",
+   "got": "other_spelling",
+   "ok": true,
+   "code": "other_spelling",
+   "judge": null,
+   "words": "Your word uses m alone, not mb. This ask wants mb."
+  },
+  {
+   "pattern": "wr",
+   "made": "wrap",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.99,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "wr",
+   "made": "write",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.99,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "wr",
+   "made": "rap",
+   "expect": "other_spelling",
+   "got": "other_spelling",
+   "ok": true,
+   "code": "other_spelling",
+   "judge": null,
+   "words": "Your word uses r alone, not wr. This ask wants wr."
+  },
+  {
+   "pattern": "ay",
+   "made": "play",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.92,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "ay",
+   "made": "stay",
+   "expect": "pass",
+   "got": "pass",
+   "ok": true,
+   "code": null,
+   "judge": {
+    "met": true,
+    "realWord": 0.97,
+    "fits": 1,
+    "judge": "jev"
+   },
+   "words": null
+  },
+  {
+   "pattern": "ay",
+   "made": "says",
+   "expect": "not_the_sound",
+   "got": "not_the_sound",
+   "ok": true,
+   "code": "not_the_sound",
+   "judge": null,
+   "words": "In that word, ay does not make the long a. Say it out loud and listen."
+  },
+  {
+   "pattern": "ay",
+   "made": "rain",
+   "expect": "other_spelling",
+   "got": "other_spelling",
+   "ok": true,
+   "code": "other_spelling",
+   "judge": null,
+   "words": "Your word uses ai, not ay. This ask wants ay."
+  }
+ ]
+}

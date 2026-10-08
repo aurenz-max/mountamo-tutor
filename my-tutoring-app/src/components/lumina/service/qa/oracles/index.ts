@@ -5,6 +5,7 @@ import { analogClockOracle } from './analog-clock';
 import { angleWorkshopOracle } from './angle-workshop';
 import { areaModelOracle } from './area-model';
 import { arrayGridOracle } from './array-grid';
+import { spellingPatternExplorerOracle } from './spelling-pattern-explorer';
 import { balanceScaleOracle } from './balance-scale';
 import { barModelOracle } from './bar-model';
 import { baseTenBlocksOracle } from './base-ten-blocks';
@@ -68,6 +69,7 @@ export const CONTENT_ORACLES: ContentOracle[] = [
   angleWorkshopOracle,
   areaModelOracle,
   arrayGridOracle,
+  spellingPatternExplorerOracle,
   balanceScaleOracle,
   barModelOracle,
   baseTenBlocksOracle,

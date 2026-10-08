@@ -40,6 +40,7 @@ import type { SpokenSentenceMiss } from '../../../primitives/visual-primitives/l
 import type { SpokenWordBuilderMiss } from '../../../primitives/visual-primitives/literacy/wordBuilderWorkspace';
 import type { AffixBuildMiss } from '../../../primitives/visual-primitives/literacy/affixBuild';
 import type { LetterBuildMiss } from '../../../primitives/visual-primitives/literacy/letterBuild';
+import type { SpellingMiss } from '../../../primitives/visual-primitives/literacy/spellingPatternExplorerWorkspace';
 import type { RhymePairMiss } from '../../../primitives/visual-primitives/literacy/rhymePairBuild';
 import type { SpokenYouAndMeMiss } from '../../../primitives/visual-primitives/literacy/youAndMeWorkspace';
 import type { SpokenOralSentenceMiss } from '../../../primitives/visual-primitives/literacy/oralSentenceStudioWorkspace';
@@ -5526,10 +5527,11 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'spelling-pattern-explorer',
     description: 'Students investigate word groups sharing spelling patterns, discover underlying rules, then apply via audio dictation practice. Supports word families, vowel patterns, suffix rules, Latin/Greek roots. TTS pronunciation and slow syllable mode. Perfect for grades 1-6 spelling.',
     constraints: 'Best for grades 1-6. Pattern complexity should match grade level.',
-    affordances: { representation: 'symbolic', answers: ['type'], role: ['visualize', 'apply'], minutes: 5 },
+    affordances: { representation: 'symbolic', answers: ['type', 'build'], role: ['visualize', 'apply'], minutes: 5 },
     evalModes: [
       {
         evalMode: 'short_vowel',
+        affordances: { answers: ['type'] },
         label: 'Short Vowel (Tier 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -5538,6 +5540,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'long_vowel',
+        affordances: { answers: ['type'] },
         label: 'Long Vowel (Tier 2)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -5546,6 +5549,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'r_controlled',
+        affordances: { answers: ['type'] },
         label: 'R-Controlled (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -5554,6 +5558,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'silent_letter',
+        affordances: { answers: ['type'] },
         label: 'Silent Letter (Tier 3)',
         beta: 4.0,
         scaffoldingMode: 3,
@@ -5562,14 +5567,46 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'morphological',
+        affordances: { answers: ['type'] },
         label: 'Morphological (Tier 4)',
         beta: 5.0,
         scaffoldingMode: 4,
         challengeTypes: ['suffix-change', 'latin-root'],
         description: 'Morpheme-based spelling.',
       },
+      {
+        evalMode: 'pattern_build',
+        affordances: { answers: ['build'] },
+        label: 'Make a Pattern Word (open build)',
+        beta: 2.6,
+        scaffoldingMode: 2,
+        challengeTypes: ['pattern-build'],
+        description: 'Open build: put letters from a bank into the boxes to MAKE any real word that uses a named spelling '
+          + 'pattern (long a spelled ai, a_e, ar, a silent k as kn), then press done; every second item asks for a second '
+          + 'word. Many words pass. Code checks the pattern, its place and that the letters make the sound; the shared word '
+          + 'judge checks it is a real word. Grades 1-3. β = long_vowel + 0.1.',
+      },
     ],
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
+      levers: true,
+      guidance: 'On the classic modes the learner first looks at the pattern words and writes the rule in their own words '
+        + '(not checked), then spells one dictation word at a time: say the word, the learner types it and presses Check, '
+        + 'and the activity checks the spelling itself. Never spell the word, name its letters or say the pattern before '
+        + 'the learner has tried; when the pattern panel is hidden the learner finds the pattern. You cannot type for them. '
+        + 'On make a pattern word the learner puts letters from the bank into the boxes to make any real word with the '
+        + 'spelling the ask names and presses "I am done"; many words pass, and some items ask for a second word. Never say '
+        + 'a word that would fit or a letter to add. You cannot place or remove a letter.',
+      // Classic: the typed spelling's own check (`spellingMiss`). The build: what the ask states, in code
+      // (`spellingPatternBuild.ts`), then the word judge's not_a_word.
+      misses: missLists<SpellingMiss | LetterBuildMiss>({
+        ...sameMisses<SpellingMiss>(['short_vowel', 'long_vowel', 'r_controlled', 'silent_letter', 'morphological'],
+          ['pattern_missing', 'other_letters', 'misspelled']),
+        pattern_build: ['other_spelling', 'wrong_place', 'no_pattern', 'not_the_sound', 'same_word', 'pick_another', 'not_a_word'] }),
+      // pattern_build: the word already made stays on screen; a word not for lessons has no smaller form.
+      unanswered: { pattern_build: ['same_word', 'pick_another'] },
+    },
   },
   {
     id: 'word-sorter',

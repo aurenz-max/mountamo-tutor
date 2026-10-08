@@ -192,7 +192,7 @@ function perform(h: WorkspaceHarness, inputs: DriverInput[]): string | null {
         if (!target) throw new Error(`touch: no object ${a.target ?? a.index}`);
         fireEvent.click(target);
       } else if (a.type === 'write') {
-        const input = Array.from(root.querySelectorAll('input')).find(i => i.getAttribute('aria-label') === a.label);
+        const input = Array.from(root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea')).find(i => i.getAttribute('aria-label') === a.label);
         if (!input || input.disabled) throw new Error(`write: no enabled input "${a.label}"`);
         fireEvent.change(input, { target: { value: a.text } });
       } else if (a.type === 'draw') {

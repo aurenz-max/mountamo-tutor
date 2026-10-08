@@ -590,6 +590,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "r_controlled":  PriorConfig(3.5, "R-controlled: ar, er, ir, or, ur"),
         "silent_letter": PriorConfig(4.0, "Silent letter: kn, wr, gn, mb"),
         "morphological": PriorConfig(5.0, "Morphological: suffix changes, Latin roots"),
+        "pattern_build": PriorConfig(2.6, "Open build: make any real word with a named spelling pattern (ai, a_e, ar, kn)"),
     },
     "story-map": {
         "bme":            PriorConfig(1.5, "BME: beginning-middle-end (K-1)"),

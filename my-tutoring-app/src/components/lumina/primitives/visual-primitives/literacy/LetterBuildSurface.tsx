@@ -23,7 +23,7 @@ import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import type { WordBuildVerdict } from '../../../service/build-layer/wordBuildDecision';
 import {
   MODEL_LEVER, PATTERN_LEVER, describeLetterBuild, letterAssignment, letterBuildLevers, letterBuildScene, letterItemsFrom,
-  letterJudgeRequest, letterLeverFacts, letterMissWords, letterShapeMiss, modelFor, patternFor, smallBankFor, startRow,
+  letterJudgeRequest, letterLeverFacts, letterMissWords, letterShapeMiss, modelFor, patternFor, rowReady, smallBankFor, startRow,
   isOpenRow, type LetterBuildData, type LetterBuildItem, type LetterBuildMiss,
 } from './letterBuild';
 import {
@@ -96,8 +96,7 @@ export default function LetterBuildSurface({ primitiveId, data, metrics, classNa
   const pulled = !practice && leverState.item === sessionItem?.id ? leverState.pulled : [];
   const blocked = progress.canAttempt === false || phase === 'checking';
   const open = !!current && isOpenRow(current.kind);
-  const full = !!current && (open ? rowWork.row.length > 0
-    : rowWork.row.length === startRow(current).length && rowWork.row.every(Boolean));
+  const full = !!current && rowReady(current, rowWork.row);
   /** Pre-reader speech (syllables): the tutor says a card, the task or the learner's word; never a learner turn. */
   const say = (text: string) => { SoundManager.tap(); ctx.sendText(text, { silent: true, author: 'host' }); };
   const tutorSpeaking = ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId);
@@ -146,7 +145,7 @@ export default function LetterBuildSurface({ primitiveId, data, metrics, classNa
     if (!item || blocked || !full) return;
     const row = rowWork.row, made = rowWork.made;
     const shape = letterShapeMiss(item, row, made);
-    if (shape) { settle(item, false, shape, letterMissWords(shape, item)); return; }
+    if (shape) { settle(item, false, shape, letterMissWords(shape, item, row.join(''))); return; }
     const opened = openCount.current;
     setPhase('checking'); setNotice('');
     let reading: WordBuildVerdict;
@@ -295,11 +294,11 @@ export default function LetterBuildSurface({ primitiveId, data, metrics, classNa
                     onClick={() => say(hearMadeRequest(rowWork.row))} />}
                 </div>
               )}
-              {!open && <div role="group" aria-label="Your word" data-testid="lb-row" className="flex justify-center gap-3">
+              {!open && <div role="group" aria-label="Your word" data-testid="lb-row" className={`flex justify-center ${rowWork.row.length > 3 ? 'gap-2' : 'gap-3'}`}>
                 {rowWork.row.map((l, i) => (
                   <button key={i} type="button" aria-label={`box ${i + 1}${l ? `, ${l}` : ', empty'}`} disabled={blocked || !l}
                     onClick={() => empty(i)}
-                    className={`flex h-16 min-w-16 px-2 items-center justify-center rounded-2xl border-2 text-3xl font-bold transition ${l
+                    className={`flex ${rowWork.row.length > 3 ? 'h-14 min-w-12' : 'h-16 min-w-16'} px-2 items-center justify-center rounded-2xl border-2 text-3xl font-bold transition ${l
                       ? 'border-cyan-300/60 bg-cyan-500/15 text-cyan-50 hover:opacity-80' : 'border-dashed border-white/25 bg-white/5 text-slate-500'}`}>
                     {l || ''}
                   </button>

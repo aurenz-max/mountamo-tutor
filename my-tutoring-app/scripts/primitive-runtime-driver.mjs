@@ -157,11 +157,11 @@ const PERFORM = {
     if (!target) throw new Error('No tappable object ' + (id ?? 'at index ' + index));
     flushSync(() => target.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })));
   },
-  // Typed text into the input with this `aria-label`, through the value setter React tracks.
+  // Typed text into the input (or textarea) with this `aria-label`, through the value setter React tracks.
   write: ({ label, text }) => {
-    const input = [...document.querySelectorAll('input')].find(i => i.getAttribute('aria-label') === label);
+    const input = [...document.querySelectorAll('input, textarea')].find(i => i.getAttribute('aria-label') === label);
     if (!input || input.disabled) throw new Error('No enabled input labelled ' + label);
-    const setValue = Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value').set;
+    const setValue = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), 'value').set;
     flushSync(() => { setValue.call(input, text); input.dispatchEvent(new dom.window.Event('input', { bubbles: true })); });
   },
   // Strokes on the canvas, in its own pixel coordinates: its client rect is pinned to its size.

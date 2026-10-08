@@ -1,0 +1,38 @@
+{
+ "source": "qa/open-build/spelling-pattern-explorer-2026-10-08/generations.json",
+ "primitiveId": "spelling-pattern-explorer",
+ "evalMode": "r_controlled",
+ "data": {
+  "title": "Exploring AR and OR Vowel Patterns",
+  "gradeLevel": "Grade 3",
+  "patternType": "r-controlled",
+  "patternWords": [
+   "card",
+   "bark",
+   "shark",
+   "start",
+   "corn",
+   "form",
+   "short",
+   "storm"
+  ],
+  "highlightPattern": "ar and or",
+  "ruleTemplate": "When the letter r follows a or o, it changes the vowel sound to make the __-controlled sound.",
+  "correctRule": "r",
+  "dictationWords": [
+   "park",
+   "sharp",
+   "horn",
+   "fork",
+   "north"
+  ],
+  "dictationHints": [
+   "A place outside with trees and grass",
+   "Having a fine edge or point",
+   "An instrument that plays music loudly",
+   "A tool used for eating food",
+   "A direction on the compass"
+  ],
+  "intent": "Spell words with ar and or"
+ }
+}

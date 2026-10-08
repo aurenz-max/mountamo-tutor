@@ -1,0 +1,35 @@
+{
+ "source": "qa/open-build/spelling-pattern-explorer-2026-10-08/generations.json",
+ "primitiveId": "spelling-pattern-explorer",
+ "evalMode": "long_vowel",
+ "data": {
+  "title": "Exploring the Vowel Team ai",
+  "gradeLevel": "2",
+  "patternType": "long-vowel",
+  "patternWords": [
+   "rain",
+   "train",
+   "pain",
+   "snail",
+   "paint",
+   "tail",
+   "wait"
+  ],
+  "highlightPattern": "ai",
+  "ruleTemplate": "When two vowels go walking, the first one does the talking. In words like rain and train, the vowels a and i make the long __ sound.",
+  "correctRule": "a",
+  "dictationWords": [
+   "brain",
+   "chain",
+   "sail",
+   "jail"
+  ],
+  "dictationHints": [
+   "Think of what you use to think",
+   "A metal link loop",
+   "What a boat uses to catch the wind",
+   "A secure place for locked doors"
+  ],
+  "intent": "Spell words with the vowel team ai"
+ }
+}

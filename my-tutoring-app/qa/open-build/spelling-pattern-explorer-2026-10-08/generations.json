@@ -1,0 +1,1286 @@
+{
+ "results": [
+  {
+   "lesson": {
+    "mode": "pattern_build",
+    "grade": "2",
+    "topic": "Long a vowel teams",
+    "intent": "Spell words with long a spelled ai"
+   },
+   "title": "Make Pattern Words",
+   "oracle": [],
+   "uncheckedTypes": [],
+   "checked": 4,
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "p1",
+     "pattern": "ai",
+     "ask": "Make a real word with the long a sound spelled ai.",
+     "ways": 1,
+     "bank": "a e i d l m n t w y",
+     "boxes": 5,
+     "examples": [
+      "wait",
+      "tail",
+      "aim",
+      "mail",
+      "maid"
+     ],
+     "examplesPass": true,
+     "card": "_ a i _   (ai says long a; a letter comes after it)",
+     "model": "ee: tree",
+     "smallBank": "a i l t w",
+     "levers": [
+      "pattern_card:other_spelling/wrong_place/no_pattern/not_the_sound",
+      "model_word:not_a_word",
+      "small_bank:not_a_word"
+     ]
+    },
+    {
+     "id": "p2",
+     "pattern": "ay",
+     "ask": "Make a real word with the long a sound spelled ay.",
+     "ways": 2,
+     "bank": "a e i d h k l p s y",
+     "boxes": 5,
+     "examples": [
+      "day",
+      "say",
+      "hay",
+      "pay",
+      "play"
+     ],
+     "examplesPass": true,
+     "card": "_ a y   (ay says long a)",
+     "model": "ee: tree",
+     "smallBank": "a d s y",
+     "levers": [
+      "pattern_card:other_spelling/wrong_place/no_pattern/not_the_sound",
+      "model_word:not_a_word",
+      "small_bank:not_a_word"
+     ]
+    },
+    {
+     "id": "p3",
+     "pattern": "a_e",
+     "ask": "Make a real word with the long a sound spelled a_e.",
+     "ways": 1,
+     "bank": "a e i c d k m n s v y",
+     "boxes": 5,
+     "examples": [
+      "same",
+      "made",
+      "save",
+      "cave",
+      "cake"
+     ],
+     "examplesPass": true,
+     "card": "_ a _ e   (one letter between a and the e at the end)",
+     "model": "ee: tree",
+     "smallBank": "a d e m s",
+     "levers": [
+      "pattern_card:other_spelling/wrong_place/no_pattern/not_the_sound",
+      "model_word:not_a_word",
+      "small_bank:not_a_word"
+     ]
+    },
+    {
+     "id": "p4",
+     "pattern": "ai",
+     "ask": "Make a real word with the long a sound spelled ai.",
+     "ways": 2,
+     "bank": "a e i f g l m n r y",
+     "boxes": 5,
+     "examples": [
+      "gain",
+      "rain",
+      "aim",
+      "main",
+      "mail"
+     ],
+     "examplesPass": true,
+     "card": "_ a i _   (ai says long a; a letter comes after it)",
+     "model": "ee: tree",
+     "smallBank": "a g i n r",
+     "levers": [
+      "pattern_card:other_spelling/wrong_place/no_pattern/not_the_sound",
+      "model_word:not_a_word",
+      "small_bank:not_a_word"
+     ]
+    }
+   ],
+   "data": {
+    "title": "Make Pattern Words",
+    "gradeLevel": "2",
+    "patternType": "long-vowel",
+    "patternWords": [],
+    "highlightPattern": "",
+    "ruleTemplate": "",
+    "correctRule": "",
+    "dictationWords": [],
+    "task": "letter_build",
+    "buildItems": [
+     {
+      "id": "p1",
+      "kind": "pattern",
+      "pattern": "ai",
+      "ask": "Make a real word with the long a sound spelled ai.",
+      "bank": [
+       "a",
+       "e",
+       "i",
+       "d",
+       "l",
+       "m",
+       "n",
+       "t",
+       "w",
+       "y"
+      ],
+      "examples": [
+       "wait",
+       "tail",
+       "aim",
+       "mail",
+       "maid"
+      ],
+      "ways": 1
+     },
+     {
+      "id": "p2",
+      "kind": "pattern",
+      "pattern": "ay",
+      "ask": "Make a real word with the long a sound spelled ay.",
+      "bank": [
+       "a",
+       "e",
+       "i",
+       "d",
+       "h",
+       "k",
+       "l",
+       "p",
+       "s",
+       "y"
+      ],
+      "examples": [
+       "day",
+       "say",
+       "hay",
+       "pay",
+       "play"
+      ],
+      "ways": 1
+     },
+     {
+      "id": "p3",
+      "kind": "pattern",
+      "pattern": "a_e",
+      "ask": "Make a real word with the long a sound spelled a_e.",
+      "bank": [
+       "a",
+       "e",
+       "i",
+       "c",
+       "d",
+       "k",
+       "m",
+       "n",
+       "s",
+       "v",
+       "y"
+      ],
+      "examples": [
+       "same",
+       "made",
+       "save",
+       "cave",
+       "cake"
+      ],
+      "ways": 1
+     },
+     {
+      "id": "p4",
+      "kind": "pattern",
+      "pattern": "ai",
+      "ask": "Make a real word with the long a sound spelled ai.",
+      "bank": [
+       "a",
+       "e",
+       "i",
+       "f",
+       "g",
+       "l",
+       "m",
+       "n",
+       "r",
+       "y"
+      ],
+      "examples": [
+       "gain",
+       "rain",
+       "aim",
+       "main",
+       "mail"
+      ],
+      "ways": 1
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "mode": "pattern_build",
+    "grade": "1",
+    "topic": "Silent e words",
+    "intent": "Read and spell CVCe words",
+    "difficulty": "easy"
+   },
+   "title": "Make Pattern Words",
+   "oracle": [],
+   "uncheckedTypes": [],
+   "checked": 4,
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "p1",
+     "pattern": "i_e",
+     "ask": "Make a real word with the long i sound spelled i_e.",
+     "ways": 1,
+     "bank": "e i d g h k l n s t",
+     "boxes": 6,
+     "examples": [
+      "slide",
+      "side",
+      "line",
+      "nine",
+      "like"
+     ],
+     "examplesPass": true,
+     "card": "_ i _ e   (one letter between i and the e at the end)",
+     "model": "ai: rain",
+     "smallBank": "d e i l s",
+     "levers": [
+      "pattern_card:other_spelling/wrong_place/no_pattern/not_the_sound",
+      "model_word:not_a_word",
+      "small_bank:not_a_word"
+     ]
+    },
+    {
+     "id": "p2",
+     "pattern": "a_e",
+     "ask": "Make a real word with the long a sound spelled a_e.",
+     "ways": 1,
+     "bank": "a e i f g k m n s v y",
+     "boxes": 6,
+     "examples": [
+      "same",
+      "game",
+      "name",
+      "save",
+      "snake"
+     ],
+     "examplesPass": true,
+     "card": "_ a _ e   (one letter between a and the e at the end)",
+     "model": "ee: tree",
+     "smallBank": "a e g m s",
+     "levers": [
+      "pattern_card:other_spelling/wrong_place/no_pattern/not_the_sound",
+      "model_word:not_a_word",
+      "small_bank:not_a_word"
+     ]
+    },
+    {
+     "id": "p3",
+     "pattern": "o_e",
+     "ask": "Make a real word with the long o sound spelled o_e.",
+     "ways": 1,
+     "bank": "a e o g h j k l p",
+     "boxes": 5,
+     "examples": [
+      "poke",
+      "joke",
+      "pole",
+      "hope",
+      "hole"
+     ],
+     "examplesPass": true,
+     "card": "_ o _ e   (one letter between o and the e at the end)",
+     "model": "ai: rain",
+     "smallBank": "e j k o p",
+     "levers": [
+      "pattern_card:other_spelling/wrong_place/no_pattern/not_the_sound",
+      "model_word:not_a_word",
+      "small_bank:not_a_word"
+     ]
+    },
+    {
+     "id": "p4",
+     "pattern": "i_e",
+     "ask": "Make a real word with the long i sound spelled i_e.",
+     "ways": 1,
+     "bank": "e i d f g h l m p r z",
+     "boxes": 6,
+     "examples": [
+      "prize",
+      "ride",
+      "hide",
+      "pile",
+      "mile"
+     ],
+     "examplesPass": true,
+     "card": "_ i _ e   (one letter between i and the e at the end)",
+     "model": "ai: rain",
+     "smallBank": "d e i p r z",
+     "levers": [
+      "pattern_card:other_spelling/wrong_place/no_pattern/not_the_sound",
+      "model_word:not_a_word",
+      "small_bank:not_a_word"
+     ]
+    }
+   ],
+   "data": {
+    "title": "Make Pattern Words",
+    "gradeLevel": "1",
+    "patternType": "long-vowel",
+    "patternWords": [],
+    "highlightPattern": "",
+    "ruleTemplate": "",
+    "correctRule": "",
+    "dictationWords": [],
+    "task": "letter_build",
+    "buildItems": [
+     {
+      "id": "p1",
+      "kind": "pattern",
+      "pattern": "i_e",
+      "ask": "Make a real word with the long i sound spelled i_e.",
+      "bank": [
+       "e",
+       "i",
+       "d",
+       "g",
+       "h",
+       "k",
+       "l",
+       "n",
+       "s",
+       "t"
+      ],
+      "examples": [
+       "slide",
+       "side",
+       "line",
+       "nine",
+       "like"
+      ],
+      "ways": 1
+     },
+     {
+      "id": "p2",
+      "kind": "pattern",
+      "pattern": "a_e",
+      "ask": "Make a real word with the long a sound spelled a_e.",
+      "bank": [
+       "a",
+       "e",
+       "i",
+       "f",
+       "g",
+       "k",
+       "m",
+       "n",
+       "s",
+       "v",
+       "y"
+      ],
+      "examples": [
+       "same",
+       "game",
+       "name",
+       "save",
+       "snake"
+      ],
+      "ways": 1
+     },
+     {
+      "id": "p3",
+      "kind": "pattern",
+      "pattern": "o_e",
+      "ask": "Make a real word with the long o sound spelled o_e.",
+      "bank": [
+       "a",
+       "e",
+       "o",
+       "g",
+       "h",
+       "j",
+       "k",
+       "l",
+       "p"
+      ],
+      "examples": [
+       "poke",
+       "joke",
+       "pole",
+       "hope",
+       "hole"
+      ],
+      "ways": 1
+     },
+     {
+      "id": "p4",
+      "kind": "pattern",
+      "pattern": "i_e",
+      "ask": "Make a real word with the long i sound spelled i_e.",
+      "bank": [
+       "e",
+       "i",
+       "d",
+       "f",
+       "g",
+       "h",
+       "l",
+       "m",
+       "p",
+       "r",
+       "z"
+      ],
+      "examples": [
+       "prize",
+       "ride",
+       "hide",
+       "pile",
+       "mile"
+      ],
+      "ways": 1
+     }
+    ],
+    "supportTier": "easy"
+   }
+  },
+  {
+   "lesson": {
+    "mode": "pattern_build",
+    "grade": "3",
+    "topic": "R-controlled vowels",
+    "intent": "Spell words with ar, or, ir and ur"
+   },
+   "title": "Make Pattern Words",
+   "oracle": [],
+   "uncheckedTypes": [],
+   "checked": 4,
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "p1",
+     "pattern": "ur",
+     "ask": "Make a real word with the er sound spelled ur.",
+     "ways": 1,
+     "bank": "e i u b f p r s t",
+     "boxes": 5,
+     "examples": [
+      "fur",
+      "surf",
+      "purr",
+      "spur",
+      "turf"
+     ],
+     "examplesPass": true,
+     "card": "_ u r _   (u then r)",
+     "model": "ai: rain",
+     "smallBank": "f r s u",
+     "levers": [
+      "pattern_card:other_spelling/wrong_place/no_pattern/not_the_sound",
+      "model_word:not_a_word",
+      "small_bank:not_a_word"
+     ]
+    },
+    {
+     "id": "p2",
+     "pattern": "ir",
+     "ask": "Make a real word with the er sound spelled ir.",
+     "ways": 2,
+     "bank": "e i u b f h p r s t",
+     "boxes": 6,
+     "examples": [
+      "birth",
+      "fir",
+      "stir",
+      "first",
+      "sir"
+     ],
+     "examplesPass": true,
+     "card": "_ i r _   (i then r)",
+     "model": "ai: rain",
+     "smallBank": "b f h i r t",
+     "levers": [
+      "pattern_card:other_spelling/wrong_place/no_pattern/not_the_sound",
+      "model_word:not_a_word",
+      "small_bank:not_a_word"
+     ]
+    },
+    {
+     "id": "p3",
+     "pattern": "or",
+     "ask": "Make a real word with the or sound spelled or.",
+     "ways": 1,
+     "bank": "o b f h n r t w",
+     "boxes": 6,
+     "examples": [
+      "worn",
+      "born",
+      "horn",
+      "north",
+      "torn"
+     ],
+     "examplesPass": true,
+     "card": "_ o r _   (o then r)",
+     "model": "ai: rain",
+     "smallBank": "b n o r w",
+     "levers": [
+      "pattern_card:other_spelling/wrong_place/no_pattern/not_the_sound",
+      "model_word:not_a_word",
+      "small_bank:not_a_word"
+     ]
+    },
+    {
+     "id": "p4",
+     "pattern": "ar",
+     "ask": "Make a real word with the ar sound spelled ar.",
+     "ways": 2,
+     "bank": "a d f h m n r",
+     "boxes": 5,
+     "examples": [
+      "harm",
+      "arm",
+      "farm",
+      "far",
+      "hard"
+     ],
+     "examplesPass": true,
+     "card": "_ a r _   (a then r)",
+     "model": "ai: rain",
+     "smallBank": "a h m r",
+     "levers": [
+      "pattern_card:other_spelling/wrong_place/no_pattern/not_the_sound",
+      "model_word:not_a_word",
+      "small_bank:not_a_word"
+     ]
+    }
+   ],
+   "data": {
+    "title": "Make Pattern Words",
+    "gradeLevel": "3",
+    "patternType": "long-vowel",
+    "patternWords": [],
+    "highlightPattern": "",
+    "ruleTemplate": "",
+    "correctRule": "",
+    "dictationWords": [],
+    "task": "letter_build",
+    "buildItems": [
+     {
+      "id": "p1",
+      "kind": "pattern",
+      "pattern": "ur",
+      "ask": "Make a real word with the er sound spelled ur.",
+      "bank": [
+       "e",
+       "i",
+       "u",
+       "b",
+       "f",
+       "p",
+       "r",
+       "s",
+       "t"
+      ],
+      "examples": [
+       "fur",
+       "surf",
+       "purr",
+       "spur",
+       "turf"
+      ],
+      "ways": 1
+     },
+     {
+      "id": "p2",
+      "kind": "pattern",
+      "pattern": "ir",
+      "ask": "Make a real word with the er sound spelled ir.",
+      "bank": [
+       "e",
+       "i",
+       "u",
+       "b",
+       "f",
+       "h",
+       "p",
+       "r",
+       "s",
+       "t"
+      ],
+      "examples": [
+       "birth",
+       "fir",
+       "stir",
+       "first",
+       "sir"
+      ],
+      "ways": 1
+     },
+     {
+      "id": "p3",
+      "kind": "pattern",
+      "pattern": "or",
+      "ask": "Make a real word with the or sound spelled or.",
+      "bank": [
+       "o",
+       "b",
+       "f",
+       "h",
+       "n",
+       "r",
+       "t",
+       "w"
+      ],
+      "examples": [
+       "worn",
+       "born",
+       "horn",
+       "north",
+       "torn"
+      ],
+      "ways": 1
+     },
+     {
+      "id": "p4",
+      "kind": "pattern",
+      "pattern": "ar",
+      "ask": "Make a real word with the ar sound spelled ar.",
+      "bank": [
+       "a",
+       "d",
+       "f",
+       "h",
+       "m",
+       "n",
+       "r"
+      ],
+      "examples": [
+       "harm",
+       "arm",
+       "farm",
+       "far",
+       "hard"
+      ],
+      "ways": 1
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "mode": "pattern_build",
+    "grade": "3",
+    "topic": "Silent letters",
+    "intent": "Spell words with a silent k (kn) and silent w (wr)"
+   },
+   "title": "Make Pattern Words",
+   "oracle": [],
+   "uncheckedTypes": [],
+   "checked": 4,
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "p1",
+     "pattern": "wr",
+     "ask": "Make a real word that starts with a silent w, spelled wr.",
+     "ways": 1,
+     "bank": "e i o g n p r s t w",
+     "boxes": 6,
+     "examples": [
+      "write",
+      "wrote",
+      "wrist",
+      "wren",
+      "wring"
+     ],
+     "examplesPass": true,
+     "card": "w r _ _   (w, then r, at the start; the w is silent)",
+     "model": "ai: rain",
+     "smallBank": "e i o r t w",
+     "levers": [
+      "pattern_card:other_spelling/wrong_place/no_pattern/not_the_sound",
+      "model_word:not_a_word",
+      "small_bank:not_a_word"
+     ]
+    },
+    {
+     "id": "p2",
+     "pattern": "kn",
+     "ask": "Make a real word that starts with a silent k, spelled kn.",
+     "ways": 2,
+     "bank": "i o b c k m n t w",
+     "boxes": 6,
+     "examples": [
+      "knob",
+      "knot",
+      "knock",
+      "know",
+      "knit"
+     ],
+     "examplesPass": true,
+     "card": "k n _ _   (k, then n, at the start; the k is silent)",
+     "model": "ai: rain",
+     "smallBank": "b k n o t",
+     "levers": [
+      "pattern_card:other_spelling/wrong_place/no_pattern/not_the_sound",
+      "model_word:not_a_word",
+      "small_bank:not_a_word"
+     ]
+    },
+    {
+     "id": "p3",
+     "pattern": "wr",
+     "ask": "Make a real word that starts with a silent w, spelled wr.",
+     "ways": 1,
+     "bank": "e i o f g n r t w",
+     "boxes": 6,
+     "examples": [
+      "wring",
+      "wren",
+      "wrong",
+      "wrote",
+      "write"
+     ],
+     "examplesPass": true,
+     "card": "w r _ _   (w, then r, at the start; the w is silent)",
+     "model": "ai: rain",
+     "smallBank": "e g i n r w",
+     "levers": [
+      "pattern_card:other_spelling/wrong_place/no_pattern/not_the_sound",
+      "model_word:not_a_word",
+      "small_bank:not_a_word"
+     ]
+    },
+    {
+     "id": "p4",
+     "pattern": "kn",
+     "ask": "Make a real word that starts with a silent k, spelled kn.",
+     "ways": 2,
+     "bank": "i o b c k n r t w",
+     "boxes": 6,
+     "examples": [
+      "knit",
+      "knot",
+      "knob",
+      "knock",
+      "know"
+     ],
+     "examplesPass": true,
+     "card": "k n _ _   (k, then n, at the start; the k is silent)",
+     "model": "ai: rain",
+     "smallBank": "i k n o t",
+     "levers": [
+      "pattern_card:other_spelling/wrong_place/no_pattern/not_the_sound",
+      "model_word:not_a_word",
+      "small_bank:not_a_word"
+     ]
+    }
+   ],
+   "data": {
+    "title": "Make Pattern Words",
+    "gradeLevel": "3",
+    "patternType": "long-vowel",
+    "patternWords": [],
+    "highlightPattern": "",
+    "ruleTemplate": "",
+    "correctRule": "",
+    "dictationWords": [],
+    "task": "letter_build",
+    "buildItems": [
+     {
+      "id": "p1",
+      "kind": "pattern",
+      "pattern": "wr",
+      "ask": "Make a real word that starts with a silent w, spelled wr.",
+      "bank": [
+       "e",
+       "i",
+       "o",
+       "g",
+       "n",
+       "p",
+       "r",
+       "s",
+       "t",
+       "w"
+      ],
+      "examples": [
+       "write",
+       "wrote",
+       "wrist",
+       "wren",
+       "wring"
+      ],
+      "ways": 1
+     },
+     {
+      "id": "p2",
+      "kind": "pattern",
+      "pattern": "kn",
+      "ask": "Make a real word that starts with a silent k, spelled kn.",
+      "bank": [
+       "i",
+       "o",
+       "b",
+       "c",
+       "k",
+       "m",
+       "n",
+       "t",
+       "w"
+      ],
+      "examples": [
+       "knob",
+       "knot",
+       "knock",
+       "know",
+       "knit"
+      ],
+      "ways": 1
+     },
+     {
+      "id": "p3",
+      "kind": "pattern",
+      "pattern": "wr",
+      "ask": "Make a real word that starts with a silent w, spelled wr.",
+      "bank": [
+       "e",
+       "i",
+       "o",
+       "f",
+       "g",
+       "n",
+       "r",
+       "t",
+       "w"
+      ],
+      "examples": [
+       "wring",
+       "wren",
+       "wrong",
+       "wrote",
+       "write"
+      ],
+      "ways": 1
+     },
+     {
+      "id": "p4",
+      "kind": "pattern",
+      "pattern": "kn",
+      "ask": "Make a real word that starts with a silent k, spelled kn.",
+      "bank": [
+       "i",
+       "o",
+       "b",
+       "c",
+       "k",
+       "n",
+       "r",
+       "t",
+       "w"
+      ],
+      "examples": [
+       "knit",
+       "knot",
+       "knob",
+       "knock",
+       "know"
+      ],
+      "ways": 1
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "mode": "pattern_build",
+    "grade": "2",
+    "topic": "Spelling patterns",
+    "intent": "Use spelling patterns to spell words"
+   },
+   "title": "Make Pattern Words",
+   "oracle": [],
+   "uncheckedTypes": [],
+   "checked": 4,
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "p1",
+     "pattern": "ee",
+     "ask": "Make a real word with the long e sound spelled ee.",
+     "ways": 1,
+     "bank": "a e h k l n p s",
+     "boxes": 6,
+     "examples": [
+      "sheep",
+      "see",
+      "sleep",
+      "peel",
+      "seen"
+     ],
+     "examplesPass": true,
+     "card": "_ e e _   (ee says long e)",
+     "model": "ai: rain",
+     "smallBank": "e h p s",
+     "levers": [
+      "pattern_card:other_spelling/wrong_place/no_pattern/not_the_sound",
+      "model_word:not_a_word",
+      "small_bank:not_a_word"
+     ]
+    },
+    {
+     "id": "p2",
+     "pattern": "ay",
+     "ask": "Make a real word with the long a sound spelled ay.",
+     "ways": 2,
+     "bank": "a e i d k l m p y",
+     "boxes": 5,
+     "examples": [
+      "play",
+      "pay",
+      "lay",
+      "day",
+      "may"
+     ],
+     "examplesPass": true,
+     "card": "_ a y   (ay says long a)",
+     "model": "ee: tree",
+     "smallBank": "a l p y",
+     "levers": [
+      "pattern_card:other_spelling/wrong_place/no_pattern/not_the_sound",
+      "model_word:not_a_word",
+      "small_bank:not_a_word"
+     ]
+    },
+    {
+     "id": "p3",
+     "pattern": "ai",
+     "ask": "Make a real word with the long a sound spelled ai.",
+     "ways": 1,
+     "bank": "a e i d l p r s t w y",
+     "boxes": 5,
+     "examples": [
+      "rail",
+      "tail",
+      "sail",
+      "raid",
+      "wait"
+     ],
+     "examplesPass": true,
+     "card": "_ a i _   (ai says long a; a letter comes after it)",
+     "model": "ee: tree",
+     "smallBank": "a i l r t",
+     "levers": [
+      "pattern_card:other_spelling/wrong_place/no_pattern/not_the_sound",
+      "model_word:not_a_word",
+      "small_bank:not_a_word"
+     ]
+    },
+    {
+     "id": "p4",
+     "pattern": "igh",
+     "ask": "Make a real word with the long i sound spelled igh.",
+     "ways": 2,
+     "bank": "e i g h m n s t",
+     "boxes": 6,
+     "examples": [
+      "thigh",
+      "tight",
+      "high",
+      "night",
+      "might"
+     ],
+     "examplesPass": true,
+     "card": "_ i g h _   (igh says long i)",
+     "model": "ai: rain",
+     "smallBank": "g h i t",
+     "levers": [
+      "pattern_card:other_spelling/wrong_place/no_pattern/not_the_sound",
+      "model_word:not_a_word",
+      "small_bank:not_a_word"
+     ]
+    }
+   ],
+   "data": {
+    "title": "Make Pattern Words",
+    "gradeLevel": "2",
+    "patternType": "long-vowel",
+    "patternWords": [],
+    "highlightPattern": "",
+    "ruleTemplate": "",
+    "correctRule": "",
+    "dictationWords": [],
+    "task": "letter_build",
+    "buildItems": [
+     {
+      "id": "p1",
+      "kind": "pattern",
+      "pattern": "ee",
+      "ask": "Make a real word with the long e sound spelled ee.",
+      "bank": [
+       "a",
+       "e",
+       "h",
+       "k",
+       "l",
+       "n",
+       "p",
+       "s"
+      ],
+      "examples": [
+       "sheep",
+       "see",
+       "sleep",
+       "peel",
+       "seen"
+      ],
+      "ways": 1
+     },
+     {
+      "id": "p2",
+      "kind": "pattern",
+      "pattern": "ay",
+      "ask": "Make a real word with the long a sound spelled ay.",
+      "bank": [
+       "a",
+       "e",
+       "i",
+       "d",
+       "k",
+       "l",
+       "m",
+       "p",
+       "y"
+      ],
+      "examples": [
+       "play",
+       "pay",
+       "lay",
+       "day",
+       "may"
+      ],
+      "ways": 1
+     },
+     {
+      "id": "p3",
+      "kind": "pattern",
+      "pattern": "ai",
+      "ask": "Make a real word with the long a sound spelled ai.",
+      "bank": [
+       "a",
+       "e",
+       "i",
+       "d",
+       "l",
+       "p",
+       "r",
+       "s",
+       "t",
+       "w",
+       "y"
+      ],
+      "examples": [
+       "rail",
+       "tail",
+       "sail",
+       "raid",
+       "wait"
+      ],
+      "ways": 1
+     },
+     {
+      "id": "p4",
+      "kind": "pattern",
+      "pattern": "igh",
+      "ask": "Make a real word with the long i sound spelled igh.",
+      "bank": [
+       "e",
+       "i",
+       "g",
+       "h",
+       "m",
+       "n",
+       "s",
+       "t"
+      ],
+      "examples": [
+       "thigh",
+       "tight",
+       "high",
+       "night",
+       "might"
+      ],
+      "ways": 1
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "mode": "long_vowel",
+    "grade": "2",
+    "topic": "Long vowel spelling patterns",
+    "intent": "Spell words with the vowel team ai"
+   },
+   "title": "Exploring the Vowel Team ai",
+   "oracle": [],
+   "uncheckedTypes": [],
+   "checked": 4,
+   "adapter": "ok",
+   "items": {
+    "patternType": "long-vowel",
+    "highlightPattern": "ai",
+    "patternWords": [
+     "rain",
+     "train",
+     "pain",
+     "snail",
+     "paint",
+     "tail",
+     "wait"
+    ],
+    "dictationWords": [
+     "brain",
+     "chain",
+     "sail",
+     "jail"
+    ],
+    "dictationHints": [
+     "Think of what you use to think",
+     "A metal link loop",
+     "What a boat uses to catch the wind",
+     "A secure place for locked doors"
+    ]
+   },
+   "data": {
+    "title": "Exploring the Vowel Team ai",
+    "gradeLevel": "2",
+    "patternType": "long-vowel",
+    "patternWords": [
+     "rain",
+     "train",
+     "pain",
+     "snail",
+     "paint",
+     "tail",
+     "wait"
+    ],
+    "highlightPattern": "ai",
+    "ruleTemplate": "When two vowels go walking, the first one does the talking. In words like rain and train, the vowels a and i make the long __ sound.",
+    "correctRule": "a",
+    "dictationWords": [
+     "brain",
+     "chain",
+     "sail",
+     "jail"
+    ],
+    "dictationHints": [
+     "Think of what you use to think",
+     "A metal link loop",
+     "What a boat uses to catch the wind",
+     "A secure place for locked doors"
+    ],
+    "intent": "Spell words with the vowel team ai"
+   }
+  },
+  {
+   "lesson": {
+    "mode": "r_controlled",
+    "grade": "3",
+    "topic": "R-controlled vowels",
+    "intent": "Spell words with ar and or"
+   },
+   "title": "Exploring AR and OR Vowel Patterns",
+   "oracle": [],
+   "uncheckedTypes": [],
+   "checked": 5,
+   "adapter": "ok",
+   "items": {
+    "patternType": "r-controlled",
+    "highlightPattern": "ar and or",
+    "patternWords": [
+     "card",
+     "bark",
+     "shark",
+     "start",
+     "corn",
+     "form",
+     "short",
+     "storm"
+    ],
+    "dictationWords": [
+     "park",
+     "sharp",
+     "horn",
+     "fork",
+     "north"
+    ],
+    "dictationHints": [
+     "A place outside with trees and grass",
+     "Having a fine edge or point",
+     "An instrument that plays music loudly",
+     "A tool used for eating food",
+     "A direction on the compass"
+    ]
+   },
+   "data": {
+    "title": "Exploring AR and OR Vowel Patterns",
+    "gradeLevel": "Grade 3",
+    "patternType": "r-controlled",
+    "patternWords": [
+     "card",
+     "bark",
+     "shark",
+     "start",
+     "corn",
+     "form",
+     "short",
+     "storm"
+    ],
+    "highlightPattern": "ar and or",
+    "ruleTemplate": "When the letter r follows a or o, it changes the vowel sound to make the __-controlled sound.",
+    "correctRule": "r",
+    "dictationWords": [
+     "park",
+     "sharp",
+     "horn",
+     "fork",
+     "north"
+    ],
+    "dictationHints": [
+     "A place outside with trees and grass",
+     "Having a fine edge or point",
+     "An instrument that plays music loudly",
+     "A tool used for eating food",
+     "A direction on the compass"
+    ],
+    "intent": "Spell words with ar and or"
+   }
+  }
+ ],
+ "logs": [
+  "[SpellingPatternExplorer] pattern_build: letter build {\n  named: [ 'ai' ],\n  patterns: [ 'ai', 'ay', 'a_e' ],\n  asks: [\n    'Make a real word with the long a sound spelled ai.',\n    'Make a real word with the long a sound spelled ay.',\n    'Make a real word with the long a sound spelled a_e.',\n    'Make a real word with the long a sound spelled ai.'\n  ]\n}",
+  "[SpellingPatternExplorer] pattern_build: letter build {\n  named: [ 'a_e', 'i_e', 'o_e' ],\n  patterns: [ 'i_e', 'a_e', 'o_e' ],\n  asks: [\n    'Make a real word with the long i sound spelled i_e.',\n    'Make a real word with the long a sound spelled a_e.',\n    'Make a real word with the long o sound spelled o_e.',\n    'Make a real word with the long i sound spelled i_e.'\n  ]\n}",
+  "[SpellingPatternExplorer] pattern_build: letter build {\n  named: [ 'ir', 'ur', 'ar', 'or' ],\n  patterns: [ 'ur', 'ir', 'or', 'ar' ],\n  asks: [\n    'Make a real word with the er sound spelled ur.',\n    'Make a real word with the er sound spelled ir.',\n    'Make a real word with the or sound spelled or.',\n    'Make a real word with the ar sound spelled ar.'\n  ]\n}",
+  "[SpellingPatternExplorer] pattern_build: letter build {\n  named: [ 'kn', 'wr' ],\n  patterns: [ 'wr', 'kn' ],\n  asks: [\n    'Make a real word that starts with a silent w, spelled wr.',\n    'Make a real word that starts with a silent k, spelled kn.',\n    'Make a real word that starts with a silent w, spelled wr.',\n    'Make a real word that starts with a silent k, spelled kn.'\n  ]\n}",
+  "[SpellingPatternExplorer] pattern_build: letter build {\n  named: [],\n  patterns: [ 'ee', 'ay', 'ai', 'igh', 'ea', 'oa' ],\n  asks: [\n    'Make a real word with the long e sound spelled ee.',\n    'Make a real word with the long a sound spelled ay.',\n    'Make a real word with the long a sound spelled ai.',\n    'Make a real word with the long i sound spelled igh.'\n  ]\n}",
+  "[SpellingPatternExplorer] evalMode: \"long_vowel\" → schema enum: [long-vowel] (β=2.5)",
+  "[SpellingPatternExplorer] evalMode: \"r_controlled\" → schema enum: [r-controlled] (β=3.5)"
+ ]
+}

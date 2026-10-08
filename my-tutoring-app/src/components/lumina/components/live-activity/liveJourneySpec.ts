@@ -79,6 +79,7 @@ import type { BarModelChallenge } from '../../primitives/visual-primitives/math/
 import { blendHarnessAnswers, blendItems } from '../../primitives/visual-primitives/literacy/phonicsBlenderWorkspace';
 import { flipHarnessAnswers } from '../../primitives/visual-primitives/literacy/wordFlipWorkspace';
 import { swapHarnessAnswers } from '../../primitives/visual-primitives/literacy/soundSwapWorkspace';
+import { dictationItems, spellingHarnessAnswers } from '../../primitives/visual-primitives/literacy/spellingPatternExplorerWorkspace';
 import { cvcHarnessAnswers } from '../../primitives/visual-primitives/literacy/cvcSpellerWorkspace';
 import { OPTION_MODES, ROW_TAP_MODES, barModelHarnessAnswers, isSpokenGraph }
   from '../../primitives/visual-primitives/math/barModelWorkspace';
@@ -173,7 +174,7 @@ export type DriverInput =
   | { type: 'touch'; index?: number; target?: string }
   | { type: 'give' }
   | { type: 'choose'; label: string }
-  /** Text typed into the input with this `aria-label`. */
+  /** Text typed into the input (or textarea) with this `aria-label`. */
   | { type: 'write'; label: string; text: string }
   /** Strokes drawn on the canvas, in canvas pixel coordinates. */
   | { type: 'draw'; strokes: { x: number; y: number }[][] }
@@ -1242,6 +1243,33 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
         : [{ type: 'answer', text: answers[0] }];
     },
     probes: { mounted: { selector: '[aria-label="hear the word"], [data-testid="lb-row"]' }, reward: { selector: '[data-cvc-reward]', kind: 'count' } },
+  },
+  'spelling-pattern-explorer': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/SpellingPatternExplorer.tsx',
+    instanceId: 'spe',
+    defaults: { grade: 'Grade 2', mode: 'long_vowel', di: false, topic: 'Long vowel spelling patterns: vowel teams and silent e' },
+    leakTokens: [],
+    prompts: WORKSPACE_PROMPTS,
+    // Classic: look at the pattern words and write a rule (warmup, first item only), then type each dictation word and
+    // press Check; the wrong spelling swaps the pattern's letters.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup' && ctx.data.task === 'letter_build') return [];
+      // pattern_build is checked by the shared word judge (a model) after its code checks; SpellingPatternExplorer.workspace.test.tsx drives it.
+      if (ctx.data.task === 'letter_build') throw new Error('spelling-pattern-explorer pattern_build is judged by the word judge, not driven at W1');
+      if (intent === 'warmup') {
+        const phase = ctx.demand?.phase;
+        return phase === 'observe' ? [{ type: 'choose', label: 'I see the pattern! Next: Write the Rule' },
+          { type: 'write', label: 'Your spelling rule', text: 'The words share the same spelling pattern.' },
+          { type: 'choose', label: 'Next: Apply the Rule' }] as DriverInput[] : [];
+      }
+      const item = dictationItems(ctx.data.dictationWords, ctx.data.dictationHints).find(d => d.id === ctx.itemId);
+      if (!item) throw new Error('No current spelling-pattern-explorer word');
+      const answers = spellingHarnessAnswers(item, String(ctx.data.highlightPattern ?? ''));
+      return [{ type: 'write', label: 'Your spelling', text: intent === 'wrong' ? answers.plainWrong : answers.correct },
+        { type: 'choose', label: 'Check spelling' }];
+    },
+    probes: { mounted: { selector: '[data-testid="spe-board"], [data-testid="lb-row"]' }, reward: { selector: '[data-spe-reward]', kind: 'count' } },
   },
   'adaptation-investigator': {
     execution: 'teaching',

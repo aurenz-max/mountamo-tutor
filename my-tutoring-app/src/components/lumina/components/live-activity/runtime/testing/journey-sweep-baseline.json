@@ -71,5 +71,8 @@
  },
  "read-aloud-studio.expression": {
   "J1-drivable": "handoff 24 SW-L2"
+ },
+ "spelling-pattern-explorer.pattern_build": {
+  "J1-drivable": "by design: the word is checked by the shared literacy judge (a model) after code checks; SpellingPatternExplorer.workspace.test.tsx drives the commit with a stubbed judge"
  }
 }

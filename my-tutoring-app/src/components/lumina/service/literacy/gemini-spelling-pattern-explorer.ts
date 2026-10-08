@@ -9,6 +9,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from '../evalMode';
+import { makePatternItems, patternsNamed, sessionPatterns } from '../../primitives/visual-primitives/literacy/spellingPatternBuild';
 
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   'short-vowel': {
@@ -123,6 +124,22 @@ export const generateSpellingPatternExplorer = async (
     // Band fallback only (no canonical grade): this ladder has no K rung, so
     // kindergarten/preschool clamps to the grade-1 floor; other bands → mid rung.
     gradeLevelKey = ctx.gradeLevel === 'kindergarten' || ctx.gradeLevel === 'preschool' ? '1' : '3';
+  }
+
+  // pattern_build (open build, qa/open-build/ROADMAP.md OB-8L): code-owned asks on the shared letter build surface.
+  // No model call: the patterns follow the objective (a named spelling, sound or pattern family), else the grade
+  // (1-3; above 3 uses the grade-3 set); any real word with the asked pattern passes, judged by code and the word judge.
+  if (config?.targetEvalMode === 'pattern_build') {
+    const tier = normalizeSupportTier(config?.difficulty);
+    const named = patternsNamed(`${topic ?? ''} ${intent ?? ''}`);
+    const patterns = sessionPatterns(named, gradeLevelKey, config?.patternType);
+    const buildItems = makePatternItems(patterns, 4);
+    console.log('[SpellingPatternExplorer] pattern_build: letter build', { named, patterns, asks: buildItems.map(i => i.ask) });
+    return {
+      title: 'Make Pattern Words', gradeLevel: gradeLevelKey, patternType: config?.patternType ?? 'long-vowel',
+      patternWords: [], highlightPattern: '', ruleTemplate: '', correctRule: '', dictationWords: [],
+      task: 'letter_build', buildItems, ...(tier ? { supportTier: tier } : {}),
+    };
   }
 
   const evalConstraint = resolveEvalModeConstraint(
