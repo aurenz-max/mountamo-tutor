@@ -1,5 +1,5 @@
 """Merge an agent worktree's uncommitted changes into the main tree: new files copied, changed files 3-way merged
-against HEAD (line endings normalized to LF). Prints conflicts; never overwrites a conflicted file."""
+against the worktree's HEAD (line endings normalized to LF). Prints conflicts; never overwrites a conflicted file."""
 import subprocess, sys, shutil
 from pathlib import Path
 MAIN = Path(r'c:/Users/xbox3/claude web tutor')
@@ -16,7 +16,9 @@ for line in names:
     src, dst = wt / path, MAIN / path
     if status == 'D':
         print('DELETE (not applied)', path); continue
-    head = run('git', 'show', f'HEAD:{path}', cwd=MAIN)
+    # Base = the worktree's own HEAD: main may have moved on (an earlier merge committed), and main's HEAD as base
+    # would read main's newer lines as removed by the worktree and revert them.
+    head = run('git', 'show', f'HEAD:{path}', cwd=wt)
     if head.returncode != 0:  # new file
         if dst.exists():
             same = src.read_bytes().replace(b'\r', b'') == dst.read_bytes().replace(b'\r', b'')
