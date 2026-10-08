@@ -85,10 +85,11 @@ const KNOWN_TYPES = new Set([
   'regroup',
   'add_with_blocks',
   'subtract_with_blocks',
+  'build_two_ways',
 ]);
 const OPERATE_TYPES = new Set(['add_with_blocks', 'subtract_with_blocks']);
 // Modes that ship a bare targetNumber (decomposition is code-derived → no desync surface).
-const BARE_TARGET_TYPES = new Set(['build_number', 'read_blocks', 'regroup']);
+const BARE_TARGET_TYPES = new Set(['build_number', 'read_blocks', 'regroup', 'build_two_ways']);
 
 // Intrinsic magnitude ceiling per grade band when neither harness nor topic names one
 // (matches the generator's bandMax at gemini-base-ten-blocks.ts:788).
@@ -217,6 +218,10 @@ export const baseTenBlocksOracle: ContentOracle = {
             }
           }
         }
+      } else if (type === 'build_two_ways' && (!Number.isInteger(t) || t < 10)) {
+        // A second way needs a block above the ones to swap for ten smaller ones: below ten there is only one way.
+        violations.push({ check: 'answer-key-desync', where,
+          detail: `build_two_ways target ${t} has only one way to build it (needs a whole number of at least 10)` });
       } else if (!BARE_TARGET_TYPES.has(type)) {
         // Defensive: a KNOWN but unhandled type (should not happen).
         uncheckedTypes.add(type);

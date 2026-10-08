@@ -67,6 +67,13 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `This teaches relational understanding of the equal sign.`,
     schemaDescription: "'rewrite' (rewrite equation in another form)",
   },
+  'make-n': {
+    promptDoc:
+      `"make-n": OPEN BUILD. The learner makes ANY number sentence that equals a total, from number and sign tiles `
+      + `(4 + 6, 12 - 2 and 5 + 5 all pass for 10). The app chooses every total, the tile bank and the instruction; `
+      + `write only the id, the type and a short placeholder instruction with no number in it.`,
+    schemaDescription: "'make-n' (make any number sentence for a total)",
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -81,11 +88,13 @@ type EquationBuilderChallengeType =
   | 'missing-value'
   | 'true-false'
   | 'balance'
-  | 'rewrite';
+  | 'rewrite'
+  | 'make-n';
 
 /** The eval-mode IDs this primitive resolves (the manifest's targetEvalMode). */
 type EquationBuilderEvalMode =
   | 'build-simple'
+  | 'make-n'
   | 'missing-result'
   | 'true-false'
   | 'missing-operand'
@@ -93,7 +102,7 @@ type EquationBuilderEvalMode =
   | 'rewrite';
 
 const EQUATION_BUILDER_EVAL_MODES: readonly EquationBuilderEvalMode[] = [
-  'build-simple', 'missing-result', 'true-false', 'missing-operand', 'balance-both-sides', 'rewrite',
+  'build-simple', 'make-n', 'missing-result', 'true-false', 'missing-operand', 'balance-both-sides', 'rewrite',
 ];
 
 /** Narrow an arbitrary targetEvalMode string to a known eval mode (else null). */
@@ -227,6 +236,9 @@ function resolveSupportStructure(mode: EquationBuilderEvalMode, tier: SupportTie
               : 'HARD: a bare prompt ("Rewrite this equation.") — no relational hint.',
         ],
       };
+    case 'make-n':
+      // The app writes the instruction and the levers start bare at every tier; easy only drops the second way.
+      return { instructionTone: tone, promptLines: [TIER_GUARDRAIL] };
   }
 }
 
@@ -271,6 +283,7 @@ const COUNT_BY_MODE: Record<EquationBuilderChallengeType, number> = {
   'true-false': 5,     // T2 — B4 bump 3-5 → 5
   balance: 5,          // T2 — B4 bump 3-5 → 5
   rewrite: 5,          // T2 — B4 bump 3-5 → 5
+  'make-n': 4,         // open build, like counting-board build_n
 };
 
 // ---------------------------------------------------------------------------
@@ -284,6 +297,7 @@ const CHALLENGE_TYPE_FIELDS: Record<string, string[]> = {
   'true-false': ['displayEquation', 'isTrue'],
   balance: ['leftSide', 'rightSide', 'correctAnswer'],
   rewrite: ['originalEquation', 'tile0', 'tile1', 'tile2', 'tile3', 'tile4', 'tile5', 'tile6'],
+  'make-n': [],  // code owns the total, the bank and the instruction
 };
 
 /** All optional challenge-level field definitions (reusable across schema builds) */
@@ -603,6 +617,8 @@ function validateChallenge(
     case 'true-false': return validateTrueFalse(raw);
     case 'balance': return validateBalance(raw, maxNumber);
     case 'rewrite': return validateRewrite(raw, maxNumber, shape);
+    // Only the slot is the model's: `fillMakeN` writes the total, the bank and the instruction.
+    case 'make-n': return buildValidChallenge({ id: raw.id, type: 'make-n', instruction: raw.instruction });
     default:
       console.log(`[EquationBuilder] REJECT challenge — unknown type: "${raw.type}"`);
       return null;
@@ -1076,6 +1092,44 @@ function validateRewrite(raw: RawChallenge, maxNumber: number, shape?: ProblemSh
 }
 
 // ---------------------------------------------------------------------------
+// make-n (open build): code owns every number
+// ---------------------------------------------------------------------------
+
+/** The bound an objective names ("within 10", "to 20", "make 10"), read in code; undefined when it names none. */
+function namedBound(texts: Array<string | undefined>): { bound: number; made: boolean } | undefined {
+  for (const text of texts) {
+    const make = (text ?? '').match(/\bmak(?:e|es|ing)\s+(\d{1,2})\b/i);
+    if (make) return { bound: parseInt(make[1], 10), made: true };
+    const upTo = (text ?? '').match(/\b(?:to|within|up to)\s+(\d{1,2})\b/i);
+    if (upTo) return { bound: parseInt(upTo[1], 10), made: false };
+  }
+  return undefined;
+}
+
+/**
+ * Fill every make-n slot: distinct totals from 3 to the ceiling (a total the objective names, "make 10", comes first),
+ * one bank of the numbers 1..ceiling with + (and − past Kindergarten, so 12 − 2 can make 10), and the instruction.
+ * Every second item asks for two different ways, except at the easy tier.
+ */
+function fillMakeN(
+  challenges: import("../../primitives/visual-primitives/math/EquationBuilder").EquationBuilderChallenge[],
+  opts: { ceiling: number; named?: number; takeAway: boolean; twoWays: boolean },
+) {
+  const others = shuffle(Array.from({ length: Math.max(0, opts.ceiling - 2) }, (_, i) => i + 3).filter(n => n !== opts.named));
+  const totals = opts.named ? [opts.named, ...others] : others;
+  const bank = [...Array.from({ length: opts.ceiling }, (_, i) => String(i + 1)), '+', ...(opts.takeAway ? ['-'] : [])];
+  let k = 0;
+  return challenges.map(c => {
+    if (c.type !== 'make-n') return c;
+    const target = totals[k % totals.length] ?? 3;
+    const ways = opts.twoWays && k % 2 === 1 ? 2 : 1;
+    k += 1;
+    return { id: c.id, type: 'make-n' as const, target, ways, availableTiles: [...bank],
+      instruction: ways > 1 ? `Make two different number sentences that equal ${target}.` : `Make a number sentence that equals ${target}.` };
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Hardcoded fallback challenges
 // ---------------------------------------------------------------------------
 
@@ -1128,11 +1182,14 @@ function getFallbackChallenges(
       acceptedForms: [`${b} + ${a} = ${total}`, `${total} = ${a} + ${b}`, `${total} - ${a} = ${b}`, `${total} - ${b} = ${a}`],
       availableTiles: shuffle([String(a), String(b), String(total), '+', '-', '=', String(a + 1)]),
     }),
+    // A slot only: `fillMakeN` writes its total, bank and instruction after the fallback is chosen.
+    'make-n': () => ({ id: 'fallback-1', type: 'make-n', instruction: '' }),
   };
 
   // Map eval modes to challenge types
   const evalModeToType: Record<string, string> = {
     'build-simple': 'build',
+    'make-n': 'make-n',
     'missing-result': 'missing-value',
     'true-false': 'true-false',
     'missing-operand': 'missing-value',
@@ -1302,7 +1359,7 @@ REQUIREMENTS:
 5. For 'true-false': MIX true and false equations (not all the same). displayEquation must be complete
 6. For 'balance': leftSide is fully known, rightSide has one ?. Both sides must evaluate to the same value
 7. For 'rewrite': originalEquation must be mathematically true. Include tiles for alternative forms + distractors
-8. ALL equations must use spaces between tokens: "3 + 2 = 5" not "3+2=5"
+${effectiveChallengeTypes?.includes('make-n') || !evalConstraint ? `7b. For 'make-n': write only id, type and a short placeholder instruction; the app writes the total and the tiles\n` : ''}8. ALL equations must use spaces between tokens: "3 + 2 = 5" not "3+2=5"
 9. Numbers must not exceed maxNumber
 10. Vary the numbers across challenges — don't repeat the same equation
 
@@ -1346,7 +1403,7 @@ Return the complete equation builder configuration.
   }
 
   // Validate challenges through post-validation pipeline
-  const validTypes = ['build', 'missing-value', 'true-false', 'balance', 'rewrite'];
+  const validTypes = ['build', 'missing-value', 'true-false', 'balance', 'rewrite', 'make-n'];
 
   const validatedChallenges: import("../../primitives/visual-primitives/math/EquationBuilder").EquationBuilderChallenge[] = [];
 
@@ -1386,6 +1443,20 @@ Return the complete equation builder configuration.
   // shorter list is accepted as-is.
   if (data.challenges.length > instanceCount) {
     data.challenges = data.challenges.slice(0, instanceCount);
+  }
+
+  // make-n is code-owned end to end: a pinned session is exactly `instanceCount` slots whatever the model returned,
+  // and every slot (pinned or in a mix) gets its total, bank and instruction here.
+  if (pinnedType === 'make-n') {
+    data.challenges = Array.from({ length: instanceCount }, (_, i) => ({ id: `c${i + 1}`, type: 'make-n', instruction: '' }));
+  }
+  if ((data.challenges as Array<{ type: string }>).some(c => c.type === 'make-n')) {
+    const named = namedBound([topic, ctx.scope?.intent, ctx.scope?.objectiveText]);
+    // A bound the objective names wins over the band's default maxNumber (a cap below the lesson's intent is a bug).
+    const ceiling = Math.min(20, Math.max(4, named?.bound ?? data.maxNumber));
+    data.maxNumber = Math.max(data.maxNumber, ceiling);
+    data.challenges = fillMakeN(data.challenges, { ceiling, named: named?.made ? Math.max(3, ceiling) : undefined,
+      takeAway: data.gradeBand !== 'K', twoWays: supportTier !== 'easy' });
   }
 
   // Apply explicit config overrides

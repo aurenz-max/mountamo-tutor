@@ -118,3 +118,26 @@ describe('bar-model oracle', () => {
     expect(v.some((x) => x.check === 'schema' && x.where === 'c1')).toBe(true);
   });
 });
+
+// ── make_graph — an open build: no key; the ask must state the rule over rows on an empty graph ──
+describe('bar-model oracle — make_graph', () => {
+  const ctx = { ...readCtx, evalMode: 'make_graph' };
+  const rows = ['apples', 'pears', 'plums'].map((label) => ({ label, value: 0 }));
+  const made = (id: string, graphRule: Record<string, unknown>, prompt: string) =>
+    ({ id, evalMode: 'make_graph', graphStyle: 'picture', values: rows, graphRule, prompt });
+  const clean = { title: 'Fruit', description: '', challenges: [
+    made('m1', { kind: 'most', a: 0 }, 'Make a graph where apples have the most.'),
+    made('m2', { kind: 'fewest', a: 1 }, 'Make a graph where pears have the fewest.'),
+    made('m3', { kind: 'same', a: 1, b: 2 }, 'Make a graph where pears and plums have the same number.'),
+    made('m4', { kind: 'more_than', a: 2, b: 0, by: 2 }, 'Make a graph where there are two more plums than apples.'),
+  ] };
+  it('passes a clean session', () => expect(barModelOracle.verify(clean, ctx).violations).toEqual([]));
+  it('flags a filled bar, an ask that does not state its rule, and an N more that cannot be made', () => {
+    const bad = { ...clean, challenges: [
+      { ...clean.challenges[0], values: [{ label: 'apples', value: 2 }, ...rows.slice(1)] },
+      { ...clean.challenges[1], prompt: 'Make a graph where apples have the fewest.' },
+      made('m3', { kind: 'more_than', a: 2, b: 0, by: 10 }, 'Make a graph where there are ten more plums than apples.'),
+    ] };
+    expect(barModelOracle.verify(bad, ctx).violations.map((x) => x.where)).toEqual(['m1', 'm2', 'm3']);
+  });
+});

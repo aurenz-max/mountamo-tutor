@@ -1,0 +1,68 @@
+[
+ {
+  "task": "Make an array with 12 squares.",
+  "build": "3x4 done",
+  "squares": 12,
+  "svgHasText": false,
+  "seeing": [
+   "Ooh, bright green squares are filling up the dark corner!",
+   "Ooh, bright green squares are filling up the dark grid!"
+  ],
+  "kept": 2
+ },
+ {
+  "task": "Make an array with 12 squares.",
+  "build": "partial 2x3",
+  "squares": 6,
+  "svgHasText": false,
+  "seeing": [
+   "Ooh, bright green squares are filling up the dark corner!",
+   "Ooh, bright green squares are filling up the corner nicely!"
+  ],
+  "kept": 2
+ },
+ {
+  "task": "Make an array with 12 squares.",
+  "build": "ragged 4,4,3",
+  "squares": 11,
+  "svgHasText": false,
+  "seeing": [
+   "Ooh, bright green squares are filling up the dark board!",
+   "Ooh, bright green squares are filling up the dark board!"
+  ],
+  "kept": 2
+ },
+ {
+  "task": "Make an array with 12 squares.",
+  "build": "1x12",
+  "squares": 12,
+  "svgHasText": false,
+  "seeing": [
+   "Ooh, bright green squares are filling up the top edge!",
+   "Ooh, bright green squares are filling up the top edge!"
+  ],
+  "kept": 2
+ },
+ {
+  "task": "Make an array with 16 squares.",
+  "build": "4x4 done",
+  "squares": 16,
+  "svgHasText": false,
+  "seeing": [
+   "Ooh, bright green squares are filling up the dark board!",
+   "Bright green squares are filling up the left side of the dark board!"
+  ],
+  "kept": 2
+ },
+ {
+  "task": "Make an array with 24 squares.",
+  "build": "3x8 plus two below",
+  "squares": 26,
+  "svgHasText": false,
+  "seeing": [
+   "Ooh, bright green squares are filling up the dark grid!",
+   "Ooh, bright green squares are filling up the dark cells!"
+  ],
+  "kept": 2
+ }
+]

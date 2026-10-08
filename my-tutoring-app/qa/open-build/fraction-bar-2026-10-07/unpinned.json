@@ -1,0 +1,179 @@
+{
+  "generatedAt": "2026-10-08T01:52:11.214Z",
+  "case": {
+    "grade": "3",
+    "topic": "Fractions on a bar",
+    "intent": "Explore fractions with a bar model"
+  },
+  "data": {
+    "title": "Fraction Bar Practice — Grade 3",
+    "description": "Explore how whole bars can be divided into equal parts to represent unit fractions! Practice naming the numerator and denominator, then shade each part to see the fraction come to life.",
+    "challenges": [
+      {
+        "id": "fraction-bar-1",
+        "numerator": 1,
+        "denominator": 2,
+        "numeratorChoices": [
+          0,
+          3,
+          1,
+          2
+        ],
+        "denominatorChoices": [
+          5,
+          3,
+          2,
+          4
+        ]
+      },
+      {
+        "id": "fraction-bar-2",
+        "numerator": 1,
+        "denominator": 3,
+        "numeratorChoices": [
+          0,
+          1,
+          3,
+          2
+        ],
+        "denominatorChoices": [
+          2,
+          3,
+          4,
+          5
+        ]
+      },
+      {
+        "id": "fraction-bar-3",
+        "numerator": 1,
+        "denominator": 4,
+        "numeratorChoices": [
+          2,
+          4,
+          0,
+          1
+        ],
+        "denominatorChoices": [
+          4,
+          6,
+          3,
+          5
+        ]
+      },
+      {
+        "id": "fraction-bar-4",
+        "numerator": 1,
+        "denominator": 8,
+        "numeratorChoices": [
+          2,
+          8,
+          0,
+          1
+        ],
+        "denominatorChoices": [
+          8,
+          9,
+          7,
+          10
+        ]
+      },
+      {
+        "id": "fraction-bar-5",
+        "numerator": 1,
+        "denominator": 6,
+        "numeratorChoices": [
+          2,
+          0,
+          1,
+          6
+        ],
+        "denominatorChoices": [
+          6,
+          8,
+          7,
+          5
+        ]
+      },
+      {
+        "id": "fraction-bar-6",
+        "numerator": 1,
+        "denominator": 2,
+        "numeratorChoices": [
+          2,
+          1,
+          0,
+          3
+        ],
+        "denominatorChoices": [
+          4,
+          2,
+          5,
+          3
+        ]
+      },
+      {
+        "id": "fraction-bar-7",
+        "numerator": 1,
+        "denominator": 3,
+        "numeratorChoices": [
+          0,
+          2,
+          3,
+          1
+        ],
+        "denominatorChoices": [
+          4,
+          5,
+          3,
+          2
+        ]
+      }
+    ],
+    "challengeType": "identify",
+    "showDecimal": false,
+    "showPartitionNumerals": true,
+    "showShadedReadout": true,
+    "showPromptGloss": true,
+    "gradeLevel": "Grade 3"
+  },
+  "items": [
+    {
+      "id": "fraction-bar-1",
+      "target": "1/2"
+    },
+    {
+      "id": "fraction-bar-2",
+      "target": "1/3"
+    },
+    {
+      "id": "fraction-bar-3",
+      "target": "1/4"
+    },
+    {
+      "id": "fraction-bar-4",
+      "target": "1/8"
+    },
+    {
+      "id": "fraction-bar-5",
+      "target": "1/6"
+    },
+    {
+      "id": "fraction-bar-6",
+      "target": "1/2"
+    },
+    {
+      "id": "fraction-bar-7",
+      "target": "1/3"
+    }
+  ],
+  "oracle": {
+    "violations": [],
+    "uncheckedTypes": [],
+    "checkedChallenges": 7
+  },
+  "issues": [],
+  "logs": [
+    "[FractionBar] No targetEvalMode — full schema, mixed difficulty",
+    "🍰 Fraction Bar generated: {\n  topic: 'Fractions on a bar',\n  challengeType: 'identify',\n  instanceCount: 7,\n  fractions: [\n    '1/2', '1/3',\n    '1/4', '1/8',\n    '1/6', '1/2',\n    '1/3'\n  ]\n}"
+  ]
+}

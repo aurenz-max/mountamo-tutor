@@ -745,6 +745,7 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'build_train',
+        affordances: { answers: ['build'] },
         label: 'Build the Train',
         beta: 0.8,
         scaffoldingMode: 3,

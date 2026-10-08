@@ -2,7 +2,7 @@ import type { CoinCounterData, CoinDef } from '../../../primitives/visual-primit
 import { COIN_CENTS } from '../../../primitives/visual-primitives/math/coinCounterWorkspace';
 import { workspaceOpening, type WorkspaceDomain } from './adapterContract';
 
-const CHALLENGE_TYPES = ['identify', 'count', 'make-amount', 'compare', 'make-change'];
+const CHALLENGE_TYPES = ['identify', 'count', 'make-amount', 'compare', 'make-change', 'show-amount'];
 const coinsOk = (coins: CoinDef[] | undefined) => Array.isArray(coins) && coins.length > 0
   && coins.every(c => c && c.type in COIN_CENTS && Number.isInteger(c.count) && c.count > 0);
 const cents = (n: unknown) => Number.isInteger(n) && (n as number) >= 0;
@@ -20,6 +20,9 @@ export function validateCoinCounterData(value: unknown): CoinCounterData {
     const ok = c.type === 'identify' ? !!c.targetCoin && (!c.options || c.options.includes(c.targetCoin))
       : c.type === 'count' ? coinsOk(c.displayedCoins) && cents(c.correctTotal)
       : c.type === 'make-amount' ? cents(c.targetAmount) && (c.targetAmount ?? 0) > 0
+      // The open build needs bins to take coins from, a penny among them or the amount may not be makeable.
+      : c.type === 'show-amount' ? cents(c.targetAmount) && (c.targetAmount ?? 0) > 0
+        && !!c.availableCoins?.length && c.availableCoins.every(t => t in COIN_CENTS) && c.availableCoins.includes('penny')
       : c.type === 'compare' ? coinsOk(c.groupA) && coinsOk(c.groupB) && ['A', 'B', 'equal'].includes(c.correctGroup ?? '')
       : cents(c.paidAmount) && cents(c.itemCost) && cents(c.correctChange);
     if (!ok) throw new Error(`A coin-counter ${c.type} challenge cannot be answered as generated.`);

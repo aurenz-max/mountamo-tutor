@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -21,11 +21,20 @@ import {
 } from '../../../evaluation';
 import type { AngleWorkshopMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import {
+  ANSWER_LABEL, CLOSER_LABEL, DONE_LABEL, PROTRACTOR_LABEL, RESET_LABEL, STEP_DEG, WIDER_LABEL,
+  describeAngleWork, makeAngleMiss, makeAngleMissWords, relationshipLabel, workspaceAssignment, workspaceScene, type AngleView,
+} from './angleWorkshopWorkspace';
+import { CORNER_LEVER, PROTRACTOR_LEVER, coarserMakeAngle, makeAngleLeverFacts, makeAngleLevers } from './angleWorkshopLevers';
+import { AngleBuildScene } from './AngleBuildScene';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -36,7 +45,17 @@ export type AngleWorkshopChallengeType =
   | 'classify_pairs'
   | 'solve_unknown'
   | 'solve_algebraic'
-  | 'transversal';
+  | 'transversal'
+  | 'make_angle';
+
+/**
+ * make_angle (open build): the kind of angle asked for. `between_right_straight` is obtuse asked by its definition;
+ * `smaller_than_right` / `bigger_than_right` are the coarser asks a simplify lever opens; `range` is a degree band
+ * (`targetMin`..`targetMax`, inclusive).
+ */
+export type AngleTargetKind =
+  | 'acute' | 'right' | 'obtuse' | 'straight' | 'between_right_straight'
+  | 'smaller_than_right' | 'bigger_than_right' | 'range';
 
 /** Angle-pair relationships used by classify / solve modes. */
 export type AnglePairRelationship =
@@ -65,7 +84,7 @@ export type TransversalShape =
   | 'exterior_angle';
 
 /** What the student must enter. */
-export type AngleAnswerKind = 'degrees' | 'relationship' | 'x_value';
+export type AngleAnswerKind = 'degrees' | 'relationship' | 'x_value' | 'build';
 
 export interface AngleWorkshopChallenge {
   id: string;
@@ -111,7 +130,12 @@ export interface AngleWorkshopChallenge {
   givenAngle2?: number;
   transRelation?: TransversalRelation;
 
-  /** Pre-computed numeric answer (degrees or x value). */
+  // --- make_angle (open build): any opening of the asked kind passes (angleWorkshopWorkspace.ts `fitsTarget`) ---
+  targetKind?: AngleTargetKind;
+  targetMin?: number;
+  targetMax?: number;
+
+  /** Pre-computed numeric answer (degrees or x value). make_angle: unused (0); the kind check judges. */
   expectedAnswer: number;
   /** Pre-computed answer for classify mode. */
   expectedRelationship?: AnglePairRelationship;
@@ -129,7 +153,8 @@ export interface AngleWorkshopData {
   title: string;
   description: string;
   challengeType: AngleWorkshopChallengeType;
-  gradeBand?: '7' | '8';
+  /** '7' | '8' for the classic modes; make_angle carries the lesson's grade (3-8). */
+  gradeBand?: '3' | '4' | '5' | '6' | '7' | '8';
   /**
    * Within-mode support tier that was applied ('easy' | 'medium' | 'hard'), set only
    * for single-mode sessions. Threaded into the live tutor so it calibrates how much
@@ -159,6 +184,7 @@ const PHASE_CONFIG_BY_TYPE: Record<AngleWorkshopChallengeType, PhaseConfig> = {
   solve_unknown:   { label: 'Solve',       icon: '🧮', accentColor: 'emerald' },
   solve_algebraic: { label: 'Algebraic',   icon: '🔤', accentColor: 'amber' },
   transversal:     { label: 'Transversal', icon: '🚆', accentColor: 'blue' },
+  make_angle:      { label: 'Make It',     icon: '🛠️', accentColor: 'purple' },
 };
 
 const RELATIONSHIP_OPTIONS: { value: AnglePairRelationship; label: string; sub: string }[] = [
@@ -249,9 +275,15 @@ function tutorRevealPolicy(
 interface AngleWorkshopProps {
   data: AngleWorkshopData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
-const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
+const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  AngleWorkshopProps & { tutorOwned: boolean; useController: (options: ProgressOptions<AngleWorkshopChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -267,23 +299,44 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
   } = data;
 
   // -------------------------------------------------------------------------
-  // Multi-challenge progression
+  // Multi-challenge progression. On the workspace path the runtime moves the index.
   // -------------------------------------------------------------------------
+  const stableInstanceIdRef = useRef(instanceId || `angle-workshop-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  /** Bound below, once the state it clears exists; the progress hook calls it only after render. */
+  const reopen = useRef<(retry: boolean) => void>(() => {});
+  const progress = useController({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (_index, retry) => reopen.current(retry),
+  });
   const {
     currentIndex: currentChallengeIndex,
     currentAttempts,
     results: challengeResults,
     isComplete: allChallengesComplete,
-    recordResult,
-    incrementAttempts,
+    mergeResult,
     advance: advanceProgress,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (ch) => ch.id,
-  });
+  } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
 
-  const currentChallenge = challenges[currentChallengeIndex] ?? null;
+  const sessionChallenge = challenges[currentChallengeIndex] ?? null;
+  // make_angle levers (`angleWorkshopLevers.ts`), keyed by the session item they were pulled on, and the easier item a
+  // simplify lever put on screen in its place.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<AngleWorkshopChallenge | null>(null);
+  /** What is on screen: the easier item while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
   const challengeType = currentChallenge?.type ?? 'measure';
+
+  // make_angle: the learner's opening, keyed by the item on screen, so a new item (or the easier practice item, or the
+  // full item back after it) reads 0 in the same render. Try again keeps it.
+  const [build, setBuild] = useState<{ item: string; deg: number }>({ item: '', deg: 0 });
+  const opening = build.item === currentChallenge?.id ? build.deg : 0;
 
   // -------------------------------------------------------------------------
   // Per-challenge UI state
@@ -301,8 +354,6 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
   const [resizeTick, setResizeTick] = useState(0);
 
   // Refs
-  const stableInstanceIdRef = useRef(instanceId || `angle-workshop-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
   const recordedRef = useRef(false);
   const hintViewedRef = useRef(false);
   const hintsViewedRef = useRef(0);
@@ -325,6 +376,18 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
     recordedRef.current = false;
     hintViewedRef.current = false;
   }, [currentChallenge?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Workspace path: Try again clears the rejected answer; a make_angle build and its verdict stay to revise. A fresh
+  // item drops any easier practice item and clears in the advance's own render, so the scene adds no revision after
+  // it (the reset above then finds nothing to change).
+  reopen.current = (retry) => {
+    if (retry && currentChallenge?.type === 'make_angle') return;
+    if (!retry) { setPractice(null); setProtractorShown(false); setShowHint(false); }
+    setAnswerInput('');
+    setSelectedRelationship(null);
+    setFeedback('');
+    setFeedbackType('');
+  };
 
   // -------------------------------------------------------------------------
   // Canvas draw
@@ -795,12 +858,17 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
     currentAttempts,
   ]);
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  // Its context carries the answers, so it is off on the workspace path, and its scripted cues send nothing there.
+  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'angle-workshop',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: `Grade ${gradeBand}`,
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   const hasIntroducedRef = useRef(false);
   useEffect(() => {
@@ -816,25 +884,24 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
   }, [isConnected, challenges.length, challengeType, gradeBand, supportTier, sendText]);
 
   // -------------------------------------------------------------------------
-  // Record / submit
+  // Every check: the activity's own verdict, committed through the progress controller
   // -------------------------------------------------------------------------
-  const completeChallenge = useCallback((correct: boolean) => {
-    if (!currentChallenge) return;
-    if (!correct) return; // record only on a correct attempt
-    if (recordedRef.current) return;
-    recordedRef.current = true;
-    const attempts = currentAttempts + 1;
-    const score = Math.max(20, 100 - (attempts - 1) * 20);
-    recordResult({
-      challengeId: currentChallenge.id,
-      correct: true,
-      attempts,
-      score,
-    });
-  }, [currentChallenge, currentAttempts, recordResult]);
+  const view: AngleView = { answerInput, relationship: selectedRelationship, protractorShown, opening };
 
-  const handleCheck = useCallback(() => {
-    if (!currentChallenge || hasSubmittedEvaluation) return;
+  /**
+   * Counts the attempt and records a correct result on both paths (on the workspace path it is the checked gesture),
+   * then adds this primitive's own score. An easier practice item records nothing.
+   */
+  const commit = (ch: AngleWorkshopChallenge, correct: boolean, miss?: string) => {
+    const attempts = currentAttempts + 1;
+    progress.commitCheck(describeAngleWork(ch, view), correct, miss);
+    if (!correct || practice || recordedRef.current) return;
+    recordedRef.current = true;
+    mergeResult({ challengeId: ch.id, correct: true, attempts, score: Math.max(20, 100 - (attempts - 1) * 20) });
+  };
+
+  const handleCheck = () => {
+    if (!currentChallenge || hasSubmittedEvaluation || learnerBlocked()) return;
     const ch = currentChallenge;
     const revealPolicy = tutorRevealPolicy(supportTier, ch.type);
 
@@ -845,8 +912,8 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
         setFeedbackType('error');
         return;
       }
-      incrementAttempts();
       const correct = selectedRelationship === ch.expectedRelationship;
+      commit(ch, correct);
       if (correct) {
         SoundManager.playCorrect();
         setFeedback(`Correct — these are ${ch.expectedRelationship} angles.`);
@@ -855,7 +922,6 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
           `[ANSWER_CORRECT] Student classified a pair as "${selectedRelationship}" (correct). Celebrate briefly and restate why.`,
           { silent: true },
         );
-        completeChallenge(true);
       } else {
         SoundManager.playIncorrect();
         setFeedback('Not quite. Look at how the rays meet — do the outer rays form a straight line, a right angle, or cross?');
@@ -866,7 +932,8 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
           + (revealPolicy ? ` ${revealPolicy}` : ''),
           { silent: true },
         );
-        setSelectedRelationship(null);
+        // On the workspace path Try again clears the choice.
+        if (!tutorOwned) setSelectedRelationship(null);
       }
       return;
     }
@@ -890,8 +957,8 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
       setFeedbackType('error');
       return;
     }
-    incrementAttempts();
     const correct = Math.abs(parsed - ch.expectedAnswer) <= ch.tolerance;
+    commit(ch, correct);
     const unit = ch.answerKind === 'x_value' ? '' : '°';
     if (correct) {
       SoundManager.playCorrect();
@@ -902,7 +969,6 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
         + `Celebrate briefly and reinforce the relationship used.`,
         { silent: true },
       );
-      completeChallenge(true);
     } else {
       SoundManager.playIncorrect();
       setFeedback('Not quite. Re-check which relationship links the angles, then redo the arithmetic.');
@@ -915,11 +981,33 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
         { silent: true },
       );
     }
-  }, [
-    currentChallenge, hasSubmittedEvaluation, selectedRelationship, needsProtractorFirst,
-    answerInput, incrementAttempts, completeChallenge, currentAttempts, sendText, challengeType,
-    supportTier,
-  ]);
+  };
+
+  // -------------------------------------------------------------------------
+  // make_angle (open build): turn the ray, then "I'm done!" checks the kind of angle. Try again keeps the build.
+  // -------------------------------------------------------------------------
+  const setOpening = (deg: number) => {
+    if (!currentChallenge || learnerBlocked() || hasSubmittedEvaluation) return;
+    setBuild({ item: currentChallenge.id, deg: Math.max(0, Math.min(180, Math.round(deg))) });
+  };
+  const handleDone = () => {
+    const ch = currentChallenge;
+    if (!ch || ch.type !== 'make_angle' || learnerBlocked() || hasSubmittedEvaluation) return;
+    const miss = makeAngleMiss(ch, opening);
+    commit(ch, !miss, miss);
+    if (!miss) {
+      SoundManager.playCorrect();
+      setFeedback('Yes! That is the angle asked for.');
+      setFeedbackType('success');
+      sendText('[ANSWER_CORRECT] Student made the asked angle. Celebrate briefly; ask how they knew.', { silent: true });
+    } else {
+      SoundManager.playIncorrect();
+      setFeedback(makeAngleMissWords(ch, miss));
+      setFeedbackType('error');
+      sendText('[ANSWER_INCORRECT] The student\'s angle is not the kind asked for. Ask them to compare it with a square '
+        + 'corner; do NOT say which way to turn or name the kind they made.', { silent: true });
+    }
+  };
 
   const handleShowHint = useCallback(() => {
     if (showHint) return;
@@ -947,6 +1035,8 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   useEffect(() => {
     if (!allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0) return;
+    // The live host has no evaluation provider; a workspace family submits only under one.
+    if (progress.recordsEvaluation === false) return;
     if (submittedRef.current) return;
     submittedRef.current = true;
 
@@ -979,7 +1069,40 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
       `[ALL_COMPLETE] All ${total} angle problems done. Correct: ${correctCount}/${total}. First-try: ${firstTryCount}. Accuracy: ${avgScore}%. Give an encouraging, relationship-focused summary.`,
       { silent: true },
     );
-  }, [allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults, currentChallenge, submitEvaluation, sendText]);
+  }, [allChallengesComplete, hasSubmittedEvaluation, progress.recordsEvaluation, challenges, challengeResults, currentChallenge, submitEvaluation, sendText]);
+
+  // Workspace path: what the tutor and the observer are shown, republished every render. make_angle adds its levers.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge) return;
+    const scene = workspaceScene(currentChallenge, view);
+    const onScreen = makeAngleLeverFacts(pulledLevers);
+    const levers = practice ? [] : makeAngleLevers(sessionChallenge, pulledLevers);
+    workspace.current = {
+      ...scene,
+      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      // Only make_angle has levers; while its easier item is up they are off, and endPractice brings the full item back.
+      ...(sessionChallenge?.type === 'make_angle' ? {
+        levers,
+        // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+        pullLever: (id: string) => {
+          const lever = levers.find(l => l.id === id);
+          if (practice || !sessionChallenge || !lever) return `No lever ${id} on this item.`;
+          if (lever.pulled) return `${id} is already pulled.`;
+          const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+          if (lever.kind === 'simplify') {
+            const easier = coarserMakeAngle(sessionChallenge);
+            if (!easier) return 'There is no easier item for this one.';
+            setLeverState(pulled);
+            setFeedback(''); setFeedbackType(''); setPractice(easier);
+            return { practice: workspaceAssignment(easier) };
+          }
+          setLeverState(pulled);
+          return true as const;
+        },
+        endPractice: () => { setFeedback(''); setFeedbackType(''); setPractice(null); },
+      } : {}),
+    };
+  });
 
   // -------------------------------------------------------------------------
   // Derived UI state
@@ -1077,8 +1200,38 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
         {/* Pip's dock sits above the workspace, which it outlines as a region. */}
         {pip.store && !allChallengesComplete && <div {...pip.dock} />}
         <div {...pip.workspace} className="space-y-4">
+        {/* Open build (make_angle): one fixed ray, one ray the learner turns. Levers start bare. */}
+        {challengeType === 'make_angle' && (
+          <div className="p-3 bg-slate-800/30 rounded-2xl border border-purple-500/20 space-y-3">
+            <AngleBuildScene
+              opening={opening}
+              cornerMarker={pulledLevers.includes(CORNER_LEVER) && !practice}
+              protractor={pulledLevers.includes(PROTRACTOR_LEVER) && !practice}
+              disabled={learnerBlocked() || isCurrentComplete || hasSubmittedEvaluation}
+              onTurn={setOpening}
+            />
+            <p className="text-center text-xs text-slate-400">Drag the end of the purple ray, or use the buttons, then press I&apos;m done!</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {[
+                { label: CLOSER_LABEL, to: opening - STEP_DEG },
+                { label: WIDER_LABEL, to: opening + STEP_DEG },
+                { label: RESET_LABEL, to: 0 },
+              ].map(({ label, to }) => (
+                <LuminaButton key={label} tone="subtle" size="sm"
+                  disabled={learnerBlocked() || isCurrentComplete || hasSubmittedEvaluation}
+                  onClick={() => { SoundManager.snap(); setOpening(to); }}>
+                  {label}
+                </LuminaButton>
+              ))}
+              <LuminaButton tone="primary" onClick={handleDone}
+                disabled={learnerBlocked() || isCurrentComplete || hasSubmittedEvaluation}>
+                {DONE_LABEL}
+              </LuminaButton>
+            </div>
+          </div>
+        )}
         {/* Canvas — bespoke interaction surface. */}
-        <div className="p-3 bg-slate-800/30 rounded-2xl border border-cyan-500/20">
+        <div className={challengeType === 'make_angle' ? 'hidden' : 'p-3 bg-slate-800/30 rounded-2xl border border-cyan-500/20'}>
           <canvas
             ref={canvasRef}
             width={CANVAS_W}
@@ -1098,7 +1251,7 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
                 }}
                 disabled={protractorShown || hasSubmittedEvaluation}
               >
-                {protractorShown ? 'Protractor placed ✓' : 'Place the protractor'}
+                {protractorShown ? 'Protractor placed ✓' : PROTRACTOR_LABEL}
               </LuminaButton>
             </div>
           )}
@@ -1110,7 +1263,7 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
         </div>
 
         {/* Answer panel */}
-        {!isCurrentComplete && !allChallengesComplete && (
+        {!isCurrentComplete && !allChallengesComplete && challengeType !== 'make_angle' && (
           <>
             {isRelationshipMode ? (
               <div className="grid grid-cols-2 gap-2">
@@ -1123,8 +1276,10 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
                       key={opt.value}
                       state={state}
                       className="!p-3"
-                      disabled={hasSubmittedEvaluation}
+                      aria-label={relationshipLabel(opt.value)}
+                      disabled={hasSubmittedEvaluation || learnerBlocked()}
                       onClick={() => {
+                        if (learnerBlocked()) return;
                         SoundManager.select();
                         setSelectedRelationship(opt.value);
                       }}
@@ -1141,9 +1296,10 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
                   <span className="text-cyan-300 font-mono font-bold">{answerLead}</span>
                   <LuminaInput
                     type="text"
+                    aria-label={ANSWER_LABEL}
                     value={answerInput}
-                    onChange={(e) => setAnswerInput(e.target.value)}
-                    disabled={needsProtractorFirst}
+                    onChange={(e) => { if (!learnerBlocked()) setAnswerInput(e.target.value); }}
+                    disabled={needsProtractorFirst || learnerBlocked()}
                     className="w-28 text-center"
                     placeholder="?"
                     onKeyDown={(e) => e.key === 'Enter' && handleCheck()}
@@ -1154,7 +1310,7 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
             )}
 
             <div className="flex justify-center">
-              <LuminaButton tone="primary" onClick={handleCheck} disabled={needsProtractorFirst}>
+              <LuminaButton tone="primary" onClick={handleCheck} disabled={needsProtractorFirst || learnerBlocked()}>
                 Check
               </LuminaButton>
             </div>
@@ -1184,7 +1340,7 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
 
         {/* Controls */}
         <div className="flex justify-center gap-2 flex-wrap">
-          {isCurrentComplete && !allChallengesComplete && (
+          {isCurrentComplete && !allChallengesComplete && !tutorOwned && (
             <LuminaButton
               tone="primary"
               className="border-emerald-400/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
@@ -1193,7 +1349,7 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
               Next Problem →
             </LuminaButton>
           )}
-          {!isCurrentComplete && !allChallengesComplete && (
+          {!isCurrentComplete && !allChallengesComplete && challengeType !== 'make_angle' && (
             <LuminaButton tone="subtle" size="sm" onClick={handleShowHint} disabled={showHint}>
               {showHint ? 'Hint shown' : 'Show hint'}
             </LuminaButton>
@@ -1215,5 +1371,9 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const AngleWorkshop = withWorkspaceController<AngleWorkshopProps, ProgressOptions<AngleWorkshopChallenge>, Progress>(
+  'angle-workshop', AngleWorkshopSurface, useScriptedProgress, useWorkspaceProgressFor('angle-workshop'));
 
 export default AngleWorkshop;

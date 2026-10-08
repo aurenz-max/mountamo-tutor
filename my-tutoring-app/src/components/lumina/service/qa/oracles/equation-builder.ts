@@ -12,6 +12,8 @@ import { asRecordArray, checkAnswerVariety, checkUniqueOptions, parseScopeCeilin
  *  - true-false    (handleCheckTrueFalse)   : selectedTruthValue === isTrue.
  *  - balance       (handleCheckBalance)     : parseInt(input) === correctAnswer.
  *  - rewrite       (handleCheckRewrite)     : matchesAcceptedForm(slots, acceptedForms).
+ *  - make-n        (handleDone)             : makeNMiss(target, row) — any sentence that makes the total; no key, so
+ *                  the oracle checks the bank can reach it (as many ways as asked) and the ask states the total.
  *
  * THE INDEPENDENCE RULE: the shipped keys are targetEquation / correctValue /
  * isTrue / correctAnswer / acceptedForms. The generator re-derives most of them
@@ -70,11 +72,12 @@ import { asRecordArray, checkAnswerVariety, checkUniqueOptions, parseScopeCeilin
  *  - distractor plausibility (near vs far MC spread) — /eval-test territory.
  */
 
-const KNOWN_TYPES = new Set(['build', 'missing-value', 'true-false', 'balance', 'rewrite']);
+const KNOWN_TYPES = new Set(['build', 'missing-value', 'true-false', 'balance', 'rewrite', 'make-n']);
 
 /** Eval-mode IDs → challenge type (one type backs two missing-value modes). */
 const EVAL_MODE_TO_TYPE: Record<string, string> = {
   'build-simple': 'build',
+  'make-n': 'make-n',
   'missing-result': 'missing-value',
   'missing-operand': 'missing-value',
   'true-false': 'true-false',
@@ -187,7 +190,30 @@ export const equationBuilderOracle: ContentOracle = {
       const scopeNumbers: number[] = [];
       let ok = true; // schema-gate for this challenge
 
-      if (type === 'build') {
+      if (type === 'make-n') {
+        // Open build: no key, many answers. Reachable = the bank holds two numbers adding to the total (and, on a
+        // two-way item, a second pair or a take-away), and the instruction states the total it asks for.
+        const total = c.target;
+        const bank = Array.isArray(c.availableTiles) ? c.availableTiles.map(String) : null;
+        const ways = isNum(c.ways) ? c.ways : 1;
+        if (!isNum(total) || total < 2 || !bank) {
+          violations.push({ check: 'schema', where: id, detail: `make-n malformed: target=${JSON.stringify(c.target)} tiles=${JSON.stringify(c.availableTiles)}` });
+          continue;
+        }
+        const nums = bank.filter((t) => /^\d+$/.test(t)).map(Number);
+        const pairs = bank.includes('+') ? nums.filter((a) => a <= total - a && nums.includes(total - a)).length : 0;
+        const takeAways = bank.includes('-') ? nums.filter((a) => a > total && nums.includes(a - total)).length : 0;
+        if (pairs + takeAways < ways) {
+          violations.push({ check: 'answer-key-desync', where: id, detail: `the bank [${bank.join(', ')}] cannot make ${total} ${ways} different way(s) (unreachable)` });
+          ok = false;
+        }
+        if (!numbersOf(instruction).includes(total)) {
+          violations.push({ check: 'schema', where: id, detail: `instruction "${instruction}" does not state the total ${total}` });
+        }
+        scopeNumbers.push(total);
+        answerValues.push(`make:${total}`);
+        bumpCard(`make#${total}#${ways}`);
+      } else if (type === 'build') {
         const target = typeof c.targetEquation === 'string' ? c.targetEquation : '';
         const tiles = Array.isArray(c.availableTiles) ? c.availableTiles.map(String) : null;
         if (target.trim() === '' || !tiles) {

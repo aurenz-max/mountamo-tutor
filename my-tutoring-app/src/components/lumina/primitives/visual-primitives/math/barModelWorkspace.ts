@@ -13,6 +13,7 @@
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import type { BarModelChallenge, BarModelEvalMode } from './BarModel';
+import { makeGraphMiss } from './barModelBuild';
 
 export const SPOKEN_GRAPH_MODES: ReadonlySet<BarModelEvalMode> = new Set<BarModelEvalMode>(['say_what_it_shows', 'compare_two_graphs']);
 export const ROW_TAP_MODES: ReadonlySet<BarModelEvalMode> = new Set<BarModelEvalMode>(['compare_bars', 'most_least', 'match_to_bar']);
@@ -123,6 +124,7 @@ export function describeGraphWork(c: BarModelChallenge, view: BarModelView): str
   const rows = view.built.map(r => `${r.label} ${r.value}`).join(', ');
   if (c.evalMode === 'build_one_to_one') return `Stickers placed: ${rows}`;
   if (c.evalMode === 'build_graph') return `Bars set to ${rows}; scale step ${view.chosenStep ?? 'not chosen'}`;
+  if (c.evalMode === 'make_graph') return `Made a graph: ${rows}`;
   return 'Answers aloud';
 }
 
@@ -135,11 +137,13 @@ export function describeGraphWork(c: BarModelChallenge, view: BarModelView): str
  * - a row tapped: `reversed` (the other extreme: the fewest for the most, the shorter of two for the taller),
  *   `other_row`; on match_to_bar the tapped row's count against the pile: `one_short` ... `over_by_more`;
  * - a sticker chart or built graph: `rows_swapped` (the right counts in the wrong rows), `several_rows_off`,
- *   one row `one_short` ... `over_by_more`; `wrong_step` (every bar right, the scale step not).
+ *   one row `one_short` ... `over_by_more`; `wrong_step` (every bar right, the scale step not);
+ * - a made graph (make_graph): what the bars show against the ask (`makeGraphMiss`, barModelBuild.ts).
  * The spoken modes name none: the tutor judges them.
  */
 export type BarModelMiss = 'picked_icon_count' | 'another_row' | 'one_step_off' | 'one_short' | 'one_over' | 'short_by_more'
-  | 'over_by_more' | 'reversed' | 'other_row' | 'rows_swapped' | 'several_rows_off' | 'wrong_step';
+  | 'over_by_more' | 'reversed' | 'other_row' | 'rows_swapped' | 'several_rows_off' | 'wrong_step'
+  | 'tied' | 'not_same' | 'left_empty';
 
 const offBy = (got: number, want: number): BarModelMiss | undefined => got === want ? undefined
   : got === want - 1 ? 'one_short' : got === want + 1 ? 'one_over' : got < want ? 'short_by_more' : 'over_by_more';
@@ -178,6 +182,7 @@ export function barModelMiss(c: BarModelChallenge | null, view: BarModelView): B
     return rowsMiss(want.map(e => e.value), want.map(e => view.built.find(b => b.label === e.label)?.value ?? 0))
       ?? (view.chosenStep !== c.expectedScaleStep ? 'wrong_step' : undefined);
   }
+  if (c.evalMode === 'make_graph') return makeGraphMiss(c.graphRule, view.built.map(r => r.value));
   return undefined;
 }
 
@@ -189,12 +194,14 @@ const CHANNEL: Record<string, string> = {
   build: 'The learner sets each bar with its plus and minus buttons, picks a scale step, then presses Submit graph; '
     + 'the graph checks the bars and the step.',
   speech: 'The learner answers aloud with a comparison; nothing on screen is tapped.',
+  make: 'The graph starts empty. The learner taps a column to put one more picture in it and taps a picture to take one '
+    + 'out, then presses "I\'m done!"; the graph checks whether it fits the ask. Many graphs fit.',
 };
 
 /** What is drawn and asked. Row counts only where the rows are what the item asks about (the spoken modes). */
 export function workspaceScene(c: BarModelChallenge, view: BarModelView): WorkspaceScene {
   const channel = isSpokenGraph(c) ? 'speech' : OPTION_MODES.has(c.evalMode) ? 'options' : ROW_TAP_MODES.has(c.evalMode) ? 'rows'
-    : c.evalMode === 'build_one_to_one' ? 'stickers' : 'build';
+    : c.evalMode === 'build_one_to_one' ? 'stickers' : c.evalMode === 'make_graph' ? 'make' : 'build';
   const drawn: Record<string, string | number> = { rows: c.values.map(v => v.label).join(', ') };
   if (isSpokenGraph(c)) {
     const counts = (rows: BarModelChallenge['values']) => rows.map(v => `${v.label} ${v.value}`).join(', ');
@@ -210,6 +217,8 @@ export function workspaceScene(c: BarModelChallenge, view: BarModelView): Worksp
     facts: {
       kind: c.evalMode, graph: c.graphStyle, ...drawn,
       ...(isSpokenGraph(c) ? {} : { learnerWork: describeGraphWork(c, view) }),
+      // The made bars as numbers, one per row, so the workspace's work history can show where a bar turned back.
+      ...(c.evalMode === 'make_graph' ? Object.fromEntries(view.built.map(r => [r.label, r.value])) : {}),
       constraints: `${CHANNEL[channel]} You cannot tap, place, set or choose anything for the learner.`,
     },
   };

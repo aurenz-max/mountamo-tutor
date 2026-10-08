@@ -1,0 +1,103 @@
+[
+  {
+    "name": "identify",
+    "challengeType": "identify",
+    "gradeBand": null,
+    "count": 7,
+    "targets": [
+      "1/8",
+      "1/3",
+      "1/6",
+      "1/2",
+      "1/4",
+      "1/8",
+      "1/3"
+    ],
+    "oracleViolations": 0,
+    "issues": []
+  },
+  {
+    "name": "build",
+    "challengeType": "build",
+    "gradeBand": null,
+    "count": 3,
+    "targets": [
+      "5/6",
+      "2/3",
+      "3/5"
+    ],
+    "oracleViolations": 0,
+    "issues": []
+  },
+  {
+    "name": "compare",
+    "challengeType": "compare",
+    "gradeBand": null,
+    "count": 3,
+    "targets": [
+      "2/5",
+      "6/7",
+      "4/11"
+    ],
+    "oracleViolations": 0,
+    "issues": []
+  },
+  {
+    "name": "add_subtract",
+    "challengeType": "add_subtract",
+    "gradeBand": null,
+    "count": 3,
+    "targets": [
+      "2/9",
+      "4/7",
+      "7/9"
+    ],
+    "oracleViolations": 0,
+    "issues": []
+  },
+  {
+    "name": "build_equal",
+    "challengeType": "build_equal",
+    "gradeBand": "3-5",
+    "count": 4,
+    "targets": [
+      "5/10",
+      "8/12",
+      "4/12",
+      "2/5"
+    ],
+    "oracleViolations": 0,
+    "issues": []
+  },
+  {
+    "name": "build_equal-K-2",
+    "challengeType": "build_equal",
+    "gradeBand": "K-2",
+    "count": 4,
+    "targets": [
+      "2/3",
+      "1/3",
+      "1/2",
+      "1/4"
+    ],
+    "oracleViolations": 0,
+    "issues": []
+  },
+  {
+    "name": "unpinned",
+    "challengeType": "identify",
+    "gradeBand": null,
+    "count": 7,
+    "targets": [
+      "1/2",
+      "1/3",
+      "1/4",
+      "1/8",
+      "1/6",
+      "1/2",
+      "1/3"
+    ],
+    "oracleViolations": 0,
+    "issues": []
+  }
+]

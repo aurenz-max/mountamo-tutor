@@ -1,0 +1,746 @@
+{
+ "results": [
+  {
+   "lesson": {
+    "mode": "make_array",
+    "grade": "Grade 2",
+    "topic": "Arrays with equal rows",
+    "intent": "Make arrays with a given number of objects",
+    "payload": true
+   },
+   "title": "Build Some Arrays",
+   "description": "Tap grid cells to create different rectangular arrays and see how rows and columns work together.",
+   "oracle": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "array-grid-1",
+     "total": 8,
+     "ways": 1,
+     "instruction": "Make an array with 8 squares.",
+     "arrays": [
+      "1x8",
+      "2x4",
+      "4x2",
+      "8x1"
+     ],
+     "everyArrayPasses": true,
+     "oneShortMiss": "one_line_short",
+     "sceneFacts": {
+      "kind": "make_array",
+      "grid": "an empty grid of 8 by 8 cells; the learner taps a cell to put a square in or take it out",
+      "rowsMade": 1,
+      "columnsMade": 8,
+      "squaresMade": 8,
+      "learnerWork": "Made an array of 1 row of 8",
+      "constraints": "The learner taps cells to make squares and presses \"I'm done!\"; the activity checks the array itself. You cannot tap or build for the learner."
+     }
+    },
+    {
+     "id": "array-grid-2",
+     "total": 16,
+     "ways": 2,
+     "instruction": "Make an array with 16 squares. Then make a different array with 16 squares.",
+     "arrays": [
+      "2x8",
+      "4x4",
+      "8x2"
+     ],
+     "everyArrayPasses": true,
+     "oneShortMiss": "ragged",
+     "sceneFacts": {
+      "kind": "make_array",
+      "grid": "an empty grid of 8 by 12 cells; the learner taps a cell to put a square in or take it out",
+      "rowsMade": 2,
+      "columnsMade": 8,
+      "squaresMade": 16,
+      "way": "first",
+      "learnerWork": "Made an array of 2 rows of 8",
+      "constraints": "The learner taps cells to make squares and presses \"I'm done!\"; the activity checks the array itself. You cannot tap or build for the learner."
+     }
+    },
+    {
+     "id": "array-grid-3",
+     "total": 12,
+     "ways": 1,
+     "instruction": "Make an array with 12 squares.",
+     "arrays": [
+      "1x12",
+      "2x6",
+      "3x4",
+      "4x3",
+      "6x2"
+     ],
+     "everyArrayPasses": true,
+     "oneShortMiss": "one_line_short",
+     "sceneFacts": {
+      "kind": "make_array",
+      "grid": "an empty grid of 8 by 12 cells; the learner taps a cell to put a square in or take it out",
+      "rowsMade": 1,
+      "columnsMade": 12,
+      "squaresMade": 12,
+      "learnerWork": "Made an array of 1 row of 12",
+      "constraints": "The learner taps cells to make squares and presses \"I'm done!\"; the activity checks the array itself. You cannot tap or build for the learner."
+     }
+    },
+    {
+     "id": "array-grid-4",
+     "total": 15,
+     "ways": 2,
+     "instruction": "Make an array with 15 squares. Then make a different array with 15 squares.",
+     "arrays": [
+      "3x5",
+      "5x3"
+     ],
+     "everyArrayPasses": true,
+     "oneShortMiss": "ragged",
+     "sceneFacts": {
+      "kind": "make_array",
+      "grid": "an empty grid of 8 by 12 cells; the learner taps a cell to put a square in or take it out",
+      "rowsMade": 3,
+      "columnsMade": 5,
+      "squaresMade": 15,
+      "way": "first",
+      "learnerWork": "Made an array of 3 rows of 5",
+      "constraints": "The learner taps cells to make squares and presses \"I'm done!\"; the activity checks the array itself. You cannot tap or build for the learner."
+     }
+    }
+   ],
+   "data": {
+    "title": "Build Some Arrays",
+    "description": "Tap grid cells to create different rectangular arrays and see how rows and columns work together.",
+    "challenges": [
+     {
+      "id": "array-grid-1",
+      "targetRows": 0,
+      "targetColumns": 0,
+      "total": 8,
+      "ways": 1,
+      "instruction": "Make an array with 8 squares."
+     },
+     {
+      "id": "array-grid-2",
+      "targetRows": 0,
+      "targetColumns": 0,
+      "total": 16,
+      "ways": 2,
+      "instruction": "Make an array with 16 squares. Then make a different array with 16 squares."
+     },
+     {
+      "id": "array-grid-3",
+      "targetRows": 0,
+      "targetColumns": 0,
+      "total": 12,
+      "ways": 1,
+      "instruction": "Make an array with 12 squares."
+     },
+     {
+      "id": "array-grid-4",
+      "targetRows": 0,
+      "targetColumns": 0,
+      "total": 15,
+      "ways": 2,
+      "instruction": "Make an array with 15 squares. Then make a different array with 15 squares."
+     }
+    ],
+    "challengeType": "make_array",
+    "iconType": "square",
+    "showLabels": true,
+    "maxRows": 6,
+    "maxColumns": 8
+   }
+  },
+  {
+   "lesson": {
+    "mode": "make_array",
+    "grade": "Grade 3",
+    "topic": "Multiplication arrays",
+    "intent": "Show a product as different arrays"
+   },
+   "title": "Build Different Arrays",
+   "description": "Explore how the same total number of squares can be arranged into many different rectangular shapes.",
+   "oracle": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "array-grid-1",
+     "total": 16,
+     "ways": 1,
+     "instruction": "Make an array with 16 squares.",
+     "arrays": [
+      "2x8",
+      "4x4",
+      "8x2"
+     ],
+     "everyArrayPasses": true,
+     "oneShortMiss": "ragged",
+     "sceneFacts": {
+      "kind": "make_array",
+      "grid": "an empty grid of 8 by 12 cells; the learner taps a cell to put a square in or take it out",
+      "rowsMade": 2,
+      "columnsMade": 8,
+      "squaresMade": 16,
+      "learnerWork": "Made an array of 2 rows of 8",
+      "constraints": "The learner taps cells to make squares and presses \"I'm done!\"; the activity checks the array itself. You cannot tap or build for the learner."
+     }
+    },
+    {
+     "id": "array-grid-2",
+     "total": 20,
+     "ways": 2,
+     "instruction": "Make an array with 20 squares. Then make a different array with 20 squares.",
+     "arrays": [
+      "2x10",
+      "4x5",
+      "5x4"
+     ],
+     "everyArrayPasses": true,
+     "oneShortMiss": "ragged",
+     "sceneFacts": {
+      "kind": "make_array",
+      "grid": "an empty grid of 8 by 12 cells; the learner taps a cell to put a square in or take it out",
+      "rowsMade": 2,
+      "columnsMade": 10,
+      "squaresMade": 20,
+      "way": "first",
+      "learnerWork": "Made an array of 2 rows of 10",
+      "constraints": "The learner taps cells to make squares and presses \"I'm done!\"; the activity checks the array itself. You cannot tap or build for the learner."
+     }
+    },
+    {
+     "id": "array-grid-3",
+     "total": 18,
+     "ways": 1,
+     "instruction": "Make an array with 18 squares.",
+     "arrays": [
+      "2x9",
+      "3x6",
+      "6x3"
+     ],
+     "everyArrayPasses": true,
+     "oneShortMiss": "ragged",
+     "sceneFacts": {
+      "kind": "make_array",
+      "grid": "an empty grid of 8 by 12 cells; the learner taps a cell to put a square in or take it out",
+      "rowsMade": 2,
+      "columnsMade": 9,
+      "squaresMade": 18,
+      "learnerWork": "Made an array of 2 rows of 9",
+      "constraints": "The learner taps cells to make squares and presses \"I'm done!\"; the activity checks the array itself. You cannot tap or build for the learner."
+     }
+    },
+    {
+     "id": "array-grid-4",
+     "total": 24,
+     "ways": 2,
+     "instruction": "Make an array with 24 squares. Then make a different array with 24 squares.",
+     "arrays": [
+      "2x12",
+      "3x8",
+      "4x6",
+      "6x4",
+      "8x3"
+     ],
+     "everyArrayPasses": true,
+     "oneShortMiss": "ragged",
+     "sceneFacts": {
+      "kind": "make_array",
+      "grid": "an empty grid of 8 by 12 cells; the learner taps a cell to put a square in or take it out",
+      "rowsMade": 2,
+      "columnsMade": 12,
+      "squaresMade": 24,
+      "way": "first",
+      "learnerWork": "Made an array of 2 rows of 12",
+      "constraints": "The learner taps cells to make squares and presses \"I'm done!\"; the activity checks the array itself. You cannot tap or build for the learner."
+     }
+    }
+   ],
+   "data": {
+    "title": "Build Different Arrays",
+    "description": "Explore how the same total number of squares can be arranged into many different rectangular shapes.",
+    "challenges": [
+     {
+      "id": "array-grid-1",
+      "targetRows": 0,
+      "targetColumns": 0,
+      "total": 16,
+      "ways": 1,
+      "instruction": "Make an array with 16 squares."
+     },
+     {
+      "id": "array-grid-2",
+      "targetRows": 0,
+      "targetColumns": 0,
+      "total": 20,
+      "ways": 2,
+      "instruction": "Make an array with 20 squares. Then make a different array with 20 squares."
+     },
+     {
+      "id": "array-grid-3",
+      "targetRows": 0,
+      "targetColumns": 0,
+      "total": 18,
+      "ways": 1,
+      "instruction": "Make an array with 18 squares."
+     },
+     {
+      "id": "array-grid-4",
+      "targetRows": 0,
+      "targetColumns": 0,
+      "total": 24,
+      "ways": 2,
+      "instruction": "Make an array with 24 squares. Then make a different array with 24 squares."
+     }
+    ],
+    "challengeType": "make_array",
+    "iconType": "square",
+    "showLabels": true,
+    "maxRows": 6,
+    "maxColumns": 8
+   }
+  },
+  {
+   "lesson": {
+    "mode": "make_array",
+    "grade": "Grade 3",
+    "topic": "Arrays up to 12",
+    "intent": "Make arrays for numbers up to 12",
+    "difficulty": "easy"
+   },
+   "title": "Build Some Arrays",
+   "description": "Get ready to construct different rectangular arrays using given numbers of squares. Explore how the same total can be arranged in multiple ways!",
+   "supportTier": "easy",
+   "strategyHint": "An array has the same number of squares in every row.",
+   "oracle": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "array-grid-1",
+     "total": 8,
+     "ways": 1,
+     "instruction": "Make an array with 8 squares.",
+     "arrays": [
+      "1x8",
+      "2x4",
+      "4x2",
+      "8x1"
+     ],
+     "everyArrayPasses": true,
+     "oneShortMiss": "one_line_short",
+     "sceneFacts": {
+      "kind": "make_array",
+      "grid": "an empty grid of 8 by 8 cells; the learner taps a cell to put a square in or take it out",
+      "rowsMade": 1,
+      "columnsMade": 8,
+      "squaresMade": 8,
+      "learnerWork": "Made an array of 1 row of 8",
+      "constraints": "The learner taps cells to make squares and presses \"I'm done!\"; the activity checks the array itself. You cannot tap or build for the learner."
+     }
+    },
+    {
+     "id": "array-grid-2",
+     "total": 6,
+     "ways": 1,
+     "instruction": "Make an array with 6 squares.",
+     "arrays": [
+      "1x6",
+      "2x3",
+      "3x2",
+      "6x1"
+     ],
+     "everyArrayPasses": true,
+     "oneShortMiss": "one_line_short",
+     "sceneFacts": {
+      "kind": "make_array",
+      "grid": "an empty grid of 6 by 6 cells; the learner taps a cell to put a square in or take it out",
+      "rowsMade": 1,
+      "columnsMade": 6,
+      "squaresMade": 6,
+      "learnerWork": "Made an array of 1 row of 6",
+      "constraints": "The learner taps cells to make squares and presses \"I'm done!\"; the activity checks the array itself. You cannot tap or build for the learner."
+     }
+    },
+    {
+     "id": "array-grid-3",
+     "total": 12,
+     "ways": 1,
+     "instruction": "Make an array with 12 squares.",
+     "arrays": [
+      "1x12",
+      "2x6",
+      "3x4",
+      "4x3",
+      "6x2"
+     ],
+     "everyArrayPasses": true,
+     "oneShortMiss": "one_line_short",
+     "sceneFacts": {
+      "kind": "make_array",
+      "grid": "an empty grid of 8 by 12 cells; the learner taps a cell to put a square in or take it out",
+      "rowsMade": 1,
+      "columnsMade": 12,
+      "squaresMade": 12,
+      "learnerWork": "Made an array of 1 row of 12",
+      "constraints": "The learner taps cells to make squares and presses \"I'm done!\"; the activity checks the array itself. You cannot tap or build for the learner."
+     }
+    },
+    {
+     "id": "array-grid-4",
+     "total": 9,
+     "ways": 1,
+     "instruction": "Make an array with 9 squares.",
+     "arrays": [
+      "1x9",
+      "3x3"
+     ],
+     "everyArrayPasses": true,
+     "oneShortMiss": "one_line_short",
+     "sceneFacts": {
+      "kind": "make_array",
+      "grid": "an empty grid of 8 by 9 cells; the learner taps a cell to put a square in or take it out",
+      "rowsMade": 1,
+      "columnsMade": 9,
+      "squaresMade": 9,
+      "learnerWork": "Made an array of 1 row of 9",
+      "constraints": "The learner taps cells to make squares and presses \"I'm done!\"; the activity checks the array itself. You cannot tap or build for the learner."
+     }
+    }
+   ],
+   "data": {
+    "title": "Build Some Arrays",
+    "description": "Get ready to construct different rectangular arrays using given numbers of squares. Explore how the same total can be arranged in multiple ways!",
+    "challenges": [
+     {
+      "id": "array-grid-1",
+      "targetRows": 0,
+      "targetColumns": 0,
+      "total": 8,
+      "ways": 1,
+      "instruction": "Make an array with 8 squares."
+     },
+     {
+      "id": "array-grid-2",
+      "targetRows": 0,
+      "targetColumns": 0,
+      "total": 6,
+      "ways": 1,
+      "instruction": "Make an array with 6 squares."
+     },
+     {
+      "id": "array-grid-3",
+      "targetRows": 0,
+      "targetColumns": 0,
+      "total": 12,
+      "ways": 1,
+      "instruction": "Make an array with 12 squares."
+     },
+     {
+      "id": "array-grid-4",
+      "targetRows": 0,
+      "targetColumns": 0,
+      "total": 9,
+      "ways": 1,
+      "instruction": "Make an array with 9 squares."
+     }
+    ],
+    "challengeType": "make_array",
+    "iconType": "square",
+    "showLabels": true,
+    "maxRows": 6,
+    "maxColumns": 8,
+    "supportTier": "easy",
+    "strategyHint": "An array has the same number of squares in every row."
+   }
+  },
+  {
+   "lesson": {
+    "mode": "build_array",
+    "grade": "Grade 2",
+    "topic": "Building arrays",
+    "intent": "Build arrays with rows and columns",
+    "payload": true
+   },
+   "title": "Star Array Challenge",
+   "description": "Let us practice making and counting rows and columns of stars to build exciting arrays!",
+   "oracle": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "array-grid-1",
+     "rows": 2,
+     "columns": 3
+    },
+    {
+     "id": "array-grid-2",
+     "rows": 4,
+     "columns": 2
+    },
+    {
+     "id": "array-grid-3",
+     "rows": 3,
+     "columns": 4
+    },
+    {
+     "id": "array-grid-4",
+     "rows": 2,
+     "columns": 5
+    },
+    {
+     "id": "array-grid-5",
+     "rows": 5,
+     "columns": 3
+    }
+   ],
+   "data": {
+    "title": "Star Array Challenge",
+    "description": "Let us practice making and counting rows and columns of stars to build exciting arrays!",
+    "challenges": [
+     {
+      "id": "array-grid-1",
+      "targetRows": 2,
+      "targetColumns": 3
+     },
+     {
+      "id": "array-grid-2",
+      "targetRows": 4,
+      "targetColumns": 2
+     },
+     {
+      "id": "array-grid-3",
+      "targetRows": 3,
+      "targetColumns": 4
+     },
+     {
+      "id": "array-grid-4",
+      "targetRows": 2,
+      "targetColumns": 5
+     },
+     {
+      "id": "array-grid-5",
+      "targetRows": 5,
+      "targetColumns": 3
+     }
+    ],
+    "challengeType": "build_array",
+    "iconType": "star",
+    "showLabels": true,
+    "maxRows": 6,
+    "maxColumns": 8
+   }
+  },
+  {
+   "lesson": {
+    "mode": "count_array",
+    "grade": "Grade 3",
+    "topic": "Counting arrays",
+    "intent": "Find the total in an array",
+    "payload": true
+   },
+   "title": "Star Array Challenge",
+   "description": "Explore different arrays and practice counting the total objects to discover patterns in multiplication.",
+   "oracle": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "array-grid-1",
+     "rows": 5,
+     "columns": 3
+    },
+    {
+     "id": "array-grid-2",
+     "rows": 4,
+     "columns": 5
+    },
+    {
+     "id": "array-grid-3",
+     "rows": 6,
+     "columns": 8
+    },
+    {
+     "id": "array-grid-4",
+     "rows": 6,
+     "columns": 5
+    },
+    {
+     "id": "array-grid-5",
+     "rows": 3,
+     "columns": 7
+    },
+    {
+     "id": "array-grid-6",
+     "rows": 2,
+     "columns": 4
+    },
+    {
+     "id": "array-grid-7",
+     "rows": 4,
+     "columns": 3
+    }
+   ],
+   "data": {
+    "title": "Star Array Challenge",
+    "description": "Explore different arrays and practice counting the total objects to discover patterns in multiplication.",
+    "challenges": [
+     {
+      "id": "array-grid-1",
+      "targetRows": 5,
+      "targetColumns": 3
+     },
+     {
+      "id": "array-grid-2",
+      "targetRows": 4,
+      "targetColumns": 5
+     },
+     {
+      "id": "array-grid-3",
+      "targetRows": 6,
+      "targetColumns": 8
+     },
+     {
+      "id": "array-grid-4",
+      "targetRows": 6,
+      "targetColumns": 5
+     },
+     {
+      "id": "array-grid-5",
+      "targetRows": 3,
+      "targetColumns": 7
+     },
+     {
+      "id": "array-grid-6",
+      "targetRows": 2,
+      "targetColumns": 4
+     },
+     {
+      "id": "array-grid-7",
+      "targetRows": 4,
+      "targetColumns": 3
+     }
+    ],
+    "challengeType": "count_array",
+    "iconType": "star",
+    "showLabels": true,
+    "maxRows": 6,
+    "maxColumns": 8
+   }
+  },
+  {
+   "lesson": {
+    "mode": "multiply_array",
+    "grade": "Grade 3",
+    "topic": "Arrays and multiplication",
+    "intent": "Write a multiplication sentence for an array",
+    "payload": true
+   },
+   "title": "Star Array Challenge",
+   "description": "Explore the connection between visual arrays and multiplication by writing number sentences for rows and columns.",
+   "oracle": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "array-grid-1",
+     "rows": 5,
+     "columns": 6
+    },
+    {
+     "id": "array-grid-2",
+     "rows": 6,
+     "columns": 4
+    },
+    {
+     "id": "array-grid-3",
+     "rows": 5,
+     "columns": 2
+    },
+    {
+     "id": "array-grid-4",
+     "rows": 4,
+     "columns": 8
+    },
+    {
+     "id": "array-grid-5",
+     "rows": 4,
+     "columns": 2
+    },
+    {
+     "id": "array-grid-6",
+     "rows": 5,
+     "columns": 3
+    },
+    {
+     "id": "array-grid-7",
+     "rows": 5,
+     "columns": 4
+    }
+   ],
+   "data": {
+    "title": "Star Array Challenge",
+    "description": "Explore the connection between visual arrays and multiplication by writing number sentences for rows and columns.",
+    "challenges": [
+     {
+      "id": "array-grid-1",
+      "targetRows": 5,
+      "targetColumns": 6
+     },
+     {
+      "id": "array-grid-2",
+      "targetRows": 6,
+      "targetColumns": 4
+     },
+     {
+      "id": "array-grid-3",
+      "targetRows": 5,
+      "targetColumns": 2
+     },
+     {
+      "id": "array-grid-4",
+      "targetRows": 4,
+      "targetColumns": 8
+     },
+     {
+      "id": "array-grid-5",
+      "targetRows": 4,
+      "targetColumns": 2
+     },
+     {
+      "id": "array-grid-6",
+      "targetRows": 5,
+      "targetColumns": 3
+     },
+     {
+      "id": "array-grid-7",
+      "targetRows": 5,
+      "targetColumns": 4
+     }
+    ],
+    "challengeType": "multiply_array",
+    "iconType": "star",
+    "showLabels": true,
+    "maxRows": 6,
+    "maxColumns": 8
+   }
+  }
+ ],
+ "logs": [
+  "[ArrayGrid] evalMode: \"make_array\" → schema enum: [make_array] (β=1.6)",
+  "⊞ Array Grid scope cap → 2..8 (from intent)",
+  "⊞ Array Grid generated: {\n  topic: 'Arrays with equal rows',\n  challengeType: 'make_array',\n  instanceCount: 4,\n  pairs: [\n    { total: 8, ways: 1 },\n    { total: 16, ways: 2 },\n    { total: 12, ways: 1 },\n    { total: 15, ways: 2 }\n  ]\n}",
+  "[ArrayGrid] evalMode: \"make_array\" → schema enum: [make_array] (β=1.6)",
+  "⊞ Array Grid scope cap → 2..8 (from intent)",
+  "⊞ Array Grid generated: {\n  topic: 'Multiplication arrays',\n  challengeType: 'make_array',\n  instanceCount: 4,\n  pairs: [\n    { total: 16, ways: 1 },\n    { total: 20, ways: 2 },\n    { total: 18, ways: 1 },\n    { total: 24, ways: 2 }\n  ]\n}",
+  "[ArrayGrid] evalMode: \"make_array\" → schema enum: [make_array] (β=1.6)",
+  "⊞ Array Grid scope cap → 2..8 (from intent)",
+  "⊞ Array Grid product ceiling → 12 (from scope)",
+  "[ArrayGrid] Support tier \"easy\" applied (single-mode make_array): showLabels=true, strategyHint=shown",
+  "⊞ Array Grid generated: {\n  topic: 'Arrays up to 12',\n  challengeType: 'make_array',\n  instanceCount: 4,\n  pairs: [\n    { total: 8, ways: 1 },\n    { total: 6, ways: 1 },\n    { total: 12, ways: 1 },\n    { total: 9, ways: 1 }\n  ]\n}",
+  "[ArrayGrid] evalMode: \"build_array\" → schema enum: [build_array] (β=1.5)",
+  "⊞ Array Grid scope cap → 2..8 (from intent)",
+  "⊞ Array Grid generated: {\n  topic: 'Building arrays',\n  challengeType: 'build_array',\n  instanceCount: 5,\n  pairs: [\n    { rows: 2, cols: 3 },\n    { rows: 4, cols: 2 },\n    { rows: 3, cols: 4 },\n    { rows: 2, cols: 5 },\n    { rows: 5, cols: 3 }\n  ]\n}",
+  "[ArrayGrid] evalMode: \"count_array\" → schema enum: [count_array] (β=2.5)",
+  "⊞ Array Grid scope cap → 2..8 (from intent)",
+  "⊞ Array Grid generated: {\n  topic: 'Counting arrays',\n  challengeType: 'count_array',\n  instanceCount: 7,\n  pairs: [\n    { rows: 5, cols: 3 },\n    { rows: 4, cols: 5 },\n    { rows: 6, cols: 8 },\n    { rows: 6, cols: 5 },\n    { rows: 3, cols: 7 },\n    { rows: 2, cols: 4 },\n    { rows: 4, cols: 3 }\n  ]\n}",
+  "[ArrayGrid] evalMode: \"multiply_array\" → schema enum: [multiply_array] (β=3.5)",
+  "⊞ Array Grid scope cap → 2..8 (from intent)",
+  "⊞ Array Grid generated: {\n  topic: 'Arrays and multiplication',\n  challengeType: 'multiply_array',\n  instanceCount: 7,\n  pairs: [\n    { rows: 5, cols: 6 },\n    { rows: 6, cols: 4 },\n    { rows: 5, cols: 2 },\n    { rows: 4, cols: 8 },\n    { rows: 4, cols: 2 },\n    { rows: 5, cols: 3 },\n    { rows: 5, cols: 4 }\n  ]\n}"
+ ]
+}

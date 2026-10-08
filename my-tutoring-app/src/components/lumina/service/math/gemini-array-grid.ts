@@ -31,6 +31,7 @@ import {
   ArrayGridChallengeType,
   ArrayGridIconType,
 } from "../../primitives/visual-primitives/math/ArrayGrid";
+import { arraysOf, makeArrayAsk } from "../../primitives/visual-primitives/math/arrayGridWorkspace";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -53,6 +54,12 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     promptDoc:
       `"multiply_array": Array is shown, student writes the multiplication sentence (rows × columns = total). Grades 3-4.`,
     schemaDescription: "'multiply_array' (write multiplication sentence from array)",
+  },
+  make_array: {
+    promptDoc:
+      `"make_array": Open build. Student makes ANY rectangular array with a stated number of squares on an empty grid `
+      + `(12 as 1×12, 2×6, 3×4 or 4×3); some items then ask for a different array. Grades 2-3.`,
+    schemaDescription: "'make_array' (make any array with N squares)",
   },
 };
 
@@ -97,6 +104,8 @@ const STRATEGY_HINT_BY_MODE: Record<ArrayGridChallengeType, string> = {
     'Skip-count one row at a time instead of counting each item one by one.',
   multiply_array:
     'Count how many rows, then how many are in each row — then multiply those two numbers.',
+  make_array:
+    'An array has the same number of squares in every row.',
 };
 
 /**
@@ -153,9 +162,9 @@ const arrayGridWrapperSchema: Schema = {
   properties: {
     challengeType: {
       type: Type.STRING,
-      enum: ["build_array", "count_array", "multiply_array"],
+      enum: ["build_array", "count_array", "multiply_array", "make_array"],
       description:
-        "Challenge type controlling difficulty: 'build_array' (2-3), 'count_array' (2-3), 'multiply_array' (3-4).",
+        "Challenge type controlling difficulty: 'build_array' (2-3), 'make_array' (2-3), 'count_array' (2-3), 'multiply_array' (3-4).",
     },
     title: {
       type: Type.STRING,
@@ -193,6 +202,7 @@ const COUNT_BY_MODE: Record<ArrayGridChallengeType, number> = {
   build_array: 5,
   count_array: 7,
   multiply_array: 7,
+  make_array: 4,
 };
 
 // Component-side caps (the row/column button panels max out at these counts).
@@ -275,7 +285,8 @@ function dimensionRangeFor(
       // Slightly larger so skip-counting feels useful.
       return { rowMin: 2, rowMax: 6, colMin: 3, colMax: 8 };
     case 'multiply_array':
-      // Multiplication facts through 6 × 8.
+    case 'make_array':
+      // Multiplication facts through 6 × 8. make_array picks totals instead (`pickMakeTotals`).
       return { rowMin: 2, rowMax: 6, colMin: 2, colMax: 8 };
   }
 }
@@ -495,6 +506,39 @@ function buildChallenges(
 }
 
 // ---------------------------------------------------------------------------
+// make_array (open build): code owns every total, the ways and the ask
+// ---------------------------------------------------------------------------
+
+/** Totals with more than one array of at least two rows and two columns. Grade 2 keeps one within 5 × 5 (2.OA.C.4). */
+const MAKE_TOTALS_G2 = [6, 8, 10, 12, 15, 16, 20];
+const MAKE_TOTALS_G3 = [12, 16, 18, 20, 24];
+
+const twoByTwoArrays = (n: number) => arraysOf(n).filter((a) => a.rows >= 2 && a.columns >= 2);
+
+/**
+ * `count` distinct totals within the band, under a stated product ceiling ("arrays up to 12") when one is named. A
+ * ceiling that leaves too few totals falls back to every total from 4 up to it that makes an array of two rows or more.
+ */
+export function pickMakeTotals(gradeLevel: string, count: number, ceiling?: number): number[] {
+  const grade = /kinder/i.test(gradeLevel) ? 0 : parseInt(gradeLevel.match(/\d+/)?.[0] ?? '3', 10);
+  const band = grade <= 2 ? MAKE_TOTALS_G2 : MAKE_TOTALS_G3;
+  let pool = band.filter((n) => ceiling === undefined || n <= ceiling);
+  if (pool.length < count && ceiling !== undefined) {
+    pool = Array.from({ length: Math.max(0, Math.min(ceiling, 24) - 3) }, (_, i) => i + 4).filter((n) => twoByTwoArrays(n).length > 0);
+  }
+  if (pool.length < 2) pool = band;
+  return shuffle(pool).slice(0, Math.min(count, pool.length));
+}
+
+/** Every second item asks for a different array too, except at the easy tier (one array per item). */
+function buildMakeChallenges(totals: number[], tier: SupportTier | null): ArrayGridChallenge[] {
+  return totals.map((total, idx) => {
+    const ways: 1 | 2 = tier !== 'easy' && idx % 2 === 1 ? 2 : 1;
+    return { id: `array-grid-${idx + 1}`, targetRows: 0, targetColumns: 0, total, ways, instruction: makeArrayAsk(total, ways) };
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Main generator
 // ---------------------------------------------------------------------------
 
@@ -629,9 +673,11 @@ Return ONLY the wrapper metadata in the response schema.
     console.log(`⊞ Array Grid product ceiling → ${productCeiling} (from scope)`);
   }
 
-  const challenges = buildChallenges(challengeType, instanceCount, scopeCap ?? undefined, productCeiling);
+  const challenges = challengeType === 'make_array'
+    ? buildMakeChallenges(pickMakeTotals(gradeLevel, instanceCount, productCeiling), supportTier)
+    : buildChallenges(challengeType, instanceCount, scopeCap ?? undefined, productCeiling);
 
-  const iconType: ArrayGridIconType =
+  const iconType: ArrayGridIconType = challengeType === 'make_array' ? 'square' :
     (config?.iconType as ArrayGridIconType) ||
     (wrapper.iconType as ArrayGridIconType) ||
     (challengeType === 'multiply_array' ? 'dot' : 'star');
@@ -655,13 +701,17 @@ Return ONLY the wrapper metadata in the response schema.
     topic,
     challengeType,
     instanceCount: challenges.length,
-    pairs: challenges.map((c) => ({ rows: c.targetRows, cols: c.targetColumns })),
+    pairs: challenges.map((c) => c.total !== undefined ? { total: c.total, ways: c.ways } : { rows: c.targetRows, cols: c.targetColumns }),
   });
 
+  // On a make_array session the totals are the task: a title or description that names a number is replaced.
+  const numberFree = (text: string | undefined, fallback: string) =>
+    challengeType === 'make_array' && text && /\d/.test(text) ? fallback : text;
+
   return {
-    title: wrapper.title || 'Array Builder',
+    title: numberFree(wrapper.title, 'Make Your Own Arrays') || 'Array Builder',
     description:
-      wrapper.description ||
+      numberFree(wrapper.description, 'Fill the grid with squares in equal rows to make your own arrays.') ||
       // challenges.length, not instanceCount — the selector ships a shorter session
       // rather than repeating a card when the scope admits fewer distinct arrays.
       `Practice ${challenges.length} ${challengeType.replace('_', ' ')} problems with arrays.`,

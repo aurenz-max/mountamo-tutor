@@ -95,7 +95,11 @@ const KNOWN_MODES = new Set([
   'scaled_bar_graph',
   'graph_word_problem',
   'build_graph',
+  'make_graph',
 ]);
+/** make_graph: the word each rule kind's ask must carry, and the tallest a made bar can be. */
+const RULE_WORD: Record<string, RegExp> = { most: /\bmost\b/i, fewest: /\bfewest\b/i, same: /\bsame\b/i, more_than: /\bmore\b/i };
+const GRAPH_MAX = 10;
 
 const MORE_RE = /\b(more|most|greater|greatest|tallest|largest|highest|biggest|maximum|max)\b/i;
 const LESS_RE = /\b(less|least|fewer|fewest|smaller|smallest|shortest|lowest|minimum|min)\b/i;
@@ -164,6 +168,34 @@ export const barModelOracle: ContentOracle = {
       const mode = String(c.evalMode ?? '');
       if (!KNOWN_MODES.has(mode)) {
         uncheckedTypes.add(mode || '(missing evalMode)');
+        continue;
+      }
+
+      // ── make_graph: an open build with no key. The ask must state the rule, name its rows, and be makeable. ──
+      if (mode === 'make_graph') {
+        const rows = readBars(c.values);
+        const r = (c.graphRule ?? null) as Record<string, unknown> | null;
+        const valid = (i: unknown) => isInt(i) && (i as number) >= 0 && (i as number) < (rows?.length ?? 0);
+        if (!rows || rows.length < 2 || !r || !(String(r.kind) in RULE_WORD) || !valid(r.a)
+            || (r.kind === 'same' || r.kind === 'more_than') && (!valid(r.b) || r.b === r.a)) {
+          violations.push({ check: 'schema', where: id, detail: `make_graph needs 2+ rows and a rule naming them; got ${JSON.stringify(r)}` });
+          continue;
+        }
+        if (rows.some(b => b.value !== 0)) {
+          violations.push({ check: 'answer-key-desync', where: id, detail: 'make_graph must start on an empty graph — a filled bar makes part of the graph for the learner' });
+        }
+        // Makeable: the smallest graph that fits must fit under the bar cap (more_than needs by + 1 on the taller bar).
+        if (r.kind === 'more_than' && (!isInt(r.by) || (r.by as number) < 1 || (r.by as number) + 1 > GRAPH_MAX)) {
+          violations.push({ check: 'answer-key-desync', where: id, detail: `"${String(r.by)} more" cannot be made on bars that hold ${GRAPH_MAX}` });
+        }
+        const prompt = String(c.prompt ?? '');
+        const named = [r.a, ...(r.b != null ? [r.b] : [])].map(i => rows[i as number].label);
+        if (!RULE_WORD[String(r.kind)].test(prompt) || named.some(l => !prompt.toLowerCase().includes(l.toLowerCase()))) {
+          violations.push({ check: 'answer-key-desync', where: id, detail: `the ask "${prompt}" does not state the rule ${JSON.stringify(r)} — a graph made to the words would be judged against another rule` });
+        }
+        checked++;
+        (answersByMode.make_graph ??= []).push(`${String(r.kind)}:${named.join('/')}`);
+        bump(cardSeen, `make|${rows.map(b => b.label).join(',')}|${String(r.kind)}|${named.join('/')}|${String(r.by ?? '')}`);
         continue;
       }
 

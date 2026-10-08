@@ -1,0 +1,218 @@
+[
+ {
+  "name": "grade2",
+  "grade": "2",
+  "gradeContext": "Grade 2",
+  "topic": "Counting money",
+  "intent": "Show an amount with coins in different ways",
+  "data": {
+   "title": "Showing Amounts Fun!",
+   "description": "Practice showing amounts with coins.",
+   "challenges": [
+    {
+     "id": "c1",
+     "type": "show-amount",
+     "instruction": "Show 24¢ for a sour gummy, any way you like.",
+     "hint": "Put in big coins first, then count on with smaller ones.",
+     "targetAmount": 24,
+     "availableCoins": [
+      "penny",
+      "nickel",
+      "dime",
+      "quarter",
+      "half-dollar"
+     ]
+    },
+    {
+     "id": "c2",
+     "type": "show-amount",
+     "instruction": "Show 38¢ for an orange lollipop, any way you like.",
+     "hint": "Put in big coins first, then count on with smaller ones.",
+     "targetAmount": 38,
+     "availableCoins": [
+      "penny",
+      "nickel",
+      "dime",
+      "quarter",
+      "half-dollar"
+     ]
+    },
+    {
+     "id": "c3",
+     "type": "show-amount",
+     "instruction": "Show 69¢ for a chocolate drop, any way you like.",
+     "hint": "Put in big coins first, then count on with smaller ones.",
+     "targetAmount": 69,
+     "availableCoins": [
+      "penny",
+      "nickel",
+      "dime",
+      "quarter",
+      "half-dollar"
+     ]
+    },
+    {
+     "id": "c4",
+     "type": "show-amount",
+     "instruction": "Show 89¢ for a fruit chew, any way you like.",
+     "hint": "Put in big coins first, then count on with smaller ones.",
+     "targetAmount": 89,
+     "availableCoins": [
+      "penny",
+      "nickel",
+      "dime",
+      "quarter",
+      "half-dollar"
+     ]
+    }
+   ],
+   "gradeBand": "2"
+  },
+  "liveValidator": "ok",
+  "oracle": {
+   "violations": [],
+   "uncheckedTypes": [],
+   "checkedChallenges": 4
+  }
+ },
+ {
+  "name": "k",
+  "grade": "K",
+  "gradeContext": "Kindergarten",
+  "topic": "Pennies, nickels and dimes",
+  "intent": "Make small amounts with coins",
+  "data": {
+   "title": "Showing Amounts Fun!",
+   "description": "Practice showing amounts with coins.",
+   "challenges": [
+    {
+     "id": "c1",
+     "type": "show-amount",
+     "instruction": "Show 8¢ for a sticker, any way you like.",
+     "hint": "Put in big coins first, then count on with smaller ones.",
+     "targetAmount": 8,
+     "availableCoins": [
+      "penny",
+      "nickel",
+      "dime"
+     ]
+    },
+    {
+     "id": "c2",
+     "type": "show-amount",
+     "instruction": "Show 14¢ for an apple, any way you like.",
+     "hint": "Put in big coins first, then count on with smaller ones.",
+     "targetAmount": 14,
+     "availableCoins": [
+      "penny",
+      "nickel",
+      "dime"
+     ]
+    },
+    {
+     "id": "c3",
+     "type": "show-amount",
+     "instruction": "Show 17¢ for a toy car, any way you like.",
+     "hint": "Put in big coins first, then count on with smaller ones.",
+     "targetAmount": 17,
+     "availableCoins": [
+      "penny",
+      "nickel",
+      "dime"
+     ]
+    },
+    {
+     "id": "c4",
+     "type": "show-amount",
+     "instruction": "Show 18¢ for a bouncy ball, any way you like.",
+     "hint": "Put in big coins first, then count on with smaller ones.",
+     "targetAmount": 18,
+     "availableCoins": [
+      "penny",
+      "nickel",
+      "dime"
+     ]
+    }
+   ],
+   "gradeBand": "K"
+  },
+  "liveValidator": "ok",
+  "oracle": {
+   "violations": [],
+   "uncheckedTypes": [],
+   "checkedChallenges": 4
+  }
+ },
+ {
+  "name": "grade1-bounded",
+  "grade": "1",
+  "gradeContext": "Grade 1",
+  "topic": "A lemonade stand",
+  "intent": "Make amounts up to 30 cents",
+  "data": {
+   "title": "Showing Amounts Fun!",
+   "description": "Practice showing amounts with coins.",
+   "challenges": [
+    {
+     "id": "c1",
+     "type": "show-amount",
+     "instruction": "Show 15¢ for a red pencil, any way you like.",
+     "hint": "Put in big coins first, then count on with smaller ones.",
+     "targetAmount": 15,
+     "availableCoins": [
+      "penny",
+      "nickel",
+      "dime",
+      "quarter"
+     ]
+    },
+    {
+     "id": "c2",
+     "type": "show-amount",
+     "instruction": "Show 17¢ for an orange sticker, any way you like.",
+     "hint": "Put in big coins first, then count on with smaller ones.",
+     "targetAmount": 17,
+     "availableCoins": [
+      "penny",
+      "nickel",
+      "dime",
+      "quarter"
+     ]
+    },
+    {
+     "id": "c3",
+     "type": "show-amount",
+     "instruction": "Show 18¢ for a blue eraser, any way you like.",
+     "hint": "Put in big coins first, then count on with smaller ones.",
+     "targetAmount": 18,
+     "availableCoins": [
+      "penny",
+      "nickel",
+      "dime",
+      "quarter"
+     ]
+    },
+    {
+     "id": "c4",
+     "type": "show-amount",
+     "instruction": "Show 26¢ for a yellow crayon, any way you like.",
+     "hint": "Put in big coins first, then count on with smaller ones.",
+     "targetAmount": 26,
+     "availableCoins": [
+      "penny",
+      "nickel",
+      "dime",
+      "quarter"
+     ]
+    }
+   ],
+   "gradeBand": "1"
+  },
+  "liveValidator": "ok",
+  "oracle": {
+   "violations": [],
+   "uncheckedTypes": [],
+   "checkedChallenges": 4
+  }
+ }
+]

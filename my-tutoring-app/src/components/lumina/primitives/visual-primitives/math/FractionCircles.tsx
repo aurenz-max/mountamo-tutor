@@ -13,6 +13,7 @@ import {
   LuminaActionButton,
   LuminaPanel,
   LuminaInput,
+  LuminaButton,
 } from '../../../ui';
 import {
   usePrimitiveEvaluation,
@@ -31,9 +32,13 @@ import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { buildFractionCompareEvidence, type FractionCompareResponse } from './fractionCompareEvidence';
 import {
-  COUNT_LEVER, FRAME_LEVER, OVERLAY_LEVER, PIECES_LEVER, SPLIT_LEVER, fractionMiss,
+  COUNT_LEVER, FRAME_LEVER, OVERLAY_LEVER, PIECES_LEVER, REFERENCE_LEVER, SPLIT_LEVER, fractionMiss,
   fractionLevers, simplerItem, splitFactor, startLevers,
 } from './fractionCirclesLevers';
+import { cutInto, cutsFor, equalBuildMiss, halvePiece, makesEqual, readBuild, toggleShade, wholeCircle,
+  type EqualBuildMiss, type Piece } from './fractionEqualBuild';
+import { FractionEqualBuildScene } from './FractionEqualBuildScene';
+import { useBuildWatcher } from '../../build-layer/buildLayer';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -41,7 +46,9 @@ import {
 
 export interface FractionCirclesChallenge {
   id: string;
-  type: 'identify' | 'build' | 'compare' | 'equivalent' | 'touch_fraction';
+  type: 'identify' | 'build' | 'compare' | 'equivalent' | 'touch_fraction'
+    // Open build (`fractionEqualBuild.ts`): make a fraction equal to numerator/denominator, any equal cut but the target's own.
+    | 'build_equal';
   instruction: string;
   denominator: number;
   numerator: number;
@@ -91,9 +98,20 @@ const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   build:      { label: 'Build',      icon: '🧱', accentColor: 'purple' },
   compare:    { label: 'Compare',    icon: '⚖️', accentColor: 'amber' },
   equivalent: { label: 'Equivalent', icon: '🔄', accentColor: 'emerald' },
+  build_equal: { label: 'Your Way', icon: '✂️', accentColor: 'purple' },
 };
 
 const CIRCLE_SIZE = 140;
+
+/** build_equal's verdict words by miss: the learner's work, never the target's other forms. */
+const BUILD_EQUAL_FEEDBACK: Record<EqualBuildMiss, string> = {
+  unequal_pieces: 'Those pieces are not all the same size, so they do not make a fraction yet.',
+  same_pieces: 'That is the same fraction. Can you cut the circle a different way?',
+  shaded_the_rest: 'Not the same amount yet. Look at the shaded part and the part left over.',
+  cut_cannot_make: 'Not the same amount yet. Look at your pieces.',
+  one_off: 'Not the same amount yet. Look at your pieces.',
+  off_by_more: 'Not the same amount yet. Look at your pieces.',
+};
 const CIRCLE_SIZE_SM = 100;
 
 // ============================================================================
@@ -280,10 +298,13 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
     // A fresh challenge and Try again both start from a blank circle. The setters are declared
     // below; this runs only after render.
     // Try again on an easier practice item keeps it; only a fresh challenge or endPractice removes it.
-    onItemOpened: (_index, retry) => {
+    onItemOpened: (index, retry) => {
+      // An open build (build_equal) keeps the learner's circle and the verdict's words on Try again, to revise.
+      if (retry && challenges[index]?.type === 'build_equal') return;
       if (!retry) setPractice(null);
       setShadedSlices(new Set()); setIdentifyInput(''); setCompareChoice('');
       setFeedback(''); setFeedbackType('');
+      setPieces(wholeCircle()); setKnife(false);
     },
   });
   const {
@@ -324,6 +345,12 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
 
   // Build / equivalent mode: which slices the student has toggled
   const [shadedSlices, setShadedSlices] = useState<Set<number>>(new Set());
+
+  // build_equal: the learner's circle as cut and shaded, and whether the next tap cuts a piece in half.
+  const [pieces, setPieces] = useState<Piece[]>(wholeCircle);
+  const [knife, setKnife] = useState(false);
+  const buildSvgRef = useRef<SVGSVGElement | null>(null);
+  const made = readBuild(pieces);
 
   // Identify mode: student text input (e.g., "3/4")
   const [identifyInput, setIdentifyInput] = useState('');
@@ -486,6 +513,23 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
     }
   }, [currentChallenge, shadedSlices.size, currentAttempts, recordResult, progress, practice]);
 
+  const checkBuildEqual = useCallback(() => {
+    if (!currentChallenge) return;
+    const correct = makesEqual(currentChallenge, made);
+    const miss = correct ? undefined : equalBuildMiss(currentChallenge, made);
+    const work: FractionCirclesView = { typed: '', shaded: made.shaded, choice: '', pieces: made.pieces, equalPieces: made.equal };
+    progress.commitCheck(describeWork(currentChallenge, work), correct, miss);
+    if (correct) {
+      SoundManager.playCorrect();
+      setFeedback(`Yes! ${made.shaded}/${made.pieces} is the same amount as ${currentChallenge.numerator}/${currentChallenge.denominator}.`);
+      setFeedbackType('success');
+    } else {
+      SoundManager.playIncorrect();
+      setFeedback(BUILD_EQUAL_FEEDBACK[miss ?? 'off_by_more']);
+      setFeedbackType('error');
+    }
+  }, [currentChallenge, made.shaded, made.pieces, made.equal, progress]);
+
   // -------------------------------------------------------------------------
   // Unified check answer
   // -------------------------------------------------------------------------
@@ -496,8 +540,9 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
       case 'build': checkBuild(); break;
       case 'compare': checkCompare(); break;
       case 'equivalent': checkEquivalent(); break;
+      case 'build_equal': checkBuildEqual(); break;
     }
-  }, [currentChallenge, checkIdentify, checkBuild, checkCompare, checkEquivalent]);
+  }, [currentChallenge, checkIdentify, checkBuild, checkCompare, checkEquivalent, checkBuildEqual]);
 
   // -------------------------------------------------------------------------
   // Session complete: submit once, and only under a lesson's evaluation provider
@@ -526,6 +571,7 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
       buildAccuracy: byType('build'),
       compareAccuracy: byType('compare'),
       equivalentAccuracy: byType('equivalent'),
+      ...(challenges.some(c => c.type === 'build_equal') ? { buildEqualAccuracy: byType('build_equal') } : {}),
       attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
     };
 
@@ -578,9 +624,12 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
   useLayoutEffect(() => {
     if (!currentChallenge) return;
     const levers = practice ? [] : fractionLevers(sessionChallenge, pulledLevers, gradeBand);
-    const clear = () => { setShadedSlices(new Set()); setIdentifyInput(''); setCompareChoice(''); setFeedback(''); setFeedbackType(''); };
-    workspace.current = { ...workspaceScene(currentChallenge, { typed: identifyInput, shaded: shadedSlices.size, choice: compareChoice,
-      levers: pulledLevers, practice: !!practice }),
+    const clear = () => { setShadedSlices(new Set()); setIdentifyInput(''); setCompareChoice(''); setFeedback(''); setFeedbackType('');
+      setPieces(wholeCircle()); setKnife(false); };
+    const building = currentChallenge.type === 'build_equal';
+    workspace.current = { ...workspaceScene(currentChallenge, { typed: identifyInput, shaded: building ? made.shaded : shadedSlices.size,
+      choice: compareChoice, levers: pulledLevers, practice: !!practice,
+      ...(building ? { pieces: made.pieces, equalPieces: made.equal } : {}) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the circle changes before this returns.
       pullLever: id => {
@@ -615,9 +664,38 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
       case 'build': return shadedSlices.size > 0;
       case 'compare': return compareChoice !== '';
       case 'equivalent': return shadedSlices.size > 0;
+      case 'build_equal': return made.pieces > 1 && made.shaded > 0;
       default: return false;
     }
-  }, [currentChallenge, hasSubmittedEvaluation, identifyInput, shadedSlices.size, compareChoice]);
+  }, [currentChallenge, hasSubmittedEvaluation, identifyInput, shadedSlices.size, compareChoice, made.pieces, made.shaded]);
+
+  // ── Open build (build_equal): choose a cut, cut a piece in half, shade; "I'm done!" commits ──
+  const buildOpen = currentChallenge?.type === 'build_equal' && !isCurrentChallengeCorrect && !hasSubmittedEvaluation;
+  const handleCut = useCallback((n: number) => {
+    if (!buildOpen || learnerBlocked()) return;
+    SoundManager.tap();
+    setPieces(cutInto(n)); setKnife(false);
+  }, [buildOpen]);
+  const handlePiece = useCallback((index: number) => {
+    if (!buildOpen || learnerBlocked()) return;
+    if (knife) {
+      const next = halvePiece(pieces, index);
+      if (!next) return;
+      SoundManager.tap();
+      setPieces(next);
+      return;
+    }
+    SoundManager.toggle(!pieces[index]?.shaded);
+    setPieces(toggleShade(pieces, index));
+  }, [buildOpen, knife, pieces]);
+  // The live line (shared build layer): what the circle looks like so far, NEVER a number or a fraction word.
+  const buildSeeing = useBuildWatcher({
+    buildKey: pieces.map(p => `${p.start.toFixed(4)}${p.shaded ? '*' : ''}`).join('|'),
+    enabled: buildOpen && progress.canAttempt !== false && (made.pieces > 1 || made.shaded > 0),
+    svg: buildSvgRef,
+    request: { task: currentChallenge?.instruction ?? '',
+      sceneNote: 'A plain circle on a dark square; the child cuts it into pieces and colors some pink.', numbers: 'never' },
+  });
 
   // -------------------------------------------------------------------------
   // Render helpers
@@ -795,6 +873,48 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
         );
       }
 
+      case 'build_equal': {
+        return (
+          <div className="flex flex-col items-center gap-3">
+            <div className="flex flex-wrap items-center justify-center gap-2" role="group" aria-label="Cut the circle">
+              <span className="text-slate-300 text-sm">Cut into equal pieces:</span>
+              {cutsFor(gradeBand).map(n => (
+                <LuminaButton key={n} tone={made.equal && made.pieces === n ? 'primary' : 'ghost'} disabled={!buildOpen}
+                  aria-label={`Cut into ${n} equal pieces`} onClick={() => handleCut(n)}>{n}</LuminaButton>
+              ))}
+              <LuminaButton tone={knife ? 'primary' : 'ghost'} disabled={!buildOpen || made.pieces < 2} aria-pressed={knife}
+                onClick={() => { if (!learnerBlocked()) setKnife(k => !k); }}>
+                ✂️ Cut a piece in half
+              </LuminaButton>
+            </div>
+            <div className="flex items-center justify-center gap-6">
+              <FractionEqualBuildScene ref={buildSvgRef} pieces={pieces} knife={knife} disabled={!buildOpen} onPiece={handlePiece} />
+              {/* show_reference lever: the target as a picture beside the learner's circle, which it never touches */}
+              {leverOn(REFERENCE_LEVER) && (
+                <div className="flex flex-col items-center gap-1" data-lever-on="show-reference" {...pulledMark(REFERENCE_LEVER)}>
+                  {renderFractionCircle(currentChallenge.numerator, currentChallenge.denominator, CIRCLE_SIZE_SM)}
+                  <span className="text-slate-400 text-xs">{currentChallenge.numerator}/{currentChallenge.denominator}</span>
+                </div>
+              )}
+            </div>
+            {/* running_count lever: the learner's own pieces and shading. Never the target, never "equal". */}
+            {leverOn(COUNT_LEVER) && (
+              <p className="text-slate-300 text-sm" {...pulledMark(COUNT_LEVER)}>
+                {made.pieces} {made.pieces === 1 ? 'piece' : 'pieces'}, {made.shaded} shaded
+              </p>
+            )}
+            <div className="flex min-h-8 items-center justify-center" aria-live="polite" data-testid="build-watcher">
+              {buildSeeing && <span className="rounded-full bg-white/10 px-4 py-1.5 text-base text-amber-100">👀 {buildSeeing}</span>}
+            </div>
+            {!isCurrentChallengeCorrect && (
+              <LuminaButton tone="primary" disabled={!canCheck || progress.canAttempt === false} onClick={handleCheckAnswer}>
+                I&apos;m done!
+              </LuminaButton>
+            )}
+          </div>
+        );
+      }
+
       default:
         return null;
     }
@@ -881,7 +1001,7 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
         {/* Action Buttons */}
         {challenges.length > 0 && !allChallengesComplete && (
           <div className="flex justify-center gap-3">
-            {!isCurrentChallengeCorrect && (
+            {!isCurrentChallengeCorrect && currentChallenge?.type !== 'build_equal' && (
               <LuminaActionButton
                 action="check"
                 onClick={handleCheckAnswer}

@@ -28,9 +28,11 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import {
-  ENTRY_LABEL, describeEquationBuilderCheck, equationBuilderAssignment, equationBuilderMatches, equationBuilderMiss, equationBuilderScene,
-  evaluateEquation, parseEquationTokens, tileLabel, type EquationBuilderView,
+  CLEAR_LABEL, DONE_LABEL, ENTRY_LABEL, bankOrder, describeEquationBuilderCheck, equationBuilderAssignment, equationBuilderMatches,
+  equationBuilderMiss, equationBuilderScene, evaluateEquation, makeNMiss, parseEquationTokens, tileLabel, waysAsked,
+  type EquationBuilderMiss, type EquationBuilderView,
 } from './equationBuilderWorkspace';
+import { DOTS_LEVER, FRAME_LEVER, makeNLeverFacts, makeNLevers, smallerMakeN } from './equationBuilderLevers';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -44,8 +46,13 @@ import { useSpeechScope } from '../../../pip/useSpeechScope';
 
 export interface EquationBuilderChallenge {
   id: string;
-  type: 'build' | 'missing-value' | 'true-false' | 'balance' | 'rewrite';
+  type: 'build' | 'missing-value' | 'true-false' | 'balance' | 'rewrite' | 'make-n';
   instruction: string;
+
+  // make-n (open build) — "Make a number sentence that equals 10": any sentence from the bank that makes `target`
+  // passes. `availableTiles` is the bank (each tile can be used again); `ways: 2` asks for a second, different one.
+  target?: number;
+  ways?: number;
 
   // build — "Build the equation: 3 plus 2 equals 5"
   targetEquation?: string;        // "3 + 2 = 5"
@@ -101,7 +108,30 @@ const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   'true-false':    { label: 'True or False',   icon: '⚖️', accentColor: 'emerald' },
   balance:         { label: 'Balance',          icon: '🟰', accentColor: 'amber' },
   rewrite:         { label: 'Rewrite',          icon: '🔄', accentColor: 'cyan' },
+  'make-n':        { label: 'Make It',          icon: '🛠️', accentColor: 'purple' },
 };
+
+/** make-n: the longest row (four numbers and their signs). */
+const MAKE_ROW_MAX = 7;
+
+/** What a missed make-n sentence shows on screen; never what the sentence makes. */
+const makeMissWords = (miss: EquationBuilderMiss | undefined, total: number, canTakeAway: boolean): string => {
+  switch (miss) {
+    case 'bare_number': return 'That is one number on its own. A number sentence joins numbers with a sign.';
+    case 'unfinished_sentence': return 'That is not a number sentence yet. Try a number, a sign, then a number.';
+    case 'same_way': return `You made that one already. Try different numbers${canTakeAway ? ', or take away' : ''}.`;
+    default: return `Not quite: that sentence does not make ${total}. Work out what it makes, then change a tile.`;
+  }
+};
+
+/** `number_dots` lever: as many dots as one number tile says, in rows of five. */
+function NumberDots({ n }: { n: number }) {
+  return (
+    <div data-lever="number-dots" aria-label={`${n} dots`} className="grid grid-cols-5 gap-0.5 w-14">
+      {Array.from({ length: n }).map((_, i) => <span key={i} className="h-2 w-2 rounded-full bg-indigo-300/80" />)}
+    </div>
+  );
+}
 
 // Tile appearance — bespoke interaction-surface styling for the equation tiles.
 const TILE_COLORS: Record<string, { bg: string; border: string; text: string }> = {
@@ -323,7 +353,7 @@ function EquationBuilderSurface({ data, className, runtimePlanItemId }: Equation
   const stableInstanceIdRef = useRef(instanceId || `equation-builder-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
   /** Bound after the state it clears is declared; the progress hook calls it only after render. */
-  const reopen = useRef<(index: number) => void>(() => {});
+  const reopen = useRef<(index: number, retry: boolean) => void>(() => {});
 
   // -------------------------------------------------------------------------
   // Challenge progress: the teaching workspace owns it
@@ -333,7 +363,7 @@ function EquationBuilderSurface({ data, className, runtimePlanItemId }: Equation
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
     workspace, assignment: equationBuilderAssignment,
-    onItemOpened: (index) => reopen.current(index),
+    onItemOpened: (index, retry) => reopen.current(index, retry),
   });
   const {
     currentIndex: currentChallengeIndex,
@@ -352,11 +382,22 @@ function EquationBuilderSurface({ data, className, runtimePlanItemId }: Equation
     phaseConfig: CHALLENGE_TYPE_CONFIG,
   });
 
-  const currentChallenge = challenges[currentChallengeIndex] ?? null;
+  const sessionChallenge = challenges[currentChallengeIndex] ?? null;
+  // make-n levers (`equationBuilderLevers.ts`), keyed by the session item they were pulled on, and the easier item a
+  // simplify lever put on screen in its place.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<EquationBuilderChallenge | null>(null);
+  /** What is on screen: the easier item while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
 
   // -------------------------------------------------------------------------
   // Domain-specific state
   // -------------------------------------------------------------------------
+  // make-n: the row and the ways already accepted, keyed by the item on screen, so a new item (or the easier practice
+  // item, or the full item back after it) reads an empty row in the same render. Try again keeps it.
+  const [make, setMake] = useState<{ item: string; row: string[]; made: string[][] }>({ item: '', row: [], made: [] });
+  const makeWork = make.item === currentChallenge?.id ? make : { row: [] as string[], made: [] as string[][] };
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
   const [challengeSolved, setChallengeSolved] = useState(false);
@@ -440,10 +481,16 @@ function EquationBuilderSurface({ data, className, runtimePlanItemId }: Equation
     const tiles = challenge && (challenge.type === 'build' || challenge.type === 'rewrite') ? challenge.availableTiles ?? [] : [];
     setPoolTiles([...tiles].sort(() => Math.random() - 0.5));
   }, []);
-  reopen.current = (index) => openChallenge(challenges[index]);
+  // A make-n build survives Try again, and so does its verdict until the next check (open build). A fresh item
+  // starts clean and drops any easier practice item.
+  reopen.current = (index, retry) => {
+    if (retry && currentChallenge?.type === 'make-n') return;
+    if (!retry) setPractice(null);
+    openChallenge(challenges[index]);
+  };
 
   useEffect(() => {
-    openChallenge(currentChallenge ?? undefined);
+    openChallenge(sessionChallenge ?? undefined);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChallengeIndex]);
 
@@ -474,9 +521,28 @@ function EquationBuilderSurface({ data, className, runtimePlanItemId }: Equation
   };
 
   // -------------------------------------------------------------------------
+  // make-n: the bank never runs out; tap a row tile to take it out
+  // -------------------------------------------------------------------------
+  const editRow = (edit: (row: string[]) => string[]) => {
+    if (!currentChallenge || learnerBlocked()) return;
+    const id = currentChallenge.id;
+    setMake(prev => {
+      const base = prev.item === id ? prev : { item: id, row: [], made: [] };
+      return { ...base, row: edit(base.row) };
+    });
+  };
+  const handleBankTile = (tile: string) => {
+    if (makeWork.row.length >= MAKE_ROW_MAX) return;
+    SoundManager.snap();
+    editRow(row => [...row, tile]);
+  };
+
+  // -------------------------------------------------------------------------
   // Every Check: the builder's own verdict, committed to the workspace
   // -------------------------------------------------------------------------
-  const view: EquationBuilderView = { slots: workspaceSlots, option: selectedOption, truth: selectedTruthValue, entry: balanceAnswer };
+  const view: EquationBuilderView = currentChallenge?.type === 'make-n'
+    ? { slots: makeWork.row, made: makeWork.made, option: null, truth: null, entry: '' }
+    : { slots: workspaceSlots, option: selectedOption, truth: selectedTruthValue, entry: balanceAnswer };
 
   /** Records the verdict and commits it; the runtime offers Try again or advances. */
   const settle = (challenge: EquationBuilderChallenge, correct: boolean, success: string, miss: string) => {
@@ -499,6 +565,25 @@ function EquationBuilderSurface({ data, className, runtimePlanItemId }: Equation
       evaluateEquation(workspaceSlots.join(' '))
         ? 'That\'s a true equation, but not the one we need. Look at the instruction again.'
         : 'That doesn\'t make a true equation yet. Keep trying!');
+  };
+
+  /**
+   * "I'm done!": the builder's check of the row. On a two-way item an accepted first way is kept on screen and the
+   * row opens empty for the next; only the last way (or any miss) is committed to the workspace.
+   */
+  const handleDone = () => {
+    const c = currentChallenge;
+    if (!c || c.type !== 'make-n' || c.target === undefined || learnerBlocked() || makeWork.row.length === 0) return;
+    const miss = makeNMiss(c.target, makeWork.row, makeWork.made);
+    if (!miss && makeWork.made.length + 1 < waysAsked(c)) {
+      SoundManager.playCorrect();
+      setMake({ item: c.id, row: [], made: [...makeWork.made, makeWork.row] });
+      setFeedback(`Yes! ${makeWork.row.join(' ')} = ${c.target}. Now make ${c.target} a different way.`);
+      setFeedbackType('success');
+      return;
+    }
+    settle(c, !miss, `Yes! ${makeWork.row.join(' ')} = ${c.target}!`,
+      makeMissWords(miss, c.target, (c.availableTiles ?? []).includes('-')));
   };
 
   const handleCheckMissingValue = () => {
@@ -571,11 +656,38 @@ function EquationBuilderSurface({ data, className, runtimePlanItemId }: Equation
     );
   }, [allChallengesComplete, hasSubmittedEvaluation, progress.recordsEvaluation, challengeResults, challenges, submitEvaluation]);
 
-  // What the tutor and the observer are shown, republished every render. Derived from the challenge
-  // alone, so opening an item (and its tile shuffle) adds no revision after the advance.
+  // What the tutor and the observer are shown, republished every render. Derived from the challenge (and a make-n
+  // row keyed by item), so opening an item (and its tile shuffle) adds no revision after the advance.
   useLayoutEffect(() => {
     if (!currentChallenge) return;
-    workspace.current = { ...equationBuilderScene(currentChallenge, { supportTier }) };
+    const scene = equationBuilderScene(currentChallenge, { supportTier, work: { slots: makeWork.row, made: makeWork.made } });
+    const onScreen = makeNLeverFacts(pulledLevers);
+    const levers = practice ? [] : makeNLevers(sessionChallenge, pulledLevers);
+    workspace.current = {
+      ...scene,
+      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      // Only make-n has levers; while its easier item is up they are off, and endPractice brings the full item back.
+      ...(sessionChallenge?.type === 'make-n' ? {
+        levers,
+        // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+        pullLever: (id: string) => {
+          const lever = levers.find(l => l.id === id);
+          if (practice || !sessionChallenge || !lever) return `No lever ${id} on this item.`;
+          if (lever.pulled) return `${id} is already pulled.`;
+          const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+          if (lever.kind === 'simplify') {
+            const easier = smallerMakeN(sessionChallenge);
+            if (!easier) return 'There is no easier item for this one.';
+            setLeverState(pulled);
+            setFeedback(''); setFeedbackType(''); setChallengeSolved(false); setPractice(easier);
+            return { practice: equationBuilderAssignment(easier) };
+          }
+          setLeverState(pulled);
+          return true as const;
+        },
+        endPractice: () => { setFeedback(''); setFeedbackType(''); setChallengeSolved(false); setPractice(null); },
+      } : {}),
+    };
   });
 
   // -------------------------------------------------------------------------
@@ -605,9 +717,75 @@ function EquationBuilderSurface({ data, className, runtimePlanItemId }: Equation
         return renderBalanceChallenge(isDisabled);
       case 'rewrite':
         return renderRewriteChallenge(isDisabled);
+      case 'make-n':
+        return renderMakeChallenge(isDisabled);
       default:
         return null;
     }
+  };
+
+  /** Open build: the learner's row, then "= total"; the bank below never runs out. Levers start bare. */
+  const renderMakeChallenge = (disabled: boolean) => {
+    const c = currentChallenge!;
+    const total = String(c.target ?? '');
+    const ways = waysAsked(c);
+    const { row, made } = makeWork;
+    const dotsOn = pulledLevers.includes(DOTS_LEVER);
+    const frameOn = pulledLevers.includes(FRAME_LEVER);
+    return (
+      <div className="space-y-6">
+        {ways > 1 && (
+          <div className="space-y-2 text-center">
+            <p className="text-sm text-slate-400">Way {Math.min(made.length + 1, ways)} of {ways}</p>
+            {made.map((w, i) => <EquationDisplay key={i} parts={[...w, '=', total]} size="sm" />)}
+          </div>
+        )}
+
+        <LuminaPanel ref={pip.ref('workspace')} data-pip-object="workspace">
+          <p className="text-xs text-slate-500 mb-2 text-center">Your number sentence</p>
+          <div className="flex items-start justify-center gap-2 flex-wrap min-h-[70px]">
+            {row.map((tile, i) => (
+              <div key={`row-${i}`} className="flex flex-col items-center gap-1">
+                <Tile value={tile} size="md" disabled={disabled} buttonRef={pip.ref(`slot-${i}`)} pipObject={`slot-${i}`}
+                  onClick={() => { pip.look('pool'); editRow(r => r.filter((_, j) => j !== i)); }} />
+                {dotsOn && /^\d+$/.test(tile) && <NumberDots n={parseInt(tile, 10)} />}
+              </div>
+            ))}
+            {row.length === 0 && (
+              <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl ${dropZoneStateClass('idle')}`}>_</div>
+            )}
+            <Tile value="=" disabled size="md" />
+            <Tile value={total} disabled size="md" />
+          </div>
+          {frameOn && (
+            <div data-lever="sentence-frame" aria-label="Sentence shape: number, sign, number"
+              className="mt-3 flex items-center justify-center gap-2 text-slate-500">
+              <span className="w-10 h-10 rounded-lg border border-dashed border-indigo-400/50" />
+              <span className="w-8 h-8 rounded-full border border-dashed border-amber-400/50" />
+              <span className="w-10 h-10 rounded-lg border border-dashed border-indigo-400/50" />
+              <span className="text-lg">= {total}</span>
+            </div>
+          )}
+        </LuminaPanel>
+
+        {pipDock}
+
+        <div ref={pip.ref('pool')} data-pip-object="pool">
+          <p className="text-xs text-slate-500 mb-2 text-center">Tiles (use any tile as many times as you like)</p>
+          <TilePool tiles={bankOrder(c.availableTiles ?? [])} disabled={disabled || row.length >= MAKE_ROW_MAX}
+            onPickTile={(i) => { pip.look(`slot-${row.length}`); handleBankTile(bankOrder(c.availableTiles ?? [])[i]); }} />
+        </div>
+
+        <div className="flex justify-center gap-3">
+          <LuminaButton onClick={() => { pip.look('pool'); editRow(() => []); }} disabled={disabled}>
+            {CLEAR_LABEL}
+          </LuminaButton>
+          <LuminaActionButton action="check" onClick={handleDone} disabled={disabled || row.length === 0}>
+            {DONE_LABEL}
+          </LuminaActionButton>
+        </div>
+      </div>
+    );
   };
 
   const renderBuildChallenge = (disabled: boolean) => {

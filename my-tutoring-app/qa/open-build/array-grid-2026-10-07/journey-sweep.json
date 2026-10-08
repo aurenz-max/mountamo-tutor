@@ -1,0 +1,337 @@
+{
+ "results": [
+  {
+   "payload": "array-grid.build_array",
+   "items": 5,
+   "findings": [],
+   "advisories": [],
+   "misses": {
+    "checked": 5,
+    "named": 5,
+    "declared": true,
+    "spoken": {
+     "answered": 0,
+     "named": 0
+    }
+   },
+   "records": {
+    "recover": {
+     "sent": 1,
+     "success": true,
+     "score": 67,
+     "firstResponseScore": 0,
+     "attempts": 10
+    },
+    "clean": {
+     "sent": 1,
+     "success": true,
+     "score": 100,
+     "firstResponseScore": 100,
+     "attempts": 5
+    }
+   }
+  },
+  {
+   "payload": "array-grid.count_array",
+   "items": 7,
+   "findings": [],
+   "advisories": [],
+   "misses": {
+    "checked": 7,
+    "named": 7,
+    "declared": true,
+    "spoken": {
+     "answered": 0,
+     "named": 0
+    }
+   },
+   "records": {
+    "recover": {
+     "sent": 1,
+     "success": true,
+     "score": 67,
+     "firstResponseScore": 0,
+     "attempts": 14
+    },
+    "clean": {
+     "sent": 1,
+     "success": true,
+     "score": 100,
+     "firstResponseScore": 100,
+     "attempts": 7
+    }
+   }
+  },
+  {
+   "payload": "array-grid.make_array",
+   "items": 4,
+   "findings": [],
+   "advisories": [],
+   "misses": {
+    "checked": 4,
+    "named": 4,
+    "declared": true,
+    "spoken": {
+     "answered": 0,
+     "named": 0
+    }
+   },
+   "records": {
+    "recover": {
+     "sent": 1,
+     "success": true,
+     "score": 67,
+     "firstResponseScore": 0,
+     "attempts": 8
+    },
+    "clean": {
+     "sent": 1,
+     "success": true,
+     "score": 100,
+     "firstResponseScore": 100,
+     "attempts": 4
+    }
+   }
+  },
+  {
+   "payload": "array-grid.multiply_array",
+   "items": 7,
+   "findings": [],
+   "advisories": [],
+   "misses": {
+    "checked": 7,
+    "named": 7,
+    "declared": true,
+    "spoken": {
+     "answered": 0,
+     "named": 0
+    }
+   },
+   "records": {
+    "recover": {
+     "sent": 1,
+     "success": true,
+     "score": 67,
+     "firstResponseScore": 0,
+     "attempts": 14
+    },
+    "clean": {
+     "sent": 1,
+     "success": true,
+     "score": 100,
+     "firstResponseScore": 100,
+     "attempts": 7
+    }
+   }
+  }
+ ],
+ "leverInventory": [
+  {
+   "primitiveId": "array-grid",
+   "evalMode": "build_array",
+   "declaresLevers": true,
+   "payloads": [
+    "array-grid.build_array"
+   ],
+   "status": "none",
+   "levers": [],
+   "misses": [
+    {
+     "miss": "added_sides",
+     "answeredBy": [],
+     "unanswered": false
+    },
+    {
+     "miss": "one_row_off",
+     "answeredBy": [],
+     "unanswered": false
+    },
+    {
+     "miss": "one_column_off",
+     "answeredBy": [],
+     "unanswered": false
+    },
+    {
+     "miss": "off_by_one",
+     "answeredBy": [],
+     "unanswered": false
+    },
+    {
+     "miss": "other_total",
+     "answeredBy": [],
+     "unanswered": false
+    }
+   ]
+  },
+  {
+   "primitiveId": "array-grid",
+   "evalMode": "make_array",
+   "declaresLevers": true,
+   "payloads": [
+    "array-grid.make_array"
+   ],
+   "status": "levers",
+   "levers": [
+    {
+     "id": "row_counts",
+     "kind": "help",
+     "answers": [
+      "ragged",
+      "one_line_short",
+      "one_line_over"
+     ]
+    },
+    {
+     "id": "square_count",
+     "kind": "help",
+     "answers": [
+      "too_few",
+      "too_many",
+      "one_line_short",
+      "one_line_over"
+     ]
+    },
+    {
+     "id": "smaller_array",
+     "kind": "simplify",
+     "answers": [
+      "ragged",
+      "too_few",
+      "too_many"
+     ]
+    }
+   ],
+   "misses": [
+    {
+     "miss": "ragged",
+     "answeredBy": [
+      "row_counts",
+      "smaller_array"
+     ],
+     "unanswered": false
+    },
+    {
+     "miss": "one_line_short",
+     "answeredBy": [
+      "row_counts",
+      "square_count"
+     ],
+     "unanswered": false
+    },
+    {
+     "miss": "one_line_over",
+     "answeredBy": [
+      "row_counts",
+      "square_count"
+     ],
+     "unanswered": false
+    },
+    {
+     "miss": "too_few",
+     "answeredBy": [
+      "square_count",
+      "smaller_array"
+     ],
+     "unanswered": false
+    },
+    {
+     "miss": "too_many",
+     "answeredBy": [
+      "square_count",
+      "smaller_array"
+     ],
+     "unanswered": false
+    },
+    {
+     "miss": "same_as_first",
+     "answeredBy": [],
+     "unanswered": true
+    }
+   ]
+  },
+  {
+   "primitiveId": "array-grid",
+   "evalMode": "count_array",
+   "declaresLevers": true,
+   "payloads": [
+    "array-grid.count_array"
+   ],
+   "status": "none",
+   "levers": [],
+   "misses": [
+    {
+     "miss": "added_sides",
+     "answeredBy": [],
+     "unanswered": false
+    },
+    {
+     "miss": "one_row_off",
+     "answeredBy": [],
+     "unanswered": false
+    },
+    {
+     "miss": "one_column_off",
+     "answeredBy": [],
+     "unanswered": false
+    },
+    {
+     "miss": "off_by_one",
+     "answeredBy": [],
+     "unanswered": false
+    },
+    {
+     "miss": "other_total",
+     "answeredBy": [],
+     "unanswered": false
+    }
+   ]
+  },
+  {
+   "primitiveId": "array-grid",
+   "evalMode": "multiply_array",
+   "declaresLevers": true,
+   "payloads": [
+    "array-grid.multiply_array"
+   ],
+   "status": "none",
+   "levers": [],
+   "misses": [
+    {
+     "miss": "swapped_sides",
+     "answeredBy": [],
+     "unanswered": false
+    },
+    {
+     "miss": "wrong_side",
+     "answeredBy": [],
+     "unanswered": false
+    },
+    {
+     "miss": "added_sides",
+     "answeredBy": [],
+     "unanswered": false
+    },
+    {
+     "miss": "one_row_off",
+     "answeredBy": [],
+     "unanswered": false
+    },
+    {
+     "miss": "one_column_off",
+     "answeredBy": [],
+     "unanswered": false
+    },
+    {
+     "miss": "off_by_one",
+     "answeredBy": [],
+     "unanswered": false
+    },
+    {
+     "miss": "other_total",
+     "answeredBy": [],
+     "unanswered": false
+    }
+   ]
+  }
+ ]
+}

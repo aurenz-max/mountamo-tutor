@@ -29,8 +29,16 @@ import { farThree } from '../../primitives/visual-primitives/math/compareObjects
 import { threeCards } from '../../primitives/visual-primitives/math/numberSequencerLevers';
 import { threePlaces } from '../../primitives/visual-primitives/math/ordinalLineLevers';
 import { COIN_CENTS, fewestCoins } from '../../primitives/visual-primitives/math/coinCounterWorkspace';
+import { arraysOf, gridFor } from '../../primitives/visual-primitives/math/arrayGridWorkspace';
+import { smallerArray } from '../../primitives/visual-primitives/math/arrayGridLevers';
+import type { ArrayGridChallenge } from '../../primitives/visual-primitives/math/ArrayGrid';
+import { smallerArea } from '../../primitives/visual-primitives/math/polygonAreaBuild';
+import { askOf } from '../../primitives/visual-primitives/math/shapeBuilderWorkspace';
+import { witnessesFor } from '../../primitives/visual-primitives/math/shapeMakeBuild';
 import { simplerItem as simplerFraction } from '../../primitives/visual-primitives/math/fractionCirclesLevers';
+import { cutsFor, equalWays } from '../../primitives/visual-primitives/math/fractionEqualBuild';
 import { buildFractionTouchItems, twoPictureItem } from '../../primitives/visual-primitives/math/fractionCirclesWorkspace';
+import { smallerBarTarget } from '../../primitives/visual-primitives/math/fractionBarWorkspace';
 
 /** touch_fraction's easier item (two_pictures) as the fraction to touch; the builder reads only the parent's fraction. */
 const twoPictureFraction = (parent: any) => {
@@ -143,6 +151,8 @@ import { additionFactHarnessInputs } from '../../primitives/visual-primitives/ma
 import { smallerFact as smallerAdditionFact } from '../../primitives/visual-primitives/math/additionFactStrategiesLevers';
 import { equationBuilderHarnessInputs } from '../../primitives/visual-primitives/math/equationBuilderWorkspace';
 import { patternBuilderHarnessInputs } from '../../primitives/visual-primitives/math/patternBuilderWorkspace';
+import { angleWorkshopHarnessInputs } from '../../primitives/visual-primitives/math/angleWorkshopWorkspace';
+import { coarserMakeAngle } from '../../primitives/visual-primitives/math/angleWorkshopLevers';
 import { strategyPickerHarnessInputs } from '../../primitives/visual-primitives/math/strategyPickerWorkspace';
 import { carButtonName, carFor as trainCarFor, fewestCars as trainFewestCars, fewestEngines as trainFewestEngines } from '../../primitives/visual-primitives/engineering/trainYardModel';
 import { simplerJob as simplerTrainJob } from '../../primitives/visual-primitives/engineering/trainYardLevers';
@@ -594,6 +604,19 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
         const smallest = [...available].sort((a, b) => COIN_CENTS[a as keyof typeof COIN_CENTS] - COIN_CENTS[b as keyof typeof COIN_CENTS])[0];
         return [...(wrong ? [...coins, smallest] : coins).map((coin): DriverInput => ({ type: 'choose', label: `Add a ${coin}` })), check];
       }
+      if (c.type === 'show-amount') {
+        // Open build: Try again keeps the tray, so the driver reads what is on it (`centsMade`) and adds to it. A wrong
+        // build is one coin short; pressing done again on the kept build is the second wrong.
+        const bins = c.availableCoins ?? ['penny', 'nickel', 'dime'];
+        const made = Number(ctx.demand?.centsMade ?? 0), target = c.targetAmount;
+        const add = (coins: string[]) => coins.map((coin): DriverInput => ({ type: 'choose', label: `Add a ${coin}` }));
+        const done: DriverInput = { type: 'choose', label: "I'm done!" };
+        if (made > target || (wrong && made === target)) throw new Error(`coin-counter show-amount: ${made}¢ on the tray for ${target}¢`);
+        if (wrong) return made ? [done] : [...add((fewestCoins(target, bins) ?? []).slice(0, -1)), done];
+        const rest = fewestCoins(target - made, bins);
+        if (!rest) throw new Error(`coin-counter show-amount: ${target - made}¢ cannot be made from ${bins.join(', ')}`);
+        return [...add(rest), done];
+      }
       if (c.type === 'compare') {
         const label = (g: string) => g === 'equal' ? "They're Equal" : `Group ${g}`;
         if (!wrong) return [{ type: 'choose', label: label(c.correctGroup) }, check];
@@ -604,6 +627,70 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       const change = c.correctChange ?? (c.paidAmount - c.itemCost);
       const typedChange = !wrong ? change : c.itemCost !== change ? c.itemCost : change + 1;
       return [{ type: 'write', label: 'Change in cents', text: String(typedChange) }, check];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'angle-workshop': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/AngleWorkshop.tsx',
+    instanceId: 'angles',
+    defaults: { grade: 'Grade 4', mode: 'make_angle', di: false, topic: 'Acute, right, obtuse and straight angles' },
+    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'NEXT_ITEM', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls: make_angle starts over, turns the ray with Open wider and presses I'm done!
+    // (wrong: an angle of another kind, or outside the range); measure places the protractor and types; the solving
+    // modes type; classify taps a relationship; then Check. The easier practice ask is rebuilt from its parent.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const all = ctx.data.challenges ?? [];
+      const parent = ctx.itemId?.endsWith('~coarser') ? all.find((x: { id: string }) => `${x.id}~coarser` === ctx.itemId) : undefined;
+      const c = parent ? coarserMakeAngle(parent) : all.find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current angle-workshop challenge');
+      return angleWorkshopHarnessInputs(c, intent === 'wrong', ctx.demand);
+    },
+    probes: { mounted: { selector: '[data-pip-object="angle-build"], canvas' } },
+  },
+  'array-grid': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/ArrayGrid.tsx',
+    instanceId: 'arrays',
+    defaults: { grade: 'Grade 3', mode: 'count_array', di: false, topic: 'Arrays and multiplication' },
+    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ALL_COMPLETE', 'NEXT_ITEM', 'ACTIVITY_START'],
+    prompts: WORKSPACE_PROMPTS,
+    // build, count and multiply type through the real inputs, build first pressing its rows and columns; wrong types
+    // rows + columns as the total (`added_sides`). make_array clears the kept grid, fills a rectangle from the top-left
+    // cell and presses I'm done; a two-ways item then clears and makes an array with other rows. Wrong: the first
+    // array with one more square under it (`ragged`).
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const wrong = intent === 'wrong', all: ArrayGridChallenge[] = ctx.data.challenges ?? [];
+      // An easier array (the simplify lever) is not a generated challenge: rebuild it from its parent.
+      const parent = ctx.itemId?.endsWith('~smaller') ? all.find(x => `${x.id}~smaller` === ctx.itemId) : undefined;
+      const c = parent ? smallerArray(parent) : all.find(x => x.id === ctx.itemId);
+      if (!c) throw new Error('No current array-grid challenge');
+      const check: DriverInput = { type: 'check' };
+      if (ctx.data.challengeType === 'make_array') {
+        const total = c.total ?? 0, arrays = arraysOf(total), grid = gridFor(total);
+        const first = arrays.find(a => a.rows >= 2 && a.columns >= 2) ?? arrays[0];
+        const second = arrays.find(a => a.rows !== first?.rows);
+        if (!first) throw new Error(`array-grid make_array: ${total} squares make no array on the grid`);
+        const fill = (a: { rows: number; columns: number }) => Array.from({ length: a.rows * a.columns },
+          (_, i): DriverInput => ({ type: 'touch', target: `cell-${Math.floor(i / a.columns)}-${i % a.columns}` }));
+        const clear: DriverInput = { type: 'choose', label: 'Clear the grid' }, done: DriverInput = { type: 'choose', label: "I'm done!" };
+        const start = Number(ctx.demand?.squaresMade ?? 0) > 0 ? [clear] : [];
+        if (wrong) return [...start, ...fill(first),
+          { type: 'touch', target: first.rows < grid.rows ? `cell-${first.rows}-0` : `cell-0-${first.columns}` }, done];
+        if (c.ways !== 2) return [...start, ...fill(first), done];
+        if (!second) throw new Error(`array-grid make_array: ${total} squares have no second array on the grid`);
+        return [...start, ...fill(first), done, clear, ...fill(second), done];
+      }
+      const r = c.targetRows, cols = c.targetColumns;
+      const total = String(!wrong ? r * cols : r + cols !== r * cols ? r + cols : r * cols + 1);
+      const write = (label: string, text: string): DriverInput => ({ type: 'write', label, text });
+      if (ctx.data.challengeType === 'build_array') return [{ type: 'choose', label: `Rows: ${r}` },
+        { type: 'choose', label: `Columns: ${cols}` }, write('Total', total), check];
+      if (ctx.data.challengeType === 'count_array') return [write('Total', total), check];
+      return [write('Rows', String(r)), write('Columns', String(cols)), write('Total', total), check];
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
@@ -674,6 +761,18 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
               : (labels ? `Right (${c.compareFraction.numerator}/${c.compareFraction.denominator}) is larger` : 'Right is larger');
           return [{ type: 'choose', label }, check];
         }
+        case 'build_equal': {
+          // The first other way the circle can make; halving every piece of the target's cut when no button makes it.
+          // Wrong: one piece too many shaded on that cut (`one_off`).
+          const band = ctx.data.gradeBand, way = equalWays(c.numerator, c.denominator, band)[0];
+          if (!way) throw new Error(`fraction-circles build_equal ${c.numerator}/${c.denominator}: no other way to make it`);
+          const direct = cutsFor(band).includes(way.pieces);
+          const cut: DriverInput[] = direct ? [{ type: 'choose', label: `Cut into ${way.pieces} equal pieces` }]
+            : [{ type: 'choose', label: `Cut into ${c.denominator} equal pieces` }, { type: 'choose', label: '✂️ Cut a piece in half' },
+              ...Array.from({ length: c.denominator }, (_, k) => ({ type: 'touch' as const, target: `slice-${2 * k}` })),
+              { type: 'choose', label: '✂️ Cut a piece in half' }];
+          return [...cut, ...shade(wrong ? off(way.shaded, way.pieces) : way.shaded), { type: 'choose', label: "I'm done!" }];
+        }
         case 'touch_fraction':
           // The two wrong pictures are drawn at random on mount, so the row cannot name one.
           if (wrong) throw new Error('fraction-circles touch_fraction: the wrong pictures are random per mount; no driver input for a wrong touch');
@@ -683,6 +782,54 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"], [data-pip-object="stimulus"]' } },
   },
+  'fraction-bar': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/FractionBar.tsx',
+    instanceId: 'bar',
+    defaults: { grade: 'Grade 3', mode: 'build', di: false, topic: 'Naming and building fractions on a bar' },
+    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'BUILD_', 'PHASE_TRANSITION', 'ACTIVITY_START', 'HINT_REQUESTED'],
+    prompts: WORKSPACE_PROMPTS,
+    // The three-step item goes through the bar's own controls from the step the scene names: the numerator button and
+    // Check, the denominator button and Check, then the bar part that shades up to the numerator and Submit Fraction.
+    // A wrong answer is the wrong number at the current step (the denominator for the numerator, and back), or one
+    // part over on the bar. build_equal: the first other way the bar can make, split directly or by halving every part
+    // of the target's split, shaded and "I'm done!" (wrong: one part too many, `one_off`).
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const [parentId, easier] = (ctx.itemId ?? '').split('~');
+      const parent = (ctx.data.challenges ?? []).find((ch: { id: string }) => ch.id === parentId);
+      const band = ctx.data.gradeBand;
+      // An easier practice item (the simplify lever) is not a generated challenge: rebuild it from its parent.
+      const c = !easier ? parent : parent ? smallerBarTarget(parent, band) : null;
+      if (!c) throw new Error('No current fraction-bar assignment');
+      const wrong = intent === 'wrong';
+      const off = (n: number, max: number) => (n + 1 <= max ? n + 1 : n - 1);
+      const part = (i: number): DriverInput => ({ type: 'touch', target: `part-${i}` });
+      if (ctx.data.challengeType === 'build_equal') {
+        const way = equalWays(c.numerator, c.denominator, band)[0];
+        if (!way) throw new Error(`fraction-bar build_equal ${c.numerator}/${c.denominator}: no other way to make it`);
+        const knife: DriverInput = { type: 'choose', label: '✂️ Cut a part in half' };
+        const split: DriverInput[] = cutsFor(band).includes(way.pieces) ? [{ type: 'choose', label: `Split into ${way.pieces} equal parts` }]
+          : [{ type: 'choose', label: `Split into ${c.denominator} equal parts` }, knife,
+            ...Array.from({ length: c.denominator }, (_, k) => part(2 * k)), knife];
+        const shaded = wrong ? off(way.shaded, way.pieces) : way.shaded;
+        return [...split, ...Array.from({ length: shaded }, (_, i) => part(i)), { type: 'choose', label: "I'm done!" }];
+      }
+      const check: DriverInput = { type: 'choose', label: 'Check Answer' };
+      const pick = (value: number, choices: number[], other: number) => {
+        if (!wrong) return String(value);
+        return String(choices.includes(other) && other !== value ? other : choices.find(x => x !== value));
+      };
+      const shade = (n: number): DriverInput[] => [...(n > 0 ? [part(n - 1)] : []), { type: 'choose', label: 'Submit Fraction' }];
+      const step = ctx.demand?.step;
+      if (step === 'shade') return shade(wrong ? off(c.numerator, c.denominator) : c.numerator);
+      const denominator: DriverInput[] = [{ type: 'choose', label: pick(c.denominator, c.denominatorChoices, c.numerator) }, check];
+      if (step === 'denominator') return wrong ? denominator : [...denominator, ...shade(c.numerator)];
+      const numerator: DriverInput[] = [{ type: 'choose', label: pick(c.numerator, c.numeratorChoices, c.denominator) }, check];
+      return wrong ? numerator : [...numerator, ...denominator, ...shade(c.numerator)];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
   'base-ten-blocks': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/math/BaseTenBlocks.tsx',
@@ -691,7 +838,8 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     leakTokens: ['BT_', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'BUILD_', 'TRADE_', 'ALL_COMPLETE', 'NEXT_ITEM', 'ACTIVITY_START'],
     prompts: WORKSPACE_PROMPTS,
     // Two surfaces, chosen by the payload. The judged mat (read_blocks, regroup): a spoken step says the
-    // pack's own answer; a trade taps a block (wrong: another size, or the asked size twice). The click mat:
+    // pack's own answer; a trade taps a block (wrong: another size, or the asked size twice). build_two_ways builds,
+    // says I'm done, swaps one block for ten smaller and says I'm done again (wrong: a ten short). The click mat:
     // build_number presses each column's "Add one to ..." (wrong: a ten left as ten ones), then Check My Blocks;
     // operate types the result on the keypad (wrong: a ten off; on addition after modelling both numbers), then the check key.
     inputsFor: (intent, ctx) => {
@@ -724,6 +872,23 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
         const presses = ['Thousands', 'Hundreds', 'Tens', 'Ones'].flatMap((column, i) =>
           Array.from({ length: digits[i] }, (): DriverInput => ({ type: 'choose', label: `Add one to ${column}` })));
         return [...presses, { type: 'choose', label: 'Check My Blocks' }];
+      }
+      if (c.type === 'build_two_ways') {
+        // The open build. Correct: clear the mat (Try again keeps the build), build the standard form, I'm done (the
+        // first way, no commit), then swap the largest block for ten of the next size and I'm done. Wrong: a ten short
+        // (one ones cube over when there is no ten), the miss a lost ten shows.
+        const columns = ['Thousands', 'Hundreds', 'Tens', 'Ones'];
+        const digits = String(c.targetNumber).padStart(4, '0').split('').map(Number);
+        if (wrong && digits[2] > 0) digits[2] -= 1; else if (wrong) digits[3] += 1;
+        const presses = columns.flatMap((column, i) =>
+          Array.from({ length: digits[i] }, (): DriverInput => ({ type: 'choose', label: `Add one to ${column}` })));
+        const done: DriverInput = { type: 'choose', label: "I'm done!" };
+        if (wrong) return [...presses, done];
+        const top = digits.findIndex(d => d > 0);
+        if (top < 0 || top === 3) throw new Error(`base-ten-blocks build_two_ways ${c.targetNumber}: no block above the ones to swap`);
+        const swap: DriverInput[] = [{ type: 'choose', label: `Take one from ${columns[top]}` },
+          ...Array.from({ length: 10 }, (): DriverInput => ({ type: 'choose', label: `Add one to ${columns[top + 1]}` }))];
+        return [{ type: 'choose', label: 'Reset' }, ...presses, done, ...swap, done];
       }
       if (c.type === 'regroup') {
         // A mixed payload's regroup: any trade that keeps the value is right. Correct breaks one of the largest
@@ -965,6 +1130,19 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
         const counts = (c.expectedCounts ?? []).map((n, i) => wrong && i === 0 ? (n === 0 ? 1 : n - 1) : n);
         return [...counts.flatMap((n, i) => presses(row(i), n - c.values[i].value)), { type: 'check' }];
       }
+      // An open build keeps its graph through Try again, so the inputs move each bar from what the scene says it holds.
+      // A fitting graph per ask; the wrong one ties (most, fewest), differs by one (same) or has one too many (N more).
+      if (c.evalMode === 'make_graph' && c.graphRule) {
+        const r = c.graphRule, other = r.a === 0 ? 1 : 0;
+        const want = c.values.map((_, i) => r.kind === 'most' ? (i === r.a ? (wrong ? 2 : 3) : wrong && i === other ? 2 : 1)
+          : r.kind === 'fewest' ? (i === r.a || wrong && i === other ? 1 : 3)
+            : r.kind === 'same' ? (i === r.a ? 2 : i === r.b ? (wrong ? 3 : 2) : 1)
+              : i === r.a ? 1 + (r.by ?? 1) + (wrong ? 1 : 0) : 1);
+        return [...c.values.flatMap((v, i) => {
+          const now = Number(ctx.demand?.[v.label] ?? 0);
+          return Array.from({ length: Math.abs(want[i] - now) }, () => ({ type: 'touch' as const, target: `${want[i] > now ? 'row' : 'top'}-${i}` }));
+        }), { type: 'choose', label: "I'm done!" }];
+      }
       const steps = c.availableScaleSteps ?? [1, 2, 5, 10];
       const step = wrong ? steps.find(s => s !== c.expectedScaleStep) : c.expectedScaleStep;
       return [...(c.expectedDataset ?? []).flatMap(e => presses(`Increase ${e.label}`,
@@ -1166,6 +1344,35 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       throw new Error('Open-builder build_to_goal is judged by the inspector, not driven at W1');
     },
     probes: { mounted: { selector: '[aria-label^="Building site"]' } },
+  },
+  'shape-builder': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/ShapeBuilder.tsx',
+    instanceId: 'shapes-grid',
+    defaults: { grade: 'Grade 3', mode: 'make_shape', di: false, topic: 'Quadrilaterals by their properties' },
+    leakTokens: ['ACTIVITY_START', 'SHAPE_CLOSED', 'FIRST_VERTEX', 'BUILD_CORRECT', 'BUILD_INCORRECT', 'NEXT_ITEM',
+      'ALL_COMPLETE', '[TIER'],
+    prompts: WORKSPACE_PROMPTS,
+    // make_shape through the real dot taps: the first shape the ask's menu proves passes, then "I'm done!". Try again
+    // keeps the build, so a correct try clears the kept shape first. Wrong: a shape with the wrong number of sides
+    // (`sides_off`); pressing done again on the kept wrong shape is the second wrong. The other modes place corners and
+    // pick shapes by grid position on the svg, which the driver has no input for: undriven at W1.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current shape-builder challenge');
+      if (c.type !== 'make_shape') throw new Error(`shape-builder ${c.type}: placed by svg position, undriven at W1`);
+      const ask = askOf(c);
+      const done: DriverInput = { type: 'choose', label: "I'm done!" };
+      const kept = Number(ctx.demand?.cornersPlaced ?? 0) > 0;
+      if (intent === 'wrong' && ctx.demand?.shapeClosed === 'yes') return [done];
+      const shape = intent === 'wrong' ? (ask.sides === 3 ? witnessesFor({ sides: 4 })[0] : witnessesFor({ sides: 3 })[0])
+        : witnessesFor(ask)[0];
+      if (!shape) throw new Error(`shape-builder make_shape: no passing shape for ${JSON.stringify(ask)}`);
+      const tap = (p: { x: number; y: number }): DriverInput => ({ type: 'touch', target: `dot-${p.x + 1}-${p.y + 1}` });
+      return [...(kept ? [{ type: 'choose' as const, label: 'Clear Shape' }] : []), ...shape.map(tap), tap(shape[0]), done];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
   'di-shapes': {
     execution: 'workspace',
@@ -1950,7 +2157,49 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
+  'polygon-area-builder': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/PolygonAreaBuilder.tsx',
+    instanceId: 'polygon-area',
+    defaults: { grade: 'Grade 3', mode: 'build_area', di: false, topic: 'Area: make shapes with a given number of unit squares' },
+    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'DECOMPOSE_DONE', 'NEXT_ITEM', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    inputsFor: (intent, ctx) => intent === 'warmup' ? [] : polygonAreaInputs(ctx, intent === 'wrong'),
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
 };
+
+/**
+ * Polygon area builder through its real controls. A typed area goes in the Area box, then Check; wrong is the mode's
+ * signature error (the ½ left out of a triangle or trapezoid, else half the area). The open build shades squares on
+ * the grid, then I'm done: the first shape fills rows left to right, a second shape fills columns three squares tall
+ * (never the first one turned for any area of 4 or more). Try again keeps the build, so it is cleared first; wrong is
+ * one square short. decompose needs a canvas drag the row does not drive.
+ */
+function polygonAreaInputs(ctx: JourneyContext, wrong: boolean): DriverInput[] {
+  const id = ctx.itemId ?? '';
+  const session = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === id.replace(/~smaller$/, ''));
+  const c = id.endsWith('~smaller') && session ? smallerArea(session) : session;
+  if (!c) throw new Error('No current polygon-area-builder challenge');
+  if (c.type === 'decompose') throw new Error('polygon-area-builder decompose: the cut-triangle drag on the canvas is not driven');
+  if (c.type !== 'build_area') {
+    const halfLeftOut = c.figureType === 'triangle' || c.figureType === 'trapezoid';
+    const typed = wrong ? (halfLeftOut ? c.expectedArea * 2 : c.expectedArea / 2) : c.expectedArea;
+    return [{ type: 'write', label: 'Area', text: String(typed) }, { type: 'check' }];
+  }
+  const area: number = c.targetArea;
+  const shade = (n: number, at: (i: number) => [number, number]): DriverInput[] =>
+    Array.from({ length: n }, (_, i) => ({ type: 'touch' as const, target: `cell-${at(i)[0]}-${at(i)[1]}` }));
+  const rows = (n: number) => shade(n, i => [i % 10, Math.floor(i / 10)]);
+  const columns = (n: number) => shade(n, i => [Math.floor(i / 3), i % 3]);
+  const clear: DriverInput[] = Number(ctx.demand?.squaresPlaced ?? 0) > 0 ? [{ type: 'choose', label: 'Clear grid' }] : [];
+  const done: DriverInput = { type: 'choose', label: "I'm done!" };
+  const second = ctx.demand?.shape === 'second';
+  if (wrong) return [...clear, ...(second ? columns(area - 1) : rows(area - 1)), done];
+  if (second) return [...clear, ...columns(area), done];
+  return [...clear, ...rows(area), done, ...(c.shapesAsked === 2 ? [{ type: 'choose', label: 'Clear grid' } as DriverInput,
+    ...columns(area), done] : [])];
+}
 
 /** Shared by every primitive: both belong to the runtime shell, not to any one board. */
 export const SHARED_PROBES: Record<string, JourneyProbe> = {

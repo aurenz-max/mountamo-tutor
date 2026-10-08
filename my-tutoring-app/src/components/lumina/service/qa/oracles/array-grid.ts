@@ -50,7 +50,54 @@ import { asRecordArray, checkAnswerVariety, parseScopeCeiling } from './helpers'
  * stays with /eval-test.
  */
 
-const KNOWN_TYPES = new Set(['build_array', 'count_array', 'multiply_array']);
+const KNOWN_TYPES = new Set(['build_array', 'count_array', 'multiply_array', 'make_array']);
+
+// make_array's empty grid (arrayGridWorkspace.ts `gridFor`, mirrored): up to 8 rows and 12 columns.
+const MAKE_GRID_ROWS = 8;
+const MAKE_GRID_COLS = 12;
+
+/**
+ * make_array (open build): the learner makes ANY full rectangle of `total` squares, so there are no dimensions to
+ * desync. What can be wrong is the total: not a whole number, more than the grid holds as two different arrays (no
+ * second array for a "different" ask), above the objective ceiling, unstated in the ask, or repeated.
+ */
+function verifyMakeArray(challenges: Record<string, unknown>[], ceiling: number): OracleResult {
+  const violations: OracleViolation[] = [];
+  const totals: number[] = [];
+  let checked = 0;
+  if (challenges.length < 3) {
+    violations.push({ check: 'schema', where: 'challenges', detail: `only ${challenges.length} challenge(s) — mastery-over-demo requires 3-6+` });
+  }
+  challenges.forEach((c, i) => {
+    const where = String(c.id ?? `#${i + 1}`);
+    const total = c.total;
+    if (!Number.isInteger(total) || (total as number) < 2) {
+      violations.push({ check: 'schema', where, detail: `make_array total ${JSON.stringify(total)} is not a whole number of squares` });
+      return;
+    }
+    const n = total as number;
+    checked++;
+    totals.push(n);
+    const fits: string[] = [];
+    for (let r = 1; r <= Math.min(n, MAKE_GRID_ROWS); r++) {
+      if (n % r === 0 && n / r <= Math.min(n, MAKE_GRID_COLS)) fits.push(`${r}x${n / r}`);
+    }
+    if (fits.length < 2) {
+      violations.push({ check: 'answer-key-desync', where, detail: `${n} squares fit the ${MAKE_GRID_ROWS}×${MAKE_GRID_COLS} grid as ${fits.length} array(s) — "any array" or "a different array" has no second answer` });
+    }
+    if (n > ceiling) violations.push({ check: 'scope', where, detail: `${n} squares exceeds objective ceiling ${ceiling}` });
+    if (c.ways !== undefined && c.ways !== 1 && c.ways !== 2) violations.push({ check: 'schema', where, detail: `ways ${JSON.stringify(c.ways)} is not 1 or 2` });
+    const ask = String(c.instruction ?? '');
+    if (!ask.match(/\d+/g)?.includes(String(n))) violations.push({ check: 'schema', where, detail: `the ask "${ask}" does not state ${n} squares` });
+    if (c.ways === 2 && !/different/i.test(ask)) violations.push({ check: 'schema', where, detail: `a two-ways item's ask "${ask}" does not ask for a different array` });
+  });
+  const seen = new Set<number>();
+  totals.forEach((t) => {
+    if (seen.has(t)) violations.push({ check: 'clustering', where: 'challenges[]', detail: `total ${t} appears more than once` });
+    seen.add(t);
+  });
+  return { violations, uncheckedTypes: [], checkedChallenges: checked };
+}
 
 // Component-side button-panel caps (ArrayGrid.tsx:177-178, :199-200 mirror).
 const ROW_BUTTON_CAP = 6;
@@ -67,6 +114,9 @@ export const arrayGridOracle: ContentOracle = {
 
     const sessionType = String(data.challengeType ?? '');
     const isBuild = sessionType === 'build_array';
+    if (sessionType === 'make_array') {
+      return verifyMakeArray(challenges, ctx.scopeMax ?? parseScopeCeiling(ctx.topic) ?? INTRINSIC_MAX_PRODUCT);
+    }
     if (!KNOWN_TYPES.has(sessionType)) {
       // Generic product/scope/clustering still apply below; only the build-mode
       // reachability model is type-specific, so record the honesty gap.

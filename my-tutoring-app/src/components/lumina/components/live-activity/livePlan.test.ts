@@ -63,7 +63,7 @@ describe('live lesson plan projection', () => {
       'bad-data': 'Generated number line has no valid challenges or range',
       missing: 'no prepared content in the package',
     });
-    expect(() => projectLessonPlan(synthetic([{ componentId: 'fraction-bar', instanceId: 'f', data: {} }]))).toThrow('can run live');
+    expect(() => projectLessonPlan(synthetic([{ componentId: 'concept-card-grid', instanceId: 'f', data: {} }]))).toThrow('can run live');
   });
 
   it('offers items strictly in plan order and tells the tutor identities, never answers', () => {

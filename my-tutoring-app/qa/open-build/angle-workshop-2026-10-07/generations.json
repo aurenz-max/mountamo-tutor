@@ -1,0 +1,1122 @@
+{
+ "results": [
+  {
+   "lesson": {
+    "mode": "make_angle",
+    "grade": "4",
+    "topic": "Acute, right, obtuse and straight angles",
+    "intent": "Classify angles by size compared with a right angle"
+   },
+   "title": "Constructing and Classifying Angles",
+   "gradeBand": "4",
+   "oracle": [],
+   "uncheckedTypes": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "aw-1",
+     "targetKind": "right",
+     "instruction": "Make a right angle.",
+     "narration": "A garden gate swings open.",
+     "passes": 90,
+     "passMiss": null,
+     "misses": 45,
+     "missMiss": "made_acute",
+     "boundary": {
+      "at86": "made_acute",
+      "at90": null,
+      "at94": "made_obtuse",
+      "at176": "made_obtuse",
+      "at178": "made_straight"
+     },
+     "scene": {
+      "kind": "make_angle",
+      "figure": "a fixed ray from a vertex, pointing right, and a second ray the learner turns",
+      "openingDegrees": 45,
+      "learnerWork": "Opened the angle to 45°",
+      "constraints": "The learner turns the second ray (drag it, or press Open wider / Close in) and presses I'm done!; the activity checks the angle itself. The opening is not shown on screen. You cannot move the ray for the learner."
+     }
+    },
+    {
+     "id": "aw-2",
+     "targetKind": "acute",
+     "instruction": "Make an acute angle.",
+     "narration": "A laptop lid lifts from the keyboard.",
+     "passes": 45,
+     "passMiss": null,
+     "misses": 135,
+     "missMiss": "made_obtuse",
+     "boundary": {
+      "at86": null,
+      "at90": "made_right",
+      "at94": "made_obtuse",
+      "at176": "made_obtuse",
+      "at178": "made_straight"
+     },
+     "scene": {
+      "kind": "make_angle",
+      "figure": "a fixed ray from a vertex, pointing right, and a second ray the learner turns",
+      "openingDegrees": 135,
+      "learnerWork": "Opened the angle to 135°",
+      "constraints": "The learner turns the second ray (drag it, or press Open wider / Close in) and presses I'm done!; the activity checks the angle itself. The opening is not shown on screen. You cannot move the ray for the learner."
+     }
+    },
+    {
+     "id": "aw-3",
+     "targetKind": "obtuse",
+     "instruction": "Make an obtuse angle.",
+     "narration": "A folding fan spreads out.",
+     "passes": 135,
+     "passMiss": null,
+     "misses": 45,
+     "missMiss": "made_acute",
+     "boundary": {
+      "at86": "made_acute",
+      "at90": "made_right",
+      "at94": null,
+      "at176": null,
+      "at178": "made_straight"
+     },
+     "scene": {
+      "kind": "make_angle",
+      "figure": "a fixed ray from a vertex, pointing right, and a second ray the learner turns",
+      "openingDegrees": 45,
+      "learnerWork": "Opened the angle to 45°",
+      "constraints": "The learner turns the second ray (drag it, or press Open wider / Close in) and presses I'm done!; the activity checks the angle itself. The opening is not shown on screen. You cannot move the ray for the learner."
+     }
+    },
+    {
+     "id": "aw-4",
+     "targetKind": "straight",
+     "instruction": "Make a straight angle.",
+     "narration": "A pair of scissors opens.",
+     "passes": 180,
+     "passMiss": null,
+     "misses": 135,
+     "missMiss": "made_obtuse",
+     "boundary": {
+      "at86": "made_acute",
+      "at90": "made_right",
+      "at94": "made_obtuse",
+      "at176": "made_obtuse",
+      "at178": null
+     },
+     "scene": {
+      "kind": "make_angle",
+      "figure": "a fixed ray from a vertex, pointing right, and a second ray the learner turns",
+      "openingDegrees": 135,
+      "learnerWork": "Opened the angle to 135°",
+      "constraints": "The learner turns the second ray (drag it, or press Open wider / Close in) and presses I'm done!; the activity checks the angle itself. The opening is not shown on screen. You cannot move the ray for the learner."
+     }
+    },
+    {
+     "id": "aw-5",
+     "targetKind": "between_right_straight",
+     "instruction": "Make an angle that is bigger than a right angle but smaller than a straight angle.",
+     "narration": "A door swings open from its frame.",
+     "passes": 135,
+     "passMiss": null,
+     "misses": 45,
+     "missMiss": "made_acute",
+     "boundary": {
+      "at86": "made_acute",
+      "at90": "made_right",
+      "at94": null,
+      "at176": null,
+      "at178": "made_straight"
+     },
+     "scene": {
+      "kind": "make_angle",
+      "figure": "a fixed ray from a vertex, pointing right, and a second ray the learner turns",
+      "openingDegrees": 45,
+      "learnerWork": "Opened the angle to 45°",
+      "constraints": "The learner turns the second ray (drag it, or press Open wider / Close in) and presses I'm done!; the activity checks the angle itself. The opening is not shown on screen. You cannot move the ray for the learner."
+     }
+    }
+   ],
+   "data": {
+    "title": "Constructing and Classifying Angles",
+    "description": "Practice building various types of angles by rotating rays to form acute, right, obtuse, and straight angles.",
+    "challengeType": "make_angle",
+    "gradeBand": "4",
+    "challenges": [
+     {
+      "type": "make_angle",
+      "narration": "A garden gate swings open.",
+      "instruction": "Make a right angle.",
+      "hint": "Turn the purple ray and watch how wide the opening gets.",
+      "answerKind": "build",
+      "targetKind": "right",
+      "expectedAnswer": 0,
+      "tolerance": 0,
+      "id": "aw-1"
+     },
+     {
+      "type": "make_angle",
+      "narration": "A laptop lid lifts from the keyboard.",
+      "instruction": "Make an acute angle.",
+      "hint": "Turn the purple ray and watch how wide the opening gets.",
+      "answerKind": "build",
+      "targetKind": "acute",
+      "expectedAnswer": 0,
+      "tolerance": 0,
+      "id": "aw-2"
+     },
+     {
+      "type": "make_angle",
+      "narration": "A folding fan spreads out.",
+      "instruction": "Make an obtuse angle.",
+      "hint": "Turn the purple ray and watch how wide the opening gets.",
+      "answerKind": "build",
+      "targetKind": "obtuse",
+      "expectedAnswer": 0,
+      "tolerance": 0,
+      "id": "aw-3"
+     },
+     {
+      "type": "make_angle",
+      "narration": "A pair of scissors opens.",
+      "instruction": "Make a straight angle.",
+      "hint": "Turn the purple ray and watch how wide the opening gets.",
+      "answerKind": "build",
+      "targetKind": "straight",
+      "expectedAnswer": 0,
+      "tolerance": 0,
+      "id": "aw-4"
+     },
+     {
+      "type": "make_angle",
+      "narration": "A door swings open from its frame.",
+      "instruction": "Make an angle that is bigger than a right angle but smaller than a straight angle.",
+      "hint": "Turn the purple ray and watch how wide the opening gets.",
+      "answerKind": "build",
+      "targetKind": "between_right_straight",
+      "expectedAnswer": 0,
+      "tolerance": 0,
+      "id": "aw-5"
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "mode": "make_angle",
+    "grade": "4",
+    "topic": "Obtuse angles",
+    "intent": "Make an obtuse angle",
+    "difficulty": "easy"
+   },
+   "title": "Constructing Various Angle Types",
+   "gradeBand": "4",
+   "oracle": [],
+   "uncheckedTypes": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "aw-1",
+     "targetKind": "obtuse",
+     "instruction": "Make an obtuse angle.",
+     "narration": "A pair of scissors opens.",
+     "passes": 135,
+     "passMiss": null,
+     "misses": 45,
+     "missMiss": "made_acute",
+     "boundary": {
+      "at86": "made_acute",
+      "at90": "made_right",
+      "at94": null,
+      "at176": null,
+      "at178": "made_straight"
+     },
+     "scene": {
+      "kind": "make_angle",
+      "figure": "a fixed ray from a vertex, pointing right, and a second ray the learner turns",
+      "openingDegrees": 45,
+      "learnerWork": "Opened the angle to 45°",
+      "constraints": "The learner turns the second ray (drag it, or press Open wider / Close in) and presses I'm done!; the activity checks the angle itself. The opening is not shown on screen. You cannot move the ray for the learner."
+     }
+    },
+    {
+     "id": "aw-2",
+     "targetKind": "between_right_straight",
+     "instruction": "Make an angle that is bigger than a right angle but smaller than a straight angle.",
+     "narration": "A door swings open from its frame.",
+     "passes": 135,
+     "passMiss": null,
+     "misses": 45,
+     "missMiss": "made_acute",
+     "boundary": {
+      "at86": "made_acute",
+      "at90": "made_right",
+      "at94": null,
+      "at176": null,
+      "at178": "made_straight"
+     },
+     "scene": {
+      "kind": "make_angle",
+      "figure": "a fixed ray from a vertex, pointing right, and a second ray the learner turns",
+      "openingDegrees": 45,
+      "learnerWork": "Opened the angle to 45°",
+      "constraints": "The learner turns the second ray (drag it, or press Open wider / Close in) and presses I'm done!; the activity checks the angle itself. The opening is not shown on screen. You cannot move the ray for the learner."
+     }
+    },
+    {
+     "id": "aw-3",
+     "targetKind": "right",
+     "instruction": "Make a right angle.",
+     "narration": "A laptop lid lifts from the keyboard.",
+     "passes": 90,
+     "passMiss": null,
+     "misses": 45,
+     "missMiss": "made_acute",
+     "boundary": {
+      "at86": "made_acute",
+      "at90": null,
+      "at94": "made_obtuse",
+      "at176": "made_obtuse",
+      "at178": "made_straight"
+     },
+     "scene": {
+      "kind": "make_angle",
+      "figure": "a fixed ray from a vertex, pointing right, and a second ray the learner turns",
+      "openingDegrees": 45,
+      "learnerWork": "Opened the angle to 45°",
+      "constraints": "The learner turns the second ray (drag it, or press Open wider / Close in) and presses I'm done!; the activity checks the angle itself. The opening is not shown on screen. You cannot move the ray for the learner."
+     }
+    },
+    {
+     "id": "aw-4",
+     "targetKind": "straight",
+     "instruction": "Make a straight angle.",
+     "narration": "A folding fan spreads out.",
+     "passes": 180,
+     "passMiss": null,
+     "misses": 135,
+     "missMiss": "made_obtuse",
+     "boundary": {
+      "at86": "made_acute",
+      "at90": "made_right",
+      "at94": "made_obtuse",
+      "at176": "made_obtuse",
+      "at178": null
+     },
+     "scene": {
+      "kind": "make_angle",
+      "figure": "a fixed ray from a vertex, pointing right, and a second ray the learner turns",
+      "openingDegrees": 135,
+      "learnerWork": "Opened the angle to 135°",
+      "constraints": "The learner turns the second ray (drag it, or press Open wider / Close in) and presses I'm done!; the activity checks the angle itself. The opening is not shown on screen. You cannot move the ray for the learner."
+     }
+    },
+    {
+     "id": "aw-5",
+     "targetKind": "acute",
+     "instruction": "Make an acute angle.",
+     "narration": "A drawbridge rises from the road.",
+     "passes": 45,
+     "passMiss": null,
+     "misses": 135,
+     "missMiss": "made_obtuse",
+     "boundary": {
+      "at86": null,
+      "at90": "made_right",
+      "at94": "made_obtuse",
+      "at176": "made_obtuse",
+      "at178": "made_straight"
+     },
+     "scene": {
+      "kind": "make_angle",
+      "figure": "a fixed ray from a vertex, pointing right, and a second ray the learner turns",
+      "openingDegrees": 135,
+      "learnerWork": "Opened the angle to 135°",
+      "constraints": "The learner turns the second ray (drag it, or press Open wider / Close in) and presses I'm done!; the activity checks the angle itself. The opening is not shown on screen. You cannot move the ray for the learner."
+     }
+    }
+   ],
+   "data": {
+    "title": "Constructing Various Angle Types",
+    "description": "Practice building different types of angles by rotating rays to form specific angle classifications from blank scenes.",
+    "challengeType": "make_angle",
+    "gradeBand": "4",
+    "supportTier": "easy",
+    "challenges": [
+     {
+      "type": "make_angle",
+      "narration": "A pair of scissors opens.",
+      "instruction": "Make an obtuse angle.",
+      "hint": "Turn the purple ray and watch how wide the opening gets.",
+      "answerKind": "build",
+      "targetKind": "obtuse",
+      "expectedAnswer": 0,
+      "tolerance": 0,
+      "id": "aw-1"
+     },
+     {
+      "type": "make_angle",
+      "narration": "A door swings open from its frame.",
+      "instruction": "Make an angle that is bigger than a right angle but smaller than a straight angle.",
+      "hint": "Turn the purple ray and watch how wide the opening gets.",
+      "answerKind": "build",
+      "targetKind": "between_right_straight",
+      "expectedAnswer": 0,
+      "tolerance": 0,
+      "id": "aw-2"
+     },
+     {
+      "type": "make_angle",
+      "narration": "A laptop lid lifts from the keyboard.",
+      "instruction": "Make a right angle.",
+      "hint": "Turn the purple ray and watch how wide the opening gets.",
+      "answerKind": "build",
+      "targetKind": "right",
+      "expectedAnswer": 0,
+      "tolerance": 0,
+      "id": "aw-3"
+     },
+     {
+      "type": "make_angle",
+      "narration": "A folding fan spreads out.",
+      "instruction": "Make a straight angle.",
+      "hint": "Turn the purple ray and watch how wide the opening gets.",
+      "answerKind": "build",
+      "targetKind": "straight",
+      "expectedAnswer": 0,
+      "tolerance": 0,
+      "id": "aw-4"
+     },
+     {
+      "type": "make_angle",
+      "narration": "A drawbridge rises from the road.",
+      "instruction": "Make an acute angle.",
+      "hint": "Turn the purple ray and watch how wide the opening gets.",
+      "answerKind": "build",
+      "targetKind": "acute",
+      "expectedAnswer": 0,
+      "tolerance": 0,
+      "id": "aw-5"
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "mode": "make_angle",
+    "grade": "5",
+    "topic": "Angles of a given size",
+    "intent": "Draw an angle between two given measures"
+   },
+   "title": "Constructing Angles of Various Sizes",
+   "gradeBand": "5",
+   "oracle": [],
+   "uncheckedTypes": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "aw-1",
+     "targetKind": "between_right_straight",
+     "instruction": "Make an angle that is bigger than a right angle but smaller than a straight angle.",
+     "narration": "A laptop lid lifts from the keyboard.",
+     "passes": 135,
+     "passMiss": null,
+     "misses": 45,
+     "missMiss": "made_acute",
+     "boundary": {
+      "at86": "made_acute",
+      "at90": "made_right",
+      "at94": null,
+      "at176": null,
+      "at178": "made_straight"
+     },
+     "scene": {
+      "kind": "make_angle",
+      "figure": "a fixed ray from a vertex, pointing right, and a second ray the learner turns",
+      "openingDegrees": 45,
+      "learnerWork": "Opened the angle to 45°",
+      "constraints": "The learner turns the second ray (drag it, or press Open wider / Close in) and presses I'm done!; the activity checks the angle itself. The opening is not shown on screen. You cannot move the ray for the learner."
+     }
+    },
+    {
+     "id": "aw-2",
+     "targetKind": "acute",
+     "instruction": "Make an acute angle.",
+     "narration": "A laptop lid lifts from the keyboard.",
+     "passes": 45,
+     "passMiss": null,
+     "misses": 135,
+     "missMiss": "made_obtuse",
+     "boundary": {
+      "at86": null,
+      "at90": "made_right",
+      "at94": "made_obtuse",
+      "at176": "made_obtuse",
+      "at178": "made_straight"
+     },
+     "scene": {
+      "kind": "make_angle",
+      "figure": "a fixed ray from a vertex, pointing right, and a second ray the learner turns",
+      "openingDegrees": 135,
+      "learnerWork": "Opened the angle to 135°",
+      "constraints": "The learner turns the second ray (drag it, or press Open wider / Close in) and presses I'm done!; the activity checks the angle itself. The opening is not shown on screen. You cannot move the ray for the learner."
+     }
+    },
+    {
+     "id": "aw-3",
+     "targetKind": "obtuse",
+     "instruction": "Make an obtuse angle.",
+     "narration": "A folding fan spreads out.",
+     "passes": 135,
+     "passMiss": null,
+     "misses": 45,
+     "missMiss": "made_acute",
+     "boundary": {
+      "at86": "made_acute",
+      "at90": "made_right",
+      "at94": null,
+      "at176": null,
+      "at178": "made_straight"
+     },
+     "scene": {
+      "kind": "make_angle",
+      "figure": "a fixed ray from a vertex, pointing right, and a second ray the learner turns",
+      "openingDegrees": 45,
+      "learnerWork": "Opened the angle to 45°",
+      "constraints": "The learner turns the second ray (drag it, or press Open wider / Close in) and presses I'm done!; the activity checks the angle itself. The opening is not shown on screen. You cannot move the ray for the learner."
+     }
+    },
+    {
+     "id": "aw-4",
+     "targetKind": "range",
+     "range": [
+      50,
+      70
+     ],
+     "instruction": "Make an angle between 50° and 70°.",
+     "narration": "A folding fan spreads out.",
+     "passes": 60,
+     "passMiss": null,
+     "misses": 30,
+     "missMiss": "below_range",
+     "boundary": {
+      "at86": "above_range",
+      "at90": "above_range",
+      "at94": "above_range",
+      "at176": "above_range",
+      "at178": "above_range"
+     },
+     "scene": {
+      "kind": "make_angle",
+      "figure": "a fixed ray from a vertex, pointing right, and a second ray the learner turns",
+      "openingDegrees": 30,
+      "learnerWork": "Opened the angle to 30°",
+      "constraints": "The learner turns the second ray (drag it, or press Open wider / Close in) and presses I'm done!; the activity checks the angle itself. The opening is not shown on screen. You cannot move the ray for the learner."
+     }
+    },
+    {
+     "id": "aw-5",
+     "targetKind": "range",
+     "range": [
+      60,
+      80
+     ],
+     "instruction": "Make an angle between 60° and 80°.",
+     "narration": "A drawbridge rises from the road.",
+     "passes": 70,
+     "passMiss": null,
+     "misses": 40,
+     "missMiss": "below_range",
+     "boundary": {
+      "at86": "above_range",
+      "at90": "above_range",
+      "at94": "above_range",
+      "at176": "above_range",
+      "at178": "above_range"
+     },
+     "scene": {
+      "kind": "make_angle",
+      "figure": "a fixed ray from a vertex, pointing right, and a second ray the learner turns",
+      "openingDegrees": 40,
+      "learnerWork": "Opened the angle to 40°",
+      "constraints": "The learner turns the second ray (drag it, or press Open wider / Close in) and presses I'm done!; the activity checks the angle itself. The opening is not shown on screen. You cannot move the ray for the learner."
+     }
+    }
+   ],
+   "data": {
+    "title": "Constructing Angles of Various Sizes",
+    "description": "Practice drawing and constructing angles between specific given measures using interactive rays.",
+    "challengeType": "make_angle",
+    "gradeBand": "5",
+    "challenges": [
+     {
+      "type": "make_angle",
+      "narration": "A laptop lid lifts from the keyboard.",
+      "instruction": "Make an angle that is bigger than a right angle but smaller than a straight angle.",
+      "hint": "Turn the purple ray and watch how wide the opening gets.",
+      "answerKind": "build",
+      "targetKind": "between_right_straight",
+      "expectedAnswer": 0,
+      "tolerance": 0,
+      "id": "aw-1"
+     },
+     {
+      "type": "make_angle",
+      "narration": "A laptop lid lifts from the keyboard.",
+      "instruction": "Make an acute angle.",
+      "hint": "Turn the purple ray and watch how wide the opening gets.",
+      "answerKind": "build",
+      "targetKind": "acute",
+      "expectedAnswer": 0,
+      "tolerance": 0,
+      "id": "aw-2"
+     },
+     {
+      "type": "make_angle",
+      "narration": "A folding fan spreads out.",
+      "instruction": "Make an obtuse angle.",
+      "hint": "Turn the purple ray and watch how wide the opening gets.",
+      "answerKind": "build",
+      "targetKind": "obtuse",
+      "expectedAnswer": 0,
+      "tolerance": 0,
+      "id": "aw-3"
+     },
+     {
+      "type": "make_angle",
+      "narration": "A folding fan spreads out.",
+      "instruction": "Make an angle between 50° and 70°.",
+      "hint": "Turn the purple ray and watch how wide the opening gets.",
+      "answerKind": "build",
+      "targetKind": "range",
+      "targetMin": 50,
+      "targetMax": 70,
+      "expectedAnswer": 0,
+      "tolerance": 0,
+      "id": "aw-4"
+     },
+     {
+      "type": "make_angle",
+      "narration": "A drawbridge rises from the road.",
+      "instruction": "Make an angle between 60° and 80°.",
+      "hint": "Turn the purple ray and watch how wide the opening gets.",
+      "answerKind": "build",
+      "targetKind": "range",
+      "targetMin": 60,
+      "targetMax": 80,
+      "expectedAnswer": 0,
+      "tolerance": 0,
+      "id": "aw-5"
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "mode": "measure",
+    "grade": "7",
+    "topic": "Measuring angles with a protractor",
+    "intent": "Read an angle from a protractor"
+   },
+   "title": "Measuring Angles with a Protractor",
+   "gradeBand": "7",
+   "oracle": [],
+   "uncheckedTypes": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "aw-1",
+     "type": "measure",
+     "expectedAnswer": 15
+    },
+    {
+     "id": "aw-2",
+     "type": "measure",
+     "expectedAnswer": 70
+    },
+    {
+     "id": "aw-3",
+     "type": "measure",
+     "expectedAnswer": 80
+    },
+    {
+     "id": "aw-4",
+     "type": "measure",
+     "expectedAnswer": 85
+    }
+   ],
+   "data": {
+    "title": "Measuring Angles with a Protractor",
+    "description": "Practice placing and reading a virtual protractor to find the exact degree measure of various drawn angles.",
+    "challengeType": "measure",
+    "gradeBand": "7",
+    "challenges": [
+     {
+      "type": "measure",
+      "narration": "The hands of a clock opens to this angle.",
+      "instruction": "Place the protractor on the angle and read its measure.",
+      "hint": "Line up the protractor’s center on the vertex and its baseline on one ray. Read where the other ray crosses the scale.",
+      "answerKind": "degrees",
+      "angleMeasure": 15,
+      "expectedAnswer": 15,
+      "tolerance": 2,
+      "id": "aw-1"
+     },
+     {
+      "type": "measure",
+      "narration": "An open laptop opens to this angle.",
+      "instruction": "Place the protractor on the angle and read its measure.",
+      "hint": "Line up the protractor’s center on the vertex and its baseline on one ray. Read where the other ray crosses the scale.",
+      "answerKind": "degrees",
+      "angleMeasure": 70,
+      "expectedAnswer": 70,
+      "tolerance": 2,
+      "id": "aw-2"
+     },
+     {
+      "type": "measure",
+      "narration": "A skateboard ramp opens to this angle.",
+      "instruction": "Place the protractor on the angle and read its measure.",
+      "hint": "Line up the protractor’s center on the vertex and its baseline on one ray. Read where the other ray crosses the scale.",
+      "answerKind": "degrees",
+      "angleMeasure": 80,
+      "expectedAnswer": 80,
+      "tolerance": 2,
+      "id": "aw-3"
+     },
+     {
+      "type": "measure",
+      "narration": "A pair of scissors opens to this angle.",
+      "instruction": "Place the protractor on the angle and read its measure.",
+      "hint": "Line up the protractor’s center on the vertex and its baseline on one ray. Read where the other ray crosses the scale.",
+      "answerKind": "degrees",
+      "angleMeasure": 85,
+      "expectedAnswer": 85,
+      "tolerance": 2,
+      "id": "aw-4"
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "mode": "classify_pairs",
+    "grade": "7",
+    "topic": "Angle pairs",
+    "intent": "Name complementary, supplementary, vertical and adjacent angles"
+   },
+   "title": "Identifying Angle Relationships",
+   "gradeBand": "7",
+   "oracle": [],
+   "uncheckedTypes": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "aw-1",
+     "type": "classify_pairs",
+     "expectedAnswer": 0
+    },
+    {
+     "id": "aw-2",
+     "type": "classify_pairs",
+     "expectedAnswer": 0
+    },
+    {
+     "id": "aw-3",
+     "type": "classify_pairs",
+     "expectedAnswer": 0
+    },
+    {
+     "id": "aw-4",
+     "type": "classify_pairs",
+     "expectedAnswer": 0
+    }
+   ],
+   "data": {
+    "title": "Identifying Angle Relationships",
+    "description": "Practice recognizing and naming complementary, supplementary, vertical, and adjacent angle pairs in various geometric figures.",
+    "challengeType": "classify_pairs",
+    "gradeBand": "7",
+    "challenges": [
+     {
+      "type": "classify_pairs",
+      "narration": "Roof rafters form this pair of angles.",
+      "instruction": "Look at how the two angles meet. What is their relationship?",
+      "hint": "Do the outer rays make a straight line (180°), a right angle (90°), or do two lines cross? Equal opposite angles are vertical.",
+      "answerKind": "relationship",
+      "relationship": "complementary",
+      "expectedRelationship": "complementary",
+      "expectedAnswer": 0,
+      "tolerance": 0.5,
+      "splitAngle": 80,
+      "id": "aw-1"
+     },
+     {
+      "type": "classify_pairs",
+      "narration": "Two beams in a bridge form this pair of angles.",
+      "instruction": "Look at how the two angles meet. What is their relationship?",
+      "hint": "Do the outer rays make a straight line (180°), a right angle (90°), or do two lines cross? Equal opposite angles are vertical.",
+      "answerKind": "relationship",
+      "relationship": "supplementary",
+      "expectedRelationship": "supplementary",
+      "expectedAnswer": 0,
+      "tolerance": 0.5,
+      "splitAngle": 120,
+      "id": "aw-2"
+     },
+     {
+      "type": "classify_pairs",
+      "narration": "Two beams in a bridge form this pair of angles.",
+      "instruction": "Look at how the two angles meet. What is their relationship?",
+      "hint": "Do the outer rays make a straight line (180°), a right angle (90°), or do two lines cross? Equal opposite angles are vertical.",
+      "answerKind": "relationship",
+      "relationship": "vertical",
+      "expectedRelationship": "vertical",
+      "expectedAnswer": 0,
+      "tolerance": 0.5,
+      "crossAngle": 35,
+      "id": "aw-3"
+     },
+     {
+      "type": "classify_pairs",
+      "narration": "Two roads meeting at a corner form this pair of angles.",
+      "instruction": "Look at how the two angles meet. What is their relationship?",
+      "hint": "Do the outer rays make a straight line (180°), a right angle (90°), or do two lines cross? Equal opposite angles are vertical.",
+      "answerKind": "relationship",
+      "relationship": "adjacent",
+      "expectedRelationship": "adjacent",
+      "expectedAnswer": 0,
+      "tolerance": 0.5,
+      "outerAngle": 145,
+      "splitAngle": 25,
+      "id": "aw-4"
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "mode": "solve_unknown",
+    "grade": "7",
+    "topic": "Unknown angles",
+    "intent": "Find a missing angle from a relationship"
+   },
+   "title": "Solving for Unknown Angles",
+   "gradeBand": "7",
+   "oracle": [],
+   "uncheckedTypes": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "aw-1",
+     "type": "solve_unknown",
+     "expectedAnswer": 40
+    },
+    {
+     "id": "aw-2",
+     "type": "solve_unknown",
+     "expectedAnswer": 65
+    },
+    {
+     "id": "aw-3",
+     "type": "solve_unknown",
+     "expectedAnswer": 140
+    },
+    {
+     "id": "aw-4",
+     "type": "solve_unknown",
+     "expectedAnswer": 130
+    }
+   ],
+   "data": {
+    "title": "Solving for Unknown Angles",
+    "description": "Practice using angle relationships such as supplementary, complementary, and vertical angles to determine missing measurements in various geometric figures.",
+    "challengeType": "solve_unknown",
+    "gradeBand": "7",
+    "challenges": [
+     {
+      "type": "solve_unknown",
+      "narration": "A tile pattern has two lines crossing.",
+      "instruction": "x and the labeled angle are vertical angles. Find x.",
+      "hint": "Vertical angles (opposite each other where two lines cross) are equal, so x equals the known angle.",
+      "answerKind": "degrees",
+      "solveConfig": "vertical",
+      "knownAngle": 40,
+      "expectedAnswer": 40,
+      "tolerance": 1,
+      "id": "aw-1"
+     },
+     {
+      "type": "solve_unknown",
+      "narration": "A signpost has two angles that form a right angle.",
+      "instruction": "These two angles are complementary (they add to 90°). Find the unknown angle x.",
+      "hint": "Complementary angles add to 90°, so x = 90° − the known angle.",
+      "answerKind": "degrees",
+      "solveConfig": "complementary",
+      "knownAngle": 25,
+      "expectedAnswer": 65,
+      "tolerance": 1,
+      "id": "aw-2"
+     },
+     {
+      "type": "solve_unknown",
+      "narration": "A tile pattern has two angles that sit on a straight line.",
+      "instruction": "These two angles are supplementary (they add to 180°). Find the unknown angle x.",
+      "hint": "Angles on a straight line add to 180°, so x = 180° − the known angle.",
+      "answerKind": "degrees",
+      "solveConfig": "supplementary",
+      "knownAngle": 40,
+      "expectedAnswer": 140,
+      "tolerance": 1,
+      "id": "aw-3"
+     },
+     {
+      "type": "solve_unknown",
+      "narration": "A garden trellis has three angles meeting at a point.",
+      "instruction": "The three angles go all the way around the point (360°). Find the unknown angle x.",
+      "hint": "Angles around a point add to 360°, so x = 360° − the two known angles.",
+      "answerKind": "degrees",
+      "solveConfig": "around_point",
+      "knownAngle": 120,
+      "knownAngle2": 110,
+      "expectedAnswer": 130,
+      "tolerance": 1,
+      "id": "aw-4"
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "mode": "solve_algebraic",
+    "grade": "7",
+    "topic": "Angle equations",
+    "intent": "Write and solve an equation for an unknown angle"
+   },
+   "title": "Solving for Unknown Angles with Algebraic Expressions",
+   "gradeBand": "7",
+   "oracle": [],
+   "uncheckedTypes": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "aw-1",
+     "type": "solve_algebraic",
+     "expectedAnswer": 11
+    },
+    {
+     "id": "aw-2",
+     "type": "solve_algebraic",
+     "expectedAnswer": 11
+    },
+    {
+     "id": "aw-3",
+     "type": "solve_algebraic",
+     "expectedAnswer": 4
+    },
+    {
+     "id": "aw-4",
+     "type": "solve_algebraic",
+     "expectedAnswer": 9
+    }
+   ],
+   "data": {
+    "title": "Solving for Unknown Angles with Algebraic Expressions",
+    "description": "Practice setting up and solving linear equations to find unknown angle values using geometric relationships.",
+    "challengeType": "solve_algebraic",
+    "gradeBand": "7",
+    "challenges": [
+     {
+      "type": "solve_algebraic",
+      "narration": "A signpost has angles labeled by expressions.",
+      "instruction": "These two angles are supplementary (add to 180°). Write an equation and solve for x.",
+      "hint": "Add the two expressions, set the sum equal to 180, and solve for x.",
+      "answerKind": "x_value",
+      "algConfig": "supplementary",
+      "a1": 1,
+      "b1": 25,
+      "a2": 2,
+      "b2": 122,
+      "expectedAnswer": 11,
+      "tolerance": 0.01,
+      "id": "aw-1"
+     },
+     {
+      "type": "solve_algebraic",
+      "narration": "A kite frame has two crossing lines with angles labeled by expressions.",
+      "instruction": "These two angles are vertical angles, so they are equal. Set the expressions equal and solve for x.",
+      "hint": "Vertical angles are equal: set the two expressions equal to each other, then solve for x.",
+      "answerKind": "x_value",
+      "algConfig": "vertical",
+      "a1": 1,
+      "b1": 10,
+      "a2": 2,
+      "b2": -1,
+      "expectedAnswer": 11,
+      "tolerance": 0.01,
+      "id": "aw-2"
+     },
+     {
+      "type": "solve_algebraic",
+      "narration": "A garden trellis has angles labeled by expressions.",
+      "instruction": "These two angles are complementary (add to 90°). Write an equation and solve for x.",
+      "hint": "Add the two expressions, set the sum equal to 90, and solve for x.",
+      "answerKind": "x_value",
+      "algConfig": "complementary",
+      "a1": 2,
+      "b1": 5,
+      "a2": 2,
+      "b2": 69,
+      "expectedAnswer": 4,
+      "tolerance": 0.01,
+      "id": "aw-3"
+     },
+     {
+      "type": "solve_algebraic",
+      "narration": "A bracket on a shelf has two crossing lines with angles labeled by expressions.",
+      "instruction": "These two angles are vertical angles, so they are equal. Set the expressions equal and solve for x.",
+      "hint": "Vertical angles are equal: set the two expressions equal to each other, then solve for x.",
+      "answerKind": "x_value",
+      "algConfig": "vertical",
+      "a1": 2,
+      "b1": 5,
+      "a2": 3,
+      "b2": -4,
+      "expectedAnswer": 9,
+      "tolerance": 0.01,
+      "id": "aw-4"
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "mode": "transversal",
+    "grade": "8",
+    "topic": "Parallel lines and transversals",
+    "intent": "Find angles formed by a transversal"
+   },
+   "title": "Finding Angles Formed by Transversals",
+   "gradeBand": "8",
+   "oracle": [],
+   "uncheckedTypes": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "aw-1",
+     "type": "transversal",
+     "expectedAnswer": 50
+    },
+    {
+     "id": "aw-2",
+     "type": "transversal",
+     "expectedAnswer": 75
+    },
+    {
+     "id": "aw-3",
+     "type": "transversal",
+     "expectedAnswer": 115
+    },
+    {
+     "id": "aw-4",
+     "type": "transversal",
+     "expectedAnswer": 80
+    },
+    {
+     "id": "aw-5",
+     "type": "transversal",
+     "expectedAnswer": 125
+    }
+   ],
+   "data": {
+    "title": "Finding Angles Formed by Transversals",
+    "description": "Practice finding unknown angle measures using the geometric relationships formed when parallel lines are cut by a transversal.",
+    "challengeType": "transversal",
+    "gradeBand": "8",
+    "challenges": [
+     {
+      "type": "transversal",
+      "narration": "A roof truss forms a triangle.",
+      "instruction": "The three angles of a triangle add to 180°. Two are given — find the third, x.",
+      "hint": "The angles of any triangle add to 180°, so x = 180° − the two known angles.",
+      "answerKind": "degrees",
+      "transversalShape": "triangle_sum",
+      "givenAngle": 85,
+      "givenAngle2": 45,
+      "expectedAnswer": 50,
+      "tolerance": 1,
+      "id": "aw-1"
+     },
+     {
+      "type": "transversal",
+      "narration": "A triangular sail forms a triangle.",
+      "instruction": "The three angles of a triangle add to 180°. Two are given — find the third, x.",
+      "hint": "The angles of any triangle add to 180°, so x = 180° − the two known angles.",
+      "answerKind": "degrees",
+      "transversalShape": "triangle_sum",
+      "givenAngle": 70,
+      "givenAngle2": 35,
+      "expectedAnswer": 75,
+      "tolerance": 1,
+      "id": "aw-2"
+     },
+     {
+      "type": "transversal",
+      "narration": "A ladder leaning across two shelves — two parallel lines cut by a transversal.",
+      "instruction": "The marked angle and x are corresponding angles. Find x.",
+      "hint": "corresponding angle pairs are equal when the lines are parallel, so x equals the marked angle.",
+      "answerKind": "degrees",
+      "transversalShape": "parallel_transversal",
+      "givenAngle": 115,
+      "transRelation": "corresponding",
+      "expectedAnswer": 115,
+      "tolerance": 1,
+      "id": "aw-3"
+     },
+     {
+      "type": "transversal",
+      "narration": "A ladder leaning across two shelves — two parallel lines cut by a transversal.",
+      "instruction": "The marked angle and x are alternate interior angles. Find x.",
+      "hint": "alternate interior angle pairs are equal when the lines are parallel, so x equals the marked angle.",
+      "answerKind": "degrees",
+      "transversalShape": "parallel_transversal",
+      "givenAngle": 80,
+      "transRelation": "alternate_interior",
+      "expectedAnswer": 80,
+      "tolerance": 1,
+      "id": "aw-4"
+     },
+     {
+      "type": "transversal",
+      "narration": "A yield sign has one side extended past a corner.",
+      "instruction": "The exterior angle x equals the sum of the two remote interior angles. Find x.",
+      "hint": "An exterior angle of a triangle equals the sum of the two non-adjacent (remote) interior angles.",
+      "answerKind": "degrees",
+      "transversalShape": "exterior_angle",
+      "givenAngle": 70,
+      "givenAngle2": 55,
+      "expectedAnswer": 125,
+      "tolerance": 1,
+      "id": "aw-5"
+     }
+    ]
+   }
+  }
+ ],
+ "logs": [
+  "[AngleWorkshop] evalMode: \"make_angle\" → schema enum: [make_angle] (β=1.6)",
+  "[AngleWorkshop] Final: challengeType=make_angle, instances=5 [make/right, make/acute, make/obtuse, make/straight, make/between_right_straight]",
+  "[AngleWorkshop] evalMode: \"make_angle\" → schema enum: [make_angle] (β=1.6)",
+  "[AngleWorkshop] Support tier \"easy\" applied per-challenge across 5 challenge(s) [single-mode make_angle].",
+  "[AngleWorkshop] Final: challengeType=make_angle, instances=5 [make/obtuse, make/between_right_straight, make/right, make/straight, make/acute]",
+  "[AngleWorkshop] evalMode: \"make_angle\" → schema enum: [make_angle] (β=1.6)",
+  "[AngleWorkshop] Final: challengeType=make_angle, instances=5 [make/between_right_straight, make/acute, make/obtuse, make/range:50-70, make/range:60-80]",
+  "[AngleWorkshop] evalMode: \"measure\" → schema enum: [measure] (β=1.5)",
+  "[AngleWorkshop] Final: challengeType=measure, instances=4 [measure→15, measure→70, measure→80, measure→85]",
+  "[AngleWorkshop] evalMode: \"classify_pairs\" → schema enum: [classify_pairs] (β=2.5)",
+  "[AngleWorkshop] Final: challengeType=classify_pairs, instances=4 [classify/complementary, classify/supplementary, classify/vertical, classify/adjacent]",
+  "[AngleWorkshop] evalMode: \"solve_unknown\" → schema enum: [solve_unknown] (β=3.5)",
+  "[AngleWorkshop] Final: challengeType=solve_unknown, instances=4 [vertical→40, complementary→65, supplementary→140, around_point→130]",
+  "[AngleWorkshop] evalMode: \"solve_algebraic\" → schema enum: [solve_algebraic] (β=4.5)",
+  "[AngleWorkshop] Final: challengeType=solve_algebraic, instances=4 [alg/supplementary→x=11, alg/vertical→x=11, alg/complementary→x=4, alg/vertical→x=9]",
+  "[AngleWorkshop] evalMode: \"transversal\" → schema enum: [transversal] (β=5.5)",
+  "[AngleWorkshop] Final: challengeType=transversal, instances=5 [triangle_sum→50, triangle_sum→75, parallel_transversal→115, parallel_transversal→80, exterior_angle→125]"
+ ]
+}

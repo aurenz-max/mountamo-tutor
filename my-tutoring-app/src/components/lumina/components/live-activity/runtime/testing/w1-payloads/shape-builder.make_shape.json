@@ -1,0 +1,98 @@
+{
+ "source": "qa/open-build/shape-builder-2026-10-07/pinned-3-5.json",
+ "primitiveId": "shape-builder",
+ "evalMode": "make_shape",
+ "data": {
+  "title": "Make a Shape",
+  "description": "Make your own shapes that have the properties asked for.",
+  "mode": "build",
+  "gradeBand": "3-5",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "make_shape",
+    "instruction": "Make a shape with 4 sides, exactly 2 right angles and exactly 1 pair of parallel sides.",
+    "hint": "Count your sides, then check each corner and each pair of sides.",
+    "narration": "Let's make a shape of your own!",
+    "targetProperties": {
+     "sides": 4,
+     "rightAngles": 2,
+     "parallelPairs": 1,
+     "equalSides": null,
+     "linesOfSymmetry": null
+    },
+    "showTargetGhost": false,
+    "showSideCountBadge": false,
+    "supportTier": "medium"
+   },
+   {
+    "type": "make_shape",
+    "targetProperties": {
+     "sides": 4,
+     "rightAngles": null,
+     "parallelPairs": 1,
+     "equalSides": null,
+     "linesOfSymmetry": null
+    },
+    "instruction": "Make a shape with 4 sides and exactly 1 pair of parallel sides.",
+    "hint": "Count your sides, then check each corner and each pair of sides.",
+    "narration": "Let's make a shape of your own!",
+    "id": "c2",
+    "showTargetGhost": false,
+    "showSideCountBadge": false,
+    "supportTier": "medium"
+   },
+   {
+    "type": "make_shape",
+    "targetProperties": {
+     "sides": 4,
+     "rightAngles": 2,
+     "parallelPairs": null,
+     "equalSides": null,
+     "linesOfSymmetry": null
+    },
+    "instruction": "Make a shape with 4 sides and exactly 2 right angles.",
+    "hint": "Count your sides, then check each corner and each pair of sides.",
+    "narration": "Let's make a shape of your own!",
+    "id": "c3",
+    "showTargetGhost": false,
+    "showSideCountBadge": false,
+    "supportTier": "medium"
+   },
+   {
+    "type": "make_shape",
+    "targetProperties": {
+     "sides": 4,
+     "rightAngles": 1,
+     "parallelPairs": null,
+     "equalSides": null,
+     "linesOfSymmetry": null
+    },
+    "instruction": "Make a shape with 4 sides and exactly 1 right angle.",
+    "hint": "Count your sides, then check each corner and each pair of sides.",
+    "narration": "Let's make a shape of your own!",
+    "id": "c4",
+    "showTargetGhost": false,
+    "showSideCountBadge": false,
+    "supportTier": "medium"
+   }
+  ],
+  "grid": {
+   "type": "dot",
+   "size": {
+    "rows": 10,
+    "columns": 10
+   },
+   "showCoordinates": false
+  },
+  "tools": {
+   "ruler": false,
+   "protractor": false,
+   "symmetryLine": false,
+   "parallelMarker": false
+  },
+  "targetShape": null,
+  "preloadedShapes": [],
+  "classificationCategories": []
+ }
+}

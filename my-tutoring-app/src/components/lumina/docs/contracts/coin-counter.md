@@ -140,6 +140,15 @@ treat "how many real attempts exist" as unknown, not zero.
   `gradeBand: "1"`. Worse, the test is `gl.includes('k')`, so ANY prose containing the letter k
   returns 'K' (`middle-school` prose → 'K', via "thinking").
 
+### R12 — `show-amount` is an open build on an empty tray · OBSERVED (NEW 2026-10-07)
+- **Property:** its own challenge type and eval mode (β3.6), a fork beside `make-amount`, which is unchanged. The tray
+  starts empty; the learner puts in coins from bins (`availableCoins`) and presses "I'm done!" (no auto-check); any coins
+  that add up to `targetAmount` pass (`coinMiss`, make-amount's judgment). The instruction states the amount (the task);
+  no target and no running total are on screen until a lever. Try again keeps the tray. The scene publishes `centsMade`
+  and each coin count as numbers. Levers start bare: `running_total`, `value_tags` (help), `smaller_amount` (simplify).
+- **Evidence:** `CoinCounter.build.workspace.test.tsx`; journey sweep payload `coin-counter.show-amount.json`;
+  `qa/open-build/coin-counter-2026-10-07/REPORT.md`.
+
 ## Conflicts
 
 ### C1 — R9 (K count-like enacted) vs R3 (count-mixed typed) — **RESOLVED 2026-07-25 via fork rung 1 (eval-mode split) + rung 2 (band gate)**
@@ -283,3 +292,7 @@ total teaches the interval by demonstration). **Kept default-true.** Sole except
   nickel?" answered itself; identify coins now show neither name nor value (`showName={false}`, labelled
   "Coin N"). The half-dollar's name slot printed "50¢" at every tier, a value under R8's hard tier; it now
   prints "half". R3, R9, R11 unchanged (reader-fit suite green). G7, G8 found while saving payloads.
+- 2026-10-07 — open build `show-amount` added as a new mode (R12), the fork the contract-first rule asks for: no
+  existing mode's component path, check or generator branch changed. Catalog `teachingWorkspace.levers: true`
+  (only show-amount publishes levers), so every mode's tutor guidance now also carries `LEVER_DOCTRINE` and one
+  build sentence. Existing coin-counter suites green.

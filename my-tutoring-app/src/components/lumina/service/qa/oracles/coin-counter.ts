@@ -54,7 +54,9 @@ const COIN_VALUES: Record<string, number> = {
   dollar: 100,
 };
 
-const KNOWN_TYPES = new Set(['identify', 'count', 'make-amount', 'compare', 'make-change']);
+// show-amount (open build): any coins from the bins that add up to the target pass, so the contract is make-amount's
+// (reachable from the bins) plus the instruction stating the target, which is the task, not a leak.
+const KNOWN_TYPES = new Set(['identify', 'count', 'make-amount', 'compare', 'make-change', 'show-amount']);
 
 /** Parse an untrusted {type,count}[] into denominations, or report why it can't. */
 function readCoinDefs(v: unknown): { defs: Array<{ type: string; count: number }>; error?: string } {
@@ -246,7 +248,8 @@ export const coinCounterOracle: ContentOracle = {
           break;
         }
 
-        case 'make-amount': {
+        case 'make-amount':
+        case 'show-amount': {
           const target = c.targetAmount;
           if (!Number.isInteger(target) || (target as number) <= 0) {
             violations.push({ check: 'schema', where, detail: `targetAmount invalid: ${JSON.stringify(target)}` });
@@ -273,8 +276,11 @@ export const coinCounterOracle: ContentOracle = {
           checkAmount('targetAmount', t, where);
           const availDenomDefs = avail.map((type) => ({ type, count: 1 }));
           checkDenoms(availDenomDefs, where);
-          pushAnswer('make-amount', t);
-          const maKey = `make-amount|${t}|${[...avail].sort().join('+')}`;
+          if (type === 'show-amount' && !String(c.instruction ?? '').includes(`${t}¢`)) {
+            violations.push({ check: 'schema', where, detail: `instruction does not state the amount ${t}¢: ${JSON.stringify(c.instruction)}` });
+          }
+          pushAnswer(type, t);
+          const maKey = `${type}|${t}|${[...avail].sort().join('+')}`;
           taskSeen.set(maKey, (taskSeen.get(maKey) ?? 0) + 1);
           break;
         }

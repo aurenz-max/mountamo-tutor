@@ -41,6 +41,10 @@ export interface CoinView {
   runningTotalShown: boolean;
 }
 
+/** The numeric fact per coin kind on the show-amount tray. */
+const TRAY_KEY: Record<CoinType, string> = { penny: 'penniesOnTray', nickel: 'nickelsOnTray', dime: 'dimesOnTray',
+  quarter: 'quartersOnTray', 'half-dollar': 'halfDollarsOnTray', dollar: 'dollarsOnTray' };
+
 const typed = (text: string, what: string) => text.trim() ? `Typed ${text.trim()}¢ as the ${what}` : `No ${what} typed yet`;
 
 /** The learner's work in their own terms, never the key. */
@@ -55,6 +59,7 @@ export function describeCoinWork(challenge: CoinCounterChallenge, view: CoinView
       return tags + typed(view.countInput, 'total');
     }
     case 'make-amount': return view.placed.length ? `Placed: ${listCoins(tally(view.placed))}` : 'No coins placed yet';
+    case 'show-amount': return view.placed.length ? `On the tray: ${listCoins(tally(view.placed))}` : 'No coins on the tray yet';
     case 'compare':
       return view.selectedGroup === 'equal' ? 'Chose: they are equal'
         : view.selectedGroup ? `Chose group ${view.selectedGroup}` : 'No group chosen yet';
@@ -68,7 +73,7 @@ export function describeCoinWork(challenge: CoinCounterChallenge, view: CoinView
  * subtraction). Only the observable pattern:
  * - identify: `dime_nickel` (the two swapped), `dime_penny` (the small coins swapped), `silver_coins`
  *   (another silver coin), `other_coin`;
- * - count and make-amount: `counted_coins` (the number of coins, not their value), `all_one_kind` (every coin
+ * - count, make-amount and show-amount: `counted_coins` (the number of coins, not their value), `all_one_kind` (every coin
  *   valued as one of the kinds shown), `one_coin_short` / `one_coin_over` (off by one coin's value),
  *   `short` / `over`;
  * - compare: `more_coins` (the group with more coins but less money), `said_equal`, `missed_equal`, `reversed`;
@@ -117,7 +122,9 @@ export function coinMiss(challenge: CoinCounterChallenge | null, view: CoinView)
       const got = parseInt(view.countInput, 10), target = challenge.correctTotal ?? 0;
       return Number.isNaN(got) || got === target ? undefined : totalMiss(got, target, challenge.displayedCoins ?? []);
     }
-    case 'make-amount': {
+    // show-amount is make-amount's judgment on an empty tray: any coins that make the amount pass.
+    case 'make-amount':
+    case 'show-amount': {
       const placed = tally(view.placed), got = centsOf(placed), target = challenge.targetAmount ?? 0;
       if (got === target) return undefined;
       if (view.placed.length === target) return 'counted_coins';
@@ -160,6 +167,14 @@ export function workspaceScene(challenge: CoinCounterChallenge, view: CoinView):
     drawn.coinsToAdd = (challenge.availableCoins ?? []).join(', ');
     drawn.coinValues = values;
     drawn.runningTotal = view.runningTotalShown ? 'shown' : 'hidden';
+  } else if (challenge.type === 'show-amount') {
+    // Open build: the amount is in the task. The made amount and each coin count are numbers, so the workspace's
+    // work history can name a self-correction; the target is never set beside them.
+    drawn.coinBins = (challenge.availableCoins ?? []).join(', ');
+    drawn.coinValues = values;
+    drawn.howToAnswer = 'tap a bin to put a coin on the tray, tap a coin on the tray to take it out, then press I\'m done';
+    drawn.centsMade = centsOf(tally(view.placed));
+    for (const type of challenge.availableCoins ?? []) drawn[TRAY_KEY[type]] = view.placed.filter(c => c === type).length;
   } else if (challenge.type === 'compare') {
     drawn.groups = `A: ${listCoins(challenge.groupA ?? [])}; B: ${listCoins(challenge.groupB ?? [])}`;
     drawn.coinValues = values;

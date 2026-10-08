@@ -13,6 +13,7 @@
 |---|---|---|---|
 | K-2 equation understanding: build-simple, missing-result, true-false, missing-operand, balance-both-sides, rewrite | catalog evalModes | `math.ts` entry | live |
 | Shared teaching workspace (one checked gesture per challenge) | code + sweep | `equationBuilderWorkspace.ts`, `EquationBuilder.workspace.test.tsx`, w1 payloads | 2026-09-29 |
+| K-2 composing a total (K.OA.3, 1.OA.6): make-n open build | catalog evalModes | `math.ts` entry, `equationBuilderLevers.ts` | 2026-10-07 |
 
 ## Requirements
 
@@ -43,6 +44,18 @@
 - **Evidence:** `equationBuilderAssignment`; `EquationBuilder.workspace.test.tsx`.
 - **Probe:** `npm test -- EquationBuilder.workspace`.
 
+### R5 — make-n accepts every sentence that makes the total, and nothing that only names it · OBSERVED
+- **Property:** a fork, not an edit: a new `make-n` challenge type with its own check (`makeNMiss`). The row is read as
+  number (sign number)+ by integer arithmetic; any such row equal to `target` passes; the total alone (`bare_number`)
+  and a malformed row (`unfinished_sentence`) do not; on a two-way item the second must differ (`same_way`: the same
+  numbers added in any order). Code owns the total, the bank and the instruction. Try again keeps the row. The scene
+  publishes the row and `tilesPlaced` / `numbersPlaced`, never the row's value. R2 and R3 do not apply to it (no
+  target equation; the bank is unlimited). The other modes are unchanged.
+- **Demanded by:** make-n.
+- **Evidence:** `EquationBuilder.workspace.test.tsx` (make-n block), `equationBuilderLevers.test.ts`, oracle make-n branch,
+  qa/open-build/equation-builder-2026-10-07.
+- **Probe:** `npm test -- EquationBuilder.workspace equationBuilderLevers`; `node scripts/equation-builder-make-n-probe.mjs --run`.
+
 ## Conflicts
 
 None.
@@ -52,3 +65,5 @@ None.
 - 2026-09-29 — derived (static, initial) for handoff 28 row 5. 4 requirements, 0 conflicts. Same day, RP-4: ingest normalizes
   the minus sign (R1) and the checker judges a `−` row by value (R3). `--check` **COMPATIBLE**: equation-builder vitest 36/36,
   eval-test all six modes at G1 (30 challenges, every key recomputes, no Unicode minus left), journey sweep green.
+- 2026-10-07 — make-n (open build) added as a fork (R5); R1-R4 untouched. Existing equation-builder tests and the
+  live-activity suite green; the other modes' Try again still clears the row.

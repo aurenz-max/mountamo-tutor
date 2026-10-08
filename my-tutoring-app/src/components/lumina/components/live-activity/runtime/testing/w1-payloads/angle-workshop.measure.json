@@ -1,0 +1,57 @@
+{
+ "source": "qa/open-build/angle-workshop-2026-10-07/generations.json",
+ "primitiveId": "angle-workshop",
+ "evalMode": "measure",
+ "data": {
+  "title": "Measuring Angles with a Protractor",
+  "description": "Practice placing and reading a virtual protractor to find the exact degree measure of various drawn angles.",
+  "challengeType": "measure",
+  "gradeBand": "7",
+  "challenges": [
+   {
+    "type": "measure",
+    "narration": "The hands of a clock opens to this angle.",
+    "instruction": "Place the protractor on the angle and read its measure.",
+    "hint": "Line up the protractor’s center on the vertex and its baseline on one ray. Read where the other ray crosses the scale.",
+    "answerKind": "degrees",
+    "angleMeasure": 15,
+    "expectedAnswer": 15,
+    "tolerance": 2,
+    "id": "aw-1"
+   },
+   {
+    "type": "measure",
+    "narration": "An open laptop opens to this angle.",
+    "instruction": "Place the protractor on the angle and read its measure.",
+    "hint": "Line up the protractor’s center on the vertex and its baseline on one ray. Read where the other ray crosses the scale.",
+    "answerKind": "degrees",
+    "angleMeasure": 70,
+    "expectedAnswer": 70,
+    "tolerance": 2,
+    "id": "aw-2"
+   },
+   {
+    "type": "measure",
+    "narration": "A skateboard ramp opens to this angle.",
+    "instruction": "Place the protractor on the angle and read its measure.",
+    "hint": "Line up the protractor’s center on the vertex and its baseline on one ray. Read where the other ray crosses the scale.",
+    "answerKind": "degrees",
+    "angleMeasure": 80,
+    "expectedAnswer": 80,
+    "tolerance": 2,
+    "id": "aw-3"
+   },
+   {
+    "type": "measure",
+    "narration": "A pair of scissors opens to this angle.",
+    "instruction": "Place the protractor on the angle and read its measure.",
+    "hint": "Line up the protractor’s center on the vertex and its baseline on one ray. Read where the other ray crosses the scale.",
+    "answerKind": "degrees",
+    "angleMeasure": 85,
+    "expectedAnswer": 85,
+    "tolerance": 2,
+    "id": "aw-4"
+   }
+  ]
+ }
+}

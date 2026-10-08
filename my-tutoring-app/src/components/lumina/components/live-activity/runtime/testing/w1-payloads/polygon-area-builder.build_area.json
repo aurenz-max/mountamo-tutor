@@ -1,0 +1,61 @@
+{
+ "source": "qa/open-build/polygon-area-builder-2026-10-07/generation.json#g3",
+ "primitiveId": "polygon-area-builder",
+ "evalMode": "build_area",
+ "data": {
+  "title": "Building Shapes with Unit Squares",
+  "description": "Practice constructing different geometric shapes on a square grid by counting unit squares to match a given target area.",
+  "challengeType": "build_area",
+  "gradeBand": "3",
+  "challenges": [
+   {
+    "type": "build_area",
+    "figureType": "grid",
+    "targetArea": 5,
+    "shapesAsked": 1,
+    "expectedArea": 5,
+    "unitLabel": "square units",
+    "narration": "Each square on the grid is one square unit.",
+    "instruction": "Make a shape with an area of 5 squares.",
+    "hint": "Count each square as you shade it. Every square in your shape must touch another one along a side.",
+    "id": "pab-1"
+   },
+   {
+    "type": "build_area",
+    "figureType": "grid",
+    "targetArea": 10,
+    "shapesAsked": 1,
+    "expectedArea": 10,
+    "unitLabel": "square units",
+    "narration": "Each square on the grid is one square unit.",
+    "instruction": "Make a shape with an area of 10 squares.",
+    "hint": "Count each square as you shade it. Every square in your shape must touch another one along a side.",
+    "id": "pab-2"
+   },
+   {
+    "type": "build_area",
+    "figureType": "grid",
+    "targetArea": 11,
+    "shapesAsked": 2,
+    "expectedArea": 11,
+    "unitLabel": "square units",
+    "narration": "Each square on the grid is one square unit.",
+    "instruction": "Make a shape with an area of 11 squares. Then make a different shape with the same area.",
+    "hint": "Count each square as you shade it. Every square in your shape must touch another one along a side.",
+    "id": "pab-3"
+   },
+   {
+    "type": "build_area",
+    "figureType": "grid",
+    "targetArea": 17,
+    "shapesAsked": 2,
+    "expectedArea": 17,
+    "unitLabel": "square units",
+    "narration": "Each square on the grid is one square unit.",
+    "instruction": "Make a shape with an area of 17 squares. Then make a different shape with the same area.",
+    "hint": "Count each square as you shade it. Every square in your shape must touch another one along a side.",
+    "id": "pab-4"
+   }
+  ]
+ }
+}

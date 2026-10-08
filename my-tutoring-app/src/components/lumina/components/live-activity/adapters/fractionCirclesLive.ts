@@ -1,5 +1,6 @@
 import type { FractionCirclesChallenge, FractionCirclesData } from '../../../primitives/visual-primitives/math/FractionCircles';
 import { buildFractionTouchItems } from '../../../primitives/visual-primitives/math/fractionCirclesWorkspace';
+import { equalWays } from '../../../primitives/visual-primitives/math/fractionEqualBuild';
 import { validateChallengePool, workspaceOpening, type WorkspaceDomain } from './adapterContract';
 
 const whole = (n: unknown, min: number, max: number): n is number => Number.isInteger(n) && (n as number) >= min && (n as number) <= max;
@@ -21,6 +22,8 @@ function runnable(c: FractionCirclesChallenge): boolean {
     }
     case 'touch_fraction':
       try { buildFractionTouchItems([c]); return true; } catch { return false; }
+    // The open build needs another equal cut the circle can make (never the target's own).
+    case 'build_equal': return whole(c.numerator, 1, c.denominator - 1) && equalWays(c.numerator, c.denominator).length > 0;
     default: return false;
   }
 }

@@ -72,11 +72,34 @@ import { asRecordArray, checkAnswerVariety } from './helpers';
  *    display-only; the checker never reads them.
  *  - classify relationship-word leak: relationship names appear in the option
  *    labels/prompt by design (naming the relationship IS the task) — /eval-test.
+ *
+ * make_angle (open build) has no single answer: any angle of the asked kind passes. Its checks:
+ *  - answer-key-desync : the ask the student reads names a different kind (or a different range) from the
+ *      `targetKind` / `targetMin..targetMax` the check judges — re-read from the instruction's own words.
+ *  - schema            : a known targetKind; a range with 0 < min < max ≤ 180 at least 10° wide.
+ *  - answer-leak       : the narration or hint states a degree measure (the class is the skill).
+ *  - clustering        : the asks spread across kinds/ranges; no duplicated ask.
  */
 
 const EPS = 0.01;
 
-const KNOWN_TYPES = new Set(['measure', 'classify_pairs', 'solve_unknown', 'solve_algebraic', 'transversal']);
+const KNOWN_TYPES = new Set(['measure', 'classify_pairs', 'solve_unknown', 'solve_algebraic', 'transversal', 'make_angle']);
+const TARGET_KINDS = new Set(['acute', 'right', 'obtuse', 'straight', 'between_right_straight', 'smaller_than_right', 'bigger_than_right', 'range']);
+
+/** The kind an ask names, read from its own words (independent of the generator's `targetKind`). */
+function kindAsked(text: string): string | null {
+  const t = text.toLowerCase();
+  const bigger = /bigger than a right angle/.test(t), smaller = /smaller than a right angle/.test(t);
+  if (bigger && /smaller than a straight/.test(t)) return 'between_right_straight';
+  if (bigger) return 'bigger_than_right';
+  if (smaller) return 'smaller_than_right';
+  if (/between \d+°? and \d+°?/.test(t)) return 'range';
+  if (/\bacute\b/.test(t)) return 'acute';
+  if (/\bobtuse\b/.test(t)) return 'obtuse';
+  if (/\bstraight angle\b/.test(t)) return 'straight';
+  if (/\bright angle\b/.test(t)) return 'right';
+  return null;
+}
 const RELATIONSHIPS = new Set(['complementary', 'supplementary', 'vertical', 'adjacent']);
 
 /** answerKind the component's grading path requires per type. */
@@ -86,6 +109,7 @@ const ANSWER_KIND_BY_TYPE: Record<string, string> = {
   solve_unknown: 'degrees',
   solve_algebraic: 'x_value',
   transversal: 'degrees',
+  make_angle: 'build',
 };
 
 function isNum(v: unknown): v is number {
@@ -163,6 +187,39 @@ export const angleWorkshopOracle: ContentOracle = {
           where: id,
           detail: `answerKind="${answerKind}" but a ${type} answer is graded as "${wantKind}" — the component grades the wrong path (the answer can never be marked correct)`,
         });
+      }
+
+      // ── make_angle (open build): the ask must name the kind the check judges ──
+      if (type === 'make_angle') {
+        const kind = String(c.targetKind ?? '');
+        if (!TARGET_KINDS.has(kind)) {
+          violations.push({ check: 'schema', where: id, detail: `make_angle unknown targetKind "${kind}"` });
+          continue;
+        }
+        const asked = kindAsked(instruction);
+        if (asked !== kind) {
+          violations.push({ check: 'answer-key-desync', where: id, detail: `the ask "${instruction}" names ${asked ?? 'no kind'} but the check judges "${kind}"` });
+        }
+        let key = `b|${kind}`;
+        if (kind === 'range') {
+          const min = c.targetMin, max = c.targetMax;
+          if (!isNum(min) || !isNum(max) || min <= 0 || max > 180 || max - min < 10) {
+            violations.push({ check: 'schema', where: id, detail: `make_angle range ${String(min)}..${String(max)} is not a usable band (0 < min, max <= 180, >= 10 wide)` });
+            continue;
+          }
+          const stated = numbersIn(instruction);
+          if (!stated.some((n) => near(n, min)) || !stated.some((n) => near(n, max))) {
+            violations.push({ check: 'answer-key-desync', where: id, detail: `the ask "${instruction}" does not state the judged range ${min}-${max}` });
+          }
+          key += `|${min}|${max}`;
+        }
+        if (/\d+\s*°/.test(`${narration} ${hint}`)) {
+          violations.push({ check: 'answer-leak', where: id, detail: `narration/hint states a degree measure: "${narration} ${hint}"` });
+        }
+        answerValues.push(key);
+        cardSeen.set(key, (cardSeen.get(key) ?? 0) + 1);
+        checked++;
+        continue;
       }
 
       let derived: number | null = null;

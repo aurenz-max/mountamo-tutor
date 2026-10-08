@@ -24,7 +24,7 @@ Not a consumer: K teen numbers. The math-k atlas routes teens to ten-frame/numbe
 ## Requirements
 
 ### R1 — each eval mode emits its own challenge types · OBSERVED
-- **Property:** `build_number` → `build_number`; `read_blocks` → `read_blocks`; `regroup` → `regroup`; `operate` → `add_with_blocks` / `subtract_with_blocks`. read_blocks and regroup are projected from `baseTenModes.ts` (identity, β, docs), never re-typed in the catalog or generator.
+- **Property:** `build_number` → `build_number`; `read_blocks` → `read_blocks`; `regroup` → `regroup`; `operate` → `add_with_blocks` / `subtract_with_blocks`; `build_two_ways` → `build_two_ways` (R24). read_blocks and regroup are projected from `baseTenModes.ts` (identity, β, docs), never re-typed in the catalog or generator.
 - **Demanded by:** manifest routing, IRT task identity, the oracle `schema` check.
 - **Evidence:** catalog `evalModes`; generator `resolveEvalModeConstraint` + `constrainChallengeTypeEnum`; `BASE_TEN_DI_EVAL_MODES`, `BASE_TEN_DI_TYPE_DOCS`.
 - **Probe:** `baseTenScript.test.ts` "the catalog agrees with the pack" (2 tests); all four modes PASS in `qa/eval-reports/base-ten-blocks-2026-06-20.md`.
@@ -160,6 +160,15 @@ Not a consumer: K teen numbers. The math-k atlas routes teens to ten-frame/numbe
 - **Credit:** practice items are ungraded and give the full item back on its own mat; the full item's answer carries the lever and is assisted (`BaseTenBlocksDi.levers.workspace.test.tsx`, 5).
 - **Also (2026-09-29):** the click mat's trades land on the tap (they waited 400 ms, so a check pressed in that window judged the untraded mat); the mixed payload's regroup items are driven (`liveJourneySpec.ts`).
 
+### R24 — build_two_ways: an open build judged on value, then different-from-first · IMPLEMENTED 2026-10-07
+- **Property:** a fork, not an edit of build_number (R4 still judges build_number in standard form). The item opens on an empty svg mat (`BaseTenBuildScene`, whole-number places only); tap a column or its + button to put a block in, tap a block or - to take one out. Any blocks whose value is the target pass the first way (34 ones passes); that is not a commit: the first way is kept, drawn small above the mat, and the mat keeps it to change. "I'm done!" on the second way commits: right when the value matches and the blocks differ from the first way. No stillness check. Try again keeps the build and the first way. The mat never prints a value or a total; the instruction states the target (the task) and is code-written (`twoWaysInstruction`), as is every target (distinct in the session, at least 10, inside the range).
+- **Misses:** the value misses of `plainMiss` and `same_as_first` (catalog list `build_two_ways`). Feedback never states the learner's total.
+- **Scene:** numeric `valueMade` and `<place>OnMat` per place, `way` first/second, `firstWay` in words; the check sent is the blocks in words ("Second way: 2 tens and 14 ones (first way: 3 tens and 4 ones)").
+- **Levers:** start bare at every tier (`startLevers` returns none; the generator sets both flags false). `column_counts` (help, every value miss; counts drawn as `data-aid`), `ten_model` (help, `same_as_first`; a ten-stick beside the ones cubes it is worth, a hundred-flat beside ten-sticks when the item is 100 or more), `smaller_number` (simplify, far off; about half, at least 10, never the number or its reversal; ungraded, then the full item on an empty mat). No total lever.
+- **Live line:** `useBuildWatcher` with `numbers: 'never'` on the mat svg; off while closed or complete.
+- **Probe:** `BaseTenBlocks.twoWays.workspace.test.tsx` (7), `baseTenTwoWays.test.ts` (11); generation `qa/open-build/base-ten-blocks-2026-10-07/generation.json`.
+- **Compatibility:** `blocksAreTheAnswer` now includes `build_two_ways` (its check describes blocks). The catalog guidance's "the right value without the fewest blocks is not yet a build" is scoped to build.
+
 ## Conflicts
 
 _None open._ Notes for the four M1 fixes and the lever slice:
@@ -185,6 +194,8 @@ Proposed only; not applied.
 - **tutoring (outside the curator prompt):** the `aiDirectives` "CHALLENGE TYPE COACHING" line says "For READ_BLOCKS: … Count each column and combine", which contradicts R6 (the child never composes the number), and "For REGROUP: Trade 10 ones for 1 ten!", which names the trade (R14's concern). `scaffoldingLevels` level2 and level3 recite the column counts and `{{currentTotal}}`, which is the answer on read_blocks. No reference to these fields was found under `components/live-activity/runtime/` (not verified at runtime). Both surfaces are workspace-only, so these lines may be unread; confirm before trimming.
 
 ## Changelog
+
+- 2026-10-07 — R24 added (build_two_ways, open build). Compatible: no existing mode's component path, generator path or lever changes; the guidance sentence on non-standard builds is now scoped to build; the W1 fixture list gains the mode; new payload `w1-payloads/base-ten-blocks.build_two_ways.json` and a journey branch.
 
 - 2026-09-29 — R23 added (spoken-mat levers). Compatible: an unpulled mat renders as before. The click mat's trade now updates the columns immediately; only the pulse animation is delayed.
 - 2026-09-28 — R22 added (operate levers). Compatible: an untiered operate deck renders as before (counts start pulled, no total); the generator draws the same operands through the moved builders (`Math.random` stays their default).

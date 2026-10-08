@@ -1,0 +1,68 @@
+{
+ "source": "qa/open-build/fraction-bar-2026-10-07/build.json",
+ "primitiveId": "fraction-bar",
+ "evalMode": "build",
+ "data": {
+  "title": "Building Fractions on a Bar",
+  "description": "Practice identifying the parts of a fraction and shading the matching parts on a fraction bar. Learn how numerators and denominators work together to build fractions!",
+  "challenges": [
+   {
+    "id": "fraction-bar-1",
+    "numerator": 5,
+    "denominator": 6,
+    "numeratorChoices": [
+     5,
+     4,
+     6,
+     7
+    ],
+    "denominatorChoices": [
+     7,
+     5,
+     6,
+     8
+    ]
+   },
+   {
+    "id": "fraction-bar-2",
+    "numerator": 2,
+    "denominator": 3,
+    "numeratorChoices": [
+     2,
+     3,
+     1,
+     4
+    ],
+    "denominatorChoices": [
+     2,
+     3,
+     5,
+     4
+    ]
+   },
+   {
+    "id": "fraction-bar-3",
+    "numerator": 3,
+    "denominator": 5,
+    "numeratorChoices": [
+     3,
+     5,
+     2,
+     4
+    ],
+    "denominatorChoices": [
+     6,
+     4,
+     3,
+     5
+    ]
+   }
+  ],
+  "challengeType": "build",
+  "showDecimal": false,
+  "showPartitionNumerals": true,
+  "showShadedReadout": true,
+  "showPromptGloss": true,
+  "gradeLevel": "Grade 3"
+ }
+}

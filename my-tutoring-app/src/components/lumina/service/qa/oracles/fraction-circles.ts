@@ -65,7 +65,8 @@ import { asRecordArray, checkAnswerVariety, parseScopeCeiling } from './helpers'
  * withdrawal stays with /eval-test.
  */
 
-const KNOWN_TYPES = new Set(['touch_fraction', 'identify', 'build', 'compare', 'equivalent']);
+// build_equal: an open build (the learner picks the cut); reachable when another equal cut of 2..12 pieces makes it.
+const KNOWN_TYPES = new Set(['touch_fraction', 'identify', 'build', 'compare', 'equivalent', 'build_equal']);
 
 // Intrinsic denominator ceiling when neither the harness nor the topic names one.
 // Mirrors the generator's GRADE_BAND_DENOMINATORS max (gemini-fraction-circles.ts:36-39).
@@ -243,6 +244,13 @@ export const fractionCirclesOracle: ContentOracle = {
           cardSeen.set(`equivalent:${n}/${d}->${e}`, (cardSeen.get(`equivalent:${n}/${d}->${e}`) ?? 0) + 1);
         }
         continue;
+      }
+
+      // build_equal is passed only by a cut other than d (the component's `same_pieces` miss), so a proper fraction
+      // with no other cut of 2..12 pieces that makes it can never be passed. Re-derived here, not imported.
+      if (type === 'build_equal' && (n < 1 || n >= d || ![2, 3, 4, 5, 6, 8, 10, 12].some(k => k !== d && (n * k) % d === 0))) {
+        violations.push({ check: 'answer-key-desync', where: id,
+          detail: `build_equal ${n}/${d} has no other equal cut of 2..12 pieces that makes it — the correct state is unreachable` });
       }
 
       // Touch repeats use newly shuffled picture banks and shaded positions.

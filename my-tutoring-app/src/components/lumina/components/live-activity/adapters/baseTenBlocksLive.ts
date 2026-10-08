@@ -3,7 +3,7 @@ import { itemsFromChallenges, usesBaseTenDi } from '../../../primitives/visual-p
 import type { BtMode } from '../../../primitives/visual-primitives/math/baseTenModel';
 import { workspaceOpening, type WorkspaceDomain } from './adapterContract';
 
-const CHALLENGE_TYPES = ['build_number', 'read_blocks', 'regroup', 'add_with_blocks', 'subtract_with_blocks'];
+const CHALLENGE_TYPES = ['build_number', 'read_blocks', 'regroup', 'add_with_blocks', 'subtract_with_blocks', 'build_two_ways'];
 
 /** The judged mat's items, built exactly as the component builds them (a homogeneous read/regroup payload). */
 const judgedItems = (d: BaseTenBlocksData) =>

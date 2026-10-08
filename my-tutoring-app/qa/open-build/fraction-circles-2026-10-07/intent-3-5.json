@@ -1,0 +1,126 @@
+{
+  "generatedAt": "2026-10-08T00:42:26.752Z",
+  "case": {
+    "grade": "3",
+    "topic": "Equivalent fractions with visual models",
+    "intent": "Make your own fraction that is equal to a given fraction by choosing how to cut the circle"
+  },
+  "data": {
+    "title": "Pizza Party Equivalent Fractions",
+    "challenges": [
+      {
+        "id": "fc1",
+        "type": "build_equal",
+        "instruction": "Make a fraction equal to 2/12 your own way: cut the circle into equal pieces, but not 12, then shade some.",
+        "denominator": 12,
+        "numerator": 2,
+        "hint": "Think about cutting every piece into the same number of smaller pieces.",
+        "narration": "Make a fraction equal to 2/12 your own way: cut the circle into equal pieces, but not 12, then shade some."
+      },
+      {
+        "id": "fc2",
+        "type": "build_equal",
+        "instruction": "Make a fraction equal to 6/8 your own way: cut the circle into equal pieces, but not 8, then shade some.",
+        "denominator": 8,
+        "numerator": 6,
+        "hint": "Think about cutting every piece into the same number of smaller pieces.",
+        "narration": "Make a fraction equal to 6/8 your own way: cut the circle into equal pieces, but not 8, then shade some."
+      },
+      {
+        "id": "fc3",
+        "type": "build_equal",
+        "instruction": "Make a fraction equal to 4/5 your own way: cut the circle into equal pieces, but not 5, then shade some.",
+        "denominator": 5,
+        "numerator": 4,
+        "hint": "Think about cutting every piece into the same number of smaller pieces.",
+        "narration": "Make a fraction equal to 4/5 your own way: cut the circle into equal pieces, but not 5, then shade some."
+      },
+      {
+        "id": "fc4",
+        "type": "build_equal",
+        "instruction": "Make a fraction equal to 3/12 your own way: cut the circle into equal pieces, but not 12, then shade some.",
+        "denominator": 12,
+        "numerator": 3,
+        "hint": "Think about cutting every piece into the same number of smaller pieces.",
+        "narration": "Make a fraction equal to 3/12 your own way: cut the circle into equal pieces, but not 12, then shade some."
+      },
+      {
+        "id": "fc5",
+        "type": "build_equal",
+        "instruction": "Make a fraction equal to 1/3 your own way: cut the circle into equal pieces, but not 3, then shade some.",
+        "denominator": 3,
+        "numerator": 1,
+        "hint": "Think about cutting every piece into the same number of smaller pieces.",
+        "narration": "Make a fraction equal to 1/3 your own way: cut the circle into equal pieces, but not 3, then shade some."
+      }
+    ],
+    "description": "Practice building equivalent fractions visually by cutting circles into different numbers of equal slices.",
+    "gradeBand": "3-5"
+  },
+  "items": [
+    {
+      "id": "fc1",
+      "type": "build_equal",
+      "target": "2/12",
+      "instruction": "Make a fraction equal to 2/12 your own way: cut the circle into equal pieces, but not 12, then shade some.",
+      "ways": [
+        "1/6"
+      ],
+      "ownCutMiss": "same_pieces"
+    },
+    {
+      "id": "fc2",
+      "type": "build_equal",
+      "target": "6/8",
+      "instruction": "Make a fraction equal to 6/8 your own way: cut the circle into equal pieces, but not 8, then shade some.",
+      "ways": [
+        "3/4",
+        "9/12"
+      ],
+      "ownCutMiss": "same_pieces"
+    },
+    {
+      "id": "fc3",
+      "type": "build_equal",
+      "target": "4/5",
+      "instruction": "Make a fraction equal to 4/5 your own way: cut the circle into equal pieces, but not 5, then shade some.",
+      "ways": [
+        "8/10"
+      ],
+      "ownCutMiss": "same_pieces"
+    },
+    {
+      "id": "fc4",
+      "type": "build_equal",
+      "target": "3/12",
+      "instruction": "Make a fraction equal to 3/12 your own way: cut the circle into equal pieces, but not 12, then shade some.",
+      "ways": [
+        "1/4",
+        "2/8"
+      ],
+      "ownCutMiss": "same_pieces"
+    },
+    {
+      "id": "fc5",
+      "type": "build_equal",
+      "target": "1/3",
+      "instruction": "Make a fraction equal to 1/3 your own way: cut the circle into equal pieces, but not 3, then shade some.",
+      "ways": [
+        "2/6",
+        "4/12"
+      ],
+      "ownCutMiss": "same_pieces"
+    }
+  ],
+  "oracle": {
+    "violations": [],
+    "uncheckedTypes": [],
+    "checkedChallenges": 5
+  },
+  "issues": [],
+  "logs": [
+    "[resolveEvalModes] fraction-circles: intent → [build_equal]",
+    "[FractionCircles] modes: build_equal",
+    "[FractionCircles] Final: 5 challenge(s) → [build_equal, build_equal, build_equal, build_equal, build_equal]"
+  ]
+}

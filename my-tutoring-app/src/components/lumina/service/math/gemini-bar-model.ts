@@ -32,6 +32,7 @@ import {
   selectIconCountContrast,
   type BarModelRemediationMove,
 } from "./barModelRemediation";
+import { GRAPH_MAX, makeGraphAsk, type GraphRule, type GraphRuleKind } from "../../primitives/visual-primitives/math/barModelBuild";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -52,7 +53,8 @@ export type BarModelEvalMode =
   | 'picture_graph'
   | 'scaled_bar_graph'
   | 'graph_word_problem'
-  | 'build_graph';
+  | 'build_graph'
+  | 'make_graph';
 
 export interface BarValue {
   label: string;
@@ -107,6 +109,8 @@ export interface BarModelChallenge {
   /** build_one_to_one: show how many stickers the child has placed so far. */
   showPlacedCount?: boolean;
   supportTier?: SupportTier;
+  /** make_graph: what the made graph must show; any data that fits passes. */
+  graphRule?: GraphRule;
 }
 
 export interface BarModelData {
@@ -149,6 +153,7 @@ const COUNT_BY_MODE: Record<BarModelEvalMode, number> = {
   scaled_bar_graph: 4,     // hold (not classified in §5a)
   graph_word_problem: 4,   // T3 hold (§10 cost budget gates any bump)
   build_graph: 4,          // hold (not classified in §5a)
+  make_graph: 4,           // one graph per ask kind at G1+ (most, fewest, same, N more)
 };
 
 // ---------------------------------------------------------------------------
@@ -266,6 +271,7 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   scaled_bar_graph: { promptDoc: 'G3 step-2/5/10 reading.', schemaDescription: "'scaled_bar_graph' (G3)" },
   graph_word_problem: { promptDoc: 'G2-3 how-many-more / total.', schemaDescription: "'graph_word_problem' (G2-3)" },
   build_graph: { promptDoc: 'G3-5 construct + pick scale.', schemaDescription: "'build_graph' (G3-5)" },
+  make_graph: { promptDoc: 'K-2 open build: fill an empty picture graph so a named row has the most / fewest, two rows match, or one has N more.', schemaDescription: "'make_graph' (K-2 open build)" },
 };
 
 // ---------------------------------------------------------------------------
@@ -400,6 +406,9 @@ function resolveSupportStructure(mode: BarModelEvalMode, tier: SupportTier): Sup
               : 'HARD: hint only says "set each bar, then choose a scale that fits" — the student reasons out the step alone.',
         ],
       };
+    // The made graph prints no number at any tier; its aids are levers that start bare.
+    case 'make_graph':
+      return { showBarValues: false, showTargetHighlight: false, promptLines: [] };
     case 'compare_bars':
     default:
       return {
@@ -1694,6 +1703,104 @@ ${kSettingLine(variant)}`,
   };
 }
 
+// ===========================================================================
+// Sub-generator: make_graph — open build: fill an empty graph to fit an ask
+// ===========================================================================
+//
+// Code owns the categories (a theme's rows, one emoji each), the rule and the ask, so the ask can never be one
+// the graph cannot meet and nothing the model writes can state a count. The model only picks which themes fit the
+// topic and writes the title. The rule kinds and named rows are assigned across the session afterwards
+// (`assignGraphRules`), so N graphs are N different asks.
+
+const GRAPH_THEMES: Record<string, readonly { label: string; emoji: string }[]> = {
+  fruit: [{ label: 'apples', emoji: '🍎' }, { label: 'bananas', emoji: '🍌' }, { label: 'grapes', emoji: '🍇' }, { label: 'oranges', emoji: '🍊' }, { label: 'strawberries', emoji: '🍓' }],
+  pets: [{ label: 'dogs', emoji: '🐶' }, { label: 'cats', emoji: '🐱' }, { label: 'fish', emoji: '🐟' }, { label: 'birds', emoji: '🐦' }, { label: 'rabbits', emoji: '🐰' }],
+  farm: [{ label: 'cows', emoji: '🐄' }, { label: 'pigs', emoji: '🐖' }, { label: 'sheep', emoji: '🐑' }, { label: 'chickens', emoji: '🐔' }, { label: 'horses', emoji: '🐴' }],
+  bugs: [{ label: 'ants', emoji: '🐜' }, { label: 'bees', emoji: '🐝' }, { label: 'ladybugs', emoji: '🐞' }, { label: 'butterflies', emoji: '🦋' }, { label: 'snails', emoji: '🐌' }],
+  ocean: [{ label: 'crabs', emoji: '🦀' }, { label: 'octopuses', emoji: '🐙' }, { label: 'whales', emoji: '🐳' }, { label: 'turtles', emoji: '🐢' }, { label: 'sharks', emoji: '🦈' }],
+  vegetables: [{ label: 'carrots', emoji: '🥕' }, { label: 'corn', emoji: '🌽' }, { label: 'broccoli', emoji: '🥦' }, { label: 'tomatoes', emoji: '🍅' }, { label: 'peppers', emoji: '🫑' }],
+  toys: [{ label: 'balls', emoji: '⚽' }, { label: 'teddy bears', emoji: '🧸' }, { label: 'toy cars', emoji: '🚗' }, { label: 'kites', emoji: '🪁' }, { label: 'blocks', emoji: '🧱' }],
+  weather: [{ label: 'sunny days', emoji: '☀️' }, { label: 'rainy days', emoji: '🌧️' }, { label: 'cloudy days', emoji: '☁️' }, { label: 'snowy days', emoji: '❄️' }],
+  treats: [{ label: 'cookies', emoji: '🍪' }, { label: 'cupcakes', emoji: '🧁' }, { label: 'ice creams', emoji: '🍦' }, { label: 'donuts', emoji: '🍩' }],
+  travel: [{ label: 'buses', emoji: '🚌' }, { label: 'bikes', emoji: '🚲' }, { label: 'trains', emoji: '🚆' }, { label: 'boats', emoji: '⛵' }, { label: 'planes', emoji: '✈️' }],
+  sports: [{ label: 'soccer balls', emoji: '⚽' }, { label: 'basketballs', emoji: '🏀' }, { label: 'baseballs', emoji: '⚾' }, { label: 'tennis balls', emoji: '🎾' }],
+};
+const THEME_IDS = Object.keys(GRAPH_THEMES);
+
+async function generateMakeGraph(topic: string, gradeContext: string, intent: string, tier: SupportTier | null = null, variant = 0): Promise<SubGenResult> {
+  const schema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      themes: { type: Type.ARRAY, items: { type: Type.STRING, enum: THEME_IDS },
+        description: 'One to three themes a teacher would accept for this topic, best first. One is fine; never add a theme only to fill the list.' },
+      title: { type: Type.STRING, description: "Short warm title for a class graph, no numbers (e.g. 'Our Favourite Fruit')" },
+      description: { type: Type.STRING, description: 'One short line tying the graph to the topic. No numbers.' },
+    },
+    required: ['themes', 'title', 'description'],
+  };
+  const prompt = `A young learner will MAKE a picture graph: they fill an empty graph so it fits an ask such as "apples have the most".
+Pick the themes that fit the topic, and write a title. A theme that only loosely relates to the topic is worse than
+repeating the best one: the app varies which things from a theme appear on each graph.
+
+TOPIC: ${topic}
+AUDIENCE: ${gradeContext}
+INTENT: ${intent}
+
+THEMES: ${THEME_IDS.join(', ')}
+- You choose no numbers and no ask; the app does both after your answer.
+- Title and description are read aloud to a young child: short, plain, no digits or number words.`;
+
+  const response = await ai.models.generateContent({
+    model: MODEL,
+    contents: prompt,
+    config: { responseMimeType: 'application/json', responseSchema: schema },
+  });
+  if (!response.text) throw new Error('No content generated (make_graph)');
+  const raw = JSON.parse(response.text) as Record<string, unknown>;
+  const ranked = (Array.isArray(raw.themes) ? raw.themes : []).map(String).filter(t => t in GRAPH_THEMES);
+  const theme = ranked.length ? ranked[variant % ranked.length] : THEME_IDS[variant % THEME_IDS.length];
+  const cats = shuffleInPlace([...GRAPH_THEMES[theme]]).slice(0, tier === 'hard' ? 4 : 3);
+  const rule: GraphRule = { kind: 'most', a: 0 };
+  return {
+    title: safeKText(raw.title, 'Make a Graph'),
+    description: safeKText(raw.description, 'Fill the graph so it fits the ask.'),
+    challenge: {
+      id: 'bm-pending',
+      evalMode: 'make_graph',
+      values: cats.map((c, i) => ({ label: c.label, value: 0, color: pickColor(i), emoji: c.emoji })),
+      graphStyle: 'picture',
+      scale: kScale(GRAPH_MAX, cats[0].emoji),
+      prompt: makeGraphAsk(cats.map(c => c.label), rule),
+      hint: 'Look at the ask again, then look at each bar.',
+      graphRule: rule,
+      showBarValues: false,
+      showTargetHighlight: false,
+    },
+  };
+}
+
+/**
+ * The session's asks, from code: every kind the grade allows appears before any repeats (K: most, fewest, same;
+ * Grade 1 and up add N more, N from 1-3, 2-5 from Grade 2), the named rows vary, and each ask is restated from its rule.
+ */
+function assignGraphRules(challenges: BarModelChallenge[], gradeContext: string): void {
+  const isK = /kindergarten|\bK\b/i.test(gradeContext);
+  const later = /grade\s*[2-9]|second|third|fourth|fifth/i.test(gradeContext);
+  const kinds: GraphRuleKind[] = isK ? ['most', 'fewest', 'same'] : ['most', 'fewest', 'same', 'more_than'];
+  let order: GraphRuleKind[] = [];
+  challenges.filter(c => c.evalMode === 'make_graph').forEach((c) => {
+    if (!order.length) order = shuffleInPlace([...kinds]);
+    const kind = order.pop()!;
+    const rows = c.values.length;
+    const a = randInt(0, rows - 1);
+    const b = (a + randInt(1, rows - 1)) % rows;
+    const rule: GraphRule = kind === 'most' || kind === 'fewest' ? { kind, a }
+      : kind === 'same' ? { kind, a, b } : { kind, a, b, by: later ? randInt(2, 5) : randInt(1, 3) };
+    c.graphRule = rule;
+    c.prompt = makeGraphAsk(c.values.map(v => v.label), rule);
+  });
+}
+
 function subGeneratorFor(mode: BarModelEvalMode): (topic: string, gradeContext: string, intent: string, tier?: SupportTier | null, variant?: number) => Promise<SubGenResult> {
   switch (mode) {
     case 'say_what_it_shows': return generateGraphExplanation;
@@ -1707,6 +1814,7 @@ function subGeneratorFor(mode: BarModelEvalMode): (topic: string, gradeContext: 
     case 'scaled_bar_graph':   return generateScaledBarGraph;
     case 'graph_word_problem': return generateGraphWordProblem;
     case 'build_graph':        return generateBuildGraph;
+    case 'make_graph':         return generateMakeGraph;
     case 'compare_bars':
     default:                   return generateCompareBars;
   }
@@ -1736,7 +1844,7 @@ export const generateBarModel = async (ctx: GenerationContext): Promise<BarModel
   }, CHALLENGE_TYPE_DOCS);
   const isK = /kindergarten|\bK\b/i.test(gradeContext);
   const modes = (resolution?.allowedTypes ?? (isK
-    ? ['read_one_to_one', 'most_least', 'build_one_to_one', 'say_what_it_shows', 'compare_two_graphs']
+    ? ['read_one_to_one', 'most_least', 'build_one_to_one', 'make_graph', 'say_what_it_shows', 'compare_two_graphs']
     : ['compare_bars', 'read_scale', 'picture_graph', 'scaled_bar_graph'])) as BarModelEvalMode[];
   const mode = modes[0];
   console.log(`[BarModel] modes: ${modes.join('+')} (${resolution?.source ?? 'mixed'})`);
@@ -1781,6 +1889,7 @@ export const generateBarModel = async (ctx: GenerationContext): Promise<BarModel
   // is rotated into a different problem rather than re-drawn from the model.
   {
     spreadKAnswerPositions(challenges);
+    assignGraphRules(challenges, gradeContext);
     const seen = new Set<string>();
     for (const ch of challenges.filter((c) => K_MODES.has(c.evalMode))) {
       let key = kCardKey(ch);

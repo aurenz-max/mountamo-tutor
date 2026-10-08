@@ -127,3 +127,23 @@ describe('fraction-bar oracle', () => {
     expect(v.some((x) => x.check === 'schema' && x.where === 'challenges')).toBe(true);
   });
 });
+
+// ── build_equal — the open build, from the real generation (qa/open-build/fraction-bar-2026-10-07/build_equal.json) ──
+describe('fraction-bar oracle, build_equal', () => {
+  const ask = (n: number, d: number) => `Make a fraction equal to ${n}/${d} your own way: split the bar into equal parts, but not ${d}, then shade some.`;
+  const card = (id: string, n: number, d: number) => ({ id, numerator: n, denominator: d, numeratorChoices: [], denominatorChoices: [], instruction: ask(n, d) });
+  const clean = { title: 'Equal Fractions', description: 'Your way.', challengeType: 'build_equal', gradeBand: '3-5',
+    challenges: [card('fraction-bar-1', 5, 10), card('fraction-bar-2', 8, 12), card('fraction-bar-3', 4, 12), card('fraction-bar-4', 2, 5)] };
+  const eqCtx = { ...ctx, evalMode: 'build_equal', topic: 'Equivalent fractions' };
+
+  it('passes the real generation, empty choice arrays included', () => {
+    expect(fractionBarOracle.verify(clean, eqCtx)).toMatchObject({ violations: [], uncheckedTypes: [], checkedChallenges: 4 });
+  });
+
+  it('flags a target with no other way, a K-2 fifth, a missing target in the ask, and a repeated value', () => {
+    const k2 = { ...clean, gradeBand: 'K-2', challenges: [card('a', 1, 5), { ...card('b', 1, 2), instruction: 'Make it your way.' },
+      card('c', 2, 4)] };
+    const v = fractionBarOracle.verify(k2, eqCtx).violations.map(x => `${x.check} ${x.where}`);
+    expect(v).toEqual(expect.arrayContaining(['answer-key-desync a', 'scope a', 'schema b', 'clustering challenges[]']));
+  });
+});

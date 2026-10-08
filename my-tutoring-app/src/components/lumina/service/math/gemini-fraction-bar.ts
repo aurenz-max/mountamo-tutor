@@ -29,6 +29,8 @@ import {
 } from "../evalMode";
 import { adaptationTaskFor, planAdaptation, plannedMode, stampAdaptation } from '../generation/adaptationStep';
 import { eligibleFractionBarTeaching, fractionBarTeaching, selectSharedDigitRoleContrast } from "./fractionBarRemediation";
+import { equalTargets } from '../../primitives/visual-primitives/math/fractionEqualBuild';
+import { equalBarInstruction } from '../../primitives/visual-primitives/math/fractionBarWorkspace';
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -60,7 +62,17 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `Transitional symbolic/pictorial.`,
     schemaDescription: "'add_subtract' (fractions in operation context)",
   },
+  build_equal: {
+    promptDoc:
+      `"build_equal": Open build. The student makes a fraction equal to a given one on the bar in their OWN way: they `
+      + `choose how many equal parts to split the bar into (any number but the given denominator), shade some, and say `
+      + `done. Many answers are right (1/2 = 2/4 = 3/6). The app chooses every fraction; the title and description name none.`,
+    schemaDescription: "'build_equal' (make an equal fraction on the bar, your own split)",
+  },
 };
+
+/** An open build is reached only by a pin; an unpinned session keeps the four modes it always had. */
+const UNPINNED_TYPES = ['identify', 'build', 'compare', 'add_subtract'];
 
 // ---------------------------------------------------------------------------
 // Wrapper schema — Gemini emits session-level metadata only.
@@ -72,7 +84,7 @@ const fractionBarWrapperSchema: Schema = {
   properties: {
     challengeType: {
       type: Type.STRING,
-      enum: ["identify", "build", "compare", "add_subtract"],
+      enum: ["identify", "build", "compare", "add_subtract", "build_equal"],
       description:
         "Challenge type controlling difficulty: 'identify' (2-3), 'build' (3-4), 'compare' (4-5), 'add_subtract' (5-6).",
     },
@@ -103,7 +115,7 @@ const fractionBarWrapperSchema: Schema = {
 // Constants
 // ---------------------------------------------------------------------------
 
-type ChallengeType = 'identify' | 'build' | 'compare' | 'add_subtract';
+type ChallengeType = 'identify' | 'build' | 'compare' | 'add_subtract' | 'build_equal';
 
 // ---------------------------------------------------------------------------
 // Within-mode difficulty = structural SUPPORT tier (config.difficulty)
@@ -206,6 +218,11 @@ function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): 
             : 'Hide the decimal but keep the partition numerals; dim the running readout so the student leans on the bar.',
       );
       break;
+    case 'build_equal':
+      // Starts bare at every tier: choosing the split and keeping count IS the task; its levers come on a miss.
+      promptLines.push('build_equal: the bar starts whole with no count or readout shown; the student chooses the split and keeps count.');
+      return { showDecimal: false, showPartitionNumerals: false, showShadedReadout: false, distractorTightness,
+        showPromptGloss, promptLines };
     case 'add_subtract':
       promptLines.push(
         tier === 'easy'
@@ -238,6 +255,7 @@ const COUNT_BY_MODE: Record<ChallengeType, number> = {
   build: 3,
   compare: 3,
   add_subtract: 3,
+  build_equal: 4,
 };
 
 // ---------------------------------------------------------------------------
@@ -343,11 +361,35 @@ function addSubtractOperands(count: number): FractionPair[] {
   return pairs;
 }
 
+/** The open build's band, from the canonical grade: K-2 splits into halves to fourths, 3-5 up to twelfths. */
+export function fractionBarGradeBand(grade?: string): 'K-2' | '3-5' {
+  const g = (grade ?? '').trim().toUpperCase();
+  const n = g === 'K' ? 0 : parseInt(g, 10);
+  return !isNaN(n) && n <= 2 ? 'K-2' : '3-5';
+}
+
+/**
+ * build_equal: code picks each target from a shuffled list of band fractions that have another equal split the bar
+ * can make, each a different value from every other build in the session (`fractionEqualBuild.equalTargets`).
+ */
+function equalBuildOperands(count: number, band: 'K-2' | '3-5'): FractionPair[] {
+  const value = (p: FractionPair) => p.numerator / p.denominator;
+  const pairs: FractionPair[] = [];
+  for (const p of shuffle(equalTargets(band))) {
+    if (pairs.length >= count) break;
+    if (pairs.some(q => Math.abs(value(q) - value(p)) < 1e-9)) continue;
+    pairs.push(p);
+  }
+  return pairs;
+}
+
 function selectFractionBarOperands(
   challengeType: ChallengeType,
   count: number,
+  band: 'K-2' | '3-5' = '3-5',
 ): FractionPair[] {
   switch (challengeType) {
+    case 'build_equal': return equalBuildOperands(count, band);
     case 'identify': return identifyOperands(count);
     case 'build': return buildOperands(count);
     case 'compare': return compareOperands(count);
@@ -426,8 +468,14 @@ function buildChallenges(
   // Support-tier distractor proximity (identify lever). Defaults to 'wide' so the
   // no-tier path produces byte-identical choices to before.
   tightness: DistractorTightness = 'wide',
+  band: 'K-2' | '3-5' = '3-5',
 ): FractionBarChallenge[] {
-  const pairs = selectFractionBarOperands(challengeType, count);
+  const pairs = selectFractionBarOperands(challengeType, count, band);
+  // build_equal has no numerator/denominator questions: the instruction states the target, the choices are empty.
+  if (challengeType === 'build_equal') {
+    return pairs.map((pair, idx) => ({ id: `fraction-bar-${idx + 1}`, ...pair, numeratorChoices: [], denominatorChoices: [],
+      instruction: equalBarInstruction(pair.numerator, pair.denominator) }));
+  }
 
   // Pad if short — generate one more pair, accepting duplicates if needed.
   while (pairs.length < count) {
@@ -478,9 +526,8 @@ export const generateFractionBar = async (
   );
   logEvalModeResolution('FractionBar', config?.targetEvalMode, evalConstraint);
 
-  const activeSchema = evalConstraint
-    ? constrainChallengeTypeEnum(fractionBarWrapperSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, { fieldName: 'challengeType', rootLevel: true })
-    : fractionBarWrapperSchema;
+  const activeSchema = constrainChallengeTypeEnum(fractionBarWrapperSchema, evalConstraint?.allowedTypes ?? UNPINNED_TYPES,
+    CHALLENGE_TYPE_DOCS, { fieldName: 'challengeType', rootLevel: true });
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
   // ── Within-mode support tier (only meaningful within ONE pinned mode) ──
@@ -557,10 +604,11 @@ Return ONLY the wrapper metadata in the response schema.
   }
 
   // ── Local: build challenges array ─────────────────────────────────
-  const challengeType: ChallengeType =
-    (wrapper.challengeType as ChallengeType) ||
-    (evalConstraint?.allowedTypes[0] as ChallengeType) ||
-    'identify';
+  const allowedTypes = evalConstraint?.allowedTypes ?? UNPINNED_TYPES;
+  const challengeType: ChallengeType = allowedTypes.includes(wrapper.challengeType)
+    ? (wrapper.challengeType as ChallengeType)
+    : (allowedTypes[0] as ChallengeType) || 'identify';
+  const gradeBand = fractionBarGradeBand(ctx.grade);
 
   // ── Resolve the support scaffold from the FINAL challenge type (mode-correct).
   // fraction-bar sessions are single-mode (all challenges share challengeType), so
@@ -578,7 +626,7 @@ Return ONLY the wrapper metadata in the response schema.
       ? appliedScaffold.distractorTightness
       : 'wide';
 
-  let challenges = buildChallenges(challengeType, instanceCount, distractorTightness);
+  let challenges = buildChallenges(challengeType, instanceCount, distractorTightness, gradeBand);
   let learningAdaptation: FractionBarData['learningAdaptation'];
   if (remediationMove && challengeType === 'build') {
     const selected = selectSharedDigitRoleContrast(challenges, remediationMove, (p) => ({
@@ -631,5 +679,6 @@ Return ONLY the wrapper metadata in the response schema.
     // Persist the tier so the tutor can match the on-screen reveal level.
     ...(supportTier ? { supportTier } : {}),
     gradeLevel: wrapper.gradeLevel || gradeLevel,
+    ...(challengeType === 'build_equal' ? { gradeBand } : {}),
   };
 };

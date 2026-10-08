@@ -1,5 +1,6 @@
 import type { ContentOracle, OracleResult, OracleViolation } from './types';
 import { asRecordArray, checkAnswerVariety, checkUniqueOptions, parseScopeCeiling } from './helpers';
+import { cutInto, equalBuildMiss, equalWays, makesEqual, readBuild } from '../../../primitives/visual-primitives/math/fractionEqualBuild';
 
 /**
  * Fraction-bar oracle — a REACHABILITY oracle for the numerator/denominator
@@ -67,9 +68,14 @@ import { asRecordArray, checkAnswerVariety, checkUniqueOptions, parseScopeCeilin
  *
  * uncheckedTypes: none — the four modes share one data shape and one three-phase
  * contract, so every mode is fully covered by the checks above.
+ *
+ * build_equal (the open build) has no choice questions: its contract is that the target is a proper fraction
+ * with another equal split the bar can make, that split passes the bar's own judge (`makesEqual`), the target's
+ * own split does not (`same_pieces`), the instruction states the target, K-2 stays within fourths, and no two
+ * builds ask for the same value. Its choice arrays are empty by design and not checked.
  */
 
-const KNOWN_TYPES = new Set(['identify', 'build', 'compare', 'add_subtract']);
+const KNOWN_TYPES = new Set(['identify', 'build', 'compare', 'add_subtract', 'build_equal']);
 // Intrinsic denominator ceiling when neither the harness nor the topic names one:
 // the top of the compare-mode denominator window (gemini-fraction-bar.ts:308-323).
 const INTRINSIC_MAX_DENOMINATOR = 12;
@@ -98,6 +104,7 @@ export const fractionBarOracle: ContentOracle = {
     }
     // identify intentionally cycles a 5-fraction pool → repeated cards are in-contract.
     const allowDuplicateCards = sessionType === 'identify';
+    if (sessionType === 'build_equal') return verifyEqualBuild(data, challenges, violations, uncheckedTypes);
 
     // Objective ceiling on the DENOMINATOR. Harness scopeMax wins, then a "to N"
     // topic, else the primitive's intrinsic max denominator.
@@ -225,3 +232,37 @@ export const fractionBarOracle: ContentOracle = {
     return { violations, uncheckedTypes: Array.from(uncheckedTypes), checkedChallenges: checked };
   },
 };
+
+/** build_equal: every target can be made another way and only another way; see the header. */
+function verifyEqualBuild(data: Record<string, unknown>, challenges: Record<string, unknown>[], violations: OracleViolation[],
+  uncheckedTypes: Set<string>): OracleResult {
+  const band = data.gradeBand === 'K-2' ? 'K-2' : '3-5';
+  if (challenges.length < 3) violations.push({ check: 'schema', where: 'challenges', detail: `only ${challenges.length} challenge(s) — mastery-over-demo requires 3+` });
+  const values = new Map<string, number>();
+  let checked = 0;
+  challenges.forEach((c, i) => {
+    const where = String(c.id ?? `#${i + 1}`);
+    const n = c.numerator, d = c.denominator;
+    if (!isInt(n) || !isInt(d) || n < 1 || n >= d) {
+      violations.push({ check: 'schema', where, detail: `target must be a proper fraction with whole parts; got ${JSON.stringify(n)}/${JSON.stringify(d)}` });
+      return;
+    }
+    checked++;
+    const target = { numerator: n, denominator: d };
+    const way = equalWays(n, d, band)[0];
+    const shadeFirst = (pieces: number, shaded: number) => readBuild(cutInto(pieces).map((p, k) => ({ ...p, shaded: k < shaded })));
+    if (!way || !makesEqual(target, shadeFirst(way.pieces, way.shaded)))
+      violations.push({ check: 'answer-key-desync', where, detail: `${n}/${d}: no other equal split of the bar passes the judge (band ${band})` });
+    if (equalBuildMiss(target, shadeFirst(d, n)) !== 'same_pieces')
+      violations.push({ check: 'answer-key-desync', where, detail: `${n}/${d}: the target's own split is not the same_pieces miss` });
+    if (typeof c.instruction !== 'string' || !c.instruction.includes(`${n}/${d}`))
+      violations.push({ check: 'schema', where, detail: `instruction does not state the target ${n}/${d}` });
+    if (band === 'K-2' && d > 4) violations.push({ check: 'scope', where, detail: `K-2 target ${n}/${d} beyond fourths` });
+    const key = (n / d).toFixed(6);
+    values.set(key, (values.get(key) ?? 0) + 1);
+  });
+  values.forEach((count, key) => {
+    if (count > 1) violations.push({ check: 'clustering', where: 'challenges[]', detail: `${count} builds ask for the same value ${Number(key)}` });
+  });
+  return { violations, uncheckedTypes: Array.from(uncheckedTypes), checkedChallenges: checked };
+}

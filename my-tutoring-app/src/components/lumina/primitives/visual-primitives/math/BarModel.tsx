@@ -32,6 +32,10 @@ import { withWorkspaceOnly } from '../../../components/live-activity/runtime/wit
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import { OPTION_MODES, ROW_TAP_MODES, barModelMiss, describeGraphWork, workspaceAssignment, workspaceScene, type BarModelView }
   from './barModelWorkspace';
+import { COUNTS_LEVER, LINE_LEVER, TWO_BARS_LEVER, isPracticeGraph, levelLineRow, makeGraphLevers, makeGraphMiss,
+  makeGraphVerdict, twoBarPractice, GRAPH_MAX, type GraphRule } from './barModelBuild';
+import { GraphBuildScene } from './GraphBuildScene';
+import { useBuildWatcher } from '../../build-layer/buildLayer';
 
 // ---------------------------------------------------------------------------
 // Public types (mirrored by the generator)
@@ -52,7 +56,9 @@ export type BarModelEvalMode =
   | 'picture_graph'
   | 'scaled_bar_graph'
   | 'graph_word_problem'
-  | 'build_graph';
+  | 'build_graph'
+  // Open build: set the bars of an empty graph so the data fits an ask (barModelBuild.ts).
+  | 'make_graph';
 
 export interface BarModelScale {
   step: number;
@@ -107,6 +113,8 @@ export interface BarModelChallenge {
   /** build_one_to_one: show how many stickers the child has placed so far. */
   showPlacedCount?: boolean;
   supportTier?: 'easy' | 'medium' | 'hard';
+  /** make_graph: what the made graph must show. Any data that fits passes; there is no answer key. */
+  graphRule?: GraphRule;
 }
 
 export interface BarModelData {
@@ -618,7 +626,14 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const currentChallenge = challenges[currentIndex] ?? null;
+  // make_graph levers (`barModelBuild.ts`), keyed by the session item they were pulled on, and the easier two-bar
+  // graph the simplify lever put on screen in its place.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<BarModelChallenge | null>(null);
+  const sessionChallenge = challenges[currentIndex] ?? null;
+  /** What is on screen: the easier graph while the simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
   const graphStyle: BarModelGraphStyle = currentChallenge?.graphStyle ?? 'bar';
 
   // ── Per-challenge interaction state ────────────────────────────────────────
@@ -628,6 +643,9 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
   const [selectedBarIndex, setSelectedBarIndex] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
   const [showHint, setShowHint] = useState(false);
+  /** make_graph: the check's words about the learner's own graph; they stay until the next check. */
+  const [verdictText, setVerdictText] = useState('');
+  const graphSvgRef = useRef<SVGSVGElement | null>(null);
 
   const recordedRef = useRef(false);
   const sessionCompleteFiredRef = useRef(false);
@@ -640,6 +658,9 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
   openItem.current = (index, retry) => {
     const next = challenges[index];
     if (!next) return;
+    // make_graph: Try again keeps the graph and the verdict, so the learner revises their own work.
+    if (retry && next.evalMode === 'make_graph') return;
+    if (!retry) { setPractice(null); setVerdictText(''); }
     setSelectedOption(null);
     setSelectedBarIndex(null);
     setFeedback(null);
@@ -736,6 +757,8 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
       setFeedback(correct ? 'correct' : 'incorrect');
       if (correct) {
         if (recordedRef.current) return;
+        // The easier two-bar graph is ungraded practice: it records no result of its own.
+        if (isPracticeGraph(currentChallenge)) { SoundManager.playCorrect(); return; }
         recordedRef.current = true;
         SoundManager.playCorrect();
         recordResult({
@@ -820,11 +843,39 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
     });
   };
 
+  // ── Open build (make_graph): tap a column to put one in, tap a picture to take one out; "I'm done!" commits ──
+  const isMakeGraph = currentChallenge?.evalMode === 'make_graph';
+  const graphOpen = isMakeGraph && progress.canAttempt !== false && feedback !== 'correct' && !isComplete;
+  const setBar = (i: number, delta: number) => {
+    if (learnerBlocked() || !graphOpen) return;
+    SoundManager.tick();
+    setBuiltValues(prev => prev.map((v, idx) => idx === i ? { ...v, value: Math.max(0, Math.min(GRAPH_MAX, v.value + delta)) } : v));
+  };
+  const handleGraphDone = () => {
+    if (learnerBlocked() || !graphOpen || !currentChallenge) return;
+    const bars = builtValues.map(v => v.value);
+    setVerdictText(makeGraphVerdict(currentChallenge, bars));
+    submitResult(!makeGraphMiss(currentChallenge.graphRule, bars), { graphValues: bars });
+  };
+  const graphRule = isMakeGraph ? currentChallenge?.graphRule : undefined;
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
+  // The live line (shared build layer): what the graph looks like so far. Never a number, never a comparison:
+  // which bar is tallest is the skill.
+  const graphSeeing = useBuildWatcher({
+    buildKey: builtValues.map(v => v.value).join(','),
+    enabled: graphOpen && builtValues.some(v => v.value > 0),
+    svg: graphSvgRef,
+    request: { task: currentChallenge?.prompt ?? '',
+      sceneNote: `An empty picture graph with one column each for ${currentChallenge?.values.map(v => v.label).join(', ')}; `
+        + 'the child stacks one picture per tap. Talk about the pictures and colours, never which column is taller or shorter.',
+      numbers: 'never' },
+  });
+
   // ── Derived render data ────────────────────────────────────────────────────
   const isStickerBuild = currentChallenge?.evalMode === 'build_one_to_one';
 
   const valuesToRender: BarValue[] =
-    currentChallenge?.evalMode === 'build_graph' || isStickerBuild
+    currentChallenge?.evalMode === 'build_graph' || isStickerBuild || isMakeGraph
       ? builtValues
       : (currentChallenge?.values ?? []);
 
@@ -897,8 +948,30 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!currentChallenge) return;
-    workspace.current = { ...workspaceScene(currentChallenge, { built: builtValues, selectedOption,
-      selectedRow: selectedBarIndex, chosenStep }) };
+    const scene = workspaceScene(currentChallenge, { built: builtValues, selectedOption, selectedRow: selectedBarIndex, chosenStep });
+    if (sessionChallenge?.evalMode !== 'make_graph') { workspace.current = { ...scene }; return; }
+    const levers = practice ? [] : makeGraphLevers(sessionChallenge, pulledLevers);
+    const emptyGraph = (c: BarModelChallenge) => { setBuiltValues(c.values); setFeedback(null); setVerdictText(''); };
+    workspace.current = {
+      ...scene,
+      ...(practice ? { facts: { ...scene.facts, practice: 'An easier graph with two bars, ungraded. The full graph comes back after it.' } } : {}),
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this graph.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (id === TWO_BARS_LEVER) {
+          const easier = twoBarPractice(sessionChallenge);
+          if (!easier) return 'This graph has no easier version; try a help lever.';
+          setLeverState(pulled); setPractice(easier); emptyGraph(easier);
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { setPractice(null); emptyGraph(sessionChallenge); },
+    };
   });
   /** A solved answer, or a checked one waiting for Try again or Next challenge. */
   const answerClosed = feedback === 'correct' || progress.canAttempt === false;
@@ -982,7 +1055,13 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
               <div ref={pip.ref('graph')} data-pip-object="graph" className="space-y-6">
                 <div className="px-2 space-y-5">
                   {currentChallenge.graphLabel && <h3 className="text-lg font-semibold text-cyan-200">{currentChallenge.graphLabel}</h3>}
-                  <BarsArea
+                  {isMakeGraph ? (
+                    <div className="flex justify-center">
+                      <GraphBuildScene ref={graphSvgRef} bars={builtValues} disabled={!graphOpen}
+                        lineRow={graphRule && leverOn(LINE_LEVER) ? levelLineRow(graphRule) : null} counts={leverOn(COUNTS_LEVER)}
+                        onAdd={i => setBar(i, 1)} onRemove={i => setBar(i, -1)} rowRef={pip.ref} />
+                    </div>
+                  ) : <BarsArea
                     values={valuesToRender}
                     graphStyle={graphStyle}
                     scale={scaleToRender}
@@ -1003,7 +1082,7 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
                     showEmptySlots={isStickerBuild}
                     showPlacedCount={false}
                     rowRef={pip.ref}
-                  />
+                  />}
                 </div>
 
                 {currentChallenge.secondValues && <div className="px-2 space-y-3">
@@ -1016,6 +1095,24 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
                 <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
                   className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />
               )}
+
+              {isMakeGraph ? (
+                <div className="space-y-4">
+                  {practice && (
+                    <div data-practice-graph="true" className="text-center text-xs text-cyan-200">
+                      An easier graph first. It is not graded; the full graph comes back after it.
+                    </div>
+                  )}
+                  <div className="flex min-h-8 items-center justify-center" aria-live="polite" data-testid="build-watcher">
+                    {graphSeeing && graphOpen && <span className="rounded-full bg-white/10 px-4 py-1.5 text-base text-amber-100">👀 {graphSeeing}</span>}
+                  </div>
+                  <div className="flex justify-center">
+                    <LuminaButton tone="primary" disabled={!graphOpen || builtValues.every(v => v.value === 0)} onClick={handleGraphDone}>
+                      I&apos;m done!
+                    </LuminaButton>
+                  </div>
+                </div>
+              ) : null}
 
               {isStickerBuild ? (
                 <div className="space-y-4">
@@ -1097,7 +1194,7 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
                       : undefined
                   }
                 >
-                  {feedback === 'correct'
+                  {isMakeGraph && verdictText ? verdictText : feedback === 'correct'
                     ? "That's correct."
                     : 'Take another look and try again.'}
                 </LuminaFeedbackCard>

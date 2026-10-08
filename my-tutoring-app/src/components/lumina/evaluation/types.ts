@@ -706,6 +706,8 @@ export interface BaseTenBlocksMetrics extends BasePrimitiveMetrics {
 
 export interface FractionCirclesMetrics extends BasePrimitiveMetrics {
   touchFractionAccuracy?: number;
+  /** build_equal (open build: an equal fraction, the learner's own cut). */
+  buildEqualAccuracy?: number;
   type: 'fraction-circles';
   totalChallenges: number;
   correctCount: number;
@@ -777,7 +779,7 @@ export interface PercentBarMetrics extends BasePrimitiveMetrics {
 
 export interface FractionBarMetrics extends BasePrimitiveMetrics {
   type: 'fraction-bar';
-  challengeType: 'identify' | 'build' | 'compare' | 'add_subtract';
+  challengeType: 'identify' | 'build' | 'compare' | 'add_subtract' | 'build_equal';
   totalChallenges: number;
   correctCount: number;
   attemptsCount: number;
@@ -893,7 +895,8 @@ export interface BarModelMetrics extends BasePrimitiveMetrics {
     | 'picture_graph'
     | 'scaled_bar_graph'
     | 'graph_word_problem'
-    | 'build_graph';
+    | 'build_graph'
+    | 'make_graph';
   graphStyle: 'bar' | 'scaled_bar' | 'picture';
 
   // Session aggregates
@@ -1061,7 +1064,7 @@ export interface FormulaLabMetrics extends BasePrimitiveMetrics {
 
 export interface ArrayGridMetrics extends BasePrimitiveMetrics {
   type: 'array-grid';
-  challengeType: 'build_array' | 'count_array' | 'multiply_array';
+  challengeType: 'build_array' | 'count_array' | 'multiply_array' | 'make_array';
   totalChallenges: number;
   correctCount: number;
   attemptsCount: number;          // Total tries across all challenges
@@ -2893,7 +2896,7 @@ export interface SlopeTriangleMetrics extends BasePrimitiveMetrics {
 
 export interface PolygonAreaBuilderMetrics extends BasePrimitiveMetrics {
   type: 'polygon-area-builder';
-  challengeType: 'decompose' | 'find_area_triangle_parallelogram' | 'find_area_trapezoid' | 'composite_area' | 'coordinate_polygon';
+  challengeType: 'decompose' | 'find_area_triangle_parallelogram' | 'find_area_trapezoid' | 'composite_area' | 'coordinate_polygon' | 'build_area';
   totalChallenges: number;
   correctCount: number;
   attemptsCount: number;
@@ -2917,7 +2920,7 @@ export interface CircleExplorerMetrics extends BasePrimitiveMetrics {
 
 export interface AngleWorkshopMetrics extends BasePrimitiveMetrics {
   type: 'angle-workshop';
-  challengeType: 'measure' | 'classify_pairs' | 'solve_unknown' | 'solve_algebraic' | 'transversal';
+  challengeType: 'measure' | 'classify_pairs' | 'solve_unknown' | 'solve_algebraic' | 'transversal' | 'make_angle';
   totalChallenges: number;
   correctCount: number;
   attemptsCount: number;

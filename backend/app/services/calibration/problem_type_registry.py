@@ -141,6 +141,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     },
     "base-ten-blocks": {
         "build_number":  PriorConfig(1.5, "Concrete: build number from blocks"),
+        "build_two_ways": PriorConfig(2.0, "Open build: show a number with any blocks, then a different way (1.NBT.2a, 2.NBT.1a)"),
         "read_blocks":   PriorConfig(2.5, "Pictorial: identify number from blocks"),
         "regroup":       PriorConfig(3.5, "Strategy: trade between place values"),
         "operate":       PriorConfig(4.5, "Operations: add/subtract with blocks"),
@@ -151,6 +152,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "build":      PriorConfig(2.5, "Pictorial: shade slices to match fraction"),
         "compare":    PriorConfig(3.5, "Pictorial: compare two fractions visually"),
         "equivalent": PriorConfig(4.5, "Transitional: find equivalent fractions"),
+        "build_equal": PriorConfig(4.6, "Open build: make an equal fraction with your own cut, not the given denominator (3.NF.A.3)"),
     },
     "regrouping-workbench": {
         "add_no_regroup":      PriorConfig(1.5, "Concrete: addition without carrying"),
@@ -169,6 +171,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "build":        PriorConfig(2.5, "Pictorial: shade non-unit proper fractions"),
         "compare":      PriorConfig(3.5, "Pictorial: fractions with larger denominators"),
         "add_subtract": PriorConfig(4.5, "Transitional: fractions in operation context"),
+        "build_equal":  PriorConfig(4.6, "Pictorial: open build, an equal fraction on the bar your own way"),
     },
     "measurement-tools": {
         "measure":   PriorConfig(1.5, "Concrete: direct measurement with ruler"),
@@ -192,6 +195,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     },
     "array-grid": {
         "build_array":    PriorConfig(1.5, "Concrete: build array with given dimensions"),
+        "make_array":     PriorConfig(1.6, "Open build: make any array with N squares on an empty grid"),
         "count_array":    PriorConfig(2.5, "Pictorial: count total objects in array"),
         "multiply_array": PriorConfig(3.5, "Pictorial: write multiplication from array"),
     },
@@ -207,6 +211,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     # -----------------------------------------------------------------
     "polygon-area-builder": {
         "decompose":                       PriorConfig(1.5, "Rearrange a parallelogram into a rectangle; find base x height (conservation of area)."),
+        "build_area":                      PriorConfig(1.6, "Open build: shade unit squares on an empty grid into one shape with a stated area, then a different shape with the same area (3.MD.C.5-6)."),
         "find_area_triangle_parallelogram": PriorConfig(2.5, "Compute area of a triangle (1/2 * b * h) or parallelogram (b * h) from labels."),
         "find_area_trapezoid":             PriorConfig(3.5, "Trapezoid area via average-of-bases 1/2 * (b1 + b2) * h."),
         "composite_area":                  PriorConfig(4.5, "Decompose an irregular figure into known rectangles and sum."),
@@ -221,6 +226,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     },
     "angle-workshop": {
         "measure":         PriorConfig(1.5, "Read an angle from a protractor"),
+        "make_angle":      PriorConfig(1.6, "Open build: make an angle of a named kind (acute/right/obtuse/straight) or within a degree range"),
         "classify_pairs":  PriorConfig(2.5, "Identify complementary/supplementary/vertical/adjacent pairs"),
         "solve_unknown":   PriorConfig(3.5, "Solve for an unknown angle from a relationship"),
         "solve_algebraic": PriorConfig(4.5, "Set up and solve a linear equation for an unknown angle"),
@@ -304,6 +310,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     },
     "shape-builder": {
         "build":              PriorConfig(1.5, "Concrete: construct given shape"),
+        "make_shape":         PriorConfig(1.6, "Concrete: open build, any shape with the asked properties"),
         "measure":            PriorConfig(2.5, "Pictorial: find side lengths/angles"),
         "classify_by_lines":  PriorConfig(3.0, "Pictorial: classify by parallel/perpendicular lines (CCSS 4.G.1-2)"),
         "classify":           PriorConfig(3.5, "Pictorial: identify shape properties"),
@@ -396,6 +403,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "scaled_bar_graph":   PriorConfig(3.5, "Strategy: read step-2/5/10 bar graph including mid-bar values (3.MD.B.3)"),
         "graph_word_problem": PriorConfig(4.5, "Transitional: 'how many more' / totals from a graph"),
         "build_graph":        PriorConfig(5.5, "Transitional: construct graph from dataset, choose own scale (3.MD.B.3)"),
+        "make_graph":         PriorConfig(1.9, "Open build: fill an empty picture graph so the data fits an ask (most, fewest, same, N more) (K.MD.B.3, 1.MD.C.4)"),
     },
     "hundreds-chart": {
         "highlight_sequence": PriorConfig(1.5, "Highlight all cells in a skip-count pattern"),
@@ -416,6 +424,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "count-mixed": PriorConfig(2.5, "Count mixed coin sets"),
         "compare":     PriorConfig(3.0, "Compare two coin groups"),
         "make-amount": PriorConfig(3.5, "Build a target amount with coins"),
+        "show-amount": PriorConfig(3.6, "Open build: make a stated amount any way on an empty tray"),
         "make-change": PriorConfig(4.5, "Calculate change from a purchase"),
         "fewest-coins": PriorConfig(5.0, "Make amount using minimum coins"),
     },
@@ -461,6 +470,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     },
     "equation-builder": {
         "build-simple":       PriorConfig(1.0, "Build a given equation from tiles"),
+        "make-n":             PriorConfig(1.1, "Open build: make any number sentence that equals a stated total"),
         "missing-result":     PriorConfig(1.5, "Find the result of an equation"),
         "true-false":         PriorConfig(2.0, "Determine if an equation is true or false"),
         "missing-operand":    PriorConfig(2.5, "Find a missing operand in an equation"),

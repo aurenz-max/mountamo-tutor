@@ -1,0 +1,90 @@
+[
+ {
+  "task": "Show 16¢ for a sticker, any way you like.",
+  "coins": [
+   "dime",
+   "nickel",
+   "penny"
+  ],
+  "valuesShown": true,
+  "aidsRemoved": 3,
+  "seeing": "Ooh, shiny silver and brown coins are starting to line up on the green tray!",
+  "kept": true,
+  "numberFree": true
+ },
+ {
+  "task": "Show 37¢ for a toy car, any way you like.",
+  "coins": [
+   "quarter",
+   "dime",
+   "penny",
+   "penny"
+  ],
+  "valuesShown": true,
+  "aidsRemoved": 8,
+  "seeing": "Shiny silver and copper coins are lining up across the green tray!",
+  "kept": true,
+  "numberFree": true
+ },
+ {
+  "task": "Show 8¢ any way you like.",
+  "coins": [
+   "penny",
+   "penny",
+   "penny",
+   "penny",
+   "penny",
+   "penny",
+   "penny",
+   "penny"
+  ],
+  "valuesShown": true,
+  "aidsRemoved": 8,
+  "seeing": "Ooh, round brown pennies are filling up the top edge of the green tray!",
+  "kept": true,
+  "numberFree": true
+ },
+ {
+  "task": "Show 89¢ for a fruit chew, any way you like.",
+  "coins": [
+   "half-dollar",
+   "quarter",
+   "dime",
+   "penny",
+   "penny",
+   "penny",
+   "penny"
+  ],
+  "valuesShown": true,
+  "aidsRemoved": 7,
+  "seeing": "Ooh, shiny silver coins and brown pennies are lining up nicely!",
+  "kept": true,
+  "numberFree": true
+ },
+ {
+  "task": "Show 15¢ for an apple, any way you like.",
+  "coins": [
+   "nickel",
+   "nickel",
+   "nickel"
+  ],
+  "valuesShown": false,
+  "aidsRemoved": 0,
+  "seeing": "Ooh, round silver nickels are lining up on the tray!",
+  "kept": true,
+  "numberFree": true
+ },
+ {
+  "task": "Show 24¢ for a sour gummy, any way you like.",
+  "coins": [
+   "dime",
+   "dime",
+   "nickel"
+  ],
+  "valuesShown": false,
+  "aidsRemoved": 0,
+  "seeing": "Ooh, shiny dimes and a larger nickel are landing on the green tray!",
+  "kept": true,
+  "numberFree": true
+ }
+]

@@ -1,0 +1,18 @@
+{
+  "bare": {
+    "emptyColumnGrapes": "rect row-2",
+    "aboveOrangesBar": "rect row-1",
+    "emojiOnTopOrange": "rect top-1",
+    "levelLineOverApples": "rect top-0",
+    "aidsInPicture": 0,
+    "aidsOnScreen": 0
+  },
+  "levers": {
+    "emptyColumnGrapes": "rect row-2",
+    "aboveOrangesBar": "rect row-1",
+    "emojiOnTopOrange": "rect top-1",
+    "levelLineOverApples": "rect top-0",
+    "aidsInPicture": 0,
+    "aidsOnScreen": 4
+  }
+}

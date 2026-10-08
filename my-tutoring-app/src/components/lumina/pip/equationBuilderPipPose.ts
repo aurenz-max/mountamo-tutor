@@ -17,7 +17,7 @@ export interface EquationBuilderPipState extends PipPhaseGate {
  * printed equation on true-or-false. Checking is synchronous, so nothing is received.
  */
 export function equationBuilderPipPose(state: EquationBuilderPipState): PipPose {
-  const cueId = state.type === 'build' || state.type === 'rewrite' ? 'workspace'
+  const cueId = state.type === 'build' || state.type === 'rewrite' || state.type === 'make-n' ? 'workspace'
     : state.type === 'true-false' ? 'equation' : 'gap';
   return pipPhasePose(state, { visibleIds: state.visibleIds, cueId, attendId: state.lastTouchedId });
 }

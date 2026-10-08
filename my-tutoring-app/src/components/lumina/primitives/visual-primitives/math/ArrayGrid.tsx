@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback } from 'react';
 import {
   usePrimitiveEvaluation,
   type ArrayGridMetrics,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
@@ -19,31 +18,54 @@ import {
   LuminaCardContent,
   LuminaBadge,
   LuminaActionButton,
+  LuminaButton,
   LuminaInput,
 } from '../../../ui';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { useBuildWatcher } from '../../build-layer/buildLayer';
+import {
+  arrayMiss, arrayShape, cellKey, describeArrayWork, gridFor, makeArrayAsk, makeArrayMiss, workspaceAssignment, workspaceScene,
+  type ArrayGridView,
+} from './arrayGridWorkspace';
+import { ROW_COUNTS_LEVER, SQUARE_COUNT_LEVER, arrayGridLevers, leverFacts, smallerArray } from './arrayGridLevers';
+import { ArrayBuildGrid, FirstArray } from './ArrayBuildGrid';
 
 /**
- * Array Grid — multi-challenge array builder / counter / multiplier.
+ * Array Grid — multi-challenge array builder / counter / multiplier, and the open build `make_array`.
  *
  * Session walks the student through 3-6 distinct (rows, columns) pairs in the
  * SAME eval mode. Per PRD §6h (array-grid post-mortem), per-challenge state
  * must reset on advance; the stale-state guard lives in submit handlers
  * (§6a #8). Pool-service generator owns dimension variance — Gemini emits
  * only wrapper metadata.
+ *
+ * On the shared teaching workspace (W1, plain shape) the check commits through `progress.commitCheck` and the
+ * runtime owns progression: no Next button, no scripted cues, the scored session submitted from `onFinished`.
  */
 
 // ============================================================================
 // Data Types (Single Source of Truth)
 // ============================================================================
 
-export type ArrayGridChallengeType = 'build_array' | 'count_array' | 'multiply_array';
+export type ArrayGridChallengeType = 'build_array' | 'count_array' | 'multiply_array' | 'make_array';
 export type ArrayGridIconType = 'dot' | 'square' | 'star';
 
 export interface ArrayGridChallenge {
   id: string;
+  /** 0 on make_array, where the learner chooses the rows and columns. */
   targetRows: number;
   targetColumns: number;
+  /** make_array (open build): how many squares to make, as any full rectangle on an empty grid. */
+  total?: number;
+  /** make_array: 2 asks for a second, different array after the first. */
+  ways?: 1 | 2;
+  /** make_array: the ask, written by code ("Make an array with 12 squares."). */
+  instruction?: string;
 }
 
 export interface ArrayGridData {
@@ -81,6 +103,10 @@ export interface ArrayGridData {
 interface ArrayGridProps {
   data: ArrayGridData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
@@ -91,6 +117,7 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   build_array:    { label: 'Build',    icon: '🔨', accentColor: 'emerald' },
   count_array:    { label: 'Count',    icon: '🔢', accentColor: 'blue' },
   multiply_array: { label: 'Multiply', icon: '✖️', accentColor: 'purple' },
+  make_array:     { label: 'Make',     icon: '🧱', accentColor: 'cyan' },
 };
 
 /** Per-challenge score: 100 first try, then -20 per extra attempt, floored at 20. */
@@ -127,11 +154,20 @@ function tutorRevealPolicy(
   }
 }
 
+/** The make_array verdict's words: the rule an array keeps, never a number or a direction. */
+const MAKE_FEEDBACK: Record<string, string> = {
+  ragged: 'Not yet. In an array every row has the same number of squares, with no gaps. Fix your squares.',
+  same_as_first: 'That is the same array as your first one. Change your squares to make a different array.',
+};
+const MAKE_NOT_YET = 'Not yet. Count your squares, then fix your array.';
+
 // ============================================================================
 // Component
 // ============================================================================
 
-const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
+const ArrayGridSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  ArrayGridProps & { tutorOwned: boolean; useController: (options: ProgressOptions<ArrayGridChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -151,25 +187,44 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
+  const isMakeMode = sessionChallengeType === 'make_array';
+  /** make_array always builds squares: the ask names them. */
+  const icon: ArrayGridIconType = isMakeMode ? 'square' : iconType;
+
   const stableInstanceIdRef = useRef(instanceId || `array-grid-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // ── Challenge progress ─────────────────────────────────────────
-  const {
-    currentIndex,
-    results,
-    isComplete,
-    recordResult,
-    advance,
-  } = useChallengeProgress<ArrayGridChallenge>({
+  // ── Challenge progress. On the workspace path the runtime moves the index. ──
+  // Bound below, once the setters and the evaluation exist.
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
     challenges,
     getChallengeId: (c) => c.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: (c) => workspaceAssignment(c, sessionChallengeType, icon),
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onFinished: (result) => finish.current(result),
   });
+  const { currentIndex, results, isComplete, mergeResult, advance } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
 
-  const currentChallenge = challenges[currentIndex] ?? null;
+  // make_array levers (`arrayGridLevers.ts`), keyed by the session item they were pulled on, and the easier ask a
+  // simplify lever put on screen in its place. The item starts bare: no lever comes from the tier.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<ArrayGridChallenge | null>(null);
+  const sessionChallenge = challenges[currentIndex] ?? null;
+  /** What is on screen: the easier ask while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
+
   const targetRows = currentChallenge?.targetRows ?? 0;
   const targetColumns = currentChallenge?.targetColumns ?? 0;
   const targetProduct = targetRows * targetColumns;
+  const makeTotal = currentChallenge?.total ?? 0;
+  const makeAsk = currentChallenge?.instruction ?? makeArrayAsk(makeTotal, currentChallenge?.ways);
 
   const isMultiplyMode = sessionChallengeType === 'multiply_array';
   const isPreBuilt = sessionChallengeType === 'count_array' || isMultiplyMode;
@@ -188,17 +243,24 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'hint' | null>(null);
   const [attempts, setAttempts] = useState(0);
   const [challengeDone, setChallengeDone] = useState(false);
+  /** make_array: the squares on the grid (`row-column`), and the first array on a two-ways item once it passed. */
+  const [cells, setCells] = useState<string[]>([]);
+  const [firstWay, setFirstWay] = useState<{ rows: number; columns: number } | null>(null);
 
   const recordedRef = useRef(false);
   const sessionCompleteFiredRef = useRef(false);
 
   // ── Reset every per-challenge slot when the active challenge changes ──
-  // PRD §6c lesson: missing any slot leaks state from challenge N into N+1.
-  useEffect(() => {
-    if (!currentChallenge) return;
+  // PRD §6c lesson: missing any slot leaks state from challenge N into N+1. A practice ask and the return from it
+  // change the id too, so each opens an empty grid. On the workspace path the reset runs in the same update that
+  // opens the item (`openItem`, the lever handlers), so no later render of the item supersedes its receipt; the
+  // effect then finds the item already reset.
+  const resetFor = useRef<string | null>(null);
+  const resetItem = (challenge: ArrayGridChallenge) => {
+    resetFor.current = challenge.id;
     // Pre-built modes show the array immediately at target dimensions.
-    const startRows = isPreBuilt ? currentChallenge.targetRows : 0;
-    const startCols = isPreBuilt ? currentChallenge.targetColumns : 0;
+    const startRows = isPreBuilt ? challenge.targetRows : 0;
+    const startCols = isPreBuilt ? challenge.targetColumns : 0;
     setCurrentRows(startRows);
     setCurrentColumns(startCols);
     setTotalAnswer('');
@@ -208,8 +270,27 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
     setFeedbackType(null);
     setAttempts(0);
     setChallengeDone(false);
+    setCells([]);
+    setFirstWay(null);
     recordedRef.current = false;
+  };
+  useEffect(() => {
+    if (currentChallenge && resetFor.current !== currentChallenge.id) resetItem(currentChallenge);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChallenge?.id, isPreBuilt]);
+
+  // Workspace path: a fresh item ends any practice; Try again clears what was typed. The open build keeps its
+  // squares and the verdict's words, so the learner revises the array.
+  openItem.current = (index, retry) => {
+    if (!retry) {
+      setPractice(null);
+      if (challenges[index]) resetItem(challenges[index]);
+      return;
+    }
+    if (isMakeMode) return;
+    setTotalAnswer(''); setRowsAnswer(''); setColumnsAnswer('');
+    setFeedback(null); setFeedbackType(null);
+  };
 
   // ── Evaluation hook ────────────────────────────────────────────
   const {
@@ -240,7 +321,8 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
         : Math.round(rs.reduce((s, r) => s + Number(r.score ?? 0), 0) / rs.length),
   });
 
-  // ── AI tutoring ────────────────────────────────────────────────
+  // ── AI tutoring (scripted path only) ───────────────────────────
+  // Its context carries the dimensions, so it is off on the workspace path, and its cues send nothing there.
   const aiPrimitiveData = useMemo(
     () => ({
       title,
@@ -258,11 +340,15 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
     ],
   );
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'array-grid',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   const hasIntroducedRef = useRef(false);
   useEffect(() => {
@@ -297,35 +383,37 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
   );
 
   // ── Per-challenge completion (called from submit handlers) ─────
+  // A practice ask (the simplify lever) records nothing: it is not the session's challenge.
   const completeCurrentChallenge = useCallback(
-    (
-      correct: boolean,
-      score: number,
-      attemptsCount: number,
-      extras: Record<string, unknown> = {},
-    ) => {
+    (score: number, attemptsCount: number) => {
       if (!currentChallenge) return;
       if (recordedRef.current) return;
       if (!stateMatchesChallenge(currentChallenge)) return;
       recordedRef.current = true;
       setChallengeDone(true);
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct,
-        attempts: attemptsCount,
-        score,
-        ...extras,
-      });
+      if (!practice) mergeResult({ challengeId: currentChallenge.id, correct: true, attempts: attemptsCount, score });
     },
-    [currentChallenge, stateMatchesChallenge, recordResult],
+    [currentChallenge, stateMatchesChallenge, mergeResult, practice],
   );
 
-  // ── Session complete → aggregate metrics + submitEvaluation ────
+  // ── The learner's work, as the check, the tutor and the scene read it ──
+  const view: ArrayGridView = {
+    mode: sessionChallengeType, icon, rows: currentRows, columns: currentColumns, totalAnswer, rowsAnswer, columnsAnswer,
+    labelsShown: showLabels, cells, firstWay,
+  };
+  /** Counts the attempt and records a correct result on both paths; on the workspace path it is the checked gesture. */
+  const commit = (correct: boolean) => {
+    progress.commitCheck(describeArrayWork(view), correct, correct ? undefined : arrayMiss(currentChallenge, view));
+  };
+
+  // ── Session complete → aggregate metrics + submitEvaluation (scripted path) ────
   useEffect(() => {
     if (!isComplete) return;
     if (sessionCompleteFiredRef.current) return;
     if (challenges.length === 0) return;
     sessionCompleteFiredRef.current = true;
+    // The workspace path submits the scored session from `onFinished` (below), not this tally.
+    if (tutorOwned) return;
 
     const totalAttempts = results.reduce((s, r) => s + r.attempts, 0);
     const correctCount = results.filter((r) => r.correct).length;
@@ -375,19 +463,40 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
     );
   }, [
     isComplete, results, challenges, sessionChallengeType,
-    submitEvaluation, hasSubmittedEvaluation, sendText,
+    submitEvaluation, hasSubmittedEvaluation, sendText, tutorOwned,
   ]);
+
+  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // corrections and whose evidence carries each wrong check's named miss (`diagnosisEvidence.phases`).
+  finish.current = (result) => {
+    if (hasSubmittedEvaluation || progress.recordsEvaluation === false) return;
+    const metrics: ArrayGridMetrics = {
+      type: 'array-grid',
+      challengeType: sessionChallengeType,
+      totalChallenges: challenges.length,
+      correctCount: result.solvedCount,
+      attemptsCount: result.attemptsCount,
+      firstTryCount: result.firstTryCount,
+      hintsViewed: 0,
+      overallAccuracy: result.accuracy,
+      averageAttemptsPerChallenge: Math.round((result.attemptsCount / Math.max(1, challenges.length)) * 10) / 10,
+    };
+    submitEvaluation(result.passed, result.accuracy, metrics,
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
 
   // ── Build-mode controls ────────────────────────────────────────
   const handleRowChange = (newRows: number) => {
-    if (challengeDone || isPreBuilt) return;
+    if (challengeDone || isPreBuilt || learnerBlocked()) return;
     SoundManager.select();
     setCurrentRows(newRows);
     setFeedback(null);
   };
 
   const handleColumnChange = (newColumns: number) => {
-    if (challengeDone || isPreBuilt) return;
+    if (challengeDone || isPreBuilt || learnerBlocked()) return;
     SoundManager.select();
     setCurrentColumns(newColumns);
     setFeedback(null);
@@ -405,6 +514,7 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
     const isCorrect = correctArray && correctTotal;
     const nextAttempts = attempts + 1;
     setAttempts(nextAttempts);
+    commit(isCorrect);
 
     if (isCorrect) {
       SoundManager.playCorrect();
@@ -414,8 +524,7 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
           : `Perfect! You built a ${currentRows} × ${currentColumns} array with ${studentTotal} total items.`,
       );
       setFeedbackType('success');
-      const score = phaseScore(nextAttempts);
-      completeCurrentChallenge(true, score, nextAttempts);
+      completeCurrentChallenge(phaseScore(nextAttempts), nextAttempts);
       sendText(
         `[ANSWER_CORRECT] Student gave total ${studentTotal} for a ${sessionChallengeType} array `
         + `(${targetRows} rows × ${targetColumns} columns) on attempt ${nextAttempts}. `
@@ -469,6 +578,7 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
 
     const nextAttempts = attempts + 1;
     setAttempts(nextAttempts);
+    commit(isCorrect);
 
     if (isCorrect) {
       SoundManager.playCorrect();
@@ -476,8 +586,7 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
         `Excellent! ${targetRows} × ${targetColumns} = ${targetProduct}. You wrote the multiplication fact correctly!`,
       );
       setFeedbackType('success');
-      const score = phaseScore(nextAttempts);
-      completeCurrentChallenge(true, score, nextAttempts);
+      completeCurrentChallenge(phaseScore(nextAttempts), nextAttempts);
       sendText(
         `[ANSWER_CORRECT] Student wrote ${studentRows} × ${studentColumns} = ${studentTotal} (correct) `
         + `on attempt ${nextAttempts}. Celebrate briefly and reinforce the array → multiplication link.`,
@@ -503,13 +612,51 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
     );
   };
 
+  /**
+   * make_array ("I'm done!"): any full rectangle of the asked number of squares passes. On a two-ways item the first
+   * right array is kept, drawn small beside the grid and not committed; the second commits, right only when it differs.
+   * The words name no number and no direction.
+   */
+  const handleSubmitMake = () => {
+    if (!currentChallenge) return;
+    const miss = makeArrayMiss(makeTotal, cells, firstWay);
+    if (!miss && currentChallenge.ways === 2 && !firstWay) {
+      const s = arrayShape(cells);
+      SoundManager.playCorrect();
+      setFirstWay({ rows: s.rows, columns: s.columns });
+      setFeedback(`That is one array! Now change your squares to make a different array with ${makeTotal} squares.`);
+      setFeedbackType('hint');
+      return;
+    }
+    const nextAttempts = attempts + 1;
+    setAttempts(nextAttempts);
+    commit(!miss);
+    if (!miss) {
+      SoundManager.playCorrect();
+      setFeedback(firstWay ? 'Yes! Two different arrays with the same number of squares.' : 'Yes! That is an array.');
+      setFeedbackType('success');
+      completeCurrentChallenge(phaseScore(nextAttempts), nextAttempts);
+      return;
+    }
+    SoundManager.playIncorrect();
+    setFeedback(MAKE_FEEDBACK[miss] ?? MAKE_NOT_YET);
+    setFeedbackType('error');
+  };
+
   const handleSubmit = () => {
-    if (challengeDone) return;
-    if (isMultiplyMode) handleSubmitMultiply();
+    if (challengeDone || learnerBlocked()) return;
+    if (isMakeMode) handleSubmitMake();
+    else if (isMultiplyMode) handleSubmitMultiply();
     else handleSubmitCountOrBuild();
   };
 
-  // ── Advance to next challenge ──────────────────────────────────
+  const toggleCell = (key: string) => {
+    if (challengeDone || learnerBlocked()) return;
+    SoundManager.tap();
+    setCells((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+  };
+
+  // ── Advance to next challenge (scripted path; the workspace hides Next) ──
   // One end_of_turn message per advance, and number-free so the tutor doesn't
   // reveal the next array's dimensions (see ADDING_TUTORING_SCAFFOLD turn-race).
   const handleNextChallenge = () => {
@@ -527,11 +674,57 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
   // ── Can submit? ────────────────────────────────────────────────
   const canSubmit = useMemo(() => {
     if (challengeDone) return false;
+    if (isMakeMode) return cells.length > 0;
     if (isMultiplyMode) {
       return rowsAnswer !== '' && columnsAnswer !== '' && totalAnswer !== '';
     }
     return arrayBuilt && totalAnswer !== '';
-  }, [challengeDone, isMultiplyMode, rowsAnswer, columnsAnswer, totalAnswer, arrayBuilt]);
+  }, [challengeDone, isMakeMode, cells.length, isMultiplyMode, rowsAnswer, columnsAnswer, totalAnswer, arrayBuilt]);
+
+  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  // W1 offers no demonstration targets and no presentation. Only make_array declares levers.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    const scene = workspaceScene(currentChallenge, view);
+    if (!isMakeMode) { workspace.current = { ...scene }; return; }
+    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
+    const levers = practice ? [] : arrayGridLevers(sessionChallenge, pulledLevers);
+    workspace.current = {
+      ...scene,
+      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find((l) => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = smallerArray(sessionChallenge);
+          if (!easier) return 'This item has no easier ask; try a help lever.';
+          setLeverState(pulled); resetItem(easier); setPractice(easier);
+          return { practice: workspaceAssignment(easier, sessionChallengeType, icon) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { resetItem(sessionChallenge); setPractice(null); },
+    };
+  });
+
+  // ── Open build (make_array): the grid, the live line ──
+  const gridRef = useRef<SVGSVGElement | null>(null);
+  const buildOpen = isMakeMode && !challengeDone && !learnerBlocked();
+  // The live line (shared build layer): what the grid looks like so far, NEVER a number — counting is the task.
+  const buildSeeing = useBuildWatcher({
+    buildKey: cells.join('|'),
+    enabled: buildOpen && cells.length > 0,
+    svg: gridRef,
+    request: {
+      task: makeAsk,
+      sceneNote: 'A dark grid of empty cells. The learner taps a cell to fill it with a green square.',
+      numbers: 'never',
+    },
+  });
 
   // ── Icon renderer ──────────────────────────────────────────────
   const renderIcon = () => {
@@ -567,18 +760,6 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
   const displayColumns = isPreBuilt ? targetColumns : currentColumns;
   const hasNextChallenge = currentIndex + 1 < challenges.length;
 
-  // ── Empty state ────────────────────────────────────────────────
-  if (challenges.length === 0) {
-    return (
-      <div className={`w-full ${className || ''}`}>
-        <div className="max-w-6xl mx-auto p-8 text-center text-slate-400">
-          No array grid challenges available.
-        </div>
-      </div>
-    );
-  }
-
-  // ── Session summary ────────────────────────────────────────────
   // ── Pip shared surface ───────────────────────────────────────────
   // A projection of this item's check state, the tutor's speech on it, and
   // the child's touches; Pip points only at the workspace as a whole and never
@@ -591,6 +772,18 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
     tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
   });
 
+  // ── Empty state ────────────────────────────────────────────────
+  if (challenges.length === 0) {
+    return (
+      <div className={`w-full ${className || ''}`}>
+        <div className="max-w-6xl mx-auto p-8 text-center text-slate-400">
+          No array grid challenges available.
+        </div>
+      </div>
+    );
+  }
+
+  // ── Session summary ────────────────────────────────────────────
   if (isComplete) {
     return (
       <div className={`w-full max-w-6xl mx-auto my-16 ${className || ''}`}>
@@ -608,6 +801,11 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
       </div>
     );
   }
+
+  const grid = gridFor(makeTotal);
+  const typingBlocked = (set: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!learnerBlocked()) set(e.target.value);
+  };
 
   return (
     <div className={`w-full max-w-6xl mx-auto my-16 animate-fade-in ${className || ''}`}>
@@ -628,7 +826,7 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
             <LuminaBadge accent="emerald" className="text-xs font-mono uppercase tracking-wider">
-              {isMultiplyMode ? 'Multiply' : isPreBuilt ? 'Count' : 'Build & Multiply'}
+              {isMakeMode ? 'Make an Array' : isMultiplyMode ? 'Multiply' : isPreBuilt ? 'Count' : 'Build & Multiply'}
             </LuminaBadge>
           </div>
         </div>
@@ -686,8 +884,29 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
           {/* Pip's dock sits above the workspace, which it outlines as a region. */}
           {pip.store && <div {...pip.dock} />}
           <div {...pip.workspace}>
+          {/* Open build (make_array): the ask, an empty grid, the first array beside it on a two-ways item. */}
+          {isMakeMode && currentChallenge && (
+            <div className="mb-6 space-y-3">
+              <h4 className="text-lg font-semibold text-green-300 text-center">{makeAsk}</h4>
+              <p className="text-slate-500 text-xs text-center">Tap a cell to put a square in. Tap a square to take it out.</p>
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                <ArrayBuildGrid ref={gridRef} rows={grid.rows} columns={grid.columns} cells={cells}
+                  rowCounts={leverOn(ROW_COUNTS_LEVER)} disabled={!buildOpen} onToggle={toggleCell} />
+                {firstWay && <FirstArray rows={firstWay.rows} columns={firstWay.columns} />}
+              </div>
+              <div className="flex min-h-8 items-center justify-center" aria-live="polite" data-testid="build-watcher">
+                {buildSeeing && <span className="rounded-full bg-white/10 px-4 py-1.5 text-base text-amber-100">👀 {buildSeeing}</span>}
+              </div>
+              {leverOn(SQUARE_COUNT_LEVER) && (
+                <p className="text-center text-sm text-slate-300" data-lever="square-count">
+                  Squares on your grid: <span className="text-orange-300 font-bold text-lg">{cells.length}</span>
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Step 1: Build (build_array mode only) */}
-          {!isPreBuilt && !challengeDone && (
+          {!isPreBuilt && !isMakeMode && !challengeDone && (
             <div className="mb-8">
               <h4 className="text-lg font-semibold text-green-300 mb-4 text-center">
                 Step 1: Build an array with {targetRows} rows and {targetColumns} columns
@@ -703,6 +922,7 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
                         key={`row-${num}`}
                         onClick={() => handleRowChange(num)}
                         disabled={challengeDone}
+                        aria-label={`Rows: ${num}`}
                         className={`w-10 h-10 rounded-lg font-bold transition-all ${
                           currentRows === num
                             ? 'bg-green-500 text-white scale-110 shadow-lg'
@@ -724,6 +944,7 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
                         key={`col-${num}`}
                         onClick={() => handleColumnChange(num)}
                         disabled={challengeDone}
+                        aria-label={`Columns: ${num}`}
                         className={`w-10 h-10 rounded-lg font-bold transition-all ${
                           currentColumns === num
                             ? 'bg-blue-500 text-white scale-110 shadow-lg'
@@ -740,7 +961,7 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
           )}
 
           {/* Array Grid */}
-          {displayRows > 0 && displayColumns > 0 && (
+          {!isMakeMode && displayRows > 0 && displayColumns > 0 && (
             <div className="flex justify-center items-center mb-8">
               <div className="relative inline-block">
                 {/* Column Labels */}
@@ -779,10 +1000,10 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
                   >
                     {Array.from({ length: displayRows }).map((_, rowIndex) =>
                       Array.from({ length: displayColumns }).map((_, colIndex) => {
-                        const cellKey = `${rowIndex}-${colIndex}`;
+                        const key = cellKey(rowIndex, colIndex);
                         return (
                           <div
-                            key={cellKey}
+                            key={key}
                             className="w-16 h-16 rounded-lg flex items-center justify-center transition-all duration-200 border-2 bg-slate-800/30 border-slate-600"
                           >
                             {renderIcon()}
@@ -809,8 +1030,9 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
                 <LuminaInput
                   type="number"
                   inputMode="numeric"
+                  aria-label="Total"
                   value={totalAnswer}
-                  onChange={(e) => setTotalAnswer(e.target.value)}
+                  onChange={typingBlocked(setTotalAnswer)}
                   placeholder="?"
                   className="w-32 text-center font-mono text-xl"
                   onKeyDown={(e) => {
@@ -832,8 +1054,9 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
                 <LuminaInput
                   type="number"
                   inputMode="numeric"
+                  aria-label="Rows"
                   value={rowsAnswer}
-                  onChange={(e) => setRowsAnswer(e.target.value)}
+                  onChange={typingBlocked(setRowsAnswer)}
                   placeholder="rows"
                   className="w-24 text-center font-mono text-xl"
                 />
@@ -841,8 +1064,9 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
                 <LuminaInput
                   type="number"
                   inputMode="numeric"
+                  aria-label="Columns"
                   value={columnsAnswer}
-                  onChange={(e) => setColumnsAnswer(e.target.value)}
+                  onChange={typingBlocked(setColumnsAnswer)}
                   placeholder="cols"
                   className="w-24 text-center font-mono text-xl"
                 />
@@ -850,8 +1074,9 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
                 <LuminaInput
                   type="number"
                   inputMode="numeric"
+                  aria-label="Total"
                   value={totalAnswer}
-                  onChange={(e) => setTotalAnswer(e.target.value)}
+                  onChange={typingBlocked(setTotalAnswer)}
                   placeholder="total"
                   className="w-28 text-center font-mono text-xl"
                   onKeyDown={(e) => {
@@ -873,8 +1098,9 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
                 <LuminaInput
                   type="number"
                   inputMode="numeric"
+                  aria-label="Total"
                   value={totalAnswer}
-                  onChange={(e) => setTotalAnswer(e.target.value)}
+                  onChange={typingBlocked(setTotalAnswer)}
                   placeholder="?"
                   className="w-32 text-center font-mono text-xl"
                   onKeyDown={(e) => {
@@ -903,14 +1129,25 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
             </div>
           )}
 
-          {/* Submit Control */}
+          {/* Submit Control. The open build commits with "I'm done!" through the same check; there is no auto-check. */}
           {!challengeDone && (
             <div className="flex justify-center gap-4 mb-8">
-              <LuminaActionButton
-                action="check"
-                onClick={handleSubmit}
-                disabled={!canSubmit}
-              />
+              {isMakeMode ? (
+                <>
+                  <LuminaButton disabled={!buildOpen || cells.length === 0} onClick={() => { if (!learnerBlocked()) setCells([]); }}>
+                    Clear the grid
+                  </LuminaButton>
+                  <LuminaButton tone="primary" disabled={!buildOpen || !canSubmit} onClick={handleSubmit}>
+                    I&apos;m done!
+                  </LuminaButton>
+                </>
+              ) : (
+                <LuminaActionButton
+                  action="check"
+                  onClick={handleSubmit}
+                  disabled={!canSubmit || learnerBlocked()}
+                />
+              )}
             </div>
           )}
 
@@ -922,7 +1159,7 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
                   <h4 className="text-lg font-bold text-green-400">
                     ✓ Array {currentIndex + 1} complete!
                   </h4>
-                  {hasNextChallenge ? (
+                  {tutorOwned ? null : hasNextChallenge ? (
                     <LuminaActionButton action="next" onClick={handleNextChallenge}>
                       Next Array →
                     </LuminaActionButton>
@@ -932,10 +1169,16 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-slate-300">
-                  {targetRows} × {targetColumns} ={' '}
-                  <span className="font-bold text-white">{targetProduct}</span>
-                </p>
+                {isMakeMode ? (
+                  <p className="text-sm text-slate-300">
+                    {makeTotal} squares in equal rows.
+                  </p>
+                ) : (
+                  <p className="text-sm text-slate-300">
+                    {targetRows} × {targetColumns} ={' '}
+                    <span className="font-bold text-white">{targetProduct}</span>
+                  </p>
+                )}
               </LuminaCardContent>
             </LuminaCard>
           )}
@@ -944,5 +1187,9 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
     </div>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const ArrayGrid = withWorkspaceController<ArrayGridProps, ProgressOptions<ArrayGridChallenge>, Progress>(
+  'array-grid', ArrayGridSurface, useScriptedProgress, useWorkspaceProgressFor('array-grid'));
 
 export default ArrayGrid;

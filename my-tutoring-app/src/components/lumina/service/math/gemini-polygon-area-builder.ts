@@ -16,6 +16,11 @@ import type {
   CompositeRect,
   PolygonVertex,
 } from "../../primitives/visual-primitives/math/PolygonAreaBuilder";
+import {
+  BUILD_MAX_AREA,
+  BUILD_MIN_AREA,
+  buildAreaAsk,
+} from "../../primitives/visual-primitives/math/polygonAreaBuild";
 
 // ---------------------------------------------------------------------------
 // Challenge type docs (one per eval mode)
@@ -51,6 +56,13 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       `"coordinate_polygon": Grade 7. A polygon plotted on a coordinate grid with labeled vertices. The student finds `
       + `its area by decomposition or bounding-box reasoning. Integer vertices in the first quadrant; clean area.`,
     schemaDescription: "'coordinate_polygon' (area of a polygon from vertex coordinates)",
+  },
+  build_area: {
+    promptDoc:
+      `"build_area": Grade 3 open build (3.MD.C.5-6). On an empty square grid the student shades unit squares into ONE `
+      + `shape with a stated area ("Make a shape with an area of 12 squares"), then on some items a different shape with `
+      + `the same area. Any shape with that area passes. The system picks every area; do not name one.`,
+    schemaDescription: "'build_area' (make a shape with a given area on a square grid)",
   },
 };
 
@@ -111,6 +123,15 @@ const TIER_GUARDRAIL =
 /** easy → hard decomposition-support gradient, per challenge type. */
 function resolveSupportStructure(type: PolygonAreaChallengeType, tier: SupportTier): SupportScaffold {
   switch (type) {
+    case 'build_area':
+      // The open build starts bare at every tier: counting the squares is the task, so its aids are levers pulled on a
+      // miss (`polygonAreaBuild.ts`), never a tier flag.
+      return {
+        showDecompositionGuides: false,
+        showRegionAreaLabel: false,
+        showGridOverlay: false,
+        promptLines: ['OPEN BUILD: the grid starts empty with no count shown at every tier.'],
+      };
     case 'decompose':
       // The dashed target-slot is the guideline that tells the student where the
       // cut triangle slides. Easy/medium show it; hard hides it so the student
@@ -321,6 +342,7 @@ const COUNT_BY_MODE: Record<PolygonAreaChallengeType, number> = {
   find_area_trapezoid: 4,
   composite_area: 4,
   coordinate_polygon: 4,
+  build_area: 4,
 };
 
 // ---------------------------------------------------------------------------
@@ -332,6 +354,7 @@ const COUNT_BY_MODE: Record<PolygonAreaChallengeType, number> = {
 
 const TIER_ORDER: PolygonAreaChallengeType[] = [
   'decompose',                       // Grade 6 entry — easiest
+  'build_area',                      // open build (β 1.6): make a shape with a given area
   'find_area_triangle_parallelogram',// Grade 6
   'find_area_trapezoid',             // Grade 6-7
   'composite_area',                  // Grade 6-7
@@ -343,7 +366,7 @@ const TIER_RANK: Record<PolygonAreaChallengeType, number> = TIER_ORDER.reduce(
   {} as Record<PolygonAreaChallengeType, number>,
 );
 
-const MIXED_INSTANCE_COUNT = 8;  // all 5 tiers once + 3 repeats of easier tiers
+const MIXED_INSTANCE_COUNT = 8;  // all 6 modes once + 2 repeats of easier tiers
 const MIXED_MAX_COUNT = 12;
 
 // ---------------------------------------------------------------------------
@@ -401,6 +424,45 @@ function capDims(lo: number, hi: number): [number, number] {
   const hiC = Math.min(hi, Math.max(lo, activeDimCap.max));
   const loC = Math.min(Math.max(lo, activeDimCap.min), hiC);
   return [loC, hiC];
+}
+
+// ── Open build (build_area): code owns the area ─────────────────────────────
+// The areas a session asks for. null → the default band; the generator narrows it to the lesson scope (CLASS-3).
+let activeAreaCap: { min: number; max: number } | null = null;
+const DEFAULT_BUILD_AREA = { min: 6, max: 20 };
+
+function buildAreaRange(): [number, number] {
+  const lo = Math.max(BUILD_MIN_AREA, activeAreaCap?.min ?? DEFAULT_BUILD_AREA.min);
+  const hi = Math.min(BUILD_MAX_AREA, activeAreaCap?.max ?? DEFAULT_BUILD_AREA.max);
+  return hi >= lo ? [lo, hi] : [Math.min(lo, BUILD_MAX_AREA), Math.min(lo, BUILD_MAX_AREA)];
+}
+
+/** One build item; `shapesAsked` and the instruction are set after selection (they depend on the item's place). */
+function buildBuildArea(): RawChallenge {
+  const area = randInt(...buildAreaRange());
+  return {
+    type: 'build_area',
+    figureType: 'grid',
+    targetArea: area,
+    shapesAsked: 1,
+    expectedArea: area,
+    unitLabel: 'square units',
+    narration: 'Each square on the grid is one square unit.',
+    instruction: buildAreaAsk(area, 1),
+    hint: 'Count each square as you shade it. Every square in your shape must touch another one along a side.',
+  };
+}
+
+/** A session's build items: the first half ask for one shape, the rest for a second, different shape too. */
+function finishBuildItems<T extends RawChallenge>(items: T[], twoShapes: boolean): T[] {
+  const builds = items.filter((c) => c.type === 'build_area');
+  const from = Math.ceil(builds.length / 2);
+  builds.forEach((c, i) => {
+    const shapes: 1 | 2 = twoShapes && i >= from ? 2 : 1;
+    c.shapesAsked = shapes;
+    c.instruction = buildAreaAsk(c.targetArea ?? c.expectedArea, shapes);
+  });
+  return items;
 }
 
 function buildDecompose(): RawChallenge {
@@ -648,6 +710,8 @@ function canonicalKey(ch: RawChallenge): string {
       return `comp|${(ch.parts ?? []).map((p) => `${p.x},${p.y},${p.w},${p.h}`).join(';')}`;
     case 'coordinate_polygon':
       return `coord|${(ch.vertices ?? []).map((v) => `${v.x},${v.y}`).join(';')}`;
+    case 'build_area':
+      return `build|${ch.targetArea}`;
   }
 }
 
@@ -678,6 +742,8 @@ export function selectPolygonAreaChallenges(
         return buildTrapezoid(shape?.trapezoidVariant);
       case 'composite_area':
         return buildComposite(shape?.pieceCount);
+      case 'build_area':
+        return buildBuildArea();
       default:
         // never reached for the two multi-variant modes below
         return buildTrapezoid(shape?.trapezoidVariant);
@@ -754,7 +820,7 @@ export function selectPolygonAreaChallenges(
   }
 
   // Easier → harder by area magnitude.
-  const sorted = raw.sort((a, b) => a.expectedArea - b.expectedArea);
+  const sorted = finishBuildItems(raw.sort((a, b) => a.expectedArea - b.expectedArea), true);
   return sorted.map((ch, i) => ({ ...ch, id: `pab-${i + 1}` }));
 }
 
@@ -780,6 +846,8 @@ function buildForType(type: PolygonAreaChallengeType, tier: SupportTier | null =
       return buildComposite(shape?.pieceCount);
     case 'coordinate_polygon':
       return buildCoordinate(shape?.coordinateVariant ?? (Math.random() < 0.5 ? 'rectangle' : 'right_triangle'));
+    case 'build_area':
+      return buildBuildArea();
   }
 }
 
@@ -816,10 +884,10 @@ export function selectMixedPolygonAreaChallenges(count?: number, tier: SupportTi
 
   // Scale difficulty low → high: tier rank is the primary key, area magnitude
   // the tiebreaker within a tier.
-  const sorted = raw.sort((a, b) => {
+  const sorted = finishBuildItems(raw.sort((a, b) => {
     const dr = TIER_RANK[a.type] - TIER_RANK[b.type];
     return dr !== 0 ? dr : a.expectedArea - b.expectedArea;
-  });
+  }), false);
   return sorted.map((ch, i) => ({ ...ch, id: `pab-${i + 1}` }));
 }
 
@@ -842,6 +910,8 @@ function recomputeArea(ch: PolygonAreaChallenge): number | null {
       return (ch.parts ?? []).reduce((s, p) => s + p.w * p.h, 0);
     case 'coordinate_polygon':
       return ch.vertices && ch.vertices.length >= 3 ? shoelace(ch.vertices) : null;
+    case 'build_area':
+      return ch.targetArea ?? null;
   }
 }
 
@@ -869,6 +939,7 @@ const polygonAreaSchema: Schema = {
         'find_area_trapezoid',
         'composite_area',
         'coordinate_polygon',
+        'build_area',
       ],
       description: "Difficulty tier of the session. The system uses this to build the figure pool.",
     },
@@ -909,6 +980,7 @@ export const generatePolygonAreaBuilder = async (
     'find_area_trapezoid',
     'composite_area',
     'coordinate_polygon',
+    'build_area',
   ];
 
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -1007,13 +1079,22 @@ Return ONLY the wrapper fields described above.
   // Dimensions are code-picked for variety; intent can't reach them via the prompt. Resolve
   // a {min,max} for the side lengths from topic+intent. Ceiling = widest builder span (2..16)
   // → narrow-only; null → grade default. Post-validation recomputes area, so correct always.
-  const dimCap = await resolveScopeRange(
+  // The open build has no side lengths: its scope is the area it asks for (CLASS-3, same resolver).
+  const isBuildSession = !isMixed && challengeType === 'build_area';
+  const dimCap = isBuildSession ? null : await resolveScopeRange(
     ctx.scope,
     gradeLevel,
     'the polygon side lengths (base, height, and vertex spans)',
     { min: 2, max: 16 },
   );
   if (dimCap) console.log(`▱ Polygon Area dimension cap → ${dimCap.min}..${dimCap.max} (from intent)`);
+  const areaCap = isBuildSession ? await resolveScopeRange(
+    ctx.scope,
+    gradeLevel,
+    'the area of the shape to make, in unit squares',
+    { min: BUILD_MIN_AREA, max: BUILD_MAX_AREA },
+  ) : null;
+  if (areaCap) console.log(`▱ Polygon Area build area cap → ${areaCap.min}..${areaCap.max} (from intent)`);
 
   // ── Build the per-challenge pool locally ──
   // Axis 2: pass supportTier so the constructive builders make the structurally
@@ -1022,10 +1103,12 @@ Return ONLY the wrapper fields described above.
   // config.difficulty is absent → byte-identical legacy figures. activeDimCap is read by
   // the builders' capDims; set it across the SYNCHRONOUS selection only, then clear it.
   activeDimCap = dimCap;
+  activeAreaCap = areaCap;
   const challenges = isMixed
     ? selectMixedPolygonAreaChallenges(config?.instanceCount, supportTier)
     : selectPolygonAreaChallenges(challengeType, config?.instanceCount, supportTier);
   activeDimCap = null;
+  activeAreaCap = null;
 
   // ── Post-validation: every expectedArea must match its geometry ──
   for (const ch of challenges) {
@@ -1055,8 +1138,10 @@ Return ONLY the wrapper fields described above.
     );
   }
 
-  const gradeBand: '6' | '7' = isMixed
+  const gradeBand: '3' | '6' | '7' = isMixed
     ? '7' // mixed sessions reach the Grade 7 coordinate-polygon tier
+    : isBuildSession
+      ? '3' // the open build is the Grade 3 area-by-counting skill
     : wrapper.gradeBand === '7' || wrapper.gradeBand === '6'
       ? wrapper.gradeBand
       : (challengeType === 'coordinate_polygon' ? '7' : '6');

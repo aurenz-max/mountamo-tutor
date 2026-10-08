@@ -122,4 +122,29 @@ describe('array-grid oracle', () => {
     const v = arrayGridOracle.verify(data, agCtx).violations;
     expect(v.some((x) => x.check === 'schema' && x.where === 'c1')).toBe(true);
   });
+
+  it('make_array: a real generation passes; an unstated, unfittable, repeated or out-of-scope total is flagged', () => {
+    // From the real G2 generation (qa/open-build/array-grid-2026-10-07/generator-run.json).
+    const make = { title: 'Build Some Arrays', description: 'Tap grid cells to create different rectangular arrays.', challengeType: 'make_array',
+      challenges: [
+        { id: 'array-grid-1', targetRows: 0, targetColumns: 0, total: 8, ways: 1, instruction: 'Make an array with 8 squares.' },
+        { id: 'array-grid-2', targetRows: 0, targetColumns: 0, total: 16, ways: 2,
+          instruction: 'Make an array with 16 squares. Then make a different array with 16 squares.' },
+        { id: 'array-grid-3', targetRows: 0, targetColumns: 0, total: 12, ways: 1, instruction: 'Make an array with 12 squares.' },
+      ] };
+    const ctx = { ...agCtx, evalMode: 'make_array' };
+    const clean = arrayGridOracle.verify(make, ctx);
+    expect(clean.violations).toEqual([]);
+    expect(clean.uncheckedTypes).toEqual([]);
+    const bad = { ...make, challenges: [
+      { id: 'p', targetRows: 0, targetColumns: 0, total: 13, ways: 1, instruction: 'Make an array with 13 squares.' },
+      { id: 'u', targetRows: 0, targetColumns: 0, total: 12, ways: 2, instruction: 'Make an array with some squares.' },
+      { id: 'r', targetRows: 0, targetColumns: 0, total: 12, ways: 1, instruction: 'Make an array with 12 squares.' },
+    ] };
+    const v = arrayGridOracle.verify(bad, { ...ctx, topic: 'Arrays up to 10' }).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'p')).toBe(true);
+    expect(v.filter((x) => x.check === 'schema' && x.where === 'u')).toHaveLength(2);
+    expect(v.some((x) => x.check === 'clustering')).toBe(true);
+    expect(v.some((x) => x.check === 'scope' && x.where === 'r')).toBe(true);
+  });
 });

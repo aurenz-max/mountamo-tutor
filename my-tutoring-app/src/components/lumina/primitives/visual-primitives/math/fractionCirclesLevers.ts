@@ -17,10 +17,14 @@
  * - Simplify (a new, ungraded item of the same mode; never the learner's item or its value):
  *   `fewer_pieces` (identify), `unit_build` (build), `double_split` (equivalent), `far_pair` (compare).
  *   `two_pictures` (touch_fraction) lives with the touch items (`twoPictureItem`).
+ * - build_equal (open build, `fractionEqualBuild.ts`) starts bare: `running_count` (the learner's pieces and shaded
+ *   pieces, never whether they are equal), `show_reference` (the target drawn as a circle beside theirs), and the
+ *   simplify `smaller_target` (another target with fewer pieces, halves first).
  * Every builder is deterministic, so the live journey can rebuild the easier item from its parent.
  */
 import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
 import type { FractionCirclesChallenge } from './FractionCircles';
+import { smallerTarget } from './fractionEqualBuild';
 
 export const PIECES_LEVER = 'mark_pieces';
 export const FRAME_LEVER = 'part_whole';
@@ -32,6 +36,8 @@ export const UNIT_LEVER = 'unit_build';
 export const DOUBLE_LEVER = 'double_split';
 export const FAR_LEVER = 'far_pair';
 export const TWO_PICTURES_LEVER = 'two_pictures';
+export const REFERENCE_LEVER = 'show_reference';
+export const SMALLER_TARGET_LEVER = 'smaller_target';
 
 /** The generator's denominator pools (`gemini-fraction-circles.ts` GRADE_BAND_DENOMINATORS). */
 const BAND_DENOMINATORS: Record<string, readonly number[]> = { 'K-2': [2, 3, 4], '3-5': [2, 3, 4, 5, 6, 8, 10, 12] };
@@ -97,6 +103,7 @@ export function simplerItem(ch: FractionCirclesChallenge, band?: string): Fracti
     case 'build': return unitBuild(ch);
     case 'equivalent': return doubleSplit(ch, band);
     case 'compare': return farPair(ch, band);
+    case 'build_equal': return smallerTarget(ch, band);
     default: return null;
   }
 }
@@ -132,6 +139,11 @@ const LEVER_ANSWERS: Record<string, Record<string, readonly string[]>> = {
   compare: {
     [OVERLAY_LEVER]: ['picked_more_slices', 'picked_smaller', 'said_equal', 'missed_equal'],
     [FAR_LEVER]: ['picked_more_slices', 'picked_smaller'],
+  },
+  build_equal: {
+    [COUNT_LEVER]: ['one_off'],
+    [REFERENCE_LEVER]: ['shaded_the_rest', 'cut_cannot_make', 'off_by_more', 'unequal_pieces'],
+    [SMALLER_TARGET_LEVER]: ['same_pieces', 'cut_cannot_make', 'off_by_more', 'unequal_pieces'],
   },
 };
 const leverAnswers = (type: string, id: string): readonly string[] | undefined => LEVER_ANSWERS[type]?.[id];
@@ -174,6 +186,16 @@ export function fractionLevers(ch: FractionCirclesChallenge | null, pulled: read
       if (simpler) levers.push(lever(FAR_LEVER, 'simplify', 'shown', 'The two amounts are too close for the learner to tell apart yet.',
         'Opens an easier comparison first, two amounts far apart. It is not graded; the full item comes back after it.'));
       break;
+    case 'build_equal':
+      // Starts bare: choosing the cut and keeping count of it IS the task; every lever comes on a miss.
+      levers.push(lever(COUNT_LEVER, 'help', 'both', 'The learner cuts a circle that works but shades one piece too many or too few.',
+        'Shows under the circle how many pieces the learner cut it into and how many they shaded. Never the target, and never whether the two are equal.'),
+      lever(REFERENCE_LEVER, 'help', 'shown',
+        'The learner shades the wrong amount, shades the part that should stay empty, cuts pieces of different sizes, or picks a cut that cannot make the fraction.',
+        "Draws the target fraction as a second circle beside the learner's circle, cut into its own pieces with its pieces shaded. The learner's circle is untouched."));
+      if (simpler) levers.push(lever(SMALLER_TARGET_LEVER, 'simplify', 'shown', 'The learner cannot find another way to make this fraction yet.',
+        'Opens an easier build first: make a fraction with fewer pieces, halves if they fit, your own way. It is not graded; the full item comes back after it.'));
+      break;
   }
   return levers;
 }
@@ -189,6 +211,9 @@ export function leverFacts(ch: FractionCirclesChallenge, pulled: readonly string
   if (ch.type === 'equivalent' && on(SPLIT_LEVER) && splitFactor(ch))
     facts.push('Each slice of the reference circle is cut by lines into thinner slices the same size as the slices to shade.');
   if (ch.type === 'compare' && on(OVERLAY_LEVER)) facts.push("The left circle's shaded part is outlined on the right circle.");
+  if (ch.type === 'build_equal' && on(COUNT_LEVER)) facts.push("Under the learner's circle: how many pieces it is cut into and how many are shaded.");
+  if (ch.type === 'build_equal' && on(REFERENCE_LEVER))
+    facts.push("A reference circle beside the learner's circle shows the target fraction, cut into its own pieces with its pieces shaded.");
   return facts;
 }
 

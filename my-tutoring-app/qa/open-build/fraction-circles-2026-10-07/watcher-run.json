@@ -1,0 +1,50 @@
+[
+  {
+    "build": "3/4: eighths, 3 shaded",
+    "modelSaid": "Ooh, bright pink triangle slices are filling the circle up!",
+    "shown": "Ooh, bright pink triangle slices are filling the circle up!",
+    "dropped": false
+  },
+  {
+    "build": "3/4: eighths, 6 shaded (right)",
+    "modelSaid": "Ooh, bright pink slices are filling up the circle!",
+    "shown": "Ooh, bright pink slices are filling up the circle!",
+    "dropped": false
+  },
+  {
+    "build": "3/4: twelfths, 9 shaded (right)",
+    "modelSaid": "Ooh, bright pink slices are filling up the circle nicely!",
+    "shown": "Ooh, bright pink slices are filling up the circle nicely!",
+    "dropped": false
+  },
+  {
+    "build": "3/4: fourths, one halved, 2 shaded (unequal)",
+    "modelSaid": "Ooh, bright pink slices are glowing inside the circle!",
+    "shown": "Ooh, bright pink slices are glowing inside the circle!",
+    "dropped": false
+  },
+  {
+    "build": "1/2: sixths, nothing shaded yet",
+    "modelSaid": "Ooh, bright pie slices are spinning inside the pink circle!",
+    "shown": "Ooh, bright pie slices are spinning inside the pink circle!",
+    "dropped": false
+  },
+  {
+    "build": "1/2: sixths, 3 shaded (right)",
+    "modelSaid": "Ooh, bright pink slices are filling up the circle!",
+    "shown": "Ooh, bright pink slices are filling up the circle!",
+    "dropped": false
+  },
+  {
+    "build": "2/3: whole circle shaded",
+    "modelSaid": "Ooh, bright pink is filling up the circle!",
+    "shown": "Ooh, bright pink is filling up the circle!",
+    "dropped": false
+  },
+  {
+    "build": "2/5: tenths, 5 shaded",
+    "modelSaid": "Ooh, bright pink slices are filling up the circle!",
+    "shown": "Ooh, bright pink slices are filling up the circle!",
+    "dropped": false
+  }
+]

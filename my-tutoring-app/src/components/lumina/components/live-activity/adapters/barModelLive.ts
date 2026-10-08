@@ -1,11 +1,12 @@
 import type { BarModelChallenge, BarModelData, BarModelEvalMode } from '../../../primitives/visual-primitives/math/BarModel';
 import { OPTION_MODES, ROW_TAP_MODES, graphComparisonFacts, isSpokenGraph, workspaceAssignment }
   from '../../../primitives/visual-primitives/math/barModelWorkspace';
+import { GRAPH_MAX } from '../../../primitives/visual-primitives/math/barModelBuild';
 import { workspaceOpening, type WorkspaceDomain } from './adapterContract';
 
 const MODES: ReadonlySet<BarModelEvalMode> = new Set<BarModelEvalMode>(['read_one_to_one', 'most_least', 'compare_bars', 'match_to_bar',
   'build_one_to_one', 'say_what_it_shows', 'compare_two_graphs', 'read_scale', 'picture_graph', 'scaled_bar_graph',
-  'graph_word_problem', 'build_graph']);
+  'graph_word_problem', 'build_graph', 'make_graph']);
 const count = (n: unknown) => typeof n === 'number' && Number.isFinite(n) && n >= 0;
 
 /** Can this challenge be answered as generated, by the check its mode uses? */
@@ -18,6 +19,12 @@ function answerable(c: BarModelChallenge): boolean {
   if (c.evalMode === 'build_graph') return Array.isArray(c.expectedDataset) && c.expectedDataset.length === rows
     && c.expectedDataset.every(e => c.values.some(v => v.label === e.label) && count(e.value))
     && (c.availableScaleSteps ?? [1, 2, 5, 10]).includes(c.expectedScaleStep as number);
+  // An open build has no key: the rule must name rows on the graph, and the graph must start empty.
+  if (c.evalMode === 'make_graph') {
+    const r = c.graphRule, row = (i: unknown) => Number.isInteger(i) && (i as number) >= 0 && (i as number) < rows;
+    return !!r && row(r.a) && c.values.every(v => v.value === 0) && (r.kind === 'most' || r.kind === 'fewest' ? rows >= 2
+      : row(r.b) && r.b !== r.a && (r.kind === 'same' || r.kind === 'more_than' && Number.isInteger(r.by) && r.by! >= 1 && r.by! <= GRAPH_MAX));
+  }
   // A spoken explanation is judged against the comparisons its rows support; none means nothing to judge.
   return isSpokenGraph(c) && graphComparisonFacts(c).length > 0;
 }

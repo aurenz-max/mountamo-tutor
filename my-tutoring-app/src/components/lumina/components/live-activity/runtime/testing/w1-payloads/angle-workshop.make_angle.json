@@ -1,0 +1,72 @@
+{
+ "source": "qa/open-build/angle-workshop-2026-10-07/generations.json",
+ "primitiveId": "angle-workshop",
+ "evalMode": "make_angle",
+ "data": {
+  "title": "Constructing Angles of Various Sizes",
+  "description": "Practice drawing and constructing angles between specific given measures using interactive rays.",
+  "challengeType": "make_angle",
+  "gradeBand": "5",
+  "challenges": [
+   {
+    "type": "make_angle",
+    "narration": "A laptop lid lifts from the keyboard.",
+    "instruction": "Make an angle that is bigger than a right angle but smaller than a straight angle.",
+    "hint": "Turn the purple ray and watch how wide the opening gets.",
+    "answerKind": "build",
+    "targetKind": "between_right_straight",
+    "expectedAnswer": 0,
+    "tolerance": 0,
+    "id": "aw-1"
+   },
+   {
+    "type": "make_angle",
+    "narration": "A laptop lid lifts from the keyboard.",
+    "instruction": "Make an acute angle.",
+    "hint": "Turn the purple ray and watch how wide the opening gets.",
+    "answerKind": "build",
+    "targetKind": "acute",
+    "expectedAnswer": 0,
+    "tolerance": 0,
+    "id": "aw-2"
+   },
+   {
+    "type": "make_angle",
+    "narration": "A folding fan spreads out.",
+    "instruction": "Make an obtuse angle.",
+    "hint": "Turn the purple ray and watch how wide the opening gets.",
+    "answerKind": "build",
+    "targetKind": "obtuse",
+    "expectedAnswer": 0,
+    "tolerance": 0,
+    "id": "aw-3"
+   },
+   {
+    "type": "make_angle",
+    "narration": "A folding fan spreads out.",
+    "instruction": "Make an angle between 50° and 70°.",
+    "hint": "Turn the purple ray and watch how wide the opening gets.",
+    "answerKind": "build",
+    "targetKind": "range",
+    "targetMin": 50,
+    "targetMax": 70,
+    "expectedAnswer": 0,
+    "tolerance": 0,
+    "id": "aw-4"
+   },
+   {
+    "type": "make_angle",
+    "narration": "A drawbridge rises from the road.",
+    "instruction": "Make an angle between 60° and 80°.",
+    "hint": "Turn the purple ray and watch how wide the opening gets.",
+    "answerKind": "build",
+    "targetKind": "range",
+    "targetMin": 60,
+    "targetMax": 80,
+    "expectedAnswer": 0,
+    "tolerance": 0,
+    "id": "aw-5"
+   }
+  ]
+ }
+}

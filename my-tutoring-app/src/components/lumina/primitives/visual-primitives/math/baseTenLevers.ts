@@ -21,6 +21,15 @@
  * - `single_regroup` (simplify): an ungraded operation first with one carry or borrow fewer (floor one), new
  *   operands, the same places, M > S; then the full item. Answers a ten off and far off. Leak rule: never the
  *   item's operands (either order) or its result. `digits_swapped` has no lever on operate.
+ *
+ * build_two_ways (open build, references/build-mode.md). Starts bare at every tier: keeping track of the blocks is the
+ * task, so the counts come on a miss, and no total is ever offered (the value of the build IS the skill).
+ * - `column_counts` (help): as above, on the learner's own blocks. Answers every value miss.
+ * - `ten_model` (help): beside the mat, one ten-stick next to ten ones cubes (and one hundred-flat next to ten
+ *   ten-sticks when the mat has hundreds), with no count. Answers `same_as_first`: a learner who cannot find a second
+ *   way has not seen that one bigger block can be swapped for ten smaller ones.
+ * - `smaller_number` (simplify): the same two-ways build on about half the number (at least ten, so a second way
+ *   exists), ungraded, then the full item on an empty mat. Answers far off. Leak rule: never the number or its reversal.
  */
 import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
 import { analyzeBorrows, buildAdditionOperands, buildSubtractionOperands, countCarries } from './baseTenOperands';
@@ -30,6 +39,17 @@ export const TOTAL_LEVER = 'blocks_total';
 export const BRACKET_LEVER = 'ten_bracket';
 export const PLAINER_LEVER = 'plainer_build';
 export const SIMPLER_OP_LEVER = 'single_regroup';
+export const TEN_MODEL_LEVER = 'ten_model';
+export const SMALLER_LEVER = 'smaller_number';
+
+/** The smaller number to show two ways first, or null: about half, at least ten, never the number or its reversal. */
+export function smallerTwoWaysNumber(target: number): number | null {
+  if (!Number.isInteger(target) || target <= 10) return null;
+  const half = Math.max(10, Math.round(target / 2));
+  // Half of 73 rounds to 37, its reversal: step down one.
+  const smaller = half === reversed(target) && half > 10 ? half - 1 : half;
+  return smaller < target && smaller !== reversed(target) ? smaller : null;
+}
 
 const reversed = (n: number) => Number(String(n).split('').reverse().join(''));
 
@@ -126,6 +146,16 @@ export function baseTenLevers(challenge: LeverItem | null, pulled: readonly stri
       'The learner loses track when an operation needs several trades.',
       'Opens an easier operation first, needing fewer trades, with the same number of places. It is not graded; the full item comes back after it.')] : []),
   ];
+  if (challenge?.type === 'build_two_ways') return [
+    counts(['one_short', 'one_over', 'one_ten_off', 'digits_swapped', 'short_by_more', 'over_by_more'],
+      'The learner miscounts the blocks in a column, so the build is not the number.'),
+    lever(TEN_MODEL_LEVER, 'help', ['same_as_first'],
+      'The learner cannot find a second way and builds the first way again.',
+      'Shows beside the mat a ten-stick next to the ones cubes it is worth, and a hundred-flat next to the ten-sticks it is worth, with no count.'),
+    ...(smallerTwoWaysNumber(challenge.targetNumber) !== null ? [lever(SMALLER_LEVER, 'simplify', ['short_by_more', 'over_by_more'],
+      'The learner cannot build a number this big yet.',
+      'Opens a smaller number to build both ways first. It is not graded; the full item comes back after it, on an empty mat.')] : []),
+  ];
   if (challenge?.type !== 'build_number') return [];
   return [
     counts(['one_short', 'one_over', 'one_ten_off', 'digits_swapped'],
@@ -147,5 +177,6 @@ export function leverFacts(pulled: readonly string[], started: readonly string[]
     live.includes(COUNTS_LEVER) && "Each column shows how many of the learner's blocks are in it.",
     live.includes(TOTAL_LEVER) && "The total of the learner's blocks is under the mat.",
     pulled.includes(BRACKET_LEVER) && 'Any column holding ten or more blocks has a bracket round it.',
+    pulled.includes(TEN_MODEL_LEVER) && 'Beside the mat, a big block is shown next to the smaller blocks it is worth.',
   ].filter((s): s is string => !!s).join(' ');
 }

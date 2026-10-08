@@ -1,0 +1,78 @@
+[
+  {
+    "name": "pinned-3-5",
+    "gradeBand": "3-5",
+    "count": 4,
+    "types": [
+      "make_shape"
+    ],
+    "asks": [
+      "Make a shape with 4 sides, exactly 2 right angles and exactly 1 pair of parallel sides.",
+      "Make a shape with 4 sides and exactly 1 pair of parallel sides.",
+      "Make a shape with 4 sides and exactly 2 right angles.",
+      "Make a shape with 4 sides and exactly 1 right angle."
+    ],
+    "oracleChecked": 4,
+    "issues": []
+  },
+  {
+    "name": "pinned-K-2",
+    "gradeBand": "K-2",
+    "count": 4,
+    "types": [
+      "make_shape"
+    ],
+    "asks": [
+      "Make a shape with 3 sides and exactly 1 square corner.",
+      "Make a shape with 4 sides and no square corners.",
+      "Make a shape with 5 sides.",
+      "Make a shape with 4 sides and exactly 4 square corners."
+    ],
+    "oracleChecked": 4,
+    "issues": []
+  },
+  {
+    "name": "pinned-K",
+    "gradeBand": "K-2",
+    "count": 4,
+    "types": [
+      "make_shape"
+    ],
+    "asks": [
+      "Make a shape with 3 sides.",
+      "Make a shape with 5 sides.",
+      "Make a shape with 6 sides.",
+      "Make a shape with 4 sides."
+    ],
+    "oracleChecked": 4,
+    "issues": []
+  },
+  {
+    "name": "pinned-3-5-hard",
+    "gradeBand": "3-5",
+    "count": 4,
+    "types": [
+      "make_shape"
+    ],
+    "asks": [
+      "Make a shape with 4 sides, exactly 2 right angles and exactly 1 pair of parallel sides.",
+      "Make a shape with 4 sides and exactly 2 right angles.",
+      "Make a shape with 5 sides and exactly 3 right angles.",
+      "Make a shape with 4 sides and exactly 2 lines of symmetry."
+    ],
+    "oracleChecked": 4,
+    "issues": []
+  },
+  {
+    "name": "mixed-3-5",
+    "gradeBand": "3-5",
+    "count": 3,
+    "types": [
+      "build",
+      "classify"
+    ],
+    "asks": [],
+    "oracleChecked": 0,
+    "issues": []
+  }
+]

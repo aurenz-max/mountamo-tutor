@@ -1,18 +1,24 @@
 import { missLists, sameMisses } from './missLists';
+import type { ArrayMiss } from '../../../primitives/visual-primitives/math/arrayGridWorkspace';
 import type { AddSubMiss, SpokenAddSubMiss } from '../../../primitives/visual-primitives/math/additionSubtractionSceneWorkspace';
 import type { BarModelMiss, SpokenGraphMiss } from '../../../primitives/visual-primitives/math/barModelWorkspace';
 import type { SpokenBalanceMiss } from '../../../primitives/visual-primitives/math/balanceScaleWorkspace';
 import type { BaseTenMiss, SpokenBaseTenMiss } from '../../../primitives/visual-primitives/math/baseTenWorkspace';
 import type { CoinMiss } from '../../../primitives/visual-primitives/math/coinCounterWorkspace';
+import type { AreaMiss } from '../../../primitives/visual-primitives/math/polygonAreaWorkspace';
+import type { BuildAreaMiss } from '../../../primitives/visual-primitives/math/polygonAreaBuild';
 import type { CompareOrderMiss, SpokenCompareMiss } from '../../../primitives/visual-primitives/math/compareObjectsWorkspace';
 import type { ComparisonMiss } from '../../../primitives/visual-primitives/math/comparisonBuilderWorkspace';
 import type { CountMiss, SpokenCountMiss } from '../../../primitives/visual-primitives/math/countingBoardDomain';
 import type { EquationBuilderMiss } from '../../../primitives/visual-primitives/math/equationBuilderWorkspace';
 import type { FractionMiss } from '../../../primitives/visual-primitives/math/fractionCirclesLevers';
+import type { FractionBarMiss } from '../../../primitives/visual-primitives/math/fractionBarWorkspace';
 import type { TouchMiss } from '../../../primitives/visual-primitives/math/fractionCirclesWorkspace';
+import { EQUAL_BUILD_MISSES, type EqualBuildMiss } from '../../../primitives/visual-primitives/math/fractionEqualBuild';
 import type { HundredsChartMiss } from '../../../primitives/visual-primitives/math/hundredsChartWorkspace';
 import type { MathFactMiss } from '../../../primitives/visual-primitives/math/mathFactFluencyWorkspace';
 import type { AdditionFactMiss } from '../../../primitives/visual-primitives/math/additionFactStrategiesWorkspace';
+import { MAKE_ANGLE_MISSES } from '../../../primitives/visual-primitives/math/angleWorkshopWorkspace';
 import type { BondMiss } from '../../../primitives/visual-primitives/math/numberBondModes';
 import type { SpokenBondMiss } from '../../../primitives/visual-primitives/math/numberBondWorkspace';
 import type { JumpMiss } from '../../../primitives/visual-primitives/math/numberLineLevers';
@@ -26,6 +32,7 @@ import type { StrategyPickerMiss } from '../../../primitives/visual-primitives/m
 import type { FrameMiss } from '../../../primitives/visual-primitives/math/tenFrameLevers';
 import type { SpokenFrameMiss } from '../../../primitives/visual-primitives/math/tenFrameWorkspace';
 import type { SpokenShapeMiss } from '../../../primitives/visual-primitives/math/shapeSorterDomain';
+import type { ShapeBuilderMiss } from '../../../primitives/visual-primitives/math/shapeBuilderWorkspace';
 import type { SpokenSortingMiss } from '../../../primitives/visual-primitives/math/sortingStationWorkspace';
 import type { SpokenSolidMiss } from '../../../primitives/visual-primitives/math/threeDShapeExplorerWorkspace';
 import { FRACTION_TOUCH_EVAL_MODES } from '../../../primitives/visual-primitives/math/fractionTouchModes';
@@ -64,8 +71,10 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + '(say what the graph shows, compare two graphs) are answered aloud: the learner tells one true comparison (more, '
         + 'fewer, the same, most, fewest) in their own words, judged against the comparisons in the expected answer. A '
         + 'reversed claim, a bare number or a row name alone is not a comparison, and comparing two graphs must compare the '
-        + 'two surveys. A Kindergarten learner cannot read: read the '
+        + 'two surveys. On make a graph the learner fills an empty graph to fit the ask, then presses I\'m done!; many graphs '
+        + 'fit, so never say how many pictures a bar needs or which bar to change. A Kindergarten learner cannot read: read the '
         + 'question and the row names aloud. You cannot tap, place stickers, set bars or choose a step for the learner.',
+      levers: true,
       // The graph's own check (`barModelMiss`), and the two spoken modes' known wrong comparisons (`barModelSpokenMisses`).
       misses: (() => {
         const off: BarModelMiss[] = ['one_short', 'one_over', 'short_by_more', 'over_by_more'];
@@ -75,6 +84,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
           read_one_to_one: ['another_row', ...off], read_scale: read, picture_graph: read, scaled_bar_graph: read,
           graph_word_problem: read, compare_bars: ['reversed', 'other_row'], most_least: ['reversed', 'other_row'],
           match_to_bar: off, build_one_to_one: rows, build_graph: [...rows, 'wrong_step'],
+          make_graph: ['reversed', 'tied', 'other_row', 'not_same', 'left_empty', ...off],
           say_what_it_shows: ['reversed_comparison', 'same_for_different', 'no_comparison'],
           compare_two_graphs: ['reversed_comparison', 'same_for_different', 'rows_not_graphs', 'no_comparison'],
         });
@@ -179,6 +189,16 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 1,
         challengeTypes: ['build_one_to_one'],
         description: 'Record a mixed pile of objects onto a chart, one sticker per object. K.MD.B.3.',
+      },
+      {
+        evalMode: 'make_graph',
+        affordances: { representation: 'pictorial', reader: 'none', answers: ['build'] },
+        label: 'Make a Graph That Fits (K-2)',
+        beta: 1.9,
+        scaffoldingMode: 1,
+        challengeTypes: ['make_graph'],
+        description: 'Open build: fill an empty picture graph so a named row has the most or the fewest, two rows are the same, '
+          + 'or one row has N more than another. Any data that fits passes. K.MD.B.3, 1.MD.C.4.',
       },
       {
         evalMode: 'say_what_it_shows', label: 'Tell What the Graph Shows (K)',
@@ -340,8 +360,10 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'asked (four for forty) is not the value. On a trade the learner first predicts aloud how many smaller blocks '
         + 'there will be, while the mat is untraded, then taps one block to break it into ten; the mat checks the trade '
         + 'itself once the learner stops. On build and operate the learner adds, removes or trades blocks and presses '
-        + 'Check My Blocks or Check My Trade, or types a result on the keypad, and the activity checks it; the right '
-        + 'value without the fewest blocks is not yet a build. Never say a column count, a total, a '
+        + 'Check My Blocks or Check My Trade, or types a result on the keypad, and the activity checks it; on build the right '
+        + 'value without the fewest blocks is not yet a build. On two ways the learner builds the number on an empty mat, '
+        + 'any blocks that make it, presses I\'m done, then changes the blocks to show it a different way; the mat checks '
+        + 'both. Never say a column count, a total, a '
         + 'prediction or a result before the learner answers. You cannot add, remove, trade or type anything.',
       // Both mats publish levers (handoff 21 M1): build_number and operate on the click mat (`baseTenLevers.ts`),
       // read_blocks and regroup on the spoken mat (`baseTenSpokenLevers.ts`).
@@ -356,6 +378,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         read_blocks: ['one_short', 'one_over', 'one_ten_off', 'digits_swapped', 'short_by_more', 'over_by_more', 'said_value',
           'said_count', 'said_total', 'other_block_count', 'one_block_off'],
         operate: ['one_short', 'one_over', 'one_ten_off', 'digits_swapped', 'short_by_more', 'over_by_more'],
+        build_two_ways: ['one_short', 'one_over', 'one_ten_off', 'digits_swapped', 'short_by_more', 'over_by_more', 'same_as_first'],
       }),
       // operate `digits_swapped` has no lever (approved table). The click-mat misses of regroup and read_blocks come
       // only from a mixed payload, whose regroup and read_blocks items have no levers.
@@ -415,6 +438,17 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         challengeTypes: ['build_number'],
         description: 'Concrete manipulative: student builds a target number by placing blocks in place value columns.',
       },
+      {
+        // Open build (`/add-eval-modes` references/build-mode.md): build_number's value check on an empty mat, any
+        // blocks that make the number, then a second build with different blocks. Equivalent forms (1.NBT.2a, 2.NBT.1a).
+        evalMode: 'build_two_ways',
+        affordances: { answers: ['build'] },
+        label: 'Show It Two Ways (Open Build)',
+        beta: 2.0,
+        scaffoldingMode: 1,
+        challengeTypes: ['build_two_ways'],
+        description: 'Open build: student shows a number with any blocks on an empty mat, then shows the same number a different way (34 as 3 tens 4 ones, then 2 tens 14 ones).',
+      },
       // read_blocks + regroup are PROJECTED from baseTenModes.ts — the DI port's
       // single source for identity, beta, docs and the learner's action story.
       ...BASE_TEN_DI_EVAL_MODES,
@@ -440,14 +474,17 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'the answer and you are not told it. When the fraction labels are hidden, talk about how much of each circle is '
         + 'shaded, never the values. In touch-the-fraction the fraction is only written in words, so say it aloud; three '
         + 'unlabelled pictures are shown and you do not know which one matches: never point at, number or describe a picture '
-        + 'as the answer. You cannot type, shade, choose or touch for the learner.',
-      // The circle's own check (`fractionMiss`, `touchMiss`).
-      misses: missLists<FractionMiss | TouchMiss>({
+        + 'as the answer. You cannot type, shade, choose or touch for the learner. On the your-own-way build the learner '
+        + 'chooses the cut: never name a number of pieces or how many to shade, and never say whether their fraction is '
+        + "equal before they press I'm done.",
+      // The circle's own check (`fractionMiss`, `touchMiss`, `equalBuildMiss`).
+      misses: missLists<FractionMiss | TouchMiss | EqualBuildMiss>({
         identify: ['not_a_fraction', 'swapped', 'bottom_not_pieces', 'top_is_unshaded', 'top_one_off', 'top_off_by_more'],
         build: ['shaded_all', 'shaded_the_rest', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
         equivalent: ['copied_the_count', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
         compare: ['picked_more_slices', 'picked_smaller', 'said_equal', 'missed_equal'],
         touch_fraction: ['same_parts_other_shading', 'same_shading_other_parts', 'other_fraction'],
+        build_equal: [...EQUAL_BUILD_MISSES],
       }),
     },
     misconceptionScope: 'skill',
@@ -525,15 +562,41 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         challengeTypes: ['equivalent'],
         description: 'Find equivalent fractions with different denominators.',
       },
+      {
+        evalMode: 'build_equal',
+        affordances: { representation: 'pictorial', answers: ['build'] },
+        label: 'Equal Fraction, Your Way (open build)',
+        beta: 4.6,
+        scaffoldingMode: 4,
+        challengeTypes: ['build_equal'],
+        description: 'Open build: make a fraction equal to a given one in your own way. The circle starts whole; the '
+          + 'student chooses how many equal pieces to cut it into (not the given number), shades some, and says done. '
+          + 'Many answers pass (1/2 = 2/4 = 3/6). 3.NF.A.3.',
+      },
     ],
   },
   {
     id: 'fraction-bar',
+    teachingWorkspace: {
+      grades: ['Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+      levers: true,
+      guidance: 'A fraction is printed and the learner works one fraction at a time. In the three-step item they pick the numerator, '
+        + 'then the denominator, from four number buttons, then shade that many equal parts of a bar; each step has its own Check and the '
+        + 'bar checks it, so you are not told the answer. In the open build (build_equal) the learner splits a bar into equal parts of '
+        + "their own choosing, shades some, and presses I'm done; many splits are right. Never name a number of parts or how many to "
+        + "shade, and never say whether the bar is equal before I'm done. You cannot pick, split or shade for the learner.",
+      // The bar's own checks (`fractionBarMiss`; build_equal: `equalBuildMiss`, shared with fraction-circles).
+      misses: missLists<FractionBarMiss | EqualBuildMiss>({
+        ...sameMisses<FractionBarMiss>(['identify', 'build', 'compare', 'add_subtract'], ['chose_denominator', 'other_numerator',
+          'chose_numerator', 'other_denominator', 'shaded_all', 'shaded_the_rest', 'one_short', 'one_over', 'short_by_more', 'over_by_more']),
+        build_equal: ['unequal_pieces', 'same_pieces', 'shaded_the_rest', 'cut_cannot_make', 'one_off', 'off_by_more'],
+      }),
+    },
     misconceptionScope: 'skill',
     observationDelivery: 'server',
     learningObservations: { eligible: fractionBarDeliveryEligible },
-    description: 'Multi-challenge interactive fraction bar. Each session walks the student through 3-6 distinct fractions in the same eval mode. Every fraction runs through three within-challenge phases: (1) identify the numerator via multiple choice, (2) identify the denominator via multiple choice, (3) build the fraction by shading parts on a bar. Progressive scaffolding from vocabulary to hands-on construction. ESSENTIAL for elementary fraction introduction.',
-    constraints: 'Session-level configuration. The generator picks fractions locally per eval mode, so do NOT supply specific numerators, denominators, or MC choices from the manifest — they are generated per challenge. Supports challengeTypes: identify (2-3, unit fractions), build (3-4, non-unit proper fractions), compare (4-5, larger denominators), add_subtract (5-6, operation context).',
+    description: 'Multi-challenge interactive fraction bar. Each session walks the student through 3-6 distinct fractions in the same eval mode. Every fraction runs through three within-challenge phases: (1) identify the numerator via multiple choice, (2) identify the denominator via multiple choice, (3) build the fraction by shading parts on a bar. Progressive scaffolding from vocabulary to hands-on construction. Open-build mode build_equal skips the three phases: the student makes a fraction equal to a given one on the bar their own way (chooses how many equal parts, shades some), and any equal fraction passes. ESSENTIAL for elementary fraction introduction.',
+    constraints: 'Session-level configuration. The generator picks fractions locally per eval mode, so do NOT supply specific numerators, denominators, or MC choices from the manifest — they are generated per challenge. Supports challengeTypes: identify (2-3, unit fractions), build (3-4, non-unit proper fractions), compare (4-5, larger denominators), add_subtract (5-6, operation context), build_equal (open build: make an equal fraction your own way).',
     affordances: { representation: 'pictorial', answers: ['tap', 'build'], role: 'apply', minutes: 5 },
     tutoring: {
       taskDescription: 'Walk through {{totalChallenges}} fraction problems in {{challengeType}} mode. Current: fraction {{currentChallengeIndex}} of {{totalChallenges}} = {{numerator}}/{{denominator}}. Phase: {{currentPhase}}.',
@@ -593,6 +656,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 4,
         challengeTypes: ['add_subtract'],
         description: 'Fractions in addition/subtraction context.',
+      },
+      {
+        evalMode: 'build_equal',
+        affordances: { representation: 'pictorial', answers: ['build'] },
+        label: 'Equal Fraction, Your Way (Tier 4)',
+        beta: 4.6,
+        scaffoldingMode: 4,
+        challengeTypes: ['build_equal'],
+        description: 'Open build: make a fraction equal to a given one on the bar your own way; any equal split passes.',
       },
     ],
   },
@@ -862,6 +934,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'build_model',
+        affordances: { answers: ['build'] },
         label: 'Build Model (Concrete)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -904,6 +977,30 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'array-grid',
+    teachingWorkspace: {
+      grades: ['Grade 2', 'Grade 3', 'Grade 4'],
+      guidance: 'The activity checks the answer itself, and you are not told it. On build the learner picks the rows and '
+        + 'columns asked for, then types the total; on count the learner types the total of the array drawn; on multiply '
+        + 'the learner writes rows × columns = total; each then presses Check. Never say the total. On count and multiply '
+        + 'never say how many rows or columns there are: finding them is the task. Skip-counting a row aloud together is '
+        + 'teaching; saying where the count ends is not. On make an array the learner fills cells on an empty grid to make '
+        + 'any array with the number of squares asked, presses I’m done!, and on some items then makes a different array. '
+        + 'Many arrays pass: never say how many rows or columns to use, how many squares are on the grid, or how many more '
+        + 'are needed; if they stop, invite them to check that every row has the same number of squares. You cannot tap, '
+        + 'build or type for the learner.',
+      // make_array publishes levers (`arrayGridLevers.ts`); the other modes have none yet.
+      levers: true,
+      // The activity's own check (`arrayMiss`), every mode.
+      misses: missLists<ArrayMiss>({
+        build_array: ['added_sides', 'one_row_off', 'one_column_off', 'off_by_one', 'other_total'],
+        count_array: ['added_sides', 'one_row_off', 'one_column_off', 'off_by_one', 'other_total'],
+        multiply_array: ['swapped_sides', 'wrong_side', 'added_sides', 'one_row_off', 'one_column_off', 'off_by_one', 'other_total'],
+        make_array: ['ragged', 'one_line_short', 'one_line_over', 'too_few', 'too_many', 'same_as_first'],
+      }),
+      // make_array `same_as_first` has no lever: the first array stays on screen beside the grid, and "different" has
+      // no smaller form.
+      unanswered: { make_array: ['same_as_first'] },
+    },
     description: 'Multi-challenge rectangular array of discrete objects (dots, squares, stars) arranged in rows and columns. Each session walks the student through 3-6 distinct (rows, columns) pairs in the same eval mode. Per-challenge dimensions are picked locally by a pool service; Gemini emits only session-level wrapper metadata. Teaches multiplication introduction, repeated addition, skip counting, commutative property, and arrays-as-multiplication. ESSENTIAL for elementary multiplication (grades 2-5).',
     constraints: 'The manifest must NOT supply specific row/column counts — the generator picks 3-6 dimension pairs locally per the selected eval mode. Keep arrays within the component caps (rows 2-6, columns 2-8).',
     affordances: { representation: ['concrete', 'pictorial'], answers: ['build', 'type'], role: 'apply', minutes: 5 },
@@ -949,6 +1046,19 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 1,
         challengeTypes: ['build_array'],
         description: 'Concrete: build array with given dimensions.',
+      },
+      {
+        // Open build (`/add-eval-modes` references/build-mode.md): build_array's grid with no dimensions given. The
+        // learner fills an empty grid with N squares as any full rectangle; some items then ask for a different one.
+        evalMode: 'make_array',
+        affordances: { representation: 'concrete', answers: ['build'] },
+        label: 'Make an Array (open build)',
+        beta: 1.6,
+        scaffoldingMode: 1,
+        challengeTypes: ['make_array'],
+        description: 'Open build: "Make an array with 12 squares." The grid starts EMPTY; the student taps cells to make '
+          + 'any rectangular array of N squares (1×12, 2×6, 3×4, 4×3), then presses “I’m done!”. Every second item asks '
+          + 'for a different array. No dimensions or running count on screen. 2.OA.C.4, 3.OA.A.1.',
       },
       {
         evalMode: 'count_array',
@@ -1751,7 +1861,32 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'polygon-area-builder',
-    description: 'Multi-figure polygon-area session (3-6 distinct figures of the same eval mode, surfaced sequentially). Students derive and apply area formulas by composing and decomposing shapes on a canvas grid: rearrange a parallelogram into a rectangle by sliding the cut triangle (conservation of area), compute triangle / parallelogram / trapezoid areas from labeled dimensions, decompose composite figures into known rectangles and sum, and find the area of a polygon from its vertex coordinates. Canvas-based with five progressive difficulty tiers (decompose → triangle/parallelogram → trapezoid → composite → coordinate polygon). CCSS 6.G.A.1. Grades 6-7. The system pre-builds each figure (dimensions, coordinates, rectangle parts) deterministically per challenge — the manifest must NOT specify dimensions, coordinates, or areas.',
+    teachingWorkspace: {
+      grades: ['Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7'],
+      guidance: 'Most modes ask for an area the learner types and checks with Check; the screen checks it against the '
+        + 'figure. The drawn lengths are the givens; the area, and any piece\'s area, is the answer: never say one before '
+        + 'the check. On decompose the learner first drags the cut triangle into the slot to make a rectangle, which '
+        + "unlocks the answer box. The open build (build_area) is answered on an empty grid: the learner taps squares to "
+        + "shade them into ONE shape (squares joined along a side) with the area the task states, then presses I'm done; "
+        + 'a two-shape item then asks for a different shape with the same area, and the first shape moved, turned or '
+        + 'flipped is not different. The grid checks the count, that it is one shape, and that the second differs. '
+        + 'Counting the squares is the skill: never say how many are shaded or how many more are needed. You cannot '
+        + 'type, drag, shade or clear squares for the learner.',
+      levers: true,
+      // The screen's own check (`areaMiss` for a typed area, `buildAreaMiss` for the open build).
+      misses: (() => {
+        const typed: AreaMiss[] = ['forgot_half', 'halved', 'added_sides', 'wrong_area'];
+        return missLists<AreaMiss | BuildAreaMiss>({
+          decompose: ['halved', 'added_sides', 'wrong_area'],
+          find_area_triangle_parallelogram: typed,
+          find_area_trapezoid: ['forgot_half', 'added_sides', 'wrong_area'],
+          composite_area: ['one_piece', 'halved', 'wrong_area'],
+          coordinate_polygon: ['bounding_box', 'forgot_half', 'halved', 'wrong_area'],
+          build_area: ['one_short', 'one_over', 'short_by_more', 'over_by_more', 'not_connected', 'same_as_first'],
+        });
+      })(),
+    },
+    description: 'Multi-figure polygon-area session (3-6 distinct figures of the same eval mode, surfaced sequentially). Students derive and apply area formulas by composing and decomposing shapes on a canvas grid: rearrange a parallelogram into a rectangle by sliding the cut triangle (conservation of area), compute triangle / parallelogram / trapezoid areas from labeled dimensions, decompose composite figures into known rectangles and sum, and find the area of a polygon from its vertex coordinates. Canvas-based with five progressive difficulty tiers (decompose → triangle/parallelogram → trapezoid → composite → coordinate polygon). CCSS 6.G.A.1. Grades 6-7. One more mode is an OPEN BUILD for Grade 3 (build_area, 3.MD.C.5-6): on an empty square grid the student shades unit squares into a shape with a stated area, then a different shape with the same area; any shape with that area passes. The system pre-builds each figure (dimensions, coordinates, rectangle parts, build areas) deterministically per challenge — the manifest must NOT specify dimensions, coordinates, or areas.',
     constraints: 'The manifest must NOT supply per-figure dimensions, coordinates, rectangle parts, or areas — the pool service builds 3-6 distinct figures deterministically from the selected eval mode and gradeBand. The manifest may supply gradeBand and instanceCount only (default 4, max 6). Each eval mode maps to exactly one challenge type of the same name.',
     affordances: { representation: 'pictorial', answers: ['type'], role: 'apply', minutes: 8 },
     evalModes: [
@@ -1763,6 +1898,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 2,
         challengeTypes: ['decompose'],
         description: 'Rearrange a parallelogram into a rectangle by sliding the cut triangle, then find base × height. Conservation of area.',
+      },
+      {
+        evalMode: 'build_area',
+        affordances: { representation: 'concrete', answers: ['build'] },
+        label: 'Build a Shape with an Area (Open Build)',
+        beta: 1.6,
+        scaffoldingMode: 2,
+        challengeTypes: ['build_area'],
+        description: 'Open build (Grade 3, 3.MD.C.5-6): shade unit squares on an empty grid into one shape with a stated area, then a different shape with the same area. Any shape with that area passes; area is measured by counting unit squares.',
       },
       {
         evalMode: 'find_area_triangle_parallelogram',
@@ -1917,7 +2061,25 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'angle-workshop',
-    description: 'Interactive angle workshop where students measure, classify, and solve for unknown angles on a canvas figure. Perfect for angle relationships (complementary, supplementary, vertical, adjacent), writing and solving equations for unknown angles, and parallel-lines-with-a-transversal reasoning. ESSENTIAL for grade 7-8 geometry (CCSS 7.G.B.5, 8.G.A.5).',
+    teachingWorkspace: {
+      grades: ['Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
+      guidance: 'The activity checks every answer itself, and you are not told it. On measure the learner places the '
+        + 'protractor and types the reading; on the solving modes they type the angle or x; on classify they tap a '
+        + 'relationship; each then presses Check. Before the check, and after a wrong one, never say the measure, the '
+        + 'value of x, or the relationship: ask what the learner notices in the figure (a square corner, a straight line, '
+        + 'crossing lines, parallel marks). On make an angle the learner turns a ray from a fixed ray and presses '
+        + 'I\'m done!; any angle of the asked kind passes. You are told the opening in degrees so you can follow the '
+        + 'work, and the screen does not show it: never say it, never say whether their angle is acute, right, obtuse '
+        + 'or straight, and never say which way to turn the ray; ask them to compare their angle with a square corner '
+        + 'or a straight line. You cannot type, tap or move the ray for the learner.',
+      // make_angle (the open build) publishes levers (`angleWorkshopLevers.ts`); the classic modes have none.
+      levers: true,
+      // The open build's own check (`makeAngleMiss`); the classic modes name no misses yet.
+      misses: { make_angle: MAKE_ANGLE_MISSES },
+      // make_angle `not_opened` has no lever: the ray never left the fixed ray, and the screen already says to open it.
+      unanswered: { make_angle: ['not_opened'] },
+    },
+    description: 'Interactive angle workshop where students measure, classify, and solve for unknown angles on a canvas figure. Perfect for angle relationships (complementary, supplementary, vertical, adjacent), writing and solving equations for unknown angles, and parallel-lines-with-a-transversal reasoning. ESSENTIAL for grade 7-8 geometry (CCSS 7.G.B.5, 8.G.A.5). Also an open build for grades 4-6: the student makes an acute, right, obtuse or straight angle, or one inside a degree range (4.G.A.1, 4.MD.C.5, 4.MD.C.6).',
     constraints: 'The manifest must NOT supply specific per-challenge angle values, measures, or relationships — the local pool service builds the challenges deterministically from the selected eval mode. The manifest supplies only session-level wrapper metadata (title, description, challengeType, gradeBand).',
     affordances: { representation: 'pictorial', answers: ['tap', 'type'], role: 'apply', minutes: 5 },
     evalModes: [
@@ -1928,6 +2090,17 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 2,
         challengeTypes: ['measure'],
         description: 'Read an angle from a protractor.',
+      },
+      {
+        // Open build (`/add-eval-modes` references/build-mode.md): the learner turns a ray from a fixed ray to make an
+        // angle of the asked kind; any such angle passes. β = measure + 0.1, the offset build_n has over give_me_n.
+        evalMode: 'make_angle',
+        affordances: { answers: ['build'] },
+        label: 'Make an Angle (open build)',
+        beta: 1.6,
+        scaffoldingMode: 2,
+        challengeTypes: ['make_angle'],
+        description: 'Open build: turn a ray from a fixed ray to make an acute, right, obtuse or straight angle ("bigger than a right angle but smaller than a straight one"), or at higher grades an angle between two given degrees. Any angle of that kind passes; no measure is shown. 4.G.A.1, 4.MD.C.6.',
       },
       {
         evalMode: 'classify_pairs',
@@ -2613,7 +2786,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'build_n',
-        affordances: { representation: 'concrete', reader: 'none', answers: ['tap'] },
+        affordances: { representation: 'concrete', reader: 'none', answers: ['build'] },
         label: 'Build N (Concrete, open build)',
         beta: 1.6,
         scaffoldingMode: 1,
@@ -3411,6 +3584,27 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'shape-builder',
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+      // Only the open build (make_shape) publishes levers (`shapeBuilderLevers.ts`).
+      levers: true,
+      guidance: 'The activity checks every answer itself, and you are not told the key: the learner places corners on '
+        + 'the dot grid and closes the shape, taps a shape then a category, draws fold lines, or turns on measuring tools, '
+        + 'then presses Check. On make_shape many shapes pass: the learner makes any shape with the properties asked and '
+        + 'presses "I\'m done!". The scene gives the learner\'s own shape\'s sides, right angles, parallel pairs, equal '
+        + 'sides and fold lines: never read them out against the ask or say which property is off, and never name the '
+        + 'shape (square, trapezoid): naming can be the skill. Ask the learner to count sides and check corners. You '
+        + 'cannot place, move or sort anything for the learner.',
+      // The activity's own checks: `buildCheck` (build, coordinate_shape), `makeShapeMiss` (make_shape), and the sort.
+      // find_symmetry, measure and compose have no wrong check: an unfinished one is not checked.
+      misses: missLists<ShapeBuilderMiss>({
+        build: ['sides_off', 'right_angles_off', 'parallel_off', 'equal_sides_off'],
+        make_shape: ['sides_off', 'right_angles_off', 'parallel_off', 'equal_sides_off', 'symmetry_off'],
+        classify_by_lines: ['misplaced_shape'],
+        classify: ['misplaced_shape'],
+        coordinate_shape: ['sides_off', 'right_angles_off', 'parallel_off', 'equal_sides_off'],
+      }),
+    },
     description: 'Interactive geometry workspace for constructing shapes on dot/coordinate grids, measuring properties with ruler/protractor tools, classifying shapes into categories, composing/decomposing shapes, and finding lines of symmetry. Supports build, discover, classify, compose, decompose, and symmetry modes. Perfect for teaching shape construction, property discovery, classification hierarchies, and spatial reasoning. ESSENTIAL for K-5 geometry.',
     constraints: 'Requires challenges array with progressive difficulty. Grid-based workspace (dot or coordinate). Supports modes: build, discover, classify, compose, decompose, symmetry.',
     affordances: { representation: ['pictorial', 'symbolic'], answers: ['manipulate', 'tap'], role: ['visualize', 'apply'], minutes: 8 },
@@ -3423,6 +3617,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 1,
         challengeTypes: ['build'],
         description: 'Construct a shape matching given properties.',
+      },
+      {
+        evalMode: 'make_shape',
+        affordances: { representation: 'concrete', answers: ['build'] },
+        label: 'Make a Shape (open build)',
+        beta: 1.6,
+        scaffoldingMode: 1,
+        challengeTypes: ['make_shape'],
+        description: 'Open build: the dot grid starts EMPTY and the learner makes ANY shape with the asked properties (number of sides, right angles, parallel sides, equal sides, lines of symmetry), then says done. Many shapes pass; code writes the ask and judges the shape. 1.G.A.1, 2.G.A.1, 3.G.A.1, 4.G.A.2.',
       },
       {
         evalMode: 'measure',
@@ -5190,7 +5393,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'take out. When coin values are hidden on screen, do not say what a coin is worth: ask the learner. Counting aloud '
         + 'together by a coin’s value is teaching; saying where the count ends is not. A Kindergarten or Grade 1 learner may '
         + 'not read: read the instruction aloud, and on a count of like coins tell them to tap each coin once to count it '
-        + '(at Grade 1, then type the total). You cannot tap, place or type for the learner.',
+        + '(at Grade 1, then type the total). On show-amount the learner makes the amount any way they like and presses '
+        + '“I’m done!”. Never say how much is on the tray or how much more is needed; if they stop, invite them to count '
+        + 'what their coins are worth. You cannot tap, place or type for the learner.',
+      // Only show-amount publishes levers (`coinCounterLevers.ts`); every miss it names is answered by one.
+      levers: true,
       // The activity's own check (`coinMiss`), every mode. Kindergarten like coins check themselves on the last tap.
       misses: missLists<CoinMiss>({
         identify: ['dime_nickel', 'dime_penny', 'silver_coins', 'other_coin'],
@@ -5200,6 +5407,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         'make-amount': ['counted_coins', 'one_coin_short', 'one_coin_over', 'short', 'over'],
         'fewest-coins': ['counted_coins', 'one_coin_short', 'one_coin_over', 'short', 'over'],
         'make-change': ['gave_cost', 'gave_paid', 'added', 'short', 'over'],
+        'show-amount': ['counted_coins', 'one_coin_short', 'one_coin_over', 'short', 'over'],
       }),
     },
     // Records failed sessions' evidence, named misses included, as skill-scoped observations. Recording only:
@@ -5290,6 +5498,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 2,
         challengeTypes: ['make-amount'],
         description: 'Drag coins to build a target amount',
+      },
+      {
+        evalMode: 'show-amount',
+        affordances: { answers: ['build'] },
+        label: 'Show an Amount (Scaffold 2, open build)',
+        beta: 3.6,
+        scaffoldingMode: 2,
+        challengeTypes: ['show-amount'],
+        description: 'Open build: the tray starts EMPTY and the student makes a stated amount ("Show 37¢ any way you like") from coin bins, then presses “I’m done!”. Any coin mix that adds up passes; no target or running total on screen.',
       },
       {
         evalMode: 'make-change',
@@ -5722,16 +5939,23 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'printed equation in your own words first. Before the learner has checked, never say the missing number, whether '
         + 'the equation is true, the value of either side, an equation to build, or which number goes first; coach only as far as the support tier '
         + 'allows. Talk about = as "the same amount on both sides", never "the answer is". You cannot place a tile, pick '
-        + 'or type for the learner.',
+        + 'or type for the learner. On make-n the learner makes their own sentence for the total and presses "I\'m done!": '
+        + 'never say what their row makes or a sentence that works; if they stop, invite them to work out their row.',
+      // make-n (the open build) publishes levers (`equationBuilderLevers.ts`); the other modes have none yet.
+      levers: true,
       // The builder's own check (`equationBuilderMiss`), every mode.
       misses: missLists<EquationBuilderMiss>({
         'build-simple': ['unfinished_equation', 'false_equation', 'other_operation', 'other_numbers'],
+        'make-n': ['bare_number', 'unfinished_sentence', 'one_short', 'one_over', 'short_by_more', 'over_by_more', 'same_way'],
         'missing-result': ['printed_number', 'sum_of_printed', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
         'missing-operand': ['printed_number', 'sum_of_printed', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
         'true-false': ['said_true', 'said_false'],
         'balance-both-sides': ['other_side_total', 'printed_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
         rewrite: ['unfinished_equation', 'false_equation', 'same_as_printed', 'other_form', 'other_numbers'],
       }),
+      // make-n `same_way` has no lever: the way already made stays on screen beside the row, and "different" has no
+      // smaller form.
+      unanswered: { 'make-n': ['same_way'] },
     },
     evalModes: [
       {
@@ -5742,6 +5966,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 1,
         challengeTypes: ['build'],
         description: 'Build a given equation from tiles.',
+      },
+      {
+        evalMode: 'make-n',
+        affordances: { answers: ['build'] },
+        label: 'Make N (open build)',
+        beta: 1.1,
+        scaffoldingMode: 1,
+        challengeTypes: ['make-n'],
+        description: 'Open build: make ANY number sentence that equals a stated total from number and sign tiles (4 + 6, 12 - 2, 5 + 5 for 10), then press done; some items then ask for a different way. Many answers pass; the total alone does not. K.OA.3, 1.OA.6.',
       },
       {
         evalMode: 'missing-result',

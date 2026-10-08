@@ -1,0 +1,48 @@
+{
+ "source": "qa/open-build/array-grid-2026-10-07/generator-run.json",
+ "primitiveId": "array-grid",
+ "evalMode": "make_array",
+ "data": {
+  "title": "Build Some Arrays",
+  "description": "Tap grid cells to create different rectangular arrays and see how rows and columns work together.",
+  "challenges": [
+   {
+    "id": "array-grid-1",
+    "targetRows": 0,
+    "targetColumns": 0,
+    "total": 8,
+    "ways": 1,
+    "instruction": "Make an array with 8 squares."
+   },
+   {
+    "id": "array-grid-2",
+    "targetRows": 0,
+    "targetColumns": 0,
+    "total": 16,
+    "ways": 2,
+    "instruction": "Make an array with 16 squares. Then make a different array with 16 squares."
+   },
+   {
+    "id": "array-grid-3",
+    "targetRows": 0,
+    "targetColumns": 0,
+    "total": 12,
+    "ways": 1,
+    "instruction": "Make an array with 12 squares."
+   },
+   {
+    "id": "array-grid-4",
+    "targetRows": 0,
+    "targetColumns": 0,
+    "total": 15,
+    "ways": 2,
+    "instruction": "Make an array with 15 squares. Then make a different array with 15 squares."
+   }
+  ],
+  "challengeType": "make_array",
+  "iconType": "square",
+  "showLabels": true,
+  "maxRows": 6,
+  "maxColumns": 8
+ }
+}

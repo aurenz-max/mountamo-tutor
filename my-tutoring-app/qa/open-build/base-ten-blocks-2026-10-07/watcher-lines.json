@@ -1,0 +1,54 @@
+{
+  "ranAt": "2026-10-08T00:50:07.833Z",
+  "note": "real watchBuild (gemini-flash-lite-latest) on the real BaseTenBuildScene svg rasterized in headless Chromium; numbers: never; an empty line was dropped by keepWatchLine",
+  "lines": [
+    {
+      "mat": "34 standard",
+      "seeing": "Ooh, purple sticks are lining up in the tens section!"
+    },
+    {
+      "mat": "34 standard",
+      "seeing": "Ooh, purple sticks are growing in the tens place!"
+    },
+    {
+      "mat": "34 as 2 tens 14 ones",
+      "seeing": "Ooh, bright green cubes are filling the ones section!"
+    },
+    {
+      "mat": "34 as 2 tens 14 ones",
+      "seeing": "Ooh, purple sticks are lining up and green cubes are filling the top!"
+    },
+    {
+      "mat": "34 half built",
+      "seeing": ""
+    },
+    {
+      "mat": "34 half built",
+      "seeing": "Ooh, a purple stick is standing in the tens section!"
+    },
+    {
+      "mat": "17 as 17 ones",
+      "seeing": "Ooh, bright green cubes are filling up the ones side!"
+    },
+    {
+      "mat": "17 as 17 ones",
+      "seeing": "Ooh, bright green cubes are filling up the ones section!"
+    },
+    {
+      "mat": "245 standard",
+      "seeing": "Ooh, bright blue squares and purple sticks are filling the mat!"
+    },
+    {
+      "mat": "245 standard",
+      "seeing": "Ooh, bright blue squares and purple sticks are filling the mat!"
+    },
+    {
+      "mat": "245 as 1 hundred 14 tens 5 ones",
+      "seeing": "Ooh, a big blue square and purple sticks are appearing!"
+    },
+    {
+      "mat": "245 as 1 hundred 14 tens 5 ones",
+      "seeing": "Ooh, bright purple sticks and green cubes are filling the mat!"
+    }
+  ]
+}

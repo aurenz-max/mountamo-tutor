@@ -1,0 +1,41 @@
+{
+ "source": "qa/open-build/array-grid-2026-10-07/generator-run.json",
+ "primitiveId": "array-grid",
+ "evalMode": "build_array",
+ "data": {
+  "title": "Star Array Challenge",
+  "description": "Let us practice making and counting rows and columns of stars to build exciting arrays!",
+  "challenges": [
+   {
+    "id": "array-grid-1",
+    "targetRows": 2,
+    "targetColumns": 3
+   },
+   {
+    "id": "array-grid-2",
+    "targetRows": 4,
+    "targetColumns": 2
+   },
+   {
+    "id": "array-grid-3",
+    "targetRows": 3,
+    "targetColumns": 4
+   },
+   {
+    "id": "array-grid-4",
+    "targetRows": 2,
+    "targetColumns": 5
+   },
+   {
+    "id": "array-grid-5",
+    "targetRows": 5,
+    "targetColumns": 3
+   }
+  ],
+  "challengeType": "build_array",
+  "iconType": "star",
+  "showLabels": true,
+  "maxRows": 6,
+  "maxColumns": 8
+ }
+}

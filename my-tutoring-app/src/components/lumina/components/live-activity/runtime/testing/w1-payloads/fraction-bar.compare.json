@@ -1,0 +1,68 @@
+{
+ "source": "qa/open-build/fraction-bar-2026-10-07/compare.json",
+ "primitiveId": "fraction-bar",
+ "evalMode": "compare",
+ "data": {
+  "title": "Comparing Fractions on a Bar — Grade 4",
+  "description": "Explore and compare the sizes of fractions by examining their parts and visualizing them on fraction bars. Use visual models to see which fraction represents a greater amount.",
+  "challenges": [
+   {
+    "id": "fraction-bar-1",
+    "numerator": 2,
+    "denominator": 5,
+    "numeratorChoices": [
+     1,
+     2,
+     3,
+     5
+    ],
+    "denominatorChoices": [
+     4,
+     5,
+     6,
+     2
+    ]
+   },
+   {
+    "id": "fraction-bar-2",
+    "numerator": 6,
+    "denominator": 7,
+    "numeratorChoices": [
+     6,
+     8,
+     5,
+     7
+    ],
+    "denominatorChoices": [
+     6,
+     9,
+     7,
+     8
+    ]
+   },
+   {
+    "id": "fraction-bar-3",
+    "numerator": 4,
+    "denominator": 11,
+    "numeratorChoices": [
+     5,
+     3,
+     11,
+     4
+    ],
+    "denominatorChoices": [
+     10,
+     11,
+     12,
+     4
+    ]
+   }
+  ],
+  "challengeType": "compare",
+  "showDecimal": true,
+  "showPartitionNumerals": true,
+  "showShadedReadout": true,
+  "showPromptGloss": true,
+  "gradeLevel": "Grade 4"
+ }
+}

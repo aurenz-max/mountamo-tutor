@@ -1,0 +1,180 @@
+{
+  "generatedAt": "2026-10-08T01:51:54.974Z",
+  "case": {
+    "targetEvalMode": "identify",
+    "grade": "3",
+    "topic": "Unit fractions",
+    "intent": "Name the parts of a unit fraction"
+  },
+  "data": {
+    "title": "Unit Fraction Bar Practice",
+    "description": "Explore equal parts of a whole by identifying the top and bottom numbers of unit fractions and shading them on a fraction bar. Take your time to discover how each equal piece fits into the whole!",
+    "challenges": [
+      {
+        "id": "fraction-bar-1",
+        "numerator": 1,
+        "denominator": 8,
+        "numeratorChoices": [
+          0,
+          2,
+          8,
+          1
+        ],
+        "denominatorChoices": [
+          7,
+          9,
+          8,
+          10
+        ]
+      },
+      {
+        "id": "fraction-bar-2",
+        "numerator": 1,
+        "denominator": 3,
+        "numeratorChoices": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "denominatorChoices": [
+          5,
+          2,
+          4,
+          3
+        ]
+      },
+      {
+        "id": "fraction-bar-3",
+        "numerator": 1,
+        "denominator": 6,
+        "numeratorChoices": [
+          1,
+          6,
+          2,
+          0
+        ],
+        "denominatorChoices": [
+          5,
+          7,
+          6,
+          8
+        ]
+      },
+      {
+        "id": "fraction-bar-4",
+        "numerator": 1,
+        "denominator": 2,
+        "numeratorChoices": [
+          2,
+          0,
+          3,
+          1
+        ],
+        "denominatorChoices": [
+          3,
+          4,
+          2,
+          5
+        ]
+      },
+      {
+        "id": "fraction-bar-5",
+        "numerator": 1,
+        "denominator": 4,
+        "numeratorChoices": [
+          1,
+          4,
+          2,
+          0
+        ],
+        "denominatorChoices": [
+          4,
+          5,
+          3,
+          6
+        ]
+      },
+      {
+        "id": "fraction-bar-6",
+        "numerator": 1,
+        "denominator": 8,
+        "numeratorChoices": [
+          0,
+          8,
+          2,
+          1
+        ],
+        "denominatorChoices": [
+          10,
+          9,
+          8,
+          7
+        ]
+      },
+      {
+        "id": "fraction-bar-7",
+        "numerator": 1,
+        "denominator": 3,
+        "numeratorChoices": [
+          2,
+          0,
+          3,
+          1
+        ],
+        "denominatorChoices": [
+          2,
+          5,
+          3,
+          4
+        ]
+      }
+    ],
+    "challengeType": "identify",
+    "showDecimal": false,
+    "showPartitionNumerals": true,
+    "showShadedReadout": true,
+    "showPromptGloss": true,
+    "gradeLevel": "Grade 3"
+  },
+  "items": [
+    {
+      "id": "fraction-bar-1",
+      "target": "1/8"
+    },
+    {
+      "id": "fraction-bar-2",
+      "target": "1/3"
+    },
+    {
+      "id": "fraction-bar-3",
+      "target": "1/6"
+    },
+    {
+      "id": "fraction-bar-4",
+      "target": "1/2"
+    },
+    {
+      "id": "fraction-bar-5",
+      "target": "1/4"
+    },
+    {
+      "id": "fraction-bar-6",
+      "target": "1/8"
+    },
+    {
+      "id": "fraction-bar-7",
+      "target": "1/3"
+    }
+  ],
+  "oracle": {
+    "violations": [],
+    "uncheckedTypes": [],
+    "checkedChallenges": 7
+  },
+  "issues": [],
+  "logs": [
+    "[FractionBar] evalMode: \"identify\" → schema enum: [identify] (β=1.5)",
+    "🍰 Fraction Bar generated: {\n  topic: 'Unit fractions',\n  challengeType: 'identify',\n  instanceCount: 7,\n  fractions: [\n    '1/8', '1/3',\n    '1/6', '1/2',\n    '1/4', '1/8',\n    '1/3'\n  ]\n}"
+  ]
+}

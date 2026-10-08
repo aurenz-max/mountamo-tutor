@@ -1,0 +1,96 @@
+{
+  "generatedAt": "2026-10-08T01:52:02.432Z",
+  "case": {
+    "targetEvalMode": "compare",
+    "grade": "4",
+    "topic": "Fractions with larger denominators",
+    "intent": "Work with eighths, tenths and twelfths"
+  },
+  "data": {
+    "title": "Comparing Fractions on a Bar — Grade 4",
+    "description": "Explore and compare the sizes of fractions by examining their parts and visualizing them on fraction bars. Use visual models to see which fraction represents a greater amount.",
+    "challenges": [
+      {
+        "id": "fraction-bar-1",
+        "numerator": 2,
+        "denominator": 5,
+        "numeratorChoices": [
+          1,
+          2,
+          3,
+          5
+        ],
+        "denominatorChoices": [
+          4,
+          5,
+          6,
+          2
+        ]
+      },
+      {
+        "id": "fraction-bar-2",
+        "numerator": 6,
+        "denominator": 7,
+        "numeratorChoices": [
+          6,
+          8,
+          5,
+          7
+        ],
+        "denominatorChoices": [
+          6,
+          9,
+          7,
+          8
+        ]
+      },
+      {
+        "id": "fraction-bar-3",
+        "numerator": 4,
+        "denominator": 11,
+        "numeratorChoices": [
+          5,
+          3,
+          11,
+          4
+        ],
+        "denominatorChoices": [
+          10,
+          11,
+          12,
+          4
+        ]
+      }
+    ],
+    "challengeType": "compare",
+    "showDecimal": true,
+    "showPartitionNumerals": true,
+    "showShadedReadout": true,
+    "showPromptGloss": true,
+    "gradeLevel": "Grade 4"
+  },
+  "items": [
+    {
+      "id": "fraction-bar-1",
+      "target": "2/5"
+    },
+    {
+      "id": "fraction-bar-2",
+      "target": "6/7"
+    },
+    {
+      "id": "fraction-bar-3",
+      "target": "4/11"
+    }
+  ],
+  "oracle": {
+    "violations": [],
+    "uncheckedTypes": [],
+    "checkedChallenges": 3
+  },
+  "issues": [],
+  "logs": [
+    "[FractionBar] evalMode: \"compare\" → schema enum: [compare] (β=3.5)",
+    "🍰 Fraction Bar generated: {\n  topic: 'Fractions with larger denominators',\n  challengeType: 'compare',\n  instanceCount: 3,\n  fractions: [ '2/5', '6/7', '4/11' ]\n}"
+  ]
+}

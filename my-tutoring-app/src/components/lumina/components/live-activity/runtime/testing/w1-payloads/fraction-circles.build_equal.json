@@ -1,0 +1,72 @@
+{
+ "source": "qa/open-build/fraction-circles-2026-10-07/pinned-K-2.json",
+ "primitiveId": "fraction-circles",
+ "evalMode": "build_equal",
+ "data": {
+  "title": "Exploring Halves and Fourths",
+  "challenges": [
+   {
+    "id": "fc1",
+    "type": "build_equal",
+    "instruction": "Make a fraction equal to 2/4 your own way: cut the circle into equal pieces, but not 4, then shade some.",
+    "denominator": 4,
+    "numerator": 2,
+    "hint": "Think about cutting every piece into the same number of smaller pieces.",
+    "narration": "Make a fraction equal to 2/4 your own way: cut the circle into equal pieces, but not 4, then shade some.",
+    "supportTier": "easy",
+    "showTotalPieces": false,
+    "showWorkingCount": false
+   },
+   {
+    "id": "fc2",
+    "type": "build_equal",
+    "instruction": "Make a fraction equal to 1/3 your own way: cut the circle into equal pieces, but not 3, then shade some.",
+    "denominator": 3,
+    "numerator": 1,
+    "hint": "Think about cutting every piece into the same number of smaller pieces.",
+    "narration": "Make a fraction equal to 1/3 your own way: cut the circle into equal pieces, but not 3, then shade some.",
+    "supportTier": "easy",
+    "showTotalPieces": false,
+    "showWorkingCount": false
+   },
+   {
+    "id": "fc3",
+    "type": "build_equal",
+    "instruction": "Make a fraction equal to 2/3 your own way: cut the circle into equal pieces, but not 3, then shade some.",
+    "denominator": 3,
+    "numerator": 2,
+    "hint": "Think about cutting every piece into the same number of smaller pieces.",
+    "narration": "Make a fraction equal to 2/3 your own way: cut the circle into equal pieces, but not 3, then shade some.",
+    "supportTier": "easy",
+    "showTotalPieces": false,
+    "showWorkingCount": false
+   },
+   {
+    "id": "fc4",
+    "type": "build_equal",
+    "instruction": "Make a fraction equal to 1/4 your own way: cut the circle into equal pieces, but not 4, then shade some.",
+    "denominator": 4,
+    "numerator": 1,
+    "hint": "Think about cutting every piece into the same number of smaller pieces.",
+    "narration": "Make a fraction equal to 1/4 your own way: cut the circle into equal pieces, but not 4, then shade some.",
+    "supportTier": "easy",
+    "showTotalPieces": false,
+    "showWorkingCount": false
+   },
+   {
+    "id": "fc5",
+    "type": "build_equal",
+    "instruction": "Make a fraction equal to 3/4 your own way: cut the circle into equal pieces, but not 4, then shade some.",
+    "denominator": 4,
+    "numerator": 3,
+    "hint": "Think about cutting every piece into the same number of smaller pieces.",
+    "narration": "Make a fraction equal to 3/4 your own way: cut the circle into equal pieces, but not 4, then shade some.",
+    "supportTier": "easy",
+    "showTotalPieces": false,
+    "showWorkingCount": false
+   }
+  ],
+  "description": "Practice building equal fractions using different slice sizes for halves and fourths.",
+  "gradeBand": "K-2"
+ }
+}

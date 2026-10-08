@@ -102,10 +102,11 @@ export const describeTrade = (columns: BtColumns) => `Mat after the taps: ${desc
  *   `short_by_more` / `over_by_more`;
  * - build_number: `not_traded_up` (the right value, but a place holds ten or more);
  * - a trade: `no_trade` (checked before any trade), `value_changed` (blocks added or removed as well),
- *   `other_block` (a different size broken down), `traded_twice` (more than one of the asked block broken).
+ *   `other_block` (a different size broken down), `traded_twice` (more than one of the asked block broken);
+ * - build_two_ways: `same_as_first` (the second way has the right value and the same blocks as the first).
  */
 export type BaseTenMiss = 'digits_swapped' | 'one_short' | 'one_over' | 'one_ten_off' | 'short_by_more' | 'over_by_more'
-  | 'not_traded_up' | 'no_trade' | 'value_changed' | 'other_block' | 'traded_twice';
+  | 'not_traded_up' | 'no_trade' | 'value_changed' | 'other_block' | 'traded_twice' | 'same_as_first';
 
 /** The judged mat's trade: the only wrong commit is a tap on the wrong block, or too many taps. */
 export function tradeMiss(item: BaseTenItem | null, mat: BtColumns): BaseTenMiss | undefined {
@@ -161,7 +162,7 @@ export const plainWorkspaceAssignment = (challenge: PlainBaseTenChallenge): Teac
   ({ id: challenge.id, task: challenge.instruction, response: 'gesture' });
 
 /** Which control carries the answer (BT-4): the blocks where the value is on screen, else the keypad. */
-export const blocksAreTheAnswer = (type: string) => type === 'build_number' || type === 'regroup';
+export const blocksAreTheAnswer = (type: string) => type === 'build_number' || type === 'regroup' || type === TWO_WAYS;
 
 export interface PlainBaseTenView {
   /** The columns in words ("1 ten and 2 ones"). */
@@ -192,4 +193,62 @@ export function plainWorkspaceScene(challenge: PlainBaseTenChallenge, view: Plai
     constraints: PLAIN_CONSTRAINTS[challenge.type]
       ?? 'The learner may work with the blocks, then types the result on the keypad; the activity checks it.',
   } };
+}
+
+// ── Open build: show N with blocks, then show it a different way (build_two_ways) ──────────────────────
+// `/add-eval-modes` references/build-mode.md. The learner builds N on an empty mat, any blocks whose value is N
+// (3 tens 4 ones, or 34 ones), and presses I'm done. The first right build is kept and stays on the mat; the learner
+// changes it into a second build with the same value and different blocks (2 tens 14 ones), and presses I'm done
+// again. Judged in code: the value, then different-from-first. Only the second check completes the item.
+
+export const TWO_WAYS = 'build_two_ways';
+
+/** The instruction states the number: it is the task, not the answer (the answer is a set of blocks). */
+export const twoWaysInstruction = (n: number) => `Show ${n} with blocks. Then show ${n} a different way.`;
+
+/** Blocks per place, by place name ('hundreds', 'tens', 'ones'). */
+export type WayColumns = Readonly<Record<string, number>>;
+
+/** Two builds are the same way when every place holds the same number of blocks. */
+export const sameWay = (a: WayColumns, b: WayColumns) =>
+  Array.from(new Set([...Object.keys(a), ...Object.keys(b)])).every(p => (a[p] ?? 0) === (b[p] ?? 0));
+
+/** The way a build is checked against: the value first; on the second way, then whether it differs from the first. */
+export function twoWaysMiss(work: { got: number; target: number; unit: number; now: WayColumns; first: WayColumns | null }):
+  BaseTenMiss | undefined {
+  const miss = plainMiss(TWO_WAYS, { got: work.got, target: work.target, unit: work.unit, trades: 0 });
+  if (miss) return miss;
+  return work.first && sameWay(work.first, work.now) ? 'same_as_first' : undefined;
+}
+
+/** The blocks in words, largest first ("2 tens and 14 ones"); the learner's own work, never the key. */
+export function describeWay(columns: WayColumns, places: readonly string[]): string {
+  const parts = places.filter(p => (columns[p] ?? 0) > 0).map(p => {
+    const n = columns[p] ?? 0;
+    return `${n} ${n === 1 ? p.replace(/s$/, '') : p}`;
+  });
+  if (!parts.length) return 'no blocks';
+  return parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}`;
+}
+
+/** The checked build in words: which way it was, and on the second the first way beside it. */
+export const describeTwoWaysCheck = (now: WayColumns, first: WayColumns | null, places: readonly string[]) => first
+  ? `Second way: ${describeWay(now, places)} (first way: ${describeWay(first, places)})`
+  : `First way: ${describeWay(now, places)}`;
+
+/**
+ * The open build's scene. The made value and the blocks in each place are NUMBERS, so the workspace's
+ * `workHistory` records where the learner turned back. The mat itself never prints the value.
+ */
+export function twoWaysScene(view: { columns: WayColumns; places: readonly string[]; value: number; first: WayColumns | null }):
+  WorkspaceScene {
+  const facts: Record<string, string | number> = { kind: TWO_WAYS, way: view.first ? 'second' : 'first', valueMade: view.value };
+  for (const p of view.places) facts[`${p}OnMat`] = view.columns[p] ?? 0;
+  if (view.first) facts.firstWay = describeWay(view.first, view.places);
+  facts.constraints = view.first
+    ? "The first way was checked right and is shown above the mat. The learner changes the blocks on the mat so they "
+      + "make the same number a different way, then presses I'm done. The mat checks the value and that the blocks differ."
+    : "The learner puts blocks on an empty mat, any blocks that make the number, then presses I'm done. The mat checks "
+      + 'the value itself. The mat prints no total.';
+  return { objects: [], facts };
 }

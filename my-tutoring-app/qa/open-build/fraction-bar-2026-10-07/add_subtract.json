@@ -1,0 +1,96 @@
+{
+  "generatedAt": "2026-10-08T01:52:04.611Z",
+  "case": {
+    "targetEvalMode": "add_subtract",
+    "grade": "5",
+    "topic": "Adding fractions",
+    "intent": "Fractions in addition and subtraction context"
+  },
+  "data": {
+    "title": "Adding Fractions with Fraction Bars",
+    "description": "Combine fractional parts on a visual bar to see how parts join together to make a sum. Practice identifying each part of the fraction before shading the combined amount.",
+    "challenges": [
+      {
+        "id": "fraction-bar-1",
+        "numerator": 2,
+        "denominator": 9,
+        "numeratorChoices": [
+          1,
+          9,
+          3,
+          2
+        ],
+        "denominatorChoices": [
+          9,
+          10,
+          8,
+          2
+        ]
+      },
+      {
+        "id": "fraction-bar-2",
+        "numerator": 4,
+        "denominator": 7,
+        "numeratorChoices": [
+          4,
+          7,
+          5,
+          3
+        ],
+        "denominatorChoices": [
+          4,
+          6,
+          7,
+          8
+        ]
+      },
+      {
+        "id": "fraction-bar-3",
+        "numerator": 7,
+        "denominator": 9,
+        "numeratorChoices": [
+          6,
+          7,
+          8,
+          9
+        ],
+        "denominatorChoices": [
+          8,
+          10,
+          9,
+          7
+        ]
+      }
+    ],
+    "challengeType": "add_subtract",
+    "showDecimal": true,
+    "showPartitionNumerals": true,
+    "showShadedReadout": true,
+    "showPromptGloss": true,
+    "gradeLevel": "Grade 5"
+  },
+  "items": [
+    {
+      "id": "fraction-bar-1",
+      "target": "2/9"
+    },
+    {
+      "id": "fraction-bar-2",
+      "target": "4/7"
+    },
+    {
+      "id": "fraction-bar-3",
+      "target": "7/9"
+    }
+  ],
+  "oracle": {
+    "violations": [],
+    "uncheckedTypes": [],
+    "checkedChallenges": 3
+  },
+  "issues": [],
+  "logs": [
+    "[FractionBar] evalMode: \"add_subtract\" → schema enum: [add_subtract] (β=4.5)",
+    "🍰 Fraction Bar generated: {\n  topic: 'Adding fractions',\n  challengeType: 'add_subtract',\n  instanceCount: 3,\n  fractions: [ '2/9', '4/7', '7/9' ]\n}"
+  ]
+}

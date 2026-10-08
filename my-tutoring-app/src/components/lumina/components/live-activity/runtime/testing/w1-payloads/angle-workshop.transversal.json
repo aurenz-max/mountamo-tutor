@@ -1,0 +1,78 @@
+{
+ "source": "qa/open-build/angle-workshop-2026-10-07/generations.json",
+ "primitiveId": "angle-workshop",
+ "evalMode": "transversal",
+ "data": {
+  "title": "Finding Angles Formed by Transversals",
+  "description": "Practice finding unknown angle measures using the geometric relationships formed when parallel lines are cut by a transversal.",
+  "challengeType": "transversal",
+  "gradeBand": "8",
+  "challenges": [
+   {
+    "type": "transversal",
+    "narration": "A roof truss forms a triangle.",
+    "instruction": "The three angles of a triangle add to 180°. Two are given — find the third, x.",
+    "hint": "The angles of any triangle add to 180°, so x = 180° − the two known angles.",
+    "answerKind": "degrees",
+    "transversalShape": "triangle_sum",
+    "givenAngle": 85,
+    "givenAngle2": 45,
+    "expectedAnswer": 50,
+    "tolerance": 1,
+    "id": "aw-1"
+   },
+   {
+    "type": "transversal",
+    "narration": "A triangular sail forms a triangle.",
+    "instruction": "The three angles of a triangle add to 180°. Two are given — find the third, x.",
+    "hint": "The angles of any triangle add to 180°, so x = 180° − the two known angles.",
+    "answerKind": "degrees",
+    "transversalShape": "triangle_sum",
+    "givenAngle": 70,
+    "givenAngle2": 35,
+    "expectedAnswer": 75,
+    "tolerance": 1,
+    "id": "aw-2"
+   },
+   {
+    "type": "transversal",
+    "narration": "A ladder leaning across two shelves — two parallel lines cut by a transversal.",
+    "instruction": "The marked angle and x are corresponding angles. Find x.",
+    "hint": "corresponding angle pairs are equal when the lines are parallel, so x equals the marked angle.",
+    "answerKind": "degrees",
+    "transversalShape": "parallel_transversal",
+    "givenAngle": 115,
+    "transRelation": "corresponding",
+    "expectedAnswer": 115,
+    "tolerance": 1,
+    "id": "aw-3"
+   },
+   {
+    "type": "transversal",
+    "narration": "A ladder leaning across two shelves — two parallel lines cut by a transversal.",
+    "instruction": "The marked angle and x are alternate interior angles. Find x.",
+    "hint": "alternate interior angle pairs are equal when the lines are parallel, so x equals the marked angle.",
+    "answerKind": "degrees",
+    "transversalShape": "parallel_transversal",
+    "givenAngle": 80,
+    "transRelation": "alternate_interior",
+    "expectedAnswer": 80,
+    "tolerance": 1,
+    "id": "aw-4"
+   },
+   {
+    "type": "transversal",
+    "narration": "A yield sign has one side extended past a corner.",
+    "instruction": "The exterior angle x equals the sum of the two remote interior angles. Find x.",
+    "hint": "An exterior angle of a triangle equals the sum of the two non-adjacent (remote) interior angles.",
+    "answerKind": "degrees",
+    "transversalShape": "exterior_angle",
+    "givenAngle": 70,
+    "givenAngle2": 55,
+    "expectedAnswer": 125,
+    "tolerance": 1,
+    "id": "aw-5"
+   }
+  ]
+ }
+}

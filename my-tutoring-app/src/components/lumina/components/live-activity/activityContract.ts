@@ -18,9 +18,12 @@ import { sortingStationLiveDomain } from './adapters/sortingStationLive';
 import { numberTracerLiveDomain } from './adapters/numberTracerLive';
 import { comparisonBuilderLiveDomain } from './adapters/comparisonBuilderLive';
 import { coinCounterLiveDomain } from './adapters/coinCounterLive';
+import { angleWorkshopLiveDomain } from './adapters/angleWorkshopLive';
+import { arrayGridLiveDomain } from './adapters/arrayGridLive';
 import { compareObjectsLiveDomain } from './adapters/compareObjectsLive';
 import { balanceScaleLiveDomain } from './adapters/balanceScaleLive';
 import { fractionCirclesLiveDomain } from './adapters/fractionCirclesLive';
+import { fractionBarLiveDomain } from './adapters/fractionBarLive';
 import { placeValueLiveDomain } from './adapters/placeValueLive';
 import { baseTenBlocksLiveDomain } from './adapters/baseTenBlocksLive';
 import { shapeSorterLiveDomain, validateShapeSorterData } from './adapters/shapeSorterLive';
@@ -68,6 +71,7 @@ import { youAndMeLiveDomain } from './adapters/youAndMeLive';
 import { rampLabLiveDomain } from './adapters/rampLabLive';
 import { trainYardLiveDomain } from './adapters/trainYardLive';
 import { openBuilderLiveDomain } from './adapters/openBuilderLive';
+import { shapeBuilderLiveDomain } from './adapters/shapeBuilderLive';
 import { diShapesLiveDomain } from './adapters/diShapesLive';
 import { diSpokenPracticeLiveDomain } from './adapters/diSpokenPracticeLive';
 import { diDiceRollLiveDomain } from './adapters/diDiceRollLive';
@@ -81,6 +85,7 @@ import { additionFactStrategiesLiveDomain } from './adapters/additionFactStrateg
 import { equationBuilderLiveDomain } from './adapters/equationBuilderLive';
 import { patternBuilderLiveDomain } from './adapters/patternBuilderLive';
 import { strategyPickerLiveDomain } from './adapters/strategyPickerLive';
+import { polygonAreaBuilderLiveDomain } from './adapters/polygonAreaBuilderLive';
 import { workspaceAdapter, type LiveActivityAdapter } from './adapters/adapterContract';
 
 export type { LiveActivityAdapter } from './adapters/adapterContract';
@@ -104,9 +109,12 @@ export const LIVE_ADAPTERS = {
   'number-tracer': workspaceAdapter('number-tracer', numberTracerLiveDomain),
   'comparison-builder': workspaceAdapter('comparison-builder', comparisonBuilderLiveDomain),
   'coin-counter': workspaceAdapter('coin-counter', coinCounterLiveDomain),
+  'angle-workshop': workspaceAdapter('angle-workshop', angleWorkshopLiveDomain),
+  'array-grid': workspaceAdapter('array-grid', arrayGridLiveDomain),
   'compare-objects': workspaceAdapter('compare-objects', compareObjectsLiveDomain),
   'balance-scale': workspaceAdapter('balance-scale', balanceScaleLiveDomain),
   'fraction-circles': workspaceAdapter('fraction-circles', fractionCirclesLiveDomain),
+  'fraction-bar': workspaceAdapter('fraction-bar', fractionBarLiveDomain),
   'place-value-chart': workspaceAdapter('place-value-chart', placeValueLiveDomain),
   'base-ten-blocks': workspaceAdapter('base-ten-blocks', baseTenBlocksLiveDomain),
   'shape-sorter': workspaceAdapter('shape-sorter', shapeSorterLiveDomain),
@@ -154,6 +162,7 @@ export const LIVE_ADAPTERS = {
   'ramp-lab': workspaceAdapter('ramp-lab', rampLabLiveDomain),
   'train-yard': workspaceAdapter('train-yard', trainYardLiveDomain),
   'open-builder': workspaceAdapter('open-builder', openBuilderLiveDomain),
+  'shape-builder': workspaceAdapter('shape-builder', shapeBuilderLiveDomain),
   'di-shapes': workspaceAdapter('di-shapes', diShapesLiveDomain),
   'di-spoken-practice': workspaceAdapter('di-spoken-practice', diSpokenPracticeLiveDomain),
   'di-dice-roll': workspaceAdapter('di-dice-roll', diDiceRollLiveDomain),
@@ -167,6 +176,7 @@ export const LIVE_ADAPTERS = {
   'equation-builder': workspaceAdapter('equation-builder', equationBuilderLiveDomain),
   'pattern-builder': workspaceAdapter('pattern-builder', patternBuilderLiveDomain),
   'strategy-picker': workspaceAdapter('strategy-picker', strategyPickerLiveDomain),
+  'polygon-area-builder': workspaceAdapter('polygon-area-builder', polygonAreaBuilderLiveDomain),
 } satisfies Record<string, LiveActivityAdapter<any>>;
 
 export type LivePrimitiveId = keyof typeof LIVE_ADAPTERS;

@@ -1,0 +1,157 @@
+[
+  {
+    "payload": "fraction-bar.add_subtract",
+    "items": 3,
+    "findings": [],
+    "advisories": [],
+    "misses": {
+      "checked": 3,
+      "named": 3,
+      "declared": true,
+      "spoken": {
+        "answered": 0,
+        "named": 0
+      }
+    },
+    "records": {
+      "recover": {
+        "sent": 1,
+        "success": true,
+        "score": 67,
+        "firstResponseScore": 0,
+        "attempts": 6
+      },
+      "clean": {
+        "sent": 1,
+        "success": true,
+        "score": 100,
+        "firstResponseScore": 100,
+        "attempts": 3
+      }
+    }
+  },
+  {
+    "payload": "fraction-bar.build",
+    "items": 3,
+    "findings": [],
+    "advisories": [],
+    "misses": {
+      "checked": 3,
+      "named": 3,
+      "declared": true,
+      "spoken": {
+        "answered": 0,
+        "named": 0
+      }
+    },
+    "records": {
+      "recover": {
+        "sent": 1,
+        "success": true,
+        "score": 67,
+        "firstResponseScore": 0,
+        "attempts": 6
+      },
+      "clean": {
+        "sent": 1,
+        "success": true,
+        "score": 100,
+        "firstResponseScore": 100,
+        "attempts": 3
+      }
+    }
+  },
+  {
+    "payload": "fraction-bar.build_equal",
+    "items": 4,
+    "findings": [],
+    "advisories": [],
+    "misses": {
+      "checked": 4,
+      "named": 4,
+      "declared": true,
+      "spoken": {
+        "answered": 0,
+        "named": 0
+      }
+    },
+    "records": {
+      "recover": {
+        "sent": 1,
+        "success": true,
+        "score": 67,
+        "firstResponseScore": 0,
+        "attempts": 8
+      },
+      "clean": {
+        "sent": 1,
+        "success": true,
+        "score": 100,
+        "firstResponseScore": 100,
+        "attempts": 4
+      }
+    }
+  },
+  {
+    "payload": "fraction-bar.compare",
+    "items": 3,
+    "findings": [],
+    "advisories": [],
+    "misses": {
+      "checked": 3,
+      "named": 3,
+      "declared": true,
+      "spoken": {
+        "answered": 0,
+        "named": 0
+      }
+    },
+    "records": {
+      "recover": {
+        "sent": 1,
+        "success": true,
+        "score": 67,
+        "firstResponseScore": 0,
+        "attempts": 6
+      },
+      "clean": {
+        "sent": 1,
+        "success": true,
+        "score": 100,
+        "firstResponseScore": 100,
+        "attempts": 3
+      }
+    }
+  },
+  {
+    "payload": "fraction-bar.identify",
+    "items": 7,
+    "findings": [],
+    "advisories": [],
+    "misses": {
+      "checked": 7,
+      "named": 7,
+      "declared": true,
+      "spoken": {
+        "answered": 0,
+        "named": 0
+      }
+    },
+    "records": {
+      "recover": {
+        "sent": 1,
+        "success": true,
+        "score": 67,
+        "firstResponseScore": 0,
+        "attempts": 14
+      },
+      "clean": {
+        "sent": 1,
+        "success": true,
+        "score": 100,
+        "firstResponseScore": 100,
+        "attempts": 7
+      }
+    }
+  }
+]

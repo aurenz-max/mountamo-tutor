@@ -11,6 +11,7 @@ import {
   LuminaPanel,
   LuminaActionButton,
   LuminaInput,
+  LuminaButton,
   motion,
 } from '../../../ui';
 import {
@@ -29,6 +30,9 @@ import { withWorkspaceController } from '../../../components/live-activity/runti
 import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
   from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import { COIN_CENTS, coinMiss, describeCoinWork, workspaceAssignment, workspaceScene, type CoinView } from './coinCounterWorkspace';
+import { RUNNING_TOTAL_LEVER, VALUE_TAGS_LEVER, coinCounterLevers, leverFacts, runningValues, smallerAmount } from './coinCounterLevers';
+import { CoinBuildTray, MAX_TRAY } from './CoinBuildTray';
+import { useBuildWatcher } from '../../build-layer/buildLayer';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -43,7 +47,7 @@ export interface CoinDef {
 
 export interface CoinCounterChallenge {
   id: string;
-  type: 'identify' | 'count' | 'make-amount' | 'compare' | 'make-change';
+  type: 'identify' | 'count' | 'make-amount' | 'compare' | 'make-change' | 'show-amount';
   instruction: string;
 
   // identify — "Which coin is a nickel?"
@@ -62,7 +66,8 @@ export interface CoinCounterChallenge {
    *  targetEvalMode so the K/G1 enacted-count forks can never fire on a count-mixed card. */
   countMode?: 'like' | 'mixed';
 
-  // make-amount — "Make 47¢ using coins"
+  // make-amount — "Make 47¢ using coins"; show-amount (open build) — "Show 37¢ any way you like", from
+  // `availableCoins` as bins onto an empty tray
   targetAmount?: number;
   availableCoins?: CoinType[];
 
@@ -127,6 +132,7 @@ const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   'make-amount': { label: 'Make Amount', icon: '🎯', accentColor: 'purple' },
   compare: { label: 'Compare', icon: '⚖️', accentColor: 'amber' },
   'make-change': { label: 'Make Change', icon: '💰', accentColor: 'orange' },
+  'show-amount': { label: 'Show It', icon: '🧺', accentColor: 'cyan' },
 };
 
 // ============================================================================
@@ -313,7 +319,15 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   });
 
   // ── State ──────────────────────────────────────────────────────────
-  const currentChallenge = challenges[currentChallengeIndex] ?? null;
+  // show-amount levers (`coinCounterLevers.ts`), keyed by the session item they were pulled on, and the easier
+  // ask a simplify lever put on screen in its place. The item starts bare: no lever comes from the tier.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<CoinCounterChallenge | null>(null);
+  const sessionChallenge = challenges[currentChallengeIndex] ?? null;
+  /** What is on screen: the easier ask while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
 
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
@@ -428,8 +442,10 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   }, []);
   // A fresh challenge starts empty. Try again clears the answer (the pick, the typed number, the placed coins)
   // and the feedback, but keeps a Grade 1 count's tags: every coin was already tagged once, which is right.
+  // On the open build (show-amount) Try again keeps the tray and the verdict's words: the learner revises the build.
   openItem.current = (retry) => {
-    if (!retry) { resetDomainState(); return; }
+    if (!retry) { resetDomainState(); setPractice(null); return; }
+    if (currentChallenge?.type === 'show-amount') return;
     setSelectedCoin(null);
     setPlacedCoins([]);
     setCountInput('');
@@ -571,6 +587,16 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     return correct;
   }, [currentChallenge, changeInput, sendText, supportTier]);
 
+  /** show-amount ("I'm done!"): any coins that add up to the amount pass. The words name no amount or direction. */
+  const handleCheckShowAmount = useCallback(() => {
+    if (!currentChallenge) return;
+    const target = currentChallenge.targetAmount ?? 0;
+    const correct = placedCoins.reduce((sum, c) => sum + COIN_VALUES[c], 0) === target;
+    setFeedback(correct ? `Yes! Your coins make ${formatCents(target)}!` : 'Not yet. Count what your coins are worth, then fix your tray.');
+    setFeedbackType(correct ? 'success' : 'error');
+    return correct;
+  }, [currentChallenge, placedCoins]);
+
   // ── Master Check Handler ───────────────────────────────────────────
   const handleCheckAnswer = useCallback(() => {
     if (!currentChallenge) return;
@@ -582,6 +608,7 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
       case 'make-amount': correct = handleCheckMakeAmount() ?? false; break;
       case 'compare': correct = handleCheckCompare() ?? false; break;
       case 'make-change': correct = handleCheckMakeChange() ?? false; break;
+      case 'show-amount': correct = handleCheckShowAmount() ?? false; break;
     }
 
     if (correct) SoundManager.playCorrect();
@@ -590,7 +617,8 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     const work = coinView.current;
     commitCheck.current(describeCoinWork(currentChallenge, work), correct,
       correct ? undefined : coinMiss(currentChallenge, work));
-  }, [currentChallenge, handleCheckIdentify, handleCheckCount, handleCheckMakeAmount, handleCheckCompare, handleCheckMakeChange]);
+  }, [currentChallenge, handleCheckIdentify, handleCheckCount, handleCheckMakeAmount, handleCheckCompare, handleCheckMakeChange,
+    handleCheckShowAmount]);
 
   // ── Advance to Next Challenge ──────────────────────────────────────
   const advanceToNextChallenge = useCallback(() => {
@@ -736,10 +764,46 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   coinView.current = currentView;
 
   // Workspace path: what the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation.
+  // W1 offers no demonstration targets and no presentation. Only show-amount declares levers.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge) return;
-    workspace.current = { ...workspaceScene(currentChallenge, coinView.current) };
+    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    const scene = workspaceScene(currentChallenge, coinView.current);
+    if (sessionChallenge.type !== 'show-amount') { workspace.current = { ...scene }; return; }
+    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
+    const levers = practice ? [] : coinCounterLevers(sessionChallenge, pulledLevers);
+    workspace.current = {
+      ...scene,
+      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = smallerAmount(sessionChallenge);
+          if (!easier) return 'This item has no easier ask; try a help lever.';
+          setLeverState(pulled); setPlacedCoins([]); setFeedback(''); setFeedbackType(''); setPractice(easier);
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { setPlacedCoins([]); setFeedback(''); setFeedbackType(''); setPractice(null); },
+    };
+  });
+
+  // ── Open build (show-amount): the tray, the live line, the commit ──
+  const trayRef = useRef<SVGSVGElement | null>(null);
+  const isShowAmount = currentChallenge?.type === 'show-amount';
+  const buildOpen = isShowAmount && !isCurrentChallengeCorrect && !(tutorOwned && progress.canAttempt === false);
+  // The live line (shared build layer): what the tray looks like so far, NEVER a number — adding up is the task.
+  const buildSeeing = useBuildWatcher({
+    buildKey: placedCoins.join('|'),
+    enabled: buildOpen && placedCoins.length > 0,
+    svg: trayRef,
+    request: { task: currentChallenge?.instruction ?? '',
+      sceneNote: 'A green coin tray. The coin bins the learner takes coins from sit outside the picture.', numbers: 'never' },
   });
 
   /** Running total after the first `n` taps — the value stamped on the nth coin. */
@@ -1073,6 +1137,51 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     );
   };
 
+  /** Open build: bins above an empty tray. No target on screen beside the coins; the ask states the amount. */
+  const renderShowAmountChallenge = () => {
+    if (!currentChallenge) return null;
+    const bins = currentChallenge.availableCoins || ['penny', 'nickel', 'dime'] as CoinType[];
+    const full = placedCoins.length >= MAX_TRAY;
+    return (
+      <div className="space-y-3">
+        <div className="flex flex-wrap gap-2 justify-center">
+          {bins.map((coin) => (
+            <CoinVisual
+              key={coin}
+              type={coin}
+              onClick={() => {
+                if (!buildOpen || full) return;
+                SoundManager.tap();
+                setPlacedCoins((prev) => [...prev, coin]);
+              }}
+              disabled={!buildOpen || full}
+              showValue={showCoinValues}
+              ariaLabel={`Add a ${coin}`}
+            />
+          ))}
+        </div>
+        <p className="text-slate-500 text-xs text-center">Tap a coin to put it on your tray. Tap a coin on the tray to take it off.</p>
+        <div className="flex justify-center">
+          <CoinBuildTray ref={trayRef} coins={placedCoins} valuesShown={showCoinValues}
+            tags={leverOn(VALUE_TAGS_LEVER) ? runningValues(placedCoins) : null} disabled={!buildOpen}
+            onRemove={(i) => {
+              if (!buildOpen) return;
+              SoundManager.tap();
+              setPlacedCoins((prev) => prev.filter((_, j) => j !== i));
+            }} />
+        </div>
+        <div className="flex min-h-8 items-center justify-center" aria-live="polite" data-testid="build-watcher">
+          {buildSeeing && <span className="rounded-full bg-white/10 px-4 py-1.5 text-base text-amber-100">👀 {buildSeeing}</span>}
+        </div>
+        {leverOn(RUNNING_TOTAL_LEVER) && (
+          <div className="flex items-center justify-center text-sm" data-lever="running-total">
+            <span className="text-slate-300">On your tray: <span className="text-orange-300 font-bold text-lg">{formatCents(placedTotal)}</span></span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderCompareChallenge = () => {
     if (!currentChallenge) return null;
     return (
@@ -1263,6 +1372,7 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
             {currentChallenge.type === 'make-amount' && renderMakeAmountChallenge()}
             {currentChallenge.type === 'compare' && renderCompareChallenge()}
             {currentChallenge.type === 'make-change' && renderMakeChangeChallenge()}
+            {currentChallenge.type === 'show-amount' && renderShowAmountChallenge()}
 
             </div>
 
@@ -1287,7 +1397,13 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
                   auto-judges, so a Check button would be a dead control. The G1 enacted
                   count keeps Check, but only once every coin is tagged (it appears
                   together with the total input). */}
-              {!isCurrentChallengeCorrect ? (
+              {/* The open build commits with "I'm done!" through the same check; there is no auto-check. */}
+              {isShowAmount && !isCurrentChallengeCorrect ? (
+                <LuminaButton tone="primary" disabled={!buildOpen || placedCoins.length === 0}
+                  onClick={() => { if (!learnerBlocked()) handleCheckAnswer(); }}>
+                  I&apos;m done!
+                </LuminaButton>
+              ) : !isCurrentChallengeCorrect ? (
                 isEnactedCount || (isEnactedCountG1 && !allEnactedCounted) ? null : (
                 <LuminaActionButton
                   action="check"

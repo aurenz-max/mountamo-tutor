@@ -10,6 +10,7 @@ import {
   type ChallengeTypeDoc,
 } from "../evalMode";
 import { buildScopePromptSection } from "../scopeContext";
+import { askIsOpen, asksFor, shapeAskText, type ShapeAsk, type ShapeBand } from "../../primitives/visual-primitives/math/shapeMakeBuild";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -72,6 +73,14 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `BAD example: (1,1),(4,1),(4,4),(1,4) — center at (2.5,2.5), impossible to draw. `
       + `Symbolic — analyze and identify symmetry lines.`,
     schemaDescription: "'find_symmetry' (analyze symmetry lines)",
+  },
+  make_shape: {
+    promptDoc:
+      `"make_shape": Open build. The learner makes ANY shape with a set of properties on an empty dot grid. `
+      + `Code writes each make_shape challenge's properties and instruction, so for these write only a short, warm `
+      + `narration line; never name a shape (square, trapezoid...) and never give a hint about where to place corners. `
+      + `No preloaded shapes are needed for make_shape.`,
+    schemaDescription: "'make_shape' (make any shape with the asked properties)",
   },
   coordinate_shape: {
     promptDoc:
@@ -555,16 +564,23 @@ Return the complete shape builder configuration.
 
   logEvalModeResolution('ShapeBuilder', config?.targetEvalMode, evalConstraint);
 
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: activeSchema,
-    },
-  });
-
-  const data = result.text ? JSON.parse(result.text) : null;
+  // A pinned make_shape session is written by code alone (the asks, the words, an empty dot grid): the model has
+  // nothing to add, and its runaway numbers ("sides": 4.0000…) truncated the JSON on a live run.
+  const makeShapePinned = evalConstraint?.allowedTypes.length === 1 && evalConstraint.allowedTypes[0] === 'make_shape';
+  const data = makeShapePinned
+    ? { title: 'Make a Shape', description: 'Make your own shapes that have the properties asked for.', mode: 'build',
+        gradeBand: ctx.grade ? (['K', '1', '2'].includes(ctx.grade) ? 'K-2' : '3-5') : undefined, challenges: [] }
+    : await (async () => {
+      const result = await ai.models.generateContent({
+        model: "gemini-flash-lite-latest",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: activeSchema,
+        },
+      });
+      return result.text ? JSON.parse(result.text) : null;
+    })();
 
   if (!data) {
     throw new Error('No valid shape builder data returned from Gemini API');
@@ -615,7 +631,7 @@ Return the complete shape builder configuration.
   }
 
   // Ensure challenges have valid types (safety net — schema enum handles the eval mode case)
-  const validChallengeTypes = ['build', 'measure', 'classify', 'classify_by_lines', 'compose', 'find_symmetry', 'coordinate_shape'];
+  const validChallengeTypes = ['build', 'measure', 'classify', 'classify_by_lines', 'compose', 'find_symmetry', 'coordinate_shape', 'make_shape'];
   data.challenges = (data.challenges || []).filter(
     (c: { type: string }) => validChallengeTypes.includes(c.type)
   );
@@ -662,6 +678,12 @@ Return the complete shape builder configuration.
         hint: 'Imagine folding the shape in half — where would both sides match perfectly?',
         narration: "Let's find where this shape is perfectly balanced!",
       },
+      make_shape: {
+        type: 'make_shape',
+        instruction: 'Make a shape with 4 sides.',
+        hint: 'Count your sides. Check each corner.',
+        narration: "Let's make a shape of your own!",
+      },
       coordinate_shape: {
         type: 'coordinate_shape',
         instruction: 'Plot vertices at (1,1), (4,1), (4,4), (1,4) to build a square.',
@@ -671,6 +693,49 @@ Return the complete shape builder configuration.
     };
     console.log(`[ShapeBuilder] No valid challenges — using ${fallbackType} fallback`);
     data.challenges = [{ id: 'c1', ...fallbacks[fallbackType] ?? fallbacks.build }];
+  }
+
+  // ── make_shape (open build): code owns every ask. The model's properties, instruction and hint are replaced by a
+  //    property set from the menu, each proved satisfiable and open (two different shapes pass it) by the board's
+  //    own judge; asks are distinct within the session. A pinned session is all make_shape on an empty 10x10 dot grid.
+  const makeShapeOnly = evalConstraint?.allowedTypes.length === 1 && evalConstraint.allowedTypes[0] === 'make_shape';
+  if (makeShapeOnly || (data.challenges as Array<{ type: string }>).some(c => c.type === 'make_shape')) {
+    const band: ShapeBand = data.gradeBand === '3-5' ? '3-5' : 'K-2';
+    const kindergarten = ctx.grade === 'K' || /kinder/i.test(gradeLevel);
+    let pool = asksFor(band, `${topic} ${ctx.intent ?? ''}`)
+      .filter(a => !kindergarten || Object.keys(a).length === 1)
+      .filter(a => askIsOpen(a, 10));
+    if (!pool.length) pool = [{ sides: 4 }];
+    pool = pool.map(a => ({ a, r: Math.random() })).sort((x, y) => x.r - y.r).map(x => x.a);
+    const asks: ShapeAsk[] = [];
+    if (makeShapeOnly) {
+      data.challenges = (data.challenges as Array<{ type: string }>).filter(c => c.type === 'make_shape');
+      while (data.challenges.length < Math.min(4, pool.length)) data.challenges.push({ type: 'make_shape' });
+      data.challenges = data.challenges.slice(0, Math.min(4, pool.length));
+    }
+    for (const ch of data.challenges as Array<Record<string, unknown>>) {
+      if (ch.type !== 'make_shape') continue;
+      const ask = pool[asks.length % pool.length];
+      asks.push(ask);
+      ch.targetProperties = { sides: ask.sides, rightAngles: ask.rightAngles ?? null, parallelPairs: ask.parallelPairs ?? null,
+        equalSides: ask.equalSides ?? null, linesOfSymmetry: ask.linesOfSymmetry ?? null };
+      ch.instruction = shapeAskText(ask, band);
+      ch.hint = band === 'K-2' ? 'Count your sides. Check each corner.' : 'Count your sides, then check each corner and each pair of sides.';
+      ch.narration = "Let's make a shape of your own!";
+      delete ch.showTargetGhost; delete ch.showSideCountBadge;
+    }
+    (data.challenges as Array<{ id?: string }>).forEach((c, i) => { if (!c.id) c.id = `c${i + 1}`; });
+    if (new Set((data.challenges as Array<{ id: string }>).map(c => c.id)).size !== data.challenges.length) {
+      (data.challenges as Array<{ id: string }>).forEach((c, i) => { c.id = `c${i + 1}`; });
+    }
+    if (makeShapeOnly) {
+      data.mode = 'build';
+      data.grid = { type: 'dot', size: { rows: 10, columns: 10 }, showCoordinates: false };
+      data.tools = { ruler: false, protractor: false, symmetryLine: false, parallelMarker: false };
+      data.targetShape = null;
+      data.preloadedShapes = [];
+    }
+    console.log(`[ShapeBuilder] make_shape asks (${band}): ${asks.map(a => JSON.stringify(a)).join(' ')}`);
   }
 
   // Final summary log

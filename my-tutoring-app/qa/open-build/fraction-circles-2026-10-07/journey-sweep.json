@@ -1,0 +1,118 @@
+[
+  {
+    "payload": "fraction-circles.build_equal",
+    "items": 5,
+    "findings": [],
+    "advisories": [],
+    "misses": {
+      "checked": 5,
+      "named": 5,
+      "declared": true,
+      "spoken": {
+        "answered": 0,
+        "named": 0
+      }
+    },
+    "records": {
+      "recover": {
+        "sent": 1,
+        "success": true,
+        "score": 67,
+        "firstResponseScore": 0,
+        "attempts": 10
+      },
+      "clean": {
+        "sent": 1,
+        "success": true,
+        "score": 100,
+        "firstResponseScore": 100,
+        "attempts": 5
+      }
+    }
+  },
+  {
+    "primitiveId": "fraction-circles",
+    "evalMode": "build_equal",
+    "declaresLevers": true,
+    "payloads": [
+      "fraction-circles.build_equal"
+    ],
+    "status": "levers",
+    "levers": [
+      {
+        "id": "running_count",
+        "kind": "help",
+        "answers": [
+          "one_off"
+        ]
+      },
+      {
+        "id": "show_reference",
+        "kind": "help",
+        "answers": [
+          "shaded_the_rest",
+          "cut_cannot_make",
+          "off_by_more",
+          "unequal_pieces"
+        ]
+      },
+      {
+        "id": "smaller_target",
+        "kind": "simplify",
+        "answers": [
+          "same_pieces",
+          "cut_cannot_make",
+          "off_by_more",
+          "unequal_pieces"
+        ]
+      }
+    ],
+    "misses": [
+      {
+        "miss": "unequal_pieces",
+        "answeredBy": [
+          "show_reference",
+          "smaller_target"
+        ],
+        "unanswered": false
+      },
+      {
+        "miss": "same_pieces",
+        "answeredBy": [
+          "smaller_target"
+        ],
+        "unanswered": false
+      },
+      {
+        "miss": "shaded_the_rest",
+        "answeredBy": [
+          "show_reference"
+        ],
+        "unanswered": false
+      },
+      {
+        "miss": "cut_cannot_make",
+        "answeredBy": [
+          "show_reference",
+          "smaller_target"
+        ],
+        "unanswered": false
+      },
+      {
+        "miss": "one_off",
+        "answeredBy": [
+          "running_count"
+        ],
+        "unanswered": false
+      },
+      {
+        "miss": "off_by_more",
+        "answeredBy": [
+          "show_reference",
+          "smaller_target"
+        ],
+        "unanswered": false
+      }
+    ]
+  }
+]

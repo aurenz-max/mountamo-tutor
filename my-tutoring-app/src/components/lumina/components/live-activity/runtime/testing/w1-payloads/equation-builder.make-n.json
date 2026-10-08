@@ -1,0 +1,97 @@
+{
+ "source": "qa/open-build/equation-builder-2026-10-07/generations.json",
+ "primitiveId": "equation-builder",
+ "evalMode": "make-n",
+ "data": {
+  "title": "Ways to Make 10",
+  "description": "Explore different ways to build equations that equal 10 using addition and subtraction.",
+  "maxNumber": 10,
+  "gradeBand": "1",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "make-n",
+    "target": 10,
+    "ways": 1,
+    "availableTiles": [
+     "1",
+     "2",
+     "3",
+     "4",
+     "5",
+     "6",
+     "7",
+     "8",
+     "9",
+     "10",
+     "+",
+     "-"
+    ],
+    "instruction": "Make a number sentence that equals 10."
+   },
+   {
+    "id": "c2",
+    "type": "make-n",
+    "target": 8,
+    "ways": 2,
+    "availableTiles": [
+     "1",
+     "2",
+     "3",
+     "4",
+     "5",
+     "6",
+     "7",
+     "8",
+     "9",
+     "10",
+     "+",
+     "-"
+    ],
+    "instruction": "Make two different number sentences that equal 8."
+   },
+   {
+    "id": "c3",
+    "type": "make-n",
+    "target": 7,
+    "ways": 1,
+    "availableTiles": [
+     "1",
+     "2",
+     "3",
+     "4",
+     "5",
+     "6",
+     "7",
+     "8",
+     "9",
+     "10",
+     "+",
+     "-"
+    ],
+    "instruction": "Make a number sentence that equals 7."
+   },
+   {
+    "id": "c4",
+    "type": "make-n",
+    "target": 3,
+    "ways": 2,
+    "availableTiles": [
+     "1",
+     "2",
+     "3",
+     "4",
+     "5",
+     "6",
+     "7",
+     "8",
+     "9",
+     "10",
+     "+",
+     "-"
+    ],
+    "instruction": "Make two different number sentences that equal 3."
+   }
+  ]
+ }
+}

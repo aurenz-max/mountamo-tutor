@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -19,11 +19,20 @@ import {
 } from '../../../evaluation';
 import type { ShapeBuilderMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { useBuildWatcher } from '../../build-layer/buildLayer';
+import { buildCheck, describeShapeWork, makeShapeMiss, workspaceAssignment, workspaceScene, type ShapeView } from './shapeBuilderWorkspace';
+import { CORNER_MARKS_LEVER, EQUAL_TICKS_LEVER, FEWER_LEVER, FOLD_LINES_LEVER, PARALLEL_MARKS_LEVER, SIDE_TAGS_LEVER,
+  fewerShape, leverFacts, shapeBuilderLevers } from './shapeBuilderLevers';
+import { SHAPE_WATCH_NEVER_SAY, shapeMarks, tapDot, type ShapeBuild } from './shapeMakeBuild';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -36,7 +45,8 @@ interface Point {
 
 export interface ShapeBuilderChallenge {
   id: string;
-  type: 'build' | 'measure' | 'classify' | 'classify_by_lines' | 'compose' | 'find_symmetry' | 'coordinate_shape';
+  /** `make_shape` is the open build: an empty grid, any shape with the code-written `targetProperties` passes. */
+  type: 'build' | 'measure' | 'classify' | 'classify_by_lines' | 'compose' | 'find_symmetry' | 'coordinate_shape' | 'make_shape';
   instruction: string;
   targetProperties?: {
     sides?: number;
@@ -124,6 +134,7 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   compose:           { label: 'Compose',      icon: '🧩', accentColor: 'cyan' },
   find_symmetry:     { label: 'Symmetry',     icon: '🪞', accentColor: 'pink' },
   coordinate_shape:  { label: 'Coordinates',  icon: '📐', accentColor: 'amber' },
+  make_shape:        { label: 'Make a Shape', icon: '✏️', accentColor: 'cyan' },
 };
 
 // ============================================================================
@@ -313,9 +324,15 @@ function isLineOfSymmetry(lineP1: Point, lineP2: Point, vertices: Point[]): bool
 interface ShapeBuilderProps {
   data: ShapeBuilderData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
-const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
+const ShapeBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  ShapeBuilderProps & { tutorOwned: boolean; useController: (options: ProgressOptions<ShapeBuilderChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -368,19 +385,40 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
   // Tool state
   const [activeTool, setActiveTool] = useState<'select' | 'ruler' | 'protractor' | 'symmetry'>('select');
 
-  // Challenge tracking (shared hooks)
+  // Challenge tracking (shared hooks). On the workspace path the runtime moves the index.
+  const stableInstanceIdRef = useRef(instanceId || `shape-builder-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  // Bound below, once the setters and the evaluation exist.
+  const openItem = useRef<(retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (_index, retry) => openItem.current(retry),
+    onFinished: result => finish.current(result),
+  });
   const {
     currentIndex: currentChallengeIndex,
     currentAttempts,
     results: challengeResults,
     isComplete: allChallengesComplete,
-    recordResult,
     incrementAttempts,
     advance: advanceProgress,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (ch) => ch.id,
-  });
+  } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  const learnerBlocked = () => workspaceClosed.current;
+  // The activity's own check is the workspace's checked gesture. A ref, so the check callbacks keep their deps.
+  const commitCheck = useRef(progress.commitCheck);
+  commitCheck.current = progress.commitCheck;
+
+  // make_shape levers (`shapeBuilderLevers.ts`), keyed by the session item they were pulled on, and the easier ask
+  // a simplify lever put on screen in its place. The item starts bare: no lever comes from the tier.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<ShapeBuilderChallenge | null>(null);
 
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
@@ -396,11 +434,13 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
   const [hierarchyUnderstood] = useState(false);
 
   // Refs
-  const stableInstanceIdRef = useRef(instanceId || `shape-builder-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
   const svgRef = useRef<SVGSVGElement>(null);
 
-  const currentChallenge = challenges[currentChallengeIndex] || null;
+  const sessionChallenge = challenges[currentChallengeIndex] || null;
+  /** What is on screen: the easier ask while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
   const activeMode = currentChallenge?.type || mode;
   const isClassifyChallenge = activeMode === 'classify' || activeMode === 'classify_by_lines';
 
@@ -451,7 +491,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
   );
 
   const displayVertices = useMemo((): Point[] => {
-    if (activeMode === 'build' || activeMode === 'coordinate_shape') return placedVertices;
+    if (activeMode === 'build' || activeMode === 'coordinate_shape' || activeMode === 'make_shape') return placedVertices;
     if (isClassifyChallenge) return [];
     return activeShape?.vertices || [];
   }, [activeMode, isClassifyChallenge, placedVertices, activeShape]);
@@ -551,12 +591,17 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
       + 'properties it needs; let them count their own corners.';
   }, [supportTier]);
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  // Its context carries the targets, so it is off on the workspace path, and its scripted cues send nothing there.
+  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'shape-builder',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: gradeBand === 'K-2' ? 'K-2' : 'Grades 3-5',
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   // Activity introduction
   const hasIntroducedRef = useRef(false);
@@ -580,7 +625,8 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
   // is never called. This effect ensures submitEvaluation fires automatically.
 
   useEffect(() => {
-    if (!allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0) return;
+    // The workspace path submits the scored session from `onFinished` (below), not this tally.
+    if (tutorOwned || !allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0) return;
 
     const totalCorrect = challengeResults.filter((r) => r.correct).length;
     const score = Math.round((totalCorrect / challenges.length) * 100);
@@ -622,7 +668,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
     allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults, phaseResults,
     shapesBuiltCorrectly, propertiesIdentified, propertiesTotal, classificationsCorrect,
     classificationsTotal, symmetryLinesFoundTotal, hierarchyUnderstood, toolsUsed,
-    submitEvaluation, sendText,
+    submitEvaluation, sendText, tutorOwned,
   ]);
 
   // -------------------------------------------------------------------------
@@ -631,7 +677,8 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
 
   const handleSvgClick = useCallback(
     (e: React.MouseEvent<SVGSVGElement>) => {
-      if (hasSubmittedEvaluation) return;
+      // make_shape builds through its own dot targets (`tapShapeDot`).
+      if (hasSubmittedEvaluation || learnerBlocked() || activeMode === 'make_shape') return;
       const svg = svgRef.current;
       if (!svg) return;
 
@@ -792,7 +839,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
 
   const handleClassify = useCallback(
     (category: string) => {
-      if (!selectedShapeId || hasSubmittedEvaluation) return;
+      if (!selectedShapeId || hasSubmittedEvaluation || learnerBlocked()) return;
       const shape = preloadedShapes.find((s) => s.id === selectedShapeId);
       if (!shape) return;
 
@@ -831,6 +878,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
 
   const handleToggleRuler = useCallback(() => {
+    if (learnerBlocked()) return;
     SoundManager.toggle(!showSideLengths);
     setShowSideLengths((prev) => !prev);
     setToolsUsed((prev) => new Set(prev).add('ruler'));
@@ -838,6 +886,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
   }, [showSideLengths]);
 
   const handleToggleProtractor = useCallback(() => {
+    if (learnerBlocked()) return;
     SoundManager.toggle(!showAngles);
     setShowAngles((prev) => !prev);
     setToolsUsed((prev) => new Set(prev).add('protractor'));
@@ -845,6 +894,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
   }, [showAngles]);
 
   const handleToggleParallel = useCallback(() => {
+    if (learnerBlocked()) return;
     SoundManager.toggle(!showParallel);
     setShowParallel((prev) => !prev);
     setToolsUsed((prev) => new Set(prev).add('parallelMarker'));
@@ -854,12 +904,47 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
   // Check Answer
   // -------------------------------------------------------------------------
 
+  /** What the check reads, in the workspace's terms (the same view the scene publishes). */
+  const shapeView = (): ShapeView => ({
+    points: placedVertices, closed: isShapeClosed,
+    classifications: Object.fromEntries(Object.entries(classifications)
+      .map(([id, cat]) => [preloadedShapes.find(sh => sh.id === id)?.name ?? id, cat])),
+    shapeNames: preloadedShapes.map(sh => sh.name), categories: classificationCategories,
+    linesFound: validSymmetryLines,
+    toolsOn: [showSideLengths && 'ruler', showAngles && 'protractor', showParallel && 'parallel marker']
+      .filter((t): t is string => !!t),
+  });
+
+  // A move that is not a check (an open shape, an unfinished sort, missing tools or fold lines) only counts an
+  // attempt on the scripted path, as before; a check commits through `commitCheck` on both paths.
+  const notACheck = () => { if (!tutorOwned) incrementAttempts(); };
+
   const handleCheckAnswer = useCallback(() => {
-    if (!currentChallenge || hasSubmittedEvaluation) return;
-    incrementAttempts();
+    if (!currentChallenge || hasSubmittedEvaluation || learnerBlocked()) return;
+    const commit = (correct: boolean, miss?: string) =>
+      commitCheck.current(describeShapeWork(currentChallenge, shapeView()), correct, correct ? undefined : miss);
+
+    // The open build: any shape with every asked property passes. The words name no property and no shape.
+    if (activeMode === 'make_shape') {
+      if (!isShapeClosed) return;
+      const miss = makeShapeMiss(currentChallenge, shapeView());
+      if (!miss) {
+        SoundManager.playCorrect();
+        setShapesBuiltCorrectly((prev) => prev + 1);
+        setFeedback('Yes! Your shape has everything the ask says.');
+        setFeedbackType('success');
+      } else {
+        SoundManager.playIncorrect();
+        setFeedback('Not yet. Check your shape against each part of the ask, then change it.');
+        setFeedbackType('error');
+      }
+      commit(!miss, miss);
+      return;
+    }
 
     if (activeMode === 'build' || activeMode === 'coordinate_shape') {
       if (!isShapeClosed || !currentShapeProps) {
+        notACheck();
         SoundManager.invalid();
         setFeedback('Close your shape first by clicking the first vertex!');
         setFeedbackType('error');
@@ -871,11 +956,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
         setShapesBuiltCorrectly((prev) => prev + 1);
         setFeedback(`Great! You built a ${currentShapeName}!`);
         setFeedbackType('success');
-        recordResult({
-          challengeId: currentChallenge.id,
-          correct: true,
-          attempts: currentAttempts + 1,
-        });
+        commit(true);
         sendText(
           `[BUILD_CORRECT] Student successfully built a ${currentShapeName}. Celebrate!`,
           { silent: true },
@@ -883,40 +964,13 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
         return;
       }
 
-      let matches = true;
-      const mismatches: string[] = [];
-
-      if (target.sides !== undefined && currentShapeProps.sides !== target.sides) {
-        matches = false;
-        mismatches.push(`needs ${target.sides} sides, has ${currentShapeProps.sides}`);
-      }
-      // Only enforce rightAngles when requiring a positive count (e.g. "4 right angles").
-      // A target of 0 is almost always generator noise, not a real constraint.
-      if (target.rightAngles !== undefined && target.rightAngles > 0 && currentShapeProps.rightAngles !== target.rightAngles) {
-        matches = false;
-        mismatches.push(`needs ${target.rightAngles} right angles, has ${currentShapeProps.rightAngles}`);
-      }
-      // Only enforce parallelPairs when requiring a positive count.
-      if (target.parallelPairs !== undefined && target.parallelPairs > 0 && currentShapeProps.parallelPairs < target.parallelPairs) {
-        matches = false;
-        mismatches.push(`needs ${target.parallelPairs} parallel pairs, has ${currentShapeProps.parallelPairs}`);
-      }
-      // Only enforce equalSides when requiring equality ('all' or 'pairs'), not 'none'.
-      if (target.equalSides && target.equalSides !== 'none' && currentShapeProps.equalSides !== target.equalSides) {
-        matches = false;
-        mismatches.push(`sides should be ${target.equalSides} equal`);
-      }
-
-      if (matches) {
+      const { miss, mismatches } = buildCheck(target, currentShapeProps);
+      if (!miss) {
         SoundManager.playCorrect();
         setShapesBuiltCorrectly((prev) => prev + 1);
         setFeedback(`Perfect! That's a ${currentShapeName}!`);
         setFeedbackType('success');
-        recordResult({
-          challengeId: currentChallenge.id,
-          correct: true,
-          attempts: currentAttempts + 1,
-        });
+        commit(true);
         sendText(
           `[BUILD_CORRECT] Student built a ${currentShapeName} matching target. `
           + `${target.sides} sides, ${target.rightAngles || 0} right angles. Celebrate!`,
@@ -926,6 +980,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
         SoundManager.playIncorrect();
         setFeedback(`Not quite. ${mismatches.join('. ')}. Try again!`);
         setFeedbackType('error');
+        commit(false, miss);
         sendText(
           `[BUILD_INCORRECT] Shape doesn't match. Issues: ${mismatches.join(', ')}. `
           + `Attempt ${currentAttempts + 1}. Guide without giving the answer.`
@@ -950,11 +1005,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
         setPropertiesTotal((prev) => prev + propsNeeded);
         setFeedback(`You discovered all properties of this ${currentShapeName}!`);
         setFeedbackType('success');
-        recordResult({
-          challengeId: currentChallenge.id,
-          correct: true,
-          attempts: currentAttempts + 1,
-        });
+        commit(true);
         sendText(
           `[MEASURE_COMPLETE] Student measured all properties of ${currentShapeName}: `
           + `${currentShapeProps.sides} sides, ${currentShapeProps.rightAngles} right angles, `
@@ -962,6 +1013,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
           { silent: true },
         );
       } else {
+        notACheck();
         SoundManager.invalid();
         setFeedback("Use all measurement tools to discover the shape's properties!");
         setFeedbackType('info');
@@ -979,22 +1031,22 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
       const totalShapes = preloadedShapes.length;
       const classified = Object.keys(classifications).length;
       if (classified >= totalShapes) {
-        setFeedback(`All shapes classified! ${classificationsCorrect}/${totalShapes} correct.`);
-        setFeedbackType(classificationsCorrect === totalShapes ? 'success' : 'info');
-        recordResult({
-          challengeId: currentChallenge.id,
-          correct: classificationsCorrect === totalShapes,
-          attempts: currentAttempts + 1,
-        });
+        // Read from this sort, not the running tally (which spans items and a Try again).
+        const rightNow = preloadedShapes.filter(sh => classifications[sh.id] === sh.correctCategory).length;
+        const allRight = rightNow === totalShapes;
+        setFeedback(`All shapes classified! ${rightNow}/${totalShapes} correct.`);
+        setFeedbackType(allRight ? 'success' : 'info');
+        commit(allRight, 'misplaced_shape');
         sendText(
           `[CLASSIFY_COMPLETE] All ${totalShapes} shapes classified. `
-          + `${classificationsCorrect}/${totalShapes} correct. `
-          + (classificationsCorrect === totalShapes
+          + `${rightNow}/${totalShapes} correct. `
+          + (allRight
             ? 'Celebrate: "You sorted all the shapes perfectly!"'
             : 'Encourage: "Good effort! Let\'s review the tricky ones."'),
           { silent: true },
         );
       } else {
+        notACheck();
         SoundManager.invalid();
         setFeedback(`Classify all shapes first. ${classified}/${totalShapes} done.`);
         setFeedbackType('info');
@@ -1009,16 +1061,13 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
           `You found ${validSymmetryLines} line${validSymmetryLines > 1 ? 's' : ''} of symmetry!`,
         );
         setFeedbackType('success');
-        recordResult({
-          challengeId: currentChallenge.id,
-          correct: true,
-          attempts: currentAttempts + 1,
-        });
+        commit(true);
         sendText(
           `[SYMMETRY_COMPLETE] Found ${validSymmetryLines}/${target} lines. Celebrate!`,
           { silent: true },
         );
       } else {
+        notACheck();
         SoundManager.invalid();
         setFeedback(`Found ${validSymmetryLines}/${target}. Keep looking!`);
         setFeedbackType('info');
@@ -1035,18 +1084,15 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
       SoundManager.playCorrect();
       setFeedback('Shape composed! Great work with pattern blocks.');
       setFeedbackType('success');
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      });
+      commit(true);
       sendText('[COMPOSE_COMPLETE] Student completed the composition. Celebrate!', { silent: true });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    currentChallenge, hasSubmittedEvaluation, currentAttempts, activeMode, isShapeClosed,
+    currentChallenge, hasSubmittedEvaluation, currentAttempts, activeMode, isShapeClosed, placedVertices,
     currentShapeProps, currentShapeName, tools, showSideLengths, showAngles, showParallel,
     preloadedShapes, classifications, classificationsCorrect, validSymmetryLines, sendText,
-    incrementAttempts, recordResult, tutorRevealClause,
+    incrementAttempts, tutorRevealClause, tutorOwned, classificationCategories,
   ]);
 
   // -------------------------------------------------------------------------
@@ -1069,6 +1115,31 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
     tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
   });
 
+  /** Clears the working surface: a fresh item, or Try again on a mode whose build does not survive a retry. */
+  const resetDomainState = useCallback(() => {
+    setFeedback('');
+    setFeedbackType('');
+    setPlacedVertices([]);
+    setIsShapeClosed(false);
+    setShowSideLengths(false);
+    setShowAngles(false);
+    setShowParallel(false);
+    setSelectedShapeId(null);
+    setClassifications({});
+    setSymmetryLineStart(null);
+    setSymmetryLines([]);
+    setValidSymmetryLines(0);
+    setActiveTool('select');
+  }, []);
+
+  // Workspace path: the runtime opens a fresh item and Try again. On the open build (make_shape) Try again keeps the
+  // shape and the verdict's words, so the learner revises the build; a new item opens an empty grid.
+  openItem.current = (retry) => {
+    if (!retry) { resetDomainState(); setPractice(null); return; }
+    if (currentChallenge?.type === 'make_shape') return;
+    resetDomainState();
+  };
+
   const advanceToNextChallenge = useCallback(() => {
     if (!advanceProgress()) {
       // All challenges done — send AI summary and submit evaluation
@@ -1086,7 +1157,8 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
         { silent: true },
       );
 
-      if (!hasSubmittedEvaluation) {
+      // The workspace path submits the scored session from `onFinished` (below), not this tally.
+      if (!hasSubmittedEvaluation && !tutorOwned) {
         const totalCorrect = challengeResults.filter((r) => r.correct).length;
         const score =
           challenges.length > 0 ? Math.round((totalCorrect / challenges.length) * 100) : 0;
@@ -1095,7 +1167,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
           type: 'shape-builder',
           shapesBuiltCorrectly,
           shapesTotal: challenges.filter(
-            (c) => c.type === 'build' || c.type === 'coordinate_shape',
+            (c) => c.type === 'build' || c.type === 'coordinate_shape' || c.type === 'make_shape',
           ).length,
           propertiesIdentified,
           propertiesTotal,
@@ -1121,19 +1193,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
 
     // advanceProgress() already incremented index and reset attempts.
     // Just reset domain-specific state:
-    setFeedback('');
-    setFeedbackType('');
-    setPlacedVertices([]);
-    setIsShapeClosed(false);
-    setShowSideLengths(false);
-    setShowAngles(false);
-    setShowParallel(false);
-    setSelectedShapeId(null);
-    setClassifications({});
-    setSymmetryLineStart(null);
-    setSymmetryLines([]);
-    setValidSymmetryLines(0);
-    setActiveTool('select');
+    resetDomainState();
 
     const nextIndex = currentChallengeIndex + 1;
     const next = challenges[nextIndex];
@@ -1153,10 +1213,39 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
     advanceProgress, phaseResults, challengeResults, challenges, sendText, hasSubmittedEvaluation,
     shapesBuiltCorrectly, propertiesIdentified, propertiesTotal, classificationsCorrect,
     classificationsTotal, symmetryLinesFoundTotal, hierarchyUnderstood, toolsUsed, submitEvaluation,
-    currentChallengeIndex,
+    currentChallengeIndex, resetDomainState, tutorOwned,
   ]);
 
+  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // corrections and whose evidence carries each wrong check's named miss (`diagnosisEvidence.phases`).
+  finish.current = (result) => {
+    if (hasSubmittedEvaluation || progress.recordsEvaluation === false) return;
+    const metrics: ShapeBuilderMetrics = {
+      type: 'shape-builder',
+      shapesBuiltCorrectly,
+      shapesTotal: challenges.filter(c => c.type === 'build' || c.type === 'coordinate_shape' || c.type === 'make_shape').length,
+      propertiesIdentified,
+      propertiesTotal,
+      classificationCorrect: classificationsCorrect,
+      classificationTotal: classificationsTotal,
+      compositionsCompleted: result.outcomes.filter((r, i) => challenges[i]?.type === 'compose' && r.solved).length,
+      compositionsTotal: challenges.filter((c) => c.type === 'compose').length,
+      symmetryLinesFound: symmetryLinesFoundTotal,
+      symmetryLinesTotal: challenges
+        .filter((c) => c.type === 'find_symmetry')
+        .reduce((s, c) => s + (c.targetProperties?.linesOfSymmetry || 1), 0),
+      hierarchyUnderstood,
+      toolsUsed: Array.from(toolsUsed),
+      attemptsCount: result.attemptsCount,
+    };
+    submitEvaluation(result.passed, result.accuracy, metrics,
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
+
   const handleReset = useCallback(() => {
+    if (learnerBlocked()) return;
     setPlacedVertices([]);
     setIsShapeClosed(false);
     setFeedback('');
@@ -1164,7 +1253,62 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
     setSymmetryLineStart(null);
     setSymmetryLines([]);
     setValidSymmetryLines(0);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  // W1 offers no demonstration targets and no presentation. Only make_shape declares levers.
+  const band = gradeBand === '3-5' ? '3-5' : 'K-2';
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    const scene = workspaceScene(currentChallenge, shapeView());
+    if (sessionChallenge.type !== 'make_shape') { workspace.current = { ...scene }; return; }
+    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
+    const levers = practice ? [] : shapeBuilderLevers(sessionChallenge, pulledLevers, band);
+    workspace.current = {
+      ...scene,
+      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = fewerShape(sessionChallenge, band);
+          if (!easier) return 'This item has no easier ask; try a help lever.';
+          setLeverState(pulled); resetDomainState(); setPractice(easier);
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { resetDomainState(); setPractice(null); },
+    };
+  });
+
+  // ── Open build (make_shape): the dot taps, the live line, the commit ──
+  const isMakeShape = activeMode === 'make_shape';
+  const buildOpen = isMakeShape && !isCurrentChallengeComplete && !hasSubmittedEvaluation
+    && !(tutorOwned && progress.canAttempt === false);
+  const tapShapeDot = (p: { x: number; y: number }) => {
+    if (!buildOpen || learnerBlocked()) return;
+    const next = tapDot({ points: placedVertices, closed: isShapeClosed } as ShapeBuild, p);
+    if (!next) { SoundManager.invalid(); return; }
+    if (next.closed && !isShapeClosed) SoundManager.pop(); else SoundManager.snap();
+    setPlacedVertices(next.points);
+    setIsShapeClosed(next.closed);
+  };
+  const marks = isMakeShape && isShapeClosed ? shapeMarks(placedVertices) : null;
+  // The live line (shared build layer): what the shape looks like so far. Never a number, a shape name or a
+  // property word: counting sides, checking corners and naming the shape can each be the skill.
+  const buildSeeing = useBuildWatcher({
+    buildKey: `${placedVertices.map(v => `${v.x},${v.y}`).join('|')}${isShapeClosed ? '#' : ''}`,
+    enabled: buildOpen && placedVertices.length >= 2,
+    svg: svgRef,
+    request: { task: currentChallenge?.instruction ?? '', sceneNote: 'A grid of dots the learner taps to place corners of a shape.',
+      numbers: 'never', neverSay: SHAPE_WATCH_NEVER_SAY },
+  });
 
   // -------------------------------------------------------------------------
   // Rendering Helpers
@@ -1496,7 +1640,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
 
         {/* Measurement Tools Bar */}
         {(tools.ruler || tools.protractor || tools.symmetryLine || tools.parallelMarker) &&
-          !allChallengesComplete && (
+          !allChallengesComplete && !isMakeShape && (
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-slate-500 text-xs">Tools:</span>
               {tools.ruler && (
@@ -1575,6 +1719,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
             className="max-w-full h-auto rounded-xl cursor-crosshair"
             style={{ background: 'rgba(255,255,255,0.02)' }}
             onClick={handleSvgClick}
+            data-build-scene={isMakeShape ? 'shape-grid' : undefined}
             onMouseMove={handleSvgMouseMove}
           >
             {/* Border */}
@@ -1740,8 +1885,83 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
                 />
               );
             })()}
+
+            {/* make_shape help levers: marks on the learner's OWN shape, pulled on a miss. Aids, never in the picture. */}
+            {isMakeShape && (
+              <g data-aid className="pointer-events-none">
+                {leverOn(SIDE_TAGS_LEVER) && (marks?.corners ?? (placedVertices.length >= 2 ? placedVertices : []))
+                  .map((a, i, cs) => {
+                    if (!isShapeClosed && i === cs.length - 1) return null;
+                    const b = cs[(i + 1) % cs.length], pa = gridToPixel(a), pb = gridToPixel(b);
+                    return (
+                      <g key={`tag-${i}`} data-lever="side-tag">
+                        <circle cx={(pa.x + pb.x) / 2} cy={(pa.y + pb.y) / 2} r={9} fill="rgba(56,189,248,0.85)" />
+                        <text x={(pa.x + pb.x) / 2} y={(pa.y + pb.y) / 2 + 4} textAnchor="middle" fontSize={11}
+                          fontWeight="bold" fill="white">{i + 1}</text>
+                      </g>
+                    );
+                  })}
+                {marks && leverOn(CORNER_MARKS_LEVER) && marks.rightCorners.map((i) => {
+                  const n = marks.corners.length, c = marks.corners[i];
+                  const toward = (q: { x: number; y: number }) => {
+                    const dx = q.x - c.x, dy = q.y - c.y, l = Math.hypot(dx, dy);
+                    return { x: (dx / l) * 0.3, y: (dy / l) * 0.3 };
+                  };
+                  const u = toward(marks.corners[(i - 1 + n) % n]), v = toward(marks.corners[(i + 1) % n]);
+                  const pts = [{ x: c.x + u.x, y: c.y + u.y }, { x: c.x + u.x + v.x, y: c.y + u.y + v.y }, { x: c.x + v.x, y: c.y + v.y }]
+                    .map(gridToPixel).map(q => `${q.x},${q.y}`).join(' ');
+                  return <polyline key={`ra-${i}`} data-lever="corner-mark" points={pts} fill="none" stroke="rgba(16,185,129,0.95)" strokeWidth={2} />;
+                })}
+                {marks && leverOn(PARALLEL_MARKS_LEVER) && marks.parallelGroups.flatMap((g, gi) => g.map((i) => {
+                  const n = marks.corners.length, pa = gridToPixel(marks.corners[i]), pb = gridToPixel(marks.corners[(i + 1) % n]);
+                  return (
+                    <text key={`par-${gi}-${i}`} data-lever="parallel-mark" x={(pa.x + pb.x) / 2} y={(pa.y + pb.y) / 2 - 6}
+                      textAnchor="middle" fontSize={13} fill="rgba(251,191,36,0.95)">{'>'.repeat(gi + 1)}</text>
+                  );
+                }))}
+                {marks && leverOn(EQUAL_TICKS_LEVER) && marks.lengthGroups.flatMap((g, gi) => g.map((i) => {
+                  const n = marks.corners.length, pa = gridToPixel(marks.corners[i]), pb = gridToPixel(marks.corners[(i + 1) % n]);
+                  return (
+                    <text key={`eq-${gi}-${i}`} data-lever="equal-tick" x={(pa.x + pb.x) / 2} y={(pa.y + pb.y) / 2 + 14}
+                      textAnchor="middle" fontSize={13} fontWeight="bold" fill="rgba(244,114,182,0.95)">{'|'.repeat(gi + 1)}</text>
+                  );
+                }))}
+                {marks && leverOn(FOLD_LINES_LEVER) && marks.foldLines.map(([a, b], i) => {
+                  const pa = gridToPixel(a), pb = gridToPixel(b);
+                  return <line key={`fold-${i}`} data-lever="fold-line" x1={pa.x} y1={pa.y} x2={pb.x} y2={pb.y}
+                    stroke="rgba(236,72,153,0.8)" strokeWidth={2} strokeDasharray="8 5" />;
+                })}
+              </g>
+            )}
+
+            {/* make_shape: a tap target on every dot, above the shape so a corner is tapped too. */}
+            {isMakeShape && (
+              <g data-aid>
+                {Array.from({ length: (rows + 1) * (cols + 1) }, (_, k) => {
+                  const pt = { x: k % (cols + 1), y: Math.floor(k / (cols + 1)) };
+                  const px = gridToPixel(pt);
+                  return (
+                    <circle key={`dot-${k}`} data-pip-object={`dot-${pt.x}-${pt.y}`} aria-label={`Dot ${pt.x}, ${pt.y}`}
+                      cx={px.x} cy={px.y} r={CELL_SIZE / 2 - 2} fill="transparent"
+                      className={buildOpen ? 'cursor-pointer' : undefined}
+                      onClick={(e) => { e.stopPropagation(); tapShapeDot(pt); }} />
+                  );
+                })}
+              </g>
+            )}
           </svg>
         </div>
+
+        {isMakeShape && !allChallengesComplete && (
+          <div className="space-y-2">
+            <p className="text-slate-500 text-xs text-center">
+              Tap dots to make corners. Tap your first corner to close the shape. Tap a corner to take it out.
+            </p>
+            <div className="flex min-h-8 items-center justify-center" aria-live="polite" data-testid="build-watcher">
+              {buildSeeing && <span className="rounded-full bg-white/10 px-4 py-1.5 text-base text-amber-100">👀 {buildSeeing}</span>}
+            </div>
+          </div>
+        )}
 
         {/* Shape Properties Panel */}
         {isShapeClosed && currentShapeProps && currentShapeName && (
@@ -1844,23 +2064,31 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
           <div className="flex justify-center gap-3">
             {!isCurrentChallengeComplete && !allChallengesComplete && (
               <>
-                {(activeMode === 'build' || activeMode === 'coordinate_shape') && (
+                {(activeMode === 'build' || activeMode === 'coordinate_shape' || isMakeShape) && (
                   <LuminaButton
                     size="sm"
                     className="text-slate-400 text-xs"
                     onClick={handleReset}
+                    disabled={tutorOwned && progress.canAttempt === false}
                   >
                     Clear Shape
                   </LuminaButton>
                 )}
-                <LuminaActionButton
-                  action="check"
-                  onClick={handleCheckAnswer}
-                  disabled={hasSubmittedEvaluation}
-                />
+                {isMakeShape ? (
+                  <LuminaButton tone="primary" disabled={!buildOpen || !isShapeClosed}
+                    onClick={() => { if (!learnerBlocked()) handleCheckAnswer(); }}>
+                    I&apos;m done!
+                  </LuminaButton>
+                ) : (
+                  <LuminaActionButton
+                    action="check"
+                    onClick={handleCheckAnswer}
+                    disabled={hasSubmittedEvaluation || (tutorOwned && progress.canAttempt === false)}
+                  />
+                )}
               </>
             )}
-            {isCurrentChallengeComplete && !allChallengesComplete && (
+            {isCurrentChallengeComplete && !allChallengesComplete && !tutorOwned && (
               <LuminaActionButton
                 action="next"
                 onClick={advanceToNextChallenge}
@@ -1893,5 +2121,9 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const ShapeBuilder = withWorkspaceController<ShapeBuilderProps, ProgressOptions<ShapeBuilderChallenge>, Progress>(
+  'shape-builder', ShapeBuilderSurface, useScriptedProgress, useWorkspaceProgressFor('shape-builder'));
 
 export default ShapeBuilder;

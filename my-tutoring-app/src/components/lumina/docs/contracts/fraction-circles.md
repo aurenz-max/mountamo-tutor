@@ -99,6 +99,12 @@ Authored curriculum map (channel 3): no fraction-circles subskills (2026-09-27).
 - **Evidence:** as R12.
 - **Probe:** as R12 (builder sweeps over every band fraction; mounted practice-then-full-item flows).
 
+### R14 — build_equal: any equal cut but the target's own passes; nothing on screen judges before "I'm done!" · OBSERVED
+- **Property:** the circle starts whole; the learner picks an equal cut (the band's denominators) or halves a piece, shades, and commits with "I'm done!". Code passes shaded/pieces = a/b with equal pieces, a supported count, and a count other than b. Try again keeps the build and the verdict words. No running count or equal-check is on screen until a lever is pulled; levers start bare at every tier. The scene publishes `piecesCut` and `piecesShaded` as numbers. Code picks every target (a band fraction with another reachable equal cut, distinct values per session). Mixed sessions never include it.
+- **Demanded by:** G3/G4 equivalence (3.NF.A.3), the open-build layer.
+- **Evidence:** `qa/open-build/fraction-circles-2026-10-07/` (`generator-run.json`, `journey-sweep.json`, `watcher-run.json`).
+- **Probe:** `npm test -- src/components/lumina/primitives/visual-primitives/math/fractionEqualBuild src/components/lumina/primitives/visual-primitives/math/FractionCircles.build-equal`; `node scripts/fraction-equal-build-probe.mjs --run`.
+
 ## Conflicts
 
 None open. The B2 levers (R12, R13) were built under R5 and R7: no lever prints or says the shaded count, and no lever fact carries a key.
@@ -116,3 +122,4 @@ None open. The B2 levers (R12, R13) were built under R5 and R7: no lever prints 
 - 2026-09-27 — a wrong Check or touch names its miss (`fractionMiss`, `touchMiss`, handoff 20 A1) on all five modes; every lever lists the misses it answers. Compatible: R1-R13 unchanged; a miss names a pattern of the learner's work and carries no key to the tutor.
 - 2026-09-27 — `part_whole` lever text and scene fact say "a shaded part", not "one shaded piece": on a unit fraction that named the count to shade, against the lever property (no shaded count). Found by tutor replay (RP-1): near-answer 30/30 samples before, 0/30 after. Drawing unchanged. Compatible.
 - 2026-09-27 — handoff 19 (shared runtime, `/add-live-tutor-tools`): the workspace reads the eval mode from the wrapper's lesson pin, not a mode rebuilt in this primitive (slice 1), and publishes the scene after every render, so the scene setter drops its publish call and default fields (slice 3). Its checks now call `commitCheck`, which counts the attempt and records the correct result on both paths; its own attempt counter and base-only result records are deleted (slice 4). Wiring only: no content, check, miss, verdict or tutor input changed; the sweep over saved payloads (J1-J8) and this primitive's tests pass. Compatible: no requirement changed.
+- 2026-10-07 — R14 added: `build_equal` open build (β 4.6), a fork beside the five modes. Existing modes untouched: their checks, levers, misses and Try again behaviour are unchanged, and the mixed session's types are the same five (generator probe `mixed-3-5`). R1-R13 probes re-run (vitest), COMPATIBLE.

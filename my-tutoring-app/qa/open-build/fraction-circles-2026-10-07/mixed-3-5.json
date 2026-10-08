@@ -1,0 +1,133 @@
+{
+  "generatedAt": "2026-10-08T00:42:29.097Z",
+  "case": {
+    "targetEvalMode": "mixed",
+    "grade": "4",
+    "topic": "Fractions with circles",
+    "intent": "Explore all fraction circle activities"
+  },
+  "data": {
+    "title": "Fantastic Fraction Circles",
+    "challenges": [
+      {
+        "id": "fc1",
+        "type": "touch_fraction",
+        "instruction": "Touch the picture showing two thirds.",
+        "denominator": 3,
+        "numerator": 2,
+        "hint": "Look at the equal parts and the shaded parts.",
+        "narration": "Touch the picture showing two thirds."
+      },
+      {
+        "id": "fc2",
+        "type": "identify",
+        "instruction": "What fraction of the circle is shaded?",
+        "denominator": 8,
+        "numerator": 5,
+        "hint": "Count the equal parts, then count the shaded parts.",
+        "narration": "What fraction of the circle is shaded?"
+      },
+      {
+        "id": "fc3",
+        "type": "build",
+        "instruction": "Shade the circle to show 3/10.",
+        "denominator": 10,
+        "numerator": 3,
+        "hint": "Look at the equal parts and the amount you need to shade.",
+        "narration": "Shade the circle to show 3/10."
+      },
+      {
+        "id": "fc4",
+        "type": "compare",
+        "instruction": "Compare 1/2 and 3/5. Which fraction is larger, or are they equal?",
+        "denominator": 2,
+        "numerator": 1,
+        "hint": "Compare the shaded amounts in the two equal-sized circles.",
+        "narration": "Compare 1/2 and 3/5. Which fraction is larger, or are they equal?",
+        "compareFraction": {
+          "numerator": 3,
+          "denominator": 5
+        }
+      },
+      {
+        "id": "fc5",
+        "type": "equivalent",
+        "instruction": "Build a fraction equivalent to 1/2 using 6 equal slices.",
+        "denominator": 2,
+        "numerator": 1,
+        "hint": "Look at the equal parts and the amount you need to shade.",
+        "narration": "Build a fraction equivalent to 1/2 using 6 equal slices.",
+        "equivalentDenominator": 6
+      }
+    ],
+    "description": "Explore fraction circles by identifying, building, comparing, and finding equivalent fractions using a variety of denominators.",
+    "gradeBand": "3-5"
+  },
+  "items": [
+    {
+      "id": "fc1",
+      "type": "touch_fraction",
+      "target": "2/3",
+      "instruction": "Touch the picture showing two thirds.",
+      "ways": [
+        "4/6",
+        "8/12"
+      ],
+      "ownCutMiss": "same_pieces"
+    },
+    {
+      "id": "fc2",
+      "type": "identify",
+      "target": "5/8",
+      "instruction": "What fraction of the circle is shaded?",
+      "ways": [],
+      "ownCutMiss": "same_pieces"
+    },
+    {
+      "id": "fc3",
+      "type": "build",
+      "target": "3/10",
+      "instruction": "Shade the circle to show 3/10.",
+      "ways": [],
+      "ownCutMiss": "same_pieces"
+    },
+    {
+      "id": "fc4",
+      "type": "compare",
+      "target": "1/2",
+      "instruction": "Compare 1/2 and 3/5. Which fraction is larger, or are they equal?",
+      "ways": [
+        "2/4",
+        "3/6",
+        "4/8",
+        "5/10",
+        "6/12"
+      ],
+      "ownCutMiss": "same_pieces"
+    },
+    {
+      "id": "fc5",
+      "type": "equivalent",
+      "target": "1/2",
+      "instruction": "Build a fraction equivalent to 1/2 using 6 equal slices.",
+      "ways": [
+        "2/4",
+        "3/6",
+        "4/8",
+        "5/10",
+        "6/12"
+      ],
+      "ownCutMiss": "same_pieces"
+    }
+  ],
+  "oracle": {
+    "violations": [],
+    "uncheckedTypes": [],
+    "checkedChallenges": 5
+  },
+  "issues": [],
+  "logs": [
+    "[FractionCircles] modes: mixed",
+    "[FractionCircles] Final: 5 challenge(s) → [touch_fraction, identify, build, compare, equivalent]"
+  ]
+}

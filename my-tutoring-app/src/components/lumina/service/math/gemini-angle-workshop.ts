@@ -17,7 +17,9 @@ import type {
   SolveConfig,
   TransversalShape,
   TransversalRelation,
+  AngleTargetKind,
 } from "../../primitives/visual-primitives/math/AngleWorkshop";
+import { makeAngleAsk } from "../../primitives/visual-primitives/math/angleWorkshopWorkspace";
 
 // ---------------------------------------------------------------------------
 // Challenge type docs (one per eval mode) — feeds the constrained prompt
@@ -53,6 +55,13 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       `"transversal": Grade 8. Parallel lines cut by a transversal (corresponding / alternate / co-interior angles), `
       + `or triangle angle-sum and exterior-angle problems. The student finds the unknown angle in degrees.`,
     schemaDescription: "'transversal' (parallel-line transversal & triangle angle problems)",
+  },
+  make_angle: {
+    promptDoc:
+      `"make_angle": Grades 4-8, open build. The student turns a ray from a fixed ray to MAKE an angle of a named kind `
+      + `(acute, right, obtuse, straight) or, at higher grades, an angle inside a degree range. Any angle of that kind passes. `
+      + `The system builds every ask; the title must not name one kind as the answer.`,
+    schemaDescription: "'make_angle' (make an angle of a named kind)",
   },
 };
 
@@ -264,6 +273,7 @@ const COUNT_BY_MODE: Record<AngleWorkshopChallengeType, number> = {
   solve_unknown: 4,
   solve_algebraic: 4,
   transversal: 5,
+  make_angle: 5,
 };
 
 // ---------------------------------------------------------------------------
@@ -610,6 +620,64 @@ function buildTransversal(shape: TransversalShape, relation?: TransversalRelatio
 }
 
 // ---------------------------------------------------------------------------
+// make_angle (open build) — code owns the kind and the range; the model writes only the wrapper
+// ---------------------------------------------------------------------------
+
+const BUILD_CTX = [
+  'A door swings open from its frame.', 'A pair of scissors opens.', 'A laptop lid lifts from the keyboard.',
+  'A drawbridge rises from the road.', 'A folding fan spreads out.', 'A garden gate swings open.',
+];
+
+/** The kinds asked by name, in the order a lesson meets them. `between_right_straight` is obtuse by its definition. */
+const CLASS_KINDS: AngleTargetKind[] = ['acute', 'obtuse', 'right', 'straight', 'between_right_straight'];
+
+/**
+ * Degree ranges for higher grades: 20° wide, on multiples of 10, and clear of the right-angle band (85-95), so a
+ * range ask is never a right-angle ask in disguise. 40-60 is the canonical example.
+ */
+const RANGES: Array<[number, number]> = [[40, 60], [20, 40], [50, 70], [100, 120], [110, 130], [130, 150], [140, 160], [60, 80]];
+
+function buildMakeAngle(kind: AngleTargetKind, range?: [number, number]): RawChallenge {
+  const [min, max] = kind === 'range' && range ? range : [undefined, undefined];
+  return {
+    type: 'make_angle',
+    narration: pick(BUILD_CTX),
+    instruction: makeAngleAsk(kind, min, max),
+    hint: 'Turn the purple ray and watch how wide the opening gets.',
+    answerKind: 'build',
+    targetKind: kind,
+    ...(kind === 'range' ? { targetMin: min, targetMax: max } : {}),
+    expectedAnswer: 0,
+    tolerance: 0,
+  };
+}
+
+/** The kinds a topic or objective names, in the order named ("make an obtuse angle" asks obtuse first). */
+export function namedAngleKinds(text: string): AngleTargetKind[] {
+  const t = text.toLowerCase();
+  const hits: Array<[number, AngleTargetKind]> = [];
+  for (const [word, kind] of [['acute', 'acute'], ['obtuse', 'obtuse'], ['right angle', 'right'], ['straight', 'straight']] as const) {
+    const at = t.indexOf(word);
+    if (at >= 0) hits.push([at, kind]);
+  }
+  return hits.sort((a, b) => a[0] - b[0]).map(([, k]) => k);
+}
+
+/**
+ * The make_angle asks for one session. Grade 4 and below: the named kinds only. Grade 5 and above: two degree ranges
+ * after the kinds. A kind the lesson names comes first; the rest follow in a shuffled order, so sessions differ.
+ */
+export function selectMakeAngleChallenges(count: number, grade: number, named: AngleTargetKind[] = []): RawChallenge[] {
+  const rest = CLASS_KINDS.filter(k => !named.includes(k)).sort(() => Math.random() - 0.5);
+  const kinds = [...named, ...rest];
+  const rangeCount = grade >= 5 ? Math.min(2, Math.max(1, count - 3)) : 0;
+  const ranges = [...RANGES].sort(() => Math.random() - 0.5).slice(0, rangeCount);
+  const out: RawChallenge[] = kinds.slice(0, count - ranges.length).map(k => buildMakeAngle(k));
+  for (const r of ranges) out.push(buildMakeAngle('range', r));
+  return out;
+}
+
+// ---------------------------------------------------------------------------
 // Canonical key for de-duplication within a session
 // ---------------------------------------------------------------------------
 
@@ -625,6 +693,8 @@ function canonicalKey(ch: RawChallenge): string {
       return `sa|${ch.algConfig}|${ch.a1}x${ch.b1}|${ch.a2}x${ch.b2}`;
     case 'transversal':
       return `t|${ch.transversalShape}|${ch.givenAngle}|${ch.givenAngle2 ?? ''}|${ch.transRelation ?? ''}`;
+    case 'make_angle':
+      return `b|${ch.targetKind}|${ch.targetMin ?? ''}|${ch.targetMax ?? ''}`;
   }
 }
 
@@ -668,6 +738,8 @@ function recomputeExpected(ch: AngleWorkshopChallenge): number | null {
         default: return null;
       }
     }
+    case 'make_angle':
+      return null; // open build — the kind check judges, there is no single answer
   }
 }
 
@@ -685,6 +757,8 @@ export function selectAngleWorkshopChallenges(
    * byte-identical rotation (every structural branch below is gated on `tier`).
    */
   tier?: SupportTier | null,
+  /** make_angle only: the lesson's grade (0 = K) and the kinds its topic names. */
+  build?: { grade: number; named: AngleTargetKind[] },
 ): AngleWorkshopChallenge[] {
   const target = Math.max(
     1,
@@ -703,6 +777,12 @@ export function selectAngleWorkshopChallenges(
     raw.push(ch);
     return true;
   };
+
+  // make_angle: code owns every ask, in lesson order (named kind first); no difficulty sort.
+  if (challengeType === 'make_angle') {
+    return selectMakeAngleChallenges(target, build?.grade ?? 7, build?.named ?? [])
+      .map((ch, i) => ({ ...ch, id: `aw-${i + 1}` }));
+  }
 
   // Variance rule: rotate through structural variants, guaranteeing ≥1 of each
   // category before back-filling (mirrors factor-tree / circle-explorer).
@@ -788,6 +868,7 @@ export function selectAngleWorkshopChallenges(
       case 'solve_unknown': return ['vertical', 'complementary', 'supplementary', 'around_point'].indexOf(ch.solveConfig ?? 'vertical');
       case 'solve_algebraic': return (ch.a1 ?? 1) + (ch.a2 ?? 1);
       case 'transversal': return ['triangle_sum', 'parallel_transversal', 'exterior_angle'].indexOf(ch.transversalShape ?? 'triangle_sum');
+      case 'make_angle': return 0;
     }
   };
   const sorted = raw.sort((a, b) => difficulty(a) - difficulty(b));
@@ -812,7 +893,7 @@ const angleWorkshopSchema: Schema = {
     },
     challengeType: {
       type: Type.STRING,
-      enum: ['measure', 'classify_pairs', 'solve_unknown', 'solve_algebraic', 'transversal'],
+      enum: ['measure', 'classify_pairs', 'solve_unknown', 'solve_algebraic', 'transversal', 'make_angle'],
       description: "Difficulty tier of the session. The system uses this to build the angle problem pool.",
     },
     gradeBand: {
@@ -860,6 +941,16 @@ function resolveSupportStructure(
         lead,
         `The protractor reading cue (a dot where the second ray crosses the scale) is ${showReadingCue ? 'shown to help locate the reading' : 'withdrawn — the student reads the scale unaided'}.`,
         'Keep the title and description neutral — never state the support level or name an angle measure.',
+      ],
+    };
+  }
+
+  if (pinnedType === 'make_angle') {
+    // The levers start bare at every tier: the build has no on-screen scaffold to withdraw.
+    return {
+      promptLines: [
+        'The student makes angles from an empty scene; no measure is ever printed.',
+        'Keep the title and description neutral — never name one kind of angle as the answer.',
       ],
     };
   }
@@ -987,7 +1078,7 @@ export const generateAngleWorkshop = async (
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as AngleWorkshopConfig;
   const validTypes: AngleWorkshopChallengeType[] = [
-    'measure', 'classify_pairs', 'solve_unknown', 'solve_algebraic', 'transversal',
+    'measure', 'classify_pairs', 'solve_unknown', 'solve_algebraic', 'transversal', 'make_angle',
   ];
 
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -1071,7 +1162,12 @@ Return ONLY the wrapper fields described above.
     : (evalConstraint?.allowedTypes[0] as AngleWorkshopChallengeType) ?? 'measure';
   if (!validTypes.includes(challengeType)) challengeType = 'measure';
 
-  const gradeBand: '7' | '8' = wrapper.gradeBand === '8' ? '8' : '7';
+  // make_angle carries the lesson's grade (3-8); the classic modes keep the model's 7 / 8.
+  const gradeNum = ctx.grade === 'K' ? 0 : Number.parseInt(ctx.grade ?? '', 10);
+  const buildGrade = Number.isFinite(gradeNum) ? gradeNum : 7;
+  const gradeBand: NonNullable<AngleWorkshopData['gradeBand']> = challengeType === 'make_angle'
+    ? (String(Math.min(8, Math.max(3, buildGrade))) as NonNullable<AngleWorkshopData['gradeBand']>)
+    : wrapper.gradeBand === '8' ? '8' : '7';
 
   // ── Build the per-challenge pool locally ──
   // Structural difficulty (axis 2) is a SINGLE-MODE lever: it re-selects the
@@ -1080,7 +1176,8 @@ Return ONLY the wrapper fields described above.
   // pinned AND it matches the resolved challengeType. The scaffolding axis still
   // applies per-challenge in the blended post-process below (unchanged).
   const structuralTier = pinnedType && pinnedType === challengeType ? supportTier : null;
-  const challenges = selectAngleWorkshopChallenges(challengeType, config?.instanceCount, structuralTier);
+  const challenges = selectAngleWorkshopChallenges(challengeType, config?.instanceCount, structuralTier,
+    { grade: buildGrade, named: namedAngleKinds(`${ctx.intent ?? ''} ${topic}`) });
 
   // ── Post-validation: every numeric expectedAnswer must match its figure ──
   for (const ch of challenges) {
@@ -1098,6 +1195,7 @@ Return ONLY the wrapper fields described above.
   //    one. Runs AFTER the answer-recompute fixup so a tier can only remove help. ──
   if (supportTier) {
     for (const ch of challenges) {
+      if (ch.type === 'make_angle') continue; // levers start bare; nothing to withdraw
       const sc = resolveSupportStructure(ch.type, supportTier);
       if (ch.type === 'measure') {
         ch.showReadingCue = sc.showReadingCue ?? true;
@@ -1134,6 +1232,7 @@ Return ONLY the wrapper fields described above.
       if (c.type === 'solve_algebraic') return `alg/${c.algConfig}→x=${c.expectedAnswer}`;
       if (c.type === 'transversal') return `${c.transversalShape}→${c.expectedAnswer}`;
       if (c.type === 'solve_unknown') return `${c.solveConfig}→${c.expectedAnswer}`;
+      if (c.type === 'make_angle') return `make/${c.targetKind}${c.targetKind === 'range' ? `:${c.targetMin}-${c.targetMax}` : ''}`;
       return `measure→${c.expectedAnswer}`;
     })
     .join(', ');

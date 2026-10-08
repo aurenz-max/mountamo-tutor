@@ -7,7 +7,8 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
-import { buildScopePromptSection } from "../scopeContext";
+import { buildScopePromptSection, type PedagogicalScope } from "../scopeContext";
+import { showAmountAsk } from "../../primitives/visual-primitives/math/coinCounterLevers";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -47,6 +48,13 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `paidAmount > itemCost. correctChange = paidAmount - itemCost. `
       + `Use round amounts for K-1 (e.g., pay 50¢ for 35¢ item). Grade 2+ can use $1.00 payments.`,
     schemaDescription: "'make-change' (calculate change)",
+  },
+  // Open build (/add-eval-modes references/build-mode.md): code owns the amount, the bins and the ask.
+  "show-amount": {
+    promptDoc:
+      `"show-amount": Open build. The tray starts EMPTY and the student makes a stated amount from coin bins, `
+      + `any coins they like; every mix that adds up to the amount passes. The app writes the amount and the instruction.`,
+    schemaDescription: "'show-amount' (make an amount any way on an empty tray)",
   },
 };
 
@@ -121,6 +129,11 @@ function resolveSupportStructure(type: string, tier: SupportTier): SupportScaffo
       else if (tier === 'medium') lines.push('MEDIUM: target needs a small mix of coins; running total is hidden.');
       else lines.push('HARD: target requires combining 3+ coins (no single-coin or trivial-pair shortcut); running total AND coin ¢ labels are HIDDEN — the student tracks the build mentally.');
       break;
+    case 'show-amount':
+      // The running total and value tags are levers that come on a miss, never from the tier.
+      showCoinValues = tier !== 'hard';
+      if (tier === 'hard') lines.push('HARD: coin ¢ labels are HIDDEN on the bins and the tray; the student recalls each value.');
+      break;
     case 'make-change':
       // no visual coin levers (numeric paid/cost layout); instruction + structure only.
       if (tier === 'easy') lines.push('EASY: the instruction sets up the subtraction explicitly ("subtract the cost from what you paid"); choose amounts whose change needs NO regrouping across 10s.');
@@ -177,6 +190,7 @@ function challengeSignature(c: CoinCounterChallenge): string {
     case "make-amount": return `make-amount|${c.targetAmount}|${[...(c.availableCoins ?? [])].sort().join("+")}`;
     case "make-change": return `make-change|${c.paidAmount}-${c.itemCost}`;
     case "identify": return `identify|${c.targetCoin}|${[...(c.options ?? [])].sort().join("+")}`;
+    case "show-amount": return `show-amount|${c.targetAmount}`;
     default: return JSON.stringify(c);
   }
 }
@@ -742,6 +756,87 @@ Generate 5-6 challenges progressing in difficulty. Use warm, encouraging instruc
     .filter((c): c is CoinCounterChallenge => c !== null);
 }
 
+const showAmountSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    challenges: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          thing: { type: Type.STRING, description: "Something small a child could buy, 2-4 words with 'a' or 'an', no numbers or prices (e.g. 'a sticker')" },
+        },
+        required: ["thing"],
+      },
+      description: "5-6 things to buy, all different",
+    },
+  },
+  required: ["challenges"],
+};
+
+const SHOW_AMOUNT_COUNT = 4;
+const FALLBACK_THINGS = ["a sticker", "a pencil", "a small toy car", "a bouncy ball", "a bookmark", "a juice box"];
+
+/** The largest amount a show-amount ask may name: the band's, lowered by a bound the objective states ("within 20"). */
+function showAmountCeiling(gradeBand: string, scope: PedagogicalScope): number {
+  const band = gradeBand === "K" ? 20 : gradeBand === "1" ? 50 : 99;
+  const bounds = [scope.topic, scope.intent, scope.objectiveText]
+    .map((t) => (t ?? "").match(/\b(?:to|within|up to|under)\s+(\d{1,3})\b/i))
+    .filter((m): m is RegExpMatchArray => !!m)
+    .map((m) => parseInt(m[1], 10) - (/under/i.test(m[0]) ? 1 : 0));
+  return Math.max(2, Math.min(band, ...bounds));
+}
+
+/**
+ * show-amount: the amounts, the bins and the ask are code's (distinct per session, within the ceiling, never a single
+ * coin's value so the ask is a mix). The model only names what each amount is for; a name with a number is dropped.
+ */
+async function generateShowAmountChallenges(
+  topic: string,
+  gradeLevel: string,
+  gradeBand: string,
+  scope: PedagogicalScope,
+  scopeSection = '',
+): Promise<CoinCounterChallenge[]> {
+  const ceiling = showAmountCeiling(gradeBand, scope);
+  const bins = gradeCoinPool(gradeBand).filter((c) => COIN_VALUES[c] <= ceiling);
+  const single = new Set(bins.map((c) => COIN_VALUES[c]));
+  const low = ceiling >= 8 ? 6 : 2;
+  const pool = Array.from({ length: ceiling - low + 1 }, (_, i) => low + i).filter((n) => !single.has(n));
+  const amounts = (pool.length ? pool : [ceiling])
+    .map((n) => ({ n, k: Math.random() })).sort((a, b) => a.k - b.k)
+    .slice(0, SHOW_AMOUNT_COUNT).map(({ n }) => n).sort((a, b) => a - b);
+
+  let things: string[] = [];
+  try {
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-lite-latest",
+      contents: `Lesson topic: "${topic}" (${gradeLevel} students). Theme: ${randomTheme()}.
+${scopeSection}
+List 5-6 different small things a child could buy or save for that fit the topic, each 2-4 words starting with "a" or "an"
+(e.g. "a sticker", "an apple"). No numbers, prices or coin names.`,
+      config: { responseMimeType: "application/json", responseSchema: showAmountSchema },
+    });
+    const data = result.text ? JSON.parse(result.text) : null;
+    things = ((data?.challenges ?? []) as FlatChallenge[])
+      .map((f) => String(f.thing ?? "").trim().replace(/[.!]+$/, ""))
+      .filter((t) => /^(a|an) [a-z][a-z' -]{1,30}$/i.test(t) && !/\d|cent|¢|penn|nickel|dime|quarter|dollar/i.test(t));
+  } catch (err) {
+    console.warn("[CoinCounter] show-amount things failed; using the fallback list", err);
+  }
+  things = Array.from(new Set(things.map((t) => t.toLowerCase())));
+  if (things.length < amounts.length) things = [...things, ...FALLBACK_THINGS.filter((t) => !things.includes(t))];
+
+  return amounts.map((amount, i) => ({
+    id: `s${i + 1}`,
+    type: "show-amount" as const,
+    instruction: showAmountAsk(amount, things[i]),
+    hint: "Put in big coins first, then count on with smaller ones.",
+    targetAmount: amount,
+    availableCoins: bins,
+  }));
+}
+
 // ===========================================================================
 // Fallbacks — one per type, correct by construction
 // ===========================================================================
@@ -796,6 +891,14 @@ const FALLBACKS: Record<string, CoinCounterChallenge> = {
     paidAmount: 50,
     itemCost: 35,
     correctChange: 15,
+  },
+  "show-amount": {
+    id: "c1",
+    type: "show-amount",
+    instruction: showAmountAsk(17),
+    hint: "Put in big coins first, then count on with smaller ones.",
+    targetAmount: 17,
+    availableCoins: ["penny", "nickel", "dime"],
   },
 };
 
@@ -868,6 +971,9 @@ export const generateCoinCounter = async (
       case "make-change":
         generators.push(generateMakeChangeChallenges(topic, gradeLevel, gradeBand, supportTier, scopeSection));
         break;
+      case "show-amount":
+        generators.push(generateShowAmountChallenges(topic, gradeLevel, gradeBand, ctx.scope, scopeSection));
+        break;
     }
   }
 
@@ -919,6 +1025,7 @@ export const generateCoinCounter = async (
     "make-amount": "Making Amounts",
     compare: "Comparing Coin Groups",
     "make-change": "Making Change",
+    "show-amount": "Showing Amounts",
   };
   if (allowedTypes.length === 1) {
     title = `${typeLabels[allowedTypes[0]] ?? "Coin"} Fun!`;

@@ -1,5 +1,6 @@
 import { FRACTION_TOUCH_TYPE_DOCS, fractionTouchPlan } from '../../primitives/visual-primitives/math/fractionTouchModes';
 import { buildFractionTouchItems } from '../../primitives/visual-primitives/math/fractionCirclesWorkspace';
+import { equalBuildInstruction, equalTargets } from '../../primitives/visual-primitives/math/fractionEqualBuild';
 /**
  * Fraction Circles Generator - Dedicated service for fraction circle challenges
  *
@@ -54,6 +55,8 @@ const GRADE_BAND_DENOMINATORS: Record<'K-2' | '3-5', number[]> = {
 };
 
 /** Resolve K-2 vs 3-5 from a grade-context string (mirrors the post-process default). */
+const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
+
 function resolveGradeBand(gradeContext: string): 'K-2' | '3-5' {
   const lower = gradeContext.toLowerCase();
   return lower.includes('kinder') || lower.includes('k-2') || lower.includes('1st') || lower.includes('2nd')
@@ -161,7 +164,20 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `Example: 2/4 equivalent with denominator 6 => 3/6, so equivalentDenominator=6.`,
     schemaDescription: "'equivalent' (find equivalent fraction)",
   },
+  build_equal: {
+    promptDoc:
+      `"build_equal": Open build. The student makes a fraction equal to the given one in their OWN way: they choose how `
+      + `many equal pieces to cut a whole circle into (any number but the given denominator), shade some, and say done. `
+      + `Many answers are right (1/2 = 2/4 = 3/6). The app chooses each fraction and writes the instruction after you `
+      + `answer, so put any pool fraction in numerator/denominator and never state a fraction in the instruction.`,
+    schemaDescription: "'build_equal' (make an equal fraction, your own cut)",
+  },
 };
+
+/** An open build is reached only by a pin or by intent; the mixed session keeps the five modes it always had. */
+const OPEN_BUILD_TYPES = new Set(['build_equal']);
+const MIXED_TYPE_DOCS: Record<string, ChallengeTypeDoc> = Object.fromEntries(
+  Object.entries(CHALLENGE_TYPE_DOCS).filter(([type]) => !OPEN_BUILD_TYPES.has(type)));
 
 // ---------------------------------------------------------------------------
 // Support tiers — within-mode scaffolding withdrawal + compare proximity.
@@ -235,6 +251,11 @@ function resolveSupportStructure(type: FractionChallengeType, tier: SupportTier)
           promptLines: ['equivalent: NO live built-fraction tally — the student tracks the equivalent they are building unaided. Hint must not state the current built count.'] };
       return { showTotalPieces: true, showWorkingCount: true, showFractionLabels: true,
         promptLines: ['equivalent: the live built-fraction tally is shown so the student can compare it against the reference.'] };
+
+    case 'build_equal':
+      // Starts bare at every tier: choosing the cut and keeping count IS the task; its levers come on a miss.
+      return { showTotalPieces: false, showWorkingCount: false, showFractionLabels: false,
+        promptLines: ['build_equal: the circle starts whole with no count shown; the student chooses the cut and keeps count.'] };
 
     case 'compare':
       if (tier === 'easy')
@@ -423,8 +444,7 @@ export const generateFractionCircles = async (ctx: GenerationContext): Promise<F
   // ── Resolve the within-mode support tier (drives BOTH the prompt tone and the
   //    deterministic per-challenge scaffold application after generation) ──
   const supportTier = normalizeSupportTier(ctx.supportTier ?? config?.difficulty);
-  const tierModes = (evalConstraint?.allowedTypes
-    ?? ['touch_fraction', 'identify', 'build', 'compare', 'equivalent']) as FractionChallengeType[];
+  const tierModes = (evalConstraint?.allowedTypes ?? Object.keys(MIXED_TYPE_DOCS)) as FractionChallengeType[];
   const tierSection = supportTier ? buildTierPromptSection(tierModes, supportTier) : '';
 
   // ── Pre-roll a grade-legal fraction pool (entropy lives in the prompt); the
@@ -434,14 +454,13 @@ export const generateFractionCircles = async (ctx: GenerationContext): Promise<F
   const fractionPoolSection = buildFractionPoolSection(gradeContext, config?.intent, canonicalBand);
 
   // ── Build mode-constrained schema ──
-  const activeSchema = evalConstraint
-    ? constrainChallengeTypeEnum(fractionCirclesSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
-    : fractionCirclesSchema;
+  const activeSchema = constrainChallengeTypeEnum(fractionCirclesSchema, evalConstraint?.allowedTypes ?? Object.keys(MIXED_TYPE_DOCS),
+    CHALLENGE_TYPE_DOCS);
 
   // ── Build prompt ──
-  const challengeTypeSection = buildModeConstraintSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+  const challengeTypeSection = buildModeConstraintSection(evalConstraint, evalConstraint ? CHALLENGE_TYPE_DOCS : MIXED_TYPE_DOCS);
 
-  const requiredTypes = evalConstraint?.allowedTypes ?? Object.keys(CHALLENGE_TYPE_DOCS);
+  const requiredTypes = evalConstraint?.allowedTypes ?? Object.keys(MIXED_TYPE_DOCS);
   const prompt = `
 Create an educational fraction circles activity for teaching "${topic}" to ${gradeContext} students.
 
@@ -542,6 +561,11 @@ Return the complete fraction circles configuration.
   buildFractionTouchItems(data.challenges);
 
   const maxDenominator = data.gradeBand === 'K-2' ? 4 : 12;
+  // build_equal: code picks each target from a shuffled list of band fractions that have another equal cut the
+  // circle can make, each a different value from every other build in the session.
+  const equalPool = equalTargets(data.gradeBand).map(f => ({ f, k: Math.random() })).sort((x, y) => x.k - y.k).map(({ f }) => f);
+  const valueKey = (n: number, d: number) => { const g = gcd(n, d); return `${n / g}/${d / g}`; };
+  const equalValues = new Set<string>();
   // Per-challenge validation
   for (let i = 0; i < data.challenges.length; i++) {
     const challenge = data.challenges[i] as FractionCirclesChallenge;
@@ -658,6 +682,14 @@ Return the complete fraction circles configuration.
       }
     }
 
+    if (challenge.type === 'build_equal') {
+      // Code owns the target: the model's picks converged on 1/2, 1/3, 3/4 in every probe run (2026-10-07).
+      const pick = equalPool.find(f => !equalValues.has(valueKey(f.numerator, f.denominator))) ?? equalPool[0];
+      challenge.numerator = pick.numerator;
+      challenge.denominator = pick.denominator;
+      equalValues.add(valueKey(pick.numerator, pick.denominator));
+    }
+
     // The displayed fractions are authoritative after validation. Generated
     // prose must never ask about a different operand or partition count.
     const shown = `${challenge.numerator}/${challenge.denominator}`;
@@ -665,10 +697,12 @@ Return the complete fraction circles configuration.
     if (challenge.type === 'build') challenge.instruction = `Shade the circle to show ${shown}.`;
     if (challenge.type === 'compare' && challenge.compareFraction) challenge.instruction = compareInstruction(challenge);
     if (challenge.type === 'equivalent') challenge.instruction = `Build a fraction equivalent to ${shown} using ${challenge.equivalentDenominator} equal slices.`;
+    if (challenge.type === 'build_equal') challenge.instruction = equalBuildInstruction(challenge.numerator, challenge.denominator);
     challenge.narration = challenge.instruction;
     challenge.hint = challenge.type === 'identify'
       ? 'Count the equal parts, then count the shaded parts.'
       : challenge.type === 'compare' ? 'Compare the shaded amounts in the two equal-sized circles.'
+      : challenge.type === 'build_equal' ? 'Think about cutting every piece into the same number of smaller pieces.'
       : 'Look at the equal parts and the amount you need to shade.';
 
     if (challenge.type === 'touch_fraction') {
@@ -732,6 +766,15 @@ Return the complete fraction circles configuration.
         equivalentDenominator: 4,
         hint: "If the circle has 4 slices, how many do you shade to equal 1/2?",
         narration: "Can you find a fraction that looks different but has the same value?",
+      },
+      build_equal: {
+        id: "fc1",
+        type: "build_equal",
+        instruction: equalBuildInstruction(1, 2),
+        denominator: 2,
+        numerator: 1,
+        hint: "Think about cutting every piece into the same number of smaller pieces.",
+        narration: equalBuildInstruction(1, 2),
       },
     };
 

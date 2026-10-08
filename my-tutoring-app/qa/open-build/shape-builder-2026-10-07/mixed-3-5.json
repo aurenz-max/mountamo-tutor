@@ -1,0 +1,174 @@
+{
+  "generatedAt": "2026-10-08T02:00:27.772Z",
+  "case": {
+    "grade": "3",
+    "topic": "Geometry with shapes",
+    "intent": "Explore shapes on a dot grid"
+  },
+  "data": {
+    "title": "Shape Explorers: Geometry Adventure",
+    "description": "Explore properties of shapes, classify them by attributes, and build geometric figures using grids and tools.",
+    "mode": "classify",
+    "grid": {
+      "type": "dot",
+      "size": {
+        "rows": 10,
+        "columns": 10
+      },
+      "showCoordinates": false
+    },
+    "challenges": [
+      {
+        "id": "c1",
+        "type": "build",
+        "instruction": "Can you build a shape with 3 sides and 3 corners?",
+        "hint": "Try connecting 3 dots to form a triangle.",
+        "narration": "Let us start by building a simple shape with 3 sides and 3 corners.",
+        "targetProperties": {
+          "sides": 3
+        }
+      },
+      {
+        "id": "c2",
+        "type": "build",
+        "instruction": "Build a shape with 4 equal sides and 4 right angles.",
+        "hint": "Make sure all four sides are the same length and meet at square corners.",
+        "narration": "Now let us construct a shape with 4 equal sides and 4 right angles.",
+        "targetProperties": {
+          "sides": 4
+        }
+      },
+      {
+        "id": "c3",
+        "type": "classify",
+        "instruction": "Sort the given shapes into the correct categories based on their number of sides.",
+        "hint": "Count the number of vertices for each shape to decide where it belongs.",
+        "narration": "Time to put your sorting skills to the test! Drag each shape into the correct category.",
+        "targetProperties": null
+      }
+    ],
+    "tools": {
+      "ruler": true,
+      "protractor": false,
+      "symmetryLine": false,
+      "parallelMarker": false
+    },
+    "gradeBand": "3-5",
+    "classificationCategories": [
+      "Triangles",
+      "Quadrilaterals",
+      "Pentagons & More"
+    ],
+    "patternBlocks": {
+      "enabled": false,
+      "availableShapes": []
+    },
+    "preloadedShapes": [
+      {
+        "id": "s1",
+        "vertices": [
+          {
+            "x": 1,
+            "y": 1
+          },
+          {
+            "x": 4,
+            "y": 1
+          },
+          {
+            "x": 2,
+            "y": 5
+          }
+        ],
+        "name": "Small Triangle",
+        "locked": false,
+        "correctCategory": "Triangles"
+      },
+      {
+        "id": "s2",
+        "vertices": [
+          {
+            "x": 6,
+            "y": 1
+          },
+          {
+            "x": 9,
+            "y": 1
+          },
+          {
+            "x": 9,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 4
+          }
+        ],
+        "name": "Square",
+        "locked": false,
+        "correctCategory": "Quadrilaterals"
+      },
+      {
+        "id": "s3",
+        "vertices": [
+          {
+            "x": 1,
+            "y": 6
+          },
+          {
+            "x": 4,
+            "y": 6
+          },
+          {
+            "x": 5,
+            "y": 9
+          },
+          {
+            "x": 3,
+            "y": 9
+          },
+          {
+            "x": 1,
+            "y": 8
+          }
+        ],
+        "name": "Pentagon",
+        "locked": false,
+        "correctCategory": "Pentagons & More"
+      },
+      {
+        "id": "s4",
+        "vertices": [
+          {
+            "x": 6,
+            "y": 6
+          },
+          {
+            "x": 8,
+            "y": 6
+          },
+          {
+            "x": 7,
+            "y": 9
+          }
+        ],
+        "name": "Tall Triangle",
+        "locked": false,
+        "correctCategory": "Triangles"
+      }
+    ]
+  },
+  "oracle": {
+    "violations": [],
+    "uncheckedTypes": [
+      "build",
+      "classify"
+    ],
+    "checkedChallenges": 0
+  },
+  "issues": [],
+  "logs": [
+    "[ShapeBuilder] No targetEvalMode — full schema, mixed difficulty",
+    "[ShapeBuilder] Final: 3 challenge(s) → [build, build, classify]"
+  ]
+}

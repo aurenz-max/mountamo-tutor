@@ -1,0 +1,65 @@
+{
+ "source": "qa/open-build/polygon-area-builder-2026-10-07/generation.json#g6-triangle",
+ "primitiveId": "polygon-area-builder",
+ "evalMode": "find_area_triangle_parallelogram",
+ "data": {
+  "title": "Finding the Area of Triangles and Parallelograms",
+  "description": "Practice calculating the area of various triangles and parallelograms using their base and height measurements.",
+  "challengeType": "find_area_triangle_parallelogram",
+  "gradeBand": "6",
+  "challenges": [
+   {
+    "type": "find_area_triangle_parallelogram",
+    "figureType": "triangle",
+    "base": 11,
+    "height": 6,
+    "apexX": 7,
+    "expectedArea": 33,
+    "unitLabel": "yd",
+    "narration": "A sail on a sailboat is shaped like this triangle.",
+    "instruction": "Find the area of this triangle.",
+    "hint": "A triangle is half of a rectangle. Area = ½ × base × height. Use the perpendicular (dashed) height, not a slanted side.",
+    "id": "pab-1"
+   },
+   {
+    "type": "find_area_triangle_parallelogram",
+    "figureType": "parallelogram",
+    "base": 5,
+    "height": 7,
+    "skew": 4,
+    "expectedArea": 35,
+    "unitLabel": "ft",
+    "narration": "A leaning bookshelf panel is shaped like this parallelogram.",
+    "instruction": "Find the area of this parallelogram.",
+    "hint": "Area of a parallelogram = base × height. Use the perpendicular (dashed) height.",
+    "id": "pab-2"
+   },
+   {
+    "type": "find_area_triangle_parallelogram",
+    "figureType": "parallelogram",
+    "base": 13,
+    "height": 4,
+    "skew": 4,
+    "expectedArea": 52,
+    "unitLabel": "cm",
+    "narration": "The side panel of a ramp is shaped like this parallelogram.",
+    "instruction": "Find the area of this parallelogram.",
+    "hint": "Area of a parallelogram = base × height. Use the perpendicular (dashed) height.",
+    "id": "pab-3"
+   },
+   {
+    "type": "find_area_triangle_parallelogram",
+    "figureType": "triangle",
+    "base": 9,
+    "height": 12,
+    "apexX": 3,
+    "expectedArea": 54,
+    "unitLabel": "cm",
+    "narration": "A slice of pizza is shaped like this triangle.",
+    "instruction": "Find the area of this triangle.",
+    "hint": "A triangle is half of a rectangle. Area = ½ × base × height. Use the perpendicular (dashed) height, not a slanted side.",
+    "id": "pab-4"
+   }
+  ]
+ }
+}

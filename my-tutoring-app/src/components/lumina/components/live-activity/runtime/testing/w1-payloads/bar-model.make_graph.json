@@ -1,0 +1,170 @@
+{
+ "source": "qa/open-build/bar-model-2026-10-07/generated-g1.json",
+ "primitiveId": "bar-model",
+ "evalMode": "make_graph",
+ "data": {
+  "title": "Fruit We Ate",
+  "description": "Show the fruit we had for snack time.",
+  "challenges": [
+   {
+    "id": "bm-1",
+    "evalMode": "make_graph",
+    "values": [
+     {
+      "label": "apples",
+      "value": 0,
+      "color": "blue",
+      "emoji": "🍎"
+     },
+     {
+      "label": "oranges",
+      "value": 0,
+      "color": "green",
+      "emoji": "🍊"
+     },
+     {
+      "label": "grapes",
+      "value": 0,
+      "color": "purple",
+      "emoji": "🍇"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 10,
+     "iconEmoji": "🍎",
+     "iconValue": 1
+    },
+    "prompt": "Make a graph where grapes have the most.",
+    "hint": "Look at the ask again, then look at each bar.",
+    "graphRule": {
+     "kind": "most",
+     "a": 2
+    },
+    "showBarValues": false,
+    "showTargetHighlight": false
+   },
+   {
+    "id": "bm-2",
+    "evalMode": "make_graph",
+    "values": [
+     {
+      "label": "oranges",
+      "value": 0,
+      "color": "blue",
+      "emoji": "🍊"
+     },
+     {
+      "label": "grapes",
+      "value": 0,
+      "color": "green",
+      "emoji": "🍇"
+     },
+     {
+      "label": "bananas",
+      "value": 0,
+      "color": "purple",
+      "emoji": "🍌"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 10,
+     "iconEmoji": "🍊",
+     "iconValue": 1
+    },
+    "prompt": "Make a graph where grapes have the fewest.",
+    "hint": "Look at the ask again, then look at each bar.",
+    "graphRule": {
+     "kind": "fewest",
+     "a": 1
+    },
+    "showBarValues": false,
+    "showTargetHighlight": false
+   },
+   {
+    "id": "bm-3",
+    "evalMode": "make_graph",
+    "values": [
+     {
+      "label": "grapes",
+      "value": 0,
+      "color": "blue",
+      "emoji": "🍇"
+     },
+     {
+      "label": "oranges",
+      "value": 0,
+      "color": "green",
+      "emoji": "🍊"
+     },
+     {
+      "label": "bananas",
+      "value": 0,
+      "color": "purple",
+      "emoji": "🍌"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 10,
+     "iconEmoji": "🍇",
+     "iconValue": 1
+    },
+    "prompt": "Make a graph where oranges and grapes have the same number.",
+    "hint": "Look at the ask again, then look at each bar.",
+    "graphRule": {
+     "kind": "same",
+     "a": 1,
+     "b": 0
+    },
+    "showBarValues": false,
+    "showTargetHighlight": false
+   },
+   {
+    "id": "bm-4",
+    "evalMode": "make_graph",
+    "values": [
+     {
+      "label": "apples",
+      "value": 0,
+      "color": "blue",
+      "emoji": "🍎"
+     },
+     {
+      "label": "grapes",
+      "value": 0,
+      "color": "green",
+      "emoji": "🍇"
+     },
+     {
+      "label": "oranges",
+      "value": 0,
+      "color": "purple",
+      "emoji": "🍊"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 10,
+     "iconEmoji": "🍎",
+     "iconValue": 1
+    },
+    "prompt": "Make a graph where there are two more oranges than apples.",
+    "hint": "Look at the ask again, then look at each bar.",
+    "graphRule": {
+     "kind": "more_than",
+     "a": 2,
+     "b": 0,
+     "by": 2
+    },
+    "showBarValues": false,
+    "showTargetHighlight": false
+   }
+  ]
+ }
+}

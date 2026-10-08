@@ -22,7 +22,10 @@ import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRu
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { describePlainCheck, plainMiss, plainWorkspaceAssignment, plainWorkspaceScene } from './baseTenWorkspace';
+import { TWO_WAYS, describePlainCheck, describeTwoWaysCheck, plainMiss, plainWorkspaceAssignment, plainWorkspaceScene,
+  twoWaysInstruction, twoWaysMiss, twoWaysScene } from './baseTenWorkspace';
+import { BaseTenBuildScene, MatButtons, TenModel, columnCapacity, type MatPlace } from './BaseTenBuildScene';
+import { useBuildWatcher } from '../../build-layer/buildLayer';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
@@ -30,15 +33,15 @@ import CalculatorInput from '../../input-primitives/CalculatorInput';
 import { SoundManager } from '../../../utils/SoundManager';
 import BaseTenBlocksDi from './BaseTenBlocksDi';
 import { usesBaseTenDi } from './baseTenScript';
-import { BRACKET_LEVER, COUNTS_LEVER, PLAINER_LEVER, SIMPLER_OP_LEVER, TOTAL_LEVER, baseTenLevers, isOperate as isOperateType,
-  leverFacts, plainerNumber, simplerOperation, startLevers } from './baseTenLevers';
+import { BRACKET_LEVER, COUNTS_LEVER, PLAINER_LEVER, SIMPLER_OP_LEVER, SMALLER_LEVER, TEN_MODEL_LEVER, TOTAL_LEVER, baseTenLevers,
+  isOperate as isOperateType, leverFacts, plainerNumber, simplerOperation, smallerTwoWaysNumber, startLevers } from './baseTenLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
 // ============================================================================
 
 export interface BaseTenBlocksChallenge {
-  type: 'build_number' | 'read_blocks' | 'regroup' | 'add_with_blocks' | 'subtract_with_blocks';
+  type: 'build_number' | 'read_blocks' | 'regroup' | 'add_with_blocks' | 'subtract_with_blocks' | 'build_two_ways';
   instruction: string;
   targetNumber: number;
   secondNumber?: number; // For operations
@@ -94,6 +97,7 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   regroup:              { label: 'Regroup',  icon: '🔄', accentColor: 'amber' },
   add_with_blocks:      { label: 'Add',      icon: '➕', accentColor: 'emerald' },
   subtract_with_blocks: { label: 'Subtract', icon: '➖', accentColor: 'pink' },
+  build_two_ways:       { label: 'Two Ways', icon: '🔀', accentColor: 'purple' },
 };
 
 function getActivePlaces(maxPlace: string, decimalMode: boolean): PlaceValue[] {
@@ -271,6 +275,9 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<PlainChallenge | null>(null);
   const practiceRef = useRef<PlainChallenge | null>(null);
+  // build_two_ways: the first way, once it was checked right, keyed by the item on screen (a practice item has its own).
+  const [firstWay, setFirstWay] = useState<{ item: string; columns: Record<PlaceValue, number> } | null>(null);
+  const buildSvgRef = useRef<SVGSVGElement | null>(null);
 
   // Refs
   const stableInstanceIdRef = useRef(instanceId || `base-ten-blocks-${Date.now()}`);
@@ -295,8 +302,11 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
     // A fresh challenge and Try again both start from the challenge's own mat. Try again on the plainer build
     // keeps it; only a fresh challenge or the workspace's endPractice removes it.
     onItemOpened: (index, retry) => {
-      if (!retry) { practiceRef.current = null; setPractice(null); }
-      setColumns(startColumnsFor(retry && practiceRef.current ? practiceRef.current : challengesWithIds[index]));
+      const open = retry && practiceRef.current ? practiceRef.current : challengesWithIds[index];
+      // An open build's Try again keeps the build (and the first way) to revise, and the verdict's words stay.
+      if (retry && open?.type === TWO_WAYS) return;
+      if (!retry) { practiceRef.current = null; setPractice(null); setFirstWay(null); }
+      setColumns(startColumnsFor(open));
       setRegroupCount(0); setFeedback(''); setFeedbackType(''); setTypedAnswer('');
     },
   });
@@ -341,16 +351,21 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
   // On build_number the counts and the total are levers; the tier only sets where they start.
   const isBuild = currentChallenge?.type === 'build_number';
   const isOperate = isOperateType(currentChallenge?.type);
-  const showColumnCounts = isReadBlocks ? false : isBuild || isOperate ? pulledLevers.includes(COUNTS_LEVER)
+  // build_two_ways starts bare at every tier: its counts are a lever, and it never shows a total (the value is the skill).
+  const isTwoWays = currentChallenge?.type === TWO_WAYS;
+  const showColumnCounts = isReadBlocks ? false : isBuild || isOperate || isTwoWays ? pulledLevers.includes(COUNTS_LEVER)
     : (currentChallenge?.showColumnCounts ?? true);
   // Operate never shows its total at any tier (contract R13): once the learner models the operation, the
   // total IS the typed answer, whatever the flag says. build_number keeps the default (R10).
   const bracketOn = pulledLevers.includes(BRACKET_LEVER);
-  const showBlocksTotal = isReadBlocks || isOperate ? false : isBuild ? pulledLevers.includes(TOTAL_LEVER)
+  const showBlocksTotal = isReadBlocks || isOperate || isTwoWays ? false : isBuild ? pulledLevers.includes(TOTAL_LEVER)
     : (currentChallenge?.showBlocksTotal ?? true);
 
   // BT-4: which channel carries the answer for this challenge (see BLOCK_JUDGED_TYPES).
   const isBlockJudged = !!currentChallenge && BLOCK_JUDGED_TYPES.has(currentChallenge.type);
+  /** The open build's mat: the whole-number places (no decimal columns). */
+  const matPlaces = activePlaces.filter((p): p is MatPlace => p !== 'tenths' && p !== 'hundredths');
+  const firstWayNow = isTwoWays && firstWay && firstWay.item === currentChallenge?.id ? firstWay.columns : null;
 
   // -------------------------------------------------------------------------
   // Evaluation Hook
@@ -375,9 +390,12 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
   // -------------------------------------------------------------------------
   const addBlock = useCallback((place: PlaceValue) => {
     if (hasSubmittedEvaluation || learnerBlocked()) return;
+    // The open build's mat draws every block, so a column takes only what fits without overlapping.
+    if (isTwoWays && (columns[place] || 0) >= columnCapacity(place as MatPlace, matPlaces.length)) return;
     SoundManager.tick();
     setColumns(prev => ({ ...prev, [place]: (prev[place] || 0) + 1 }));
-  }, [hasSubmittedEvaluation]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasSubmittedEvaluation, isTwoWays, columns, matPlaces.length]);
 
   const removeBlock = useCallback((place: PlaceValue) => {
     if (hasSubmittedEvaluation || learnerBlocked()) return;
@@ -439,14 +457,14 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
 
   const resetColumns = useCallback(() => {
     if (learnerBlocked()) return;
-    // Reset to the CURRENT challenge's mat.
-    setColumns(startColumnsFor(currentChallenge));
+    // Reset to the CURRENT challenge's mat; on the second way of an open build, back to the first way.
+    setColumns(firstWayNow ? { ...firstWayNow } : startColumnsFor(currentChallenge));
     setFeedback('');
     setFeedbackType('');
     setRegroupCount(0);
     setTypedAnswer('');
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentChallenge]);
+  }, [currentChallenge, firstWayNow]);
 
   // -------------------------------------------------------------------------
   // Challenge Checking
@@ -526,6 +544,36 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
     }
   }, [currentChallenge, columns, activePlaces, currentTotal, regroupCount, showBlocksTotal, markCorrect, markWrong]);
 
+  // ── Open build (build_two_ways): "I'm done!" checks the value, then on the second way that the blocks differ ──
+  // A right first way is not a commit: it is kept, stays on the mat to change, and the second way begins. Every other
+  // check commits, so a miss reaches the tutor and the levers, and Try again keeps the build.
+  const doneBuilding = () => {
+    if (!currentChallenge || !isTwoWays || learnerBlocked()) return;
+    const target = currentChallenge.targetNumber;
+    const miss = twoWaysMiss({ got: currentTotal, target, unit: 1, now: columns, first: firstWayNow });
+    if (!firstWayNow && !miss) {
+      SoundManager.snap();
+      setFirstWay({ item: currentChallenge.id, columns: { ...columns } });
+      setFeedback(`Yes, that is one way to show ${target}. Now change the blocks to show ${target} a different way.`);
+      setFeedbackType('success');
+      return;
+    }
+    progress.commitCheck(describeTwoWaysCheck(columns, firstWayNow, matPlaces), !miss, miss);
+    if (!miss) {
+      SoundManager.playCorrect();
+      setFeedback(`Two different ways to show ${target}!`);
+      setFeedbackType('success');
+      if (!practice) recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1, regroupsUsed: 0 });
+      return;
+    }
+    SoundManager.playIncorrect();
+    // Never the learner's total: the value of the blocks is what they are working out.
+    setFeedback(miss === 'same_as_first'
+      ? `Those blocks make ${target}, but it is the same way as your first. Change the blocks so they still make ${target}.`
+      : `Not ${target} yet. Look at each column again.`);
+    setFeedbackType('error');
+  };
+
   // ── Channel B: the student types a number the screen does not state
   //    (read_blocks, add_with_blocks, subtract_with_blocks) ──
   const checkAnswer = useCallback(() => {
@@ -570,6 +618,17 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
     ? challengeResults.some(r => r.challengeId === currentChallenge.id)
     : false;
 
+  // The live line (shared build layer): what the mat looks like so far, NEVER a number: the value is the task.
+  const buildSeeing = useBuildWatcher({
+    buildKey: `${firstWayNow ? 2 : 1}:${matPlaces.map(p => columns[p] || 0).join(',')}`,
+    enabled: isTwoWays && matPlaces.some(p => (columns[p] || 0) > 0) && progress.canAttempt !== false
+      && !hasSubmittedEvaluation && !isCurrentComplete,
+    svg: buildSvgRef,
+    request: { task: currentChallenge?.instruction ?? '', numbers: 'never',
+      sceneNote: `A dark place value mat with columns labelled ${matPlaces.map(p => PLACE_CONFIG[p].label).join(', ')}. `
+        + 'Purple sticks are tens, green cubes are ones, blue squares are hundreds.' },
+  });
+
   // ── Pip shared surface ───────────────────────────────────────────
   const { isAudioPlaying, activePrimitiveId } = useLuminaAIContext();
   // A projection of this challenge's check state, the tutor's speech on it, and
@@ -593,8 +652,10 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!currentChallenge) return;
-    const scene = plainWorkspaceScene(currentChallenge, { blocks: describeDecomposition(columns, activePlaces),
-      typed: typedAnswer, trades: regroupCount });
+    const scene = currentChallenge.type === TWO_WAYS
+      ? twoWaysScene({ columns, places: matPlaces, value: currentTotal, first: firstWayNow })
+      : plainWorkspaceScene(currentChallenge, { blocks: describeDecomposition(columns, activePlaces),
+        typed: typedAnswer, trades: regroupCount });
     const onScreen = leverFacts(pulledLevers, startPulled);
     const levers = practice ? [] : baseTenLevers(sessionChallenge, pulledLevers, columns);
     workspace.current = {
@@ -607,9 +668,14 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
         if (practice || !sessionChallenge || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
-        if (id === PLAINER_LEVER || id === SIMPLER_OP_LEVER) {
+        if (id === PLAINER_LEVER || id === SIMPLER_OP_LEVER || id === SMALLER_LEVER) {
           let easier: PlainChallenge;
-          if (id === PLAINER_LEVER) {
+          if (id === SMALLER_LEVER) {
+            const smaller = smallerTwoWaysNumber(sessionChallenge.targetNumber);
+            if (smaller === null) return 'There is no smaller number for this item.';
+            easier = { ...sessionChallenge, id: `${sessionChallenge.id}~smaller`, targetNumber: smaller,
+              instruction: twoWaysInstruction(smaller) };
+          } else if (id === PLAINER_LEVER) {
             const plain = plainerNumber(sessionChallenge.targetNumber);
             if (plain === null) return 'There is no plainer number for this item.';
             easier = { ...sessionChallenge, id: `${sessionChallenge.id}~plainer`, targetNumber: plain,
@@ -621,7 +687,7 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
               secondNumber: simpler.second, instruction: simpler.instruction };
           }
           setLeverState(pulled);
-          practiceRef.current = easier; setPractice(easier);
+          practiceRef.current = easier; setPractice(easier); setFirstWay(null);
           setColumns(startColumnsFor(easier)); setRegroupCount(0); setFeedback(''); setFeedbackType(''); setTypedAnswer('');
           return { practice: plainWorkspaceAssignment(easier) };
         }
@@ -629,7 +695,7 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
         return true;
       },
       endPractice: () => {
-        practiceRef.current = null; setPractice(null);
+        practiceRef.current = null; setPractice(null); setFirstWay(null);
         setColumns(startColumnsFor(sessionChallenge)); setRegroupCount(0); setFeedback(''); setFeedbackType(''); setTypedAnswer('');
       },
     };
@@ -738,7 +804,36 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
             workspace — never one column or one block. */}
         {pip.store && !showSummary && <div {...pip.dock} />}
 
+        {/* Open build (build_two_ways): the first way, kept once it was right, above the mat the learner builds on.
+            Only the live mat carries data-base-ten-mat; the first way is a picture of earlier work. */}
+        {isTwoWays && !showSummary && (
+          <div {...pip.workspace} data-base-ten-mat="click" className="flex flex-col items-center gap-3">
+            {firstWayNow && (
+              <div className="flex flex-col items-center gap-1" data-first-way>
+                <span className="text-xs text-slate-400">Your first way</span>
+                <BaseTenBuildScene small places={matPlaces} columns={firstWayNow} />
+              </div>
+            )}
+            <BaseTenBuildScene ref={buildSvgRef} places={matPlaces} columns={columns} counts={showColumnCounts}
+              disabled={hasSubmittedEvaluation || workspaceClosed.current || isCurrentComplete}
+              onAdd={addBlock} onRemove={removeBlock} />
+            <MatButtons places={matPlaces} columns={columns} onAdd={addBlock} onRemove={removeBlock}
+              disabled={hasSubmittedEvaluation || workspaceClosed.current || isCurrentComplete} />
+            {pulledLevers.includes(TEN_MODEL_LEVER) && (
+              <TenModel withHundred={matPlaces.includes('hundreds') && (currentChallenge?.targetNumber ?? 0) >= 100} />
+            )}
+            <div className="flex min-h-8 items-center justify-center" aria-live="polite" data-testid="build-watcher">
+              {buildSeeing && <span className="rounded-full bg-white/10 px-4 py-1.5 text-base text-amber-100">👀 {buildSeeing}</span>}
+            </div>
+            <LuminaButton tone="primary" onClick={doneBuilding}
+              disabled={hasSubmittedEvaluation || isCurrentComplete || workspaceClosed.current || matPlaces.every(p => !columns[p])}>
+              I&apos;m done!
+            </LuminaButton>
+          </div>
+        )}
+
         {/* Place Value Columns */}
+        {!isTwoWays && (
         <div {...pip.workspace} data-base-ten-mat="click" className="grid gap-3" style={{ gridTemplateColumns: `repeat(${activePlaces.length}, 1fr)` }}>
           {activePlaces.map(place => {
             const config = PLACE_CONFIG[place];
@@ -821,6 +916,7 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
             );
           })}
         </div>
+        )}
 
         {/* Running Total from blocks (self-check aid) — off for read_blocks (BT-2) and withdrawn at the hard tier */}
         {showBlocksTotal && (
@@ -834,7 +930,7 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
             build_number / regroup are judged from the blocks (the target value is
             already on screen, so a keypad would just be transcription); only
             read_blocks and the operate modes ask for a typed number. */}
-        {challengesWithIds.length > 0 && !showSummary && (
+        {challengesWithIds.length > 0 && !showSummary && !isTwoWays && (
           isBlockJudged ? (
             <div className="flex justify-center">
               <LuminaActionButton

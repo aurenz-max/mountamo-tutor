@@ -1,0 +1,154 @@
+{
+  "generatedAt": "2026-10-08T00:40:33.369Z",
+  "runs": [
+    {
+      "name": "g1",
+      "grade": "1",
+      "difficulty": null,
+      "intent": "Show a teen number with tens and ones in more than one way",
+      "issues": [],
+      "data": {
+        "title": "Showing Numbers Two Ways",
+        "description": "Explore teen numbers and single-digit numbers by building them with tens and ones blocks in more than one way.",
+        "gradeBand": "K-1",
+        "maxPlace": "tens",
+        "decimalMode": false,
+        "interactionMode": "build",
+        "challenges": [
+          {
+            "type": "build_two_ways",
+            "instruction": "Show 20 with blocks. Then show 20 a different way.",
+            "targetNumber": 20,
+            "hint": "A big block can be swapped for the smaller blocks it is worth."
+          },
+          {
+            "type": "build_two_ways",
+            "instruction": "Show 11 with blocks. Then show 11 a different way.",
+            "targetNumber": 11,
+            "hint": "A big block can be swapped for the smaller blocks it is worth."
+          },
+          {
+            "type": "build_two_ways",
+            "instruction": "Show 19 with blocks. Then show 19 a different way.",
+            "targetNumber": 19,
+            "hint": "A big block can be swapped for the smaller blocks it is worth."
+          },
+          {
+            "type": "build_two_ways",
+            "instruction": "Show 15 with blocks. Then show 15 a different way.",
+            "targetNumber": 15,
+            "hint": "A big block can be swapped for the smaller blocks it is worth."
+          }
+        ]
+      }
+    },
+    {
+      "name": "g2",
+      "grade": "2",
+      "difficulty": null,
+      "intent": "A number can be made with tens and ones in different ways",
+      "issues": [],
+      "data": {
+        "title": "Showing Numbers in Different Ways",
+        "description": "Explore how the same number can be built using different combinations of base-ten blocks.",
+        "gradeBand": "2-3",
+        "maxPlace": "hundreds",
+        "decimalMode": false,
+        "interactionMode": "build",
+        "challenges": [
+          {
+            "type": "build_two_ways",
+            "instruction": "Show 943 with blocks. Then show 943 a different way.",
+            "targetNumber": 943,
+            "hint": "A big block can be swapped for the smaller blocks it is worth."
+          },
+          {
+            "type": "build_two_ways",
+            "instruction": "Show 245 with blocks. Then show 245 a different way.",
+            "targetNumber": 245,
+            "hint": "A big block can be swapped for the smaller blocks it is worth."
+          },
+          {
+            "type": "build_two_ways",
+            "instruction": "Show 74 with blocks. Then show 74 a different way.",
+            "targetNumber": 74,
+            "hint": "A big block can be swapped for the smaller blocks it is worth."
+          },
+          {
+            "type": "build_two_ways",
+            "instruction": "Show 382 with blocks. Then show 382 a different way.",
+            "targetNumber": 382,
+            "hint": "A big block can be swapped for the smaller blocks it is worth."
+          }
+        ]
+      }
+    },
+    {
+      "name": "g2-hard",
+      "grade": "2",
+      "difficulty": "hard",
+      "intent": "Show a two-digit number two different ways with blocks",
+      "issues": [],
+      "data": {
+        "title": "Showing Numbers Two Ways",
+        "description": "Explore how to represent the same three-digit number using different combinations of base-ten blocks.",
+        "gradeBand": "2-3",
+        "maxPlace": "hundreds",
+        "decimalMode": false,
+        "interactionMode": "build",
+        "challenges": [
+          {
+            "type": "build_two_ways",
+            "instruction": "Show 345 with blocks. Then show 345 a different way.",
+            "targetNumber": 345,
+            "hint": "A big block can be swapped for the smaller blocks it is worth.",
+            "showColumnCounts": false,
+            "showBlocksTotal": false
+          },
+          {
+            "type": "build_two_ways",
+            "instruction": "Show 16 with blocks. Then show 16 a different way.",
+            "targetNumber": 16,
+            "hint": "A big block can be swapped for the smaller blocks it is worth.",
+            "showColumnCounts": false,
+            "showBlocksTotal": false
+          },
+          {
+            "type": "build_two_ways",
+            "instruction": "Show 271 with blocks. Then show 271 a different way.",
+            "targetNumber": 271,
+            "hint": "A big block can be swapped for the smaller blocks it is worth.",
+            "showColumnCounts": false,
+            "showBlocksTotal": false
+          },
+          {
+            "type": "build_two_ways",
+            "instruction": "Show 382 with blocks. Then show 382 a different way.",
+            "targetNumber": 382,
+            "hint": "A big block can be swapped for the smaller blocks it is worth.",
+            "showColumnCounts": false,
+            "showBlocksTotal": false
+          }
+        ]
+      }
+    }
+  ],
+  "logs": [
+    "[BaseTenBlocks] pool: [\n  4, 20, 11, 19,  2,\n  6, 15,  1,  3, 16\n] difficulty: none",
+    "[BaseTenBlocks] evalMode: \"build_two_ways\" → schema enum: [build_two_ways] (β=2)",
+    "[BaseTenBlocks] build_two_ways: 4 target(s) set by code",
+    "[BaseTenBlocks] Final: 4 challenge(s) → [build_two_ways, build_two_ways, build_two_ways, build_two_ways]",
+    "🧱 Base-Ten Blocks Generated from dedicated service: {\n  topic: 'Place value with base-ten blocks',\n  numberValue: 4,\n  gradeBand: 'K-1',\n  interactionMode: 'build',\n  challengeCount: 4\n}",
+    "[BaseTenBlocks] pool: [\n  943, 245,  74, 382,\n  342, 279, 115, 863,\n  176, 709\n] difficulty: none",
+    "[BaseTenBlocks] evalMode: \"build_two_ways\" → schema enum: [build_two_ways] (β=2)",
+    "[BaseTenBlocks] build_two_ways: 4 target(s) set by code",
+    "[BaseTenBlocks] Final: 4 challenge(s) → [build_two_ways, build_two_ways, build_two_ways, build_two_ways]",
+    "🧱 Base-Ten Blocks Generated from dedicated service: {\n  topic: 'Place value with base-ten blocks',\n  numberValue: 943,\n  gradeBand: '2-3',\n  interactionMode: 'build',\n  challengeCount: 4\n}",
+    "[BaseTenBlocks] pool: [\n  345,  16, 271, 382,\n  967, 820, 894, 564,\n  802, 949\n] difficulty: hard",
+    "[BaseTenBlocks] evalMode: \"build_two_ways\" → schema enum: [build_two_ways] (β=2)",
+    "[BaseTenBlocks] Support tier \"hard\" applied per-challenge (single-mode build_two_ways)",
+    "[BaseTenBlocks] build_two_ways: 4 target(s) set by code",
+    "[BaseTenBlocks] Final: 4 challenge(s) → [build_two_ways, build_two_ways, build_two_ways, build_two_ways]",
+    "🧱 Base-Ten Blocks Generated from dedicated service: {\n  topic: 'Place value with base-ten blocks',\n  numberValue: 345,\n  gradeBand: '2-3',\n  interactionMode: 'build',\n  challengeCount: 4\n}"
+  ]
+}

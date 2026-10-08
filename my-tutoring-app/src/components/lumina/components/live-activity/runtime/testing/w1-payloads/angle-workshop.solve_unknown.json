@@ -1,0 +1,62 @@
+{
+ "source": "qa/open-build/angle-workshop-2026-10-07/generations.json",
+ "primitiveId": "angle-workshop",
+ "evalMode": "solve_unknown",
+ "data": {
+  "title": "Solving for Unknown Angles",
+  "description": "Practice using angle relationships such as supplementary, complementary, and vertical angles to determine missing measurements in various geometric figures.",
+  "challengeType": "solve_unknown",
+  "gradeBand": "7",
+  "challenges": [
+   {
+    "type": "solve_unknown",
+    "narration": "A tile pattern has two lines crossing.",
+    "instruction": "x and the labeled angle are vertical angles. Find x.",
+    "hint": "Vertical angles (opposite each other where two lines cross) are equal, so x equals the known angle.",
+    "answerKind": "degrees",
+    "solveConfig": "vertical",
+    "knownAngle": 40,
+    "expectedAnswer": 40,
+    "tolerance": 1,
+    "id": "aw-1"
+   },
+   {
+    "type": "solve_unknown",
+    "narration": "A signpost has two angles that form a right angle.",
+    "instruction": "These two angles are complementary (they add to 90°). Find the unknown angle x.",
+    "hint": "Complementary angles add to 90°, so x = 90° − the known angle.",
+    "answerKind": "degrees",
+    "solveConfig": "complementary",
+    "knownAngle": 25,
+    "expectedAnswer": 65,
+    "tolerance": 1,
+    "id": "aw-2"
+   },
+   {
+    "type": "solve_unknown",
+    "narration": "A tile pattern has two angles that sit on a straight line.",
+    "instruction": "These two angles are supplementary (they add to 180°). Find the unknown angle x.",
+    "hint": "Angles on a straight line add to 180°, so x = 180° − the known angle.",
+    "answerKind": "degrees",
+    "solveConfig": "supplementary",
+    "knownAngle": 40,
+    "expectedAnswer": 140,
+    "tolerance": 1,
+    "id": "aw-3"
+   },
+   {
+    "type": "solve_unknown",
+    "narration": "A garden trellis has three angles meeting at a point.",
+    "instruction": "The three angles go all the way around the point (360°). Find the unknown angle x.",
+    "hint": "Angles around a point add to 360°, so x = 360° − the two known angles.",
+    "answerKind": "degrees",
+    "solveConfig": "around_point",
+    "knownAngle": 120,
+    "knownAngle2": 110,
+    "expectedAnswer": 130,
+    "tolerance": 1,
+    "id": "aw-4"
+   }
+  ]
+ }
+}

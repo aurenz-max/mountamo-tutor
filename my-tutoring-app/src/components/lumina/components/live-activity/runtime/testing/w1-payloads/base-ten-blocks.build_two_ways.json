@@ -1,0 +1,41 @@
+{
+  "source": "qa/open-build/base-ten-blocks-2026-10-07/generation.json (run g1)",
+  "primitiveId": "base-ten-blocks",
+  "evalMode": "build_two_ways",
+  "data": {
+    "title": "Showing Numbers Two Ways",
+    "description": "Explore teen numbers and single-digit numbers by building them with tens and ones blocks in more than one way.",
+    "gradeBand": "K-1",
+    "maxPlace": "tens",
+    "decimalMode": false,
+    "interactionMode": "build",
+    "challenges": [
+      {
+        "type": "build_two_ways",
+        "instruction": "Show 20 with blocks. Then show 20 a different way.",
+        "targetNumber": 20,
+        "hint": "A big block can be swapped for the smaller blocks it is worth."
+      },
+      {
+        "type": "build_two_ways",
+        "instruction": "Show 11 with blocks. Then show 11 a different way.",
+        "targetNumber": 11,
+        "hint": "A big block can be swapped for the smaller blocks it is worth."
+      },
+      {
+        "type": "build_two_ways",
+        "instruction": "Show 19 with blocks. Then show 19 a different way.",
+        "targetNumber": 19,
+        "hint": "A big block can be swapped for the smaller blocks it is worth."
+      },
+      {
+        "type": "build_two_ways",
+        "instruction": "Show 15 with blocks. Then show 15 a different way.",
+        "targetNumber": 15,
+        "hint": "A big block can be swapped for the smaller blocks it is worth."
+      }
+    ],
+    "numberValue": 20,
+    "supplyTray": true
+  }
+}

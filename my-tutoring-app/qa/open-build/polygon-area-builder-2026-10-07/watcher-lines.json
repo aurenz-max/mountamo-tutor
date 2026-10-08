@@ -1,0 +1,46 @@
+{
+  "ranAt": "2026-10-08T02:16:12.231Z",
+  "note": "real watchBuild (gemini-flash-lite-latest) on the real AreaBuildGrid svg (data-aid lever drawings removed, as svgPicture does), rasterized in headless Chromium; numbers: never; an empty line was dropped by keepWatchLine",
+  "lines": [
+    {
+      "build": "12 as 3x4 rectangle",
+      "seeing": "Ooh, bright blue blocks are growing into a neat rectangle!"
+    },
+    {
+      "build": "12 as 3x4 rectangle",
+      "seeing": "Ooh, a bright blue rectangle is growing right in the middle!"
+    },
+    {
+      "build": "12 as an L",
+      "seeing": "Ooh, a long bright blue corner shape is growing!"
+    },
+    {
+      "build": "12 as an L",
+      "seeing": "Ooh, a long bright blue corner shape is growing across the board!"
+    },
+    {
+      "build": "12 half built, two pieces",
+      "seeing": "Ooh, bright blue stripes are glowing across the dark board!"
+    },
+    {
+      "build": "12 half built, two pieces",
+      "seeing": "Ooh, bright blue blocks are glowing in the upper and lower corners!"
+    },
+    {
+      "build": "7 as a strip",
+      "seeing": "Ooh, a long bright blue line is stretching across the dark grid!"
+    },
+    {
+      "build": "7 as a strip",
+      "seeing": "Ooh, a long bright blue line is stretching across the middle!"
+    },
+    {
+      "build": "16 as a plus shape",
+      "seeing": "Ooh, bright blue blocks are shaping a big cross!"
+    },
+    {
+      "build": "16 as a plus shape",
+      "seeing": "Ooh, bright blue crosses are growing on the dark board!"
+    }
+  ]
+}

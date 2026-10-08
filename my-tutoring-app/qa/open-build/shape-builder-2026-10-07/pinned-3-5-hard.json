@@ -1,0 +1,116 @@
+{
+  "generatedAt": "2026-10-08T02:00:14.333Z",
+  "case": {
+    "targetEvalMode": "make_shape",
+    "grade": "4",
+    "topic": "Lines of symmetry and parallel sides",
+    "intent": "Draw two-dimensional figures with given properties",
+    "difficulty": "hard"
+  },
+  "data": {
+    "title": "Make a Shape",
+    "description": "Make your own shapes that have the properties asked for.",
+    "mode": "build",
+    "gradeBand": "3-5",
+    "challenges": [
+      {
+        "id": "c1",
+        "type": "make_shape",
+        "instruction": "Make a shape with 4 sides, exactly 2 right angles and exactly 1 pair of parallel sides.",
+        "hint": "Count your sides, then check each corner and each pair of sides.",
+        "narration": "Let's make a shape of your own!",
+        "targetProperties": {
+          "sides": 4,
+          "rightAngles": 2,
+          "parallelPairs": 1,
+          "equalSides": null,
+          "linesOfSymmetry": null
+        },
+        "showTargetGhost": false,
+        "showSideCountBadge": false,
+        "supportTier": "hard"
+      },
+      {
+        "type": "make_shape",
+        "targetProperties": {
+          "sides": 4,
+          "rightAngles": 2,
+          "parallelPairs": null,
+          "equalSides": null,
+          "linesOfSymmetry": null
+        },
+        "instruction": "Make a shape with 4 sides and exactly 2 right angles.",
+        "hint": "Count your sides, then check each corner and each pair of sides.",
+        "narration": "Let's make a shape of your own!",
+        "id": "c2",
+        "showTargetGhost": false,
+        "showSideCountBadge": false,
+        "supportTier": "hard"
+      },
+      {
+        "type": "make_shape",
+        "targetProperties": {
+          "sides": 5,
+          "rightAngles": 3,
+          "parallelPairs": null,
+          "equalSides": null,
+          "linesOfSymmetry": null
+        },
+        "instruction": "Make a shape with 5 sides and exactly 3 right angles.",
+        "hint": "Count your sides, then check each corner and each pair of sides.",
+        "narration": "Let's make a shape of your own!",
+        "id": "c3",
+        "showTargetGhost": false,
+        "showSideCountBadge": false,
+        "supportTier": "hard"
+      },
+      {
+        "type": "make_shape",
+        "targetProperties": {
+          "sides": 4,
+          "rightAngles": null,
+          "parallelPairs": null,
+          "equalSides": null,
+          "linesOfSymmetry": 2
+        },
+        "instruction": "Make a shape with 4 sides and exactly 2 lines of symmetry.",
+        "hint": "Count your sides, then check each corner and each pair of sides.",
+        "narration": "Let's make a shape of your own!",
+        "id": "c4",
+        "showTargetGhost": false,
+        "showSideCountBadge": false,
+        "supportTier": "hard"
+      }
+    ],
+    "grid": {
+      "type": "dot",
+      "size": {
+        "rows": 10,
+        "columns": 10
+      },
+      "showCoordinates": false
+    },
+    "tools": {
+      "ruler": false,
+      "protractor": false,
+      "symmetryLine": false,
+      "parallelMarker": false
+    },
+    "targetShape": null,
+    "preloadedShapes": [],
+    "classificationCategories": []
+  },
+  "oracle": {
+    "violations": [],
+    "uncheckedTypes": [],
+    "checkedChallenges": 4
+  },
+  "issues": [],
+  "logs": [
+    "[ShapeBuilder] evalMode: \"make_shape\" → schema enum: [make_shape] (β=1.6)",
+    "[ShapeBuilder] No valid challenges — using make_shape fallback",
+    "[ShapeBuilder] make_shape asks (3-5): {\"sides\":4,\"parallelPairs\":1,\"rightAngles\":2} {\"sides\":4,\"rightAngles\":2} {\"sides\":5,\"rightAngles\":3} {\"sides\":4,\"linesOfSymmetry\":2}",
+    "[ShapeBuilder] Final: 4 challenge(s) → [make_shape, make_shape, make_shape, make_shape]",
+    "[ShapeBuilder] Support tier \"hard\" applied per-challenge (single-mode make_shape)"
+  ]
+}

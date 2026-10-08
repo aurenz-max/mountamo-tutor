@@ -1,0 +1,51 @@
+{
+ "source": "qa/open-build/array-grid-2026-10-07/generator-run.json",
+ "primitiveId": "array-grid",
+ "evalMode": "multiply_array",
+ "data": {
+  "title": "Star Array Challenge",
+  "description": "Explore the connection between visual arrays and multiplication by writing number sentences for rows and columns.",
+  "challenges": [
+   {
+    "id": "array-grid-1",
+    "targetRows": 5,
+    "targetColumns": 6
+   },
+   {
+    "id": "array-grid-2",
+    "targetRows": 6,
+    "targetColumns": 4
+   },
+   {
+    "id": "array-grid-3",
+    "targetRows": 5,
+    "targetColumns": 2
+   },
+   {
+    "id": "array-grid-4",
+    "targetRows": 4,
+    "targetColumns": 8
+   },
+   {
+    "id": "array-grid-5",
+    "targetRows": 4,
+    "targetColumns": 2
+   },
+   {
+    "id": "array-grid-6",
+    "targetRows": 5,
+    "targetColumns": 3
+   },
+   {
+    "id": "array-grid-7",
+    "targetRows": 5,
+    "targetColumns": 4
+   }
+  ],
+  "challengeType": "multiply_array",
+  "iconType": "star",
+  "showLabels": true,
+  "maxRows": 6,
+  "maxColumns": 8
+ }
+}

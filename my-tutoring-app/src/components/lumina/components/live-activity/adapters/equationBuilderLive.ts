@@ -1,5 +1,5 @@
 import type { EquationBuilderData } from '../../../primitives/visual-primitives/math/EquationBuilder';
-import { equationBuilderAssignment, evaluateEquation, matchesAcceptedForm, parseEquationTokens }
+import { equationBuilderAssignment, evaluateEquation, matchesAcceptedForm, parseEquationTokens, referenceWays }
   from '../../../primitives/visual-primitives/math/equationBuilderWorkspace';
 import { validateChallengePool, workspaceOpening, type WorkspaceDomain } from './adapterContract';
 
@@ -24,6 +24,8 @@ export const validateEquationBuilderData = (value: unknown): EquationBuilderData
       case 'true-false': return typeof c.displayEquation === 'string' && typeof c.isTrue === 'boolean';
       case 'balance': return typeof c.leftSide === 'string' && typeof c.rightSide === 'string'
         && c.rightSide.includes('?') && typeof c.correctAnswer === 'number';
+      // Open build: the bank must make the total with a sentence, and a second, different one when asked.
+      case 'make-n': return typeof c.target === 'number' && Array.isArray(c.availableTiles) && referenceWays(c) !== null;
       default: return false;
     }
   },

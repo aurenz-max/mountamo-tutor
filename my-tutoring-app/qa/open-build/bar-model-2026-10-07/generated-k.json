@@ -1,0 +1,259 @@
+{
+  "report": {
+    "grade": "Kindergarten",
+    "topic": "Our class pets survey",
+    "title": "Our Class Pets",
+    "challenges": [
+      {
+        "id": "bm-1",
+        "prompt": "Make a graph where birds have the most.",
+        "rows": [
+          "🐶 dogs=0",
+          "🐦 birds=0",
+          "🐱 cats=0"
+        ],
+        "rule": {
+          "kind": "most",
+          "a": 1
+        },
+        "fittingGraph": [
+          1,
+          3,
+          1
+        ],
+        "fittingMiss": null,
+        "tieMiss": "tied"
+      },
+      {
+        "id": "bm-2",
+        "prompt": "Make a graph where birds and fish have the same number.",
+        "rows": [
+          "🐱 cats=0",
+          "🐟 fish=0",
+          "🐦 birds=0"
+        ],
+        "rule": {
+          "kind": "same",
+          "a": 2,
+          "b": 1
+        },
+        "fittingGraph": [
+          1,
+          2,
+          2
+        ],
+        "fittingMiss": null,
+        "tieMiss": null
+      },
+      {
+        "id": "bm-3",
+        "prompt": "Make a graph where fish have the fewest.",
+        "rows": [
+          "🐰 rabbits=0",
+          "🐟 fish=0",
+          "🐦 birds=0"
+        ],
+        "rule": {
+          "kind": "fewest",
+          "a": 1
+        },
+        "fittingGraph": [
+          3,
+          1,
+          3
+        ],
+        "fittingMiss": null,
+        "tieMiss": "tied"
+      },
+      {
+        "id": "bm-4",
+        "prompt": "Make a graph where cats have the fewest.",
+        "rows": [
+          "🐶 dogs=0",
+          "🐰 rabbits=0",
+          "🐱 cats=0"
+        ],
+        "rule": {
+          "kind": "fewest",
+          "a": 2
+        },
+        "fittingGraph": [
+          3,
+          3,
+          1
+        ],
+        "fittingMiss": null,
+        "tieMiss": "tied"
+      }
+    ]
+  },
+  "valid": "ok",
+  "oracle": {
+    "violations": [],
+    "uncheckedTypes": [],
+    "checkedChallenges": 4
+  },
+  "data": {
+    "title": "Our Class Pets",
+    "description": "Show which animals we love best",
+    "challenges": [
+      {
+        "id": "bm-1",
+        "evalMode": "make_graph",
+        "values": [
+          {
+            "label": "dogs",
+            "value": 0,
+            "color": "blue",
+            "emoji": "🐶"
+          },
+          {
+            "label": "birds",
+            "value": 0,
+            "color": "green",
+            "emoji": "🐦"
+          },
+          {
+            "label": "cats",
+            "value": 0,
+            "color": "purple",
+            "emoji": "🐱"
+          }
+        ],
+        "graphStyle": "picture",
+        "scale": {
+          "step": 1,
+          "max": 10,
+          "iconEmoji": "🐶",
+          "iconValue": 1
+        },
+        "prompt": "Make a graph where birds have the most.",
+        "hint": "Look at the ask again, then look at each bar.",
+        "graphRule": {
+          "kind": "most",
+          "a": 1
+        },
+        "showBarValues": false,
+        "showTargetHighlight": false
+      },
+      {
+        "id": "bm-2",
+        "evalMode": "make_graph",
+        "values": [
+          {
+            "label": "cats",
+            "value": 0,
+            "color": "blue",
+            "emoji": "🐱"
+          },
+          {
+            "label": "fish",
+            "value": 0,
+            "color": "green",
+            "emoji": "🐟"
+          },
+          {
+            "label": "birds",
+            "value": 0,
+            "color": "purple",
+            "emoji": "🐦"
+          }
+        ],
+        "graphStyle": "picture",
+        "scale": {
+          "step": 1,
+          "max": 10,
+          "iconEmoji": "🐱",
+          "iconValue": 1
+        },
+        "prompt": "Make a graph where birds and fish have the same number.",
+        "hint": "Look at the ask again, then look at each bar.",
+        "graphRule": {
+          "kind": "same",
+          "a": 2,
+          "b": 1
+        },
+        "showBarValues": false,
+        "showTargetHighlight": false
+      },
+      {
+        "id": "bm-3",
+        "evalMode": "make_graph",
+        "values": [
+          {
+            "label": "rabbits",
+            "value": 0,
+            "color": "blue",
+            "emoji": "🐰"
+          },
+          {
+            "label": "fish",
+            "value": 0,
+            "color": "green",
+            "emoji": "🐟"
+          },
+          {
+            "label": "birds",
+            "value": 0,
+            "color": "purple",
+            "emoji": "🐦"
+          }
+        ],
+        "graphStyle": "picture",
+        "scale": {
+          "step": 1,
+          "max": 10,
+          "iconEmoji": "🐰",
+          "iconValue": 1
+        },
+        "prompt": "Make a graph where fish have the fewest.",
+        "hint": "Look at the ask again, then look at each bar.",
+        "graphRule": {
+          "kind": "fewest",
+          "a": 1
+        },
+        "showBarValues": false,
+        "showTargetHighlight": false
+      },
+      {
+        "id": "bm-4",
+        "evalMode": "make_graph",
+        "values": [
+          {
+            "label": "dogs",
+            "value": 0,
+            "color": "blue",
+            "emoji": "🐶"
+          },
+          {
+            "label": "rabbits",
+            "value": 0,
+            "color": "green",
+            "emoji": "🐰"
+          },
+          {
+            "label": "cats",
+            "value": 0,
+            "color": "purple",
+            "emoji": "🐱"
+          }
+        ],
+        "graphStyle": "picture",
+        "scale": {
+          "step": 1,
+          "max": 10,
+          "iconEmoji": "🐶",
+          "iconValue": 1
+        },
+        "prompt": "Make a graph where cats have the fewest.",
+        "hint": "Look at the ask again, then look at each bar.",
+        "graphRule": {
+          "kind": "fewest",
+          "a": 2
+        },
+        "showBarValues": false,
+        "showTargetHighlight": false
+      }
+    ]
+  }
+}

@@ -1,5 +1,11 @@
 import type { ContentOracle, OracleResult, OracleViolation } from './types';
 import { asRecordArray, checkAnswerVariety, parseScopeCeiling } from './helpers';
+import {
+  BUILD_COLS,
+  BUILD_MAX_AREA,
+  BUILD_MIN_AREA,
+  BUILD_ROWS,
+} from '../../../primitives/visual-primitives/math/polygonAreaBuild';
 
 /**
  * Polygon-area-builder oracle — verifies the pre-built figure pool against the
@@ -70,6 +76,15 @@ import { asRecordArray, checkAnswerVariety, parseScopeCeiling } from './helpers'
  *      vertices; non-empty unitLabel (the canvas prints "<b> <unit>" labels
  *      and the input suffix "<unit>²").
  *
+ * Open build (build_area): no figure is drawn; the learner makes one on an empty grid and ANY shape with the stated area
+ * passes, so the key is the stated area itself. Checked instead:
+ *  - answer-key-desync : targetArea a whole number of squares, equal to expectedArea; shapesAsked 1 or 2; the area fits
+ *      the grid (BUILD_COLS × BUILD_ROWS) with room for a second, different shape (≥ 3 squares).
+ *  - schema            : the instruction states the area (it IS the task, so this is not a leak), figureType 'grid'.
+ *  - scope             : the area under the objective ceiling, else the build ceiling (BUILD_MAX_AREA).
+ *  - clustering        : distinct areas across the session (the shared variety check and no repeated area).
+ *  The answer-leak check is skipped for build_area: the stated area is the task.
+ *
  * Deliberately NOT checked:
  *  - On-canvas dimension labels. Every mode asks for the AREA; the drawn base/
  *    height/bases/piece dimensions/vertex coordinates are the task's givens,
@@ -101,6 +116,7 @@ const KNOWN_TYPES = new Set([
   'find_area_trapezoid',
   'composite_area',
   'coordinate_polygon',
+  'build_area',
 ]);
 
 /** figureType families each challenge type may draw (component render branches). */
@@ -110,6 +126,7 @@ const FIGURES_BY_TYPE: Record<string, Set<string>> = {
   find_area_trapezoid: new Set(['trapezoid']),
   composite_area: new Set(['composite']),
   coordinate_polygon: new Set(['coordinate']),
+  build_area: new Set(['grid']),
 };
 
 // Intrinsic ceilings on the produced AREA, from the generator's uncapped
@@ -124,6 +141,7 @@ const INTRINSIC_BY_MODE: Record<string, number> = {
   find_area_trapezoid: 125,
   composite_area: 100,
   coordinate_polygon: 50,
+  build_area: BUILD_MAX_AREA,
 };
 const DEFAULT_INTRINSIC = 150;
 
@@ -273,6 +291,45 @@ export const polygonAreaBuilderOracle: ContentOracle = {
         });
         continue;
       }
+      // ── Open build: the stated area is the key, and the task ──
+      if (type === 'build_area') {
+        checked++;
+        const area = c.targetArea;
+        if (!isNum(area) || !Number.isInteger(area) || !near(area, expectedArea)) {
+          violations.push({
+            check: 'answer-key-desync',
+            where: id,
+            detail: `targetArea=${String(area)} is not a whole number equal to expectedArea=${expectedArea} — the grid checks the count against targetArea`,
+          });
+          continue;
+        }
+        if (area < BUILD_MIN_AREA || area > BUILD_COLS * BUILD_ROWS) {
+          violations.push({
+            check: 'answer-key-desync',
+            where: id,
+            detail: `area ${area} outside [${BUILD_MIN_AREA}, ${BUILD_COLS * BUILD_ROWS}] — no second, different shape exists or it does not fit the ${BUILD_COLS}×${BUILD_ROWS} grid`,
+          });
+        }
+        if (c.shapesAsked !== 1 && c.shapesAsked !== 2) {
+          violations.push({ check: 'schema', where: id, detail: `shapesAsked=${String(c.shapesAsked)} — must be 1 or 2` });
+        }
+        if (!new RegExp(`\\b${area}\\b`).test(String(c.instruction ?? ''))) {
+          violations.push({
+            check: 'schema',
+            where: id,
+            detail: `the instruction does not state the area ${area} the learner is asked to make: "${String(c.instruction ?? '').slice(0, 100)}"`,
+          });
+        }
+        const ceiling = topicCeiling ?? BUILD_MAX_AREA;
+        if (area > ceiling) {
+          violations.push({ check: 'scope', where: id, detail: `area ${area} exceeds objective ceiling ${ceiling} (topic "${ctx.topic}")` });
+        }
+        areaValues.push(area);
+        const key = `build|${area}`;
+        cardSeen.set(key, (cardSeen.get(key) ?? 0) + 1);
+        continue;
+      }
+
       if (typeof c.unitLabel !== 'string' || c.unitLabel.trim() === '') {
         violations.push({
           check: 'schema',

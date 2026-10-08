@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -20,11 +20,23 @@ import {
 } from '../../../evaluation';
 import type { PolygonAreaBuilderMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { useBuildWatcher } from '../../build-layer/buildLayer';
+import { areaMiss, describeAreaWork, workspaceAssignment, workspaceScene, type PolygonAreaView } from './polygonAreaWorkspace';
+import {
+  BUILD_AREA, NUMBERS_LEVER, PIECES_LEVER, SMALLER_LEVER, TURNED_LEVER, buildAreaLevers, buildAreaMiss, buildAreaVerdict,
+  buildLeverFacts, cellKey, connectedParts, describeBuild, smallerArea, turnedToMatch, type Cell,
+} from './polygonAreaBuild';
+import { AreaBuildGrid, AreaShapeThumb } from './AreaBuildGrid';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -35,14 +47,18 @@ export type PolygonAreaChallengeType =
   | 'find_area_triangle_parallelogram'
   | 'find_area_trapezoid'
   | 'composite_area'
-  | 'coordinate_polygon';
+  | 'coordinate_polygon'
+  /** Open build: shade squares on an empty grid into one shape with a stated area (`polygonAreaBuild.ts`). */
+  | 'build_area';
 
 export type PolygonFigureType =
   | 'triangle'
   | 'parallelogram'
   | 'trapezoid'
   | 'composite'
-  | 'coordinate';
+  | 'coordinate'
+  /** build_area: the empty grid the learner builds on. */
+  | 'grid';
 
 /** An axis-aligned rectangle piece of a composite figure (figure units, y-up). */
 export interface CompositeRect {
@@ -83,8 +99,14 @@ export interface PolygonAreaChallenge {
   // --- Coordinate polygon ---
   vertices?: PolygonVertex[];
 
-  /** Pre-computed correct area (single source of truth). */
+  /** Pre-computed correct area (single source of truth). On build_area it equals `targetArea`. */
   expectedArea: number;
+
+  // --- Open build (build_area) ---
+  /** The area to make, in unit squares. Stated in the instruction: it IS the task. */
+  targetArea?: number;
+  /** 1: one shape. 2: one shape, then a different shape with the same area. */
+  shapesAsked?: 1 | 2;
 
   // --- Support-tier scaffolds (set in post-process when config.difficulty present) ---
   /** Show the dashed decomposition guidelines: the cut-triangle target slot
@@ -106,7 +128,8 @@ export interface PolygonAreaBuilderData {
   title: string;
   description: string;
   challengeType: PolygonAreaChallengeType;
-  gradeBand?: '6' | '7';
+  /** '3' on an open-build session (3.MD.C), else the formula grades. */
+  gradeBand?: '3' | '6' | '7';
   /** 3-6 challenges per session. Required. Built by the generator's pool service. */
   challenges: PolygonAreaChallenge[];
 
@@ -129,6 +152,7 @@ const PHASE_CONFIG_BY_TYPE: Record<PolygonAreaChallengeType, PhaseConfig> = {
   find_area_trapezoid:             { label: 'Trapezoid',   icon: '🔷', accentColor: 'blue' },
   composite_area:                  { label: 'Composite',   icon: '🧩', accentColor: 'amber' },
   coordinate_polygon:              { label: 'Coordinate',  icon: '🗺️', accentColor: 'emerald' },
+  build_area:                      { label: 'Build It',    icon: '🟦', accentColor: 'cyan' },
 };
 
 // ============================================================================
@@ -225,6 +249,10 @@ function getBounds(ch: PolygonAreaChallenge): Bounds {
       // Always anchor the coordinate grid at the origin.
       return { minX: 0, maxX: Math.ceil(maxX), minY: 0, maxY: Math.ceil(maxY) };
     }
+    case 'grid':
+    default:
+      // build_area draws its own svg grid (AreaBuildGrid), never the canvas.
+      return { minX: 0, maxX: 1, minY: 0, maxY: 1 };
   }
 }
 
@@ -267,9 +295,12 @@ function pointInTriangle(
 interface PolygonAreaBuilderProps {
   data: PolygonAreaBuilderData;
   className?: string;
+  runtimePlanItemId?: string;
+  runtimeEvalMode?: string;
 }
 
-const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className }) => {
+const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  PolygonAreaBuilderProps & { tutorOwned: boolean; useController: (options: ProgressOptions<PolygonAreaChallenge>) => Progress }) => {
   const {
     title,
     description,
@@ -284,23 +315,47 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
   } = data;
 
   // -------------------------------------------------------------------------
-  // Multi-challenge progression
+  // Multi-challenge progression. On the workspace path the runtime moves the index.
   // -------------------------------------------------------------------------
+  const liveRuntime = useLiveRuntime();
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const stableInstanceIdRef = useRef(instanceId || `polygon-area-builder-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  // Bound below, once the setters and the evaluation exist.
+  const openItem = useRef<(retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (_index, retry) => openItem.current(retry),
+    onFinished: (result) => finish.current(result),
+  });
   const {
     currentIndex: currentChallengeIndex,
     currentAttempts,
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
-    incrementAttempts,
     advance: advanceProgress,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (ch) => ch.id,
-  });
+  } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  const learnerBlocked = () => workspaceClosed.current
+    || (!!liveRuntime && !['empty', 'active'].includes(liveRuntime.getSnapshot().status));
 
-  const currentChallenge = challenges[currentChallengeIndex] ?? null;
+  // Open build (build_area) levers (`polygonAreaBuild.ts`), keyed by the session item they were pulled on, and the
+  // easier build a simplify lever put on screen in its place. The item starts bare: no lever comes from the tier.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<PolygonAreaChallenge | null>(null);
+  const sessionChallenge = challenges[currentChallengeIndex] ?? null;
+  /** What is on screen: the easier build while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
   const challengeType = currentChallenge?.type ?? 'find_area_triangle_parallelogram';
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
 
   // -------------------------------------------------------------------------
   // Per-challenge UI state
@@ -316,13 +371,19 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
   const [dragging, setDragging] = useState(false);
   const dragStartRef = useRef<{ mouseX: number; offset: number } | null>(null);
 
+  // Open build: the shaded squares in the order shaded, and on a two-shape item the first shape once it was checked
+  // right (keyed by the item on screen, so a practice build has its own).
+  const [cells, setCells] = useState<Cell[]>([]);
+  const [firstShape, setFirstShape] = useState<{ item: string; cells: Cell[] } | null>(null);
+  const isBuild = currentChallenge?.type === BUILD_AREA;
+  const firstNow = isBuild && currentChallenge?.shapesAsked === 2 && firstShape?.item === currentChallenge.id
+    ? firstShape.cells : null;
+
   // Bumped by a ResizeObserver so the canvas re-renders crisply when its
   // displayed size changes (the backing store is sized to the rendered px).
   const [resizeTick, setResizeTick] = useState(0);
 
   // Refs
-  const stableInstanceIdRef = useRef(instanceId || `polygon-area-builder-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
   const recordedRef = useRef(false);
   const hintViewedRef = useRef(false);
   const hintsViewedRef = useRef(0);
@@ -342,8 +403,7 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
   // -------------------------------------------------------------------------
   // Per-challenge reset — fires whenever advance() flips currentChallenge.id.
   // -------------------------------------------------------------------------
-  useEffect(() => {
-    if (!currentChallenge) return;
+  const resetItem = () => {
     setAreaInput('');
     setFeedback('');
     setFeedbackType('');
@@ -351,10 +411,26 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
     setDragOffset(0);
     setRearranged(false);
     setDragging(false);
+    setCells([]);
     dragStartRef.current = null;
     recordedRef.current = false;
     hintViewedRef.current = false;
+  };
+  useEffect(() => {
+    if (!currentChallenge) return;
+    resetItem();
   }, [currentChallenge?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Workspace path: a fresh challenge starts clean in the same render the runtime opens it (so the scene it publishes
+  // is final), and drops a practice build. Try again keeps the decompose rectangle and the open build's squares and
+  // verdict (the learner revises the build); it clears a typed area.
+  openItem.current = (retry) => {
+    if (!retry) { resetItem(); setPractice(null); return; }
+    if (currentChallenge?.type === BUILD_AREA) return;
+    setAreaInput('');
+    setFeedback('');
+    setFeedbackType('');
+  };
 
   // -------------------------------------------------------------------------
   // Canvas draw
@@ -729,7 +805,7 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (challengeType !== 'decompose' || rearranged || !currentChallenge) return;
+    if (challengeType !== 'decompose' || rearranged || !currentChallenge || learnerBlocked()) return;
     const pt = canvasPointFromEvent(e);
     if (!pt) return;
     const s = currentChallenge.skew ?? 1;
@@ -833,12 +909,18 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
     currentAttempts,
   ]);
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'polygon-area-builder',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === '7' ? 'Grade 7' : 'Grade 6',
+    gradeLevel: `Grade ${gradeBand}`,
+    // The workspace packet replaces this context (it carries expectedArea).
+    enabled: !tutorOwned,
   });
+  // The scripted tags never reach the tutor on the workspace path: it is told facts, not cues.
+  const sendText = useCallback((text: string, options?: { silent?: boolean }) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   const hasIntroducedRef = useRef(false);
   useEffect(() => {
@@ -856,7 +938,7 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
   // Submit handler (handler-driven with stale-state guard)
   // -------------------------------------------------------------------------
   const completeChallenge = useCallback((correct: boolean) => {
-    if (!currentChallenge) return;
+    if (!currentChallenge || practice) return; // an easier practice build records nothing
     if (!correct) return; // wait for a correct attempt before recording
     if (recordedRef.current) return;
     recordedRef.current = true;
@@ -868,10 +950,10 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
       attempts,
       score,
     });
-  }, [currentChallenge, currentAttempts, recordResult]);
+  }, [currentChallenge, currentAttempts, recordResult, practice]);
 
   const handleCheckArea = useCallback(() => {
-    if (!currentChallenge || hasSubmittedEvaluation) return;
+    if (!currentChallenge || hasSubmittedEvaluation || learnerBlocked()) return;
     if (challengeType === 'decompose' && !rearranged) {
       SoundManager.invalid();
       setFeedback('First slide the cut triangle across to form the rectangle.');
@@ -898,7 +980,10 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
     }
     const unit = currentChallenge.unitLabel;
     const correct = Math.abs(parsed - currentChallenge.expectedArea) < 0.01;
-    incrementAttempts();
+    // Counts the attempt and records a correct result on both paths; on the workspace path it is the checked gesture.
+    progress.commitCheck(
+      describeAreaWork(currentChallenge, { areaInput, rearranged, cells: [], firstShape: null, practice: false }),
+      correct, correct ? undefined : areaMiss(currentChallenge, parsed));
     if (correct) {
       SoundManager.playCorrect();
       setFeedback(`Correct! Area = ${currentChallenge.expectedArea} ${unit}².`);
@@ -922,8 +1007,8 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
     }
   }, [
     currentChallenge, hasSubmittedEvaluation, challengeType, rearranged, areaInput,
-    incrementAttempts, completeChallenge, currentAttempts, sendText,
-  ]);
+    progress, completeChallenge, currentAttempts, sendText,
+  ]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleShowHint = useCallback(() => {
     if (showHint) return;
@@ -951,7 +1036,8 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
   // Session complete — build metrics and submit exactly once.
   // -------------------------------------------------------------------------
   useEffect(() => {
-    if (!allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0) return;
+    // The workspace path submits the scored session from `onFinished` (below), not this tally.
+    if (tutorOwned || !allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0) return;
     if (submittedRef.current) return;
     submittedRef.current = true;
 
@@ -984,7 +1070,115 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
       `[ALL_COMPLETE] All ${total} figures done. Correct: ${correctCount}/${total}. First-try: ${firstTryCount}. Accuracy: ${avgScore}%. Give an encouraging, area-focused summary.`,
       { silent: true },
     );
-  }, [allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults, currentChallenge, submitEvaluation, sendText]);
+  }, [allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults, currentChallenge, submitEvaluation, sendText, tutorOwned]);
+
+  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count corrections
+  // and whose evidence carries each wrong check's named miss.
+  finish.current = (result) => {
+    if (hasSubmittedEvaluation || submittedRef.current || progress.recordsEvaluation === false) return;
+    submittedRef.current = true;
+    const total = challenges.length;
+    const metrics: PolygonAreaBuilderMetrics = {
+      type: 'polygon-area-builder',
+      challengeType: (challenges[0]?.type ?? 'find_area_triangle_parallelogram') as PolygonAreaBuilderMetrics['challengeType'],
+      totalChallenges: total,
+      correctCount: result.solvedCount,
+      attemptsCount: result.attemptsCount,
+      firstTryCount: challengeResults.filter((r) => r.correct && r.attempts === 1).length,
+      hintsViewed: hintsViewedRef.current,
+      overallAccuracy: result.accuracy,
+      averageAttemptsPerChallenge: Math.round((result.attemptsCount / Math.max(total, 1)) * 10) / 10,
+    };
+    submitEvaluation(result.passed, result.accuracy, metrics,
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
+
+  // -------------------------------------------------------------------------
+  // Open build (build_area): the grid, the live line, the commit
+  // -------------------------------------------------------------------------
+  const gridRef = useRef<SVGSVGElement | null>(null);
+  const buildSolved = isBuild && challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct);
+  const buildOpen = isBuild && !buildSolved && !hasSubmittedEvaluation
+    && !(tutorOwned && progress.canAttempt === false);
+  // The live line (shared build layer): what the shape looks like so far, NEVER a number — counting the squares is the task.
+  const buildSeeing = useBuildWatcher({
+    buildKey: `${firstNow ? 2 : 1}:${cells.map(cellKey).sort().join('|')}`,
+    enabled: buildOpen && cells.length > 0,
+    svg: gridRef,
+    request: { task: currentChallenge?.instruction ?? '',
+      sceneNote: 'A square grid. Each shaded square is one square unit the learner shaded.', numbers: 'never' },
+  });
+
+  const toggleCell = (cell: Cell) => {
+    if (!buildOpen || learnerBlocked()) return;
+    SoundManager.tap();
+    setCells((prev) => prev.some((x) => x.c === cell.c && x.r === cell.r)
+      ? prev.filter((x) => x.c !== cell.c || x.r !== cell.r) : [...prev, cell]);
+  };
+
+  const clearGrid = () => {
+    if (!buildOpen || learnerBlocked()) return;
+    setCells([]);
+  };
+
+  /**
+   * "I'm done!": the check counts the squares, that they make one shape, and on the second shape that it differs. A right
+   * first shape of a two-shape item is not a commit: it is kept, drawn beside the grid, and left on the grid to change.
+   * Every other check commits, so a miss reaches the tutor and the levers; Try again keeps the build.
+   */
+  const doneBuilding = () => {
+    if (!currentChallenge || !isBuild || !buildOpen || learnerBlocked()) return;
+    const area = currentChallenge.targetArea ?? currentChallenge.expectedArea;
+    const miss = buildAreaMiss(area, cells, firstNow);
+    if (currentChallenge.shapesAsked === 2 && !firstNow && !miss) {
+      SoundManager.snap();
+      setFirstShape({ item: currentChallenge.id, cells: [...cells] });
+      setFeedback(`Yes, that shape has an area of ${area} squares. Now change it into a different shape with the same area.`);
+      setFeedbackType('success');
+      return;
+    }
+    progress.commitCheck(describeBuild(cells, firstNow), !miss, miss);
+    setFeedback(buildAreaVerdict(area, miss, cells, !!firstNow));
+    setFeedbackType(miss ? 'error' : 'success');
+    if (miss) { SoundManager.playIncorrect(); return; }
+    SoundManager.playCorrect();
+    completeChallenge(true);
+  };
+
+  // Workspace path: what the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation. Only the open build declares levers.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    const scene = workspaceScene(currentChallenge, { areaInput, rearranged, cells, firstShape: firstNow, practice: !!practice });
+    if (sessionChallenge.type !== BUILD_AREA) { workspace.current = { ...scene }; return; }
+    const onScreen = practice ? '' : buildLeverFacts(sessionChallenge, pulledLevers);
+    const levers = practice ? [] : buildAreaLevers(sessionChallenge, pulledLevers);
+    workspace.current = {
+      ...scene,
+      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the grid changes before this returns.
+      pullLever: (id) => {
+        const lever = levers.find((l) => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (id === SMALLER_LEVER) {
+          const easier = smallerArea(sessionChallenge);
+          if (!easier) return 'This item has no easier shape; try a help lever.';
+          setLeverState(pulled); setCells([]); setFirstShape(null); setFeedback(''); setFeedbackType(''); setPractice(easier);
+          return { practice: workspaceAssignment(easier) };
+        }
+        if (id === TURNED_LEVER && !firstNow) return 'There is no first shape yet: the learner makes it first.';
+        setLeverState(pulled);
+        return true;
+      },
+      // The full item comes back on an empty grid.
+      endPractice: () => { setCells([]); setFirstShape(null); setFeedback(''); setFeedbackType(''); setPractice(null); },
+    };
+  });
 
   // -------------------------------------------------------------------------
   // Derived UI state
@@ -1030,6 +1224,12 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
 
   const unit = currentChallenge.unitLabel;
   const needsRearrangeFirst = challengeType === 'decompose' && !rearranged;
+  const checkClosed = tutorOwned && progress.canAttempt === false;
+  // The piece-colours lever: each shaded square's piece, so separate pieces read apart.
+  const pieceOf = leverOn(PIECES_LEVER)
+    ? new Map(connectedParts(cells).flatMap((part, i) => part.map((x) => [cellKey(x), i] as [string, number])))
+    : null;
+  const turned = firstNow && leverOn(TURNED_LEVER) ? turnedToMatch(firstNow, cells) : null;
 
   return (
     <LuminaCard className={['shadow-2xl', className].filter(Boolean).join(' ')}>
@@ -1038,7 +1238,7 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
           <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
             <LuminaBadge accent="cyan" className="text-xs">
-              {gradeBand === '7' ? 'Grade 7' : 'Grade 6'}
+              {`Grade ${gradeBand}`}
             </LuminaBadge>
             <LuminaChallengeCounter
               current={Math.min(currentChallengeIndex + 1, challenges.length)}
@@ -1078,6 +1278,37 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
         {/* Pip's dock sits above the workspace, which it outlines as a region. */}
         {pip.store && !allChallengesComplete && <div {...pip.dock} />}
         <div {...pip.workspace} className="space-y-4">
+        {isBuild ? (
+          /* Open build — the empty grid the learner shades, one square per tap. No count and no target beside it. */
+          <div className="p-3 bg-slate-800/30 rounded-2xl border border-cyan-500/20 space-y-3">
+            <div className="flex flex-wrap items-start justify-center gap-4">
+              <AreaBuildGrid ref={gridRef} cells={cells} numbers={leverOn(NUMBERS_LEVER)} pieces={pieceOf}
+                disabled={!buildOpen} onToggle={toggleCell} />
+              {firstNow && (
+                <div className="flex flex-col items-center gap-1 text-xs text-slate-400">
+                  <span>{turned ? 'Your first shape, turned to match' : 'Your first shape'}</span>
+                  <AreaShapeThumb cells={turned ?? firstNow} label="Your first shape" lever={!!turned} />
+                </div>
+              )}
+            </div>
+            <p className="text-slate-500 text-xs text-center">Tap a square to shade it. Tap a shaded square to clear it.</p>
+            <div className="flex min-h-8 items-center justify-center" aria-live="polite" data-testid="build-watcher">
+              {buildSeeing && <span className="rounded-full bg-white/10 px-4 py-1.5 text-base text-amber-100">👀 {buildSeeing}</span>}
+            </div>
+            {!isCurrentComplete && !allChallengesComplete && (
+              <div className="flex justify-center gap-3">
+                <LuminaButton tone="subtle" size="sm" onClick={clearGrid} disabled={!buildOpen || cells.length === 0}>
+                  Clear grid
+                </LuminaButton>
+                {/* "I'm done!" commits through the check; there is no auto-check on stillness. */}
+                <LuminaButton tone="primary" onClick={doneBuilding} disabled={!buildOpen || cells.length === 0}>
+                  I&apos;m done!
+                </LuminaButton>
+              </div>
+            )}
+          </div>
+        ) : (
+        <>
         {/* Canvas — bespoke interaction surface (drag-to-decompose). Left as painting. */}
         <div className="p-3 bg-slate-800/30 rounded-2xl border border-cyan-500/20">
           <canvas
@@ -1107,9 +1338,10 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
               <span className="text-cyan-300 font-mono font-bold">Area =</span>
               <LuminaInput
                 type="text"
+                aria-label="Area"
                 value={areaInput}
                 onChange={(e) => setAreaInput(e.target.value)}
-                disabled={needsRearrangeFirst}
+                disabled={needsRearrangeFirst || checkClosed}
                 className="w-28 text-center"
                 placeholder="?"
                 onKeyDown={(e) => e.key === 'Enter' && handleCheckArea()}
@@ -1118,17 +1350,19 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
               <LuminaButton
                 tone="primary"
                 onClick={handleCheckArea}
-                disabled={needsRearrangeFirst}
+                disabled={needsRearrangeFirst || checkClosed}
               >
                 Check
               </LuminaButton>
             </div>
           </LuminaPanel>
         )}
+        </>
+        )}
 
         </div>
 
-        {/* Feedback */}
+        {/* Feedback — on the open build the verdict's words stay on screen until the next check. */}
         {feedback && feedbackType === 'success' && (
           <LuminaFeedbackCard status="correct">{feedback}</LuminaFeedbackCard>
         )}
@@ -1147,9 +1381,9 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
           </LuminaPrompt>
         )}
 
-        {/* Controls */}
+        {/* Controls. On the workspace path the runtime advances, so there is no Next. */}
         <div className="flex justify-center gap-2 flex-wrap">
-          {isCurrentComplete && !allChallengesComplete && (
+          {!tutorOwned && isCurrentComplete && !allChallengesComplete && (
             <LuminaButton
               tone="primary"
               className="border-emerald-400/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
@@ -1185,5 +1419,9 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
     </LuminaCard>
   );
 };
+
+// The workspace path never registers a scripted cue; the runtime owns progression.
+const PolygonAreaBuilder = withWorkspaceController<PolygonAreaBuilderProps, ProgressOptions<PolygonAreaChallenge>, Progress>(
+  'polygon-area-builder', PolygonAreaBuilderSurface, useScriptedProgress, useWorkspaceProgressFor('polygon-area-builder'));
 
 export default PolygonAreaBuilder;

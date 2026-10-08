@@ -1697,6 +1697,31 @@ describe('angle-workshop oracle', () => {
     const v = angleWorkshopOracle.verify(data, awSolveCtx).violations;
     expect(v.some((x) => x.check === 'schema' && x.where === 'challenges')).toBe(true);
   });
+
+  // make_angle (open build): the ask must name the kind the check judges.
+  const awMakeCtx = { componentId: 'angle-workshop', evalMode: 'make_angle', topic: 'Kinds of angles', gradeLevel: 'grade 5' };
+  const mk = (id: string, targetKind: string, instruction: string, extra: Record<string, unknown> = {}) => ({ id, type: 'make_angle',
+    narration: 'A gate swings open.', instruction, hint: 'Turn the ray.', answerKind: 'build', targetKind, expectedAnswer: 0, tolerance: 0, ...extra });
+  const awMakeClean = { title: 'Make Angles', description: 'Make each kind.', challengeType: 'make_angle', challenges: [
+    mk('b1', 'acute', 'Make an acute angle.'), mk('b2', 'obtuse', 'Make an obtuse angle.'),
+    mk('b3', 'between_right_straight', 'Make an angle that is bigger than a right angle but smaller than a straight angle.'),
+    mk('b4', 'range', 'Make an angle between 40° and 60°.', { targetMin: 40, targetMax: 60 }),
+  ] };
+
+  it('passes a clean make_angle set', () => {
+    expect(angleWorkshopOracle.verify(awMakeClean, awMakeCtx).violations).toEqual([]);
+  });
+
+  it('flags a make_angle ask that names another kind, a range the ask does not state, and a degree in the hint', () => {
+    const data = { ...awMakeClean, challenges: [
+      mk('b1', 'acute', 'Make an obtuse angle.'),
+      mk('b2', 'range', 'Make an angle between 40° and 60°.', { targetMin: 40, targetMax: 70 }),
+      mk('b3', 'right', 'Make a right angle.', { hint: 'A right angle is 90°.' }),
+    ] };
+    const v = angleWorkshopOracle.verify(data, awMakeCtx).violations;
+    expect(v.filter((x) => x.check === 'answer-key-desync').map((x) => x.where)).toEqual(['b1', 'b2']);
+    expect(v.some((x) => x.check === 'answer-leak' && x.where === 'b3')).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------

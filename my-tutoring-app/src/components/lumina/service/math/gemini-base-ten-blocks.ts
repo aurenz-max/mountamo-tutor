@@ -23,6 +23,7 @@ import { BASE_TEN_DI_TYPE_DOCS, isBaseTenDiChallengeType } from '../../primitive
 import { isAskableTarget, MAX_TARGET, MIN_TARGET } from '../../primitives/visual-primitives/math/baseTenScript';
 import type { BtMode } from '../../primitives/visual-primitives/math/baseTenModel';
 import { selectBlockWorthContrast } from './baseTenRemediation';
+import { TWO_WAYS, twoWaysInstruction } from '../../primitives/visual-primitives/math/baseTenWorkspace';
 import { adaptationTaskFor, planAdaptation, plannedMode, stampAdaptation } from '../generation/adaptationStep';
 import { baseTenTeaching, eligibleBaseTenTeaching } from './placeValueTeachingCapabilities';
 
@@ -71,6 +72,14 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `Instruction names the minuend and subtrahend: "Subtract 285 from 632 using blocks." `
       + `Do NOT reveal the difference. Grades 2-3: numbers up to 999. Grades 4-5: up to 9999.`,
     schemaDescription: "'subtract_with_blocks' (subtraction with borrowing)",
+  },
+  build_two_ways: {
+    promptDoc:
+      `"build_two_ways": Open build. The student shows a number with ANY blocks on an empty mat, then shows the same `
+      + `number a different way (34 as 3 tens and 4 ones, then as 2 tens and 14 ones). Code picks every targetNumber and `
+      + `writes every instruction, so put any number in range there. Write a short title and description about showing a `
+      + `number in more than one way. The HINT names a way to think about the blocks, never a number or a count.`,
+    schemaDescription: "'build_two_ways' (show a number two different ways)",
   },
 };
 
@@ -123,6 +132,11 @@ const TIER_GUARDRAIL =
  */
 function resolveSupportStructure(type: string, tier: SupportTier): SupportScaffold {
   const numbersNeverChange = TIER_GUARDRAIL;
+
+  // build_two_ways starts bare at every tier: the counts are a lever pulled on a miss, and it never shows a total.
+  if (type === TWO_WAYS) {
+    return { showColumnCounts: false, showBlocksTotal: false, promptLines: [numbersNeverChange] };
+  }
 
   // read_blocks: counts + total are contractually hidden (they leak the answer).
   // The tier cannot turn them on; it only sets the tutor/instruction tone.
@@ -347,7 +361,7 @@ const challengeSchema: Schema = {
   properties: {
     type: {
       type: Type.STRING,
-      enum: ["build_number", "read_blocks", "regroup", "add_with_blocks", "subtract_with_blocks"],
+      enum: ["build_number", "read_blocks", "regroup", "add_with_blocks", "subtract_with_blocks", "build_two_ways"],
       description: "The type of challenge"
     },
     instruction: {
@@ -509,6 +523,40 @@ export function normalizeDiTargets(challenges: BaseTenBlocksChallenge[]): number
     repaired++;
   }
   return repaired;
+}
+
+// ---------------------------------------------------------------------------
+// build_two_ways: code owns the target, the instruction and the hint
+// ---------------------------------------------------------------------------
+// The model never writes the number (references/build-mode.md step 7). Each target is a whole number of at least
+// ten (below ten there is only one way to build it), inside the scope range, and distinct within the session.
+// Pool numbers in range are used first, so the session still varies run to run.
+
+const TWO_WAYS_HINT = 'A big block can be swapped for the smaller blocks it is worth.';
+
+export function normalizeTwoWaysTargets(challenges: BaseTenBlocksChallenge[], range: { min: number; max: number } | undefined,
+  pool: readonly number[], rand: () => number = Math.random): number {
+  const items = challenges.filter(c => c.type === TWO_WAYS);
+  if (!items.length) return 0;
+  const hi = Math.max(10, Math.floor(range?.max ?? 99)), lo = Math.min(hi, Math.max(10, Math.ceil(range?.min ?? 10)));
+  const used = new Set<number>();
+  const fits = (n: number) => Number.isInteger(n) && n >= lo && n <= hi && !used.has(n);
+  const candidates = pool.filter(fits);
+  for (const c of items) {
+    let n = candidates.find(fits);
+    for (let tries = 0; n === undefined && tries < 200; tries++) {
+      const pick = lo + Math.floor(rand() * (hi - lo + 1));
+      if (fits(pick)) n = pick;
+    }
+    // The range holds fewer numbers than the session asks for: repeat one rather than leave a target out of scope.
+    n ??= lo + Math.floor(rand() * (hi - lo + 1));
+    used.add(n);
+    c.targetNumber = n;
+    c.secondNumber = undefined;
+    c.instruction = twoWaysInstruction(n);
+    c.hint = TWO_WAYS_HINT;
+  }
+  return items.length;
 }
 
 // ---------------------------------------------------------------------------
@@ -718,7 +766,7 @@ Return the complete base-ten blocks data structure.`;
       if (onlyType === 'read_blocks') data.interactionMode = 'decompose';
       else if (onlyType === 'regroup') data.interactionMode = 'regroup';
       else if (onlyType === 'add_with_blocks' || onlyType === 'subtract_with_blocks') data.interactionMode = 'operate';
-      else if (onlyType === 'build_number') data.interactionMode = 'build';
+      else if (onlyType === 'build_number' || onlyType === TWO_WAYS) data.interactionMode = 'build';
     }
   }
 
@@ -769,6 +817,7 @@ Return the complete base-ten blocks data structure.`;
       regroup: { type: 'regroup', instruction: 'Regroup 15 ones into tens and ones.', targetNumber: 15, hint: 'Trade a full group of ones for a ten. What is left over?' },
       add_with_blocks: { type: 'add_with_blocks', instruction: 'Add 234 + 158 using blocks.', targetNumber: 392, secondNumber: 158, hint: 'Start with the ones column. Do you need to regroup?' },
       subtract_with_blocks: { type: 'subtract_with_blocks', instruction: 'Subtract 127 from 350 using blocks.', targetNumber: 223, secondNumber: 127, hint: 'Start with the ones. Can you borrow from the tens?' },
+      build_two_ways: { type: 'build_two_ways', instruction: twoWaysInstruction(34), targetNumber: 34, hint: TWO_WAYS_HINT },
     };
     console.log(`[BaseTenBlocks] No valid challenges — using ${fallbackType} fallback`);
     data.challenges = [fallbacks[fallbackType] ?? fallbacks.build_number];
@@ -881,6 +930,18 @@ Return the complete base-ten blocks data structure.`;
   const buildRewriteCount = normalizeBuildNumberInstructions(data.challenges as BaseTenBlocksChallenge[]);
   if (buildRewriteCount > 0) {
     console.warn(`[BaseTenBlocks] BT-5 safety net: rewrote ${buildRewriteCount} build_number instruction(s) that leaked the decomposition or named a stale target`);
+  }
+
+  // ── The open build (build_two_ways): code owns the numbers and the words ──
+  const twoWaysCount = normalizeTwoWaysTargets(data.challenges as BaseTenBlocksChallenge[], effectiveNumberRange, pool?.numbers ?? []);
+  if (twoWaysCount > 0) {
+    if ((data.challenges as BaseTenBlocksChallenge[]).every(c => c.type === TWO_WAYS)) {
+      data.decimalMode = false;
+      // A title naming one number ("Build 17 in Two Ways") is wrong for every other item in the session.
+      if (/\d/.test(data.title ?? '')) data.title = 'Show a Number Two Ways';
+      if (/\d/.test(data.description ?? '')) data.description = 'Show each number with blocks, then show it a different way.';
+    }
+    console.log(`[BaseTenBlocks] build_two_ways: ${twoWaysCount} target(s) set by code`);
   }
 
   // ── BT-6: the judged modes need an askable number ──

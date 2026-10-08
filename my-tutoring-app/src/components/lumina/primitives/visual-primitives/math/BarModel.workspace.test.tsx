@@ -35,7 +35,7 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 const ROWS = [{ label: 'Apples', value: 4, emoji: '🍎' }, { label: 'Pears', value: 2, emoji: '🍐' }, { label: 'Plums', value: 3, emoji: '🟣' }];
 const MODES = ['read_one_to_one', 'most_least', 'compare_bars', 'match_to_bar', 'build_one_to_one', 'say_what_it_shows',
-  'compare_two_graphs', 'read_scale', 'picture_graph', 'scaled_bar_graph', 'graph_word_problem', 'build_graph'] as const;
+  'compare_two_graphs', 'read_scale', 'picture_graph', 'scaled_bar_graph', 'graph_word_problem', 'build_graph', 'make_graph'] as const;
 const SPOKEN = new Set<BarModelEvalMode>(['say_what_it_shows', 'compare_two_graphs']);
 
 /** One answerable challenge per mode, in the shape the generator emits. */
@@ -50,6 +50,8 @@ function challengeFor(mode: BarModelEvalMode, id: string = mode): BarModelChalle
     case 'build_one_to_one': return { ...base, values: ROWS.map(r => ({ ...r, value: 0 })), expectedCounts: [4, 2, 3] };
     case 'build_graph': return { ...base, graphStyle: 'bar', values: ROWS.map(r => ({ ...r, value: 0 })),
       expectedDataset: ROWS.map(r => ({ label: r.label, value: r.value })), expectedScaleStep: 2, availableScaleSteps: [1, 2, 5] };
+    case 'make_graph': return { ...base, values: ROWS.map(r => ({ ...r, value: 0 })), graphRule: { kind: 'most', a: 0 },
+      prompt: 'Make a graph where Apples have the most.' };
     case 'compare_two_graphs': return { ...base, graphLabel: 'Morning', secondGraphLabel: 'Afternoon',
       secondValues: ROWS.map((r, i) => ({ ...r, value: i === 0 ? 1 : r.value })), comparisonFocus: 'different' };
     default: return base;
@@ -231,7 +233,13 @@ it('validation refuses a spoken graph with no comparison to judge, and a choice 
   const flat = { ...challengeFor('compare_two_graphs'), secondValues: undefined };
   expect(() => validateBarModelData({ title: 'x', challenges: [flat] })).toThrow();
   expect(() => validateBarModelData({ title: 'x', challenges: [{ ...challengeFor('read_scale'), options: [1, 2] }] })).toThrow();
-  expect(validateBarModelData({ title: 'x', challenges: MODES.map(m => challengeFor(m)) }).challenges).toHaveLength(12);
+  // A session holds at most 12 challenges, so every mode is validated in two sessions.
+  for (const modes of [MODES.slice(0, 7), MODES.slice(7)])
+    expect(validateBarModelData({ title: 'x', challenges: modes.map(m => challengeFor(m)) }).challenges).toHaveLength(modes.length);
+  const made = challengeFor('make_graph');
+  for (const graphRule of [{ kind: 'same', a: 0, b: 0 }, { kind: 'more_than', a: 0, b: 1, by: 0 }, { kind: 'most', a: 5 }])
+    expect(() => validateBarModelData({ title: 'x', challenges: [{ ...made, graphRule }] })).toThrow();
+  expect(() => validateBarModelData({ title: 'x', challenges: [{ ...made, values: ROWS }] })).toThrow();
 });
 
 it('its fixture list covers every catalog mode, and validation holds', () => {

@@ -1,0 +1,73 @@
+{
+ "source": "qa/open-build/angle-workshop-2026-10-07/generations.json",
+ "primitiveId": "angle-workshop",
+ "evalMode": "solve_algebraic",
+ "data": {
+  "title": "Solving for Unknown Angles with Algebraic Expressions",
+  "description": "Practice setting up and solving linear equations to find unknown angle values using geometric relationships.",
+  "challengeType": "solve_algebraic",
+  "gradeBand": "7",
+  "challenges": [
+   {
+    "type": "solve_algebraic",
+    "narration": "A signpost has angles labeled by expressions.",
+    "instruction": "These two angles are supplementary (add to 180°). Write an equation and solve for x.",
+    "hint": "Add the two expressions, set the sum equal to 180, and solve for x.",
+    "answerKind": "x_value",
+    "algConfig": "supplementary",
+    "a1": 1,
+    "b1": 25,
+    "a2": 2,
+    "b2": 122,
+    "expectedAnswer": 11,
+    "tolerance": 0.01,
+    "id": "aw-1"
+   },
+   {
+    "type": "solve_algebraic",
+    "narration": "A kite frame has two crossing lines with angles labeled by expressions.",
+    "instruction": "These two angles are vertical angles, so they are equal. Set the expressions equal and solve for x.",
+    "hint": "Vertical angles are equal: set the two expressions equal to each other, then solve for x.",
+    "answerKind": "x_value",
+    "algConfig": "vertical",
+    "a1": 1,
+    "b1": 10,
+    "a2": 2,
+    "b2": -1,
+    "expectedAnswer": 11,
+    "tolerance": 0.01,
+    "id": "aw-2"
+   },
+   {
+    "type": "solve_algebraic",
+    "narration": "A garden trellis has angles labeled by expressions.",
+    "instruction": "These two angles are complementary (add to 90°). Write an equation and solve for x.",
+    "hint": "Add the two expressions, set the sum equal to 90, and solve for x.",
+    "answerKind": "x_value",
+    "algConfig": "complementary",
+    "a1": 2,
+    "b1": 5,
+    "a2": 2,
+    "b2": 69,
+    "expectedAnswer": 4,
+    "tolerance": 0.01,
+    "id": "aw-3"
+   },
+   {
+    "type": "solve_algebraic",
+    "narration": "A bracket on a shelf has two crossing lines with angles labeled by expressions.",
+    "instruction": "These two angles are vertical angles, so they are equal. Set the expressions equal and solve for x.",
+    "hint": "Vertical angles are equal: set the two expressions equal to each other, then solve for x.",
+    "answerKind": "x_value",
+    "algConfig": "vertical",
+    "a1": 2,
+    "b1": 5,
+    "a2": 3,
+    "b2": -4,
+    "expectedAnswer": 9,
+    "tolerance": 0.01,
+    "id": "aw-4"
+   }
+  ]
+ }
+}

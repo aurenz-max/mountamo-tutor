@@ -33,6 +33,9 @@ export interface FractionCirclesView {
   levers?: readonly string[];
   /** An easier practice item stands in for the item (a simplify lever). */
   practice?: boolean;
+  /** build_equal: how many pieces the learner cut the circle into, and whether they are all the same size. */
+  pieces?: number;
+  equalPieces?: boolean;
 }
 
 const CHOICE_WORDS = { left: 'the left circle is larger', right: 'the right circle is larger', equal: 'they are equal' } as const;
@@ -43,6 +46,7 @@ export function describeWork(challenge: FractionCirclesChallenge, view: Fraction
     case 'identify': return `Typed ${view.typed.trim() || 'nothing'}`;
     case 'compare': return view.choice ? `Chose: ${CHOICE_WORDS[view.choice]}` : 'Chose nothing';
     case 'equivalent': return `Shaded ${view.shaded} of ${challenge.equivalentDenominator} slices`;
+    case 'build_equal': return `Cut the circle into ${view.pieces ?? 1} ${view.equalPieces === false ? 'pieces, not all the same size,' : 'equal pieces'} and shaded ${view.shaded}`;
     default: return `Shaded ${view.shaded} of ${challenge.denominator} slices`;
   }
 }
@@ -81,6 +85,17 @@ export function workspaceScene(challenge: FractionCirclesChallenge, view: Fracti
       if (countShown) facts.learnerWork = describeWork(challenge, view);
       facts.constraints = 'The learner shades slices on the second circle to show the same amount and presses Check. '
         + 'You cannot shade slices.';
+      break;
+    case 'build_equal':
+      // An open build: the made quantity is published as numbers, so the shared work history can name a revision.
+      facts.printedTarget = `${challenge.numerator}/${challenge.denominator}`;
+      facts.piecesCut = view.pieces ?? 1;
+      facts.piecesShaded = view.shaded;
+      facts.pieceSizes = view.equalPieces === false ? 'not all the same size' : 'all the same size';
+      facts.learnerWork = describeWork(challenge, view);
+      facts.constraints = `The learner chooses how many equal pieces to cut the circle into (any number but ${challenge.denominator}), `
+        + "can cut one piece in half, shades pieces, and presses I'm done; the circle checks it. Many answers are right. "
+        + 'You cannot cut or shade.';
       break;
   }
   const onScreen = leverFacts(challenge, view.levers ?? []);

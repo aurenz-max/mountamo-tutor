@@ -1,0 +1,66 @@
+{
+ "source": "qa/open-build/angle-workshop-2026-10-07/generations.json",
+ "primitiveId": "angle-workshop",
+ "evalMode": "classify_pairs",
+ "data": {
+  "title": "Identifying Angle Relationships",
+  "description": "Practice recognizing and naming complementary, supplementary, vertical, and adjacent angle pairs in various geometric figures.",
+  "challengeType": "classify_pairs",
+  "gradeBand": "7",
+  "challenges": [
+   {
+    "type": "classify_pairs",
+    "narration": "Roof rafters form this pair of angles.",
+    "instruction": "Look at how the two angles meet. What is their relationship?",
+    "hint": "Do the outer rays make a straight line (180°), a right angle (90°), or do two lines cross? Equal opposite angles are vertical.",
+    "answerKind": "relationship",
+    "relationship": "complementary",
+    "expectedRelationship": "complementary",
+    "expectedAnswer": 0,
+    "tolerance": 0.5,
+    "splitAngle": 80,
+    "id": "aw-1"
+   },
+   {
+    "type": "classify_pairs",
+    "narration": "Two beams in a bridge form this pair of angles.",
+    "instruction": "Look at how the two angles meet. What is their relationship?",
+    "hint": "Do the outer rays make a straight line (180°), a right angle (90°), or do two lines cross? Equal opposite angles are vertical.",
+    "answerKind": "relationship",
+    "relationship": "supplementary",
+    "expectedRelationship": "supplementary",
+    "expectedAnswer": 0,
+    "tolerance": 0.5,
+    "splitAngle": 120,
+    "id": "aw-2"
+   },
+   {
+    "type": "classify_pairs",
+    "narration": "Two beams in a bridge form this pair of angles.",
+    "instruction": "Look at how the two angles meet. What is their relationship?",
+    "hint": "Do the outer rays make a straight line (180°), a right angle (90°), or do two lines cross? Equal opposite angles are vertical.",
+    "answerKind": "relationship",
+    "relationship": "vertical",
+    "expectedRelationship": "vertical",
+    "expectedAnswer": 0,
+    "tolerance": 0.5,
+    "crossAngle": 35,
+    "id": "aw-3"
+   },
+   {
+    "type": "classify_pairs",
+    "narration": "Two roads meeting at a corner form this pair of angles.",
+    "instruction": "Look at how the two angles meet. What is their relationship?",
+    "hint": "Do the outer rays make a straight line (180°), a right angle (90°), or do two lines cross? Equal opposite angles are vertical.",
+    "answerKind": "relationship",
+    "relationship": "adjacent",
+    "expectedRelationship": "adjacent",
+    "expectedAnswer": 0,
+    "tolerance": 0.5,
+    "outerAngle": 145,
+    "splitAngle": 25,
+    "id": "aw-4"
+   }
+  ]
+ }
+}

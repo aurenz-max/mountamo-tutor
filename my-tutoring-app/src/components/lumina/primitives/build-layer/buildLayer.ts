@@ -49,6 +49,8 @@ export interface BuildWatchRequest {
   sceneNote: string;
   /** 'never' on any build whose skill is a number (counting, measuring): the watcher may not say one. */
   numbers: 'allowed' | 'never';
+  /** Words the line may never use, such as shape names where naming the shape can be the skill. */
+  neverSay?: readonly string[];
 }
 
 /** Quiet time after the last change before the watcher looks (Try It uses 1500 ms for strokes). */

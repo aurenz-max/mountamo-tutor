@@ -47,7 +47,7 @@ beforeEach(() => { vi.clearAllMocks(); seam.writes = []; seam.locals = []; seam.
 afterEach(() => { cleanup(); });
 
 type Mode = FractionCirclesChallenge['type'];
-const MODES: Mode[] = ['identify', 'build', 'compare', 'equivalent', 'touch_fraction'];
+const MODES: Mode[] = ['identify', 'build', 'compare', 'equivalent', 'touch_fraction', 'build_equal'];
 
 function challengeFor(type: Mode, id: string = type): FractionCirclesChallenge {
   const base = { id, type, instruction: `Do the ${type} task.`, hint: 'Count the slices.', narration: '', numerator: 3, denominator: 4 };
@@ -91,6 +91,19 @@ function mount(evalMode: string, challenges: FractionCirclesChallenge[]) {
       case 'equivalent': shade(right ? 2 : 3); check(); break;
       case 'compare': click(screen.getByRole('button', { name: right ? /Left .*is larger/ : /They are equal/ })); check(); break;
       case 'touch_fraction': click(right ? picture(3, 4) : otherPicture(3, 4)); break;
+      // K-2 offers cuts of 2, 3 and 4: 3/4 made as 6/8 by halving every fourth; wrong is 3/4 itself.
+      case 'build_equal': {
+        const press = (name: RegExp) => click(screen.getByRole('button', { name }));
+        press(/cut into 4 equal pieces/i);
+        if (right) {
+          press(/cut a piece in half/i);
+          for (const i of [0, 2, 4, 6]) click(view.container.querySelector(`[data-pip-object="slice-${i}"]`));
+          press(/cut a piece in half/i);
+        }
+        shade(right ? 6 : 3);
+        press(/i'm done/i);
+        break;
+      }
     }
   };
   return { runtime, transport, sent, view, state, offer, dispatch, confirmVisible, answer };
@@ -144,7 +157,7 @@ it.each(MODES)('%s: a wrong answer is checked, Try again reopens a clean item, a
   expect(h.state().task!.evidence.correctness).toBe('incorrect');
   const [facts, options] = seam.send.mock.calls.at(-1)!;
   expect(options).toMatchObject({ author: 'host' });
-  expect(facts).toMatch(/Typed|Shaded|Chose|Touched/);
+  expect(facts).toMatch(/Typed|Shaded|Chose|Touched|Cut the circle/);
   expect(h.offer('advance')).toBeUndefined();
   h.dispatch('retry');
   expect(h.view.container.querySelectorAll('[aria-pressed="true"]')).toHaveLength(0);

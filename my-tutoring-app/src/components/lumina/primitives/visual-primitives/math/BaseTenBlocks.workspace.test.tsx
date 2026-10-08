@@ -44,7 +44,7 @@ beforeEach(() => { vi.useFakeTimers(); vi.clearAllMocks(); seam.conversation = [
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals(); });
 
-type Mode = 'build_number' | 'read_blocks' | 'regroup' | 'operate';
+type Mode = 'build_number' | 'read_blocks' | 'regroup' | 'operate' | 'build_two_ways';
 const challenge = (type: BaseTenBlocksChallenge['type'], targetNumber: number, instruction: string): BaseTenBlocksChallenge =>
   ({ type, targetNumber, instruction, hint: 'Look at each column.' });
 const DECKS: Record<Mode, BaseTenBlocksChallenge[]> = {
@@ -52,6 +52,7 @@ const DECKS: Record<Mode, BaseTenBlocksChallenge[]> = {
   read_blocks: [challenge('read_blocks', 47, 'unused: the modes own every ask')],
   regroup: [challenge('regroup', 34, 'unused: the modes own every ask')],
   operate: [challenge('add_with_blocks', 41, 'Add 23 and 18 with blocks.')],
+  build_two_ways: [challenge('build_two_ways', 34, 'Show 34 with blocks. Then show 34 a different way.')],
 };
 
 function mount(mode: Mode, challenges: BaseTenBlocksChallenge[] = DECKS[mode]) {
@@ -100,7 +101,7 @@ const blocksOf = (place: 0 | 1 | 2) => {
 };
 const columnOf = (name: string) => screen.getByLabelText(`${name} column`);
 
-it.each(['build_number', 'read_blocks', 'regroup', 'operate'] as const)(
+it.each(['build_number', 'read_blocks', 'regroup', 'operate', 'build_two_ways'] as const)(
   '%s binds the workspace under tutor ownership, with no scripted cue, Next button or runner control', mode => {
     const h = mount(mode);
     expect(h.state().owner).toBe('tutor');
@@ -309,5 +310,5 @@ it('operate: the keypad result is checked by the activity and never published', 
 });
 
 it('its fixture list covers every catalog mode, and validation holds', () => {
-  expect([...LIVE_ADAPTERS['base-ten-blocks'].modes].sort()).toEqual(['build_number', 'operate', 'read_blocks', 'regroup']);
+  expect([...LIVE_ADAPTERS['base-ten-blocks'].modes].sort()).toEqual(['build_number', 'build_two_ways', 'operate', 'read_blocks', 'regroup']);
 });

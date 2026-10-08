@@ -1,0 +1,50 @@
+{
+ "source": "qa/open-build/fraction-bar-2026-10-07/build_equal.json",
+ "primitiveId": "fraction-bar",
+ "evalMode": "build_equal",
+ "data": {
+  "title": "Building Equivalent Fractions — Grade 4",
+  "description": "Discover different ways to show the exact same amount by splitting and shading your fraction bar. Explore how changing the number of equal parts creates equivalent fractions!",
+  "challenges": [
+   {
+    "id": "fraction-bar-1",
+    "numerator": 5,
+    "denominator": 10,
+    "numeratorChoices": [],
+    "denominatorChoices": [],
+    "instruction": "Make a fraction equal to 5/10 your own way: split the bar into equal parts, but not 10, then shade some."
+   },
+   {
+    "id": "fraction-bar-2",
+    "numerator": 8,
+    "denominator": 12,
+    "numeratorChoices": [],
+    "denominatorChoices": [],
+    "instruction": "Make a fraction equal to 8/12 your own way: split the bar into equal parts, but not 12, then shade some."
+   },
+   {
+    "id": "fraction-bar-3",
+    "numerator": 4,
+    "denominator": 12,
+    "numeratorChoices": [],
+    "denominatorChoices": [],
+    "instruction": "Make a fraction equal to 4/12 your own way: split the bar into equal parts, but not 12, then shade some."
+   },
+   {
+    "id": "fraction-bar-4",
+    "numerator": 2,
+    "denominator": 5,
+    "numeratorChoices": [],
+    "denominatorChoices": [],
+    "instruction": "Make a fraction equal to 2/5 your own way: split the bar into equal parts, but not 5, then shade some."
+   }
+  ],
+  "challengeType": "build_equal",
+  "showDecimal": true,
+  "showPartitionNumerals": true,
+  "showShadedReadout": true,
+  "showPromptGloss": true,
+  "gradeLevel": "Grade 4",
+  "gradeBand": "3-5"
+ }
+}

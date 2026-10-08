@@ -1,0 +1,96 @@
+{
+  "generatedAt": "2026-10-08T01:51:57.069Z",
+  "case": {
+    "targetEvalMode": "build",
+    "grade": "3",
+    "topic": "Building fractions on a bar",
+    "intent": "Shade non-unit fractions on a bar"
+  },
+  "data": {
+    "title": "Building Fractions on a Bar",
+    "description": "Practice identifying the parts of a fraction and shading the matching parts on a fraction bar. Learn how numerators and denominators work together to build fractions!",
+    "challenges": [
+      {
+        "id": "fraction-bar-1",
+        "numerator": 5,
+        "denominator": 6,
+        "numeratorChoices": [
+          5,
+          4,
+          6,
+          7
+        ],
+        "denominatorChoices": [
+          7,
+          5,
+          6,
+          8
+        ]
+      },
+      {
+        "id": "fraction-bar-2",
+        "numerator": 2,
+        "denominator": 3,
+        "numeratorChoices": [
+          2,
+          3,
+          1,
+          4
+        ],
+        "denominatorChoices": [
+          2,
+          3,
+          5,
+          4
+        ]
+      },
+      {
+        "id": "fraction-bar-3",
+        "numerator": 3,
+        "denominator": 5,
+        "numeratorChoices": [
+          3,
+          5,
+          2,
+          4
+        ],
+        "denominatorChoices": [
+          6,
+          4,
+          3,
+          5
+        ]
+      }
+    ],
+    "challengeType": "build",
+    "showDecimal": false,
+    "showPartitionNumerals": true,
+    "showShadedReadout": true,
+    "showPromptGloss": true,
+    "gradeLevel": "Grade 3"
+  },
+  "items": [
+    {
+      "id": "fraction-bar-1",
+      "target": "5/6"
+    },
+    {
+      "id": "fraction-bar-2",
+      "target": "2/3"
+    },
+    {
+      "id": "fraction-bar-3",
+      "target": "3/5"
+    }
+  ],
+  "oracle": {
+    "violations": [],
+    "uncheckedTypes": [],
+    "checkedChallenges": 3
+  },
+  "issues": [],
+  "logs": [
+    "[FractionBar] evalMode: \"build\" → schema enum: [build] (β=2.5)",
+    "🍰 Fraction Bar generated: {\n  topic: 'Building fractions on a bar',\n  challengeType: 'build',\n  instanceCount: 3,\n  fractions: [ '5/6', '2/3', '3/5' ]\n}"
+  ]
+}
