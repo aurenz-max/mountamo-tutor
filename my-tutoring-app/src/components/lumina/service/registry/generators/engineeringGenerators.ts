@@ -34,6 +34,7 @@ import { generateEngineExplorer } from '../../engineering/gemini-engine-explorer
 import { generateVehicleDesignStudio } from '../../engineering/gemini-vehicle-design-studio';
 import { generateHydraulicsLab } from '../../engineering/gemini-hydraulics-lab';
 import { generateTransportChallenge } from '../../engineering/gemini-transport-challenge';
+import { generateTrainYard } from '../../engineering/gemini-train-yard';
 
 // ============================================================================
 // Engineering/STEM Primitives Registration
@@ -205,6 +206,13 @@ registerContextGenerator('transport-challenge', async (ctx) => ({
   type: 'transport-challenge',
   instanceId: ctx.instanceId,
   data: await generateTransportChallenge(ctx),
+}));
+
+// Train Yard (build a train: right cars for the cargo, enough engines for the hill)
+registerContextGenerator('train-yard', async (ctx) => ({
+  type: 'train-yard',
+  instanceId: ctx.instanceId,
+  data: await generateTrainYard(ctx),
 }));
 
 // ============================================================================

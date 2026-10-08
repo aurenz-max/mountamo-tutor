@@ -1,0 +1,4420 @@
+{
+ "lessonEntry": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+ "records": [
+  {
+   "payload": "train-yard.build_train",
+   "primitiveId": "train-yard",
+   "evalMode": "build_train",
+   "guidance": "The train run is the check: the learner presses Highball and the train loads, climbs the hill, and arrives or stalls. A build is right only when every car can carry the cargo, the cars hold the whole load with no spare car, and the engines climb the hill with no spare engine. Matching the car to the cargo is part of the task: the yard shows how each car is built, never what it carries, so never name the car for this cargo or describe how that car is built. The tutor may explain the rule of the rails (every 100 tons of train needs 1 ton of pull for each 1% of hill, plus a little to roll) and help the learner use a run's numbers, but never says how many cars or engines this job needs. In some jobs the yard sets part of the train (the scene says which part is the learner's); help only with that part. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Passenger trains and freight trains: how they move people and goods",
+   "gradeLevel": "Grade 3",
+   "leakTokens": [],
+   "ask": "Build a train to move 2,710 commuters from suburb station to city terminal. The route climbs Oak Ridge, a 0.5% grade. Use the fewest cars and engines that get the whole load there.",
+   "keys": [
+    "add a passenger coach"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "build_train",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "working",
+       "task": "Build a train to move 2,710 commuters from suburb station to city terminal. The route climbs Oak Ridge, a 0.5% grade. Use the fewest cars and engines that get the whole load there.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "job": "2,710 commuters from suburb station to city terminal",
+        "hill": "Oak Ridge, 0.5% grade",
+        "trainNow": "0 engines and no cars",
+        "runsSoFar": 0,
+        "constraints": "The learner adds and removes engines and cars with the yard buttons. The learner presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and after the run shows the train weight and the pull the hill needed. The yard shows what each car holds and how it is built, and what each engine pulls and weighs.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "cargo_picture",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "wrong_car",
+           "mixed_cars"
+          ],
+          "when": "The learner does not picture what commuters is like, so cannot tell which car is built for it.",
+          "does": "Shows a picture of the commuters beside the job ticket, as it looks. It shows no car."
+         },
+         {
+          "id": "model_match",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "wrong_car",
+           "mixed_cars"
+          ],
+          "when": "The learner does not connect how a car is built to what it can carry.",
+          "does": "Shows a worked example beside the yard: water, the car built for it, and why. It is a different cargo; never say which car carries the commuters."
+         },
+         {
+          "id": "car_tally",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "too_few_cars",
+           "extra_cars"
+          ],
+          "when": "The learner loses count of how much the cars hold, or stops short of the whole load.",
+          "does": "Under the train, each car the learner couples shows what the cars of its kind hold so far. Nothing past their own cars."
+         },
+         {
+          "id": "train_weight",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The learner cannot use the rule of the rails because the train's weight is hidden before the run.",
+          "does": "Shows what the train weighs now, with the whole load aboard: its engines, cars and load. Never the pull the hill needs."
+         },
+         {
+          "id": "worked_hill",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The learner does not know how to turn the rule of the rails into a number of engines.",
+          "does": "Shows the rule worked on a different train and hill: its weight, the pull it needs, and the engines. Never this train's numbers; do not work this train for the learner."
+         },
+         {
+          "id": "smaller_job",
+          "kind": "simplify",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "too_few_cars",
+           "extra_cars",
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The whole job is too much to build at once yet.",
+          "does": "Opens an easier job first: a small train of a different cargo, whole cars, on a gentle hill. It is not graded; the full job comes back after it."
+         }
+        ],
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 26,
+      "visibleRevision": null,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "build_train",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "checked",
+       "task": "Build a train to move 2,710 commuters from suburb station to city terminal. The route climbs Oak Ridge, a 0.5% grade. Use the fewest cars and engines that get the whole load there.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Sent a train with 1 engine, 23 boxcars",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "job": "2,710 commuters from suburb station to city terminal",
+        "hill": "Oak Ridge, 0.5% grade",
+        "trainNow": "1 engine, 23 boxcars",
+        "runsSoFar": 1,
+        "lastRunShowed": "Loaded 0 commuters, left 2,710 commuters behind; 23 cars could not carry the commuters and rode empty; train weighed 790 tons; Oak Ridge needed 6 tons of pull and the engines gave 20; the train climbed the hill",
+        "constraints": "The learner adds and removes engines and cars with the yard buttons. The learner presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and after the run shows the train weight and the pull the hill needed. The yard shows what each car holds and how it is built, and what each engine pulls and weighs.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "cargo_picture",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "wrong_car",
+           "mixed_cars"
+          ],
+          "when": "The learner does not picture what commuters is like, so cannot tell which car is built for it.",
+          "does": "Shows a picture of the commuters beside the job ticket, as it looks. It shows no car."
+         },
+         {
+          "id": "model_match",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "wrong_car",
+           "mixed_cars"
+          ],
+          "when": "The learner does not connect how a car is built to what it can carry.",
+          "does": "Shows a worked example beside the yard: water, the car built for it, and why. It is a different cargo; never say which car carries the commuters."
+         },
+         {
+          "id": "car_tally",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "too_few_cars",
+           "extra_cars"
+          ],
+          "when": "The learner loses count of how much the cars hold, or stops short of the whole load.",
+          "does": "Under the train, each car the learner couples shows what the cars of its kind hold so far. Nothing past their own cars."
+         },
+         {
+          "id": "train_weight",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The learner cannot use the rule of the rails because the train's weight is hidden before the run.",
+          "does": "Shows what the train weighs now, with the whole load aboard: its engines, cars and load. Never the pull the hill needs."
+         },
+         {
+          "id": "worked_hill",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The learner does not know how to turn the rule of the rails into a number of engines.",
+          "does": "Shows the rule worked on a different train and hill: its weight, the pull it needs, and the engines. Never this train's numbers; do not work this train for the learner."
+         },
+         {
+          "id": "smaller_job",
+          "kind": "simplify",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "too_few_cars",
+           "extra_cars",
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The whole job is too much to build at once yet.",
+          "does": "Opens an easier job first: a small train of a different cargo, whole cars, on a gentle hill. It is not graded; the full job comes back after it."
+         }
+        ],
+        "lastResponse": {
+         "itemId": "ty-1",
+         "response": "Sent a train with 1 engine, 23 boxcars",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "wrong_car"
+        },
+        "attempts": [
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 1 engine, 23 boxcars",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "wrong_car"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/26/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/26/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner submitted their selection. Current workspace response: {\"itemId\":\"ty-1\",\"response\":\"Sent a train with 1 engine, 23 boxcars\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"wrong_car\"}. Respond to the learner using the current task and workspace."
+     ],
+     "spoken": false,
+     "miss": "wrong_car"
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 26,
+      "visibleRevision": null,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "build_train",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "checked",
+       "task": "Build a train to move 2,710 commuters from suburb station to city terminal. The route climbs Oak Ridge, a 0.5% grade. Use the fewest cars and engines that get the whole load there.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Sent a train with 1 engine, 23 boxcars",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "job": "2,710 commuters from suburb station to city terminal",
+        "hill": "Oak Ridge, 0.5% grade",
+        "trainNow": "1 engine, 23 boxcars",
+        "runsSoFar": 1,
+        "lastRunShowed": "Loaded 0 commuters, left 2,710 commuters behind; 23 cars could not carry the commuters and rode empty; train weighed 790 tons; Oak Ridge needed 6 tons of pull and the engines gave 20; the train climbed the hill",
+        "constraints": "The learner adds and removes engines and cars with the yard buttons. The learner presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and after the run shows the train weight and the pull the hill needed. The yard shows what each car holds and how it is built, and what each engine pulls and weighs.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "cargo_picture",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "wrong_car",
+           "mixed_cars"
+          ],
+          "when": "The learner does not picture what commuters is like, so cannot tell which car is built for it.",
+          "does": "Shows a picture of the commuters beside the job ticket, as it looks. It shows no car."
+         },
+         {
+          "id": "model_match",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "wrong_car",
+           "mixed_cars"
+          ],
+          "when": "The learner does not connect how a car is built to what it can carry.",
+          "does": "Shows a worked example beside the yard: water, the car built for it, and why. It is a different cargo; never say which car carries the commuters."
+         },
+         {
+          "id": "car_tally",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "too_few_cars",
+           "extra_cars"
+          ],
+          "when": "The learner loses count of how much the cars hold, or stops short of the whole load.",
+          "does": "Under the train, each car the learner couples shows what the cars of its kind hold so far. Nothing past their own cars."
+         },
+         {
+          "id": "train_weight",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The learner cannot use the rule of the rails because the train's weight is hidden before the run.",
+          "does": "Shows what the train weighs now, with the whole load aboard: its engines, cars and load. Never the pull the hill needs."
+         },
+         {
+          "id": "worked_hill",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The learner does not know how to turn the rule of the rails into a number of engines.",
+          "does": "Shows the rule worked on a different train and hill: its weight, the pull it needs, and the engines. Never this train's numbers; do not work this train for the learner."
+         },
+         {
+          "id": "smaller_job",
+          "kind": "simplify",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "too_few_cars",
+           "extra_cars",
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The whole job is too much to build at once yet.",
+          "does": "Opens an easier job first: a small train of a different cargo, whole cars, on a gentle hill. It is not graded; the full job comes back after it."
+         }
+        ],
+        "lastResponse": {
+         "itemId": "ty-1",
+         "response": "Sent a train with 1 engine, 23 boxcars",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "wrong_car"
+        },
+        "attempts": [
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 1 engine, 23 boxcars",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "wrong_car"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/26/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/26/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 27,
+      "visibleRevision": 27,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "build_train",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "checked",
+       "task": "Build a train to move 2,710 commuters from suburb station to city terminal. The route climbs Oak Ridge, a 0.5% grade. Use the fewest cars and engines that get the whole load there.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Sent a train with 1 engine, 23 boxcars",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "job": "2,710 commuters from suburb station to city terminal",
+        "hill": "Oak Ridge, 0.5% grade",
+        "trainNow": "1 engine, 23 boxcars",
+        "runsSoFar": 1,
+        "lastRunShowed": "Loaded 0 commuters, left 2,710 commuters behind; 23 cars could not carry the commuters and rode empty; train weighed 790 tons; Oak Ridge needed 6 tons of pull and the engines gave 20; the train climbed the hill",
+        "constraints": "The learner adds and removes engines and cars with the yard buttons. The learner presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and after the run shows the train weight and the pull the hill needed. The yard shows what each car holds and how it is built, and what each engine pulls and weighs.",
+        "onScreen": "A picture beside the job ticket shows the commuters: people waiting on a platform.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "cargo_picture",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "wrong_car",
+           "mixed_cars"
+          ],
+          "when": "The learner does not picture what commuters is like, so cannot tell which car is built for it.",
+          "does": "Shows a picture of the commuters beside the job ticket, as it looks. It shows no car."
+         },
+         {
+          "id": "model_match",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "wrong_car",
+           "mixed_cars"
+          ],
+          "when": "The learner does not connect how a car is built to what it can carry.",
+          "does": "Shows a worked example beside the yard: water, the car built for it, and why. It is a different cargo; never say which car carries the commuters."
+         },
+         {
+          "id": "car_tally",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "too_few_cars",
+           "extra_cars"
+          ],
+          "when": "The learner loses count of how much the cars hold, or stops short of the whole load.",
+          "does": "Under the train, each car the learner couples shows what the cars of its kind hold so far. Nothing past their own cars."
+         },
+         {
+          "id": "train_weight",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The learner cannot use the rule of the rails because the train's weight is hidden before the run.",
+          "does": "Shows what the train weighs now, with the whole load aboard: its engines, cars and load. Never the pull the hill needs."
+         },
+         {
+          "id": "worked_hill",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The learner does not know how to turn the rule of the rails into a number of engines.",
+          "does": "Shows the rule worked on a different train and hill: its weight, the pull it needs, and the engines. Never this train's numbers; do not work this train for the learner."
+         },
+         {
+          "id": "smaller_job",
+          "kind": "simplify",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "too_few_cars",
+           "extra_cars",
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The whole job is too much to build at once yet.",
+          "does": "Opens an easier job first: a small train of a different cargo, whole cars, on a gentle hill. It is not graded; the full job comes back after it."
+         }
+        ],
+        "lastResponse": {
+         "itemId": "ty-1",
+         "response": "Sent a train with 1 engine, 23 boxcars",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "wrong_car"
+        },
+        "attempts": [
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 1 engine, 23 boxcars",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "wrong_car"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "ty-1",
+        "revision": 27,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "cargo_picture"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/27/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/27/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled cargo_picture (help). It is on screen now: Shows a picture of the commuters beside the job ticket, as it looks. It shows no car. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "cargo_picture",
+      "kind": "help",
+      "does": "Shows a picture of the commuters beside the job ticket, as it looks. It shows no car."
+     }
+    },
+    {
+     "kind": "credit",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 53,
+      "visibleRevision": null,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "build_train",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "checked",
+       "task": "Build a train to move 2,710 commuters from suburb station to city terminal. The route climbs Oak Ridge, a 0.5% grade. Use the fewest cars and engines that get the whole load there.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 2,
+        "correctness": "correct",
+        "recentResponses": [
+         {
+          "response": "Sent a train with 1 engine, 23 passenger coachs",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "job": "2,710 commuters from suburb station to city terminal",
+        "hill": "Oak Ridge, 0.5% grade",
+        "trainNow": "1 engine, 23 passenger coachs",
+        "runsSoFar": 2,
+        "lastRunShowed": "Loaded 2,710 commuters; train weighed 1,582 tons; Oak Ridge needed 11 tons of pull and the engines gave 20; the train climbed the hill",
+        "constraints": "The learner adds and removes engines and cars with the yard buttons. The learner presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and after the run shows the train weight and the pull the hill needed. The yard shows what each car holds and how it is built, and what each engine pulls and weighs.",
+        "onScreen": "A picture beside the job ticket shows the commuters: people waiting on a platform.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "cargo_picture",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "wrong_car",
+           "mixed_cars"
+          ],
+          "when": "The learner does not picture what commuters is like, so cannot tell which car is built for it.",
+          "does": "Shows a picture of the commuters beside the job ticket, as it looks. It shows no car."
+         },
+         {
+          "id": "model_match",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "wrong_car",
+           "mixed_cars"
+          ],
+          "when": "The learner does not connect how a car is built to what it can carry.",
+          "does": "Shows a worked example beside the yard: water, the car built for it, and why. It is a different cargo; never say which car carries the commuters."
+         },
+         {
+          "id": "car_tally",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "too_few_cars",
+           "extra_cars"
+          ],
+          "when": "The learner loses count of how much the cars hold, or stops short of the whole load.",
+          "does": "Under the train, each car the learner couples shows what the cars of its kind hold so far. Nothing past their own cars."
+         },
+         {
+          "id": "train_weight",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The learner cannot use the rule of the rails because the train's weight is hidden before the run.",
+          "does": "Shows what the train weighs now, with the whole load aboard: its engines, cars and load. Never the pull the hill needs."
+         },
+         {
+          "id": "worked_hill",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The learner does not know how to turn the rule of the rails into a number of engines.",
+          "does": "Shows the rule worked on a different train and hill: its weight, the pull it needs, and the engines. Never this train's numbers; do not work this train for the learner."
+         },
+         {
+          "id": "smaller_job",
+          "kind": "simplify",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "too_few_cars",
+           "extra_cars",
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The whole job is too much to build at once yet.",
+          "does": "Opens an easier job first: a small train of a different cargo, whole cars, on a gentle hill. It is not graded; the full job comes back after it."
+         }
+        ],
+        "lastResponse": {
+         "itemId": "ty-1",
+         "response": "Sent a train with 1 engine, 23 passenger coachs",
+         "source": "gesture",
+         "correct": true,
+         "assisted": true,
+         "answerExposure": "none",
+         "levers": [
+          "cargo_picture"
+         ]
+        },
+        "attempts": [
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 1 engine, 23 boxcars",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "wrong_car"
+         },
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 1 engine, 23 passenger coachs",
+          "source": "gesture",
+          "correct": true,
+          "assisted": true,
+          "answerExposure": "none",
+          "levers": [
+           "cargo_picture"
+          ]
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "ty-1",
+        "revision": 27,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "cargo_picture"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/53/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 20,
+        "secondsSinceReady": 20,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 2,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner submitted their selection. Current workspace response: {\"itemId\":\"ty-1\",\"response\":\"Sent a train with 1 engine, 23 passenger coachs\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"cargo_picture\"]}. Respond to the learner using the current task and workspace."
+     ],
+     "spoken": false
+    }
+   ]
+  },
+  {
+   "payload": "train-yard.enough_cars",
+   "primitiveId": "train-yard",
+   "evalMode": "enough_cars",
+   "guidance": "The train run is the check: the learner presses Highball and the train loads, climbs the hill, and arrives or stalls. A build is right only when every car can carry the cargo, the cars hold the whole load with no spare car, and the engines climb the hill with no spare engine. Matching the car to the cargo is part of the task: the yard shows how each car is built, never what it carries, so never name the car for this cargo or describe how that car is built. The tutor may explain the rule of the rails (every 100 tons of train needs 1 ton of pull for each 1% of hill, plus a little to roll) and help the learner use a run's numbers, but never says how many cars or engines this job needs. In some jobs the yard sets part of the train (the scene says which part is the learner's); help only with that part. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Passenger trains and freight trains: how they move people and goods",
+   "gradeLevel": "Grade 3",
+   "leakTokens": [],
+   "ask": "Move 900 tons of grain from Sunny Valley Farm to City Bakery. The yard has the right kind of car ready and adds the engines. Couple the fewest cars that hold the whole load.",
+   "keys": [
+    "9"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "enough_cars",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "working",
+       "task": "Move 900 tons of grain from Sunny Valley Farm to City Bakery. The yard has the right kind of car ready and adds the engines. Couple the fewest cars that hold the whole load.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "job": "900 tons of grain from Sunny Valley Farm to City Bakery",
+        "hill": "Golden Grade, 0.5% grade",
+        "trainNow": "0 engines and no cars",
+        "runsSoFar": 0,
+        "constraints": "The yard shows only the kind of car that carries this cargo and adds the engines itself; the learner adds and removes cars. Only the number of cars is the learner's. The learner presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and after the run shows the train weight and the pull the hill needed. The yard shows what each car holds and how it is built, and what each engine pulls and weighs.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "car_tally",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "too_few_cars",
+           "extra_cars"
+          ],
+          "when": "The learner loses count of how much the cars hold, or stops short of the whole load.",
+          "does": "Under the train, each car the learner couples shows what the cars of its kind hold so far. Nothing past their own cars."
+         },
+         {
+          "id": "whole_loads",
+          "kind": "simplify",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "too_few_cars",
+           "extra_cars"
+          ],
+          "when": "This load is too big, or its last car is only part full.",
+          "does": "Opens an easier job first: a different cargo that fills a few cars exactly. It is not graded; the full job comes back after it."
+         }
+        ],
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 12,
+      "visibleRevision": null,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "enough_cars",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "checked",
+       "task": "Move 900 tons of grain from Sunny Valley Farm to City Bakery. The yard has the right kind of car ready and adds the engines. Couple the fewest cars that hold the whole load.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Sent a train with 1 engine, 10 hopper cars",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "job": "900 tons of grain from Sunny Valley Farm to City Bakery",
+        "hill": "Golden Grade, 0.5% grade",
+        "trainNow": "1 engine, 10 hopper cars",
+        "runsSoFar": 1,
+        "lastRunShowed": "Loaded 900 tons of grain; train weighed 1,330 tons; Golden Grade needed 9 tons of pull and the engines gave 30; the train climbed the hill",
+        "constraints": "The yard shows only the kind of car that carries this cargo and adds the engines itself; the learner adds and removes cars. Only the number of cars is the learner's. The learner presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and after the run shows the train weight and the pull the hill needed. The yard shows what each car holds and how it is built, and what each engine pulls and weighs.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "car_tally",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "too_few_cars",
+           "extra_cars"
+          ],
+          "when": "The learner loses count of how much the cars hold, or stops short of the whole load.",
+          "does": "Under the train, each car the learner couples shows what the cars of its kind hold so far. Nothing past their own cars."
+         },
+         {
+          "id": "whole_loads",
+          "kind": "simplify",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "too_few_cars",
+           "extra_cars"
+          ],
+          "when": "This load is too big, or its last car is only part full.",
+          "does": "Opens an easier job first: a different cargo that fills a few cars exactly. It is not graded; the full job comes back after it."
+         }
+        ],
+        "lastResponse": {
+         "itemId": "ty-1",
+         "response": "Sent a train with 1 engine, 10 hopper cars",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "extra_cars"
+        },
+        "attempts": [
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 1 engine, 10 hopper cars",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "extra_cars"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/12/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/12/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner submitted their selection. Current workspace response: {\"itemId\":\"ty-1\",\"response\":\"Sent a train with 1 engine, 10 hopper cars\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"extra_cars\"}. Respond to the learner using the current task and workspace."
+     ],
+     "spoken": false,
+     "miss": "extra_cars"
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 12,
+      "visibleRevision": null,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "enough_cars",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "checked",
+       "task": "Move 900 tons of grain from Sunny Valley Farm to City Bakery. The yard has the right kind of car ready and adds the engines. Couple the fewest cars that hold the whole load.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Sent a train with 1 engine, 10 hopper cars",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "job": "900 tons of grain from Sunny Valley Farm to City Bakery",
+        "hill": "Golden Grade, 0.5% grade",
+        "trainNow": "1 engine, 10 hopper cars",
+        "runsSoFar": 1,
+        "lastRunShowed": "Loaded 900 tons of grain; train weighed 1,330 tons; Golden Grade needed 9 tons of pull and the engines gave 30; the train climbed the hill",
+        "constraints": "The yard shows only the kind of car that carries this cargo and adds the engines itself; the learner adds and removes cars. Only the number of cars is the learner's. The learner presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and after the run shows the train weight and the pull the hill needed. The yard shows what each car holds and how it is built, and what each engine pulls and weighs.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "car_tally",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "too_few_cars",
+           "extra_cars"
+          ],
+          "when": "The learner loses count of how much the cars hold, or stops short of the whole load.",
+          "does": "Under the train, each car the learner couples shows what the cars of its kind hold so far. Nothing past their own cars."
+         },
+         {
+          "id": "whole_loads",
+          "kind": "simplify",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "too_few_cars",
+           "extra_cars"
+          ],
+          "when": "This load is too big, or its last car is only part full.",
+          "does": "Opens an easier job first: a different cargo that fills a few cars exactly. It is not graded; the full job comes back after it."
+         }
+        ],
+        "lastResponse": {
+         "itemId": "ty-1",
+         "response": "Sent a train with 1 engine, 10 hopper cars",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "extra_cars"
+        },
+        "attempts": [
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 1 engine, 10 hopper cars",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "extra_cars"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/12/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/12/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 13,
+      "visibleRevision": 13,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "enough_cars",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "checked",
+       "task": "Move 900 tons of grain from Sunny Valley Farm to City Bakery. The yard has the right kind of car ready and adds the engines. Couple the fewest cars that hold the whole load.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Sent a train with 1 engine, 10 hopper cars",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "job": "900 tons of grain from Sunny Valley Farm to City Bakery",
+        "hill": "Golden Grade, 0.5% grade",
+        "trainNow": "1 engine, 10 hopper cars",
+        "runsSoFar": 1,
+        "lastRunShowed": "Loaded 900 tons of grain; train weighed 1,330 tons; Golden Grade needed 9 tons of pull and the engines gave 30; the train climbed the hill",
+        "constraints": "The yard shows only the kind of car that carries this cargo and adds the engines itself; the learner adds and removes cars. Only the number of cars is the learner's. The learner presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and after the run shows the train weight and the pull the hill needed. The yard shows what each car holds and how it is built, and what each engine pulls and weighs.",
+        "onScreen": "Under the train each coupled car shows what its kind holds so far: 10 hopper cars hold 1,000 tons.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "car_tally",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "too_few_cars",
+           "extra_cars"
+          ],
+          "when": "The learner loses count of how much the cars hold, or stops short of the whole load.",
+          "does": "Under the train, each car the learner couples shows what the cars of its kind hold so far. Nothing past their own cars."
+         },
+         {
+          "id": "whole_loads",
+          "kind": "simplify",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "too_few_cars",
+           "extra_cars"
+          ],
+          "when": "This load is too big, or its last car is only part full.",
+          "does": "Opens an easier job first: a different cargo that fills a few cars exactly. It is not graded; the full job comes back after it."
+         }
+        ],
+        "lastResponse": {
+         "itemId": "ty-1",
+         "response": "Sent a train with 1 engine, 10 hopper cars",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "extra_cars"
+        },
+        "attempts": [
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 1 engine, 10 hopper cars",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "extra_cars"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "ty-1",
+        "revision": 13,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "car_tally"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/13/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/13/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled car_tally (help). It is on screen now: Under the train, each car the learner couples shows what the cars of its kind hold so far. Nothing past their own cars. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "car_tally",
+      "kind": "help",
+      "does": "Under the train, each car the learner couples shows what the cars of its kind hold so far. Nothing past their own cars."
+     }
+    },
+    {
+     "kind": "credit",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 24,
+      "visibleRevision": null,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "enough_cars",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "checked",
+       "task": "Move 900 tons of grain from Sunny Valley Farm to City Bakery. The yard has the right kind of car ready and adds the engines. Couple the fewest cars that hold the whole load.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 2,
+        "correctness": "correct",
+        "recentResponses": [
+         {
+          "response": "Sent a train with 1 engine, 9 hopper cars",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "job": "900 tons of grain from Sunny Valley Farm to City Bakery",
+        "hill": "Golden Grade, 0.5% grade",
+        "trainNow": "1 engine, 9 hopper cars",
+        "runsSoFar": 2,
+        "lastRunShowed": "Loaded 900 tons of grain; train weighed 1,300 tons; Golden Grade needed 9 tons of pull and the engines gave 30; the train climbed the hill",
+        "constraints": "The yard shows only the kind of car that carries this cargo and adds the engines itself; the learner adds and removes cars. Only the number of cars is the learner's. The learner presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and after the run shows the train weight and the pull the hill needed. The yard shows what each car holds and how it is built, and what each engine pulls and weighs.",
+        "onScreen": "Under the train each coupled car shows what its kind holds so far: 9 hopper cars hold 900 tons.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "car_tally",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "too_few_cars",
+           "extra_cars"
+          ],
+          "when": "The learner loses count of how much the cars hold, or stops short of the whole load.",
+          "does": "Under the train, each car the learner couples shows what the cars of its kind hold so far. Nothing past their own cars."
+         },
+         {
+          "id": "whole_loads",
+          "kind": "simplify",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "too_few_cars",
+           "extra_cars"
+          ],
+          "when": "This load is too big, or its last car is only part full.",
+          "does": "Opens an easier job first: a different cargo that fills a few cars exactly. It is not graded; the full job comes back after it."
+         }
+        ],
+        "lastResponse": {
+         "itemId": "ty-1",
+         "response": "Sent a train with 1 engine, 9 hopper cars",
+         "source": "gesture",
+         "correct": true,
+         "assisted": true,
+         "answerExposure": "none",
+         "levers": [
+          "car_tally"
+         ]
+        },
+        "attempts": [
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 1 engine, 10 hopper cars",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "extra_cars"
+         },
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 1 engine, 9 hopper cars",
+          "source": "gesture",
+          "correct": true,
+          "assisted": true,
+          "answerExposure": "none",
+          "levers": [
+           "car_tally"
+          ]
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "ty-1",
+        "revision": 13,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "car_tally"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/24/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 20,
+        "secondsSinceReady": 20,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 2,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner submitted their selection. Current workspace response: {\"itemId\":\"ty-1\",\"response\":\"Sent a train with 1 engine, 9 hopper cars\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"car_tally\"]}. Respond to the learner using the current task and workspace."
+     ],
+     "spoken": false
+    }
+   ]
+  },
+  {
+   "payload": "train-yard.enough_pull",
+   "primitiveId": "train-yard",
+   "evalMode": "enough_pull",
+   "guidance": "The train run is the check: the learner presses Highball and the train loads, climbs the hill, and arrives or stalls. A build is right only when every car can carry the cargo, the cars hold the whole load with no spare car, and the engines climb the hill with no spare engine. Matching the car to the cargo is part of the task: the yard shows how each car is built, never what it carries, so never name the car for this cargo or describe how that car is built. The tutor may explain the rule of the rails (every 100 tons of train needs 1 ton of pull for each 1% of hill, plus a little to roll) and help the learner use a run's numbers, but never says how many cars or engines this job needs. In some jobs the yard sets part of the train (the scene says which part is the learner's); help only with that part. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Passenger trains and freight trains: how they move people and goods",
+   "gradeLevel": "Grade 3",
+   "leakTokens": [],
+   "ask": "The yard has loaded 1,080 tons of grain into the cars for the trip from Sunny Valley Farm to Big River Port. The route climbs Golden Hill, a 1.8% grade. Add the fewest engines that pull the train up the hill.",
+   "keys": [
+    "2"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "enough_pull",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "working",
+       "task": "The yard has loaded 1,080 tons of grain into the cars for the trip from Sunny Valley Farm to Big River Port. The route climbs Golden Hill, a 1.8% grade. Add the fewest engines that pull the train up the hill.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "job": "1,080 tons of grain from Sunny Valley Farm to Big River Port",
+        "hill": "Golden Hill, 1.8% grade",
+        "trainNow": "0 engines, 11 hopper cars",
+        "runsSoFar": 0,
+        "constraints": "The yard has coupled the loaded cars; the learner adds and removes engines. Only the number of engines is the learner's. The learner presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and after the run shows the train weight and the pull the hill needed. The yard shows what each car holds and how it is built, and what each engine pulls and weighs.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "train_weight",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The learner cannot use the rule of the rails because the train's weight is hidden before the run.",
+          "does": "Shows what the train weighs now, with the whole load aboard: its engines, cars and load. Never the pull the hill needs."
+         },
+         {
+          "id": "worked_hill",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The learner does not know how to turn the rule of the rails into a number of engines.",
+          "does": "Shows the rule worked on a different train and hill: its weight, the pull it needs, and the engines. Never this train's numbers; do not work this train for the learner."
+         },
+         {
+          "id": "round_hill",
+          "kind": "simplify",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The hill's numbers are too hard to work with yet.",
+          "does": "Opens an easier job first: a different train on a hill with a whole-number grade. It is not graded; the full job comes back after it."
+         }
+        ],
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 5,
+      "visibleRevision": null,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "enough_pull",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "checked",
+       "task": "The yard has loaded 1,080 tons of grain into the cars for the trip from Sunny Valley Farm to Big River Port. The route climbs Golden Hill, a 1.8% grade. Add the fewest engines that pull the train up the hill.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Sent a train with 3 engines, 11 hopper cars",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "job": "1,080 tons of grain from Sunny Valley Farm to Big River Port",
+        "hill": "Golden Hill, 1.8% grade",
+        "trainNow": "3 engines, 11 hopper cars",
+        "runsSoFar": 1,
+        "lastRunShowed": "Loaded 1,080 tons of grain; train weighed 1,800 tons; Golden Hill needed 36 tons of pull and the engines gave 90; the train climbed the hill",
+        "constraints": "The yard has coupled the loaded cars; the learner adds and removes engines. Only the number of engines is the learner's. The learner presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and after the run shows the train weight and the pull the hill needed. The yard shows what each car holds and how it is built, and what each engine pulls and weighs.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "train_weight",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The learner cannot use the rule of the rails because the train's weight is hidden before the run.",
+          "does": "Shows what the train weighs now, with the whole load aboard: its engines, cars and load. Never the pull the hill needs."
+         },
+         {
+          "id": "worked_hill",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The learner does not know how to turn the rule of the rails into a number of engines.",
+          "does": "Shows the rule worked on a different train and hill: its weight, the pull it needs, and the engines. Never this train's numbers; do not work this train for the learner."
+         },
+         {
+          "id": "round_hill",
+          "kind": "simplify",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The hill's numbers are too hard to work with yet.",
+          "does": "Opens an easier job first: a different train on a hill with a whole-number grade. It is not graded; the full job comes back after it."
+         }
+        ],
+        "lastResponse": {
+         "itemId": "ty-1",
+         "response": "Sent a train with 3 engines, 11 hopper cars",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "extra_engines"
+        },
+        "attempts": [
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 3 engines, 11 hopper cars",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "extra_engines"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/5/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/5/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner submitted their selection. Current workspace response: {\"itemId\":\"ty-1\",\"response\":\"Sent a train with 3 engines, 11 hopper cars\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"extra_engines\"}. Respond to the learner using the current task and workspace."
+     ],
+     "spoken": false,
+     "miss": "extra_engines"
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 5,
+      "visibleRevision": null,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "enough_pull",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "checked",
+       "task": "The yard has loaded 1,080 tons of grain into the cars for the trip from Sunny Valley Farm to Big River Port. The route climbs Golden Hill, a 1.8% grade. Add the fewest engines that pull the train up the hill.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Sent a train with 3 engines, 11 hopper cars",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "job": "1,080 tons of grain from Sunny Valley Farm to Big River Port",
+        "hill": "Golden Hill, 1.8% grade",
+        "trainNow": "3 engines, 11 hopper cars",
+        "runsSoFar": 1,
+        "lastRunShowed": "Loaded 1,080 tons of grain; train weighed 1,800 tons; Golden Hill needed 36 tons of pull and the engines gave 90; the train climbed the hill",
+        "constraints": "The yard has coupled the loaded cars; the learner adds and removes engines. Only the number of engines is the learner's. The learner presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and after the run shows the train weight and the pull the hill needed. The yard shows what each car holds and how it is built, and what each engine pulls and weighs.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "train_weight",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The learner cannot use the rule of the rails because the train's weight is hidden before the run.",
+          "does": "Shows what the train weighs now, with the whole load aboard: its engines, cars and load. Never the pull the hill needs."
+         },
+         {
+          "id": "worked_hill",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The learner does not know how to turn the rule of the rails into a number of engines.",
+          "does": "Shows the rule worked on a different train and hill: its weight, the pull it needs, and the engines. Never this train's numbers; do not work this train for the learner."
+         },
+         {
+          "id": "round_hill",
+          "kind": "simplify",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The hill's numbers are too hard to work with yet.",
+          "does": "Opens an easier job first: a different train on a hill with a whole-number grade. It is not graded; the full job comes back after it."
+         }
+        ],
+        "lastResponse": {
+         "itemId": "ty-1",
+         "response": "Sent a train with 3 engines, 11 hopper cars",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "extra_engines"
+        },
+        "attempts": [
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 3 engines, 11 hopper cars",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "extra_engines"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/5/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/5/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 6,
+      "visibleRevision": 6,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "enough_pull",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "checked",
+       "task": "The yard has loaded 1,080 tons of grain into the cars for the trip from Sunny Valley Farm to Big River Port. The route climbs Golden Hill, a 1.8% grade. Add the fewest engines that pull the train up the hill.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Sent a train with 3 engines, 11 hopper cars",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "job": "1,080 tons of grain from Sunny Valley Farm to Big River Port",
+        "hill": "Golden Hill, 1.8% grade",
+        "trainNow": "3 engines, 11 hopper cars",
+        "runsSoFar": 1,
+        "lastRunShowed": "Loaded 1,080 tons of grain; train weighed 1,800 tons; Golden Hill needed 36 tons of pull and the engines gave 90; the train climbed the hill",
+        "constraints": "The yard has coupled the loaded cars; the learner adds and removes engines. Only the number of engines is the learner's. The learner presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and after the run shows the train weight and the pull the hill needed. The yard shows what each car holds and how it is built, and what each engine pulls and weighs.",
+        "onScreen": "The yard scale shows the train with the whole load aboard: engines 390 t, cars 0 t, load 1,080 t, 1,470 t in all.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "train_weight",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The learner cannot use the rule of the rails because the train's weight is hidden before the run.",
+          "does": "Shows what the train weighs now, with the whole load aboard: its engines, cars and load. Never the pull the hill needs."
+         },
+         {
+          "id": "worked_hill",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The learner does not know how to turn the rule of the rails into a number of engines.",
+          "does": "Shows the rule worked on a different train and hill: its weight, the pull it needs, and the engines. Never this train's numbers; do not work this train for the learner."
+         },
+         {
+          "id": "round_hill",
+          "kind": "simplify",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The hill's numbers are too hard to work with yet.",
+          "does": "Opens an easier job first: a different train on a hill with a whole-number grade. It is not graded; the full job comes back after it."
+         }
+        ],
+        "lastResponse": {
+         "itemId": "ty-1",
+         "response": "Sent a train with 3 engines, 11 hopper cars",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "extra_engines"
+        },
+        "attempts": [
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 3 engines, 11 hopper cars",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "extra_engines"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "ty-1",
+        "revision": 6,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "train_weight"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/6/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/6/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled train_weight (help). It is on screen now: Shows what the train weighs now, with the whole load aboard: its engines, cars and load. Never the pull the hill needs. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "train_weight",
+      "kind": "help",
+      "does": "Shows what the train weighs now, with the whole load aboard: its engines, cars and load. Never the pull the hill needs."
+     }
+    },
+    {
+     "kind": "credit",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 10,
+      "visibleRevision": null,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "enough_pull",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "checked",
+       "task": "The yard has loaded 1,080 tons of grain into the cars for the trip from Sunny Valley Farm to Big River Port. The route climbs Golden Hill, a 1.8% grade. Add the fewest engines that pull the train up the hill.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 2,
+        "correctness": "correct",
+        "recentResponses": [
+         {
+          "response": "Sent a train with 2 engines, 11 hopper cars",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "job": "1,080 tons of grain from Sunny Valley Farm to Big River Port",
+        "hill": "Golden Hill, 1.8% grade",
+        "trainNow": "2 engines, 11 hopper cars",
+        "runsSoFar": 2,
+        "lastRunShowed": "Loaded 1,080 tons of grain; train weighed 1,670 tons; Golden Hill needed 33 tons of pull and the engines gave 60; the train climbed the hill",
+        "constraints": "The yard has coupled the loaded cars; the learner adds and removes engines. Only the number of engines is the learner's. The learner presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and after the run shows the train weight and the pull the hill needed. The yard shows what each car holds and how it is built, and what each engine pulls and weighs.",
+        "onScreen": "The yard scale shows the train with the whole load aboard: engines 260 t, cars 0 t, load 1,080 t, 1,340 t in all.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "train_weight",
+          "kind": "help",
+          "carrier": "shown",
+          "pulled": true,
+          "answers": [
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The learner cannot use the rule of the rails because the train's weight is hidden before the run.",
+          "does": "Shows what the train weighs now, with the whole load aboard: its engines, cars and load. Never the pull the hill needs."
+         },
+         {
+          "id": "worked_hill",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The learner does not know how to turn the rule of the rails into a number of engines.",
+          "does": "Shows the rule worked on a different train and hill: its weight, the pull it needs, and the engines. Never this train's numbers; do not work this train for the learner."
+         },
+         {
+          "id": "round_hill",
+          "kind": "simplify",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "stalled",
+           "extra_engines"
+          ],
+          "when": "The hill's numbers are too hard to work with yet.",
+          "does": "Opens an easier job first: a different train on a hill with a whole-number grade. It is not graded; the full job comes back after it."
+         }
+        ],
+        "lastResponse": {
+         "itemId": "ty-1",
+         "response": "Sent a train with 2 engines, 11 hopper cars",
+         "source": "gesture",
+         "correct": true,
+         "assisted": true,
+         "answerExposure": "none",
+         "levers": [
+          "train_weight"
+         ]
+        },
+        "attempts": [
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 3 engines, 11 hopper cars",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "extra_engines"
+         },
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 2 engines, 11 hopper cars",
+          "source": "gesture",
+          "correct": true,
+          "assisted": true,
+          "answerExposure": "none",
+          "levers": [
+           "train_weight"
+          ]
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "ty-1",
+        "revision": 6,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "train_weight"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/10/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 20,
+        "secondsSinceReady": 20,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 2,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner submitted their selection. Current workspace response: {\"itemId\":\"ty-1\",\"response\":\"Sent a train with 2 engines, 11 hopper cars\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"train_weight\"]}. Respond to the learner using the current task and workspace."
+     ],
+     "spoken": false
+    }
+   ]
+  },
+  {
+   "payload": "train-yard.match_car",
+   "primitiveId": "train-yard",
+   "evalMode": "match_car",
+   "guidance": "The train run is the check: the learner presses Highball and the train loads, climbs the hill, and arrives or stalls. A build is right only when every car can carry the cargo, the cars hold the whole load with no spare car, and the engines climb the hill with no spare engine. Matching the car to the cargo is part of the task: the yard shows how each car is built, never what it carries, so never name the car for this cargo or describe how that car is built. The tutor may explain the rule of the rails (every 100 tons of train needs 1 ton of pull for each 1% of hill, plus a little to roll) and help the learner use a run's numbers, but never says how many cars or engines this job needs. In some jobs the yard sets part of the train (the scene says which part is the learner's); help only with that part. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Passenger trains and freight trains: how they move people and goods",
+   "gradeLevel": "Grade 3",
+   "leakTokens": [],
+   "ask": "Move 400 tons of grain from Sunny Valley Farm to City Flour Mill. Choose the kind of car that can carry grain. The yard couples the cars and the engines.",
+   "keys": [
+    "choose a hopper car"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "match_car",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "working",
+       "task": "Move 400 tons of grain from Sunny Valley Farm to City Flour Mill. Choose the kind of car that can carry grain. The yard couples the cars and the engines.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "job": "400 tons of grain from Sunny Valley Farm to City Flour Mill",
+        "hill": "Golden Hill, 2.2% grade",
+        "trainNow": "0 engines and no cars",
+        "runsSoFar": 0,
+        "constraints": "The learner chooses one kind of car with the yard buttons; the yard then couples the cars and the engines the job needs for that kind. Only the choice of car kind is the learner's. The learner presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and after the run shows the train weight and the pull the hill needed. The yard shows how each car is built.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "cargo_picture",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "The learner does not picture what grain is like, so cannot tell which car is built for it.",
+          "does": "Shows a picture of the grain beside the job ticket, as it looks. It shows no car."
+         },
+         {
+          "id": "model_match",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "The learner does not connect how a car is built to what it can carry.",
+          "does": "Shows a worked example beside the yard: water, the car built for it, and why. It is a different cargo; never say which car carries the grain."
+         },
+         {
+          "id": "two_cars",
+          "kind": "simplify",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "Six kinds of car are too many to choose from yet.",
+          "does": "Opens an easier job first: a different cargo with only two cars to choose from. It is not graded; the full job comes back after it."
+         }
+        ],
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": null,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "match_car",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "checked",
+       "task": "Move 400 tons of grain from Sunny Valley Farm to City Flour Mill. Choose the kind of car that can carry grain. The yard couples the cars and the engines.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Sent a train with 1 engine, 4 boxcars",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "job": "400 tons of grain from Sunny Valley Farm to City Flour Mill",
+        "hill": "Golden Hill, 2.2% grade",
+        "trainNow": "1 engine, 4 boxcars",
+        "runsSoFar": 1,
+        "lastRunShowed": "Loaded 0 tons of grain, left 400 tons of grain behind; 4 cars could not carry the grain and rode empty; train weighed 250 tons; Golden Hill needed 6 tons of pull and the engines gave 30; the train climbed the hill",
+        "constraints": "The learner chooses one kind of car with the yard buttons; the yard then couples the cars and the engines the job needs for that kind. Only the choice of car kind is the learner's. The learner presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and after the run shows the train weight and the pull the hill needed. The yard shows how each car is built.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "cargo_picture",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "The learner does not picture what grain is like, so cannot tell which car is built for it.",
+          "does": "Shows a picture of the grain beside the job ticket, as it looks. It shows no car."
+         },
+         {
+          "id": "model_match",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "The learner does not connect how a car is built to what it can carry.",
+          "does": "Shows a worked example beside the yard: water, the car built for it, and why. It is a different cargo; never say which car carries the grain."
+         },
+         {
+          "id": "two_cars",
+          "kind": "simplify",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "Six kinds of car are too many to choose from yet.",
+          "does": "Opens an easier job first: a different cargo with only two cars to choose from. It is not graded; the full job comes back after it."
+         }
+        ],
+        "lastResponse": {
+         "itemId": "ty-1",
+         "response": "Sent a train with 1 engine, 4 boxcars",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "wrong_car"
+        },
+        "attempts": [
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 1 engine, 4 boxcars",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "wrong_car"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner submitted their selection. Current workspace response: {\"itemId\":\"ty-1\",\"response\":\"Sent a train with 1 engine, 4 boxcars\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"wrong_car\"}. Respond to the learner using the current task and workspace."
+     ],
+     "spoken": false,
+     "miss": "wrong_car"
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": null,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "match_car",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "checked",
+       "task": "Move 400 tons of grain from Sunny Valley Farm to City Flour Mill. Choose the kind of car that can carry grain. The yard couples the cars and the engines.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Sent a train with 1 engine, 4 boxcars",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "job": "400 tons of grain from Sunny Valley Farm to City Flour Mill",
+        "hill": "Golden Hill, 2.2% grade",
+        "trainNow": "1 engine, 4 boxcars",
+        "runsSoFar": 1,
+        "lastRunShowed": "Loaded 0 tons of grain, left 400 tons of grain behind; 4 cars could not carry the grain and rode empty; train weighed 250 tons; Golden Hill needed 6 tons of pull and the engines gave 30; the train climbed the hill",
+        "constraints": "The learner chooses one kind of car with the yard buttons; the yard then couples the cars and the engines the job needs for that kind. Only the choice of car kind is the learner's. The learner presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and after the run shows the train weight and the pull the hill needed. The yard shows how each car is built.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "cargo_picture",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "The learner does not picture what grain is like, so cannot tell which car is built for it.",
+          "does": "Shows a picture of the grain beside the job ticket, as it looks. It shows no car."
+         },
+         {
+          "id": "model_match",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "The learner does not connect how a car is built to what it can carry.",
+          "does": "Shows a worked example beside the yard: water, the car built for it, and why. It is a different cargo; never say which car carries the grain."
+         },
+         {
+          "id": "two_cars",
+          "kind": "simplify",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "Six kinds of car are too many to choose from yet.",
+          "does": "Opens an easier job first: a different cargo with only two cars to choose from. It is not graded; the full job comes back after it."
+         }
+        ],
+        "lastResponse": {
+         "itemId": "ty-1",
+         "response": "Sent a train with 1 engine, 4 boxcars",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "wrong_car"
+        },
+        "attempts": [
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 1 engine, 4 boxcars",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "wrong_car"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 4,
+      "visibleRevision": 4,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "match_car",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "checked",
+       "task": "Move 400 tons of grain from Sunny Valley Farm to City Flour Mill. Choose the kind of car that can carry grain. The yard couples the cars and the engines.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Sent a train with 1 engine, 4 boxcars",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "job": "400 tons of grain from Sunny Valley Farm to City Flour Mill",
+        "hill": "Golden Hill, 2.2% grade",
+        "trainNow": "1 engine, 4 boxcars",
+        "runsSoFar": 1,
+        "lastRunShowed": "Loaded 0 tons of grain, left 400 tons of grain behind; 4 cars could not carry the grain and rode empty; train weighed 250 tons; Golden Hill needed 6 tons of pull and the engines gave 30; the train climbed the hill",
+        "constraints": "The learner chooses one kind of car with the yard buttons; the yard then couples the cars and the engines the job needs for that kind. Only the choice of car kind is the learner's. The learner presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and after the run shows the train weight and the pull the hill needed. The yard shows how each car is built.",
+        "onScreen": "A picture beside the job ticket shows the grain: tiny grains heaped in a pile.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "cargo_picture",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "The learner does not picture what grain is like, so cannot tell which car is built for it.",
+          "does": "Shows a picture of the grain beside the job ticket, as it looks. It shows no car."
+         },
+         {
+          "id": "model_match",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "The learner does not connect how a car is built to what it can carry.",
+          "does": "Shows a worked example beside the yard: water, the car built for it, and why. It is a different cargo; never say which car carries the grain."
+         },
+         {
+          "id": "two_cars",
+          "kind": "simplify",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "Six kinds of car are too many to choose from yet.",
+          "does": "Opens an easier job first: a different cargo with only two cars to choose from. It is not graded; the full job comes back after it."
+         }
+        ],
+        "lastResponse": {
+         "itemId": "ty-1",
+         "response": "Sent a train with 1 engine, 4 boxcars",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "wrong_car"
+        },
+        "attempts": [
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 1 engine, 4 boxcars",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "wrong_car"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "ty-1",
+        "revision": 4,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "cargo_picture"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/4/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/4/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled cargo_picture (help). It is on screen now: Shows a picture of the grain beside the job ticket, as it looks. It shows no car. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "cargo_picture",
+      "kind": "help",
+      "does": "Shows a picture of the grain beside the job ticket, as it looks. It shows no car."
+     }
+    },
+    {
+     "kind": "credit",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 7,
+      "visibleRevision": null,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "match_car",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "checked",
+       "task": "Move 400 tons of grain from Sunny Valley Farm to City Flour Mill. Choose the kind of car that can carry grain. The yard couples the cars and the engines.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 2,
+        "correctness": "correct",
+        "recentResponses": [
+         {
+          "response": "Sent a train with 1 engine, 4 hopper cars",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "job": "400 tons of grain from Sunny Valley Farm to City Flour Mill",
+        "hill": "Golden Hill, 2.2% grade",
+        "trainNow": "1 engine, 4 hopper cars",
+        "runsSoFar": 2,
+        "lastRunShowed": "Loaded 400 tons of grain; train weighed 650 tons; Golden Hill needed 16 tons of pull and the engines gave 30; the train climbed the hill",
+        "constraints": "The learner chooses one kind of car with the yard buttons; the yard then couples the cars and the engines the job needs for that kind. Only the choice of car kind is the learner's. The learner presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and after the run shows the train weight and the pull the hill needed. The yard shows how each car is built.",
+        "onScreen": "A picture beside the job ticket shows the grain: tiny grains heaped in a pile.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "cargo_picture",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "The learner does not picture what grain is like, so cannot tell which car is built for it.",
+          "does": "Shows a picture of the grain beside the job ticket, as it looks. It shows no car."
+         },
+         {
+          "id": "model_match",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "The learner does not connect how a car is built to what it can carry.",
+          "does": "Shows a worked example beside the yard: water, the car built for it, and why. It is a different cargo; never say which car carries the grain."
+         },
+         {
+          "id": "two_cars",
+          "kind": "simplify",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "Six kinds of car are too many to choose from yet.",
+          "does": "Opens an easier job first: a different cargo with only two cars to choose from. It is not graded; the full job comes back after it."
+         }
+        ],
+        "lastResponse": {
+         "itemId": "ty-1",
+         "response": "Sent a train with 1 engine, 4 hopper cars",
+         "source": "gesture",
+         "correct": true,
+         "assisted": true,
+         "answerExposure": "none",
+         "levers": [
+          "cargo_picture"
+         ]
+        },
+        "attempts": [
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 1 engine, 4 boxcars",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "wrong_car"
+         },
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 1 engine, 4 hopper cars",
+          "source": "gesture",
+          "correct": true,
+          "assisted": true,
+          "answerExposure": "none",
+          "levers": [
+           "cargo_picture"
+          ]
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "ty-1",
+        "revision": 4,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "cargo_picture"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/7/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 20,
+        "secondsSinceReady": 20,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 2,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner submitted their selection. Current workspace response: {\"itemId\":\"ty-1\",\"response\":\"Sent a train with 1 engine, 4 hopper cars\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"cargo_picture\"]}. Respond to the learner using the current task and workspace."
+     ],
+     "spoken": false
+    }
+   ]
+  },
+  {
+   "payload": "train-yard.mixed",
+   "primitiveId": "train-yard",
+   "evalMode": "mixed",
+   "guidance": "The train run is the check: the learner presses Highball and the train loads, climbs the hill, and arrives or stalls. A build is right only when every car can carry the cargo, the cars hold the whole load with no spare car, and the engines climb the hill with no spare engine. Matching the car to the cargo is part of the task: the yard shows how each car is built, never what it carries, so never name the car for this cargo or describe how that car is built. The tutor may explain the rule of the rails (every 100 tons of train needs 1 ton of pull for each 1% of hill, plus a little to roll) and help the learner use a run's numbers, but never says how many cars or engines this job needs. In some jobs the yard sets part of the train (the scene says which part is the learner's); help only with that part. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool. When the learner is stuck and pull_lever is offered, let the screen help before words: pull the lever in workspace.levers whose \"when\" fits, then talk about what changed. Here begin_help is for help in words only.",
+   "topic": "Passenger trains and freight trains: how they move people and goods",
+   "gradeLevel": "Grade 3",
+   "leakTokens": [],
+   "ask": "Move 1,380 tons of grain from Sunny Valley Farm to City Flour Mill. Choose the kind of car that can carry grain. The yard couples the cars and the engines.",
+   "keys": [
+    "choose a hopper car"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "mixed",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "working",
+       "task": "Move 1,380 tons of grain from Sunny Valley Farm to City Flour Mill. Choose the kind of car that can carry grain. The yard couples the cars and the engines.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "job": "1,380 tons of grain from Sunny Valley Farm to City Flour Mill",
+        "hill": "Golden Hill, 0.8% grade",
+        "trainNow": "0 engines and no cars",
+        "runsSoFar": 0,
+        "constraints": "The learner chooses one kind of car with the yard buttons; the yard then couples the cars and the engines the job needs for that kind. Only the choice of car kind is the learner's. The learner presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and after the run shows the train weight and the pull the hill needed. The yard shows how each car is built.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "cargo_picture",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "The learner does not picture what grain is like, so cannot tell which car is built for it.",
+          "does": "Shows a picture of the grain beside the job ticket, as it looks. It shows no car."
+         },
+         {
+          "id": "model_match",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "The learner does not connect how a car is built to what it can carry.",
+          "does": "Shows a worked example beside the yard: water, the car built for it, and why. It is a different cargo; never say which car carries the grain."
+         },
+         {
+          "id": "two_cars",
+          "kind": "simplify",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "Six kinds of car are too many to choose from yet.",
+          "does": "Opens an easier job first: a different cargo with only two cars to choose from. It is not graded; the full job comes back after it."
+         }
+        ],
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": null,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "mixed",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "checked",
+       "task": "Move 1,380 tons of grain from Sunny Valley Farm to City Flour Mill. Choose the kind of car that can carry grain. The yard couples the cars and the engines.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Sent a train with 1 engine, 14 boxcars",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "job": "1,380 tons of grain from Sunny Valley Farm to City Flour Mill",
+        "hill": "Golden Hill, 0.8% grade",
+        "trainNow": "1 engine, 14 boxcars",
+        "runsSoFar": 1,
+        "lastRunShowed": "Loaded 0 tons of grain, left 1,380 tons of grain behind; 14 cars could not carry the grain and rode empty; train weighed 550 tons; Golden Hill needed 6 tons of pull and the engines gave 30; the train climbed the hill",
+        "constraints": "The learner chooses one kind of car with the yard buttons; the yard then couples the cars and the engines the job needs for that kind. Only the choice of car kind is the learner's. The learner presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and after the run shows the train weight and the pull the hill needed. The yard shows how each car is built.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "cargo_picture",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "The learner does not picture what grain is like, so cannot tell which car is built for it.",
+          "does": "Shows a picture of the grain beside the job ticket, as it looks. It shows no car."
+         },
+         {
+          "id": "model_match",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "The learner does not connect how a car is built to what it can carry.",
+          "does": "Shows a worked example beside the yard: water, the car built for it, and why. It is a different cargo; never say which car carries the grain."
+         },
+         {
+          "id": "two_cars",
+          "kind": "simplify",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "Six kinds of car are too many to choose from yet.",
+          "does": "Opens an easier job first: a different cargo with only two cars to choose from. It is not graded; the full job comes back after it."
+         }
+        ],
+        "lastResponse": {
+         "itemId": "ty-1",
+         "response": "Sent a train with 1 engine, 14 boxcars",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "wrong_car"
+        },
+        "attempts": [
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 1 engine, 14 boxcars",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "wrong_car"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner submitted their selection. Current workspace response: {\"itemId\":\"ty-1\",\"response\":\"Sent a train with 1 engine, 14 boxcars\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"wrong_car\"}. Respond to the learner using the current task and workspace."
+     ],
+     "spoken": false,
+     "miss": "wrong_car"
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": null,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "mixed",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "checked",
+       "task": "Move 1,380 tons of grain from Sunny Valley Farm to City Flour Mill. Choose the kind of car that can carry grain. The yard couples the cars and the engines.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Sent a train with 1 engine, 14 boxcars",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "job": "1,380 tons of grain from Sunny Valley Farm to City Flour Mill",
+        "hill": "Golden Hill, 0.8% grade",
+        "trainNow": "1 engine, 14 boxcars",
+        "runsSoFar": 1,
+        "lastRunShowed": "Loaded 0 tons of grain, left 1,380 tons of grain behind; 14 cars could not carry the grain and rode empty; train weighed 550 tons; Golden Hill needed 6 tons of pull and the engines gave 30; the train climbed the hill",
+        "constraints": "The learner chooses one kind of car with the yard buttons; the yard then couples the cars and the engines the job needs for that kind. Only the choice of car kind is the learner's. The learner presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and after the run shows the train weight and the pull the hill needed. The yard shows how each car is built.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "cargo_picture",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "The learner does not picture what grain is like, so cannot tell which car is built for it.",
+          "does": "Shows a picture of the grain beside the job ticket, as it looks. It shows no car."
+         },
+         {
+          "id": "model_match",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "The learner does not connect how a car is built to what it can carry.",
+          "does": "Shows a worked example beside the yard: water, the car built for it, and why. It is a different cargo; never say which car carries the grain."
+         },
+         {
+          "id": "two_cars",
+          "kind": "simplify",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "Six kinds of car are too many to choose from yet.",
+          "does": "Opens an easier job first: a different cargo with only two cars to choose from. It is not graded; the full job comes back after it."
+         }
+        ],
+        "lastResponse": {
+         "itemId": "ty-1",
+         "response": "Sent a train with 1 engine, 14 boxcars",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "wrong_car"
+        },
+        "attempts": [
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 1 engine, 14 boxcars",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "wrong_car"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "lever",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 4,
+      "visibleRevision": 4,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "mixed",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "checked",
+       "task": "Move 1,380 tons of grain from Sunny Valley Farm to City Flour Mill. Choose the kind of car that can carry grain. The yard couples the cars and the engines.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Sent a train with 1 engine, 14 boxcars",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "job": "1,380 tons of grain from Sunny Valley Farm to City Flour Mill",
+        "hill": "Golden Hill, 0.8% grade",
+        "trainNow": "1 engine, 14 boxcars",
+        "runsSoFar": 1,
+        "lastRunShowed": "Loaded 0 tons of grain, left 1,380 tons of grain behind; 14 cars could not carry the grain and rode empty; train weighed 550 tons; Golden Hill needed 6 tons of pull and the engines gave 30; the train climbed the hill",
+        "constraints": "The learner chooses one kind of car with the yard buttons; the yard then couples the cars and the engines the job needs for that kind. Only the choice of car kind is the learner's. The learner presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and after the run shows the train weight and the pull the hill needed. The yard shows how each car is built.",
+        "onScreen": "A picture beside the job ticket shows the grain: tiny grains heaped in a pile.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "cargo_picture",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "The learner does not picture what grain is like, so cannot tell which car is built for it.",
+          "does": "Shows a picture of the grain beside the job ticket, as it looks. It shows no car."
+         },
+         {
+          "id": "model_match",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "The learner does not connect how a car is built to what it can carry.",
+          "does": "Shows a worked example beside the yard: water, the car built for it, and why. It is a different cargo; never say which car carries the grain."
+         },
+         {
+          "id": "two_cars",
+          "kind": "simplify",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "Six kinds of car are too many to choose from yet.",
+          "does": "Opens an easier job first: a different cargo with only two cars to choose from. It is not graded; the full job comes back after it."
+         }
+        ],
+        "lastResponse": {
+         "itemId": "ty-1",
+         "response": "Sent a train with 1 engine, 14 boxcars",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "wrong_car"
+        },
+        "attempts": [
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 1 engine, 14 boxcars",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "wrong_car"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "ty-1",
+        "revision": 4,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "cargo_picture"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever"
+        },
+        "description": "Pull one lever from workspace.levers on this item when the learner is stuck: pick the one whose \"when\" fits why. It changes the screen and is recorded as help. Supply lever: its id (without one, the first help lever is pulled). Wait for the visible result, then say what changed, in your own words, and let the learner try. A simplify lever opens an easier practice item first; the full item comes back after it.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/4/0"
+       },
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/4/1"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner said they were stuck, so the host pulled cargo_picture (help). It is on screen now: Shows a picture of the grain beside the job ticket, as it looks. It shows no car. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them."
+     ],
+     "spoken": false,
+     "lever": {
+      "id": "cargo_picture",
+      "kind": "help",
+      "does": "Shows a picture of the grain beside the job ticket, as it looks. It shows no car."
+     }
+    },
+    {
+     "kind": "credit",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 7,
+      "visibleRevision": null,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "mixed",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "checked",
+       "task": "Move 1,380 tons of grain from Sunny Valley Farm to City Flour Mill. Choose the kind of car that can carry grain. The yard couples the cars and the engines.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 2,
+        "correctness": "correct",
+        "recentResponses": [
+         {
+          "response": "Sent a train with 1 engine, 14 hopper cars",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "job": "1,380 tons of grain from Sunny Valley Farm to City Flour Mill",
+        "hill": "Golden Hill, 0.8% grade",
+        "trainNow": "1 engine, 14 hopper cars",
+        "runsSoFar": 2,
+        "lastRunShowed": "Loaded 1,380 tons of grain; train weighed 1,930 tons; Golden Hill needed 19 tons of pull and the engines gave 30; the train climbed the hill",
+        "constraints": "The learner chooses one kind of car with the yard buttons; the yard then couples the cars and the engines the job needs for that kind. Only the choice of car kind is the learner's. The learner presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and after the run shows the train weight and the pull the hill needed. The yard shows how each car is built.",
+        "onScreen": "A picture beside the job ticket shows the grain: tiny grains heaped in a pile.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 2,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "levers": [
+         {
+          "id": "cargo_picture",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": true,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "The learner does not picture what grain is like, so cannot tell which car is built for it.",
+          "does": "Shows a picture of the grain beside the job ticket, as it looks. It shows no car."
+         },
+         {
+          "id": "model_match",
+          "kind": "help",
+          "carrier": "both",
+          "pulled": false,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "The learner does not connect how a car is built to what it can carry.",
+          "does": "Shows a worked example beside the yard: water, the car built for it, and why. It is a different cargo; never say which car carries the grain."
+         },
+         {
+          "id": "two_cars",
+          "kind": "simplify",
+          "carrier": "shown",
+          "pulled": false,
+          "answers": [
+           "wrong_car"
+          ],
+          "when": "Six kinds of car are too many to choose from yet.",
+          "does": "Opens an easier job first: a different cargo with only two cars to choose from. It is not graded; the full job comes back after it."
+         }
+        ],
+        "lastResponse": {
+         "itemId": "ty-1",
+         "response": "Sent a train with 1 engine, 14 hopper cars",
+         "source": "gesture",
+         "correct": true,
+         "assisted": true,
+         "answerExposure": "none",
+         "levers": [
+          "cargo_picture"
+         ]
+        },
+        "attempts": [
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 1 engine, 14 boxcars",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "wrong_car"
+         },
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 1 engine, 14 hopper cars",
+          "source": "gesture",
+          "correct": true,
+          "assisted": true,
+          "answerExposure": "none",
+          "levers": [
+           "cargo_picture"
+          ]
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [
+       {
+        "instanceId": "ws",
+        "itemId": "ty-1",
+        "revision": 4,
+        "action": {
+         "type": "workspace",
+         "operation": "pull_lever",
+         "input": {
+          "lever": "cargo_picture"
+         }
+        },
+        "level": 2,
+        "answerExposure": "none"
+       }
+      ],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange in words only. Records assistance without submitting an answer. No parameters. When the learner is stuck on this item, use pull_lever instead: it changes the screen and records the help itself.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/7/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 20,
+        "secondsSinceReady": 20,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 2,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": true,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner submitted their selection. Current workspace response: {\"itemId\":\"ty-1\",\"response\":\"Sent a train with 1 engine, 14 hopper cars\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"cargo_picture\"]}. Respond to the learner using the current task and workspace."
+     ],
+     "spoken": false
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,73 @@
+{
+ "source": "qa/tutor-reports/train-yard-runtime-build_train-payload-2026-10-05.json",
+ "primitiveId": "train-yard",
+ "evalMode": "build_train",
+ "data": {
+  "title": "Train Yard: Freight and Passenger Jobs",
+  "description": "Build different trains to carry people and goods safely over steep hills.",
+  "challenges": [
+   {
+    "title": "Morning Commuter Run",
+    "cargo": "commuters",
+    "cargoForm": "people",
+    "amount": 2710,
+    "unit": "riders",
+    "from": "suburb station",
+    "to": "city terminal",
+    "hillName": "Oak Ridge",
+    "distanceKm": 90,
+    "grade": 0.5,
+    "id": "ty-1",
+    "type": "build_train",
+    "instruction": "Build a train to move 2,710 commuters from suburb station to city terminal. The route climbs Oak Ridge, a 0.5% grade. Use the fewest cars and engines that get the whole load there."
+   },
+   {
+    "title": "Harvest Grain Haul",
+    "cargo": "grain",
+    "cargoForm": "loose_bulk",
+    "amount": 770,
+    "unit": "tons",
+    "from": "prairie farm",
+    "to": "river port",
+    "hillName": "Sunset Grade",
+    "distanceKm": 170,
+    "grade": 3,
+    "id": "ty-2",
+    "type": "build_train",
+    "instruction": "Build a train to move 770 tons of grain from prairie farm to river port. The route climbs Sunset Grade, a 3.0% grade. Use the fewest cars and engines that get the whole load there."
+   },
+   {
+    "title": "Milk Tanker Express",
+    "cargo": "milk",
+    "cargoForm": "liquid",
+    "amount": 1390,
+    "unit": "tons",
+    "from": "dairy valley",
+    "to": "metro dairy",
+    "hillName": "Blue Mountain",
+    "distanceKm": 180,
+    "grade": 3,
+    "id": "ty-3",
+    "type": "build_train",
+    "instruction": "Build a train to move 1,390 tons of milk from dairy valley to metro dairy. The route climbs Blue Mountain, a 3.0% grade. Use the fewest cars and engines that get the whole load there."
+   },
+   {
+    "title": "Sawmill Timber Run",
+    "cargo": "lumber",
+    "cargoForm": "long_bundles",
+    "amount": 1630,
+    "unit": "tons",
+    "from": "pine forest",
+    "to": "city lumberyard",
+    "hillName": "Pine Pass",
+    "distanceKm": 290,
+    "grade": 2,
+    "id": "ty-4",
+    "type": "build_train",
+    "instruction": "Build a train to move 1,630 tons of lumber from pine forest to city lumberyard. The route climbs Pine Pass, a 2.0% grade. Use the fewest cars and engines that get the whole load there."
+   }
+  ],
+  "challengeType": "build_train",
+  "gradeBand": "3-5"
+ }
+}

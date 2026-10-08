@@ -7,6 +7,7 @@
 import { ComponentDefinition } from '../../../types';
 import { JUDGED_AUDIO_INPUT } from '../../../hooks/judgedScriptContract';
 import type { RampMiss } from '../../../primitives/visual-primitives/engineering/rampLabWorkspace';
+import { TRAIN_YARD_MISSES, type TrainYardMiss } from '../../../primitives/visual-primitives/engineering/trainYardWorkspace';
 import { missLists } from './missLists';
 
 export const ENGINEERING_CATALOG: ComponentDefinition[] = [
@@ -711,5 +712,67 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
       ],
     },
     supportsEvaluation: true,
+  },
+  {
+    id: 'train-yard',
+    description: 'Rail job-board simulation where students build a freight or passenger train (engines plus the right kind of car: hopper, tank car, centerbeam flatcar, boxcar, autorack, passenger coach) to haul a real load over a hill, then watch it climb or stall. Teaches matching cars to cargo, capacity (how many cars hold the load), and how hill steepness decides the pulling power (engines) a train needs; on delivery it shows how many trucks one train replaces. Perfect for lessons on trains, freight vs passenger trains, transportation and how goods move in communities, simple machines and forces. ESSENTIAL for grades 1-5 engineering and transportation.',
+    constraints: 'Best for grades 1-5. Each session is 4 rail jobs built by the generator from the lesson intent; the manifest must NOT supply cargo, amounts, grades or car counts — the generator builds jobs deterministically. K-2 jobs use whole cars (skip-counting); 3-5 jobs need rounding up and 1-4 engines. Four tasks, easiest first: match the car to the cargo (K-1 entry), count the cars, choose the engines, build the whole train.',
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'developing', answers: ['tap'], role: ['apply', 'visualize'], minutes: 8 },
+    evalModes: [
+      {
+        evalMode: 'match_car',
+        label: 'Match the Car',
+        beta: -1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['match_car'],
+        description: 'Choose the kind of rail car built for the cargo (loose, liquid, long, boxed, vehicles, people); the yard sets the counts and engines',
+      },
+      {
+        evalMode: 'enough_cars',
+        label: 'Count the Cars',
+        beta: -0.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['enough_cars'],
+        description: 'The right car is given; couple the fewest cars that hold the whole load (skip-count, or divide and round up)',
+      },
+      {
+        evalMode: 'enough_pull',
+        label: 'Choose the Engines',
+        beta: 0.3,
+        scaffoldingMode: 3,
+        challengeTypes: ['enough_pull'],
+        description: 'The loaded cars are given; add the fewest engines that pull the train up the hill, using the rule of the rails',
+      },
+      {
+        evalMode: 'build_train',
+        label: 'Build the Train',
+        beta: 0.8,
+        scaffoldingMode: 3,
+        challengeTypes: ['build_train'],
+        description: 'Build the fewest-car, fewest-engine train of the right car type for a job, then run it over the hill',
+      },
+    ],
+    supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+      guidance: 'The train run is the check: the learner presses Highball and the train loads, climbs the hill, and '
+        + 'arrives or stalls. A build is right only when every car can carry the cargo, the cars hold the whole load '
+        + 'with no spare car, and the engines climb the hill with no spare engine. Matching the car to the cargo is '
+        + 'part of the task: the yard shows how each car is built, never what it carries, so never name the car for '
+        + 'this cargo or describe how that car is built. The tutor '
+        + 'may explain the rule of the rails (every 100 tons of train needs 1 ton of pull for each 1% of hill, plus a '
+        + 'little to roll) and help the learner use a run\'s numbers, but never says how many cars or engines this job '
+        + 'needs. In some jobs the yard sets part of the train (the scene says which part is the learner\'s); help '
+        + 'only with that part.',
+      // Every miss is answered by a lever (`trainYardLevers.ts`).
+      levers: true,
+      // The run's own check (`trainYardMiss`).
+      misses: missLists<TrainYardMiss>({
+        match_car: ['wrong_car'],
+        enough_cars: ['too_few_cars', 'extra_cars'],
+        enough_pull: ['stalled', 'extra_engines'],
+        build_train: [...TRAIN_YARD_MISSES],
+      }),
+    },
   },
 ];

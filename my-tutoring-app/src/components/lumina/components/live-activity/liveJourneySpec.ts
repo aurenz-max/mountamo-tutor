@@ -144,6 +144,8 @@ import { smallerFact as smallerAdditionFact } from '../../primitives/visual-prim
 import { equationBuilderHarnessInputs } from '../../primitives/visual-primitives/math/equationBuilderWorkspace';
 import { patternBuilderHarnessInputs } from '../../primitives/visual-primitives/math/patternBuilderWorkspace';
 import { strategyPickerHarnessInputs } from '../../primitives/visual-primitives/math/strategyPickerWorkspace';
+import { carButtonName, carFor as trainCarFor, fewestCars as trainFewestCars, fewestEngines as trainFewestEngines } from '../../primitives/visual-primitives/engineering/trainYardModel';
+import { simplerJob as simplerTrainJob } from '../../primitives/visual-primitives/engineering/trainYardLevers';
 
 /** One real learner action for the mounted driver to perform. */
 export type DriverInput =
@@ -1116,6 +1118,37 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       throw new Error(`ramp-lab ${c.mode} uses a slider or select the driver cannot set; not driven at W1`);
     },
     probes: { mounted: { selector: '[data-testid="ramp-investigation"], svg' } },
+  },
+  'train-yard': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/engineering/TrainYard.tsx',
+    instanceId: 'yard',
+    defaults: { grade: 'Grade 3', mode: 'build_train', di: false,
+      topic: 'Passenger trains and freight trains: how they move people and goods' },
+    leakTokens: [],
+    prompts: WORKSPACE_PROMPTS,
+    // Build the learner's part of the train through the yard's own buttons, then Highball. Correct: the
+    // right car kind, the fewest cars, the fewest engines. Wrong: a car that cannot carry the cargo
+    // (match_car, build_train) or one car / one engine too many (enough_cars, enough_pull).
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      // An easier job (a simplify lever) is not a generated challenge: rebuild it from its parent.
+      const jobs = ctx.data.challenges ?? [];
+      const parent = ctx.itemId?.endsWith('~simpler') ? jobs.find((x: { id: string }) => `${x.id}~simpler` === ctx.itemId) : undefined;
+      const c = parent ? simplerTrainJob(parent, ctx.data.gradeBand ?? '3-5') : jobs.find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current train-yard job');
+      const right = trainCarFor(c);
+      const wrongKind = c.carChoices?.find((k: string) => k !== right) ?? (right === 'boxcar' ? 'tank' : 'boxcar');
+      const extra = intent === 'wrong' ? 1 : 0;
+      const repeat = (label: string, n: number): DriverInput[] => Array.from({ length: n }, () => ({ type: 'choose', label }));
+      const send: DriverInput = { type: 'choose', label: 'Highball! Send the train' };
+      if (c.type === 'match_car') return [{ type: 'choose', label: `Choose ${carButtonName(intent === 'wrong' ? wrongKind : right)}` }, send];
+      if (c.type === 'enough_cars') return [...repeat(`Add ${carButtonName(right)}`, trainFewestCars(c) + extra), send];
+      if (c.type === 'enough_pull') return [...repeat('Add an engine', trainFewestEngines(c) + extra), send];
+      const car = intent === 'wrong' ? wrongKind : right;
+      return [...repeat('Add an engine', trainFewestEngines(c)), ...repeat(`Add ${carButtonName(car)}`, trainFewestCars(c)), send];
+    },
+    probes: { mounted: { selector: 'canvas[aria-label^="The route from"]' } },
   },
   'di-shapes': {
     execution: 'workspace',

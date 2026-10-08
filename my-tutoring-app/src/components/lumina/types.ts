@@ -1655,6 +1655,7 @@ export type ComponentId =
   | 'vehicle-design-studio' // Interactive vehicle design studio for engineering education
   | 'hydraulics-lab' // Interactive hydraulics lab for fluid power and pressure concepts
   | 'transport-challenge' // Interactive transport challenge
+  | 'train-yard' // Interactive train yard: build a train of cars for each rail job
 
   // Astronomy Primitives (K-5)
   | 'solar-system-explorer' // Interactive solar system model with orbits, zoom, and planet details
@@ -2281,6 +2282,7 @@ export type { PaperAirplaneDesignerData } from './primitives/visual-primitives/e
 export type { PropulsionTimelineData, TimelineMilestone, TimelineEra as PropulsionTimelineEra, SpeedRecord, SequencingChallenge, InnovationChain } from './primitives/visual-primitives/engineering/PropulsionTimeline';
 export type { VehicleDesignStudioData } from './primitives/visual-primitives/engineering/VehicleDesignStudio';
 export type { TransportChallengeData } from './primitives/visual-primitives/engineering/TransportChallenge';
+export type { TrainYardData } from './primitives/visual-primitives/engineering/TrainYard';
 export type { ConstructionSequencePlannerData, ConstructionTask, ConstructionChallenge } from './primitives/visual-primitives/engineering/ConstructionSequencePlanner';
 
 // Math Phase 2

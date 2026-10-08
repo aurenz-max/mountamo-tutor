@@ -154,6 +154,7 @@ import EngineExplorer from '../primitives/visual-primitives/engineering/EngineEx
 import VehicleDesignStudio from '../primitives/visual-primitives/engineering/VehicleDesignStudio';
 import HydraulicsLab from '../primitives/visual-primitives/engineering/HydraulicsLab';
 import TransportChallenge from '../primitives/visual-primitives/engineering/TransportChallenge';
+import TrainYard from '../primitives/visual-primitives/engineering/TrainYard';
 // Astronomy Primitives
 import SolarSystemExplorer from '../primitives/visual-primitives/astronomy/SolarSystemExplorer';
 import ScaleComparator from '../primitives/visual-primitives/astronomy/ScaleComparator';
@@ -1746,6 +1747,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'transport-challenge': {
     component: TransportChallenge,
     sectionTitle: 'Transport Challenge',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'train-yard': {
+    component: TrainYard,
+    sectionTitle: 'Train Yard',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

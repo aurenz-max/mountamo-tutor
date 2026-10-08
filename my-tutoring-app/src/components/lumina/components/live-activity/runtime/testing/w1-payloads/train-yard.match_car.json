@@ -1,0 +1,73 @@
+{
+  "source": "/api/lumina/eval-test train-yard evalMode=match_car grade=1, 2026-10-05",
+  "primitiveId": "train-yard",
+  "evalMode": "match_car",
+  "data": {
+    "title": "Train Yard: Passenger And Freight",
+    "description": "Help trains carry different cargo and people safely over the hills.",
+    "challenges": [
+      {
+        "title": "Grain Harvest Run",
+        "cargo": "grain",
+        "cargoForm": "loose_bulk",
+        "amount": 400,
+        "unit": "tons",
+        "from": "Sunny Valley Farm",
+        "to": "City Flour Mill",
+        "hillName": "Golden Hill",
+        "distanceKm": 450,
+        "grade": 2.2,
+        "id": "ty-1",
+        "type": "match_car",
+        "instruction": "Move 400 tons of grain from Sunny Valley Farm to City Flour Mill. Choose the kind of car that can carry grain. The yard couples the cars and the engines."
+      },
+      {
+        "title": "Morning Commuter Express",
+        "cargo": "commuters",
+        "cargoForm": "people",
+        "amount": 600,
+        "unit": "riders",
+        "from": "Maple Wood Suburb",
+        "to": "Downtown Terminal",
+        "hillName": "Summit Grade",
+        "distanceKm": 410,
+        "grade": 1.5,
+        "id": "ty-2",
+        "type": "match_car",
+        "instruction": "Move 600 commuters from Maple Wood Suburb to Downtown Terminal. Choose the kind of car that can carry commuters. The yard couples the cars and the engines."
+      },
+      {
+        "title": "Lumber Yard Haul",
+        "cargo": "lumber",
+        "cargoForm": "long_bundles",
+        "amount": 640,
+        "unit": "tons",
+        "from": "Pine Tree Sawmill",
+        "to": "Builders Supply Yard",
+        "hillName": "Timber Pass",
+        "distanceKm": 120,
+        "grade": 3,
+        "id": "ty-3",
+        "type": "match_car",
+        "instruction": "Move 640 tons of lumber from Pine Tree Sawmill to Builders Supply Yard. Choose the kind of car that can carry lumber. The yard couples the cars and the engines."
+      },
+      {
+        "title": "Fuel Tanker Journey",
+        "cargo": "heating oil",
+        "cargoForm": "liquid",
+        "amount": 900,
+        "unit": "tons",
+        "from": "River Refinery",
+        "to": "North Town Depot",
+        "hillName": "Copper Ridge",
+        "distanceKm": 320,
+        "grade": 1,
+        "id": "ty-4",
+        "type": "match_car",
+        "instruction": "Move 900 tons of heating oil from River Refinery to North Town Depot. Choose the kind of car that can carry heating oil. The yard couples the cars and the engines."
+      }
+    ],
+    "challengeType": "match_car",
+    "gradeBand": "K-2"
+  }
+}

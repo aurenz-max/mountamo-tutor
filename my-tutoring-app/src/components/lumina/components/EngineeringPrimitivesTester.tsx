@@ -33,6 +33,7 @@ import PaperAirplaneDesigner from '../primitives/visual-primitives/engineering/P
 import EngineExplorer from '../primitives/visual-primitives/engineering/EngineExplorer';
 import VehicleDesignStudio from '../primitives/visual-primitives/engineering/VehicleDesignStudio';
 import TransportChallenge from '../primitives/visual-primitives/engineering/TransportChallenge';
+import TrainYard from '../primitives/visual-primitives/engineering/TrainYard';
 
 import {
   EvaluationProvider,
@@ -57,7 +58,8 @@ type PrimitiveType =
   | 'paper-airplane-designer'
   | 'engine-explorer'
   | 'vehicle-design-studio'
-  | 'transport-challenge';
+  | 'transport-challenge'
+  | 'train-yard';
 
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
@@ -98,6 +100,7 @@ const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
   { value: 'engine-explorer', label: 'Engine Explorer', icon: '🔧', topic: 'Exploring engine types, components, and energy cycles', strand: 'VF' },
   { value: 'vehicle-design-studio', label: 'Vehicle Design Studio', icon: '🚗', topic: 'Vehicle Engineering', strand: 'VF' },
   { value: 'transport-challenge', label: 'Transport Challenge', icon: '🚛', topic: 'Choosing vehicles and optimizing transport under constraints', strand: 'VF' },
+  { value: 'train-yard', label: 'Train Yard', icon: '🚂', topic: 'Passenger trains and freight trains', strand: 'VF' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -390,6 +393,19 @@ const PrimitiveRenderer: React.FC<{
           }}
         />
       );
+    case 'train-yard':
+      return (
+        <TrainYard
+          data={{
+            ...(data as Parameters<typeof TrainYard>[0]['data']),
+            instanceId: (data as { instanceId: string }).instanceId,
+            skillId: 'engineering-trains',
+            subskillId: 'passenger-vs-freight',
+            objectiveId: 'build-train-for-job',
+            onEvaluationSubmit,
+          }}
+        />
+      );
     default:
       return (
         <div className="max-w-4xl mx-auto">
@@ -494,6 +510,17 @@ const EvaluationResultsPanel: React.FC = () => {
                 </div>
                 {result.metrics && 'type' in result.metrics && (
                   <p className="text-xs text-slate-400 mt-1">{result.metrics.type}</p>
+                )}
+                {result.metrics.type === 'train-yard' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount}/{result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg attempts: {result.metrics.averageAttemptsPerChallenge.toFixed(1)}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy.toFixed(0)}%</span>
+                  </div>
                 )}
               </div>
             ))}

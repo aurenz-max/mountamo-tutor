@@ -1,0 +1,73 @@
+{
+  "source": "/api/lumina/eval-test train-yard evalMode=mixed grade=3, 2026-10-05",
+  "primitiveId": "train-yard",
+  "evalMode": "mixed",
+  "data": {
+    "title": "Train Yard: Cargo and Passenger Routes",
+    "description": "Learn how different trains carry people and goods across the countryside.",
+    "challenges": [
+      {
+        "title": "Farm Harvest Run",
+        "cargo": "grain",
+        "cargoForm": "loose_bulk",
+        "amount": 1380,
+        "unit": "tons",
+        "from": "Sunny Valley Farm",
+        "to": "City Flour Mill",
+        "hillName": "Golden Hill",
+        "distanceKm": 460,
+        "grade": 0.8,
+        "id": "ty-1",
+        "type": "match_car",
+        "instruction": "Move 1,380 tons of grain from Sunny Valley Farm to City Flour Mill. Choose the kind of car that can carry grain. The yard couples the cars and the engines."
+      },
+      {
+        "title": "Morning Commuter Express",
+        "cargo": "commuters",
+        "cargoForm": "people",
+        "amount": 1740,
+        "unit": "riders",
+        "from": "Maple Wood Suburb",
+        "to": "Central Station",
+        "hillName": "Summit Grade",
+        "distanceKm": 480,
+        "grade": 1.2,
+        "id": "ty-2",
+        "type": "enough_cars",
+        "instruction": "Move 1,740 commuters from Maple Wood Suburb to Central Station. The yard has the right kind of car ready and adds the engines. Couple the fewest cars that hold the whole load."
+      },
+      {
+        "title": "Forest Timber Haul",
+        "cargo": "lumber",
+        "cargoForm": "long_bundles",
+        "amount": 1720,
+        "unit": "tons",
+        "from": "Pine Tree Sawmill",
+        "to": "Big City Builder",
+        "hillName": "Pine Ridge Pass",
+        "distanceKm": 260,
+        "grade": 1,
+        "id": "ty-3",
+        "type": "enough_pull",
+        "instruction": "The yard has loaded 1,720 tons of lumber into the cars for the trip from Pine Tree Sawmill to Big City Builder. The route climbs Pine Ridge Pass, a 1.0% grade. Add the fewest engines that pull the train up the hill."
+      },
+      {
+        "title": "Fuel Delivery Train",
+        "cargo": "heating oil",
+        "cargoForm": "liquid",
+        "amount": 1240,
+        "unit": "tons",
+        "from": "River Refinery",
+        "to": "Town Fuel Depot",
+        "hillName": "Copper Mountain",
+        "distanceKm": 140,
+        "grade": 3,
+        "id": "ty-4",
+        "type": "build_train",
+        "instruction": "Build a train to move 1,240 tons of heating oil from River Refinery to Town Fuel Depot. The route climbs Copper Mountain, a 3.0% grade. Use the fewest cars and engines that get the whole load there."
+      }
+    ],
+    "challengeType": "build_train",
+    "gradeBand": "3-5"
+  }
+}

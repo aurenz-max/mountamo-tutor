@@ -66,6 +66,7 @@ import { statesOfMatterLiveDomain } from './adapters/statesOfMatterLive';
 import { solarSystemExplorerLiveDomain } from './adapters/solarSystemExplorerLive';
 import { youAndMeLiveDomain } from './adapters/youAndMeLive';
 import { rampLabLiveDomain } from './adapters/rampLabLive';
+import { trainYardLiveDomain } from './adapters/trainYardLive';
 import { diShapesLiveDomain } from './adapters/diShapesLive';
 import { diSpokenPracticeLiveDomain } from './adapters/diSpokenPracticeLive';
 import { diDiceRollLiveDomain } from './adapters/diDiceRollLive';
@@ -150,6 +151,7 @@ export const LIVE_ADAPTERS = {
   'solar-system-explorer': workspaceAdapter('solar-system-explorer', solarSystemExplorerLiveDomain),
   'you-and-me': workspaceAdapter('you-and-me', youAndMeLiveDomain),
   'ramp-lab': workspaceAdapter('ramp-lab', rampLabLiveDomain),
+  'train-yard': workspaceAdapter('train-yard', trainYardLiveDomain),
   'di-shapes': workspaceAdapter('di-shapes', diShapesLiveDomain),
   'di-spoken-practice': workspaceAdapter('di-spoken-practice', diSpokenPracticeLiveDomain),
   'di-dice-roll': workspaceAdapter('di-dice-roll', diDiceRollLiveDomain),

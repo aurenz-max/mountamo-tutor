@@ -1,0 +1,73 @@
+{
+  "source": "/api/lumina/eval-test train-yard evalMode=enough_pull grade=4, 2026-10-05",
+  "primitiveId": "train-yard",
+  "evalMode": "enough_pull",
+  "data": {
+    "title": "Train Yard: Cargo and Passenger Routes",
+    "description": "Discover how different trains carry people and supplies across the land.",
+    "challenges": [
+      {
+        "title": "Golden Harvest Run",
+        "cargo": "grain",
+        "cargoForm": "loose_bulk",
+        "amount": 1080,
+        "unit": "tons",
+        "from": "Sunny Valley Farm",
+        "to": "Big River Port",
+        "hillName": "Golden Hill",
+        "distanceKm": 290,
+        "grade": 1.8,
+        "id": "ty-1",
+        "type": "enough_pull",
+        "instruction": "The yard has loaded 1,080 tons of grain into the cars for the trip from Sunny Valley Farm to Big River Port. The route climbs Golden Hill, a 1.8% grade. Add the fewest engines that pull the train up the hill."
+      },
+      {
+        "title": "Forest Timber Haul",
+        "cargo": "lumber",
+        "cargoForm": "long_bundles",
+        "amount": 1420,
+        "unit": "tons",
+        "from": "Pine Tree Sawmill",
+        "to": "Metro Building Supply",
+        "hillName": "Pine Ridge Pass",
+        "distanceKm": 170,
+        "grade": 2,
+        "id": "ty-2",
+        "type": "enough_pull",
+        "instruction": "The yard has loaded 1,420 tons of lumber into the cars for the trip from Pine Tree Sawmill to Metro Building Supply. The route climbs Pine Ridge Pass, a 2.0% grade. Add the fewest engines that pull the train up the hill."
+      },
+      {
+        "title": "Fresh Milk Delivery",
+        "cargo": "milk",
+        "cargoForm": "liquid",
+        "amount": 1940,
+        "unit": "tons",
+        "from": "Green Pastures Dairy",
+        "to": "City Grocery Warehouse",
+        "hillName": "Rolling Meadow Grade",
+        "distanceKm": 440,
+        "grade": 2.5,
+        "id": "ty-3",
+        "type": "enough_pull",
+        "instruction": "The yard has loaded 1,940 tons of milk into the cars for the trip from Green Pastures Dairy to City Grocery Warehouse. The route climbs Rolling Meadow Grade, a 2.5% grade. Add the fewest engines that pull the train up the hill."
+      },
+      {
+        "title": "Holiday Package Dash",
+        "cargo": "packages",
+        "cargoForm": "boxed_goods",
+        "amount": 830,
+        "unit": "tons",
+        "from": "Central Mail Facility",
+        "to": "Northern Town Station",
+        "hillName": "Snowy Summit",
+        "distanceKm": 60,
+        "grade": 2.5,
+        "id": "ty-4",
+        "type": "enough_pull",
+        "instruction": "The yard has loaded 830 tons of packages into the cars for the trip from Central Mail Facility to Northern Town Station. The route climbs Snowy Summit, a 2.5% grade. Add the fewest engines that pull the train up the hill."
+      }
+    ],
+    "challengeType": "enough_pull",
+    "gradeBand": "3-5"
+  }
+}

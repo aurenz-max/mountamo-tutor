@@ -1,0 +1,73 @@
+{
+  "source": "/api/lumina/eval-test train-yard evalMode=enough_cars grade=1, 2026-10-05",
+  "primitiveId": "train-yard",
+  "evalMode": "enough_cars",
+  "data": {
+    "title": "Train Yard: Passenger and Freight Jobs",
+    "description": "Help the powerful engines pull different kinds of loads and happy travelers across the hills.",
+    "challenges": [
+      {
+        "title": "Farm Harvest Run",
+        "cargo": "grain",
+        "cargoForm": "loose_bulk",
+        "amount": 900,
+        "unit": "tons",
+        "from": "Sunny Valley Farm",
+        "to": "City Bakery",
+        "hillName": "Golden Grade",
+        "distanceKm": 300,
+        "grade": 0.5,
+        "id": "ty-1",
+        "type": "enough_cars",
+        "instruction": "Move 900 tons of grain from Sunny Valley Farm to City Bakery. The yard has the right kind of car ready and adds the engines. Couple the fewest cars that hold the whole load."
+      },
+      {
+        "title": "Morning Commuter Express",
+        "cargo": "commuters",
+        "cargoForm": "people",
+        "amount": 1200,
+        "unit": "riders",
+        "from": "Oak Tree Suburb",
+        "to": "Downtown Station",
+        "hillName": "Maple Ridge",
+        "distanceKm": 310,
+        "grade": 1.5,
+        "id": "ty-2",
+        "type": "enough_cars",
+        "instruction": "Move 1,200 commuters from Oak Tree Suburb to Downtown Station. The yard has the right kind of car ready and adds the engines. Couple the fewest cars that hold the whole load."
+      },
+      {
+        "title": "Fuel Supply Trip",
+        "cargo": "heating oil",
+        "cargoForm": "liquid",
+        "amount": 900,
+        "unit": "tons",
+        "from": "River Refinery",
+        "to": "Winter Town Depot",
+        "hillName": "Frosty Pass",
+        "distanceKm": 460,
+        "grade": 2.5,
+        "id": "ty-3",
+        "type": "enough_cars",
+        "instruction": "Move 900 tons of heating oil from River Refinery to Winter Town Depot. The yard has the right kind of car ready and adds the engines. Couple the fewest cars that hold the whole load."
+      },
+      {
+        "title": "Builder Supply Haul",
+        "cargo": "lumber",
+        "cargoForm": "long_bundles",
+        "amount": 400,
+        "unit": "tons",
+        "from": "Greenwood Sawmill",
+        "to": "Metro Hardware",
+        "hillName": "Pine Hill",
+        "distanceKm": 50,
+        "grade": 1.5,
+        "id": "ty-4",
+        "type": "enough_cars",
+        "instruction": "Move 400 tons of lumber from Greenwood Sawmill to Metro Hardware. The yard has the right kind of car ready and adds the engines. Couple the fewest cars that hold the whole load."
+      }
+    ],
+    "challengeType": "enough_cars",
+    "gradeBand": "K-2"
+  }
+}

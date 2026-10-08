@@ -3374,6 +3374,18 @@ export interface TransportChallengeMetrics extends BasePrimitiveMetrics {
   averageConstraintsMet: number;
 }
 
+export interface TrainYardMetrics extends BasePrimitiveMetrics {
+  type: 'train-yard';
+  challengeType: 'match_car' | 'enough_cars' | 'enough_pull' | 'build_train';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+}
+
 // -----------------------------------------------------------------------------
 // Core Primitives
 // -----------------------------------------------------------------------------
@@ -3846,6 +3858,7 @@ export type PrimitiveMetrics =
   | EngineExplorerMetrics
   | VehicleDesignStudioMetrics
   | TransportChallengeMetrics
+  | TrainYardMetrics
   // Assessment
   | MultipleChoiceMetrics
   | FillInBlanksMetrics

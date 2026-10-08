@@ -1,0 +1,2632 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ],
+   "no_key_before_try": [
+    0,
+    25
+   ],
+   "no_fix_before_try": [
+    0,
+    25
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ],
+   "no_key_before_try": [
+    0,
+    25
+   ],
+   "no_fix_before_try": [
+    0,
+    25
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    1,
+    25
+   ],
+   "no_key_before_try": [
+    0,
+    25
+   ],
+   "no_fix_before_try": [
+    0,
+    25
+   ],
+   "no_change_before_receipt": [
+    0,
+    25
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ],
+   "no_key_before_try": [
+    0,
+    25
+   ],
+   "no_fix_before_try": [
+    0,
+    25
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "train-yard.build_train",
+   "primitiveId": "train-yard",
+   "evalMode": "build_train",
+   "keys": [
+    "add a passenger coach"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ty-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "add a passenger coach"
+      ],
+      "ask": "Build a train to move 2,710 commuters from suburb station to city terminal. The route climbs Oak Ridge, a 0.5% grade. Use the fewest cars and engines that get the whole load there.",
+      "leakTokens": []
+     },
+     "samples": [
+      {
+       "text": "Welcome to the train yard! Take a look at the job ticket to see what kind of cargo we need to move today.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the train yard! Take a look at the job ticket to see who we're moving, and start coupling the cars you think fit best.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the train yard! We need to move 2,710 commuters into the city, so take a look at the yard and choose the best cars to get started.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the train yard! Take a look at the job ticket to see what you need to move, and start building your train.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the train yard! Take a look at the job ticket to see who we need to move, and start building your train whenever you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ty-1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"ty-1\",\"response\":\"Sent a train with 1 engine, 23 boxcars\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"wrong_car\"}. Respond to the learner using the current task and workspace.",
+     "miss": "wrong_car",
+     "scoredWith": {
+      "keys": [
+       "add a passenger coach"
+      ],
+      "ask": "Build a train to move 2,710 commuters from suburb station to city terminal. The route climbs Oak Ridge, a 0.5% grade. Use the fewest cars and engines that get the whole load there.",
+      "leakTokens": []
+     },
+     "samples": [
+      {
+       "text": "A picture of our commuters is now showing next to the job ticket. Take a look at how they travel, and try choosing cars designed to carry them.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "cargo_picture",
+          "actionId": "test/26/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look beside the job ticket\u2014there is now a picture showing the commuters waiting to ride. Choose the car built for this cargo and try another run!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "cargo_picture",
+          "actionId": "test/26/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Those cars left the commuters behind on the platform! Take a look at the picture next to the job ticket, and try choosing cars designed for that cargo.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/26/0",
+          "lever": "cargo_picture"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the picture that just popped up next to the job ticket showing our commuters. Try picking a car built to carry people like them!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/26/0",
+          "lever": "cargo_picture"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The boxcars rode empty because they couldn't carry our commuters. Take a look at the picture beside the job ticket, and try choosing a car built for people!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/26/0",
+          "lever": "cargo_picture"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ty-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "add a passenger coach"
+      ],
+      "ask": "Build a train to move 2,710 commuters from suburb station to city terminal. The route climbs Oak Ridge, a 0.5% grade. Use the fewest cars and engines that get the whole load there.",
+      "leakTokens": []
+     },
+     "samples": [
+      {
+       "text": "A new example is showing beside the yard that explains how a car's shape matches what it holds. Take a look at that, and see which car in our yard matches our riders.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_match",
+          "actionId": "test/26/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "There is a picture beside the ticket showing commuters waiting on a platform. See which car in the yard is built for people to ride in!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "cargo_picture",
+          "actionId": "test/26/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A guide just popped up showing how water needs a tank car specially shaped to hold liquid. Look closely at the cars in the yard to see which design fits people riding a train.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/26/0",
+          "lever": "model_match"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "There is now an example beside the yard showing how water needs a tank car so liquid won't spill out. Look at the features of the cars in your yard and see which design fits carrying commuters.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/26/0",
+          "lever": "model_match"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "There's an example on the side showing how water matches with a tanker car because liquids need sealed tanks. Look at how each car in your yard is built to see which one fits people.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_match",
+          "actionId": "test/26/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ty-1",
+     "trigger": "The learner said they were stuck, so the host pulled cargo_picture (help). It is on screen now: Shows a picture of the commuters beside the job ticket, as it looks. It shows no car. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "add a passenger coach"
+      ],
+      "ask": "Build a train to move 2,710 commuters from suburb station to city terminal. The route climbs Oak Ridge, a 0.5% grade. Use the fewest cars and engines that get the whole load there.",
+      "leakTokens": []
+     },
+     "samples": [
+      {
+       "text": "A picture of the commuters\u2014people waiting on a train platform\u2014is now showing right beside the job ticket. Take a look at them and see which train car is built to carry people.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A picture of the commuters\u2014people waiting on a platform\u2014is now showing right beside the job ticket. Take a look at them and see which car in the yard is built to carry people.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside the job ticket, you can now see a picture of the commuters waiting on the platform. Look at how they travel, and try choosing the cars built to carry people.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is now a picture right beside the job ticket showing the commuters waiting on the platform. Take a look at them, and try picking cars that are built for carrying people.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look beside the job ticket\u2014there is now a picture showing the commuters waiting on the platform! Take a look at them, and try picking cars that are built to carry people.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ty-1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"ty-1\",\"response\":\"Sent a train with 1 engine, 23 passenger coachs\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"cargo_picture\"]}. Respond to the learner using the current task and workspace.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "add a passenger coach"
+      ],
+      "ask": "Build a train to move 2,710 commuters from suburb station to city terminal. The route climbs Oak Ridge, a 0.5% grade. Use the fewest cars and engines that get the whole load there.",
+      "leakTokens": []
+     },
+     "samples": [
+      {
+       "text": "You did it! You chose 23 passenger coaches and 1 engine, carrying all 2,710 commuters up the hill.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You chose 1 engine and 23 passenger coaches to carry all 2,710 commuters up the hill.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You chose 1 engine and 23 passenger coaches to carry all 2,710 commuters up the hill.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You matched the commuters to 23 passenger coaches with 1 engine, and your train carried every single person up Oak Ridge!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it\u2014you picked 1 engine and 23 passenger coaches, carrying all 2,710 commuters over the ridge!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "train-yard.enough_cars",
+   "primitiveId": "train-yard",
+   "evalMode": "enough_cars",
+   "keys": [
+    "9"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ty-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "9"
+      ],
+      "ask": "Move 900 tons of grain from Sunny Valley Farm to City Bakery. The yard has the right kind of car ready and adds the engines. Couple the fewest cars that hold the whole load.",
+      "leakTokens": []
+     },
+     "samples": [
+      {
+       "text": "Welcome to the train yard! We need to move 900 tons of grain, so couple enough cars to hold the whole load and hit Highball when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the train yard! We need to move 900 tons of grain, so couple enough cars to carry the whole load and send the train on its way.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the train yard! We need to move 900 tons of grain, so couple enough cars to carry the whole load, then hit Highball to send it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the train yard! We need to move 900 tons of grain, so couple enough cars to hold the whole load and hit Highball when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the train yard! Take a look at the grain we need to move, and couple enough cars to hold the whole load.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ty-1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"ty-1\",\"response\":\"Sent a train with 1 engine, 10 hopper cars\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"extra_cars\"}. Respond to the learner using the current task and workspace.",
+     "miss": "extra_cars",
+     "scoredWith": {
+      "keys": [
+       "9"
+      ],
+      "ask": "Move 900 tons of grain from Sunny Valley Farm to City Bakery. The yard has the right kind of car ready and adds the engines. Couple the fewest cars that hold the whole load.",
+      "leakTokens": []
+     },
+     "samples": [
+      {
+       "text": "That train carried all the grain, but it had extra cars attached. Try taking off any cars you don't need so we only use the fewest cars possible.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The train climbed the hill, but we have some extra cars coupled. Try removing a couple of cars so we only use what we need to hold 900 tons!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That made it up the hill, but we had more cars than we needed for 900 tons! Try coupling fewer cars so there are no empty ones left over.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The train climbed the hill, but we have some extra cars we don't need. Try taking off any extra cars so we only use the fewest needed for 900 tons!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That train carried all the grain, but it had extra cars attached. Try taking off some cars so we only use the fewest needed to hold 900 tons.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ty-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "9"
+      ],
+      "ask": "Move 900 tons of grain from Sunny Valley Farm to City Bakery. The yard has the right kind of car ready and adds the engines. Couple the fewest cars that hold the whole load.",
+      "leakTokens": []
+     },
+     "samples": [
+      {
+       "text": "Under the train, each car now shows the total amount of grain held so far. Take a look at that tally and see if you can match 900 tons exactly.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "car_tally",
+          "actionId": "test/12/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look under the train\u2014now each car shows how many tons of grain the cars hold together as you add or remove them. Use those numbers to match our 900 tons with the fewest cars.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "car_tally",
+          "actionId": "test/12/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now each car shows the total weight they can hold together as you couple them. Take a look at the numbers under the cars and adjust your train to hold 900 tons.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "car_tally",
+          "actionId": "test/12/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I turned on the car tally so you can see how many tons your cars hold as you add or remove them. Take a look at the total under the train and adjust your cars to fit 900 tons.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/12/0",
+          "lever": "car_tally"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now you can see a tally under the train showing how much your cars hold in total. Take a look at that tally and adjust your cars so they hold exactly 900 tons.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/12/0",
+          "lever": "car_tally"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ty-1",
+     "trigger": "The learner said they were stuck, so the host pulled car_tally (help). It is on screen now: Under the train, each car the learner couples shows what the cars of its kind hold so far. Nothing past their own cars. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work ",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "9"
+      ],
+      "ask": "Move 900 tons of grain from Sunny Valley Farm to City Bakery. The yard has the right kind of car ready and adds the engines. Couple the fewest cars that hold the whole load.",
+      "leakTokens": []
+     },
+     "samples": [
+      {
+       "text": "Look right underneath your train\u2014each car now shows the total amount of grain held so far. See if you can use that count to couple the fewest cars for 900 tons, and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right beneath your train cars\u2014a running tally now shows how many tons they hold together. Use that number to adjust your cars until they carry 900 tons, then hit Highball!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look underneath the train: each car now shows the total amount of grain held so far. Check those numbers to see how many cars you need to reach 900 tons, and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under the train, each car now shows the total tons of cargo held so far, showing 1,000 tons for those 10 cars. Adjust the cars to reach 900 tons and try another run!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look right under the train: each car now shows the total amount of grain counted up so far, reaching 1,000 tons. Try adjusting the cars so that total matches our 900-ton load!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ty-1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"ty-1\",\"response\":\"Sent a train with 1 engine, 9 hopper cars\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"car_tally\"]}. Respond to the learner using the current task and workspace.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "9"
+      ],
+      "ask": "Move 900 tons of grain from Sunny Valley Farm to City Bakery. The yard has the right kind of car ready and adds the engines. Couple the fewest cars that hold the whole load.",
+      "leakTokens": []
+     },
+     "samples": [
+      {
+       "text": "You did it! Coupling exactly 9 cars carried the 900 tons of grain with none to spare, and the train made it right up the hill.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! Coupling exactly 9 cars carried all 900 tons with no extras left over.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! Coupling exactly 9 cars carried all 900 tons with no extras left over.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You coupled exactly 9 cars to carry the full 900 tons of grain without any extras.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! Coupling exactly 9 cars carried all 900 tons with no extras left over.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "train-yard.enough_pull",
+   "primitiveId": "train-yard",
+   "evalMode": "enough_pull",
+   "keys": [
+    "2"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ty-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2"
+      ],
+      "ask": "The yard has loaded 1,080 tons of grain into the cars for the trip from Sunny Valley Farm to Big River Port. The route climbs Golden Hill, a 1.8% grade. Add the fewest engines that pull the train up the hill.",
+      "leakTokens": []
+     },
+     "samples": [
+      {
+       "text": "Welcome to the train yard! We need to add just enough engines to get all that grain over Golden Hill. Take a look at the engines and cars, add what you think we need, and press Highball when you are ready to test your train.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the train yard! We need to add the fewest engines to pull this grain train up Golden Hill.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the train yard! Add the engines you think you need to climb Golden Hill, then hit Highball when you are ready to test your run.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the train yard! Look at the grain cars waiting to head up Golden Hill, and add the engines you think can pull them.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the train yard! Add the engines you think you need to climb Golden Hill, and hit Highball when you're ready to test your run.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ty-1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"ty-1\",\"response\":\"Sent a train with 3 engines, 11 hopper cars\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"extra_engines\"}. Respond to the learner using the current task and workspace.",
+     "miss": "extra_engines",
+     "scoredWith": {
+      "keys": [
+       "2"
+      ],
+      "ask": "The yard has loaded 1,080 tons of grain into the cars for the trip from Sunny Valley Farm to Big River Port. The route climbs Golden Hill, a 1.8% grade. Add the fewest engines that pull the train up the hill.",
+      "leakTokens": []
+     },
+     "samples": [
+      {
+       "text": "Your train made it up Golden Hill, but the 3 engines gave 90 tons of pull when the hill only needed 36 tons. See if you can use fewer engines and try again!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Your train climbed the hill, but those 3 engines gave 90 tons of pull when the hill only needed 36 tons. Try adjusting the engines so we use the fewest needed to make the climb!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The train made it up the hill, but those 3 engines gave 90 tons of pull when Golden Hill only needed 36 tons. See if you can pull the train with fewer engines.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Your train made it up the hill, but 3 engines gave 90 tons of pull when the hill only needed 36 tons. Try removing some engines so we use the fewest needed to make the climb.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Your train made it up Golden Hill, but with 90 tons of pull when the hill only needed 36, it has extra engines. Try adjusting the number of engines so you use the fewest needed.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ty-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2"
+      ],
+      "ask": "The yard has loaded 1,080 tons of grain into the cars for the trip from Sunny Valley Farm to Big River Port. The route climbs Golden Hill, a 1.8% grade. Add the fewest engines that pull the train up the hill.",
+      "leakTokens": []
+     },
+     "samples": [
+      {
+       "text": "I pulled up an example showing how another train figured out its pull and engines. Take a look at how that train matched its engines to the hill, then give yours another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0",
+          "lever": "worked_hill"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I've opened an example showing how to figure out the engines for a different train and hill. Take a look at how its pull was calculated, and see how that helps you decide how many engines to use here.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0",
+          "lever": "worked_hill"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A guide just popped up on your screen showing how another train figured out the engines it needed for its hill. Take a look at how that train did it, and then try adjusting your engines!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0",
+          "lever": "worked_hill"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I brought up an example on the screen showing how the rule of the rails works for a train climbing a hill. Take a look at how the pull matches the engines there, and then see how many engines your train needs!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "worked_hill",
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I pulled a helper lever that shows an example of how the rule of the rails works on a different hill. Take a look at how that train figured out its engines, and see how that compares to your train!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "worked_hill",
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": false,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {
+        "no_protocol_leak": "lever"
+       },
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ty-1",
+     "trigger": "The learner said they were stuck, so the host pulled train_weight (help). It is on screen now: Shows what the train weighs now, with the whole load aboard: its engines, cars and load. Never the pull the hill needs. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not wo",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2"
+      ],
+      "ask": "The yard has loaded 1,080 tons of grain into the cars for the trip from Sunny Valley Farm to Big River Port. The route climbs Golden Hill, a 1.8% grade. Add the fewest engines that pull the train up the hill.",
+      "leakTokens": []
+     },
+     "samples": [
+      {
+       "text": "The yard scale is now showing on your screen with the total weight of the train and its cargo. Take a look at that weight to see how much pull you might need, and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The yard scale now shows what the train weighs with all its cargo aboard. Take a look at the scale and try adjusting the engines to find the fewest that can climb the hill!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The yard scale now shows what the train weighs with all its cargo aboard. Take a look at the scale, adjust your engines, and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The yard scale is now showing on your screen with the train's total weight with the whole load aboard. Take a look at that scale to see the weight, adjust your engines, and press Highball when you want to try again!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The yard scale is now showing on your screen with the train's total weight, including all the cargo and engines. Take a look at that total weight on the scale and try adjusting your engines!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ty-1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"ty-1\",\"response\":\"Sent a train with 2 engines, 11 hopper cars\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"train_weight\"]}. Respond to the learner using the current task and workspace.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2"
+      ],
+      "ask": "The yard has loaded 1,080 tons of grain into the cars for the trip from Sunny Valley Farm to Big River Port. The route climbs Golden Hill, a 1.8% grade. Add the fewest engines that pull the train up the hill.",
+      "leakTokens": []
+     },
+     "samples": [
+      {
+       "text": "You got it! You chose 2 engines, giving 60 tons of pull to get the whole train over Golden Hill with no extra engines left over. Great job!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You picked 2 engines, which gave just enough pull to power the grain cars right over Golden Hill without any extra engines. Great job!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it\u2014you picked 2 engines, giving just enough pull to climb Golden Hill!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You picked 2 engines, which gave just enough pull to get all 1,080 tons of grain over Golden Hill with no extra engines.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You chose 2 engines, giving 60 tons of pull to get the whole train smoothly over Golden Hill.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "train-yard.match_car",
+   "primitiveId": "train-yard",
+   "evalMode": "match_car",
+   "keys": [
+    "choose a hopper car"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ty-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "choose a hopper car"
+      ],
+      "ask": "Move 400 tons of grain from Sunny Valley Farm to City Flour Mill. Choose the kind of car that can carry grain. The yard couples the cars and the engines.",
+      "leakTokens": []
+     },
+     "samples": [
+      {
+       "text": "Welcome to the train yard! Take a look at the job ticket to see what cargo we need to move, then pick the right car to carry it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the train yard! Take a look at the job ticket to see what cargo we need to move, then choose the car built to carry it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the train yard! Take a look at the job ticket, pick the car that can carry the grain, and press Highball when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the train yard! Take a look at the job ticket, pick the car that can carry grain, and hit Highball to test your train.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the train yard! Take a look at your cargo, pick the car built to carry it, and hit Highball to test your train.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ty-1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"ty-1\",\"response\":\"Sent a train with 1 engine, 4 boxcars\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"wrong_car\"}. Respond to the learner using the current task and workspace.",
+     "miss": "wrong_car",
+     "scoredWith": {
+      "keys": [
+       "choose a hopper car"
+      ],
+      "ask": "Move 400 tons of grain from Sunny Valley Farm to City Flour Mill. Choose the kind of car that can carry grain. The yard couples the cars and the engines.",
+      "leakTokens": []
+     },
+     "samples": [
+      {
+       "text": "Those cars couldn't load the grain, so they rode empty. Let's look closely at how the cars are built and try another one!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Those boxcars couldn't carry the grain, so they rode empty and left the cargo behind. Let's look closely at how the cars are built and try another one!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A picture of grain appeared next to your ticket showing a heap of tiny, loose grains. Think about how to load and pour out tiny loose pieces, and try another car!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "cargo_picture"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look beside the job ticket\u2014there is a picture showing how grain is loose and heaped in tiny pieces. Take another look at how the cars are built and try again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "cargo_picture"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Those cars rode empty because they couldn't load the grain. Look beside the job ticket\u2014there's now a picture showing the grain in a loose heap, so give another car a try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "cargo_picture"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ty-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "choose a hopper car"
+      ],
+      "ask": "Move 400 tons of grain from Sunny Valley Farm to City Flour Mill. Choose the kind of car that can carry grain. The yard couples the cars and the engines.",
+      "leakTokens": []
+     },
+     "samples": [
+      {
+       "text": "A picture popped up showing grain heaped in a pile. Which car looks like it's built to pour and hold small grains like that?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "cargo_picture"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I popped up a picture of the grain next to your job ticket so you can see what it looks like. Take a look at those tiny loose grains and see which car would hold them best!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "cargo_picture"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I brought up a picture next to the job ticket so you can see what grain looks like in a pile. Which car looks built to pour and carry tiny loose grains like that?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "cargo_picture",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I added a picture of grain next to the ticket so you can see how it pours and heaps. Which car is built to carry loose stuff like that?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "cargo_picture",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I put a picture of the grain next to the job ticket so you can see what it looks like. Which car looks built to pour and hold small grains like that?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "cargo_picture",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ty-1",
+     "trigger": "The learner said they were stuck, so the host pulled cargo_picture (help). It is on screen now: Shows a picture of the grain beside the job ticket, as it looks. It shows no car. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "choose a hopper car"
+      ],
+      "ask": "Move 400 tons of grain from Sunny Valley Farm to City Flour Mill. Choose the kind of car that can carry grain. The yard couples the cars and the engines.",
+      "leakTokens": []
+     },
+     "samples": [
+      {
+       "text": "Look beside the job ticket\u2014there's now a picture showing tiny grains heaped in a pile. Take another look at how the train cars are built to see which one could hold that grain.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look beside the job ticket\u2014there is now a picture showing the grain in a big pile of loose, tiny bits. See if one of the cars looks built to hold loose grains like that, and give it a try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right beside the job ticket\u2014there is a new picture showing the tiny grains heaped in a pile. Give one of the other cars a try to see which can carry it!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is now a picture next to your job ticket showing grain as a pile of tiny loose pieces. Take a look at that picture and try picking the car that would work best!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is now a picture next to the job ticket showing the tiny grains piled up. Take a look at that, and see which car would hold that kind of cargo best!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ty-1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"ty-1\",\"response\":\"Sent a train with 1 engine, 4 hopper cars\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"cargo_picture\"]}. Respond to the learner using the current task and workspace.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "choose a hopper car"
+      ],
+      "ask": "Move 400 tons of grain from Sunny Valley Farm to City Flour Mill. Choose the kind of car that can carry grain. The yard couples the cars and the engines.",
+      "leakTokens": []
+     },
+     "samples": [
+      {
+       "text": "You picked the hopper cars, and they loaded all 400 tons of grain and climbed right over the hill!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You chose the hopper cars, and they loaded all 400 tons of grain and carried it right over the hill!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You chose hopper cars, and they loaded all 400 tons of grain and climbed right up the hill!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You chose the hopper cars, and they loaded all 400 tons of grain and carried it right over the hill!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You chose the hopper cars, and they loaded all 400 tons of grain and carried it right over the hill!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "train-yard.mixed",
+   "primitiveId": "train-yard",
+   "evalMode": "mixed",
+   "keys": [
+    "choose a hopper car"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ty-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "choose a hopper car"
+      ],
+      "ask": "Move 1,380 tons of grain from Sunny Valley Farm to City Flour Mill. Choose the kind of car that can carry grain. The yard couples the cars and the engines.",
+      "leakTokens": []
+     },
+     "samples": [
+      {
+       "text": "Welcome to the train yard! Take a look at the grain we need to move, and pick the car you think is built to carry it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the train yard! Take a look at the grain we need to move and pick the car built to carry it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the train yard! Take a look at the job ticket and pick the kind of car that can carry grain.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the train yard! Take a look at the grain we need to move, and pick the car you think is built to carry it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the train yard! Take a look at the cargo we need to move, and choose the car built to carry it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ty-1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"ty-1\",\"response\":\"Sent a train with 1 engine, 14 boxcars\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"wrong_car\"}. Respond to the learner using the current task and workspace.",
+     "miss": "wrong_car",
+     "scoredWith": {
+      "keys": [
+       "choose a hopper car"
+      ],
+      "ask": "Move 1,380 tons of grain from Sunny Valley Farm to City Flour Mill. Choose the kind of car that can carry grain. The yard couples the cars and the engines.",
+      "leakTokens": []
+     },
+     "samples": [
+      {
+       "text": "The cars rode empty because they couldn't load the grain. Look beside the job ticket to see a picture of the loose grain, then choose a car built to hold it and try again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "cargo_picture",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Those boxcars stayed empty and left all the grain behind. Let's try another kind of car to carry the grain!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Those cars stayed empty and couldn't carry the grain. I added a picture beside the ticket so you can see what grain looks like\u2014try picking another car!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "cargo_picture"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Those cars rode empty and left the grain behind. Try another car from the yard to see which one can carry loose grain.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Those cars couldn't load the grain and rode empty. Look at the new picture beside the job ticket to see what grain looks like, and try another car!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "cargo_picture",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ty-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "choose a hopper car"
+      ],
+      "ask": "Move 1,380 tons of grain from Sunny Valley Farm to City Flour Mill. Choose the kind of car that can carry grain. The yard couples the cars and the engines.",
+      "leakTokens": []
+     },
+     "samples": [
+      {
+       "text": "I pulled up a picture of the grain next to your job ticket so you can see how it heaps up in a loose pile. Which train car do you think is built to pour and carry loose cargo like that?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "cargo_picture"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A picture of the grain just appeared beside your job ticket, showing a big pile of tiny loose grains. Which car looks like it's designed to pour and hold small, loose grains like that?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "cargo_picture",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "There is now a picture next to the job ticket showing tiny grains piled up together. Look at how each train car is shaped to see which one could carry loose grain like that!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "cargo_picture"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A picture of grain just popped up next to your job ticket, showing it as a big pile of tiny loose pieces. Which train car do you think is built to pour and carry tiny loose grains like that?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "cargo_picture"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An example just appeared beside the yard showing how water needs a special sealed tank car to hold it. Look at how each car in the yard is shaped to see which one could hold loose grain!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_match",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ty-1",
+     "trigger": "The learner said they were stuck, so the host pulled cargo_picture (help). It is on screen now: Shows a picture of the grain beside the job ticket, as it looks. It shows no car. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "choose a hopper car"
+      ],
+      "ask": "Move 1,380 tons of grain from Sunny Valley Farm to City Flour Mill. Choose the kind of car that can carry grain. The yard couples the cars and the engines.",
+      "leakTokens": []
+     },
+     "samples": [
+      {
+       "text": "There is now a picture next to your job ticket showing tiny grains heaped in a pile. Take a look at how the grain pours, and try picking the car built to carry it!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A picture of the grain has appeared next to the job ticket, showing tiny grains heaped in a pile. Take a look at how it pours and pick the car you think can hold it!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new picture just appeared right beside your job ticket showing tiny grains heaped in a pile. Take a close look at it, and choose the car you think can carry it!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look beside your job ticket\u2014there is now a picture showing the grain as a heap of loose, tiny grains. See which car is shaped to load and carry loose grain like that, and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new picture showed up right beside your job ticket showing how grain looks in a tiny, loose pile. Take a look at that, and see which car you think is built to hold it!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ty-1",
+     "trigger": "The learner submitted their selection. Current workspace response: {\"itemId\":\"ty-1\",\"response\":\"Sent a train with 1 engine, 14 hopper cars\",\"source\":\"gesture\",\"correct\":true,\"assisted\":true,\"answerExposure\":\"none\",\"levers\":[\"cargo_picture\"]}. Respond to the learner using the current task and workspace.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "choose a hopper car"
+      ],
+      "ask": "Move 1,380 tons of grain from Sunny Valley Farm to City Flour Mill. Choose the kind of car that can carry grain. The yard couples the cars and the engines.",
+      "leakTokens": []
+     },
+     "samples": [
+      {
+       "text": "You chose the hopper cars, and they loaded all 1,380 tons of grain and carried it right up the hill!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You chose the hopper cars, and they loaded all 1,380 tons of grain and carried it right over the hill!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You chose the hopper cars, and they loaded all 1,380 tons of grain and carried it straight up Golden Hill.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You chose the hopper cars, and they loaded all 1,380 tons of grain and carried it right up Golden Hill!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it\u2014you picked the hopper cars, and they loaded all 1,380 tons of grain and carried it right over the hill!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

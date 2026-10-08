@@ -878,6 +878,12 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "multi_constraint":   PriorConfig(0.0, "Multiple constraints with trade-offs"),
         "full_optimization":  PriorConfig(1.5, "All constraints, no perfect answer"),
     },
+    "train-yard": {
+        "match_car":   PriorConfig(-1.5, "Match the car to the cargo; counts and engines given"),
+        "enough_cars": PriorConfig(-0.5, "Car given; couple the fewest cars that hold the load"),
+        "enough_pull": PriorConfig(0.3, "Cars given; add the fewest engines that climb the hill"),
+        "build_train": PriorConfig(0.8, "Build the Train"),
+    },
     "propulsion-lab": {
         "predict":    PriorConfig(-1.0, "Predict propulsion outcomes before testing"),
         "observe":    PriorConfig(0.0, "Watch particles and explain Newton's Third Law"),

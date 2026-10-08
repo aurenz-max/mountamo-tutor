@@ -1,0 +1,470 @@
+{
+ "lessonEntry": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+ "records": [
+  {
+   "payload": "train-yard.build_train",
+   "primitiveId": "train-yard",
+   "evalMode": "build_train",
+   "guidance": "The train run is the check: the learner presses Highball and the train loads, climbs the hill, and arrives or stalls. A build is right only when every car is the kind that can carry the cargo, the cars hold the whole load with no spare car, and the engines climb the hill with no spare engine. Matching the car to the cargo is part of the task: the yard shows how each car is built, never what it carries, so never name the car for this cargo. Before a run the screen hides the train weight and the pull the hill needs; both appear after a run. The tutor may explain the rule of the rails (every 100 tons of train needs 1 ton of pull for each 1% of hill, plus a little to roll on flat track) and help the learner use a run's numbers, but never says how many cars or engines this job needs. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. When an answer is right, credit the learner and name what they got right, in your own words: that they did it, and the number, word, shape or sound they gave. Praise that names nothing, or the answer alone, credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. The host records feedback and handles retry and advance; call no recording or progression tool.",
+   "topic": "Passenger trains and freight trains: how they move people and goods",
+   "gradeLevel": "Grade 3",
+   "leakTokens": [],
+   "ask": "Build a train to move 2,710 commuters from suburb station to city terminal. The route climbs Oak Ridge, a 0.5% grade. Use the fewest cars and engines that get the whole load there.",
+   "keys": [
+    "add a passenger coach"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "build_train",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "working",
+       "task": "Build a train to move 2,710 commuters from suburb station to city terminal. The route climbs Oak Ridge, a 0.5% grade. Use the fewest cars and engines that get the whole load there.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "job": "2,710 commuters from suburb station to city terminal",
+        "hill": "Oak Ridge, 0.5% grade",
+        "trainNow": "0 engines and no cars",
+        "runsSoFar": 0,
+        "constraints": "The learner adds and removes engines and cars with the yard buttons, then presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and shows the train weight and the pull the hill needed only after the run. The yard shows what each car holds and how it is built, and what each engine pulls and weighs.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 26,
+      "visibleRevision": null,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "build_train",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "checked",
+       "task": "Build a train to move 2,710 commuters from suburb station to city terminal. The route climbs Oak Ridge, a 0.5% grade. Use the fewest cars and engines that get the whole load there.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Sent a train with 1 engine, 23 boxcars",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "job": "2,710 commuters from suburb station to city terminal",
+        "hill": "Oak Ridge, 0.5% grade",
+        "trainNow": "1 engine, 23 boxcars",
+        "runsSoFar": 1,
+        "lastRunShowed": "Loaded 0 commuters, left 2,710 commuters behind; 23 cars could not carry the commuters and rode empty; train weighed 790 tons; Oak Ridge needed 6 tons of pull and the engines gave 20; the train climbed the hill",
+        "constraints": "The learner adds and removes engines and cars with the yard buttons, then presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and shows the train weight and the pull the hill needed only after the run. The yard shows what each car holds and how it is built, and what each engine pulls and weighs.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "lastResponse": {
+         "itemId": "ty-1",
+         "response": "Sent a train with 1 engine, 23 boxcars",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "wrong_car"
+        },
+        "attempts": [
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 1 engine, 23 boxcars",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "wrong_car"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/26/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner submitted their selection. Current workspace response: {\"itemId\":\"ty-1\",\"response\":\"Sent a train with 1 engine, 23 boxcars\",\"source\":\"gesture\",\"correct\":false,\"assisted\":false,\"answerExposure\":\"none\",\"miss\":\"wrong_car\"}. Respond to the learner using the current task and workspace."
+     ],
+     "spoken": false,
+     "miss": "wrong_car"
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 27,
+      "visibleRevision": 27,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "build_train",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "working",
+       "task": "Build a train to move 2,710 commuters from suburb station to city terminal. The route climbs Oak Ridge, a 0.5% grade. Use the fewest cars and engines that get the whole load there.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Sent a train with 1 engine, 23 boxcars",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "job": "2,710 commuters from suburb station to city terminal",
+        "hill": "Oak Ridge, 0.5% grade",
+        "trainNow": "0 engines and no cars",
+        "runsSoFar": 1,
+        "lastRunShowed": "Loaded 0 commuters, left 2,710 commuters behind; 23 cars could not carry the commuters and rode empty; train weighed 790 tons; Oak Ridge needed 6 tons of pull and the engines gave 20; the train climbed the hill",
+        "constraints": "The learner adds and removes engines and cars with the yard buttons, then presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and shows the train weight and the pull the hill needed only after the run. The yard shows what each car holds and how it is built, and what each engine pulls and weighs.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "lastResponse": {
+         "itemId": "ty-1",
+         "response": "Sent a train with 1 engine, 23 boxcars",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "wrong_car"
+        },
+        "attempts": [
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 1 engine, 23 boxcars",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "wrong_car"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/27/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "credit",
+     "itemId": "ty-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 52,
+      "visibleRevision": null,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "train-yard",
+      "objectiveId": "train-yard-practice",
+      "evalMode": "build_train",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "ty-1",
+       "phase": "checked",
+       "task": "Build a train to move 2,710 commuters from suburb station to city terminal. The route climbs Oak Ridge, a 0.5% grade. Use the fewest cars and engines that get the whole load there.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 2,
+        "correctness": "correct",
+        "recentResponses": [
+         {
+          "response": "Sent a train with 1 engine, 23 passenger coachs",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "job": "2,710 commuters from suburb station to city terminal",
+        "hill": "Oak Ridge, 0.5% grade",
+        "trainNow": "1 engine, 23 passenger coachs",
+        "runsSoFar": 2,
+        "lastRunShowed": "Loaded 2,710 commuters; train weighed 1,582 tons; Oak Ridge needed 11 tons of pull and the engines gave 20; the train climbed the hill",
+        "constraints": "The learner adds and removes engines and cars with the yard buttons, then presses Highball to send the train. The run is the check: it loads the cargo, climbs the hill, and shows the train weight and the pull the hill needed only after the run. The yard shows what each car holds and how it is built, and what each engine pulls and weighs.",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "lastResponse": {
+         "itemId": "ty-1",
+         "response": "Sent a train with 1 engine, 23 passenger coachs",
+         "source": "gesture",
+         "correct": true,
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 1 engine, 23 boxcars",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "wrong_car"
+         },
+         {
+          "itemId": "ty-1",
+          "response": "Sent a train with 1 engine, 23 passenger coachs",
+          "source": "gesture",
+          "correct": true,
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/52/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "ty-1",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 2,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner submitted their selection. Current workspace response: {\"itemId\":\"ty-1\",\"response\":\"Sent a train with 1 engine, 23 passenger coachs\",\"source\":\"gesture\",\"correct\":true,\"assisted\":false,\"answerExposure\":\"none\"}. Respond to the learner using the current task and workspace."
+     ],
+     "spoken": false
+    }
+   ]
+  }
+ ]
+}
