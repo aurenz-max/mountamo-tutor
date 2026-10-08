@@ -1,0 +1,121 @@
+{
+  "generatedAt": "2026-10-08T09:34:49.530Z",
+  "case": {
+    "targetEvalMode": "count_parts",
+    "grade": "K",
+    "topic": "Animal words",
+    "intent": "Clap and count the parts in animal words"
+  },
+  "data": {
+    "title": "Clap and Count: Animal Words",
+    "challenges": [
+      {
+        "id": "c1",
+        "word": "cat",
+        "challengeType": "count_parts",
+        "syllableCount": 1,
+        "syllables": [
+          "cat"
+        ],
+        "imageDescription": "a small furry cat",
+        "difficulty": 3
+      },
+      {
+        "id": "c2",
+        "word": "dog",
+        "challengeType": "count_parts",
+        "syllableCount": 1,
+        "syllables": [
+          "dog"
+        ],
+        "imageDescription": "a happy brown dog",
+        "difficulty": 3
+      },
+      {
+        "id": "c3",
+        "word": "rabbit",
+        "challengeType": "count_parts",
+        "syllableCount": 2,
+        "syllables": [
+          "rab",
+          "bit"
+        ],
+        "imageDescription": "a white fluffy rabbit",
+        "difficulty": 3
+      },
+      {
+        "id": "c4",
+        "word": "turtle",
+        "challengeType": "count_parts",
+        "syllableCount": 2,
+        "syllables": [
+          "tur",
+          "tle"
+        ],
+        "imageDescription": "a green swimming turtle",
+        "difficulty": 4
+      },
+      {
+        "id": "c5",
+        "word": "monkey",
+        "challengeType": "count_parts",
+        "syllableCount": 2,
+        "syllables": [
+          "mon",
+          "key"
+        ],
+        "imageDescription": "a brown jumping monkey",
+        "difficulty": 3
+      },
+      {
+        "id": "c6",
+        "word": "penguin",
+        "challengeType": "count_parts",
+        "syllableCount": 2,
+        "syllables": [
+          "pen",
+          "guin"
+        ],
+        "imageDescription": "a black and white penguin",
+        "difficulty": 4
+      },
+      {
+        "id": "c7",
+        "word": "elephant",
+        "challengeType": "count_parts",
+        "syllableCount": 3,
+        "syllables": [
+          "el",
+          "e",
+          "phant"
+        ],
+        "imageDescription": "a big gray elephant",
+        "difficulty": 5
+      },
+      {
+        "id": "c8",
+        "word": "ladybug",
+        "challengeType": "count_parts",
+        "syllableCount": 3,
+        "syllables": [
+          "la",
+          "dy",
+          "bug"
+        ],
+        "imageDescription": "a red spotted ladybug",
+        "difficulty": 4
+      }
+    ]
+  },
+  "oracle": {
+    "violations": [],
+    "uncheckedTypes": [
+      "count_parts"
+    ],
+    "checkedChallenges": 0
+  },
+  "issues": [],
+  "logs": [
+    "[SyllableClapper] modes: count_parts (explicit) → types [count_parts]"
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "generatedAt": "2026-10-08T09:34:47.592Z",
+  "case": {
+    "grade": "K",
+    "topic": "Syllables",
+    "intent": "The child builds a word that has a given number of syllables from syllable cards"
+  },
+  "data": {
+    "title": "Make Words From Parts",
+    "gradeLevel": "K",
+    "challenges": [],
+    "task": "letter_build",
+    "buildItems": [
+      {
+        "id": "s1",
+        "kind": "syllables",
+        "parts": 2,
+        "ask": "Make a word with two parts.",
+        "bank": [
+          "di",
+          "cake",
+          "pop",
+          "mon",
+          "saur",
+          "key",
+          "cup",
+          "no",
+          "corn"
+        ],
+        "examples": [
+          "popcorn",
+          "cupcake",
+          "monkey"
+        ],
+        "ways": 1
+      },
+      {
+        "id": "s2",
+        "kind": "syllables",
+        "parts": 3,
+        "ask": "Make a word with three parts.",
+        "bank": [
+          "fa",
+          "phant",
+          "to",
+          "pan",
+          "lo",
+          "po",
+          "el",
+          "buf",
+          "e",
+          "ta",
+          "da"
+        ],
+        "examples": [
+          "elephant",
+          "buffalo",
+          "potato"
+        ],
+        "ways": 1
+      },
+      {
+        "id": "s3",
+        "kind": "syllables",
+        "parts": 2,
+        "ask": "Make a word with two parts.",
+        "bank": [
+          "net",
+          "pu",
+          "man",
+          "ter",
+          "mag",
+          "com",
+          "tus",
+          "snow",
+          "cac"
+        ],
+        "examples": [
+          "magnet",
+          "cactus",
+          "snowman"
+        ],
+        "ways": 1
+      },
+      {
+        "id": "s4",
+        "kind": "syllables",
+        "parts": 3,
+        "ask": "Make a word with three parts.",
+        "bank": [
+          "kan",
+          "ril",
+          "lol",
+          "rock",
+          "pop",
+          "la",
+          "ga",
+          "go",
+          "li",
+          "et",
+          "roo"
+        ],
+        "examples": [
+          "gorilla",
+          "kangaroo",
+          "lollipop"
+        ],
+        "ways": 1
+      }
+    ]
+  },
+  "oracle": {
+    "violations": [],
+    "uncheckedTypes": [],
+    "checkedChallenges": 4
+  },
+  "issues": [],
+  "logs": [
+    "[resolveEvalModes] syllable-clapper: intent → [build_parts]",
+    "[SyllableClapper] build_parts: syllable build [\n  '2: di cake pop mon saur key cup no corn',\n  '3: fa phant to pan lo po el buf e ta da',\n  '2: net pu man ter mag com tus snow cac',\n  '3: kan ril lol rock pop la ga go li et roo'\n]"
+  ]
+}

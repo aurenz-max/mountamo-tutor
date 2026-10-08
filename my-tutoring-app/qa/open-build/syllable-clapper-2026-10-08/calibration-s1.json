@@ -1,0 +1,842 @@
+[
+  {
+    "made": "butterfly",
+    "cards": [
+      "but",
+      "ter",
+      "fly"
+    ],
+    "expect": "pass",
+    "request": {
+      "ask": "Make a word with three parts.",
+      "made": "butterfly",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 1,
+      "judge": "jev"
+    }
+  },
+  {
+    "made": "banana",
+    "cards": [
+      "ba",
+      "na",
+      "na"
+    ],
+    "expect": "pass",
+    "request": {
+      "ask": "Make a word with three parts.",
+      "made": "banana",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 1,
+      "judge": "jev"
+    }
+  },
+  {
+    "made": "popcorn",
+    "cards": [
+      "pop",
+      "corn"
+    ],
+    "expect": "pass",
+    "request": {
+      "ask": "Make a word with two parts.",
+      "made": "popcorn",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 1,
+      "judge": "jev"
+    }
+  },
+  {
+    "made": "kangaroo",
+    "cards": [
+      "kan",
+      "ga",
+      "roo"
+    ],
+    "expect": "pass",
+    "request": {
+      "ask": "Make a word with three parts.",
+      "made": "kangaroo",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": true,
+      "realWord": 0.97,
+      "fits": 1,
+      "judge": "jev"
+    }
+  },
+  {
+    "made": "butter",
+    "cards": [
+      "but",
+      "ter"
+    ],
+    "expect": "pass",
+    "request": {
+      "ask": "Make a word with two parts.",
+      "made": "butter",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 1,
+      "judge": "jev"
+    }
+  },
+  {
+    "made": "rabbit",
+    "cards": [
+      "rab",
+      "bit"
+    ],
+    "expect": "pass",
+    "request": {
+      "ask": "Make a word with two parts.",
+      "made": "rabbit",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": true,
+      "realWord": 0.96,
+      "fits": 1,
+      "judge": "jev"
+    }
+  },
+  {
+    "made": "pencil",
+    "cards": [
+      "pen",
+      "cil"
+    ],
+    "expect": "pass",
+    "request": {
+      "ask": "Make a word with two parts.",
+      "made": "pencil",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": true,
+      "realWord": 0.96,
+      "fits": 1,
+      "judge": "jev"
+    }
+  },
+  {
+    "made": "napkin",
+    "cards": [
+      "nap",
+      "kin"
+    ],
+    "expect": "pass",
+    "request": {
+      "ask": "Make a word with two parts.",
+      "made": "napkin",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": true,
+      "realWord": 0.97,
+      "fits": 1,
+      "judge": "jev"
+    }
+  },
+  {
+    "made": "watermelon",
+    "cards": [
+      "wa",
+      "ter",
+      "mel",
+      "on"
+    ],
+    "expect": "pass",
+    "request": {
+      "ask": "Make a word with four parts.",
+      "made": "watermelon",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 1,
+      "judge": "jev"
+    }
+  },
+  {
+    "made": "helicopter",
+    "cards": [
+      "hel",
+      "i",
+      "cop",
+      "ter"
+    ],
+    "expect": "pass",
+    "request": {
+      "ask": "Make a word with four parts.",
+      "made": "helicopter",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": true,
+      "realWord": 0.95,
+      "fits": 1,
+      "judge": "jev"
+    }
+  },
+  {
+    "made": "kitten",
+    "cards": [
+      "kit",
+      "ten"
+    ],
+    "expect": "pass",
+    "request": {
+      "ask": "Make a word with two parts.",
+      "made": "kitten",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": true,
+      "realWord": 0.96,
+      "fits": 1,
+      "judge": "jev"
+    }
+  },
+  {
+    "made": "robot",
+    "cards": [
+      "ro",
+      "bot"
+    ],
+    "expect": "pass",
+    "request": {
+      "ask": "Make a word with two parts.",
+      "made": "robot",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": true,
+      "realWord": 0.95,
+      "fits": 1,
+      "judge": "jev"
+    }
+  },
+  {
+    "made": "tomato",
+    "cards": [
+      "to",
+      "ma",
+      "to"
+    ],
+    "expect": "pass",
+    "request": {
+      "ask": "Make a word with three parts.",
+      "made": "tomato",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": true,
+      "realWord": 0.96,
+      "fits": 1,
+      "judge": "jev"
+    }
+  },
+  {
+    "made": "dinosaur",
+    "cards": [
+      "di",
+      "no",
+      "saur"
+    ],
+    "expect": "pass",
+    "request": {
+      "ask": "Make a word with three parts.",
+      "made": "dinosaur",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": true,
+      "realWord": 0.97,
+      "fits": 1,
+      "judge": "jev"
+    }
+  },
+  {
+    "made": "lollipop",
+    "cards": [
+      "lol",
+      "li",
+      "pop"
+    ],
+    "expect": "pass",
+    "request": {
+      "ask": "Make a word with three parts.",
+      "made": "lollipop",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": true,
+      "realWord": 0.96,
+      "fits": 1,
+      "judge": "jev"
+    }
+  },
+  {
+    "made": "basket",
+    "cards": [
+      "bas",
+      "ket"
+    ],
+    "expect": "pass",
+    "request": {
+      "ask": "Make a word with two parts.",
+      "made": "basket",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": true,
+      "realWord": 0.96,
+      "fits": 1,
+      "judge": "jev"
+    }
+  },
+  {
+    "made": "sunset",
+    "cards": [
+      "sun",
+      "set"
+    ],
+    "expect": "pass",
+    "request": {
+      "ask": "Make a word with two parts.",
+      "made": "sunset",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 1,
+      "judge": "jev"
+    }
+  },
+  {
+    "made": "pajamas",
+    "cards": [
+      "pa",
+      "ja",
+      "mas"
+    ],
+    "expect": "pass",
+    "request": {
+      "ask": "Make a word with three parts.",
+      "made": "pajamas",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": true,
+      "realWord": 0.93,
+      "fits": 1,
+      "judge": "jev"
+    }
+  },
+  {
+    "made": "cater",
+    "cards": [
+      "cat",
+      "er"
+    ],
+    "expect": "pass",
+    "request": {
+      "ask": "Make a word with two parts.",
+      "made": "cater",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": true,
+      "realWord": 0.95,
+      "fits": 1,
+      "judge": "jev"
+    }
+  },
+  {
+    "made": "baby",
+    "cards": [
+      "ba",
+      "by"
+    ],
+    "expect": "pass",
+    "request": {
+      "ask": "Make a word with two parts.",
+      "made": "baby",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 1,
+      "judge": "jev"
+    }
+  },
+  {
+    "made": "bafly",
+    "cards": [
+      "ba",
+      "fly"
+    ],
+    "expect": "not_a_word",
+    "request": {
+      "ask": "Make a word with two parts.",
+      "made": "bafly",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.03,
+      "fits": 1,
+      "judge": "jev+flash"
+    }
+  },
+  {
+    "made": "butnana",
+    "cards": [
+      "but",
+      "na",
+      "na"
+    ],
+    "expect": "not_a_word",
+    "request": {
+      "ask": "Make a word with three parts.",
+      "made": "butnana",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.02,
+      "fits": 1,
+      "judge": "jev+flash"
+    }
+  },
+  {
+    "made": "popkin",
+    "cards": [
+      "pop",
+      "kin"
+    ],
+    "expect": "not_a_word",
+    "request": {
+      "ask": "Make a word with two parts.",
+      "made": "popkin",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.21,
+      "fits": 1,
+      "judge": "jev+flash"
+    }
+  },
+  {
+    "made": "rabcil",
+    "cards": [
+      "rab",
+      "cil"
+    ],
+    "expect": "not_a_word",
+    "request": {
+      "ask": "Make a word with two parts.",
+      "made": "rabcil",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.03,
+      "fits": 1,
+      "judge": "jev+flash"
+    }
+  },
+  {
+    "made": "kanterfly",
+    "cards": [
+      "kan",
+      "ter",
+      "fly"
+    ],
+    "expect": "not_a_word",
+    "request": {
+      "ask": "Make a word with three parts.",
+      "made": "kanterfly",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.02,
+      "fits": 1,
+      "judge": "jev+flash"
+    }
+  },
+  {
+    "made": "tobot",
+    "cards": [
+      "to",
+      "bot"
+    ],
+    "expect": "not_a_word",
+    "request": {
+      "ask": "Make a word with two parts.",
+      "made": "tobot",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.07,
+      "fits": 1,
+      "judge": "jev+flash"
+    }
+  },
+  {
+    "made": "monna",
+    "cards": [
+      "mon",
+      "na"
+    ],
+    "expect": "not_a_word",
+    "request": {
+      "ask": "Make a word with two parts.",
+      "made": "monna",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.09,
+      "fits": 1,
+      "judge": "jev+flash"
+    }
+  },
+  {
+    "made": "dinoroo",
+    "cards": [
+      "di",
+      "no",
+      "roo"
+    ],
+    "expect": "not_a_word",
+    "request": {
+      "ask": "Make a word with three parts.",
+      "made": "dinoroo",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.03,
+      "fits": 1,
+      "judge": "jev+flash"
+    }
+  },
+  {
+    "made": "lolkey",
+    "cards": [
+      "lol",
+      "key"
+    ],
+    "expect": "not_a_word",
+    "request": {
+      "ask": "Make a word with two parts.",
+      "made": "lolkey",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.02,
+      "fits": 1,
+      "judge": "jev+flash"
+    }
+  },
+  {
+    "made": "napcorn",
+    "cards": [
+      "nap",
+      "corn"
+    ],
+    "expect": "not_a_word",
+    "request": {
+      "ask": "Make a word with two parts.",
+      "made": "napcorn",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.02,
+      "fits": 1,
+      "judge": "jev+flash"
+    }
+  },
+  {
+    "made": "penmato",
+    "cards": [
+      "pen",
+      "ma",
+      "to"
+    ],
+    "expect": "not_a_word",
+    "request": {
+      "ask": "Make a word with three parts.",
+      "made": "penmato",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.03,
+      "fits": 1,
+      "judge": "jev+flash"
+    }
+  },
+  {
+    "made": "robkin",
+    "cards": [
+      "rob",
+      "kin"
+    ],
+    "expect": "not_a_word",
+    "request": {
+      "ask": "Make a word with two parts.",
+      "made": "robkin",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.03,
+      "fits": 1,
+      "judge": "jev+flash"
+    }
+  },
+  {
+    "made": "cupbit",
+    "cards": [
+      "cup",
+      "bit"
+    ],
+    "expect": "not_a_word",
+    "request": {
+      "ask": "Make a word with two parts.",
+      "made": "cupbit",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.05,
+      "fits": 1,
+      "judge": "jev+flash"
+    }
+  },
+  {
+    "made": "kitgaroo",
+    "cards": [
+      "kit",
+      "ga",
+      "roo"
+    ],
+    "expect": "not_a_word",
+    "request": {
+      "ask": "Make a word with three parts.",
+      "made": "kitgaroo",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.05,
+      "fits": 1,
+      "judge": "jev+flash"
+    }
+  },
+  {
+    "made": "wamelter",
+    "cards": [
+      "wa",
+      "mel",
+      "ter"
+    ],
+    "expect": "not_a_word",
+    "request": {
+      "ask": "Make a word with three parts.",
+      "made": "wamelter",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.04,
+      "fits": 1,
+      "judge": "jev+flash"
+    }
+  },
+  {
+    "made": "helicopon",
+    "cards": [
+      "hel",
+      "i",
+      "cop",
+      "on"
+    ],
+    "expect": "not_a_word",
+    "request": {
+      "ask": "Make a word with four parts.",
+      "made": "helicopon",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.02,
+      "fits": 1,
+      "judge": "jev+flash"
+    }
+  },
+  {
+    "made": "basna",
+    "cards": [
+      "bas",
+      "na"
+    ],
+    "expect": "not_a_word",
+    "request": {
+      "ask": "Make a word with two parts.",
+      "made": "basna",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.07,
+      "fits": 1,
+      "judge": "jev+flash"
+    }
+  },
+  {
+    "made": "pajapus",
+    "cards": [
+      "pa",
+      "ja",
+      "pus"
+    ],
+    "expect": "not_a_word",
+    "request": {
+      "ask": "Make a word with three parts.",
+      "made": "pajapus",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.03,
+      "fits": 1,
+      "judge": "jev+flash"
+    }
+  },
+  {
+    "made": "sunnic",
+    "cards": [
+      "sun",
+      "nic"
+    ],
+    "expect": "not_a_word",
+    "request": {
+      "ask": "Make a word with two parts.",
+      "made": "sunnic",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.06,
+      "fits": 1,
+      "judge": "jev+flash"
+    }
+  },
+  {
+    "made": "terbut",
+    "cards": [
+      "ter",
+      "but"
+    ],
+    "expect": "not_a_word",
+    "request": {
+      "ask": "Make a word with two parts.",
+      "made": "terbut",
+      "only": "real_word",
+      "grade": "K"
+    },
+    "verdict": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.04,
+      "fits": 1,
+      "judge": "jev+flash"
+    }
+  }
+]

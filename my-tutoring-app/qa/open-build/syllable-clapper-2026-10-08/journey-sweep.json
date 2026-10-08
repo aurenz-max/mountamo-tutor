@@ -1,0 +1,133 @@
+[
+ {
+  "payload": "syllable-clapper.blend_syllables",
+  "items": 7,
+  "findings": [],
+  "advisories": [],
+  "misses": {
+   "checked": 0,
+   "named": 0,
+   "declared": true,
+   "spoken": {
+    "answered": 7,
+    "named": 7
+   }
+  },
+  "records": {
+   "recover": {
+    "sent": 1,
+    "success": true,
+    "score": 67,
+    "firstResponseScore": 0,
+    "attempts": 14
+   },
+   "clean": {
+    "sent": 1,
+    "success": true,
+    "score": 100,
+    "firstResponseScore": 100,
+    "attempts": 7
+   }
+  }
+ },
+ {
+  "payload": "syllable-clapper.build_parts",
+  "items": 1,
+  "findings": [
+   {
+    "invariant": "J1-drivable",
+    "detail": "s1 wrong: syllable-clapper build_parts is judged by the word judge, not driven at W1"
+   },
+   {
+    "invariant": "J1-drivable",
+    "detail": "s1 correct: syllable-clapper build_parts is judged by the word judge, not driven at W1"
+   },
+   {
+    "invariant": "J1-drivable",
+    "detail": "clean program: s1 correct: syllable-clapper build_parts is judged by the word judge, not driven at W1"
+   }
+  ],
+  "advisories": [],
+  "misses": {
+   "checked": 0,
+   "named": 0,
+   "declared": true,
+   "spoken": {
+    "answered": 0,
+    "named": 0
+   }
+  },
+  "records": {
+   "recover": {
+    "sent": 0
+   },
+   "clean": {
+    "sent": 0
+   }
+  }
+ },
+ {
+  "payload": "syllable-clapper.count_parts",
+  "items": 8,
+  "findings": [],
+  "advisories": [
+   "c1: the scene facts contain the key \"one\" before any try (fine only when it is the stimulus, e.g. a word to read)"
+  ],
+  "misses": {
+   "checked": 0,
+   "named": 0,
+   "declared": true,
+   "spoken": {
+    "answered": 8,
+    "named": 8
+   }
+  },
+  "records": {
+   "recover": {
+    "sent": 1,
+    "success": true,
+    "score": 67,
+    "firstResponseScore": 0,
+    "attempts": 16
+   },
+   "clean": {
+    "sent": 1,
+    "success": true,
+    "score": 100,
+    "firstResponseScore": 100,
+    "attempts": 8
+   }
+  }
+ },
+ {
+  "payload": "syllable-clapper.delete_compound",
+  "items": 8,
+  "findings": [],
+  "advisories": [],
+  "misses": {
+   "checked": 0,
+   "named": 0,
+   "declared": true,
+   "spoken": {
+    "answered": 8,
+    "named": 0
+   }
+  },
+  "records": {
+   "recover": {
+    "sent": 1,
+    "success": true,
+    "score": 67,
+    "firstResponseScore": 0,
+    "attempts": 16
+   },
+   "clean": {
+    "sent": 1,
+    "success": true,
+    "score": 100,
+    "firstResponseScore": 100,
+    "attempts": 8
+   }
+  }
+ }
+]

@@ -1534,8 +1534,12 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     leakTokens: ['SC_ITEM', 'SC_MOVE', 'SC_COMPLETE', 'SC_HEAR'],
     prompts: WORKSPACE_PROMPTS,
     // One spoken answer per item: the count, the blended word or the word left, or the pack's plain wrong answer.
-    inputsFor: spokenWorkspaceInputs(syllableItems, syllableHarnessAnswers, 'syllable-clapper'),
-    probes: { mounted: { selector: '[data-pip-object="stimulus"]' }, reward: { selector: '[data-testid="reveal"]', kind: 'count' } },
+    // build_parts is checked by the shared word judge (a model) after its code count; SyllableBuild.workspace.test.tsx drives it.
+    inputsFor: (intent, ctx) => {
+      if (intent !== 'warmup' && ctx.data.task === 'letter_build') throw new Error('syllable-clapper build_parts is judged by the word judge, not driven at W1');
+      return spokenWorkspaceInputs(syllableItems, syllableHarnessAnswers, 'syllable-clapper')(intent, ctx);
+    },
+    probes: { mounted: { selector: '[data-pip-object="stimulus"], [data-testid="lb-row"]' }, reward: { selector: '[data-testid="reveal"]', kind: 'count' } },
   },
   'rhyme-studio': {
     execution: 'workspace',

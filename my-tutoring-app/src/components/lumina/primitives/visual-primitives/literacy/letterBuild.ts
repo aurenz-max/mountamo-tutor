@@ -15,10 +15,16 @@ import type { TeachingAssignment, WorkspaceScene } from '../../../components/liv
 import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
 import type { WordBuildJudgeRequest } from '../../../service/build-layer/wordBuildDecision';
 import { BLEND_END, BLEND_START, CVC_FAMILIES, CVC_WORDS, GIVEN_WORDS, NOT_FOR_LESSONS } from './letterBuildWords';
+import {
+  SYLLABLE_BUILD_MISSES, askableSyllableItem, describeSyllableBuild, smallSyllableItem, syllableBuildLevers, syllableBuildScene,
+  syllableLeverFacts, syllableMissWords, syllableModelFor, syllableShapeMiss,
+} from './syllableBuild';
 
-export type LetterAskKind = 'vowel' | 'rhyme' | 'swap' | 'blend_start' | 'blend_end';
+export type LetterAskKind = 'vowel' | 'rhyme' | 'swap' | 'blend_start' | 'blend_end' | 'syllables';
 /** The blend kinds build from two tiles, a start and an ending (bl + ack), not three single letters. */
 export const isChunk = (kind: LetterAskKind) => kind === 'blend_start' || kind === 'blend_end';
+/** syllables (syllable-clapper `build_parts`, `syllableBuild.ts`): the row grows card by card; how many is the task. */
+export const isOpenRow = (kind: LetterAskKind) => kind === 'syllables';
 
 export interface LetterBuildItem {
   id: string;
@@ -34,6 +40,8 @@ export interface LetterBuildItem {
   /** Words that answer the ask from the bank (hidden: the gate, the oracle and the levers read them). */
   examples: string[];
   ways: 1 | 2;
+  /** syllables: the number of parts (claps) the ask names. */
+  parts?: number;
 }
 
 export interface LetterBuildData {
@@ -45,13 +53,14 @@ export interface LetterBuildData {
 }
 
 export type LetterBuildMiss = 'not_cvc' | 'wrong_vowel' | 'wrong_family' | 'same_as_given' | 'changed_more' | 'same_word'
-  | 'pick_another' | 'not_a_word' | 'no_blend' | 'wrong_order';
+  | 'pick_another' | 'not_a_word' | 'no_blend' | 'wrong_order' | 'too_few_parts' | 'too_many_parts' | 'counted_letters';
 export const LETTER_BUILD_MISSES: Record<LetterAskKind, readonly LetterBuildMiss[]> = {
   vowel: ['not_cvc', 'wrong_vowel', 'same_word', 'pick_another', 'not_a_word'],
   rhyme: ['not_cvc', 'same_as_given', 'wrong_family', 'same_word', 'pick_another', 'not_a_word'],
   swap: ['not_cvc', 'same_as_given', 'changed_more', 'same_word', 'pick_another', 'not_a_word'],
   blend_start: ['wrong_order', 'no_blend', 'same_word', 'pick_another', 'not_a_word'],
   blend_end: ['wrong_order', 'no_blend', 'same_word', 'pick_another', 'not_a_word'],
+  syllables: SYLLABLE_BUILD_MISSES,
 };
 
 const VOWELS = 'aeiou';
@@ -59,11 +68,12 @@ const isVowel = (l: string) => VOWELS.includes(l);
 export const KEYWORD: Record<string, string> = { a: 'apple', e: 'egg', i: 'itch', o: 'octopus', u: 'up' };
 
 /** What the boxes show when an item opens: empty, or the given word on a swap. */
-export const startRow = (item: LetterBuildItem): string[] =>
+export const startRow = (item: LetterBuildItem): string[] => isOpenRow(item.kind) ? [] :
   item.kind === 'swap' && item.word ? item.word.split('') : isChunk(item.kind) ? ['', ''] : ['', '', ''];
 
 /** Everything the ask states, checked in code before any judge. Undefined: a well-made word, waiting on "is it real?". */
 export function letterShapeMiss(item: LetterBuildItem, row: readonly string[], made: readonly string[] = []): LetterBuildMiss | undefined {
+  if (item.kind === 'syllables') return syllableShapeMiss(item, row, made);
   const w = row.join('').toLowerCase();
   if (isChunk(item.kind)) {
     const [start, end] = row;
@@ -87,6 +97,7 @@ export function letterShapeMiss(item: LetterBuildItem, row: readonly string[], m
 /** The gate: an item ships when its ask names no passing word and at least two bank words answer it. */
 export function askableLetterItem(item: LetterBuildItem): LetterBuildItem | null {
   if (!item?.ask || !Array.isArray(item.bank) || !Array.isArray(item.examples)) return null;
+  if (item.kind === 'syllables') return askableSyllableItem(item);
   const bank = new Set(item.bank);
   const buildable = (w: string) => isChunk(item.kind)
     ? [1, 2, 3].some(i => bank.has(w.slice(0, i)) && bank.has(w.slice(i)) && !letterShapeMiss({ ...item, ways: 1 }, [w.slice(0, i), w.slice(i)]))
@@ -189,13 +200,14 @@ const waysLine = (item: LetterBuildItem) => item.ways === 2 ? ' Then make a diff
 export const letterAssignment = (item: LetterBuildItem): TeachingAssignment =>
   ({ id: item.id, task: `${item.ask}${waysLine(item)}`, response: 'gesture' });
 
-export const describeLetterBuild = (row: readonly string[]) =>
+export const describeLetterBuild = (row: readonly string[], kind?: LetterAskKind) => kind === 'syllables' ? describeSyllableBuild(row) :
   row.some(Boolean) ? `Built "${row.map(l => l || '_').join('')}"` : 'Built nothing';
 
 export const letterJudgeRequest = (item: LetterBuildItem, row: readonly string[], grade?: string): WordBuildJudgeRequest =>
   ({ ask: item.ask, made: row.join(''), only: 'real_word', ...(grade ? { grade } : {}) });
 
 export function letterBuildScene(item: LetterBuildItem, row: readonly string[], made: readonly string[], inspectorSaid?: string): WorkspaceScene {
+  if (item.kind === 'syllables') return syllableBuildScene(item, row, made, inspectorSaid);
   return { objects: [], facts: {
     ask: item.ask,
     letterBank: item.bank.join(' '),
@@ -229,6 +241,7 @@ export function patternFor(item: LetterBuildItem): string {
 export function modelFor(item: LetterBuildItem): string | null {
   const other = (w: string) => !item.examples.includes(w) && w !== item.word && (item.kind !== 'vowel' || w[1] !== item.vowel)
     && (item.kind !== 'rhyme' || w.slice(1) !== item.word!.slice(1));
+  if (item.kind === 'syllables') { const m = syllableModelFor(item); return m ? `${m.cards.join(' + ')} = ${m.word}` : null; }
   if (isChunk(item.kind)) {
     const pair = (item.kind === 'blend_start' ? BLEND_START : BLEND_END).find(([a, b]) => !item.examples.includes(a + b)
       && !item.bank.includes(a) && !item.bank.includes(b));
@@ -249,6 +262,7 @@ export function modelFor(item: LetterBuildItem): string | null {
 
 /** The easier practice item: the same ask, one word, a bank of only the letters one example needs plus one other. */
 export function smallBankFor(item: LetterBuildItem): LetterBuildItem | null {
+  if (item.kind === 'syllables') return smallSyllableItem(item);
   const ex = item.examples.slice(0, 2);
   if (isChunk(item.kind)) {
     const tiles = item.bank.filter(t => ex.some(w => w.startsWith(t) || w.endsWith(t)));
@@ -264,6 +278,7 @@ const lever = (id: string, kind: WorkspaceLever['kind'], answers: readonly Lette
 
 export function letterBuildLevers(item: LetterBuildItem | null, pulled: readonly string[]): WorkspaceLever[] {
   if (!item) return [];
+  if (item.kind === 'syllables') return syllableBuildLevers(item, pulled);
   // The card shows the part the ask fixes, which answers every shape miss whatever the ask's kind.
   const shapeMisses: LetterBuildMiss[] = ['not_cvc', 'wrong_vowel', 'wrong_family', 'same_as_given', 'changed_more', 'no_blend', 'wrong_order'];
   return [
@@ -283,6 +298,7 @@ export function letterBuildLevers(item: LetterBuildItem | null, pulled: readonly
 }
 
 export function letterLeverFacts(pulled: readonly string[], item: LetterBuildItem): string | undefined {
+  if (item.kind === 'syllables') return syllableLeverFacts(pulled, item);
   const notes = [
     pulled.includes(PATTERN_LEVER) && `A pattern card above the boxes shows: ${patternFor(item)}.`,
     pulled.includes(MODEL_LEVER) && `A solved example on other letters is shown: ${modelFor(item)}.`,
@@ -291,6 +307,7 @@ export function letterLeverFacts(pulled: readonly string[], item: LetterBuildIte
 }
 
 export function letterMissWords(miss: LetterBuildMiss | undefined, item: LetterBuildItem): string {
+  if (item.kind === 'syllables') return syllableMissWords(miss, item);
   switch (miss) {
     case 'not_cvc': return 'A word here has a vowel in the middle box and other letters on each side.';
     case 'wrong_vowel': return `Listen to the middle sound. The ask wants the short ${item.vowel} sound.`;

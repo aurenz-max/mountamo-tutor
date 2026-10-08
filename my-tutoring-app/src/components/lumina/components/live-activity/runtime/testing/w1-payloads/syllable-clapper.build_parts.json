@@ -1,0 +1,107 @@
+{
+ "source": "qa/open-build/syllable-clapper-2026-10-08/pinned-G1.json",
+ "primitiveId": "syllable-clapper",
+ "evalMode": "build_parts",
+ "data": {
+  "title": "Make Words From Parts",
+  "gradeLevel": "1",
+  "challenges": [],
+  "task": "letter_build",
+  "buildItems": [
+   {
+    "id": "s1",
+    "kind": "syllables",
+    "parts": 4,
+    "ask": "Make a word with four parts.",
+    "bank": [
+     "cop",
+     "bow",
+     "i",
+     "ter",
+     "hel",
+     "cal",
+     "tor",
+     "cu",
+     "rain",
+     "la"
+    ],
+    "examples": [
+     "calculator",
+     "helicopter"
+    ],
+    "ways": 1
+   },
+   {
+    "id": "s2",
+    "kind": "syllables",
+    "parts": 2,
+    "ask": "Make a word with two parts.",
+    "bank": [
+     "on",
+     "sun",
+     "doc",
+     "kan",
+     "roo",
+     "set",
+     "ga",
+     "wag",
+     "tor"
+    ],
+    "examples": [
+     "doctor",
+     "sunset",
+     "wagon"
+    ],
+    "ways": 1
+   },
+   {
+    "id": "s3",
+    "kind": "syllables",
+    "parts": 3,
+    "ask": "Make a word with three parts.",
+    "bank": [
+     "to",
+     "key",
+     "po",
+     "ket",
+     "um",
+     "bas",
+     "ta",
+     "la",
+     "ball",
+     "mon",
+     "brel"
+    ],
+    "examples": [
+     "potato",
+     "umbrella",
+     "basketball"
+    ],
+    "ways": 1
+   },
+   {
+    "id": "s4",
+    "kind": "syllables",
+    "parts": 2,
+    "ask": "Make a word with two parts.",
+    "bank": [
+     "cake",
+     "corn",
+     "fa",
+     "cup",
+     "pop",
+     "bath",
+     "buf",
+     "lo",
+     "tub"
+    ],
+    "examples": [
+     "popcorn",
+     "bathtub",
+     "cupcake"
+    ],
+    "ways": 1
+   }
+  ]
+ }
+}

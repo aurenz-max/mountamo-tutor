@@ -36,6 +36,9 @@
  "rhyme-studio.pair_build": {
   "J1-drivable": "the dry sweep has no picture-tap input for this board; RhymePair.workspace.test.tsx drives every miss and the pass through the real runtime"
  },
+ "syllable-clapper.build_parts": {
+  "J1-drivable": "by design: the word is checked by the shared literacy judge (a model) after the code count; SyllableBuild.workspace.test.tsx drives the commit with a stubbed judge"
+ },
  "phonics-blender.build_blend": {
   "J1-drivable": "by design: the word is checked by the shared literacy judge (a model) after code checks; LetterBuild.workspace.test.tsx drives the commit with a stubbed judge"
  },

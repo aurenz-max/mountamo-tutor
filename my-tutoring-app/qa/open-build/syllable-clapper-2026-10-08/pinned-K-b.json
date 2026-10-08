@@ -1,0 +1,121 @@
+{
+  "generatedAt": "2026-10-08T09:34:46.780Z",
+  "case": {
+    "targetEvalMode": "build_parts",
+    "grade": "K",
+    "topic": "Syllables",
+    "intent": "Make words with two or three parts"
+  },
+  "data": {
+    "title": "Make Words From Parts",
+    "gradeLevel": "K",
+    "challenges": [],
+    "task": "letter_build",
+    "buildItems": [
+      {
+        "id": "s1",
+        "kind": "syllables",
+        "parts": 3,
+        "ask": "Make a word with three parts.",
+        "bank": [
+          "vol",
+          "mal",
+          "an",
+          "el",
+          "no",
+          "fin",
+          "phant",
+          "muf",
+          "ca",
+          "i",
+          "e"
+        ],
+        "examples": [
+          "animal",
+          "elephant",
+          "volcano"
+        ],
+        "ways": 1
+      },
+      {
+        "id": "s2",
+        "kind": "syllables",
+        "parts": 2,
+        "ask": "Make a word with two parts.",
+        "bank": [
+          "lo",
+          "bath",
+          "by",
+          "tub",
+          "fa",
+          "ten",
+          "ba",
+          "buf",
+          "kit"
+        ],
+        "examples": [
+          "kitten",
+          "bathtub",
+          "baby"
+        ],
+        "ways": 1
+      },
+      {
+        "id": "s3",
+        "kind": "syllables",
+        "parts": 3,
+        "ask": "Make a word with three parts.",
+        "bank": [
+          "ball",
+          "na",
+          "lem",
+          "ket",
+          "on",
+          "tor",
+          "ma",
+          "bas",
+          "do",
+          "to"
+        ],
+        "examples": [
+          "tomato",
+          "tornado",
+          "basketball"
+        ],
+        "ways": 1
+      },
+      {
+        "id": "s4",
+        "kind": "syllables",
+        "parts": 2,
+        "ask": "Make a word with two parts.",
+        "bank": [
+          "pu",
+          "rab",
+          "box",
+          "et",
+          "com",
+          "sand",
+          "rock",
+          "bit",
+          "ter"
+        ],
+        "examples": [
+          "sandbox",
+          "rabbit",
+          "rocket"
+        ],
+        "ways": 1
+      }
+    ]
+  },
+  "oracle": {
+    "violations": [],
+    "uncheckedTypes": [],
+    "checkedChallenges": 4
+  },
+  "issues": [],
+  "logs": [
+    "[SyllableClapper] build_parts: syllable build [\n  '3: vol mal an el no fin phant muf ca i e',\n  '2: lo bath by tub fa ten ba buf kit',\n  '3: ball na lem ket on tor ma bas do to',\n  '2: pu rab box et com sand rock bit ter'\n]"
+  ]
+}

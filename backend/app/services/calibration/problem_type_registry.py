@@ -635,6 +635,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "blend_syllables": PriorConfig(1.5, "Blending: hear the parts, say the whole word"),
         "count_parts":     PriorConfig(2.5, "Segmenting: hear the word, clap and say how many parts"),
         "delete_compound": PriorConfig(3.5, "Compound deletion: say a two-word compound without one of its words"),
+        "build_parts":     PriorConfig(2.6, "Open build: make any real word with a stated number of parts from syllable cards"),
         # Retired 2026-09-11 — word-length bands, read-only for old attempts.
         "easy":   PriorConfig(2.0, "RETIRED band: counting, 1-2 syllable words"),
         "medium": PriorConfig(2.5, "RETIRED band: counting, 2-3 syllable words"),

@@ -1,0 +1,122 @@
+{
+  "generatedAt": "2026-10-08T09:34:46.778Z",
+  "case": {
+    "targetEvalMode": "build_parts",
+    "grade": "K",
+    "topic": "Syllables in animal words",
+    "intent": "Make words with two or three parts"
+  },
+  "data": {
+    "title": "Make Words From Parts",
+    "gradeLevel": "K",
+    "challenges": [],
+    "task": "letter_build",
+    "buildItems": [
+      {
+        "id": "s1",
+        "kind": "syllables",
+        "parts": 2,
+        "ask": "Make a word with two parts.",
+        "bank": [
+          "rock",
+          "tub",
+          "brel",
+          "nic",
+          "la",
+          "bath",
+          "um",
+          "et",
+          "pic"
+        ],
+        "examples": [
+          "picnic",
+          "bathtub",
+          "rocket"
+        ],
+        "ways": 1
+      },
+      {
+        "id": "s2",
+        "kind": "syllables",
+        "parts": 3,
+        "ask": "Make a word with three parts.",
+        "bank": [
+          "no",
+          "ga",
+          "pop",
+          "vol",
+          "roo",
+          "kan",
+          "li",
+          "can",
+          "ca",
+          "dy",
+          "lol"
+        ],
+        "examples": [
+          "kangaroo",
+          "lollipop",
+          "volcano"
+        ],
+        "ways": 1
+      },
+      {
+        "id": "s3",
+        "kind": "syllables",
+        "parts": 2,
+        "ask": "Make a word with two parts.",
+        "bank": [
+          "rab",
+          "wag",
+          "bit",
+          "buf",
+          "man",
+          "fa",
+          "snow",
+          "on",
+          "lo"
+        ],
+        "examples": [
+          "wagon",
+          "rabbit",
+          "snowman"
+        ],
+        "ways": 1
+      },
+      {
+        "id": "s4",
+        "kind": "syllables",
+        "parts": 3,
+        "ask": "Make a word with three parts.",
+        "bank": [
+          "la",
+          "bas",
+          "na",
+          "e",
+          "go",
+          "ket",
+          "do",
+          "tor",
+          "el",
+          "ril",
+          "phant"
+        ],
+        "examples": [
+          "gorilla",
+          "elephant",
+          "tornado"
+        ],
+        "ways": 1
+      }
+    ]
+  },
+  "oracle": {
+    "violations": [],
+    "uncheckedTypes": [],
+    "checkedChallenges": 4
+  },
+  "issues": [],
+  "logs": [
+    "[SyllableClapper] build_parts: syllable build [\n  '2: rock tub brel nic la bath um et pic',\n  '3: no ga pop vol roo kan li can ca dy lol',\n  '2: rab wag bit buf man fa snow on lo',\n  '3: la bas na e go ket do tor el ril phant'\n]"
+  ]
+}

@@ -1,0 +1,261 @@
+[
+  {
+    "name": "pinned-K",
+    "task": "letter_build",
+    "count": 4,
+    "builds": [
+      {
+        "ask": "Make a word with two parts.",
+        "parts": 2,
+        "bank": "rock tub brel nic la bath um et pic",
+        "examples": [
+          "picnic",
+          "bathtub",
+          "rocket"
+        ]
+      },
+      {
+        "ask": "Make a word with three parts.",
+        "parts": 3,
+        "bank": "no ga pop vol roo kan li can ca dy lol",
+        "examples": [
+          "kangaroo",
+          "lollipop",
+          "volcano"
+        ]
+      },
+      {
+        "ask": "Make a word with two parts.",
+        "parts": 2,
+        "bank": "rab wag bit buf man fa snow on lo",
+        "examples": [
+          "wagon",
+          "rabbit",
+          "snowman"
+        ]
+      },
+      {
+        "ask": "Make a word with three parts.",
+        "parts": 3,
+        "bank": "la bas na e go ket do tor el ril phant",
+        "examples": [
+          "gorilla",
+          "elephant",
+          "tornado"
+        ]
+      }
+    ],
+    "oracleChecked": 4,
+    "issues": []
+  },
+  {
+    "name": "pinned-K-b",
+    "task": "letter_build",
+    "count": 4,
+    "builds": [
+      {
+        "ask": "Make a word with three parts.",
+        "parts": 3,
+        "bank": "vol mal an el no fin phant muf ca i e",
+        "examples": [
+          "animal",
+          "elephant",
+          "volcano"
+        ]
+      },
+      {
+        "ask": "Make a word with two parts.",
+        "parts": 2,
+        "bank": "lo bath by tub fa ten ba buf kit",
+        "examples": [
+          "kitten",
+          "bathtub",
+          "baby"
+        ]
+      },
+      {
+        "ask": "Make a word with three parts.",
+        "parts": 3,
+        "bank": "ball na lem ket on tor ma bas do to",
+        "examples": [
+          "tomato",
+          "tornado",
+          "basketball"
+        ]
+      },
+      {
+        "ask": "Make a word with two parts.",
+        "parts": 2,
+        "bank": "pu rab box et com sand rock bit ter",
+        "examples": [
+          "sandbox",
+          "rabbit",
+          "rocket"
+        ]
+      }
+    ],
+    "oracleChecked": 4,
+    "issues": []
+  },
+  {
+    "name": "pinned-G1",
+    "task": "letter_build",
+    "count": 4,
+    "builds": [
+      {
+        "ask": "Make a word with four parts.",
+        "parts": 4,
+        "bank": "cop bow i ter hel cal tor cu rain la",
+        "examples": [
+          "calculator",
+          "helicopter"
+        ]
+      },
+      {
+        "ask": "Make a word with two parts.",
+        "parts": 2,
+        "bank": "on sun doc kan roo set ga wag tor",
+        "examples": [
+          "doctor",
+          "sunset",
+          "wagon"
+        ]
+      },
+      {
+        "ask": "Make a word with three parts.",
+        "parts": 3,
+        "bank": "to key po ket um bas ta la ball mon brel",
+        "examples": [
+          "potato",
+          "umbrella",
+          "basketball"
+        ]
+      },
+      {
+        "ask": "Make a word with two parts.",
+        "parts": 2,
+        "bank": "cake corn fa cup pop bath buf lo tub",
+        "examples": [
+          "popcorn",
+          "bathtub",
+          "cupcake"
+        ]
+      }
+    ],
+    "oracleChecked": 4,
+    "issues": []
+  },
+  {
+    "name": "pinned-G1-b",
+    "task": "letter_build",
+    "count": 4,
+    "builds": [
+      {
+        "ask": "Make a word with three parts.",
+        "parts": 3,
+        "bank": "to dy bas ter can oc fly but ket pus ball",
+        "examples": [
+          "basketball",
+          "octopus",
+          "butterfly"
+        ]
+      },
+      {
+        "ask": "Make a word with four parts.",
+        "parts": 4,
+        "bank": "ro der ten ni gar kin mac by a ba",
+        "examples": [
+          "macaroni",
+          "kindergarten"
+        ]
+      },
+      {
+        "ask": "Make a word with two parts.",
+        "parts": 2,
+        "bank": "ta mit lem to wag po on ten",
+        "examples": [
+          "wagon",
+          "lemon",
+          "mitten"
+        ]
+      },
+      {
+        "ask": "Make a word with three parts.",
+        "parts": 3,
+        "bank": "pu li ba bath lol pop com tub na ter",
+        "examples": [
+          "banana",
+          "lollipop",
+          "computer"
+        ]
+      }
+    ],
+    "oracleChecked": 4,
+    "issues": []
+  },
+  {
+    "name": "intent-K",
+    "task": "letter_build",
+    "count": 4,
+    "builds": [
+      {
+        "ask": "Make a word with two parts.",
+        "parts": 2,
+        "bank": "di cake pop mon saur key cup no corn",
+        "examples": [
+          "popcorn",
+          "cupcake",
+          "monkey"
+        ]
+      },
+      {
+        "ask": "Make a word with three parts.",
+        "parts": 3,
+        "bank": "fa phant to pan lo po el buf e ta da",
+        "examples": [
+          "elephant",
+          "buffalo",
+          "potato"
+        ]
+      },
+      {
+        "ask": "Make a word with two parts.",
+        "parts": 2,
+        "bank": "net pu man ter mag com tus snow cac",
+        "examples": [
+          "magnet",
+          "cactus",
+          "snowman"
+        ]
+      },
+      {
+        "ask": "Make a word with three parts.",
+        "parts": 3,
+        "bank": "kan ril lol rock pop la ga go li et roo",
+        "examples": [
+          "gorilla",
+          "kangaroo",
+          "lollipop"
+        ]
+      }
+    ],
+    "oracleChecked": 4,
+    "issues": []
+  },
+  {
+    "name": "spoken-count-K",
+    "task": "spoken",
+    "count": 8,
+    "builds": [],
+    "oracleChecked": 0,
+    "issues": []
+  },
+  {
+    "name": "blend-count-build-K",
+    "task": "spoken",
+    "count": 8,
+    "builds": [],
+    "oracleChecked": 0,
+    "issues": []
+  }
+]

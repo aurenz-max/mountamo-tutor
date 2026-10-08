@@ -22,6 +22,7 @@ import {
   syllableTaskShape,
   type SyllableTask,
 } from "../../primitives/visual-primitives/literacy/syllableClapperModes";
+import { makeSyllableItems } from "../../primitives/visual-primitives/literacy/syllableBuild";
 import {
   resolveEvalModes,
   constrainChallengeTypeEnum,
@@ -325,12 +326,23 @@ export const generateSyllableClapper = async (
   // 'easy'|'medium'|'hard'|undefined). Read it here and NOWHERE else.
   const supportTier = ctx.supportTier as SyllableSupportTier | undefined;
 
+  // ── build_parts (open build, qa/open-build/ROADMAP.md OB-8L): "make a word with three parts" from syllable cards
+  //    on the shared letter build surface. Code-owned asks and banks (`syllableBuild.ts`), no model call; the part
+  //    count varies across the session. Reached by the pin, or by intent when it resolves to the build alone. ──
+  const buildSession = (): SyllableClapperData => {
+    const buildItems = makeSyllableItems(gradeLevelKey, 4);
+    console.log('[SyllableClapper] build_parts: syllable build', buildItems.map((i) => `${i.parts}: ${i.bank.join(' ')}`));
+    return { title: 'Make Words From Parts', gradeLevel: gradeLevelKey, challenges: [], task: 'letter_build', buildItems,
+      ...(supportTier ? { supportTier } : {}) };
+  };
+  if (config?.targetEvalMode === 'build_parts') return buildSession();
+
   // ── Eval mode resolution ──────────────────────────────────────────
   // The INTENT path matters now in a way it could not before: with the modes
   // renamed from word lengths to acts, "blend syllables to say the word" and
   // "count the syllables you hear" are different objectives that resolve to
   // different modes, where previously both landed on a length band.
-  const resolution = await resolveEvalModes(
+  const resolved = await resolveEvalModes(
     'syllable-clapper',
     {
       targetEvalMode: config?.targetEvalMode,
@@ -339,6 +351,12 @@ export const generateSyllableClapper = async (
     },
     CHALLENGE_TYPE_DOCS,
   );
+  if (resolved && resolved.allowedTypes.every((t) => t === 'build_parts')) return buildSession();
+  // One payload has one shape: a blend that includes the build generates its spoken acts only.
+  const resolution = resolved && resolved.allowedTypes.includes('build_parts')
+    ? { ...resolved, modes: resolved.modes.filter((m) => m.evalMode !== 'build_parts'),
+        allowedTypes: resolved.allowedTypes.filter((t) => t !== 'build_parts') }
+    : resolved;
 
   const activeSchema = resolution
     ? constrainChallengeTypeEnum(syllableClapperSchema, resolution.allowedTypes, CHALLENGE_TYPE_DOCS, {

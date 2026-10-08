@@ -1,0 +1,120 @@
+{
+  "generatedAt": "2026-10-08T09:34:46.783Z",
+  "case": {
+    "targetEvalMode": "build_parts",
+    "grade": "1",
+    "topic": "Syllables",
+    "intent": "Build words with a given number of syllables"
+  },
+  "data": {
+    "title": "Make Words From Parts",
+    "gradeLevel": "1",
+    "challenges": [],
+    "task": "letter_build",
+    "buildItems": [
+      {
+        "id": "s1",
+        "kind": "syllables",
+        "parts": 3,
+        "ask": "Make a word with three parts.",
+        "bank": [
+          "to",
+          "dy",
+          "bas",
+          "ter",
+          "can",
+          "oc",
+          "fly",
+          "but",
+          "ket",
+          "pus",
+          "ball"
+        ],
+        "examples": [
+          "basketball",
+          "octopus",
+          "butterfly"
+        ],
+        "ways": 1
+      },
+      {
+        "id": "s2",
+        "kind": "syllables",
+        "parts": 4,
+        "ask": "Make a word with four parts.",
+        "bank": [
+          "ro",
+          "der",
+          "ten",
+          "ni",
+          "gar",
+          "kin",
+          "mac",
+          "by",
+          "a",
+          "ba"
+        ],
+        "examples": [
+          "macaroni",
+          "kindergarten"
+        ],
+        "ways": 1
+      },
+      {
+        "id": "s3",
+        "kind": "syllables",
+        "parts": 2,
+        "ask": "Make a word with two parts.",
+        "bank": [
+          "ta",
+          "mit",
+          "lem",
+          "to",
+          "wag",
+          "po",
+          "on",
+          "ten"
+        ],
+        "examples": [
+          "wagon",
+          "lemon",
+          "mitten"
+        ],
+        "ways": 1
+      },
+      {
+        "id": "s4",
+        "kind": "syllables",
+        "parts": 3,
+        "ask": "Make a word with three parts.",
+        "bank": [
+          "pu",
+          "li",
+          "ba",
+          "bath",
+          "lol",
+          "pop",
+          "com",
+          "tub",
+          "na",
+          "ter"
+        ],
+        "examples": [
+          "banana",
+          "lollipop",
+          "computer"
+        ],
+        "ways": 1
+      }
+    ]
+  },
+  "oracle": {
+    "violations": [],
+    "uncheckedTypes": [],
+    "checkedChallenges": 4
+  },
+  "issues": [],
+  "logs": [
+    "[SyllableClapper] build_parts: syllable build [\n  '3: to dy bas ter can oc fly but ket pus ball',\n  '4: ro der ten ni gar kin mac by a ba',\n  '2: ta mit lem to wag po on ten',\n  '3: pu li ba bath lol pop com tub na ter'\n]"
+  ]
+}

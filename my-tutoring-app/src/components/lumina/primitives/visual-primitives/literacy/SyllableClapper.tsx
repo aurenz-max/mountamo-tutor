@@ -72,6 +72,8 @@ import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSu
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { syllableClapperPipPose } from '../../../pip/syllableClapperPipPose';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import LetterBuildSurface, { type LetterBuildSummary } from './LetterBuildSurface';
+import type { LetterBuildItem } from './letterBuild';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -113,6 +115,10 @@ export interface SyllableClapperData {
   supportTier?: 'easy' | 'medium' | 'hard';
   challenges: SyllableChallenge[];
   gradeLevel?: string;
+  /** `build_parts` (open build): the shared letter build surface runs the session from `buildItems` (syllable cards,
+   *  `syllableBuild.ts`); `challenges` is empty. */
+  task?: 'letter_build';
+  buildItems?: LetterBuildItem[];
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -500,8 +506,23 @@ function SyllableClapperSurface({ data, className, runtimePlanItemId }: Syllable
   );
 }
 
+/** build_parts' metrics in this primitive's shape. */
+const buildPartsMetrics = (s: LetterBuildSummary): SyllableClapperMetrics => ({ type: 'syllable-clapper', evalMode: 'build_parts',
+  wordsCorrect: s.solved, wordsTotal: s.total, clapCountAccuracy: s.accuracy, syllableCountsEncountered: {},
+  attemptsCount: s.attemptsCount });
+
+/** One mount, one shape: the open build (`build_parts`) runs on the shared letter build surface. */
+function SyllableClapperHost(props: SyllableClapperProps) {
+  const { data } = props;
+  if (data.task === 'letter_build') {
+    return <LetterBuildSurface primitiveId="syllable-clapper" className={props.className} runtimePlanItemId={props.runtimePlanItemId}
+      data={{ ...data, task: 'letter_build', buildItems: data.buildItems ?? [] } as never} metrics={buildPartsMetrics} />;
+  }
+  return <SyllableClapperSurface {...props} />;
+}
+
 // The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
-const SyllableClapper = withWorkspaceOnly<SyllableClapperProps>('syllable-clapper', SyllableClapperSurface,
+const SyllableClapper = withWorkspaceOnly<SyllableClapperProps>('syllable-clapper', SyllableClapperHost,
   props => props.data.title);
 
 export default SyllableClapper;

@@ -11,7 +11,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import {
   LuminaBadge, LuminaButton, LuminaCard, LuminaCardContent, LuminaCardHeader, LuminaCardTitle, LuminaChallengeCounter,
-  LuminaFeedbackCard, LuminaPanel, LuminaPrompt,
+  LuminaFeedbackCard, LuminaPanel, LuminaPrompt, LuminaReadAloud,
 } from '../../../ui';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
@@ -24,8 +24,11 @@ import type { WordBuildVerdict } from '../../../service/build-layer/wordBuildDec
 import {
   MODEL_LEVER, PATTERN_LEVER, describeLetterBuild, letterAssignment, letterBuildLevers, letterBuildScene, letterItemsFrom,
   letterJudgeRequest, letterLeverFacts, letterMissWords, letterShapeMiss, modelFor, patternFor, smallBankFor, startRow,
-  type LetterBuildData, type LetterBuildItem, type LetterBuildMiss,
+  isOpenRow, type LetterBuildData, type LetterBuildItem, type LetterBuildMiss,
 } from './letterBuild';
+import {
+  CLAP_LEVER, MAX_CARDS, hearAskRequest, hearCardRequest, hearMadeRequest, hearModelRequest, syllableModelFor, syllablePassWords,
+} from './syllableBuild';
 
 const PHASES: Record<string, PhaseConfig> = { letter_build: { label: 'Make a word', icon: '🔤', accentColor: 'cyan' } };
 const VOWELS = 'aeiou';
@@ -92,7 +95,12 @@ export default function LetterBuildSurface({ primitiveId, data, metrics, classNa
   const rowWork = work.item === current?.id ? work : { item: current?.id ?? '', row: current ? startRow(current) : [], made: [] as string[] };
   const pulled = !practice && leverState.item === sessionItem?.id ? leverState.pulled : [];
   const blocked = progress.canAttempt === false || phase === 'checking';
-  const full = !!current && rowWork.row.length === startRow(current).length && rowWork.row.every(Boolean);
+  const open = !!current && isOpenRow(current.kind);
+  const full = !!current && (open ? rowWork.row.length > 0
+    : rowWork.row.length === startRow(current).length && rowWork.row.every(Boolean));
+  /** Pre-reader speech (syllables): the tutor says a card, the task or the learner's word; never a learner turn. */
+  const say = (text: string) => { SoundManager.tap(); ctx.sendText(text, { silent: true, author: 'host' }); };
+  const tutorSpeaking = ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId);
 
   const phaseResults = usePhaseResults({
     challenges: items, results, isComplete: allDone, getChallengeType: () => 'letter_build', phaseConfig: PHASES,
@@ -110,19 +118,23 @@ export default function LetterBuildSurface({ primitiveId, data, metrics, classNa
   };
   const place = (letter: string) => {
     if (blocked) return;
+    if (open) {
+      if (rowWork.row.length >= MAX_CARDS) { setNotice('Tap a card in your word to take it out first.'); return; }
+      SoundManager.tap(); edit([...rowWork.row, letter]); return;
+    }
     const at = rowWork.row.findIndex(l => !l);
     if (at < 0) { setNotice('Tap a box to empty it first.'); return; }
     SoundManager.tap(); edit(rowWork.row.map((l, i) => (i === at ? letter : l)));
   };
   const empty = (i: number) => {
     if (blocked || !rowWork.row[i]) return;
-    SoundManager.tap(); edit(rowWork.row.map((l, j) => (j === i ? '' : l)));
+    SoundManager.tap(); edit(open ? rowWork.row.filter((_, j) => j !== i) : rowWork.row.map((l, j) => (j === i ? '' : l)));
   };
 
   const settle = (item: LetterBuildItem, correct: boolean, miss: LetterBuildMiss | undefined, words: string) => {
     setVerdict({ met: correct, words }); setPhase('checked');
     if (correct) SoundManager.playCorrect(); else SoundManager.playIncorrect();
-    progress.commitCheck(describeLetterBuild(rowWork.row), correct, correct ? undefined : miss);
+    progress.commitCheck(describeLetterBuild(rowWork.row, item.kind), correct, correct ? undefined : miss);
     if (correct && !practice) {
       const attempts = progress.currentAttempts + 1;
       progress.mergeResult({ challengeId: item.id, correct: true, attempts, score: Math.max(20, 100 - 20 * (attempts - 1)) });
@@ -150,12 +162,12 @@ export default function LetterBuildSurface({ primitiveId, data, metrics, classNa
     if (reading.met && made.length + 1 < item.ways) {
       SoundManager.playCorrect();
       setWork({ item: item.id, row: startRow(item), made: [...made, word] });
-      setVerdict({ met: true, words: `Yes! "${word}" is a word. Now make a different one.` });
+      setVerdict({ met: true, words: item.kind === 'syllables' ? syllablePassWords(item, row, true) : `Yes! "${word}" is a word. Now make a different one.` });
       setPhase('building');
       return;
     }
     settle(item, reading.met, reading.met ? undefined : 'not_a_word',
-      reading.met ? `Yes! "${word}" is a word.` : letterMissWords('not_a_word', item));
+      reading.met ? (item.kind === 'syllables' ? syllablePassWords(item, row, false) : `Yes! "${word}" is a word.`) : letterMissWords('not_a_word', item));
   };
 
   useEffect(() => {
@@ -175,7 +187,7 @@ export default function LetterBuildSurface({ primitiveId, data, metrics, classNa
     solved: phase === 'checked' && !!verdict?.met,
     checking: phase === 'checking',
     handover: true,
-    tutorSpeaking: ctx.isAudioPlaying && (ctx.sessionMode !== 'lesson' || ctx.activePrimitiveId === resolvedInstanceId),
+    tutorSpeaking,
   });
 
   useLayoutEffect(() => {
@@ -211,6 +223,8 @@ export default function LetterBuildSurface({ primitiveId, data, metrics, classNa
   }
   const model = current && pulled.includes(MODEL_LEVER) ? modelFor(current) : null;
   const pattern = current && pulled.includes(PATTERN_LEVER) ? patternFor(current) : null;
+  const spokenModel = model && current ? syllableModelFor(current) : null;
+  const claps = open && pulled.includes(CLAP_LEVER);
 
   return (
     <LuminaCard className={className}>
@@ -233,9 +247,13 @@ export default function LetterBuildSurface({ primitiveId, data, metrics, classNa
             <LuminaPrompt accent="cyan">
               <div className="space-y-1">
                 <div className="text-xs font-semibold uppercase tracking-wider text-cyan-300">Make a word</div>
-                <div className="text-lg leading-snug">{current.ask}</div>
+                <div className="flex items-center gap-2">
+                  <div className="text-lg leading-snug">{current.ask}</div>
+                  {open && <LuminaReadAloud iconOnly size="lg" label="Hear the task" speaking={tutorSpeaking}
+                    onClick={() => say(hearAskRequest(letterAssignment(current)))} />}
+                </div>
                 {current.ways === 2 && <div className="text-sm text-slate-300">Then make a different one.</div>}
-                {practice && <div className="text-xs text-amber-300">Practice with fewer letters</div>}
+                {practice && <div className="text-xs text-amber-300">{open ? 'Practice with fewer cards' : 'Practice with fewer letters'}</div>}
               </div>
             </LuminaPrompt>
 
@@ -254,10 +272,30 @@ export default function LetterBuildSurface({ primitiveId, data, metrics, classNa
                 <LuminaPanel data-lever="model-word" className="p-2 text-center">
                   <span className="text-[10px] font-mono uppercase tracking-widest text-cyan-300">Another word </span>
                   <span className="text-lg font-bold text-cyan-100">{model}</span>
+                  {spokenModel && <LuminaReadAloud iconOnly size="sm" className="ml-2 align-middle" label="Hear the example"
+                    onClick={() => say(hearModelRequest(spokenModel))} />}
                 </LuminaPanel>
               )}
 
-              <div role="group" aria-label="Your word" data-testid="lb-row" className="flex justify-center gap-3">
+              {open && (
+                <div className="flex flex-wrap items-start justify-center gap-2">
+                  <div role="group" aria-label="Your word" data-testid="lb-row" className="flex flex-wrap justify-center gap-2">
+                    {rowWork.row.map((card, i) => (
+                      <div key={`${i}-${card}`} className="flex flex-col items-center gap-1">
+                        <button type="button" aria-label={`box ${i + 1}, ${card}`} disabled={blocked} onClick={() => empty(i)}
+                          className="flex h-14 min-w-16 items-center justify-center rounded-2xl border-2 border-violet-300/60 bg-violet-500/15 px-3 text-2xl font-bold text-violet-50 transition hover:opacity-80">
+                          {card}
+                        </button>
+                        {claps && <span data-aid data-lever="clap-cards" aria-hidden className="text-xl">👏</span>}
+                      </div>
+                    ))}
+                    {rowWork.row.length < MAX_CARDS && <div aria-hidden className="h-14 w-16 rounded-2xl border-2 border-dashed border-white/25 bg-white/5" />}
+                  </div>
+                  {rowWork.row.length > 0 && <LuminaReadAloud iconOnly size="lg" label="Hear my word" speaking={tutorSpeaking}
+                    onClick={() => say(hearMadeRequest(rowWork.row))} />}
+                </div>
+              )}
+              {!open && <div role="group" aria-label="Your word" data-testid="lb-row" className="flex justify-center gap-3">
                 {rowWork.row.map((l, i) => (
                   <button key={i} type="button" aria-label={`box ${i + 1}${l ? `, ${l}` : ', empty'}`} disabled={blocked || !l}
                     onClick={() => empty(i)}
@@ -266,9 +304,22 @@ export default function LetterBuildSurface({ primitiveId, data, metrics, classNa
                     {l || ''}
                   </button>
                 ))}
-              </div>
+              </div>}
 
-              <div className="flex flex-wrap justify-center gap-2" role="group" aria-label="Letters">
+              {open && (
+                <div className="flex flex-wrap justify-center gap-2" role="group" aria-label="Word-part cards">
+                  {current.bank.map(card => (
+                    <div key={card} className="flex items-center gap-1 rounded-xl border border-violet-300/30 bg-violet-500/10 p-1">
+                      <button type="button" aria-label={`card ${card}`} disabled={blocked} onClick={() => place(card)}
+                        className="h-12 min-w-14 rounded-lg px-2 text-2xl font-bold text-violet-100 transition hover:brightness-125 disabled:opacity-40">
+                        {card}
+                      </button>
+                      <LuminaReadAloud iconOnly size="sm" aria-label={`hear ${card}`} onClick={() => say(hearCardRequest(card))} />
+                    </div>
+                  ))}
+                </div>
+              )}
+              {!open && <div className="flex flex-wrap justify-center gap-2" role="group" aria-label="Letters">
                 {current.bank.map(l => (
                   <button key={l} type="button" aria-label={`letter ${l}`} disabled={blocked} onClick={() => place(l)}
                     className={`h-12 min-w-12 px-2 rounded-xl border text-2xl font-bold transition hover:brightness-125 disabled:opacity-40 ${VOWELS.includes(l[0])
@@ -276,7 +327,7 @@ export default function LetterBuildSurface({ primitiveId, data, metrics, classNa
                     {l}
                   </button>
                 ))}
-              </div>
+              </div>}
 
               <div className="min-h-5 text-center text-sm text-slate-300" aria-live="polite">
                 {notice || (phase === 'checking' ? 'Checking your word…' : '')}

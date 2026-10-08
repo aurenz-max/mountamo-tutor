@@ -1754,14 +1754,21 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'you say a two-part word, name the part to take away, and the learner says the word left. Say the stimulus '
         + 'exactly as the voicing fact tells you: splitting a count or delete word into parts before the learner has '
         + 'tried hands over the answer. The learner claps with their own hands; there is nothing to tap. The '
-        + 'hear-again button asks you to repeat the question only. You cannot show the word or its parts.',
+        + 'hear-again button asks you to repeat the question only. You cannot show the word or its parts. On build parts '
+        + '(the open build) the learner taps word-part cards, one clap each, into a word with the number of parts the task '
+        + 'names and presses "I am done"; many words pass, and a speaker on each card, the task and their word asks you to '
+        + 'say just that. Never say a word that would fit, which cards to use, or how many parts their word has.',
       levers: true,
       // Spoken misses (`syllableClapperLevers.ts`), emitted by `syllableSpokenMisses` on blend and count (delete names none yet).
       // `unanswered` stays the levers' own list (`syllableClapperLevers.test.ts` pins it).
-      misses: missLists<SyllableMiss>({ blend_syllables: ['parts_back'], count_parts: ['count_one_over', 'counted_sounds', 'word_for_count'],
+      misses: { ...missLists<SyllableMiss>({ blend_syllables: ['parts_back'], count_parts: ['count_one_over', 'counted_sounds', 'word_for_count'],
         delete_compound: ['whole_word', 'removed_part'] }),
+        // build_parts (`syllableBuild.ts`): the part count in code, then the word judge.
+        build_parts: ['too_few_parts', 'too_many_parts', 'counted_letters', 'same_word', 'pick_another', 'not_a_word'] },
       unanswered: { blend_syllables: ['parts_back'], count_parts: ['count_one_over', 'counted_sounds', 'word_for_count'],
-        delete_compound: ['whole_word', 'removed_part'] },
+        delete_compound: ['whole_word', 'removed_part'],
+        // build_parts: the word already made stays on screen; a word not for lessons has no smaller form.
+        build_parts: ['same_word', 'pick_another'] },
     },
     // ── DI MODALITY (2026-08-16) — literacy port. The click era shipped a
     // `👏 Clap!` button, six counter circles and a `Check (3 claps)` label: the
@@ -1796,7 +1803,18 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     // same three facts lived in three hand-maintained copies and a rename in one
     // of them left a mode that still generated and simply stopped being routable.
     // βs are unchanged in magnitude from the shipped registry (1.5 / 2.5 / 3.5).
-    evalModes: SYLLABLE_CLAPPER_EVAL_MODES,
+    evalModes: [...SYLLABLE_CLAPPER_EVAL_MODES, {
+      evalMode: 'build_parts',
+      affordances: { answers: ['build'] },
+      label: 'Make a Word With N Parts (open build)',
+      beta: 2.6,
+      scaffoldingMode: 2,
+      challengeTypes: ['build_parts'],
+      description: 'Open build: tap syllable cards (one clap each) into a word with the number of parts the task names '
+        + '("make a word with three parts": but-ter-fly, ba-na-na; pop-corn for two), then press done; some items ask for '
+        + 'a second word. Many words pass. Every card, the task and the made word can be heard. Code counts the parts; '
+        + 'the shared word judge checks it is a real word. The count varies across the session. Beta = count_parts + 0.1.',
+    }],
     tutoring: {
       taskDescription:
         'Live-judged Direct Instruction syllable work for a young child. Right now the act is '

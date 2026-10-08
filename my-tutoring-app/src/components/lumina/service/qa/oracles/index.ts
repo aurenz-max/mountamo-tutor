@@ -46,6 +46,7 @@ import { habitatDioramaOracle } from './habitat-diorama';
 import { ratioTableOracle } from './ratio-table';
 import { regroupingWorkbenchOracle } from './regrouping-workbench';
 import { skipCountingRunnerOracle } from './skip-counting-runner';
+import { syllableClapperOracle } from './syllable-clapper';
 import { slopeTriangleOracle } from './slope-triangle';
 import { systemsEquationsVisualizerOracle } from './systems-equations-visualizer';
 import { tapeDiagramOracle } from './tape-diagram';
@@ -107,6 +108,7 @@ export const CONTENT_ORACLES: ContentOracle[] = [
   ratioTableOracle,
   regroupingWorkbenchOracle,
   skipCountingRunnerOracle,
+  syllableClapperOracle,
   slopeTriangleOracle,
   systemsEquationsVisualizerOracle,
   tapeDiagramOracle,
