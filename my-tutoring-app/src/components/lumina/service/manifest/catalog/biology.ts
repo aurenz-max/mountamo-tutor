@@ -7,6 +7,7 @@
 
 import { ComponentDefinition } from '../../../types';
 import type { HabitatMiss, SpokenHabitatMiss } from '../../../primitives/visual-primitives/biology/habitatDioramaWorkspace';
+import type { HabitatBuildMiss } from '../../../primitives/visual-primitives/biology/habitatBuild';
 import { missLists } from './missLists';
 
 export const BIOLOGY_CATALOG: ComponentDefinition[] = [
@@ -303,6 +304,9 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
       { evalMode: 'predict', affordances: { answers: ['spoken'] }, label: 'Predict', beta: 5.0, scaffoldingMode: 4, challengeTypes: ['predict'], description: 'Predict whether a population rises, falls, or stays stable after a change.' },
       { evalMode: 'restore', affordances: { answers: ['build'] }, label: 'Restore', beta: 6.5, scaffoldingMode: 5, challengeTypes: ['restore'], description: 'Place a missing organism or habitat feature in the zone that restores a relationship.' },
       { evalMode: 'defend', affordances: { answers: ['spoken'] }, label: 'Defend', beta: 8.0, scaffoldingMode: 6, challengeTypes: ['defend'], description: 'Choose the strongest visible evidence for an ecosystem claim.' },
+      // Open build: restore asks where ONE living thing meets its needs; this asks the learner to make a whole habitat
+      // that meets every need of a named animal, on an empty scene, and many habitats pass. Beta near restore.
+      { evalMode: 'build_habitat', affordances: { answers: ['build'] }, label: 'Build a habitat', beta: 6.6, scaffoldingMode: 5, challengeTypes: ['build_habitat'], description: 'Build a habitat on an empty scene with everything a named animal needs to live: food, water, shelter and the right weather. Many habitats pass.' },
     ],
     audioInput: { manual_activity: true },
     tutoring: {
@@ -385,14 +389,23 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
         + 'eaten to the eater, the host to the one that lives on it). Restore: the learner taps the zone where the missing '
         + 'living thing can meet its needs. The activity checks both taps. A K-2 learner does not read: read the question, the '
         + 'change and the choices aloud, and say names, never producer, consumer or decomposer. No living thing is mean; each '
-        + 'is finding food. Before an attempt never say the answer or which choice is right. You cannot tap or place for them.',
-      // The activity's own checks (`habitatMiss`), and the spoken choices' known wrong answer (`habitatSpokenMisses`,
-      // handoff 20 Part B).
-      misses: missLists<HabitatMiss | SpokenHabitatMiss>({
+        + 'is finding food. Before an attempt never say the answer or which choice is right. You cannot tap or place for them. '
+        + 'Build a habitat: the learner taps pieces (a pond, flies, a log, snow...) into an empty habitat around a named animal '
+        + 'and presses I’m done!; the activity checks that every need is met and nothing would hurt it. Many habitats pass. '
+        + 'Knowing what the animal needs IS the task: never say which need is missing, which piece to add or take out, or '
+        + 'what a piece gives the animal; if they stop, invite them to think about what the animal needs every day.',
+      // build_habitat publishes levers (`habitatBuildLevers`); the other modes have none yet.
+      levers: true,
+      // The activity's own checks (`habitatMiss`, `readHabitatBuild`), and the spoken choices' known wrong answer
+      // (`habitatSpokenMisses`, handoff 20 Part B).
+      misses:missLists<HabitatMiss | SpokenHabitatMiss | HabitatBuildMiss>({
         connect: ['other_kind_link', 'leads_to_start', 'unconnected'],
         restore: ['water_for_land', 'land_for_water', 'other_land_zone'],
         observe: ['other_choice'], predict: ['other_choice'], defend: ['other_choice'],
+        build_habitat: ['harmful_piece', 'several_needs_unmet', 'other_animals_piece', 'one_need_unmet'],
       }),
+      // Every build miss is answered by a lever (`habitatBuildLevers`).
+      unanswered: { build_habitat: [] },
     },
   },
   {

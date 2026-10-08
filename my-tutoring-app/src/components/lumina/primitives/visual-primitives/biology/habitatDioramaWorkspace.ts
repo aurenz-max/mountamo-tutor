@@ -12,6 +12,7 @@ import type { TeachingAssignment, WorkspaceScene } from '../../../components/liv
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { askFor, habitatDioramaHarnessAnswers, type HabitatItem } from './habitatDioramaScript';
 import type { HabitatZone, Relationship } from './HabitatDiorama';
+import { FEWER_SUFFIX, animalById, buildAsk, fewerNeeds, habitatBuildScene, trayFor } from './habitatBuild';
 
 export const ZONE_LABELS: Record<HabitatZone, string> = {
   canopy: 'Canopy', 'open-land': 'Open land', water: 'Open water',
@@ -47,9 +48,13 @@ export interface HabitatView {
   organismNames: string[];
   /** K-2: the learner does not read the names, cards or choices. */
   preReader: boolean;
+  /** build_habitat: the pieces the learner has put in, in order. */
+  placed?: readonly string[];
 }
 
 export function habitatScene(item: HabitatItem, view: HabitatView): WorkspaceScene {
+  const animal = item.kind === 'build_habitat' ? animalById(item.animalId) : undefined;
+  if (animal) return habitatBuildScene(animal, item.needs ?? [], item.tray ?? [], view.placed ?? [], { preReader: view.preReader });
   const facts: Record<string, string> = {
     shown: `The ${view.habitatName} habitat with ${view.organismNames.join(', ')}.`.slice(0, 480),
   };
@@ -107,6 +112,15 @@ export function habitatMiss(item: HabitatItem, move: { toId?: string; zone?: Hab
 export function habitatJourneyAnswers(item: HabitatItem): { correct: string; plainWrong: string } {
   const answers = habitatDioramaHarnessAnswers(item);
   if (item.answerKind === 'voice') return { correct: answers.correct, plainWrong: item.signatureWrong };
+  if (!answers.tapped) throw new Error(`habitat-diorama ${item.kind}: no single tap answers it`);
   const label = (value: string) => item.kind === 'restore' ? ZONE_LABELS[value as HabitatZone] : item.organismNames[value] ?? value;
   return { correct: label(answers.tapped!.correct), plainWrong: label(answers.tapped!.wrong) };
+}
+
+/** build_habitat's simplify lever: the same animal, two named needs, its own tray, on an empty scene. */
+export function fewerNeedsItem(item: HabitatItem): HabitatItem | null {
+  const animal = animalById(item.animalId), needs = fewerNeeds(item.needs ?? []);
+  if (item.kind !== 'build_habitat' || !animal || !needs || item.id.endsWith(FEWER_SUFFIX)) return null;
+  const id = `${item.id}${FEWER_SUFFIX}`;
+  return { ...item, id, needs, prompt: buildAsk(animal, needs, true), tray: trayFor(animal, needs, id) };
 }

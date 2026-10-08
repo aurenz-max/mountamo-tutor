@@ -945,6 +945,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "predict": PriorConfig(5.0, "Predict a population response to change"),
         "restore": PriorConfig(6.5, "Restore a disrupted habitat relationship"),
         "defend": PriorConfig(8.0, "Defend an ecosystem claim with visible evidence"),
+        "build_habitat": PriorConfig(6.6, "Build a habitat that meets every need of a named animal (open build)"),
     },
     "bio-compare-contrast":       {"default": PriorConfig(3.5, "Compare biological entities")},
     "bio-process-animator":       {"default": PriorConfig(3.5, "Animate and comprehend biological process")},
@@ -1026,6 +1027,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     },
     "molecule-constructor": {
         "build":    PriorConfig(-0.5, "Build simple molecules from a name or formula"),
+        "make_molecule": PriorConfig(-0.4, "Make any molecule with the asked property; every atom uses all its bonds"),
         "identify": PriorConfig(1.0, "Identify molecules and write formulas from structure"),
         "predict":  PriorConfig(2.5, "Predict properties and shape from molecular structure"),
     },

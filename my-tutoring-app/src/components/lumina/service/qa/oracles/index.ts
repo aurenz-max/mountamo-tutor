@@ -30,6 +30,7 @@ import { hundredsChartOracle } from './hundreds-chart';
 import { knowledgeCheckOracle } from './knowledge-check';
 import { mathFactFluencyOracle } from './math-fact-fluency';
 import { measureLabOracle } from './measure-lab';
+import { moleculeConstructorOracle } from './molecule-constructor';
 import { matrixDisplayOracle } from './matrix-display';
 import { multiplicationExplorerOracle } from './multiplication-explorer';
 import { numberBondOracle } from './number-bond';
@@ -40,6 +41,7 @@ import { placeValueChartOracle } from './place-value-chart';
 import { poetryLabOracle } from './poetry-lab';
 import { polygonAreaBuilderOracle } from './polygon-area-builder';
 import { shapeBuilderOracle } from './shape-builder';
+import { habitatDioramaOracle } from './habitat-diorama';
 import { ratioTableOracle } from './ratio-table';
 import { regroupingWorkbenchOracle } from './regrouping-workbench';
 import { skipCountingRunnerOracle } from './skip-counting-runner';
@@ -88,6 +90,7 @@ export const CONTENT_ORACLES: ContentOracle[] = [
   knowledgeCheckOracle,
   mathFactFluencyOracle,
   measureLabOracle,
+  moleculeConstructorOracle,
   matrixDisplayOracle,
   multiplicationExplorerOracle,
   numberBondOracle,
@@ -98,6 +101,7 @@ export const CONTENT_ORACLES: ContentOracle[] = [
   poetryLabOracle,
   polygonAreaBuilderOracle,
   shapeBuilderOracle,
+  habitatDioramaOracle,
   ratioTableOracle,
   regroupingWorkbenchOracle,
   skipCountingRunnerOracle,

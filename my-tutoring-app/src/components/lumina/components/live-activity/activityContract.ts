@@ -56,6 +56,7 @@ import { calendarExplorerLiveDomain } from './adapters/calendarExplorerLive';
 import { pushPullArenaLiveDomain } from './adapters/pushPullArenaLive';
 import { habitatDioramaLiveDomain } from './adapters/habitatDioramaLive';
 import { matterExplorerLiveDomain } from './adapters/matterExplorerLive';
+import { moleculeConstructorLiveDomain } from './adapters/moleculeConstructorLive';
 import { genreExplorerLiveDomain } from './adapters/genreExplorerLive';
 import { textStructureAnalyzerLiveDomain } from './adapters/textStructureAnalyzerLive';
 import { sentenceAnalyzerLiveDomain } from './adapters/sentenceAnalyzerLive';
@@ -147,6 +148,7 @@ export const LIVE_ADAPTERS = {
   'push-pull-arena': workspaceAdapter('push-pull-arena', pushPullArenaLiveDomain),
   'habitat-diorama': workspaceAdapter('habitat-diorama', habitatDioramaLiveDomain),
   'matter-explorer': workspaceAdapter('matter-explorer', matterExplorerLiveDomain),
+  'molecule-constructor': workspaceAdapter('molecule-constructor', moleculeConstructorLiveDomain),
   'genre-explorer': workspaceAdapter('genre-explorer', genreExplorerLiveDomain),
   'text-structure-analyzer': workspaceAdapter('text-structure-analyzer', textStructureAnalyzerLiveDomain),
   'sentence-analyzer': workspaceAdapter('sentence-analyzer', sentenceAnalyzerLiveDomain),

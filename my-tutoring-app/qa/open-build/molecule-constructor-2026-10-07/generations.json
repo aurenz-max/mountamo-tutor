@@ -1,0 +1,962 @@
+{
+ "results": [
+  {
+   "lesson": {
+    "mode": "make_molecule",
+    "grade": "4",
+    "topic": "Atoms bond to make molecules",
+    "intent": "Make a molecule with a double bond"
+   },
+   "title": "Build Your Own Molecule",
+   "description": "Students use an empty board and special pieces to construct custom molecules that meet specific chemical challenges.",
+   "gradeBand": "3-5",
+   "oracle": [],
+   "uncheckedTypes": [],
+   "checked": 4,
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "make1",
+     "instruction": "Make a molecule with a double bond.",
+     "ask": {
+      "doubleBonds": 1
+     },
+     "passes": "C2H4",
+     "passMiss": null,
+     "shortMiss": "open_valence",
+     "scene": {
+      "kind": "make_molecule",
+      "board": "an empty board; the learner taps an element to add an atom, taps two atoms to join them (again for a double or triple bond), taps a bond to take one step of it away",
+      "atomsPlaced": 5,
+      "bondsMade": 4,
+      "doubleBonds": 1,
+      "tripleBonds": 0,
+      "openBonds": 1,
+      "pieces": 1,
+      "learnerWork": "Made C2H3: 5 atoms in one piece, 4 bonds (1 double); 1 bond still open",
+      "constraints": "The learner builds on the board and presses \"I'm done!\"; the activity checks the molecule itself. You cannot place or join atoms for the learner."
+     }
+    },
+    {
+     "id": "make2",
+     "instruction": "Make a molecule with a double bond and exactly 2 carbon atoms.",
+     "ask": {
+      "doubleBonds": 1,
+      "carbons": 2
+     },
+     "passes": "C2H4",
+     "passMiss": null,
+     "shortMiss": "open_valence",
+     "scene": {
+      "kind": "make_molecule",
+      "board": "an empty board; the learner taps an element to add an atom, taps two atoms to join them (again for a double or triple bond), taps a bond to take one step of it away",
+      "atomsPlaced": 5,
+      "bondsMade": 4,
+      "doubleBonds": 1,
+      "tripleBonds": 0,
+      "openBonds": 1,
+      "pieces": 1,
+      "learnerWork": "Made C2H3: 5 atoms in one piece, 4 bonds (1 double); 1 bond still open",
+      "constraints": "The learner builds on the board and presses \"I'm done!\"; the activity checks the molecule itself. You cannot place or join atoms for the learner."
+     }
+    },
+    {
+     "id": "make3",
+     "instruction": "Make a molecule with a double bond and a nitrogen atom.",
+     "ask": {
+      "doubleBonds": 1,
+      "contains": "N"
+     },
+     "passes": "CH3N",
+     "passMiss": null,
+     "shortMiss": "open_valence",
+     "scene": {
+      "kind": "make_molecule",
+      "board": "an empty board; the learner taps an element to add an atom, taps two atoms to join them (again for a double or triple bond), taps a bond to take one step of it away",
+      "atomsPlaced": 4,
+      "bondsMade": 3,
+      "doubleBonds": 1,
+      "tripleBonds": 0,
+      "openBonds": 1,
+      "pieces": 1,
+      "learnerWork": "Made CH2N: 4 atoms in one piece, 3 bonds (1 double); 1 bond still open",
+      "constraints": "The learner builds on the board and presses \"I'm done!\"; the activity checks the molecule itself. You cannot place or join atoms for the learner."
+     }
+    },
+    {
+     "id": "make4",
+     "instruction": "Make a molecule with two double bonds.",
+     "ask": {
+      "doubleBonds": 2
+     },
+     "passes": "C3H4",
+     "passMiss": null,
+     "shortMiss": "open_valence",
+     "scene": {
+      "kind": "make_molecule",
+      "board": "an empty board; the learner taps an element to add an atom, taps two atoms to join them (again for a double or triple bond), taps a bond to take one step of it away",
+      "atomsPlaced": 6,
+      "bondsMade": 5,
+      "doubleBonds": 2,
+      "tripleBonds": 0,
+      "openBonds": 1,
+      "pieces": 1,
+      "learnerWork": "Made C3H3: 6 atoms in one piece, 5 bonds (2 double); 1 bond still open",
+      "constraints": "The learner builds on the board and presses \"I'm done!\"; the activity checks the molecule itself. You cannot place or join atoms for the learner."
+     }
+    }
+   ],
+   "data": {
+    "title": "Build Your Own Molecule",
+    "description": "Students use an empty board and special pieces to construct custom molecules that meet specific chemical challenges.",
+    "targetMolecule": {
+     "name": null,
+     "formula": null,
+     "atoms": [],
+     "bonds": [],
+     "realWorldUse": "",
+     "imagePrompt": ""
+    },
+    "palette": {
+     "availableElements": [
+      "H",
+      "C",
+      "N",
+      "O"
+     ],
+     "showValence": true,
+     "showElectronDots": false
+    },
+    "challenges": [
+     {
+      "id": "make1",
+      "type": "make_molecule",
+      "instruction": "Make a molecule with a double bond.",
+      "targetFormula": null,
+      "targetName": null,
+      "targetAtoms": [],
+      "ask": {
+       "doubleBonds": 1
+      },
+      "hint": "Count the bonds each atom makes. In a molecule, every atom uses all of its bonds.",
+      "narration": "Every atom uses all of its bonds: that is a real molecule!"
+     },
+     {
+      "id": "make2",
+      "type": "make_molecule",
+      "instruction": "Make a molecule with a double bond and exactly 2 carbon atoms.",
+      "targetFormula": null,
+      "targetName": null,
+      "targetAtoms": [],
+      "ask": {
+       "doubleBonds": 1,
+       "carbons": 2
+      },
+      "hint": "Count the bonds each atom makes. In a molecule, every atom uses all of its bonds.",
+      "narration": "Every atom uses all of its bonds: that is a real molecule!"
+     },
+     {
+      "id": "make3",
+      "type": "make_molecule",
+      "instruction": "Make a molecule with a double bond and a nitrogen atom.",
+      "targetFormula": null,
+      "targetName": null,
+      "targetAtoms": [],
+      "ask": {
+       "doubleBonds": 1,
+       "contains": "N"
+      },
+      "hint": "Count the bonds each atom makes. In a molecule, every atom uses all of its bonds.",
+      "narration": "Every atom uses all of its bonds: that is a real molecule!"
+     },
+     {
+      "id": "make4",
+      "type": "make_molecule",
+      "instruction": "Make a molecule with two double bonds.",
+      "targetFormula": null,
+      "targetName": null,
+      "targetAtoms": [],
+      "ask": {
+       "doubleBonds": 2
+      },
+      "hint": "Count the bonds each atom makes. In a molecule, every atom uses all of its bonds.",
+      "narration": "Every atom uses all of its bonds: that is a real molecule!"
+     }
+    ],
+    "moleculeGallery": [],
+    "showOptions": {
+     "showFormula": false,
+     "showName": false,
+     "showRealWorldImage": false,
+     "showValenceSatisfaction": false,
+     "show3DToggle": false,
+     "showElectronDots": false,
+     "showBondType": false
+    },
+    "gradeBand": "3-5"
+   }
+  },
+  {
+   "lesson": {
+    "mode": "make_molecule",
+    "grade": "5",
+    "topic": "Single and double bonds",
+    "intent": "Use valence to build molecules",
+    "difficulty": "easy"
+   },
+   "title": "Build Your Own Bond",
+   "description": "Young scientists design custom molecular structures on a blank board to explore how atoms connect with single and double links.",
+   "gradeBand": "3-5",
+   "oracle": [],
+   "uncheckedTypes": [],
+   "checked": 3,
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "make1",
+     "instruction": "Make a molecule with a double bond.",
+     "ask": {
+      "doubleBonds": 1
+     },
+     "passes": "C2H4",
+     "passMiss": null,
+     "shortMiss": "open_valence",
+     "scene": {
+      "kind": "make_molecule",
+      "board": "an empty board; the learner taps an element to add an atom, taps two atoms to join them (again for a double or triple bond), taps a bond to take one step of it away",
+      "atomsPlaced": 5,
+      "bondsMade": 4,
+      "doubleBonds": 1,
+      "tripleBonds": 0,
+      "openBonds": 1,
+      "pieces": 1,
+      "learnerWork": "Made C2H3: 5 atoms in one piece, 4 bonds (1 double); 1 bond still open",
+      "constraints": "The learner builds on the board and presses \"I'm done!\"; the activity checks the molecule itself. You cannot place or join atoms for the learner."
+     }
+    },
+    {
+     "id": "make2",
+     "instruction": "Make a molecule with exactly 2 carbon atoms.",
+     "ask": {
+      "carbons": 2
+     },
+     "passes": "C2H6",
+     "passMiss": null,
+     "shortMiss": "open_valence",
+     "scene": {
+      "kind": "make_molecule",
+      "board": "an empty board; the learner taps an element to add an atom, taps two atoms to join them (again for a double or triple bond), taps a bond to take one step of it away",
+      "atomsPlaced": 7,
+      "bondsMade": 6,
+      "doubleBonds": 0,
+      "tripleBonds": 0,
+      "openBonds": 1,
+      "pieces": 1,
+      "learnerWork": "Made C2H5: 7 atoms in one piece, 6 bonds; 1 bond still open",
+      "constraints": "The learner builds on the board and presses \"I'm done!\"; the activity checks the molecule itself. You cannot place or join atoms for the learner."
+     }
+    },
+    {
+     "id": "make3",
+     "instruction": "Make a molecule with two double bonds.",
+     "ask": {
+      "doubleBonds": 2
+     },
+     "passes": "C3H4",
+     "passMiss": null,
+     "shortMiss": "open_valence",
+     "scene": {
+      "kind": "make_molecule",
+      "board": "an empty board; the learner taps an element to add an atom, taps two atoms to join them (again for a double or triple bond), taps a bond to take one step of it away",
+      "atomsPlaced": 6,
+      "bondsMade": 5,
+      "doubleBonds": 2,
+      "tripleBonds": 0,
+      "openBonds": 1,
+      "pieces": 1,
+      "learnerWork": "Made C3H3: 6 atoms in one piece, 5 bonds (2 double); 1 bond still open",
+      "constraints": "The learner builds on the board and presses \"I'm done!\"; the activity checks the molecule itself. You cannot place or join atoms for the learner."
+     }
+    }
+   ],
+   "data": {
+    "title": "Build Your Own Bond",
+    "description": "Young scientists design custom molecular structures on a blank board to explore how atoms connect with single and double links.",
+    "targetMolecule": {
+     "name": null,
+     "formula": null,
+     "atoms": [],
+     "bonds": [],
+     "realWorldUse": "",
+     "imagePrompt": ""
+    },
+    "palette": {
+     "availableElements": [
+      "H",
+      "C",
+      "N",
+      "O"
+     ],
+     "showValence": true,
+     "showElectronDots": false
+    },
+    "challenges": [
+     {
+      "id": "make1",
+      "type": "make_molecule",
+      "instruction": "Make a molecule with a double bond.",
+      "targetFormula": null,
+      "targetName": null,
+      "targetAtoms": [],
+      "ask": {
+       "doubleBonds": 1
+      },
+      "hint": "Count the bonds each atom makes. In a molecule, every atom uses all of its bonds.",
+      "narration": "Every atom uses all of its bonds: that is a real molecule!"
+     },
+     {
+      "id": "make2",
+      "type": "make_molecule",
+      "instruction": "Make a molecule with exactly 2 carbon atoms.",
+      "targetFormula": null,
+      "targetName": null,
+      "targetAtoms": [],
+      "ask": {
+       "carbons": 2
+      },
+      "hint": "Count the bonds each atom makes. In a molecule, every atom uses all of its bonds.",
+      "narration": "Every atom uses all of its bonds: that is a real molecule!"
+     },
+     {
+      "id": "make3",
+      "type": "make_molecule",
+      "instruction": "Make a molecule with two double bonds.",
+      "targetFormula": null,
+      "targetName": null,
+      "targetAtoms": [],
+      "ask": {
+       "doubleBonds": 2
+      },
+      "hint": "Count the bonds each atom makes. In a molecule, every atom uses all of its bonds.",
+      "narration": "Every atom uses all of its bonds: that is a real molecule!"
+     }
+    ],
+    "moleculeGallery": [],
+    "showOptions": {
+     "showFormula": false,
+     "showName": false,
+     "showRealWorldImage": false,
+     "showValenceSatisfaction": false,
+     "show3DToggle": false,
+     "showElectronDots": false,
+     "showBondType": false
+    },
+    "gradeBand": "3-5"
+   }
+  },
+  {
+   "lesson": {
+    "mode": "make_molecule",
+    "grade": "7",
+    "topic": "Covalent bonds and valence",
+    "intent": "Build molecules with double and triple bonds"
+   },
+   "title": "Molecular Maker",
+   "description": "Students build custom molecules on a blank workspace by correctly connecting atoms according to their bonding rules to achieve specific molecular properties.",
+   "gradeBand": "6-8",
+   "oracle": [],
+   "uncheckedTypes": [],
+   "checked": 4,
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "make1",
+     "instruction": "Make a molecule with a double bond.",
+     "ask": {
+      "doubleBonds": 1
+     },
+     "passes": "C2H4",
+     "passMiss": null,
+     "shortMiss": "open_valence",
+     "scene": {
+      "kind": "make_molecule",
+      "board": "an empty board; the learner taps an element to add an atom, taps two atoms to join them (again for a double or triple bond), taps a bond to take one step of it away",
+      "atomsPlaced": 5,
+      "bondsMade": 4,
+      "doubleBonds": 1,
+      "tripleBonds": 0,
+      "openBonds": 1,
+      "pieces": 1,
+      "learnerWork": "Made C2H3: 5 atoms in one piece, 4 bonds (1 double); 1 bond still open",
+      "constraints": "The learner builds on the board and presses \"I'm done!\"; the activity checks the molecule itself. You cannot place or join atoms for the learner."
+     }
+    },
+    {
+     "id": "make2",
+     "instruction": "Make a molecule with a double bond and a nitrogen atom.",
+     "ask": {
+      "doubleBonds": 1,
+      "contains": "N"
+     },
+     "passes": "CH3N",
+     "passMiss": null,
+     "shortMiss": "open_valence",
+     "scene": {
+      "kind": "make_molecule",
+      "board": "an empty board; the learner taps an element to add an atom, taps two atoms to join them (again for a double or triple bond), taps a bond to take one step of it away",
+      "atomsPlaced": 4,
+      "bondsMade": 3,
+      "doubleBonds": 1,
+      "tripleBonds": 0,
+      "openBonds": 1,
+      "pieces": 1,
+      "learnerWork": "Made CH2N: 4 atoms in one piece, 3 bonds (1 double); 1 bond still open",
+      "constraints": "The learner builds on the board and presses \"I'm done!\"; the activity checks the molecule itself. You cannot place or join atoms for the learner."
+     }
+    },
+    {
+     "id": "make3",
+     "instruction": "Make a molecule with a double bond and exactly 2 carbon atoms.",
+     "ask": {
+      "doubleBonds": 1,
+      "carbons": 2
+     },
+     "passes": "C2H4",
+     "passMiss": null,
+     "shortMiss": "open_valence",
+     "scene": {
+      "kind": "make_molecule",
+      "board": "an empty board; the learner taps an element to add an atom, taps two atoms to join them (again for a double or triple bond), taps a bond to take one step of it away",
+      "atomsPlaced": 5,
+      "bondsMade": 4,
+      "doubleBonds": 1,
+      "tripleBonds": 0,
+      "openBonds": 1,
+      "pieces": 1,
+      "learnerWork": "Made C2H3: 5 atoms in one piece, 4 bonds (1 double); 1 bond still open",
+      "constraints": "The learner builds on the board and presses \"I'm done!\"; the activity checks the molecule itself. You cannot place or join atoms for the learner."
+     }
+    },
+    {
+     "id": "make4",
+     "instruction": "Make a molecule with a double bond and an oxygen atom.",
+     "ask": {
+      "doubleBonds": 1,
+      "contains": "O"
+     },
+     "passes": "CH2O",
+     "passMiss": null,
+     "shortMiss": "open_valence",
+     "scene": {
+      "kind": "make_molecule",
+      "board": "an empty board; the learner taps an element to add an atom, taps two atoms to join them (again for a double or triple bond), taps a bond to take one step of it away",
+      "atomsPlaced": 3,
+      "bondsMade": 2,
+      "doubleBonds": 1,
+      "tripleBonds": 0,
+      "openBonds": 1,
+      "pieces": 1,
+      "learnerWork": "Made CHO: 3 atoms in one piece, 2 bonds (1 double); 1 bond still open",
+      "constraints": "The learner builds on the board and presses \"I'm done!\"; the activity checks the molecule itself. You cannot place or join atoms for the learner."
+     }
+    }
+   ],
+   "data": {
+    "title": "Molecular Maker",
+    "description": "Students build custom molecules on a blank workspace by correctly connecting atoms according to their bonding rules to achieve specific molecular properties.",
+    "targetMolecule": {
+     "name": null,
+     "formula": null,
+     "atoms": [],
+     "bonds": [],
+     "realWorldUse": "",
+     "imagePrompt": ""
+    },
+    "palette": {
+     "availableElements": [
+      "H",
+      "C",
+      "N",
+      "O",
+      "S",
+      "Cl"
+     ],
+     "showValence": true,
+     "showElectronDots": false
+    },
+    "challenges": [
+     {
+      "id": "make1",
+      "type": "make_molecule",
+      "instruction": "Make a molecule with a double bond.",
+      "targetFormula": null,
+      "targetName": null,
+      "targetAtoms": [],
+      "ask": {
+       "doubleBonds": 1
+      },
+      "hint": "Count the bonds each atom makes. In a molecule, every atom uses all of its bonds.",
+      "narration": "Every atom uses all of its bonds: that is a real molecule!"
+     },
+     {
+      "id": "make2",
+      "type": "make_molecule",
+      "instruction": "Make a molecule with a double bond and a nitrogen atom.",
+      "targetFormula": null,
+      "targetName": null,
+      "targetAtoms": [],
+      "ask": {
+       "doubleBonds": 1,
+       "contains": "N"
+      },
+      "hint": "Count the bonds each atom makes. In a molecule, every atom uses all of its bonds.",
+      "narration": "Every atom uses all of its bonds: that is a real molecule!"
+     },
+     {
+      "id": "make3",
+      "type": "make_molecule",
+      "instruction": "Make a molecule with a double bond and exactly 2 carbon atoms.",
+      "targetFormula": null,
+      "targetName": null,
+      "targetAtoms": [],
+      "ask": {
+       "doubleBonds": 1,
+       "carbons": 2
+      },
+      "hint": "Count the bonds each atom makes. In a molecule, every atom uses all of its bonds.",
+      "narration": "Every atom uses all of its bonds: that is a real molecule!"
+     },
+     {
+      "id": "make4",
+      "type": "make_molecule",
+      "instruction": "Make a molecule with a double bond and an oxygen atom.",
+      "targetFormula": null,
+      "targetName": null,
+      "targetAtoms": [],
+      "ask": {
+       "doubleBonds": 1,
+       "contains": "O"
+      },
+      "hint": "Count the bonds each atom makes. In a molecule, every atom uses all of its bonds.",
+      "narration": "Every atom uses all of its bonds: that is a real molecule!"
+     }
+    ],
+    "moleculeGallery": [],
+    "showOptions": {
+     "showFormula": false,
+     "showName": false,
+     "showRealWorldImage": false,
+     "showValenceSatisfaction": false,
+     "show3DToggle": false,
+     "showElectronDots": false,
+     "showBondType": false
+    },
+    "gradeBand": "6-8"
+   }
+  },
+  {
+   "lesson": {
+    "mode": "make_molecule",
+    "grade": "8",
+    "topic": "Molecules from carbon, nitrogen, oxygen and chlorine",
+    "intent": "Apply valence rules"
+   },
+   "title": "Build Your Own Molecular Models",
+   "description": "Students use carbon, nitrogen, oxygen, and chlorine atoms on an empty board to design unique molecular structures that fulfill specific chemical property challenges.",
+   "gradeBand": "6-8",
+   "oracle": [],
+   "uncheckedTypes": [],
+   "checked": 4,
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "make1",
+     "instruction": "Make a molecule with a double bond.",
+     "ask": {
+      "doubleBonds": 1
+     },
+     "passes": "C2H4",
+     "passMiss": null,
+     "shortMiss": "open_valence",
+     "scene": {
+      "kind": "make_molecule",
+      "board": "an empty board; the learner taps an element to add an atom, taps two atoms to join them (again for a double or triple bond), taps a bond to take one step of it away",
+      "atomsPlaced": 5,
+      "bondsMade": 4,
+      "doubleBonds": 1,
+      "tripleBonds": 0,
+      "openBonds": 1,
+      "pieces": 1,
+      "learnerWork": "Made C2H3: 5 atoms in one piece, 4 bonds (1 double); 1 bond still open",
+      "constraints": "The learner builds on the board and presses \"I'm done!\"; the activity checks the molecule itself. You cannot place or join atoms for the learner."
+     }
+    },
+    {
+     "id": "make2",
+     "instruction": "Make a molecule with a triple bond.",
+     "ask": {
+      "tripleBond": true
+     },
+     "passes": "CHN",
+     "passMiss": null,
+     "shortMiss": "open_valence",
+     "scene": {
+      "kind": "make_molecule",
+      "board": "an empty board; the learner taps an element to add an atom, taps two atoms to join them (again for a double or triple bond), taps a bond to take one step of it away",
+      "atomsPlaced": 2,
+      "bondsMade": 1,
+      "doubleBonds": 0,
+      "tripleBonds": 1,
+      "openBonds": 1,
+      "pieces": 1,
+      "learnerWork": "Made CN: 2 atoms in one piece, 1 bond (1 triple); 1 bond still open",
+      "constraints": "The learner builds on the board and presses \"I'm done!\"; the activity checks the molecule itself. You cannot place or join atoms for the learner."
+     }
+    },
+    {
+     "id": "make3",
+     "instruction": "Make a molecule with two double bonds.",
+     "ask": {
+      "doubleBonds": 2
+     },
+     "passes": "C3H4",
+     "passMiss": null,
+     "shortMiss": "open_valence",
+     "scene": {
+      "kind": "make_molecule",
+      "board": "an empty board; the learner taps an element to add an atom, taps two atoms to join them (again for a double or triple bond), taps a bond to take one step of it away",
+      "atomsPlaced": 6,
+      "bondsMade": 5,
+      "doubleBonds": 2,
+      "tripleBonds": 0,
+      "openBonds": 1,
+      "pieces": 1,
+      "learnerWork": "Made C3H3: 6 atoms in one piece, 5 bonds (2 double); 1 bond still open",
+      "constraints": "The learner builds on the board and presses \"I'm done!\"; the activity checks the molecule itself. You cannot place or join atoms for the learner."
+     }
+    },
+    {
+     "id": "make4",
+     "instruction": "Make a molecule with a double bond and a chlorine atom.",
+     "ask": {
+      "doubleBonds": 1,
+      "contains": "Cl"
+     },
+     "passes": "C2H3Cl",
+     "passMiss": null,
+     "shortMiss": "open_valence",
+     "scene": {
+      "kind": "make_molecule",
+      "board": "an empty board; the learner taps an element to add an atom, taps two atoms to join them (again for a double or triple bond), taps a bond to take one step of it away",
+      "atomsPlaced": 5,
+      "bondsMade": 4,
+      "doubleBonds": 1,
+      "tripleBonds": 0,
+      "openBonds": 1,
+      "pieces": 1,
+      "learnerWork": "Made C2H2Cl: 5 atoms in one piece, 4 bonds (1 double); 1 bond still open",
+      "constraints": "The learner builds on the board and presses \"I'm done!\"; the activity checks the molecule itself. You cannot place or join atoms for the learner."
+     }
+    }
+   ],
+   "data": {
+    "title": "Build Your Own Molecular Models",
+    "description": "Students use carbon, nitrogen, oxygen, and chlorine atoms on an empty board to design unique molecular structures that fulfill specific chemical property challenges.",
+    "targetMolecule": {
+     "name": null,
+     "formula": null,
+     "atoms": [],
+     "bonds": [],
+     "realWorldUse": "",
+     "imagePrompt": ""
+    },
+    "palette": {
+     "availableElements": [
+      "H",
+      "C",
+      "N",
+      "O",
+      "S",
+      "Cl"
+     ],
+     "showValence": true,
+     "showElectronDots": false
+    },
+    "challenges": [
+     {
+      "id": "make1",
+      "type": "make_molecule",
+      "instruction": "Make a molecule with a double bond.",
+      "targetFormula": null,
+      "targetName": null,
+      "targetAtoms": [],
+      "ask": {
+       "doubleBonds": 1
+      },
+      "hint": "Count the bonds each atom makes. In a molecule, every atom uses all of its bonds.",
+      "narration": "Every atom uses all of its bonds: that is a real molecule!"
+     },
+     {
+      "id": "make2",
+      "type": "make_molecule",
+      "instruction": "Make a molecule with a triple bond.",
+      "targetFormula": null,
+      "targetName": null,
+      "targetAtoms": [],
+      "ask": {
+       "tripleBond": true
+      },
+      "hint": "Count the bonds each atom makes. In a molecule, every atom uses all of its bonds.",
+      "narration": "Every atom uses all of its bonds: that is a real molecule!"
+     },
+     {
+      "id": "make3",
+      "type": "make_molecule",
+      "instruction": "Make a molecule with two double bonds.",
+      "targetFormula": null,
+      "targetName": null,
+      "targetAtoms": [],
+      "ask": {
+       "doubleBonds": 2
+      },
+      "hint": "Count the bonds each atom makes. In a molecule, every atom uses all of its bonds.",
+      "narration": "Every atom uses all of its bonds: that is a real molecule!"
+     },
+     {
+      "id": "make4",
+      "type": "make_molecule",
+      "instruction": "Make a molecule with a double bond and a chlorine atom.",
+      "targetFormula": null,
+      "targetName": null,
+      "targetAtoms": [],
+      "ask": {
+       "doubleBonds": 1,
+       "contains": "Cl"
+      },
+      "hint": "Count the bonds each atom makes. In a molecule, every atom uses all of its bonds.",
+      "narration": "Every atom uses all of its bonds: that is a real molecule!"
+     }
+    ],
+    "moleculeGallery": [],
+    "showOptions": {
+     "showFormula": false,
+     "showName": false,
+     "showRealWorldImage": false,
+     "showValenceSatisfaction": false,
+     "show3DToggle": false,
+     "showElectronDots": false,
+     "showBondType": false
+    },
+    "gradeBand": "6-8"
+   }
+  },
+  {
+   "lesson": {
+    "mode": "build",
+    "grade": "4",
+    "topic": "Simple molecules: water, oxygen, carbon dioxide",
+    "intent": "Build a molecule from its formula"
+   },
+   "title": "Build Amazing Simple Molecules!",
+   "description": "Snap atoms together like building blocks to discover how water, oxygen, and carbon dioxide are made!",
+   "gradeBand": "3-5",
+   "oracle": [],
+   "uncheckedTypes": [
+    "build_target",
+    "free_build"
+   ],
+   "checked": 0,
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "ch1",
+     "type": "build_target",
+     "targetFormula": "H2O",
+     "targetName": "Water",
+     "buildable": true
+    },
+    {
+     "id": "ch2",
+     "type": "build_target",
+     "targetFormula": "O2",
+     "targetName": "Oxygen",
+     "buildable": true
+    },
+    {
+     "id": "ch3",
+     "type": "build_target",
+     "targetFormula": "CO2",
+     "targetName": "Carbon Dioxide",
+     "buildable": true
+    },
+    {
+     "id": "ch4",
+     "type": "free_build",
+     "targetFormula": null,
+     "targetName": null
+    }
+   ],
+   "data": {
+    "title": "Build Amazing Simple Molecules!",
+    "description": "Snap atoms together like building blocks to discover how water, oxygen, and carbon dioxide are made!",
+    "targetMolecule": {
+     "name": "Water",
+     "formula": "H2O",
+     "atoms": [
+      {
+       "element": "O",
+       "count": 1
+      },
+      {
+       "element": "H",
+       "count": 2
+      }
+     ],
+     "bonds": [
+      {
+       "atom1": 0,
+       "atom2": 1,
+       "type": "single"
+      },
+      {
+       "atom1": 0,
+       "atom2": 2,
+       "type": "single"
+      }
+     ],
+     "realWorldUse": "Water covers 71% of Earth and is essential for all living things!",
+     "imagePrompt": "A crystal clear droplet of water resting on a vibrant green leaf, reflecting sunlight in a lush forest."
+    },
+    "palette": {
+     "availableElements": [
+      "H",
+      "C",
+      "N",
+      "O"
+     ],
+     "showValence": true,
+     "showElectronDots": false
+    },
+    "challenges": [
+     {
+      "id": "ch1",
+      "type": "build_target",
+      "instruction": "Let's start simple! Snap together two Hydrogen atoms and one Oxygen atom to build water (H2O).",
+      "targetFormula": "H2O",
+      "targetName": "Water",
+      "targetAtoms": [
+       {
+        "element": "H",
+        "count": 2
+       },
+       {
+        "element": "O",
+        "count": 1
+       }
+      ],
+      "hint": "Connect each Hydrogen atom with a single bond to the central Oxygen atom.",
+      "narration": "Amazing! You built water — H2O! Every raindrop, every ocean wave is made of this life-giving molecule!"
+     },
+     {
+      "id": "ch2",
+      "type": "build_target",
+      "instruction": "Now let's build the oxygen gas we breathe! Snap together two Oxygen atoms to make O2.",
+      "targetFormula": "O2",
+      "targetName": "Oxygen",
+      "targetAtoms": [
+       {
+        "element": "O",
+        "count": 2
+       }
+      ],
+      "hint": "Oxygen atoms like to share four electrons, creating a double bond between them.",
+      "narration": "Fantastic job! You built O2, the oxygen gas that fills our atmosphere and helps us breathe every day!"
+     },
+     {
+      "id": "ch3",
+      "type": "build_target",
+      "instruction": "Time for Carbon Dioxide! Combine one Carbon atom and two Oxygen atoms to make CO2.",
+      "targetFormula": "CO2",
+      "targetName": "Carbon Dioxide",
+      "targetAtoms": [
+       {
+        "element": "C",
+        "count": 1
+       },
+       {
+        "element": "O",
+        "count": 2
+       }
+      ],
+      "hint": "Put Carbon in the middle and use double bonds to connect it to both Oxygen atoms.",
+      "narration": "Incredible! CO2 is exhaled by animals and used by plants to make food through photosynthesis!"
+     },
+     {
+      "id": "ch4",
+      "type": "free_build",
+      "instruction": "You are a master molecule builder! Use the atom palette to create any molecule you can imagine.",
+      "targetFormula": null,
+      "targetName": null,
+      "targetAtoms": [],
+      "hint": "Make sure every atom's valence bonds are fully connected with green indicators!",
+      "narration": "You are thinking like a real chemist, exploring how different building blocks connect in our universe!"
+     }
+    ],
+    "moleculeGallery": [
+     {
+      "name": "Water",
+      "formula": "H2O",
+      "category": "essential",
+      "unlocked": false,
+      "imagePrompt": "A splashing blue wave in the ocean sparkling under a bright blue sky."
+     },
+     {
+      "name": "Oxygen Gas",
+      "formula": "O2",
+      "category": "atmosphere",
+      "unlocked": false,
+      "imagePrompt": "Green treetops swaying gently in a crisp, clear morning breeze."
+     },
+     {
+      "name": "Carbon Dioxide",
+      "formula": "CO2",
+      "category": "atmosphere",
+      "unlocked": false,
+      "imagePrompt": "Lush green plants basking in warm sunlight, absorbing gases from the air."
+     },
+     {
+      "name": "Methane",
+      "formula": "CH4",
+      "category": "energy",
+      "unlocked": false,
+      "imagePrompt": "A blue flame burning steadily on a modern kitchen stove burner."
+     },
+     {
+      "name": "Table Sugar",
+      "formula": "C12H22O11",
+      "category": "food",
+      "unlocked": false,
+      "imagePrompt": "A heap of white crystal sugar granules glowing softly under warm light."
+     }
+    ],
+    "showOptions": {
+     "showFormula": true,
+     "showName": true,
+     "showRealWorldImage": true,
+     "showValenceSatisfaction": true,
+     "show3DToggle": false,
+     "showElectronDots": false,
+     "showBondType": false
+    },
+    "gradeBand": "3-5"
+   }
+  }
+ ],
+ "logs": [
+  "[MoleculeConstructor] make_molecule asks: doubleBond, doubleTwoCarbons, doubleNitrogen, twoDoubles",
+  "[MoleculeConstructor] make_molecule asks: doubleBond, twoCarbons, twoDoubles",
+  "[MoleculeConstructor] make_molecule asks: doubleBond, doubleNitrogen, doubleTwoCarbons, doubleOxygen",
+  "[MoleculeConstructor] make_molecule asks: doubleBond, tripleBond, twoDoubles, doubleChlorine",
+  "Molecule Constructor Generated: {\n  title: 'Build Amazing Simple Molecules!',\n  gradeBand: '3-5',\n  targetMolecule: 'Water',\n  formula: 'H2O',\n  challengeCount: 4,\n  galleryCount: 5,\n  availableElements: 'H, C, N, O'\n}"
+ ]
+}

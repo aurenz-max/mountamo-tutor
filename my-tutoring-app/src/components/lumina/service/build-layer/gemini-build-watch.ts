@@ -25,7 +25,7 @@ No grid positions, rows or columns.`;
 const OVERSTEP = /\?|\b(add|put|move|try|need|needs|should|could|must|missing|almost|yet|finish|finished|maybe|don't forget|remember|complete|done|ready|perfect)\b/i;
 /** The watcher only looks at a scene with something in it, so "empty" is a misread. */
 const MISREAD = /\b(empty|blank|nothing)\b/i;
-const NUMBER_WORD = /\d|\b(zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|hundred|dozen|pair|couple|few|many|lots|several|both|single|double|triple|once|twice|first|second|third|thirds|half|halves|halfway|quarters?|fourths?|fifths?|sixths?|eighths?|tenths?|twelfths?|fraction|whole|equal|same)\b/i;
+const NUMBER_WORD = /\d|\b(zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|hundred|dozen|pair|couple|few|many|lots|several|both|single|double|triple|twins?|once|twice|first|second|third|thirds|half|halves|halfway|quarters?|fourths?|fifths?|sixths?|eighths?|tenths?|twelfths?|fraction|whole|equal|same)\b/i;
 
 export interface BuildWatchParams {
   task: string;

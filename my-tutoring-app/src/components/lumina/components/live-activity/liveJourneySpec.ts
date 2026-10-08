@@ -117,9 +117,14 @@ import { calendarSequenceItemsFromChallenges, calendarSequenceJourneyAnswers, is
 import { itemsFromChallenges as arenaItems } from '../../primitives/visual-primitives/physics/pushPullArenaScript';
 import { pushPullArenaJourneyAnswers } from '../../primitives/visual-primitives/physics/pushPullArenaWorkspace';
 import { itemsFromChallenges as habitatItems } from '../../primitives/visual-primitives/biology/habitatDioramaScript';
-import { habitatJourneyAnswers } from '../../primitives/visual-primitives/biology/habitatDioramaWorkspace';
+import { fewerNeedsItem as habitatFewerNeedsItem, habitatJourneyAnswers } from '../../primitives/visual-primitives/biology/habitatDioramaWorkspace';
+import { FEWER_SUFFIX as HABITAT_FEWER, animalById as habitatAnimalById, pieceById as habitatPieceById }
+  from '../../primitives/visual-primitives/biology/habitatBuild';
 import { matterItems } from './adapters/matterExplorerLive';
 import { matterJourneyAnswers } from '../../primitives/visual-primitives/chemistry/matterExplorerWorkspace';
+import { moleculeHarnessInputs } from '../../primitives/visual-primitives/chemistry/moleculeConstructorWorkspace';
+import { simplerMolecule } from '../../primitives/visual-primitives/chemistry/moleculeConstructorLevers';
+import type { MoleculeConstructorChallenge } from '../../primitives/visual-primitives/chemistry/MoleculeConstructor';
 import { itemsFromPayload as genreItems } from '../../primitives/visual-primitives/literacy/genreExplorerScript';
 import { genreJourneyAnswers } from '../../primitives/visual-primitives/literacy/genreExplorerWorkspace';
 import { textStructureItems, textStructureJourneyAnswers } from '../../primitives/visual-primitives/literacy/textStructureAnalyzerWorkspace';
@@ -1821,10 +1826,24 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     leakTokens: ['HABITAT_ITEM', 'HABITAT_GESTURE', 'HABITAT_MOVE', 'HABITAT_COMPLETE'],
     prompts: WORKSPACE_PROMPTS,
     // Observe, predict and defend are one spoken choice; connect taps the living thing, restore the zone.
+    // build_habitat clears a kept habitat, puts in one piece per asked need that serves the animal, and presses I'm
+    // done; wrong leaves the last need out (`one_need_unmet`). The easier ask (simplify lever) is rebuilt from its parent.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const item = habitatItems(ctx.data.challenges ?? [], ctx.data as never).items.find(i => i.id === ctx.itemId);
+      const all = habitatItems(ctx.data.challenges ?? [], ctx.data as never).items;
+      const parent = ctx.itemId?.endsWith(HABITAT_FEWER) ? all.find(i => `${i.id}${HABITAT_FEWER}` === ctx.itemId) : undefined;
+      const item = parent ? habitatFewerNeedsItem(parent) : all.find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current habitat-diorama item');
+      if (item.kind === 'build_habitat') {
+        const animal = habitatAnimalById(item.animalId);
+        if (!animal) throw new Error(`habitat-diorama build: unknown animal ${item.animalId}`);
+        const pieces = (item.needs ?? []).map(n => (item.tray ?? []).find(p => animal.meets[n].includes(p) && !animal.harmedBy.includes(p)));
+        if (pieces.some(p => !p)) throw new Error(`habitat-diorama build: the tray cannot meet every need of the ${animal.name}`);
+        const put = (ids: string[]): DriverInput[] => ids.map(id => ({ type: 'choose', label: `Put in ${habitatPieceById(id)!.name}` }));
+        const start: DriverInput[] = Number(ctx.demand?.piecesPlaced ?? 0) > 0 ? [{ type: 'choose', label: 'Clear the habitat' }] : [];
+        const made = intent === 'wrong' ? (pieces as string[]).slice(0, -1) : (pieces as string[]);
+        return [...start, ...put(made), { type: 'choose', label: "I'm done!" }];
+      }
       const answers = habitatJourneyAnswers(item);
       const pick = intent === 'wrong' ? answers.plainWrong : answers.correct;
       return [item.answerKind === 'gesture' ? { type: 'choose', label: pick } : { type: 'answer', text: pick }];
@@ -1847,6 +1866,27 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
+  },
+  'molecule-constructor': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/chemistry/MoleculeConstructor.tsx',
+    instanceId: 'molecules',
+    defaults: { grade: 'Grade 4', mode: 'make_molecule', di: false, topic: 'Atoms bond to make molecules' },
+    leakTokens: ['FIRST_BOND', 'MOLECULE_COMPLETE', 'MOLECULE_INCORRECT', 'NEXT_CHALLENGE', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every challenge type through its real controls (`moleculeHarnessInputs`): make_molecule adds a molecule the
+    // ask's menu proves passes and presses "I'm done!" (wrong: the same molecule one hydrogen short, `open_valence`);
+    // build_target adds the target's atoms and joins them; identify and formula_write type. The easier practice ask
+    // is rebuilt from its parent.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const all: MoleculeConstructorChallenge[] = ctx.data.challenges ?? [];
+      const parent = ctx.itemId?.endsWith('~simpler') ? all.find(x => `${x.id}~simpler` === ctx.itemId) : undefined;
+      const c = parent ? simplerMolecule(parent) : all.find(x => x.id === ctx.itemId);
+      if (!c) throw new Error('No current molecule-constructor challenge');
+      return moleculeHarnessInputs(c, intent === 'wrong', ctx.demand);
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
   'states-of-matter': {
     execution: 'workspace',

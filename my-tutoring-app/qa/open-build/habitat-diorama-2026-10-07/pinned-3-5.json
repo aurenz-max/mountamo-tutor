@@ -1,0 +1,141 @@
+{
+  "generatedAt": "2026-10-08T03:55:16.284Z",
+  "case": {
+    "targetEvalMode": "build_habitat",
+    "grade": "4",
+    "topic": "What animals need to survive in a habitat",
+    "intent": "Build a habitat that meets every need of an animal"
+  },
+  "data": {
+    "primitiveType": "habitat-diorama",
+    "habitat": {
+      "name": "Habitat Builder",
+      "biome": "Build a habitat",
+      "climate": "",
+      "description": "Put pieces into an empty habitat so an animal has everything it needs to live."
+    },
+    "organisms": [],
+    "relationships": [],
+    "environmentalFeatures": [],
+    "gradeBand": "3-5",
+    "challengeType": "build_habitat",
+    "challengeTypes": [
+      "build_habitat"
+    ],
+    "challenges": [
+      {
+        "id": "build-1-rabbit",
+        "type": "build_habitat",
+        "prompt": "",
+        "explanation": "",
+        "targetAnimal": "rabbit",
+        "needs": [
+          "food",
+          "water",
+          "shelter",
+          "weather"
+        ],
+        "trayPieces": [
+          "mice",
+          "rain",
+          "sea",
+          "tall_grass",
+          "ice",
+          "stream",
+          "burrow",
+          "pond",
+          "clover",
+          "snow"
+        ]
+      },
+      {
+        "id": "build-2-squirrel",
+        "type": "build_habitat",
+        "prompt": "",
+        "explanation": "",
+        "targetAnimal": "squirrel",
+        "needs": [
+          "food",
+          "water",
+          "shelter",
+          "weather"
+        ],
+        "trayPieces": [
+          "sun",
+          "tree",
+          "berries",
+          "fish",
+          "rain",
+          "pond",
+          "sea",
+          "nuts",
+          "tall_grass",
+          "stream"
+        ]
+      },
+      {
+        "id": "build-3-deer",
+        "type": "build_habitat",
+        "prompt": "",
+        "explanation": "",
+        "targetAnimal": "deer",
+        "needs": [
+          "food",
+          "water",
+          "shelter",
+          "weather"
+        ],
+        "trayPieces": [
+          "pond",
+          "mice",
+          "burrow",
+          "tall_grass",
+          "sun",
+          "sea",
+          "carrots",
+          "stream",
+          "rain",
+          "nuts",
+          "tree"
+        ]
+      },
+      {
+        "id": "build-4-frog",
+        "type": "build_habitat",
+        "prompt": "",
+        "explanation": "",
+        "targetAnimal": "frog",
+        "needs": [
+          "food",
+          "water",
+          "shelter",
+          "weather"
+        ],
+        "trayPieces": [
+          "sea",
+          "tall_grass",
+          "worms",
+          "sun",
+          "pond",
+          "log",
+          "ice",
+          "stream",
+          "flies",
+          "berries",
+          "snow",
+          "rain"
+        ]
+      }
+    ]
+  },
+  "oracle": {
+    "violations": [],
+    "uncheckedTypes": [],
+    "checkedChallenges": 4
+  },
+  "issues": [],
+  "logs": [
+    "[HabitatDiorama] modes: build_habitat (explicit) -> types [build_habitat]",
+    "[HabitatDiorama] build_habitat (3-5): rabbit, squirrel, deer, frog"
+  ]
+}

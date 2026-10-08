@@ -22,6 +22,7 @@ import type {
   Organism,
   Relationship,
 } from './HabitatDiorama';
+import { ALL_NEEDS, animalById, buildAsk, pieceById, readHabitatBuild, trayFor, type HabitatNeed } from './habitatBuild';
 
 const TYPES: readonly HabitatChallengeType[] = [
   'observe',
@@ -29,6 +30,7 @@ const TYPES: readonly HabitatChallengeType[] = [
   'predict',
   'restore',
   'defend',
+  'build_habitat',
 ];
 
 const ZONES: readonly HabitatZone[] = [
@@ -89,7 +91,7 @@ const uniqueTermsFor = (answer: string, options: readonly string[]): string[] =>
 };
 
 export const answerKindFor = (kind: HabitatChallengeType): 'voice' | 'gesture' =>
-  kind === 'connect' || kind === 'restore' ? 'gesture' : 'voice';
+  kind === 'connect' || kind === 'restore' || kind === 'build_habitat' ? 'gesture' : 'voice';
 
 export const responseClassFor = (kind: HabitatChallengeType): ResponseClassId =>
   answerKindFor(kind) === 'gesture' ? 'manipulation' : 'closed_set_choice';
@@ -100,6 +102,7 @@ export const actionFor = (kind: HabitatChallengeType): string => ({
   predict: 'predict-population-change',
   restore: 'place-restoration-part',
   defend: 'choose-supporting-evidence',
+  build_habitat: 'build-habitat-for-animal',
 })[kind];
 
 const roleClue = (role: Organism['role']): string => {
@@ -173,6 +176,10 @@ export interface HabitatItem extends JudgedScriptItem {
   evidenceChoices?: Array<{ id: string; text: string }>;
   correctEvidenceId?: string;
   organismNames: Record<string, string>;
+  /** build_habitat: the animal (`habitatBuild.ts`), the needs asked, the pieces offered. */
+  animalId?: string;
+  needs?: HabitatNeed[];
+  tray?: string[];
 }
 
 export interface HabitatBuildResult {
@@ -191,11 +198,48 @@ const candidateOrganismIds = (
   return Array.from(new Set(pool)).slice(0, 5);
 };
 
+/**
+ * build_habitat, the open build: code owns the animal, the needs, the tray, the ask and the explanation, so nothing
+ * the model wrote is read. The item is dropped unless every asked need can be met from the tray (buildable) and the
+ * tray holds a piece that is not right for the animal (the choice is real).
+ */
+const buildItemFromChallenge = (
+  challenge: HabitatChallenge,
+  data: Pick<HabitatDioramaData, 'organisms'>,
+  index: number,
+): HabitatItem | null => {
+  const animal = animalById(challenge.targetAnimal);
+  const needs = Array.from(new Set((challenge.needs ?? []).filter((n): n is HabitatNeed => ALL_NEEDS.includes(n))));
+  if (!animal || needs.length < 2 || !needs.includes('food') || !needs.includes('water')) return null;
+  const id = clean(challenge.id) || `habitat-build_habitat-${index + 1}`;
+  const tray = (challenge.trayPieces?.length ? challenge.trayPieces : trayFor(animal, needs, id)).filter(p => pieceById(p));
+  if (readHabitatBuild(animal, needs, tray.filter(p => !animal.harmedBy.includes(p))).miss) return null;
+  if (tray.every(p => needs.some(n => animal.meets[n].includes(p)))) return null;
+  return {
+    id,
+    kind: 'build_habitat',
+    action: actionFor('build_habitat'),
+    answerKind: 'gesture',
+    responseClass: responseClassFor('build_habitat'),
+    prompt: buildAsk(animal, needs),
+    explanation: animal.why,
+    organismNames: Object.fromEntries((data.organisms ?? []).map((organism) => [organism.id, organism.commonName])),
+    answerText: animal.name,
+    answerTerms: [],
+    optionTexts: [],
+    signatureWrong: 'a habitat missing something the animal needs',
+    animalId: animal.id,
+    needs,
+    tray,
+  };
+};
+
 export const itemFromChallenge = (
   challenge: HabitatChallenge,
   data: Pick<HabitatDioramaData, 'organisms' | 'relationships'>,
   index = 0,
 ): HabitatItem | null => {
+  if (challenge.type === 'build_habitat') return buildItemFromChallenge(challenge, data, index);
   if (!TYPES.includes(challenge.type) || !safeSpokenText(challenge.prompt, 260)
       || !safeSpokenText(challenge.explanation, 320)) return null;
 
@@ -323,7 +367,7 @@ export const itemFromChallenge = (
 const sessionKeyFor = (item: HabitatItem): string => (
   item.kind === 'restore'
     ? `restore:${item.restorationEntityId ?? item.answerText}`
-    : item.answerText.toLowerCase()
+    : item.kind === 'build_habitat' ? `build:${item.animalId}` : item.answerText.toLowerCase()
 );
 
 /** Select rather than blindly truncate, and do not ask for the same spoken
@@ -370,6 +414,9 @@ export const askFor = (item: HabitatItem): string => {
       // reads correctly for BOTH shapes, and howToPlayFor already frames the
       // game, so no frame is lost.
       return `${endSentence(item.prompt)} Say the evidence that fits.`;
+    case 'build_habitat':
+      // Written by code (`buildAsk`): it names the animal, never its needs.
+      return item.prompt;
   }
 };
 
@@ -379,6 +426,7 @@ const howToPlayFor = (item: HabitatItem): string => ({
   predict: 'Picture the ecosystem after the change, then answer with a living thing\'s name. ',
   restore: 'Use your hands to place the missing living thing into the best habitat zone. ',
   defend: 'Read or listen to the evidence cards, then say the evidence that best supports the claim. ',
+  build_habitat: 'Use your hands to put pieces into the empty habitat, then press I\'m done. ',
 })[item.kind];
 
 /** Answers that are whole sentences already carry their own full stop; the cue
@@ -392,6 +440,7 @@ const asClause = (text: string): string => clean(text).replace(/[.\s]+$/, '');
 const affirmFor = (item: HabitatItem): string => {
   if (item.kind === 'connect') return `Yes, that connection works. ${item.explanation}`;
   if (item.kind === 'restore') return `Yes, that placement helps the habitat recover. ${item.explanation}`;
+  if (item.kind === 'build_habitat') return `Yes, that habitat works. ${item.explanation}`;
   return `Yes, ${asClause(item.answerText)}. ${item.explanation}`;
 };
 
@@ -402,6 +451,8 @@ const correctionFor = (item: HabitatItem): string => {
   if (item.kind === 'restore') {
     return `My turn: ${item.organismNames[item.restorationEntityId ?? '']} belongs in the ${item.restorationZone} zone. ${item.explanation} Your turn: place it there.`;
   }
+  // Many habitats pass, so there is no one answer to model: the correction never names the missing need.
+  if (item.kind === 'build_habitat') return `Not yet. Think about what the ${item.answerText} needs every day. Your turn: change your habitat.`;
   return `My turn: the answer is ${asClause(item.answerText)}. ${item.explanation} Your turn. ${askFor(item)}`;
 };
 
@@ -422,7 +473,7 @@ const judgingContract = (item: HabitatItem): string =>
 
 const silenceContract = (item: HabitatItem): string =>
   `The quoted line is the ONLY thing you say on this turn; the learner answers with their HANDS on the habitat model, not with their voice, so you then stay completely silent. `
-  + `Do not narrate their taps, name the correct ${item.kind === 'connect' ? 'connection' : 'zone'}, or fill the pause. `
+  + `Do not narrate their taps, name the correct ${item.kind === 'connect' ? 'connection' : item.kind === 'build_habitat' ? 'pieces' : 'zone'}, or fill the pause. `
   + `You will be told what they built and whether code found a match; only then do you speak.`;
 
 const NEVER_PERFORM =
@@ -438,12 +489,17 @@ export const itemCue = (item: HabitatItem, opts: { opening?: boolean; howToPlay?
 
 export const gestureVerdictCue = (
   item: HabitatItem,
-  attempt: { fromId?: string; toId?: string; zone?: HabitatZone },
+  attempt: { fromId?: string; toId?: string; zone?: HabitatZone; pieces?: string[] },
 ): string => {
+  const animal = animalById(item.animalId);
   const correct = item.kind === 'connect'
     ? attempt.fromId === item.fromId && attempt.toId === item.toId
-    : item.kind === 'restore' && attempt.zone === item.restorationZone;
-  const description = item.kind === 'connect'
+    : item.kind === 'build_habitat'
+      ? !!animal && !readHabitatBuild(animal, item.needs ?? [], attempt.pieces ?? []).miss
+      : item.kind === 'restore' && attempt.zone === item.restorationZone;
+  const description = item.kind === 'build_habitat'
+    ? `a habitat of ${(attempt.pieces ?? []).map(p => pieceById(p)?.name ?? p).join(', ') || 'nothing'}`
+    : item.kind === 'connect'
     ? `${item.organismNames[attempt.fromId ?? 'unknown'] ?? 'one living thing'} to ${item.organismNames[attempt.toId ?? 'unknown'] ?? 'another living thing'}`
     : `${item.organismNames[item.restorationEntityId ?? ''] ?? 'the living thing'} in the ${attempt.zone ?? 'unplaced'} zone`;
   const line = correct ? affirmFor(item) : correctionFor(item);
@@ -472,6 +528,7 @@ export const pronounceCue = (item: HabitatItem): string =>
 export const stimulusFor = (item: HabitatItem): string => {
   if (item.kind === 'connect') return `the habitat map with ${item.organismNames[item.fromId ?? '']} ready to start a connection; the destination is not named`;
   if (item.kind === 'restore') return `${item.organismNames[item.restorationEntityId ?? '']} waiting beside six habitat zones; the correct zone is not named`;
+  if (item.kind === 'build_habitat') return `an empty habitat for the ${item.answerText} and a tray of pieces; its needs are not named`;
   if (item.kind === 'predict') return `a disruption card and ${item.optionTexts.length} named populations to compare; the changed population is not marked`;
   if (item.kind === 'defend') return `${item.optionTexts.length} evidence cards supporting or challenging one ecological claim; no card is marked correct`;
   return `${item.optionTexts.length} named living things in one habitat scene; ecological role labels are hidden`;
@@ -493,6 +550,7 @@ const wrongGestureFor = (item: HabitatItem): string => {
       ?? item.fromId
       ?? 'unknown';
   }
+  if (item.kind === 'build_habitat') return '';
   return ZONES.find((zone) => zone !== item.restorationZone) ?? 'ground';
 };
 

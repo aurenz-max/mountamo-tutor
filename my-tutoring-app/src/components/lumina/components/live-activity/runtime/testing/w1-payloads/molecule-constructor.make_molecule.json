@@ -1,0 +1,94 @@
+{
+ "source": "qa/open-build/molecule-constructor-2026-10-07/generations.json",
+ "primitiveId": "molecule-constructor",
+ "evalMode": "make_molecule",
+ "data": {
+  "title": "Build Your Own Molecule",
+  "description": "Students use an empty board and special pieces to construct custom molecules that meet specific chemical challenges.",
+  "targetMolecule": {
+   "name": null,
+   "formula": null,
+   "atoms": [],
+   "bonds": [],
+   "realWorldUse": "",
+   "imagePrompt": ""
+  },
+  "palette": {
+   "availableElements": [
+    "H",
+    "C",
+    "N",
+    "O"
+   ],
+   "showValence": true,
+   "showElectronDots": false
+  },
+  "challenges": [
+   {
+    "id": "make1",
+    "type": "make_molecule",
+    "instruction": "Make a molecule with a double bond.",
+    "targetFormula": null,
+    "targetName": null,
+    "targetAtoms": [],
+    "ask": {
+     "doubleBonds": 1
+    },
+    "hint": "Count the bonds each atom makes. In a molecule, every atom uses all of its bonds.",
+    "narration": "Every atom uses all of its bonds: that is a real molecule!"
+   },
+   {
+    "id": "make2",
+    "type": "make_molecule",
+    "instruction": "Make a molecule with a double bond and exactly 2 carbon atoms.",
+    "targetFormula": null,
+    "targetName": null,
+    "targetAtoms": [],
+    "ask": {
+     "doubleBonds": 1,
+     "carbons": 2
+    },
+    "hint": "Count the bonds each atom makes. In a molecule, every atom uses all of its bonds.",
+    "narration": "Every atom uses all of its bonds: that is a real molecule!"
+   },
+   {
+    "id": "make3",
+    "type": "make_molecule",
+    "instruction": "Make a molecule with a double bond and a nitrogen atom.",
+    "targetFormula": null,
+    "targetName": null,
+    "targetAtoms": [],
+    "ask": {
+     "doubleBonds": 1,
+     "contains": "N"
+    },
+    "hint": "Count the bonds each atom makes. In a molecule, every atom uses all of its bonds.",
+    "narration": "Every atom uses all of its bonds: that is a real molecule!"
+   },
+   {
+    "id": "make4",
+    "type": "make_molecule",
+    "instruction": "Make a molecule with two double bonds.",
+    "targetFormula": null,
+    "targetName": null,
+    "targetAtoms": [],
+    "ask": {
+     "doubleBonds": 2
+    },
+    "hint": "Count the bonds each atom makes. In a molecule, every atom uses all of its bonds.",
+    "narration": "Every atom uses all of its bonds: that is a real molecule!"
+   }
+  ],
+  "moleculeGallery": [],
+  "showOptions": {
+   "showFormula": false,
+   "showName": false,
+   "showRealWorldImage": false,
+   "showValenceSatisfaction": false,
+   "show3DToggle": false,
+   "showElectronDots": false,
+   "showBondType": false
+  },
+  "gradeBand": "3-5"
+ }
+}

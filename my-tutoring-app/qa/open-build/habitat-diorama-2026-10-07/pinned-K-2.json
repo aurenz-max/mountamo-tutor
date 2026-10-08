@@ -1,0 +1,127 @@
+{
+  "generatedAt": "2026-10-08T03:55:16.285Z",
+  "case": {
+    "targetEvalMode": "build_habitat",
+    "grade": "1",
+    "topic": "Animals need food, water and shelter",
+    "intent": "Make a home where an animal can live"
+  },
+  "data": {
+    "primitiveType": "habitat-diorama",
+    "habitat": {
+      "name": "Habitat Builder",
+      "biome": "Build a habitat",
+      "climate": "",
+      "description": "Put pieces into an empty habitat so an animal has everything it needs to live."
+    },
+    "organisms": [],
+    "relationships": [],
+    "environmentalFeatures": [],
+    "gradeBand": "K-2",
+    "challengeType": "build_habitat",
+    "challengeTypes": [
+      "build_habitat"
+    ],
+    "challenges": [
+      {
+        "id": "build-1-owl",
+        "type": "build_habitat",
+        "prompt": "",
+        "explanation": "",
+        "targetAnimal": "owl",
+        "needs": [
+          "food",
+          "water",
+          "shelter"
+        ],
+        "trayPieces": [
+          "pond",
+          "sea",
+          "stream",
+          "tree",
+          "tall_grass",
+          "clover",
+          "mice"
+        ]
+      },
+      {
+        "id": "build-2-frog",
+        "type": "build_habitat",
+        "prompt": "",
+        "explanation": "",
+        "targetAnimal": "frog",
+        "needs": [
+          "food",
+          "water",
+          "shelter"
+        ],
+        "trayPieces": [
+          "worms",
+          "flies",
+          "stream",
+          "rocks",
+          "pond",
+          "tall_grass",
+          "sea",
+          "ice",
+          "carrots"
+        ]
+      },
+      {
+        "id": "build-3-squirrel",
+        "type": "build_habitat",
+        "prompt": "",
+        "explanation": "",
+        "targetAnimal": "squirrel",
+        "needs": [
+          "food",
+          "water",
+          "shelter"
+        ],
+        "trayPieces": [
+          "nuts",
+          "fish",
+          "ice",
+          "pond",
+          "sea",
+          "tree",
+          "berries",
+          "stream"
+        ]
+      },
+      {
+        "id": "build-4-deer",
+        "type": "build_habitat",
+        "prompt": "",
+        "explanation": "",
+        "targetAnimal": "deer",
+        "needs": [
+          "food",
+          "water",
+          "shelter"
+        ],
+        "trayPieces": [
+          "tall_grass",
+          "stream",
+          "clover",
+          "pond",
+          "tree",
+          "nuts",
+          "burrow",
+          "sea",
+          "flies"
+        ]
+      }
+    ]
+  },
+  "oracle": {
+    "violations": [],
+    "uncheckedTypes": [],
+    "checkedChallenges": 4
+  },
+  "issues": [],
+  "logs": [
+    "[HabitatDiorama] modes: build_habitat (explicit) -> types [build_habitat]",
+    "[HabitatDiorama] build_habitat (K-2): owl, frog, squirrel, deer"
+  ]
+}

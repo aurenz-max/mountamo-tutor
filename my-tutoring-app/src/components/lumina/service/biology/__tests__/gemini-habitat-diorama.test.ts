@@ -5,6 +5,7 @@ const generateContent = vi.hoisted(() => vi.fn());
 vi.mock('../../geminiClient', () => ({ ai: { models: { generateContent } } }));
 
 import { ALL_HABITAT_CHALLENGE_TYPES, generateHabitatDiorama } from '../gemini-habitat-diorama';
+import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 
 const payload = {
   primitiveType: 'habitat-diorama',
@@ -76,5 +77,25 @@ describe('generateHabitatDiorama eval-mode contract', () => {
     const result = await generateHabitatDiorama(context('observe|restore'));
     expect(result.challengeTypes).toEqual(['observe', 'restore']);
     expect(result.challenges?.map((challenge) => challenge.type)).toEqual(['observe', 'restore']);
+  });
+
+  it('build_habitat pinned is written by code alone: no model call, distinct animals, the band\'s needs, no climate in the header', async () => {
+    const result = await generateHabitatDiorama(context('build_habitat'));
+    expect(generateContent).not.toHaveBeenCalled();
+    expect(result.challengeTypes).toEqual(['build_habitat']);
+    const builds = result.challenges ?? [];
+    expect(builds).toHaveLength(4);
+    expect(new Set(builds.map((c) => c.targetAnimal)).size).toBe(4);
+    for (const c of builds) expect(c.needs).toEqual(['food', 'water', 'shelter', 'weather']);
+    expect(result.habitat.climate).toBe('');
+    expect(LIVE_ADAPTERS['habitat-diorama'].validate(result)).toBeTruthy();
+  });
+
+  it('a blend with the build keeps the model off the build type and appends code-written builds', async () => {
+    const result = await generateHabitatDiorama(context('observe|build_habitat'));
+    const schema = generateContent.mock.calls[0][0].config.responseSchema;
+    expect(schema.properties.challenges.items.properties.type.enum).toEqual(['observe']);
+    expect(result.challengeTypes).toEqual(['observe', 'build_habitat']);
+    expect(result.challenges?.map((challenge) => challenge.type)).toEqual(['observe', 'build_habitat', 'build_habitat']);
   });
 });

@@ -1,0 +1,182 @@
+[
+ {
+  "task": "Make a molecule with a double bond.",
+  "build": "ethene one hydrogen short",
+  "formula": "C2H3",
+  "miss": "open_valence",
+  "seeing": "Ooh, bright orange circles are joining with blue circles!",
+  "kept": true,
+  "rechecked": true
+ },
+ {
+  "task": "Make a molecule with a double bond.",
+  "build": "ethene one hydrogen short",
+  "formula": "C2H3",
+  "miss": "open_valence",
+  "seeing": "",
+  "kept": false,
+  "rechecked": false
+ },
+ {
+  "task": "Make a molecule with a double bond.",
+  "build": "two oxygens, single bond",
+  "formula": "O2",
+  "miss": "bond_order_short",
+  "seeing": "Ooh, bright blue circles are linked by a thin bridge!",
+  "kept": true,
+  "rechecked": true
+ },
+ {
+  "task": "Make a molecule with a double bond.",
+  "build": "two oxygens, single bond",
+  "formula": "O2",
+  "miss": "bond_order_short",
+  "seeing": "Ooh, bright blue circles are linked by a pale bridge!",
+  "kept": true,
+  "rechecked": true
+ },
+ {
+  "task": "Make a molecule with a double bond.",
+  "build": "ethene, finished",
+  "formula": "C2H4",
+  "miss": null,
+  "seeing": "Ooh, bright blue circles are linking to the orange circles!",
+  "kept": true,
+  "rechecked": true
+ },
+ {
+  "task": "Make a molecule with a double bond.",
+  "build": "ethene, finished",
+  "formula": "C2H4",
+  "miss": null,
+  "seeing": "Ooh, yellow circles link together with blue friends shaping up nicely!",
+  "kept": true,
+  "rechecked": true
+ },
+ {
+  "task": "Make a molecule with a double bond and an oxygen atom.",
+  "build": "formaldehyde, all single bonds",
+  "formula": "CH2O",
+  "miss": "bond_order_short",
+  "seeing": "Ooh, bright blue and orange circles are connecting on the dark board!",
+  "kept": true,
+  "rechecked": true
+ },
+ {
+  "task": "Make a molecule with a double bond and an oxygen atom.",
+  "build": "formaldehyde, all single bonds",
+  "formula": "CH2O",
+  "miss": "bond_order_short",
+  "seeing": "Ooh, a bright yellow circle is connecting blue shapes!",
+  "kept": true,
+  "rechecked": true
+ },
+ {
+  "task": "Make a molecule with two double bonds.",
+  "build": "carbon dioxide one oxygen short",
+  "formula": "CO",
+  "miss": "open_valence",
+  "seeing": "",
+  "kept": false,
+  "rechecked": false
+ },
+ {
+  "task": "Make a molecule with two double bonds.",
+  "build": "carbon dioxide one oxygen short",
+  "formula": "CO",
+  "miss": "open_valence",
+  "seeing": "Ooh, a bright blue circle is joined to the yellow circle!",
+  "kept": true,
+  "rechecked": true
+ },
+ {
+  "task": "Make a molecule with a double bond and exactly 2 carbon atoms.",
+  "build": "acetaldehyde, finished",
+  "formula": "C2H4O",
+  "miss": null,
+  "seeing": "Ooh, yellow circles are linking with blue circles using bright lines!",
+  "kept": true,
+  "rechecked": true
+ },
+ {
+  "task": "Make a molecule with a double bond and exactly 2 carbon atoms.",
+  "build": "acetaldehyde, finished",
+  "formula": "C2H4O",
+  "miss": null,
+  "seeing": "Ooh, bright yellow and blue circles are connecting with shiny lines!",
+  "kept": true,
+  "rechecked": true
+ },
+ {
+  "task": "Make a molecule with a triple bond.",
+  "build": "HCN, single bonds",
+  "formula": "CHN",
+  "miss": "bond_order_short",
+  "seeing": "Ooh, a green circle and a blue circle are linked to the orange circle!",
+  "kept": true,
+  "rechecked": true
+ },
+ {
+  "task": "Make a molecule with a triple bond.",
+  "build": "HCN, single bonds",
+  "formula": "CHN",
+  "miss": "bond_order_short",
+  "seeing": "Ooh, a bright orange circle is connected between green and blue circles!",
+  "kept": true,
+  "rechecked": true
+ },
+ {
+  "task": "Make a molecule with a double bond and a chlorine atom.",
+  "build": "vinyl chloride one hydrogen short",
+  "formula": "C2H2Cl",
+  "miss": "open_valence",
+  "seeing": "Ooh, yellow circles are linking up with blue and purple circles!",
+  "kept": true,
+  "rechecked": true
+ },
+ {
+  "task": "Make a molecule with a double bond and a chlorine atom.",
+  "build": "vinyl chloride one hydrogen short",
+  "formula": "C2H2Cl",
+  "miss": "open_valence",
+  "seeing": "Ooh, bright blue circles branch out from the center!",
+  "kept": true,
+  "rechecked": true
+ },
+ {
+  "task": "Make a molecule with a double bond.",
+  "build": "two separate pieces",
+  "formula": "H2O2",
+  "miss": "not_connected",
+  "seeing": "",
+  "kept": false,
+  "rechecked": false
+ },
+ {
+  "task": "Make a molecule with a double bond.",
+  "build": "two separate pieces",
+  "formula": "H2O2",
+  "miss": "not_connected",
+  "seeing": "",
+  "kept": false,
+  "rechecked": false
+ },
+ {
+  "task": "Make a molecule with exactly 2 carbon atoms.",
+  "build": "ethane, two hydrogens short",
+  "formula": "C2H4",
+  "miss": "open_valence",
+  "seeing": "Ooh, bright blue circles are connected around the yellow circles!",
+  "kept": true,
+  "rechecked": true
+ },
+ {
+  "task": "Make a molecule with exactly 2 carbon atoms.",
+  "build": "ethane, two hydrogens short",
+  "formula": "C2H4",
+  "miss": "open_valence",
+  "seeing": "Ooh, yellow circles are linking together with blue circles all around!",
+  "kept": true,
+  "rechecked": true
+ }
+]

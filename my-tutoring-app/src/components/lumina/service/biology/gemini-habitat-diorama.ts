@@ -15,6 +15,31 @@ import type {
   HabitatDioramaData,
 } from '../../primitives/visual-primitives/biology/HabitatDiorama';
 import { itemFromChallenge } from '../../primitives/visual-primitives/biology/habitatDioramaScript';
+import { HABITAT_ANIMALS, needsForBand, trayFor } from '../../primitives/visual-primitives/biology/habitatBuild';
+
+/**
+ * The open build (`build_habitat`, /add-eval-modes references/build-mode.md). Code owns every part of it: the animal,
+ * the needs asked (by grade band), the pieces offered and the ask, so the model is never shown the type. A session
+ * pinned to it makes no model call; a blend appends code-written build items to the model's other items.
+ */
+export const BUILD_HABITAT_TYPE: HabitatChallengeType = 'build_habitat';
+
+/** `count` build items, each a different animal (distinct per session), avoiding animals already in the scene. */
+export function buildHabitatChallenges(
+  band: HabitatDioramaData['gradeBand'],
+  count: number,
+  avoidNames: readonly string[] = [],
+  random: () => number = Math.random,
+): HabitatChallenge[] {
+  const needs = needsForBand(band);
+  const avoid = avoidNames.map((name) => name.toLowerCase());
+  const pool = HABITAT_ANIMALS.filter((animal) => !avoid.some((name) => name.includes(animal.name)));
+  const order = pool.map((animal) => ({ animal, key: random() })).sort((a, b) => a.key - b.key).map((entry) => entry.animal);
+  return order.slice(0, count).map((animal, index) => {
+    const id = `build-${index + 1}-${animal.id}`;
+    return { id, type: BUILD_HABITAT_TYPE, prompt: '', explanation: '', targetAnimal: animal.id, needs, trayPieces: trayFor(animal, needs, id) };
+  });
+}
 
 export const ALL_HABITAT_CHALLENGE_TYPES: HabitatChallengeType[] = [
   'observe', 'connect', 'predict', 'restore', 'defend',
@@ -205,11 +230,29 @@ export const generateHabitatDiorama = async (ctx: GenerationContext): Promise<Ha
     HABITAT_CHALLENGE_TYPE_DOCS,
   );
   const challengeTypeSection = buildModeConstraintSection(resolution, HABITAT_CHALLENGE_TYPE_DOCS);
+  // The open build is code's alone: the model is constrained to the other allowed types and never sees it.
+  const buildAllowed = !!resolution?.allowedTypes.includes(BUILD_HABITAT_TYPE);
+  const modelTypes = (resolution?.allowedTypes ?? ALL_HABITAT_CHALLENGE_TYPES).filter((type) => type !== BUILD_HABITAT_TYPE);
   const activeSchema = resolution
-    ? constrainChallengeTypeEnum(habitatDioramaSchema, resolution.allowedTypes, HABITAT_CHALLENGE_TYPE_DOCS)
+    ? constrainChallengeTypeEnum(habitatDioramaSchema, modelTypes, HABITAT_CHALLENGE_TYPE_DOCS)
     : habitatDioramaSchema;
 
   console.log(`[HabitatDiorama] modes: ${resolution ? `${resolution.modes.map((mode) => mode.evalMode).join('+')} (${resolution.source})` : 'mixed'} -> types [${(resolution?.allowedTypes ?? ALL_HABITAT_CHALLENGE_TYPES).join(', ')}]`);
+
+  // Pinned to the build: an empty habitat per animal, written by code. The header names no habitat or climate (the
+  // climate is part of what the learner works out).
+  if (buildAllowed && modelTypes.length === 0) {
+    const challenges = buildHabitatChallenges(gradeBand, 4);
+    console.log(`[HabitatDiorama] build_habitat (${gradeBand}): ${challenges.map((c) => c.targetAnimal).join(', ')}`);
+    return {
+      primitiveType: 'habitat-diorama',
+      habitat: { name: 'Habitat Builder', biome: 'Build a habitat', climate: '',
+        description: 'Put pieces into an empty habitat so an animal has everything it needs to live.' },
+      organisms: [], relationships: [], environmentalFeatures: [],
+      gradeBand, challengeType: BUILD_HABITAT_TYPE, challengeTypes: [BUILD_HABITAT_TYPE], challenges,
+      supportTier: resolution?.modes.length === 1 ? ctx.supportTier : undefined,
+    };
+  }
 
   const prompt = `Create a living ecosystem mission for "${ctx.topic}".
 ${buildScopePromptSection(ctx.scope)}
@@ -244,7 +287,11 @@ The result should feel like field work: observe evidence, build a connection, pr
   const merged: HabitatDioramaData = { ...generated, ...config, gradeBand };
   const rawChallenges = (config.challenges ?? generated.challenges ?? []) as HabitatChallenge[];
   const allowed = (resolution?.allowedTypes ?? ALL_HABITAT_CHALLENGE_TYPES) as HabitatChallengeType[];
-  const challenges = filterHabitatChallenges(rawChallenges, merged, allowed);
+  const challenges = [
+    ...filterHabitatChallenges(rawChallenges.filter((challenge) => challenge.type !== BUILD_HABITAT_TYPE), merged, allowed),
+    // A blend with the build: two code-written build items, for animals not already in the generated scene.
+    ...(buildAllowed ? buildHabitatChallenges(gradeBand, 2, merged.organisms.map((organism) => organism.commonName)) : []),
+  ];
   const finalData: HabitatDioramaData = {
     ...merged,
     challengeType: (allowed[0] ?? challenges[0]?.type ?? 'observe') as HabitatChallengeType,

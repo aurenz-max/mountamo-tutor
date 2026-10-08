@@ -1,0 +1,320 @@
+{
+  "generatedAt": "2026-10-08T03:55:23.810Z",
+  "case": {
+    "targetEvalMode": "observe|build_habitat",
+    "grade": "3",
+    "topic": "Pond habitats",
+    "intent": "Observe pond life, then build a habitat an animal can survive in"
+  },
+  "data": {
+    "primitiveType": "habitat-diorama",
+    "habitat": {
+      "name": "Emerald Willow Pond",
+      "biome": "Freshwater Wetland",
+      "climate": "Temperate, warm summers and cool winters with abundant rainfall",
+      "description": "A shallow, sunlit freshwater pond surrounded by cattails, lily pads, and weeping willow trees, teeming with diverse aquatic and terrestrial life."
+    },
+    "organisms": [
+      {
+        "id": "org-phytoplankton",
+        "commonName": "Green Phytoplankton",
+        "role": "producer",
+        "imagePrompt": "Microscopic green algae cells floating in clear pond water under bright sunlight",
+        "position": {
+          "x": "15%",
+          "y": "70%"
+        },
+        "description": "Tiny microscopic producers that drift in the water column and form the base of the pond food web.",
+        "adaptations": [
+          "Microscopic size to stay suspended in the photic zone",
+          "Rapid reproduction rates"
+        ]
+      },
+      {
+        "id": "org-cattail",
+        "commonName": "Broadleaf Cattail",
+        "role": "producer",
+        "imagePrompt": "Tall green aquatic plants with brown sausage-shaped seed spikes growing near the water edge",
+        "position": {
+          "x": "85%",
+          "y": "20%"
+        },
+        "description": "Emergent wetland plants with long flat leaves and brown fuzzy flower spikes that provide structural habitat.",
+        "adaptations": [
+          "Air channels in roots for oxygen uptake in waterlogged soil",
+          "Creeping underground rhizomes for fast spreading"
+        ]
+      },
+      {
+        "id": "org-tadpole",
+        "commonName": "Green Frog Tadpole",
+        "role": "primary-consumer",
+        "imagePrompt": "Small aquatic tadpole with a long tail grazing on algae along a submerged rock",
+        "position": {
+          "x": "30%",
+          "y": "85%"
+        },
+        "description": "The herbivorous larval stage of an amphibian that grazes heavily on algae and biofilm.",
+        "adaptations": [
+          "Long muscular tail for swimming",
+          "Horny beak for scraping algae off submerged surfaces"
+        ]
+      },
+      {
+        "id": "org-dragonfly-nymph",
+        "commonName": "Dragonfly Nymph",
+        "role": "secondary-consumer",
+        "imagePrompt": "Aquatic predatory insect nymph resting on underwater plant stems with a hinged jaw",
+        "position": {
+          "x": "50%",
+          "y": "65%"
+        },
+        "description": "A fierce aquatic ambush predator that hunts small invertebrates and tadpoles using a specialized extending jaw.",
+        "adaptations": [
+          "Extendable hinged labium for striking prey",
+          "Gills located inside the rectum for jet propulsion escape"
+        ]
+      },
+      {
+        "id": "org-mallard",
+        "commonName": "Mallard Duck",
+        "role": "secondary-consumer",
+        "imagePrompt": "Male duck with a glossy green head dabbling for food in shallow pond water",
+        "position": {
+          "x": "70%",
+          "y": "45%"
+        },
+        "description": "A dabbling duck that feeds on seeds, aquatic plants, and small animals near the water surface.",
+        "adaptations": [
+          "Flat bill with comb-like edges for filtering food",
+          "Waterproof preen gland oil for feather maintenance"
+        ]
+      },
+      {
+        "id": "org-heron",
+        "commonName": "Great Blue Heron",
+        "role": "tertiary-consumer",
+        "imagePrompt": "Tall grey wading bird standing motionless in shallow water with a sharp dagger bill",
+        "position": {
+          "x": "20%",
+          "y": "30%"
+        },
+        "description": "A large apex wading bird that hunts fish, frogs, and large insects in shallow water habitats.",
+        "adaptations": [
+          "S-shaped neck for lightning-fast striking power",
+          "Long stilt-like legs for wading without disturbing water"
+        ]
+      },
+      {
+        "id": "org-bacteria",
+        "commonName": "Pond Detritus Bacteria",
+        "role": "decomposer",
+        "imagePrompt": "Decomposing leaf litter and organic matter at the bottom mud layer of the pond",
+        "position": {
+          "x": "45%",
+          "y": "90%"
+        },
+        "description": "Microscopic organisms that break down dead plant and animal matter, recycling nutrients back into the ecosystem.",
+        "adaptations": [
+          "Anaerobic and aerobic metabolic pathways",
+          "Enzyme secretion to dissolve complex organic polymers"
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "fromId": "org-phytoplankton",
+        "toId": "org-tadpole",
+        "type": "predation",
+        "description": "Tadpoles graze upon microscopic phytoplankton floating in the water column."
+      },
+      {
+        "fromId": "org-tadpole",
+        "toId": "org-dragonfly-nymph",
+        "type": "predation",
+        "description": "Dragonfly nymphs actively hunt and consume small tadpoles in the shallows."
+      },
+      {
+        "fromId": "org-cattail",
+        "toId": "org-mallard",
+        "type": "predation",
+        "description": "Mallards eat the seeds and tender shoots of broadleaf cattails."
+      },
+      {
+        "fromId": "org-dragonfly-nymph",
+        "toId": "org-heron",
+        "type": "predation",
+        "description": "Great blue herons consume larger aquatic insects and small vertebrates like dragonfly nymphs."
+      },
+      {
+        "fromId": "org-cattail",
+        "toId": "org-dragonfly-nymph",
+        "type": "symbiosis-commensalism",
+        "description": "Dragonfly nymphs use cattail stems as perches to climb out of the water when transforming into adults."
+      }
+    ],
+    "environmentalFeatures": [
+      {
+        "id": "feat-rock",
+        "name": "Sunlit Bolder",
+        "description": "A warm rock near the edge where organisms bask and algae thrives.",
+        "position": {
+          "x": "35%",
+          "y": "50%"
+        }
+      },
+      {
+        "id": "feat-mud",
+        "name": "Benthic Mud",
+        "description": "Nutrient-rich sediment at the bottom of the pond housing decomposers.",
+        "position": {
+          "x": "55%",
+          "y": "80%"
+        }
+      }
+    ],
+    "challenges": [
+      {
+        "id": "chal-1",
+        "type": "observe",
+        "prompt": "Identify the microscopic producer that drifts in the water column and serves as the base of the food web.",
+        "explanation": "Green phytoplankton floats freely in the sunlit water and uses photosynthesis to make food.",
+        "focusOrganismId": "org-phytoplankton",
+        "optionOrganismIds": [
+          "org-phytoplankton",
+          "org-cattail",
+          "org-tadpole",
+          "org-mallard"
+        ]
+      },
+      {
+        "id": "chal-2",
+        "type": "observe",
+        "prompt": "Find the tall emergent wetland plant with long flat leaves and brown fuzzy seed spikes.",
+        "explanation": "The broadleaf cattail grows along the water edge and provides shelter and nesting material.",
+        "focusOrganismId": "org-cattail",
+        "optionOrganismIds": [
+          "org-cattail",
+          "org-heron",
+          "org-bacteria",
+          "org-dragonfly-nymph"
+        ]
+      },
+      {
+        "id": "chal-3",
+        "type": "observe",
+        "prompt": "Locate the herbivorous larval amphibian that grazes on algae using a horny beak.",
+        "explanation": "The green frog tadpole spends its early life underwater scraping algae from surfaces.",
+        "focusOrganismId": "org-tadpole",
+        "optionOrganismIds": [
+          "org-tadpole",
+          "org-phytoplankton",
+          "org-mallard",
+          "org-heron"
+        ]
+      },
+      {
+        "id": "chal-4",
+        "type": "observe",
+        "prompt": "Identify the fierce aquatic ambush insect predator equipped with a hinged jaw.",
+        "explanation": "The dragonfly nymph stalks small aquatic animals in the shallows before striking with its specialized lower lip.",
+        "focusOrganismId": "org-dragonfly-nymph",
+        "optionOrganismIds": [
+          "org-dragonfly-nymph",
+          "org-tadpole",
+          "org-bacteria",
+          "org-cattail"
+        ]
+      },
+      {
+        "id": "chal-5",
+        "type": "observe",
+        "prompt": "Spot the large apex wading bird that hunts fish and frogs in shallow water.",
+        "explanation": "The great blue heron stands completely still before striking prey with its dagger-like bill.",
+        "focusOrganismId": "org-heron",
+        "optionOrganismIds": [
+          "org-heron",
+          "org-mallard",
+          "org-phytoplankton",
+          "org-cattail"
+        ]
+      },
+      {
+        "id": "build-1-penguin",
+        "type": "build_habitat",
+        "prompt": "",
+        "explanation": "",
+        "targetAnimal": "penguin",
+        "needs": [
+          "food",
+          "water",
+          "shelter",
+          "weather"
+        ],
+        "trayPieces": [
+          "snow",
+          "sea",
+          "pond",
+          "sun",
+          "fish",
+          "clover",
+          "rain",
+          "ice",
+          "log",
+          "rocks"
+        ]
+      },
+      {
+        "id": "build-2-deer",
+        "type": "build_habitat",
+        "prompt": "",
+        "explanation": "",
+        "targetAnimal": "deer",
+        "needs": [
+          "food",
+          "water",
+          "shelter",
+          "weather"
+        ],
+        "trayPieces": [
+          "flies",
+          "ice",
+          "sea",
+          "snow",
+          "rain",
+          "tall_grass",
+          "tree",
+          "stream",
+          "clover",
+          "pond"
+        ]
+      }
+    ],
+    "gradeBand": "3-5",
+    "disruptionScenario": {
+      "event": "An influx of nutrient runoff causes a massive algae bloom, blocking sunlight from reaching submerged plants.",
+      "cascadeEffects": [
+        "Submerged aquatic plants die off due to lack of light.",
+        "Herbivorous tadpole populations decline due to reduced preferred food quality.",
+        "Predator populations such as dragonfly nymphs and herons experience food shortages."
+      ],
+      "question": "How does excessive nutrient runoff trigger a chain reaction throughout the pond habitat?"
+    },
+    "challengeType": "observe",
+    "challengeTypes": [
+      "observe",
+      "build_habitat"
+    ]
+  },
+  "oracle": {
+    "violations": [],
+    "uncheckedTypes": [
+      "observe"
+    ],
+    "checkedChallenges": 2
+  },
+  "issues": [],
+  "logs": [
+    "[HabitatDiorama] modes: observe+build_habitat (explicit) -> types [observe, build_habitat]"
+  ]
+}

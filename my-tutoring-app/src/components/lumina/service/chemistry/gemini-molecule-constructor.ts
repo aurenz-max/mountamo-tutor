@@ -1,6 +1,10 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { resolveEvalMode } from "../evalMode";
+import {
+  BUILD_PALETTE, askParts, askText, menuFor, type MenuAsk,
+} from "../../primitives/visual-primitives/chemistry/moleculeBuild";
 import {
   MoleculeConstructorData,
   MoleculeConstructorChallenge,
@@ -404,12 +408,85 @@ function parseFormulaToAtoms(
  * @param config - Optional config with intent override
  * @returns MoleculeConstructorData ready for the MoleculeConstructor component
  */
+// ---------------------------------------------------------------------------
+// make_molecule (open build): code owns every ask; the model writes only the title and description.
+// ---------------------------------------------------------------------------
+
+/** A molecule's name or a number in the wrapper text would tell the learner what to make. */
+const MOLECULE_WORD = /\d|\b(water|methane|ethane|ethene|ethylene|ethyne|acetylene|propane|propene|ammonia|ethanol|methanol|alcohol|formaldehyde|dioxide|monoxide|ozone|glucose|cyanide|O2|CO2|H2O|CH4)\b/i;
+
+type MoleculeConstructorConfig = { targetEvalMode?: string; difficulty?: string; instanceCount?: number };
+
+/** Distinct asks for one session: the headline double-bond ask first, the rest shuffled from the band's menu. */
+export function pickMakeAsks(band: "3-5" | "6-8", count: number, difficulty?: string, rand: () => number = Math.random): MenuAsk[] {
+  const menu = menuFor(band).filter((m) => difficulty !== "easy" || askParts(m.ask).length === 1);
+  const [first, ...rest] = [menu.find((m) => m.key === "doubleBond")!, ...menu.filter((m) => m.key !== "doubleBond")];
+  for (let i = rest.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [rest[i], rest[j]] = [rest[j], rest[i]];
+  }
+  return [first, ...rest].slice(0, Math.max(1, Math.min(count, menu.length)));
+}
+
+export function makeMoleculeChallenges(asks: readonly MenuAsk[]): MoleculeConstructorChallenge[] {
+  return asks.map((m, i) => ({
+    id: `make${i + 1}`,
+    type: "make_molecule" as const,
+    instruction: askText(m.ask),
+    targetFormula: null,
+    targetName: null,
+    targetAtoms: [],
+    ask: m.ask,
+    hint: "Count the bonds each atom makes. In a molecule, every atom uses all of its bonds.",
+    narration: "Every atom uses all of its bonds: that is a real molecule!",
+  }));
+}
+
+async function generateMakeMolecule(ctx: GenerationContext, gradeBand: "3-5" | "6-8", config: MoleculeConstructorConfig): Promise<MoleculeConstructorData> {
+  const asks = pickMakeAsks(gradeBand, config.instanceCount ?? 4, config.difficulty);
+  let wrapper: { title?: string; description?: string } = {};
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-flash-lite-latest",
+      contents: `Write a short title and a one-sentence description for a chemistry activity about "${ctx.topic}" for grades ${gradeBand}. `
+        + "In the activity the learner makes their OWN molecules on an empty board: any molecule that uses every atom's bonds "
+        + "and has the property asked (a double bond, a number of carbon atoms, a certain atom). "
+        + "Do NOT name any molecule and do NOT use any number or chemical formula.",
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: { type: Type.OBJECT, properties: { title: { type: Type.STRING }, description: { type: Type.STRING } }, required: ["title", "description"] },
+      },
+    });
+    wrapper = response.text ? JSON.parse(response.text) : {};
+  } catch (error) {
+    console.warn("[MoleculeConstructor] make_molecule wrapper call failed; code-written title used", error);
+  }
+  const clean = (text: string | undefined, fallback: string) => (text && text.trim() && !MOLECULE_WORD.test(text) ? text.trim() : fallback);
+  console.log("[MoleculeConstructor] make_molecule asks:", asks.map((m) => m.key).join(", "));
+  return {
+    title: clean(wrapper.title, "Make Your Own Molecules"),
+    description: clean(wrapper.description, "Build molecules of your own where every atom uses all of its bonds."),
+    targetMolecule: { name: null, formula: null, atoms: [], bonds: [], realWorldUse: "", imagePrompt: "" },
+    palette: { availableElements: [...BUILD_PALETTE[gradeBand]], showValence: true, showElectronDots: false },
+    challenges: makeMoleculeChallenges(asks),
+    moleculeGallery: [],
+    showOptions: { showFormula: false, showName: false, showRealWorldImage: false, showValenceSatisfaction: false,
+      show3DToggle: false, showElectronDots: false, showBondType: false },
+    gradeBand,
+  };
+}
+
 export const generateMoleculeConstructor = async (ctx: GenerationContext): Promise<MoleculeConstructorData> => {
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const intent = ctx.intent || "";
   // Canonical objective grade wins; the prose parser is only the fallback (14m).
   const gradeBand = moleculeConstructorGradeBandFromGrade(ctx.grade) ?? resolveGradeBand(gradeLevel);
+  const config = (ctx.raw ?? {}) as MoleculeConstructorConfig;
+  // The open build is pinned only: its asks are code's, and the model's challenge enum never offers it.
+  if (resolveEvalMode("molecule-constructor", config.targetEvalMode)?.challengeTypes.includes("make_molecule")) {
+    return generateMakeMolecule(ctx, gradeBand, config);
+  }
 
   const gradeBandDescriptions: Record<string, string> = {
     "3-5":

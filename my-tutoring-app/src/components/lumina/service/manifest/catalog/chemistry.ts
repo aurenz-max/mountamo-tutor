@@ -9,6 +9,7 @@ import { ComponentDefinition } from '../../../types';
 import type { PeriodicMiss, SpokenPeriodicMiss } from '../../../primitives/chemistry-primitives/periodicTableWorkspace';
 import type { SpokenMatterMiss } from '../../../primitives/visual-primitives/chemistry/matterExplorerWorkspace';
 import type { SpokenStatesMiss } from '../../../primitives/visual-primitives/chemistry/statesOfMatterWorkspace';
+import type { MoleculeMiss } from '../../../primitives/visual-primitives/chemistry/moleculeConstructorWorkspace';
 import { missLists } from './missLists';
 
 export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
@@ -502,8 +503,32 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
         { pattern: 'Student does not understand double or triple bonds', response: 'Explain: "Some atoms need to share more than one bond! Click two already-bonded atoms again to upgrade to a double bond. Double bonds share 2 connections, triple bonds share 3. Oxygen in O\u2082 uses a double bond because each oxygen needs 2 connections."' },
       ],
     },
+    teachingWorkspace: {
+      grades: ['Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
+      // Only the open build (make_molecule) publishes levers (`moleculeConstructorLevers.ts`).
+      levers: true,
+      guidance: 'The activity checks every answer itself, and you are not told the key: the learner adds atoms and joins '
+        + 'them on the canvas, or types a name or a formula, then presses Check Answer. On make_molecule many molecules '
+        + 'pass: the learner makes any one-piece molecule in which every atom uses all its bonds and which has the '
+        + 'property asked, then presses "I\'m done!". The scene gives the learner\'s own atoms, bonds and open bonds as '
+        + 'numbers: never say which atom is short of a bond, which bond to change, or what molecule to make, and never '
+        + 'name a molecule the learner could build. Ask the learner to count the bonds each atom makes. You cannot add, '
+        + 'join or type for the learner.',
+      // The activity's own checks: `buildTargetMiss` and the typed keys (classic), `moleculeMiss` (make_molecule). The
+      // generator does not pin the classic modes, so any classic session can hold any classic challenge type.
+      misses: missLists<MoleculeMiss>({
+        build: ['atoms_off', 'open_valence', 'name_off', 'formula_off', 'no_bonds'],
+        identify: ['atoms_off', 'open_valence', 'name_off', 'formula_off', 'no_bonds'],
+        predict: ['atoms_off', 'open_valence', 'name_off', 'formula_off', 'no_bonds'],
+        make_molecule: ['not_connected', 'too_many_bonds', 'bond_order_short', 'open_valence', 'no_triple_bond',
+          'no_double_bond', 'carbon_count_off', 'element_missing', 'too_many_atoms'],
+      }),
+      // The board refuses a bond past an atom's valence, so `too_many_bonds` cannot be built: no lever answers it.
+      unanswered: missLists<MoleculeMiss>({ make_molecule: ['too_many_bonds'] }),
+    },
     evalModes: [
       { evalMode: 'build', affordances: { answers: ['build'] }, label: 'Build (Easy)', beta: -0.5, scaffoldingMode: 2, challengeTypes: ['build'], description: 'Build simple molecules from a name or formula' },
+      { evalMode: 'make_molecule', affordances: { answers: ['build'] }, label: 'Make Your Own (Open)', beta: -0.4, scaffoldingMode: 2, challengeTypes: ['make_molecule'], description: 'Make any molecule with the asked property (a double bond, a number of carbon atoms, a given atom) on an empty board; every atom must use all its bonds' },
       { evalMode: 'identify', affordances: { answers: ['type'] }, label: 'Identify (Medium)', beta: 1.0, scaffoldingMode: 3, challengeTypes: ['identify', 'formula'], description: 'Identify molecules and write formulas from structure' },
       { evalMode: 'predict', affordances: { answers: ['type'] }, label: 'Predict (Hard)', beta: 2.5, scaffoldingMode: 5, challengeTypes: ['predict'], description: 'Predict properties and shape from molecular structure' },
     ],

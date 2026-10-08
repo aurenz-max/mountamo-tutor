@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,32 @@ import type { MoleculeConstructorMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { LuminaButton, LuminaFeedbackCard } from '../../../ui';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { useBuildWatcher } from '../../build-layer/buildLayer';
+import {
+  BUILD_PALETTE, EMPTY_BUILD, MAKE_FEEDBACK, addAtom, askText, joinAtoms, lowerBond, moleculeMiss, readMolecule,
+  removeAtom, type MoleculeAsk, type MoleculeBuild,
+} from './moleculeBuild';
+import {
+  askOf, describeWork, moleculeConstructorMiss, workspaceAssignment, workspaceScene, type MoleculeView,
+} from './moleculeConstructorWorkspace';
+import {
+  BOND_TALLY_LEVER, OPEN_BONDS_LEVER, PIECE_COLORS_LEVER, leverFacts, moleculeLevers, simplerMolecule,
+} from './moleculeConstructorLevers';
+import { MoleculeBuildScene } from './MoleculeBuildScene';
+
+/**
+ * Molecule Constructor — snap atoms together to build molecules (build, identify, formula, predict), and the open
+ * build `make_molecule`: make ANY molecule with the asked property on an empty board, judged by code at "I'm done!".
+ *
+ * On the shared teaching workspace (W1, plain shape) every check commits through `progress.commitCheck` and the
+ * runtime owns progression: no auto-advance, no scripted cues, the scored session submitted from `onFinished`.
+ */
 
 // ============================================================================
 // Element Data
@@ -56,13 +82,15 @@ const ATOM_RADIUS = 22;
 
 export interface MoleculeConstructorChallenge {
   id: string;
-  type: 'free_build' | 'build_target' | 'identify' | 'formula_write' | 'predict_bonds' | 'shape_predict';
+  type: 'free_build' | 'build_target' | 'identify' | 'formula_write' | 'predict_bonds' | 'shape_predict' | 'make_molecule';
   instruction: string;
   targetFormula: string | null;
   targetName: string | null;
   targetAtoms: { element: string; count: number }[];
   hint: string;
   narration: string;
+  /** make_molecule only: what the made molecule must have (code-owned; `moleculeBuild.ts`). */
+  ask?: MoleculeAsk;
 }
 
 export interface MoleculeGalleryEntry {
@@ -201,6 +229,16 @@ const CATEGORY_COLORS: Record<string, string> = {
   household: '#a855f7',
 };
 
+/**
+ * Words the build watcher may never use on make_molecule: molecule names (naming one tells the learner what to make)
+ * and words that point at an atom still short of a bond.
+ */
+const WATCH_NEVER_SAY = ['water', 'methane', 'ethane', 'ethene', 'ethylene', 'ethyne', 'acetylene', 'propane', 'propene',
+  'ammonia', 'ethanol', 'methanol', 'alcohol', 'formaldehyde', 'dioxide', 'ozone', 'cyanide', 'valence', 'open', 'free',
+  'full', 'lonely', 'alone', 'unattached', 'loose', 'dangling', 'spare', 'extra', 'unbonded', 'satisfied',
+  // Bond order is the skill: "parallel lines" says "double bond" the way "twin" does (the shared filter drops "twin").
+  'parallel'];
+
 // ============================================================================
 // Main Component
 // ============================================================================
@@ -208,9 +246,15 @@ const CATEGORY_COLORS: Record<string, string> = {
 interface MoleculeConstructorProps {
   data: MoleculeConstructorData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
-const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, className }) => {
+const MoleculeConstructorSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  MoleculeConstructorProps & { tutorOwned: boolean; useController: (options: ProgressOptions<MoleculeConstructorChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -227,11 +271,39 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
     exhibitId,
   } = data;
 
+  const stableInstanceIdRef = useRef(instanceId || `molecule-constructor-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+
+  // ── Challenge progress. On the workspace path the runtime moves the index. ──
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges,
+    getChallengeId: (c) => c.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onFinished: (result) => finish.current(result),
+  });
+  const challengeIndex = progress.currentIndex;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+
+  // make_molecule levers (`moleculeConstructorLevers.ts`), keyed by the session item they were pulled on, and the
+  // easier ask a simplify lever put on screen in its place. The item starts bare: no lever comes from the tier.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<MoleculeConstructorChallenge | null>(null);
+  const sessionChallenge = challenges[challengeIndex] ?? null;
+  /** What is on screen: the easier ask while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
+  const isMake = currentChallenge?.type === 'make_molecule';
+
   // ---- State ----
   const [placedAtoms, setPlacedAtoms] = useState<PlacedAtom[]>([]);
   const [bonds, setBonds] = useState<Bond[]>([]);
   const [selectedAtomId, setSelectedAtomId] = useState<string | null>(null);
-  const [challengeIndex, setChallengeIndex] = useState(0);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info'>('info');
   const [completedChallenges, setCompletedChallenges] = useState<Set<string>>(new Set());
@@ -249,11 +321,16 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
   const [formulaInput, setFormulaInput] = useState('');
   const [identifyInput, setIdentifyInput] = useState('');
 
+  // make_molecule: the learner's molecule, the atom picked to join, the check's words, and a refused move's note.
+  const [build, setBuild] = useState<MoleculeBuild>(EMPTY_BUILD);
+  const [buildSelected, setBuildSelected] = useState<string | null>(null);
+  const [makeVerdict, setMakeVerdict] = useState<{ correct: boolean; text: string } | null>(null);
+  const [makeSolved, setMakeSolved] = useState(false);
+  const [boardNote, setBoardNote] = useState<string | null>(null);
+
   const atomIdRef = useRef(0);
   const bondIdRef = useRef(0);
   const attemptRef = useRef(0);
-
-  const resolvedInstanceId = instanceId || `molecule-constructor-${Date.now()}`;
 
   // ---- Derived state ----
   const formula = useMemo(() => computeFormula(placedAtoms), [placedAtoms]);
@@ -261,9 +338,9 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
     () => allValenceSatisfied(placedAtoms, bonds),
     [placedAtoms, bonds]
   );
-  const currentChallenge = challenges[challengeIndex] ?? null;
 
-  // ---- AI Tutoring ----
+  // ---- AI Tutoring (scripted path only) ----
+  // Its context carries the target, so it is off on the workspace path, and its cues send nothing there.
   const aiPrimitiveData = useMemo(() => ({
     atomsPlaced: placedAtoms.length,
     bondsFormed: bonds.length,
@@ -280,12 +357,16 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
     placedElements: placedAtoms.map(a => a.element).join(', '),
   }), [placedAtoms, bonds, formula, allSatisfied, targetMolecule, challengeIndex, challenges.length, currentChallenge, attemptsCount, gradeBand]);
 
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  const { sendText: sendLegacyText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'molecule-constructor',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: gradeBand,
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   // ---- Evaluation ----
   const { submitResult, hasSubmitted, resetAttempt } = usePrimitiveEvaluation<MoleculeConstructorMetrics>({
@@ -297,10 +378,54 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
     exhibitId,
   });
 
-  // ---- Handlers ----
+  // ---- Per-item reset ----
+  const clearWorkspace = useCallback(() => {
+    setPlacedAtoms([]);
+    setBonds([]);
+    setSelectedAtomId(null);
+    setFeedback(null);
+    atomIdRef.current = 0;
+    bondIdRef.current = 0;
+  }, []);
 
-  const addAtom = useCallback((element: string) => {
-    if (placedAtoms.length >= ATOM_POSITIONS.length || hasSubmitted) return;
+  /** Every per-item slot, for a fresh item, a practice ask, and the return from one. */
+  const resetFor = useRef<string | null>(null);
+  const resetItem = (challenge: MoleculeConstructorChallenge | null) => {
+    resetFor.current = challenge?.id ?? null;
+    clearWorkspace();
+    setFormulaInput('');
+    setIdentifyInput('');
+    setBuild(EMPTY_BUILD);
+    setBuildSelected(null);
+    setMakeVerdict(null);
+    setMakeSolved(false);
+    setBoardNote(null);
+    attemptRef.current = 0;
+  };
+  useEffect(() => {
+    if (currentChallenge && resetFor.current !== currentChallenge.id) resetItem(currentChallenge);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChallenge?.id]);
+
+  // Workspace path: a fresh item ends any practice; Try again clears what was typed. The open build keeps its
+  // molecule and the verdict's words, so the learner revises it; the classic canvas keeps its atoms.
+  openItem.current = (index, retry) => {
+    if (!retry) {
+      setPractice(null);
+      resetItem(challenges[index] ?? null);
+      return;
+    }
+    setBoardNote(null);
+    if (challenges[index]?.type === 'make_molecule') return;
+    setFormulaInput('');
+    setIdentifyInput('');
+    setFeedback(null);
+  };
+
+  // ---- Handlers (classic canvas) ----
+
+  const addClassicAtom = useCallback((element: string) => {
+    if (placedAtoms.length >= ATOM_POSITIONS.length || hasSubmitted || learnerBlocked()) return;
     SoundManager.select();
     const pos = ATOM_POSITIONS[placedAtoms.length];
     setPlacedAtoms(prev => [...prev, {
@@ -311,10 +436,11 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
     }]);
     setFeedback(null);
     setSelectedAtomId(null);
-  }, [placedAtoms.length, hasSubmitted]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [placedAtoms.length, hasSubmitted, tutorOwned, progress.canAttempt]);
 
   const handleAtomClick = useCallback((atomId: string) => {
-    if (hasSubmitted) return;
+    if (hasSubmitted || learnerBlocked()) return;
 
     if (selectedAtomId === null) {
       setSelectedAtomId(atomId);
@@ -379,24 +505,17 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
       }
     }
     setSelectedAtomId(null);
-  }, [selectedAtomId, bonds, placedAtoms, hasSubmitted, sendText]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAtomId, bonds, placedAtoms, hasSubmitted, sendText, tutorOwned, progress.canAttempt]);
 
-  const removeAtom = useCallback((atomId: string) => {
-    if (hasSubmitted) return;
+  const removeClassicAtom = useCallback((atomId: string) => {
+    if (hasSubmitted || learnerBlocked()) return;
     setPlacedAtoms(prev => prev.filter(a => a.id !== atomId));
     setBonds(prev => prev.filter(b => b.atom1Id !== atomId && b.atom2Id !== atomId));
     setSelectedAtomId(null);
     setFeedback(null);
-  }, [hasSubmitted]);
-
-  const clearWorkspace = useCallback(() => {
-    setPlacedAtoms([]);
-    setBonds([]);
-    setSelectedAtomId(null);
-    setFeedback(null);
-    atomIdRef.current = 0;
-    bondIdRef.current = 0;
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasSubmitted, tutorOwned, progress.canAttempt]);
 
   // ---- Challenge Validation ----
 
@@ -410,7 +529,7 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
     const metrics: MoleculeConstructorMetrics = {
       type: 'molecule-constructor',
       moleculesBuiltCorrectly,
-      moleculesTotal: challenges.filter(c => c.type === 'build_target' || c.type === 'free_build').length,
+      moleculesTotal: challenges.filter(c => c.type === 'build_target' || c.type === 'free_build' || c.type === 'make_molecule').length,
       bondsFormedCorrectly,
       bondsTotal: totalBondsFormed,
       formulasWrittenCorrectly: formulasCorrect,
@@ -444,7 +563,48 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
       identificationsTotal, valenceRulesFollowed, unlockedMolecules, bondTypesExplored,
       attemptsCount, formula, submitResult, sendText]);
 
-  const handleCorrect = useCallback(() => {
+  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // corrections and whose evidence carries each wrong check's named miss (`diagnosisEvidence.phases`).
+  finish.current = (result) => {
+    if (hasSubmitted || progress.recordsEvaluation === false) return;
+    const metrics: MoleculeConstructorMetrics = {
+      type: 'molecule-constructor',
+      moleculesBuiltCorrectly,
+      moleculesTotal: challenges.filter(c => c.type === 'build_target' || c.type === 'free_build' || c.type === 'make_molecule').length,
+      bondsFormedCorrectly,
+      bondsTotal: totalBondsFormed,
+      formulasWrittenCorrectly: formulasCorrect,
+      formulasTotal,
+      moleculesIdentifiedCorrectly: identifiedCorrectly,
+      identificationsTotal,
+      valenceRulesFollowed,
+      galleryMoleculesUnlocked: unlockedMolecules.size,
+      bondTypesExplored: Array.from(bondTypesExplored),
+      attemptsCount: result.attemptsCount,
+    };
+    submitResult(result.passed, result.accuracy, metrics,
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
+
+  /** Scripted path: the next challenge after a short pause, or the final submission. The workspace advances itself. */
+  const advanceScripted = () => {
+    if (tutorOwned) return;
+    setTimeout(() => {
+      if (challengeIndex < challenges.length - 1) {
+        progress.advance();
+        sendText(
+          `[NEXT_CHALLENGE] Moving to challenge ${challengeIndex + 2} of ${challenges.length}. Introduce the next task briefly.`,
+          { silent: true }
+        );
+      } else {
+        handleFinalSubmit();
+      }
+    }, 2000);
+  };
+
+  const handleCorrect = () => {
     SoundManager.playCorrect();
     const moleculeName = (currentChallenge?.targetName ?? targetMolecule.name) || formula;
     setFeedback(`Correct! ${moleculeName ? `You built ${moleculeName}!` : 'Great work!'}`);
@@ -465,26 +625,10 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
       `${targetMolecule.realWorldUse || ''} Celebrate and explain the real-world connection!`,
       { silent: true }
     );
+    advanceScripted();
+  };
 
-    setTimeout(() => {
-      if (challengeIndex < challenges.length - 1) {
-        setChallengeIndex(prev => prev + 1);
-        clearWorkspace();
-        setFormulaInput('');
-        setIdentifyInput('');
-        attemptRef.current = 0;
-        sendText(
-          `[NEXT_CHALLENGE] Moving to challenge ${challengeIndex + 2} of ${challenges.length}. Introduce the next task briefly.`,
-          { silent: true }
-        );
-      } else {
-        handleFinalSubmit();
-      }
-    }, 2000);
-  }, [targetMolecule, formula, allSatisfied, bonds.length, currentChallenge, challengeIndex,
-      challenges.length, sendText, clearWorkspace, handleFinalSubmit]);
-
-  const handleIncorrect = useCallback((reasons: string[]) => {
+  const handleIncorrect = (reasons: string[]) => {
     SoundManager.playIncorrect();
     const hint = currentChallenge?.hint || 'Check the atom counts and make sure all bonds are connected!';
     setFeedback(`${reasons.join('. ')}. Hint: ${hint}`);
@@ -495,10 +639,21 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
       `Current formula: ${formula}. Issues: ${reasons.join('; ')}. Give a helpful hint without revealing the answer.`,
       { silent: true }
     );
-  }, [currentChallenge, formula, sendText]);
+  };
 
-  const checkChallenge = useCallback(() => {
+  // ── The learner's work, as the check, the tutor and the scene read it ──
+  const view: MoleculeView = {
+    build, elements: placedAtoms.map(a => a.element), bondsFormed: bonds.length, allSatisfied, formulaInput, identifyInput,
+  };
+  /** Counts the attempt and records a correct result on both paths; on the workspace path it is the checked gesture. */
+  const commit = (correct: boolean) => {
     if (!currentChallenge) return;
+    progress.commitCheck(describeWork(currentChallenge, view), correct,
+      correct ? undefined : moleculeConstructorMiss(currentChallenge, view));
+  };
+
+  const checkChallenge = () => {
+    if (!currentChallenge || learnerBlocked()) return;
     attemptRef.current += 1;
     setAttemptsCount(prev => prev + 1);
 
@@ -520,7 +675,9 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
       const totalTarget = targetAtoms.reduce((sum, a) => sum + a.count, 0);
       if (placedAtoms.length !== totalTarget) atomsCorrect = false;
 
-      if (atomsCorrect && allSatisfied) {
+      const correct = atomsCorrect && allSatisfied;
+      commit(correct);
+      if (correct) {
         handleCorrect();
       } else {
         const reasons: string[] = [];
@@ -531,7 +688,9 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
     } else if (currentChallenge.type === 'formula_write') {
       setFormulasTotal(prev => prev + 1);
       const target = normalizeFormula(currentChallenge.targetFormula || targetMolecule.formula || '');
-      if (normalizeFormula(formulaInput) === target) {
+      const correct = normalizeFormula(formulaInput) === target;
+      commit(correct);
+      if (correct) {
         setFormulasCorrect(prev => prev + 1);
         handleCorrect();
       } else {
@@ -540,7 +699,9 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
     } else if (currentChallenge.type === 'identify') {
       setIdentificationsTotal(prev => prev + 1);
       const target = (currentChallenge.targetName ?? targetMolecule.name ?? '').toLowerCase().trim();
-      if (identifyInput.toLowerCase().trim() === target) {
+      const correct = identifyInput.toLowerCase().trim() === target;
+      commit(correct);
+      if (correct) {
         setIdentifiedCorrectly(prev => prev + 1);
         handleCorrect();
       } else {
@@ -548,18 +709,132 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
       }
     } else {
       // free_build, predict_bonds, shape_predict
-      if (placedAtoms.length > 0 && bonds.length > 0) {
+      const correct = placedAtoms.length > 0 && bonds.length > 0;
+      commit(correct);
+      if (correct) {
         handleCorrect();
       } else {
         handleIncorrect(['Add some atoms and connect them with bonds to build a molecule!']);
       }
     }
-  }, [currentChallenge, placedAtoms, bonds, allSatisfied, targetMolecule, formulaInput,
-      identifyInput, handleCorrect, handleIncorrect]);
+  };
+
+  // ---- make_molecule: the board's moves and "I'm done!" ----
+  const buildOpen = isMake && !makeSolved && !hasSubmitted && !learnerBlocked();
+  const makeAsk = currentChallenge && isMake ? currentChallenge.instruction || askText(askOf(currentChallenge)) : '';
+  const buildPalette = palette.availableElements?.length ? palette.availableElements : BUILD_PALETTE[gradeBand] ?? BUILD_PALETTE['3-5'];
+
+  const onAddBuildAtom = (element: string) => {
+    if (!buildOpen) return;
+    const next = addAtom(build, element);
+    if (!next) return;
+    SoundManager.select();
+    setBuild(next); setBuildSelected(null); setBoardNote(null);
+  };
+  const onTapBuildAtom = (id: string) => {
+    if (!buildOpen) return;
+    setBoardNote(null);
+    if (buildSelected === null) { setBuildSelected(id); return; }
+    if (buildSelected === id) { setBuildSelected(null); return; }
+    const joined = joinAtoms(build, buildSelected, id);
+    if (joined.refused) {
+      setBoardNote('Those two atoms cannot make another bond together.');
+    } else {
+      SoundManager.snap();
+      setBuild(joined.build);
+      const order = joined.build.bonds.find(b => (b.a === id || b.b === id) && (b.a === buildSelected || b.b === buildSelected))?.order;
+      if (order && order > 1) setBondTypesExplored(prev => new Set(prev).add(order === 2 ? 'double' : 'triple'));
+    }
+    setBuildSelected(null);
+  };
+  const onTapBuildBond = (a: string, b: string) => {
+    if (!buildOpen) return;
+    SoundManager.select();
+    setBuild(lowerBond(build, a, b)); setBuildSelected(null); setBoardNote(null);
+  };
+  const onRemoveBuildAtom = () => {
+    if (!buildOpen || !buildSelected) return;
+    setBuild(removeAtom(build, buildSelected)); setBuildSelected(null); setBoardNote(null);
+  };
+  const onStartOver = () => {
+    if (!buildOpen) return;
+    setBuild(EMPTY_BUILD); setBuildSelected(null); setBoardNote(null);
+  };
+
+  /**
+   * "I'm done!": any one-piece molecule whose every atom uses all its bonds and that has every asked property passes.
+   * The words name no atom and no molecule to make. No stillness check: the learner commits.
+   */
+  const onDone = () => {
+    if (!currentChallenge || !buildOpen || !build.atoms.length) return;
+    const miss = moleculeMiss(askOf(currentChallenge), build);
+    attemptRef.current += 1;
+    setAttemptsCount(prev => prev + 1);
+    setBuildSelected(null);
+    commit(!miss);
+    if (miss) {
+      SoundManager.playIncorrect();
+      setMakeVerdict({ correct: false, text: MAKE_FEEDBACK[miss] });
+      return;
+    }
+    SoundManager.playCorrect();
+    const made = readMolecule(build);
+    setMakeVerdict({ correct: true, text: `Yes! You made ${made.formula}. Every atom uses all its bonds, and it fits the task.` });
+    setMakeSolved(true);
+    if (practice) return;
+    setMoleculesBuiltCorrectly(prev => prev + 1);
+    setBondsFormedCorrectly(prev => prev + made.bonds);
+    setCompletedChallenges(prev => { const next = new Set(prev); next.add(currentChallenge.id); return next; });
+    advanceScripted();
+  };
+
+  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  // W1 offers no demonstration targets and no presentation. Only make_molecule declares levers.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    const scene = workspaceScene(currentChallenge, view);
+    if (sessionChallenge.type !== 'make_molecule') { workspace.current = { ...scene }; return; }
+    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
+    const levers = practice ? [] : moleculeLevers(sessionChallenge, pulledLevers);
+    workspace.current = {
+      ...scene,
+      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find((l) => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = simplerMolecule(sessionChallenge);
+          if (!easier) return 'This item has no easier ask; try a help lever.';
+          setLeverState(pulled); resetItem(easier); setPractice(easier);
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { resetItem(sessionChallenge); setPractice(null); },
+    };
+  });
+
+  // ── The live line (shared build layer): what the board looks like so far, never a number or a molecule's name ──
+  const boardRef = useRef<SVGSVGElement | null>(null);
+  const buildSeeing = useBuildWatcher({
+    buildKey: JSON.stringify(build),
+    enabled: buildOpen && build.atoms.length > 0,
+    svg: boardRef,
+    request: {
+      task: makeAsk,
+      sceneNote: 'A dark board. The learner adds coloured circles marked with element letters and joins them with lines.',
+      numbers: 'never',
+      neverSay: WATCH_NEVER_SAY,
+    },
+  });
 
   const handleReset = useCallback(() => {
     clearWorkspace();
-    setChallengeIndex(0);
+    progress.reset();
     setCompletedChallenges(new Set());
     setAttemptsCount(0);
     setMoleculesBuiltCorrectly(0);
@@ -574,9 +849,12 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
     setBondTypesExplored(new Set(['single']));
     setFormulaInput('');
     setIdentifyInput('');
+    setBuild(EMPTY_BUILD);
+    setMakeVerdict(null);
+    setMakeSolved(false);
     attemptRef.current = 0;
     resetAttempt();
-  }, [clearWorkspace, resetAttempt]);
+  }, [clearWorkspace, resetAttempt, progress]);
 
   // ---- Render Helpers ----
 
@@ -657,9 +935,11 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
     instanceId: (instanceId || 'molecule-constructor'),
     scopeId: hasSubmitted ? null : currentChallenge?.id ?? null,
     label: 'The molecule builder',
-    solved: !!currentChallenge && completedChallenges.has(currentChallenge.id) && ['build_target', 'formula_write', 'identify'].includes(currentChallenge.type),
+    solved: !!currentChallenge && completedChallenges.has(currentChallenge.id) && ['build_target', 'formula_write', 'identify', 'make_molecule'].includes(currentChallenge.type),
     tutorSpeaking: isAudioPlaying && activePrimitiveId === (instanceId || 'molecule-constructor'),
   });
+
+  const classicBlocked = hasSubmitted || learnerBlocked();
 
   return (
     <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
@@ -698,15 +978,46 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
         {currentChallenge && !hasSubmitted && (
           <div className="p-3 bg-cyan-500/10 border border-cyan-500/20 rounded-lg">
             <p className="text-sm text-cyan-200 font-medium">
-              Challenge {challengeIndex + 1}/{challenges.length}
+              {practice ? 'A smaller one first' : `Challenge ${challengeIndex + 1}/${challenges.length}`}
             </p>
-            <p className="text-slate-200 mt-1">{currentChallenge.instruction}</p>
+            <p className="text-slate-200 mt-1">{isMake ? makeAsk : currentChallenge.instruction}</p>
           </div>
         )}
 
         {/* Pip's dock sits above the workspace, which it outlines as a region. */}
         {pip.store && !hasSubmitted && <div {...pip.dock} />}
         <div {...pip.workspace} className="space-y-4">
+        {isMake ? (
+          /* ── Open build: an empty board, the palette, the live line, "I'm done!" ── */
+          <div className="space-y-3">
+            <p className="text-center text-sm text-slate-400">
+              Tap an atom below to add it. Tap two atoms to join them; tap them again to add another bond between them.
+              Tap a bond to take one step of it away.
+            </p>
+            <MoleculeBuildScene build={build} selected={buildSelected} palette={buildPalette} open={buildOpen}
+              svgRef={boardRef} onAdd={onAddBuildAtom} onTapAtom={onTapBuildAtom} onTapBond={onTapBuildBond}
+              showOpenBonds={leverOn(OPEN_BONDS_LEVER)} showTally={leverOn(BOND_TALLY_LEVER)} showPieces={leverOn(PIECE_COLORS_LEVER)} />
+            <div className="flex min-h-8 items-center justify-center" aria-live="polite" data-testid="build-watcher">
+              {buildSeeing && <span className="rounded-full bg-white/10 px-4 py-1.5 text-base text-amber-100">👀 {buildSeeing}</span>}
+            </div>
+            {boardNote && <p className="text-center text-sm text-amber-200" role="status">{boardNote}</p>}
+            {makeVerdict && (
+              <LuminaFeedbackCard status={makeVerdict.correct ? 'correct' : 'incorrect'} data-testid="make-verdict">
+                {makeVerdict.text}
+              </LuminaFeedbackCard>
+            )}
+            {!makeSolved && (
+              <div className="flex flex-wrap justify-center gap-2">
+                <LuminaButton disabled={!buildOpen || !buildSelected} onClick={onRemoveBuildAtom}>Take away atom</LuminaButton>
+                <LuminaButton disabled={!buildOpen || build.atoms.length === 0} onClick={onStartOver}>Start over</LuminaButton>
+                <LuminaButton tone="primary" disabled={!buildOpen || build.atoms.length === 0} onClick={onDone}>
+                  I&apos;m done!
+                </LuminaButton>
+              </div>
+            )}
+          </div>
+        ) : (
+        <>
         {/* Workspace + Info panel */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* SVG Workspace */}
@@ -733,10 +1044,12 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
                 const available = getAvailableBonds(atom.id, atom.element, bonds);
 
                 return (
-                  <g key={atom.id}
+                  <g key={atom.id} data-pip-object={atom.id}
                     onClick={(e) => { e.stopPropagation(); handleAtomClick(atom.id); }}
                     className="cursor-pointer"
                   >
+                    {/* Hit area: a <g> paints nothing of its own */}
+                    <circle cx={atom.x} cy={atom.y} r={ATOM_RADIUS + 6} fill="transparent" style={{ pointerEvents: 'all' }} />
                     {/* Selection ring */}
                     {isSelected && (
                       <circle cx={atom.x} cy={atom.y} r={ATOM_RADIUS + 5}
@@ -773,7 +1086,7 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
 
                     {/* Remove button on selected atom */}
                     {isSelected && (
-                      <g onClick={(e) => { e.stopPropagation(); removeAtom(atom.id); }}
+                      <g onClick={(e) => { e.stopPropagation(); removeClassicAtom(atom.id); }}
                         className="cursor-pointer"
                       >
                         <circle cx={atom.x + ATOM_RADIUS} cy={atom.y - ATOM_RADIUS} r={8}
@@ -876,8 +1189,8 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
             {currentChallenge?.type === 'identify' && !hasSubmitted && (
               <div className="bg-black/20 rounded-xl border border-white/5 p-3">
                 <p className="text-[10px] text-slate-500 font-mono uppercase mb-1">Name This Molecule</p>
-                <input type="text" value={identifyInput}
-                  onChange={e => setIdentifyInput(e.target.value)}
+                <input type="text" value={identifyInput} aria-label="Name this molecule"
+                  onChange={e => { if (!learnerBlocked()) setIdentifyInput(e.target.value); }}
                   placeholder="e.g., Water"
                   className="w-full bg-slate-800/60 border border-white/10 rounded px-2 py-1.5 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/50"
                 />
@@ -888,8 +1201,8 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
             {currentChallenge?.type === 'formula_write' && !hasSubmitted && (
               <div className="bg-black/20 rounded-xl border border-white/5 p-3">
                 <p className="text-[10px] text-slate-500 font-mono uppercase mb-1">Write the Formula</p>
-                <input type="text" value={formulaInput}
-                  onChange={e => setFormulaInput(e.target.value)}
+                <input type="text" value={formulaInput} aria-label="Write the formula"
+                  onChange={e => { if (!learnerBlocked()) setFormulaInput(e.target.value); }}
                   placeholder="e.g., H2O"
                   className="w-full bg-slate-800/60 border border-white/10 rounded px-2 py-1.5 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/50"
                 />
@@ -906,15 +1219,15 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
               const elData = ELEMENTS[el];
               if (!elData) return null;
               return (
-                <Button key={el} variant="ghost"
+                <Button key={el} variant="ghost" aria-label={`Add ${el}`}
                   className="h-12 w-12 p-0 rounded-full border-2 hover:scale-110 transition-transform flex flex-col items-center justify-center gap-0"
                   style={{
                     backgroundColor: elData.color + '22',
                     borderColor: elData.color + '66',
                     color: elData.color,
                   }}
-                  onClick={() => addAtom(el)}
-                  disabled={hasSubmitted || placedAtoms.length >= ATOM_POSITIONS.length}
+                  onClick={() => addClassicAtom(el)}
+                  disabled={classicBlocked || placedAtoms.length >= ATOM_POSITIONS.length}
                 >
                   <span className="text-sm font-bold font-mono leading-none">{elData.symbol}</span>
                   {palette.showValence && (
@@ -925,11 +1238,13 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
             })}
           </div>
         </div>
+        </>
+        )}
 
         </div>
 
         {/* Molecule Gallery */}
-        {moleculeGallery.length > 0 && (
+        {!isMake && moleculeGallery.length > 0 && (
           <div className="bg-black/20 rounded-xl border border-white/5 p-3">
             <p className="text-[10px] text-slate-500 font-mono uppercase mb-2">Molecule Gallery</p>
             <div className="flex gap-2 flex-wrap">
@@ -959,7 +1274,7 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
         )}
 
         {/* Feedback */}
-        {feedback && (
+        {!isMake && feedback && (
           <div className={`p-3 rounded-lg border ${
             feedbackType === 'success'
               ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
@@ -971,26 +1286,34 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
           </div>
         )}
 
-        {/* Action buttons */}
-        <div className="flex gap-2 justify-center">
-          {!hasSubmitted && currentChallenge && (
+        {/* Action buttons (classic challenges; the open build has its own) */}
+        {!isMake && (
+          <div className="flex gap-2 justify-center">
+            {!hasSubmitted && currentChallenge && (
+              <Button variant="ghost"
+                className="bg-cyan-500/10 border border-cyan-500/30 hover:bg-cyan-500/20 text-cyan-300"
+                onClick={checkChallenge}
+                disabled={learnerBlocked()}
+              >
+                Check Answer
+              </Button>
+            )}
             <Button variant="ghost"
-              className="bg-cyan-500/10 border border-cyan-500/30 hover:bg-cyan-500/20 text-cyan-300"
-              onClick={checkChallenge}
+              className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300"
+              onClick={hasSubmitted ? handleReset : () => { if (!learnerBlocked()) clearWorkspace(); }}
+              disabled={!hasSubmitted && learnerBlocked()}
             >
-              Check Answer
+              {hasSubmitted ? 'Try Again' : 'Clear All'}
             </Button>
-          )}
-          <Button variant="ghost"
-            className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300"
-            onClick={hasSubmitted ? handleReset : clearWorkspace}
-          >
-            {hasSubmitted ? 'Try Again' : 'Clear All'}
-          </Button>
-        </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose auto-advance would compete with the observer.
+const MoleculeConstructor = withWorkspaceController<MoleculeConstructorProps, ProgressOptions<MoleculeConstructorChallenge>, Progress>(
+  'molecule-constructor', MoleculeConstructorSurface, useScriptedProgress, useWorkspaceProgressFor('molecule-constructor'));
 
 export default MoleculeConstructor;

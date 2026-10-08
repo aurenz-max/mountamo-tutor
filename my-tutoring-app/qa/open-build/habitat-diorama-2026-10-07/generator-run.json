@@ -1,0 +1,364 @@
+[
+  {
+    "name": "pinned-3-5",
+    "gradeBand": "3-5",
+    "header": {
+      "name": "Habitat Builder",
+      "biome": "Build a habitat",
+      "climate": "",
+      "description": "Put pieces into an empty habitat so an animal has everything it needs to live."
+    },
+    "count": 4,
+    "types": [
+      "build_habitat"
+    ],
+    "builds": [
+      {
+        "ask": "Build a habitat where a rabbit can live. Give it everything it needs.",
+        "needs": [
+          "food",
+          "water",
+          "shelter",
+          "weather"
+        ],
+        "tray": [
+          "mice",
+          "rain",
+          "sea",
+          "tall_grass",
+          "ice",
+          "stream",
+          "burrow",
+          "pond",
+          "clover",
+          "snow"
+        ]
+      },
+      {
+        "ask": "Build a habitat where a squirrel can live. Give it everything it needs.",
+        "needs": [
+          "food",
+          "water",
+          "shelter",
+          "weather"
+        ],
+        "tray": [
+          "sun",
+          "tree",
+          "berries",
+          "fish",
+          "rain",
+          "pond",
+          "sea",
+          "nuts",
+          "tall_grass",
+          "stream"
+        ]
+      },
+      {
+        "ask": "Build a habitat where a deer can live. Give it everything it needs.",
+        "needs": [
+          "food",
+          "water",
+          "shelter",
+          "weather"
+        ],
+        "tray": [
+          "pond",
+          "mice",
+          "burrow",
+          "tall_grass",
+          "sun",
+          "sea",
+          "carrots",
+          "stream",
+          "rain",
+          "nuts",
+          "tree"
+        ]
+      },
+      {
+        "ask": "Build a habitat where a frog can live. Give it everything it needs.",
+        "needs": [
+          "food",
+          "water",
+          "shelter",
+          "weather"
+        ],
+        "tray": [
+          "sea",
+          "tall_grass",
+          "worms",
+          "sun",
+          "pond",
+          "log",
+          "ice",
+          "stream",
+          "flies",
+          "berries",
+          "snow",
+          "rain"
+        ]
+      }
+    ],
+    "oracleChecked": 4,
+    "issues": []
+  },
+  {
+    "name": "pinned-K-2",
+    "gradeBand": "K-2",
+    "header": {
+      "name": "Habitat Builder",
+      "biome": "Build a habitat",
+      "climate": "",
+      "description": "Put pieces into an empty habitat so an animal has everything it needs to live."
+    },
+    "count": 4,
+    "types": [
+      "build_habitat"
+    ],
+    "builds": [
+      {
+        "ask": "Build a habitat where an owl can live. Give it everything it needs.",
+        "needs": [
+          "food",
+          "water",
+          "shelter"
+        ],
+        "tray": [
+          "pond",
+          "sea",
+          "stream",
+          "tree",
+          "tall_grass",
+          "clover",
+          "mice"
+        ]
+      },
+      {
+        "ask": "Build a habitat where a frog can live. Give it everything it needs.",
+        "needs": [
+          "food",
+          "water",
+          "shelter"
+        ],
+        "tray": [
+          "worms",
+          "flies",
+          "stream",
+          "rocks",
+          "pond",
+          "tall_grass",
+          "sea",
+          "ice",
+          "carrots"
+        ]
+      },
+      {
+        "ask": "Build a habitat where a squirrel can live. Give it everything it needs.",
+        "needs": [
+          "food",
+          "water",
+          "shelter"
+        ],
+        "tray": [
+          "nuts",
+          "fish",
+          "ice",
+          "pond",
+          "sea",
+          "tree",
+          "berries",
+          "stream"
+        ]
+      },
+      {
+        "ask": "Build a habitat where a deer can live. Give it everything it needs.",
+        "needs": [
+          "food",
+          "water",
+          "shelter"
+        ],
+        "tray": [
+          "tall_grass",
+          "stream",
+          "clover",
+          "pond",
+          "tree",
+          "nuts",
+          "burrow",
+          "sea",
+          "flies"
+        ]
+      }
+    ],
+    "oracleChecked": 4,
+    "issues": []
+  },
+  {
+    "name": "blend-3-5",
+    "gradeBand": "3-5",
+    "header": {
+      "name": "Emerald Willow Pond",
+      "biome": "Freshwater Wetland",
+      "climate": "Temperate, warm summers and cool winters with abundant rainfall",
+      "description": "A shallow, sunlit freshwater pond surrounded by cattails, lily pads, and weeping willow trees, teeming with diverse aquatic and terrestrial life."
+    },
+    "count": 7,
+    "types": [
+      "observe",
+      "build_habitat"
+    ],
+    "builds": [
+      {
+        "ask": "Build a habitat where a penguin can live. Give it everything it needs.",
+        "needs": [
+          "food",
+          "water",
+          "shelter",
+          "weather"
+        ],
+        "tray": [
+          "snow",
+          "sea",
+          "pond",
+          "sun",
+          "fish",
+          "clover",
+          "rain",
+          "ice",
+          "log",
+          "rocks"
+        ]
+      },
+      {
+        "ask": "Build a habitat where a deer can live. Give it everything it needs.",
+        "needs": [
+          "food",
+          "water",
+          "shelter",
+          "weather"
+        ],
+        "tray": [
+          "flies",
+          "ice",
+          "sea",
+          "snow",
+          "rain",
+          "tall_grass",
+          "tree",
+          "stream",
+          "clover",
+          "pond"
+        ]
+      }
+    ],
+    "oracleChecked": 2,
+    "issues": []
+  },
+  {
+    "name": "intent-3-5",
+    "gradeBand": "3-5",
+    "header": {
+      "name": "Habitat Builder",
+      "biome": "Build a habitat",
+      "climate": "",
+      "description": "Put pieces into an empty habitat so an animal has everything it needs to live."
+    },
+    "count": 4,
+    "types": [
+      "build_habitat"
+    ],
+    "builds": [
+      {
+        "ask": "Build a habitat where a squirrel can live. Give it everything it needs.",
+        "needs": [
+          "food",
+          "water",
+          "shelter",
+          "weather"
+        ],
+        "tray": [
+          "snow",
+          "pond",
+          "berries",
+          "rain",
+          "mice",
+          "sea",
+          "tree",
+          "nuts",
+          "tall_grass",
+          "stream"
+        ]
+      },
+      {
+        "ask": "Build a habitat where a frog can live. Give it everything it needs.",
+        "needs": [
+          "food",
+          "water",
+          "shelter",
+          "weather"
+        ],
+        "tray": [
+          "carrots",
+          "worms",
+          "tall_grass",
+          "flies",
+          "rain",
+          "sun",
+          "sea",
+          "rocks",
+          "snow",
+          "ice",
+          "pond",
+          "stream"
+        ]
+      },
+      {
+        "ask": "Build a habitat where a deer can live. Give it everything it needs.",
+        "needs": [
+          "food",
+          "water",
+          "shelter",
+          "weather"
+        ],
+        "tray": [
+          "pond",
+          "mice",
+          "burrow",
+          "tall_grass",
+          "sun",
+          "sea",
+          "carrots",
+          "stream",
+          "rain",
+          "nuts",
+          "tree"
+        ]
+      },
+      {
+        "ask": "Build a habitat where a penguin can live. Give it everything it needs.",
+        "needs": [
+          "food",
+          "water",
+          "shelter",
+          "weather"
+        ],
+        "tray": [
+          "nuts",
+          "tree",
+          "rocks",
+          "rain",
+          "ice",
+          "sea",
+          "fish",
+          "stream",
+          "sun",
+          "snow"
+        ]
+      }
+    ],
+    "oracleChecked": 4,
+    "issues": []
+  }
+]

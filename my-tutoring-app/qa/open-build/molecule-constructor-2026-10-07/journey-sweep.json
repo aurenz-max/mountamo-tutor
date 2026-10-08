@@ -1,0 +1,310 @@
+{
+ "invariants": {
+  "J1-drivable": "The journey row produces a wrong and a correct input for every item, and each one performs on screen",
+  "J2-miss-committed": "A complete wrong answer is committed as a miss: not credited, no advance, no completion",
+  "J3-miss-reveals-nothing": "A miss and its retry do not newly put the answer on screen, in the scene facts or in a host message",
+  "J4-retry-reopens": "After a miss the observer can reopen the same item for another try",
+  "J5-credit-moves-on": "A credited answer moves to the next item or completes the lesson: no dead end",
+  "J6-completes-once": "Answering every item completes the lesson, with at most one submission per evaluated instance",
+  "J7-commit-visible": "A committed verdict, retry or advance is confirmed on screen by the real visibility wait: a later render of the same item and phase does not supersede it",
+  "J8-miss-named": "On a mode whose catalog entry lists misses, every checked miss names one from that list; a spoken item's known misses are all on the list and a wrong spoken answer records one",
+  "J9-miss-answered": "On a mode with levers, every catalog miss is in some lever's answers or in the catalog's unanswered list",
+  "J10-clean-record": "A clean program (every item right first time) submits once, and the record says so: passed, score 100, every item first try, no assistance",
+  "J11-recovery-record": "The wrong-then-right program submits once, and the record says so: every item solved, each miss in teachingAttempts before its correct try, the score and first-response score set by the first-response gate"
+ },
+ "results": [
+  {
+   "payload": "molecule-constructor.build",
+   "items": 4,
+   "findings": [],
+   "advisories": [],
+   "misses": {
+    "checked": 4,
+    "named": 4,
+    "declared": true,
+    "spoken": {
+     "answered": 0,
+     "named": 0
+    }
+   },
+   "records": {
+    "recover": {
+     "sent": 1,
+     "success": true,
+     "score": 67,
+     "firstResponseScore": 0,
+     "attempts": 8
+    },
+    "clean": {
+     "sent": 1,
+     "success": true,
+     "score": 100,
+     "firstResponseScore": 100,
+     "attempts": 4
+    }
+   }
+  },
+  {
+   "payload": "molecule-constructor.make_molecule",
+   "items": 4,
+   "findings": [],
+   "advisories": [],
+   "misses": {
+    "checked": 4,
+    "named": 4,
+    "declared": true,
+    "spoken": {
+     "answered": 0,
+     "named": 0
+    }
+   },
+   "records": {
+    "recover": {
+     "sent": 1,
+     "success": true,
+     "score": 67,
+     "firstResponseScore": 0,
+     "attempts": 8
+    },
+    "clean": {
+     "sent": 1,
+     "success": true,
+     "score": 100,
+     "firstResponseScore": 100,
+     "attempts": 4
+    }
+   }
+  }
+ ],
+ "leverInventory": [
+  {
+   "primitiveId": "molecule-constructor",
+   "evalMode": "build",
+   "declaresLevers": true,
+   "payloads": [
+    "molecule-constructor.build"
+   ],
+   "status": "none",
+   "levers": [],
+   "misses": [
+    {
+     "miss": "atoms_off",
+     "answeredBy": [],
+     "unanswered": false
+    },
+    {
+     "miss": "open_valence",
+     "answeredBy": [],
+     "unanswered": false
+    },
+    {
+     "miss": "name_off",
+     "answeredBy": [],
+     "unanswered": false
+    },
+    {
+     "miss": "formula_off",
+     "answeredBy": [],
+     "unanswered": false
+    },
+    {
+     "miss": "no_bonds",
+     "answeredBy": [],
+     "unanswered": false
+    }
+   ]
+  },
+  {
+   "primitiveId": "molecule-constructor",
+   "evalMode": "make_molecule",
+   "declaresLevers": true,
+   "payloads": [
+    "molecule-constructor.make_molecule"
+   ],
+   "status": "levers",
+   "levers": [
+    {
+     "id": "open_bonds",
+     "kind": "help",
+     "answers": [
+      "open_valence",
+      "bond_order_short"
+     ]
+    },
+    {
+     "id": "bond_tally",
+     "kind": "help",
+     "answers": [
+      "bond_order_short",
+      "no_double_bond",
+      "no_triple_bond",
+      "open_valence"
+     ]
+    },
+    {
+     "id": "piece_colors",
+     "kind": "help",
+     "answers": [
+      "not_connected"
+     ]
+    },
+    {
+     "id": "fewer_atoms",
+     "kind": "simplify",
+     "answers": [
+      "not_connected",
+      "open_valence",
+      "bond_order_short",
+      "no_double_bond",
+      "no_triple_bond",
+      "carbon_count_off",
+      "element_missing",
+      "too_many_atoms"
+     ]
+    }
+   ],
+   "misses": [
+    {
+     "miss": "not_connected",
+     "answeredBy": [
+      "piece_colors",
+      "fewer_atoms"
+     ],
+     "unanswered": false
+    },
+    {
+     "miss": "too_many_bonds",
+     "answeredBy": [],
+     "unanswered": true
+    },
+    {
+     "miss": "bond_order_short",
+     "answeredBy": [
+      "open_bonds",
+      "bond_tally",
+      "fewer_atoms"
+     ],
+     "unanswered": false
+    },
+    {
+     "miss": "open_valence",
+     "answeredBy": [
+      "open_bonds",
+      "bond_tally",
+      "fewer_atoms"
+     ],
+     "unanswered": false
+    },
+    {
+     "miss": "no_triple_bond",
+     "answeredBy": [
+      "bond_tally",
+      "fewer_atoms"
+     ],
+     "unanswered": false
+    },
+    {
+     "miss": "no_double_bond",
+     "answeredBy": [
+      "bond_tally",
+      "fewer_atoms"
+     ],
+     "unanswered": false
+    },
+    {
+     "miss": "carbon_count_off",
+     "answeredBy": [
+      "fewer_atoms"
+     ],
+     "unanswered": false
+    },
+    {
+     "miss": "element_missing",
+     "answeredBy": [
+      "fewer_atoms"
+     ],
+     "unanswered": false
+    },
+    {
+     "miss": "too_many_atoms",
+     "answeredBy": [
+      "fewer_atoms"
+     ],
+     "unanswered": false
+    }
+   ]
+  },
+  {
+   "primitiveId": "molecule-constructor",
+   "evalMode": "identify",
+   "declaresLevers": true,
+   "payloads": [],
+   "status": "unmeasured",
+   "levers": [],
+   "misses": [
+    {
+     "miss": "atoms_off",
+     "answeredBy": [],
+     "unanswered": false
+    },
+    {
+     "miss": "open_valence",
+     "answeredBy": [],
+     "unanswered": false
+    },
+    {
+     "miss": "name_off",
+     "answeredBy": [],
+     "unanswered": false
+    },
+    {
+     "miss": "formula_off",
+     "answeredBy": [],
+     "unanswered": false
+    },
+    {
+     "miss": "no_bonds",
+     "answeredBy": [],
+     "unanswered": false
+    }
+   ]
+  },
+  {
+   "primitiveId": "molecule-constructor",
+   "evalMode": "predict",
+   "declaresLevers": true,
+   "payloads": [],
+   "status": "unmeasured",
+   "levers": [],
+   "misses": [
+    {
+     "miss": "atoms_off",
+     "answeredBy": [],
+     "unanswered": false
+    },
+    {
+     "miss": "open_valence",
+     "answeredBy": [],
+     "unanswered": false
+    },
+    {
+     "miss": "name_off",
+     "answeredBy": [],
+     "unanswered": false
+    },
+    {
+     "miss": "formula_off",
+     "answeredBy": [],
+     "unanswered": false
+    },
+    {
+     "miss": "no_bonds",
+     "answeredBy": [],
+     "unanswered": false
+    }
+   ]
+  }
+ ],
+ "allPayloads": 395,
+ "allFindings": 35
+}

@@ -1,0 +1,213 @@
+{
+ "generatedAt": "2026-10-08T03:59:13.059Z",
+ "model": "gemini-flash-lite-latest",
+ "asked": 24,
+ "kept": 24,
+ "droppedByFilter": 0,
+ "leaksInKeptLines": [],
+ "lines": [
+  {
+   "task": "Build a habitat where a frog can live. Give it everything it needs.",
+   "animal": "frog",
+   "placed": [
+    "pond"
+   ],
+   "needsMet": 1,
+   "miss": "several_needs_unmet",
+   "seeing": [
+    "Ooh, a blue pond is appearing next to the frog!",
+    "Ooh, a blue pond is growing next to the frog!"
+   ],
+   "kept": 2,
+   "leaks": []
+  },
+  {
+   "task": "Build a habitat where a frog can live. Give it everything it needs.",
+   "animal": "frog",
+   "placed": [
+    "pond",
+    "flies"
+   ],
+   "needsMet": 2,
+   "miss": "several_needs_unmet",
+   "seeing": [
+    "Ooh, a blue pond and tiny flies are appearing beside the frog!",
+    "Ooh, a blue pond and purple bugs are growing near the frog!"
+   ],
+   "kept": 2,
+   "leaks": []
+  },
+  {
+   "task": "Build a habitat where a frog can live. Give it everything it needs.",
+   "animal": "frog",
+   "placed": [
+    "pond",
+    "flies",
+    "log"
+   ],
+   "needsMet": 3,
+   "miss": "one_need_unmet",
+   "seeing": [
+    "Ooh, shiny blue and brown circles are appearing around the frog!",
+    "Ooh, a blue pond and brown log are appearing near the frog!"
+   ],
+   "kept": 2,
+   "leaks": []
+  },
+  {
+   "task": "Build a habitat where a frog can live. Give it everything it needs.",
+   "animal": "frog",
+   "placed": [
+    "pond",
+    "flies",
+    "log",
+    "snow"
+   ],
+   "needsMet": 3,
+   "miss": "harmful_piece",
+   "seeing": [
+    "Ooh, a blue pond and a brown log are appearing!",
+    "Ooh, a blue pond and brown log are appearing near the frog!"
+   ],
+   "kept": 2,
+   "leaks": []
+  },
+  {
+   "task": "Build a habitat where a frog can live. Give it everything it needs.",
+   "animal": "frog",
+   "placed": [
+    "pond",
+    "flies",
+    "log",
+    "rain"
+   ],
+   "needsMet": 4,
+   "miss": null,
+   "seeing": [
+    "Ooh, a shiny blue pond and purple flies are appearing near the green frog!",
+    "Ooh, a shiny blue pond and a brown log are appearing near the frog!"
+   ],
+   "kept": 2,
+   "leaks": []
+  },
+  {
+   "task": "Build a habitat where a penguin can live. Give it everything it needs.",
+   "animal": "penguin",
+   "placed": [
+    "sea",
+    "fish"
+   ],
+   "needsMet": 2,
+   "miss": "several_needs_unmet",
+   "seeing": [
+    "Ooh, a blue wave and a blue fish are next to the penguin!",
+    "Ooh, a blue wave and blue fish circle the penguin!"
+   ],
+   "kept": 2,
+   "leaks": []
+  },
+  {
+   "task": "Build a habitat where a penguin can live. Give it everything it needs.",
+   "animal": "penguin",
+   "placed": [
+    "sea",
+    "fish",
+    "ice",
+    "sun"
+   ],
+   "needsMet": 3,
+   "miss": "harmful_piece",
+   "seeing": [
+    "Ooh, a blue wave and a little blue fish are near the penguin!",
+    "Ooh, a bright blue sea and a yellow sun are growing!"
+   ],
+   "kept": 2,
+   "leaks": []
+  },
+  {
+   "task": "Build a habitat where an owl can live. Give it everything it needs.",
+   "animal": "owl",
+   "placed": [
+    "tree",
+    "stream"
+   ],
+   "needsMet": 2,
+   "miss": "several_needs_unmet",
+   "seeing": [
+    "Ooh, green circles and blue squares are appearing beside the owl.",
+    "Ooh, green icons are popping up next to the owl!"
+   ],
+   "kept": 2,
+   "leaks": []
+  },
+  {
+   "task": "Build a habitat where a rabbit can live. Give it everything it needs.",
+   "animal": "rabbit",
+   "placed": [
+    "burrow",
+    "carrots",
+    "pond",
+    "rain"
+   ],
+   "needsMet": 4,
+   "miss": null,
+   "seeing": [
+    "Ooh, a dark burrow and bright carrots are appearing near the rabbit!",
+    "Ooh, a dark burrow and bright carrots are appearing near the rabbit!"
+   ],
+   "kept": 2,
+   "leaks": []
+  },
+  {
+   "task": "Build a habitat where a deer can live. Give it everything it needs.",
+   "animal": "deer",
+   "placed": [
+    "tree",
+    "clover",
+    "sea"
+   ],
+   "needsMet": 2,
+   "miss": "several_needs_unmet",
+   "seeing": [
+    "Ooh, a green tree and a blue wave are appearing by the deer!",
+    "Ooh, a green tree is growing near the deer!"
+   ],
+   "kept": 2,
+   "leaks": []
+  },
+  {
+   "task": "Build a habitat where a squirrel can live. Give it everything it needs.",
+   "animal": "squirrel",
+   "placed": [
+    "tree",
+    "nuts"
+   ],
+   "needsMet": 2,
+   "miss": "several_needs_unmet",
+   "seeing": [
+    "Ooh, a green tree and brown nuts are appearing near the squirrel!",
+    "Ooh, a green tree and brown nuts are appearing near the squirrel!"
+   ],
+   "kept": 2,
+   "leaks": []
+  },
+  {
+   "task": "Build a habitat where a squirrel can live. Give it everything it needs.",
+   "animal": "squirrel",
+   "placed": [
+    "tree",
+    "nuts",
+    "stream",
+    "snow"
+   ],
+   "needsMet": 4,
+   "miss": null,
+   "seeing": [
+    "Ooh, a green tree and brown nuts are appearing near the squirrel!",
+    "Ooh, a green tree icon is growing next to the squirrel!"
+   ],
+   "kept": 2,
+   "leaks": []
+  }
+ ]
+}

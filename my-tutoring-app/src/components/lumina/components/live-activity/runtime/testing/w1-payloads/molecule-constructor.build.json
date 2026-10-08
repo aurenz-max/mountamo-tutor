@@ -1,0 +1,159 @@
+{
+ "source": "qa/open-build/molecule-constructor-2026-10-07/generations.json",
+ "primitiveId": "molecule-constructor",
+ "evalMode": "build",
+ "data": {
+  "title": "Build Amazing Simple Molecules!",
+  "description": "Snap atoms together like building blocks to discover how water, oxygen, and carbon dioxide are made!",
+  "targetMolecule": {
+   "name": "Water",
+   "formula": "H2O",
+   "atoms": [
+    {
+     "element": "O",
+     "count": 1
+    },
+    {
+     "element": "H",
+     "count": 2
+    }
+   ],
+   "bonds": [
+    {
+     "atom1": 0,
+     "atom2": 1,
+     "type": "single"
+    },
+    {
+     "atom1": 0,
+     "atom2": 2,
+     "type": "single"
+    }
+   ],
+   "realWorldUse": "Water covers 71% of Earth and is essential for all living things!",
+   "imagePrompt": "A crystal clear droplet of water resting on a vibrant green leaf, reflecting sunlight in a lush forest."
+  },
+  "palette": {
+   "availableElements": [
+    "H",
+    "C",
+    "N",
+    "O"
+   ],
+   "showValence": true,
+   "showElectronDots": false
+  },
+  "challenges": [
+   {
+    "id": "ch1",
+    "type": "build_target",
+    "instruction": "Let's start simple! Snap together two Hydrogen atoms and one Oxygen atom to build water (H2O).",
+    "targetFormula": "H2O",
+    "targetName": "Water",
+    "targetAtoms": [
+     {
+      "element": "H",
+      "count": 2
+     },
+     {
+      "element": "O",
+      "count": 1
+     }
+    ],
+    "hint": "Connect each Hydrogen atom with a single bond to the central Oxygen atom.",
+    "narration": "Amazing! You built water — H2O! Every raindrop, every ocean wave is made of this life-giving molecule!"
+   },
+   {
+    "id": "ch2",
+    "type": "build_target",
+    "instruction": "Now let's build the oxygen gas we breathe! Snap together two Oxygen atoms to make O2.",
+    "targetFormula": "O2",
+    "targetName": "Oxygen",
+    "targetAtoms": [
+     {
+      "element": "O",
+      "count": 2
+     }
+    ],
+    "hint": "Oxygen atoms like to share four electrons, creating a double bond between them.",
+    "narration": "Fantastic job! You built O2, the oxygen gas that fills our atmosphere and helps us breathe every day!"
+   },
+   {
+    "id": "ch3",
+    "type": "build_target",
+    "instruction": "Time for Carbon Dioxide! Combine one Carbon atom and two Oxygen atoms to make CO2.",
+    "targetFormula": "CO2",
+    "targetName": "Carbon Dioxide",
+    "targetAtoms": [
+     {
+      "element": "C",
+      "count": 1
+     },
+     {
+      "element": "O",
+      "count": 2
+     }
+    ],
+    "hint": "Put Carbon in the middle and use double bonds to connect it to both Oxygen atoms.",
+    "narration": "Incredible! CO2 is exhaled by animals and used by plants to make food through photosynthesis!"
+   },
+   {
+    "id": "ch4",
+    "type": "free_build",
+    "instruction": "You are a master molecule builder! Use the atom palette to create any molecule you can imagine.",
+    "targetFormula": null,
+    "targetName": null,
+    "targetAtoms": [],
+    "hint": "Make sure every atom's valence bonds are fully connected with green indicators!",
+    "narration": "You are thinking like a real chemist, exploring how different building blocks connect in our universe!"
+   }
+  ],
+  "moleculeGallery": [
+   {
+    "name": "Water",
+    "formula": "H2O",
+    "category": "essential",
+    "unlocked": false,
+    "imagePrompt": "A splashing blue wave in the ocean sparkling under a bright blue sky."
+   },
+   {
+    "name": "Oxygen Gas",
+    "formula": "O2",
+    "category": "atmosphere",
+    "unlocked": false,
+    "imagePrompt": "Green treetops swaying gently in a crisp, clear morning breeze."
+   },
+   {
+    "name": "Carbon Dioxide",
+    "formula": "CO2",
+    "category": "atmosphere",
+    "unlocked": false,
+    "imagePrompt": "Lush green plants basking in warm sunlight, absorbing gases from the air."
+   },
+   {
+    "name": "Methane",
+    "formula": "CH4",
+    "category": "energy",
+    "unlocked": false,
+    "imagePrompt": "A blue flame burning steadily on a modern kitchen stove burner."
+   },
+   {
+    "name": "Table Sugar",
+    "formula": "C12H22O11",
+    "category": "food",
+    "unlocked": false,
+    "imagePrompt": "A heap of white crystal sugar granules glowing softly under warm light."
+   }
+  ],
+  "showOptions": {
+   "showFormula": true,
+   "showName": true,
+   "showRealWorldImage": true,
+   "showValenceSatisfaction": true,
+   "show3DToggle": false,
+   "showElectronDots": false,
+   "showBondType": false
+  },
+  "gradeBand": "3-5"
+ }
+}
