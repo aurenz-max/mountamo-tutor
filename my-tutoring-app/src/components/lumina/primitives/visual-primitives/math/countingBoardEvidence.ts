@@ -15,6 +15,8 @@ export function countingTask(item: CountingItem, gradeBand: 'K' | '1'): { challe
   switch (item.kind) {
     case 'subitize_perceptual':
       return { challenge: `${item.count} ${objects} shown; tap the hand with that many fingers (hands show 1, 2 and 3).`, expected: `The hand with ${item.target} fingers.` };
+    case 'build_n':
+      return { challenge: `On an empty scene, the tutor asked the learner to put in ${item.target} ${objects}; tap to put them in, then say done.`, expected: `${item.target} ${objects} put in.` };
     case 'give_me_n':
       return { challenge: `From a pile of ${item.count} ${objects}, the tutor asked for ${item.target}; touch that many and hand them over.`, expected: `${item.target} ${objects} handed over.` };
     case 'subitize':
@@ -43,6 +45,8 @@ export function countingTask(item: CountingItem, gradeBand: 'K' | '1'): { challe
 export function countingObservation(item: CountingItem, gradeBand: 'K' | '1', response: CountingResponse) {
   const observed = item.kind === 'give_me_n'
     ? `Handed over ${response.given ?? 0} ${item.objectWord}.`
+    : item.kind === 'build_n'
+    ? `Put in ${response.given ?? 0} ${item.objectWord}.`
     : item.kind === 'subitize_perceptual'
       ? response.hand != null ? `Tapped the hand with ${response.hand} fingers.` : 'Tapped a hand; which one was not recorded.'
       : response.heard?.trim() ? `Said "${response.heard.trim()}".` : 'No transcript; the tutor judged the spoken answer wrong.';
@@ -57,6 +61,7 @@ const EXPECTED: Partial<Record<CountingItem['kind'], string>> = {
   recount_moved: 'The same number that was counted before the objects moved.',
   group_count: 'The number of objects in all the groups together.',
   give_me_n: 'Exactly the number asked for, handed over.',
+  build_n: 'Exactly the number asked for, put into the scene.',
   subitize_perceptual: 'The hand whose finger count equals the number of objects shown.',
 };
 
@@ -65,6 +70,7 @@ const SESSION: Partial<Record<CountingItem['kind'], string>> = {
   add_more: 'each board starts with some objects, the tutor says how many more to put on, the learner puts them on and says how many altogether',
   count_on: 'the tutor says how many are already in a group and the learner counts on the rest and says how many altogether',
   give_me_n: 'the tutor asks for a number of objects and the learner hands that many over from a bigger pile',
+  build_n: 'the tutor asks for a number of objects and the learner makes a set that size by putting them into an empty scene',
   subitize_perceptual: 'the learner sees a few objects and taps the hand with that many fingers',
 };
 

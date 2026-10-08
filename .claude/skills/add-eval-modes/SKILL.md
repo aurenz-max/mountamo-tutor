@@ -19,6 +19,12 @@ This skill adds eval mode support to an existing primitive's generator. **Eval m
 
 An explicit `config.targetEvalMode` (the eval-test tester, or a curator override) **pins one mode directly with NO LLM call** and short-circuits intent resolution.
 
+**Build modes (open build).** One kind of mode recurs across primitives: the learner MAKES an example of the
+skill on an empty scene ("Put six apples on the tree"), a flash-lite narrator reacts while they build, and the
+primitive's own check judges it at "I'm done!". Add one when the primitive computes a property of something a
+learner could make and many makes are correct. It needs a surface and a live layer beyond Phases 1-5:
+`references/build-mode.md` (reference: `counting-board` `build_n`).
+
 ## Required Reading
 
 For full details on the architecture and design guidelines, see:

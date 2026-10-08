@@ -85,6 +85,8 @@ const KNOWN_TYPES = new Set([
   'recount_moved',
   'take_away',
   'add_more',
+  // Open build: the scene starts empty and the child makes the set, so count == targetAnswer.
+  'build_n',
 ]);
 
 // Fixed finger-count hand options in subitize_perceptual (CountingBoard.tsx:391, :1112).

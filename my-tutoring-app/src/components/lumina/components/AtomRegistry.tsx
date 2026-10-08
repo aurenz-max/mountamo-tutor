@@ -166,6 +166,7 @@ const UNIVERSAL_DOMAINS = new Set(['core', 'media', 'assessment']);
 const DOMAIN_TO_PANEL: Record<string, string> = {
   math: 'math-primitives-tester',
   engineering: 'engineering-primitives-tester',
+  creation: 'creation-primitives-tester',
   astronomy: 'astronomy-primitives-tester',
   physics: 'physics-primitives-tester',
   biology: 'biology-primitives-tester',

@@ -27,6 +27,9 @@
  "number-tracer.sequence": {
   "J1-drivable": "handoff 21 SW-7"
  },
+ "open-builder.build_to_goal": {
+  "J1-drivable": "by design: the check is the Gemini inspector, which the dry sweep has no model for; OpenBuilder.workspace.test.tsx drives the commit with a stubbed inspector"
+ },
  "strategy-picker.compare": {
   "J1-drivable": "handoff 21 SW-8 (by design)"
  },

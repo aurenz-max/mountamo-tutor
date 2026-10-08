@@ -65,6 +65,8 @@ export type {
   VehicleDesignStudioMetrics,
   TransportChallengeMetrics,
   TrainYardMetrics,
+  // Creation metrics
+  OpenBuilderMetrics,
   // Assessment metrics
   MultipleChoiceMetrics,
   FillInBlanksMetrics,

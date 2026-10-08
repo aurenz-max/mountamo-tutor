@@ -1,0 +1,42 @@
+{
+ "target": 7,
+ "lines": [
+  "(none)",
+  "Ooh, a bright yellow star is shining near the moon!",
+  "Ooh, bright yellow stars are glowing under the crescent moon!",
+  "Ooh, yellow stars are glowing bright below the bright moon!",
+  "Ooh, bright yellow stars are glowing right next to the moon!",
+  "Ooh, bright yellow stars are glowing right below the moon!"
+ ],
+ "afterWrong": "Attempts on this item\n\nwrong 6 · miss one_over",
+ "countShown": "Put in: 6",
+ "tagsShown": 6,
+ "countAfterAdd": "Put in: 7",
+ "afterRight": "Attempts on this item\n\nNone yet.",
+ "watchCalls": [
+  {
+   "numbers": "never",
+   "seeing": "Ooh, a bright yellow star is shining near the moon!"
+  },
+  {
+   "numbers": "never",
+   "seeing": "Ooh, bright yellow stars are glowing under the crescent moon!"
+  },
+  {
+   "numbers": "never",
+   "seeing": "Ooh, yellow stars are glowing bright below the bright moon!"
+  },
+  {
+   "numbers": "never",
+   "seeing": "Ooh, bright yellow stars are glowing right next to the moon!"
+  },
+  {
+   "numbers": "never",
+   "seeing": "Ooh, bright yellow stars are glowing right below the moon!"
+  },
+  {
+   "numbers": "never",
+   "seeing": "Ooh, bright yellow stars are glowing right beside the moon!"
+  }
+ ]
+}

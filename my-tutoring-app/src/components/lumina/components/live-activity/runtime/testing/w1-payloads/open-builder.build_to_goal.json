@@ -1,0 +1,34 @@
+{
+ "source": "hand-written from the scene presets (openBuilderModel.ts SCENES), 2026-10-06 reimagining",
+ "primitiveId": "open-builder",
+ "evalMode": "build_to_goal",
+ "data": {
+  "title": "Little Builders",
+  "description": "Build with blocks to do what the project asks. There are lots of ways to do it!",
+  "challenges": [
+   {
+    "id": "ob-1",
+    "type": "build_to_goal",
+    "sceneId": "bridge",
+    "title": "Over the River",
+    "goal": "The car needs to get across the river. Build a bridge from one side to the other!"
+   },
+   {
+    "id": "ob-2",
+    "type": "build_to_goal",
+    "sceneId": "giraffe",
+    "title": "As Tall as the Giraffe",
+    "goal": "Build a tower as tall as the giraffe!"
+   },
+   {
+    "id": "ob-3",
+    "type": "build_to_goal",
+    "sceneId": "puppy-house",
+    "title": "A House for Puppy",
+    "goal": "Puppy needs a house to stay dry when it rains. Build a house with walls and a roof."
+   }
+  ],
+  "challengeType": "build_to_goal",
+  "gradeBand": "K-2"
+ }
+}

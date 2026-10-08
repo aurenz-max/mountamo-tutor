@@ -1,0 +1,145 @@
+{
+ "rows": [
+  {
+   "scene": "bridge",
+   "after": "plank@4",
+   "ms": 1411,
+   "seeing": "Ooh, that orange block is starting to stretch out over the water!",
+   "shown": "👀 Ooh, that orange block is starting to stretch out over the water!"
+  },
+  {
+   "scene": "bridge",
+   "after": "tall block@6",
+   "ms": 833,
+   "seeing": "Ooh, two orange blocks are starting to look like piers!",
+   "shown": "👀 Ooh, two orange blocks are starting to look like piers!"
+  },
+  {
+   "scene": "bridge",
+   "after": "long block@6",
+   "ms": 881,
+   "seeing": "Ooh, a tall orange tower is growing right in the river!",
+   "shown": "👀 Ooh, a tall orange tower is growing right in the river!"
+  },
+  {
+   "scene": "giraffe",
+   "after": "big block@2",
+   "ms": 865,
+   "seeing": "Ooh, a pink square block is sitting near the giraffe!",
+   "shown": "👀 Ooh, a pink square block is sitting near the giraffe!"
+  },
+  {
+   "scene": "giraffe",
+   "after": "big block@2",
+   "ms": 834,
+   "seeing": "Ooh, a tall pink stack is growing near the giraffe!",
+   "shown": "👀 Ooh, a tall pink stack is growing near the giraffe!"
+  },
+  {
+   "scene": "giraffe",
+   "after": "tall block@2",
+   "ms": 939,
+   "seeing": "Ooh, three red blocks are starting to form a tower!",
+   "shown": "👀 Ooh, three red blocks are starting to form a tower!"
+  },
+  {
+   "scene": "puppy-house",
+   "after": "tall block@5",
+   "ms": 951,
+   "seeing": "Ooh, a tall orange block is standing right next to the puppy!",
+   "shown": "👀 Ooh, a tall orange block is standing right next to the puppy!"
+  },
+  {
+   "scene": "puppy-house",
+   "after": "tall block@7",
+   "ms": 7056,
+   "seeing": "Ooh, two tall orange blocks are starting to look like walls!",
+   "shown": "👀 Ooh, two tall orange blocks are starting to look like walls!"
+  },
+  {
+   "scene": "puppy-house",
+   "after": "long block@5",
+   "ms": 985,
+   "seeing": "Ooh, three orange blocks are starting to look like walls!",
+   "shown": "👀 Ooh, three orange blocks are starting to look like walls!"
+  },
+  {
+   "scene": "puppy-house",
+   "after": "triangle@5",
+   "ms": 914,
+   "seeing": "Ooh, those orange blocks are starting to look like a little house!",
+   "shown": "👀 Ooh, those orange blocks are starting to look like a little house!"
+  },
+  {
+   "scene": "robot",
+   "after": "tall block@5",
+   "ms": 2188,
+   "seeing": "Ooh, that single pink block is starting to look like a body!",
+   "shown": "👀 Ooh, that single pink block is starting to look like a body!"
+  },
+  {
+   "scene": "robot",
+   "after": "tall block@6",
+   "ms": 1074,
+   "seeing": "Ooh, those two pink blocks are starting to look like legs!",
+   "shown": "👀 Ooh, those two pink blocks are starting to look like legs!"
+  },
+  {
+   "scene": "robot",
+   "after": "big block@5",
+   "ms": 934,
+   "seeing": "Ooh, those two vertical blocks are starting to look like legs!",
+   "shown": "👀 Ooh, those two vertical blocks are starting to look like legs!"
+  },
+  {
+   "scene": "robot",
+   "after": "plank@4",
+   "ms": 930,
+   "seeing": "Ooh, those two pink blocks are starting to look like legs!",
+   "shown": "👀 Ooh, those two pink blocks are starting to look like legs!"
+  },
+  {
+   "scene": "robot",
+   "after": "plank@6",
+   "ms": 786,
+   "seeing": "Ooh, those pink blocks are starting to look like legs!",
+   "shown": "👀 Ooh, those pink blocks are starting to look like legs!"
+  },
+  {
+   "scene": "robot",
+   "after": "small block@5",
+   "ms": 855,
+   "seeing": "Ooh, those pink blocks are starting to look like a robot body!",
+   "shown": "👀 Ooh, those pink blocks are starting to look like a robot body!"
+  },
+  {
+   "scene": "truck",
+   "after": "wheel@4",
+   "ms": 4144,
+   "seeing": "Ooh, a blank board is waiting near the farmer!",
+   "shown": "👀 Ooh, a blank board is waiting near the farmer!"
+  },
+  {
+   "scene": "truck",
+   "after": "wheel@6",
+   "ms": 1122,
+   "seeing": "Ooh, two round wheels are starting to look like a truck!",
+   "shown": "👀 Ooh, two round wheels are starting to look like a truck!"
+  },
+  {
+   "scene": "truck",
+   "after": "long block@4",
+   "ms": 1008,
+   "seeing": "Ooh, two round wheels and a long block are starting to look like a truck!",
+   "shown": "👀 Ooh, two round wheels and a long block are starting to look like a truck!"
+  },
+  {
+   "scene": "truck",
+   "after": "big block@6",
+   "ms": 984,
+   "seeing": "Ooh, those peach blocks and wheels are starting to look like a truck!",
+   "shown": "👀 Ooh, those peach blocks and wheels are starting to look like a truck!"
+  }
+ ],
+ "fastBuilderLooks": 1
+}

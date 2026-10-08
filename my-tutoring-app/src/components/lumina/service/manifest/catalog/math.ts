@@ -2555,11 +2555,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       levers: true,
       guidance: 'Use demonstrate to show a selection on the actual board without changing learner work. '
         + 'Handovers and hand choices are checked directly by the board. '
-        + 'Respect the current task constraints, including hidden quick-look objects and pre-numeric hand matching.',
+        + 'Respect the current task constraints, including hidden quick-look objects and pre-numeric hand matching. '
+        + 'On a build, the learner makes the set and does the counting: never say how many are on the board or how '
+        + 'many more are needed. If they stop before pressing done, invite them to count what they have, one at a time.',
       // The board's own check (`countMiss`) on handovers and hands; the spoken modes' known wrong answers
       // (`countingBoardSpokenMisses`), named by the `spoken_miss` observer.
       misses: missLists<CountMiss | SpokenCountMiss>({
         give_me_n: ['one_short', 'one_over', 'gave_all', 'short_by_more', 'over_by_more'],
+        build_n: ['one_short', 'one_over', 'short_by_more', 'over_by_more'],
         subitize_perceptual: ['one_short', 'one_over', 'short_by_more', 'over_by_more'],
         count: ['skipped_a_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
         ...sameMisses<SpokenCountMiss>(['recount_moved', 'subitize'], ['one_short', 'one_over', 'short_by_more', 'over_by_more']),
@@ -2607,6 +2610,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 1,
         challengeTypes: ['give_me_n'],
         description: 'Count out a named number of objects from a bigger pile and hand them over. K.CC.B.5.',
+      },
+      {
+        evalMode: 'build_n',
+        affordances: { representation: 'concrete', reader: 'none', answers: ['tap'] },
+        label: 'Build N (Concrete, open build)',
+        beta: 1.6,
+        scaffoldingMode: 1,
+        challengeTypes: ['build_n'],
+        description: 'Open build: the scene starts EMPTY (a tree, a pond, the night sky) and the child makes a set of a named size by tapping objects in, then says done. Nothing is drawn to count; the child produces the set. K.CC.B.5.',
       },
       {
         evalMode: 'recount_moved',

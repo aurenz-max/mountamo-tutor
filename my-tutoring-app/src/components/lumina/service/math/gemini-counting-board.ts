@@ -1,6 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { CountingBoardData } from "../../primitives/visual-primitives/math/CountingBoard";
-import { numberWordFor } from "../../primitives/visual-primitives/math/countingBoardScript";
+import { buildPlaceFor, numberWordFor } from "../../primitives/visual-primitives/math/countingBoardScript";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { adaptationTaskFor, planAdaptation, plannedMode, stampAdaptation } from '../generation/adaptationStep';
@@ -36,13 +36,17 @@ type ChallengeType =
   | 'give_me_n'
   | 'recount_moved'
   | 'take_away'
-  | 'add_more';
+  | 'add_more'
+  // Open build (/add-eval-modes references/build-mode.md): make the set on an empty scene
+  | 'build_n';
 
 const DEFAULT_INSTANCE_COUNT = 7; // tier fallback (T1 — fast-tap K-1 counting)
 const MAX_INSTANCE_COUNT = 8;
 
 const COUNT_BY_MODE: Record<ChallengeType, number> = {
   give_me_n: 5,
+  // Each build is longer than a tap-count: fewer boards.
+  build_n: 4,
   recount_moved: 5,
   take_away: 5,
   add_more: 5,
@@ -124,6 +128,14 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `The app decides how many are asked for AFTER you answer, so never state a quantity in the instruction. `
       + `K.CC.B.5 — counting out a named number from many.`,
     schemaDescription: "'give_me_n' (count out a set from a pile)",
+  },
+  build_n: {
+    promptDoc:
+      `"build_n": The board starts EMPTY (a scene: a tree, a pond, the night sky) and the child MAKES a set by `
+      + `tapping to put objects in, then says done. Set count to any number in the lesson's range; the app decides `
+      + `how many are asked for AFTER you answer, so never state a quantity in the instruction. `
+      + `K.CC.B.5 — make a set of a named size (open build: the child produces the set, nothing is drawn to count).`,
+    schemaDescription: "'build_n' (make a set of N on an empty scene)",
   },
   recount_moved: {
     promptDoc:
@@ -241,6 +253,9 @@ function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): 
             ? 'Scatter a bigger pile so the child must keep track of which ones they have already handed over.'
             : 'Use a moderate pile; the child keeps track of what they have taken.',
       );
+      break;
+    case 'build_n':
+      promptLines.push('The scene starts empty; the child keeps track of what they put in themselves.');
       break;
     case 'recount_moved':
     case 'take_away':
@@ -540,6 +555,13 @@ export const generateCountingBoard = async (ctx: GenerationContext): Promise<Cou
     .sort((a, b) => a.k - b.k)
     .map(({ n }) => n);
   let giveIndex = 0;
+  // build_n asks for a NUMBER too: distinct requests from code, within the lesson's ceiling, 3..10.
+  const buildRequests = [3, 4, 5, 6, 7, 8, 9, 10]
+    .filter((n) => n <= Math.max(3, scopeCeiling))
+    .map((n) => ({ n, k: Math.random() }))
+    .sort((a, b) => a.k - b.k)
+    .map(({ n }) => n);
+  let buildIndex = 0;
   const countOnLines = countOnPairs
     .map((p, i) => `  - Challenge ${i + 1}: startFrom=${p.startFrom}, count=${p.total} (counts on ${p.extra} more)`)
     .join('\n');
@@ -723,7 +745,7 @@ Return the complete counting board configuration.
   // Filter to valid challenge types (safety net — schema enum handles the eval mode case)
   const validChallengeTypes = [
     'count_all', 'subitize', 'subitize_perceptual', 'count_on', 'group_count', 'compare',
-    'give_me_n', 'recount_moved', 'take_away', 'add_more',
+    'give_me_n', 'recount_moved', 'take_away', 'add_more', 'build_n',
   ];
   const validArrangements = ['scattered', 'line', 'groups', 'circle'];
 
@@ -767,7 +789,7 @@ Return the complete counting board configuration.
     // give_me_n is the one mode whose ask STATES the target — "give me five
     // bears" is the task, not a leak (publicValuesFor says the same on the
     // spoken side).
-    if (challenge.type !== 'give_me_n' && leak.test(challenge.instruction ?? '')) {
+    if (challenge.type !== 'give_me_n' && challenge.type !== 'build_n' && leak.test(challenge.instruction ?? '')) {
       const fallbackAsk: Record<string, string> = {
         recount_moved: `Count the ${objectWordForBoard}. Then watch them move!`,
         take_away: 'Take some away. How many are left?',
@@ -883,6 +905,15 @@ Return the complete counting board configuration.
       challenge.targetAnswer = request;
       challenge.instruction = `Give me ${numberWordFor(request)} ${objectWordForBoard}.`;
     }
+    if (challenge.type === 'build_n') {
+      const request = buildRequests.length > 0 ? buildRequests[buildIndex % buildRequests.length] : 3;
+      buildIndex += 1;
+      // Nothing is drawn: the scene starts empty and the child makes the set.
+      challenge.count = request;
+      challenge.targetAnswer = request;
+      challenge.arrangement = 'scattered';
+      challenge.instruction = `Put ${numberWordFor(request)} ${objectWordForBoard} ${buildPlaceFor(objectWordForBoard).place}.`;
+    }
     if (challenge.type === 'recount_moved') {
       if (movedCounts.length > 0) {
         challenge.count = movedCounts[movedIndex % movedCounts.length];
@@ -944,6 +975,7 @@ Return the complete counting board configuration.
       count_on: { type: 'count_on', count: 8, arrangement: 'scattered', instruction: 'There are 5 already. Count on to find the total!', targetAnswer: 8, hint: 'Start from 5 and keep counting: 6, 7, 8...', narration: "Some are already counted. Count on from there!", startFrom: 5 },
       group_count: { type: 'group_count', count: 8, arrangement: 'groups', instruction: 'Count the groups! How many altogether?', targetAnswer: 8, hint: 'Count each group, then add them up!', narration: "Let's count by groups!", groupSize: 4 },
       give_me_n: { type: 'give_me_n', count: 8, arrangement: 'scattered', instruction: `Give me four ${data.objects?.type || 'stars'}.`, targetAnswer: 4, hint: 'Count out loud as you touch each one.', narration: 'Count them out one at a time.' },
+      build_n: { type: 'build_n', count: 4, arrangement: 'scattered', instruction: `Put four ${data.objects?.type || 'stars'} ${buildPlaceFor(data.objects?.type || 'stars').place}.`, targetAnswer: 4, hint: 'Count each one as you put it in.', narration: 'Make a set of your own.' },
       recount_moved: { type: 'recount_moved', count: 5, arrangement: 'line', instruction: `Count the ${data.objects?.type || 'stars'}. Then watch them move!`, targetAnswer: 5, hint: 'Moving them does not change how many.', narration: 'They moved — but how many are there now?' },
       take_away: { type: 'take_away', count: 6, changeBy: 2, arrangement: 'scattered', instruction: `Take away two ${data.objects?.type || 'stars'}. How many are left?`, targetAnswer: 4, hint: 'Count only the ones still on the board.', narration: 'Take some away, then count what is left.' },
       add_more: { type: 'add_more', count: 4, changeBy: 2, arrangement: 'scattered', instruction: `Put two more ${data.objects?.type || 'stars'} on the board. How many altogether?`, targetAnswer: 6, hint: 'Count on from the ones already there.', narration: 'Put more on, then count them all.' },

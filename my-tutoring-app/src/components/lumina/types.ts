@@ -1660,6 +1660,9 @@ export type ComponentId =
   | 'transport-challenge' // Interactive transport challenge
   | 'train-yard' // Interactive train yard: build a train of cars for each rail job
 
+  // Creation Primitives (K-5)
+  | 'open-builder' // Open-ended building studio: build freely from a hopper to meet a goal, an inspector judges
+
   // Astronomy Primitives (K-5)
   | 'solar-system-explorer' // Interactive solar system model with orbits, zoom, and planet details
   | 'scale-comparator' // Interactive scale comparison tool for celestial objects with familiar references
@@ -2286,6 +2289,7 @@ export type { PropulsionTimelineData, TimelineMilestone, TimelineEra as Propulsi
 export type { VehicleDesignStudioData } from './primitives/visual-primitives/engineering/VehicleDesignStudio';
 export type { TransportChallengeData } from './primitives/visual-primitives/engineering/TransportChallenge';
 export type { TrainYardData } from './primitives/visual-primitives/engineering/TrainYard';
+export type { OpenBuilderData } from './primitives/visual-primitives/creation/OpenBuilder';
 export type { ConstructionSequencePlannerData, ConstructionTask, ConstructionChallenge } from './primitives/visual-primitives/engineering/ConstructionSequencePlanner';
 
 // Math Phase 2

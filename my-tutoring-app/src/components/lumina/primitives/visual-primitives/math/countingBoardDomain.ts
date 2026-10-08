@@ -41,7 +41,25 @@ export type CountingItemKind =
   | 'give_me_n'
   | 'recount_moved'
   | 'take_away'
-  | 'add_more';
+  | 'add_more'
+  // ── Open build (the build layer, /add-eval-modes references/build-mode.md) ──
+  // give_me_n's judgment on an empty scene: the child MAKES a set of the named
+  // size by putting objects in, instead of picking them out of a pile we drew.
+  | 'build_n';
+
+/** The kinds answered by making a set of the asked-for size and handing it over. */
+export const makesASet = (kind: CountingItemKind | undefined): boolean => kind === 'give_me_n' || kind === 'build_n';
+
+/** Where a build_n set goes in its scene, by the board's plural noun; a themed noun gets the plain board. */
+export const BUILD_PLACES: Record<string, { place: string; scene: string }> = {
+  apples: { place: 'on the tree', scene: 'A big apple tree with an empty canopy, on grass.' },
+  fish: { place: 'in the pond', scene: 'A blue pond with reeds at the edges.' },
+  stars: { place: 'in the night sky', scene: 'A dark night sky over hills, with a moon.' },
+  bears: { place: 'on the picnic blanket', scene: 'A checked picnic blanket on grass.' },
+  butterflies: { place: 'in the garden', scene: 'A garden with flowers along the bottom.' },
+  blocks: { place: 'on the play mat', scene: 'A colorful play mat on the floor.' },
+};
+export const buildPlaceFor = (objectWord: string) => BUILD_PLACES[objectWord] ?? { place: 'on the board', scene: 'An empty play board.' };
 
 export interface CountingItem extends TeachingItem {
   kind: CountingItemKind;
@@ -91,7 +109,7 @@ export const responseClassFor = (item: { kind: CountingItemKind; target: number 
   // child already heard the number in the ask. Same gesture class as the
   // pre-numeric hand match (the spell_word ruling: porting it to speech would
   // delete the mode's identity, which is producing a quantity).
-  if (item.kind === 'subitize_perceptual' || item.kind === 'give_me_n') return 'manipulation';
+  if (item.kind === 'subitize_perceptual' || makesASet(item.kind)) return 'manipulation';
   return item.target <= 20 ? 'number_word_to_20' : 'number_word_to_120';
 };
 
@@ -185,6 +203,8 @@ export const howToPlayFor = (item: CountingItem): string => {
       return 'Look at both groups and find the one with more. ';
     case 'give_me_n':
       return `Touch the ${item.objectWord} you want to give me. Touch one again to put it back. `;
+    case 'build_n':
+      return `Tap the picture to put ${item.objectWord} in. Tap one again to take it out. `;
     case 'recount_moved':
       return `Touch each ${objectSingularFor(item.objectWord, item.objectSingular)} as you count. Then they will move — but do not count again. `;
     case 'take_away':
@@ -216,6 +236,9 @@ export const askFor = (item: CountingItem): string => {
     case 'give_me_n':
       // The number is the ASK here, not the answer — the child hands back a set.
       return `Here are lots of ${item.objectWord}. Your turn. Give me ${countedNoun(item.target, item.objectWord, item.objectSingular)}.`;
+    case 'build_n':
+      // The number is the ASK, as on give_me_n: the child makes the set.
+      return `Your turn. Put ${countedNoun(item.target, item.objectWord, item.objectSingular)} ${buildPlaceFor(item.objectWord).place}.`;
     case 'recount_moved':
       // Spoken BEFORE the move, and deliberately short: every item in a
       // conservation session asks the same thing, and the repeated-ask gate
@@ -260,6 +283,7 @@ export const ACTION_FOR_KIND: Record<CountingItemKind, string> = {
   recount_moved: 'watch-and-hold',
   take_away: 'take-away',
   add_more: 'add-more',
+  build_n: 'build',
 };
 
 /** The catalog eval mode a board type is tracked under. Two types carry a different name from their
@@ -312,6 +336,9 @@ export const itemFromChallenge = (
   //  - give_me_n with a pile no bigger than the request: "give me five" out of
   //    five is handing over the whole board, which is not producing a set.
   if (ch.type === 'give_me_n' && (!Number.isFinite(ch.count) || ch.count <= target)) return null;
+  //  - build_n starts on an empty scene, so `count` is the target itself; past
+  //    twenty there is no room in the scene to make the set.
+  if (ch.type === 'build_n' && target > 20) return null;
   //  - take_away / add_more with no change to make, or one that is spoken as
   //    the answer ("take away three" leaving three RECITES it).
   if (ch.type === 'take_away' || ch.type === 'add_more') {
@@ -331,12 +358,12 @@ export const itemFromChallenge = (
   return {
     id: ch.id,
     kind: ch.type,
-    answerKind: ch.type === 'subitize_perceptual' || ch.type === 'give_me_n' ? 'gesture' : 'voice',
+    answerKind: ch.type === 'subitize_perceptual' || makesASet(ch.type) ? 'gesture' : 'voice',
     responseClass: responseClassFor({ kind: ch.type, target }),
     action: ACTION_FOR_KIND[ch.type],
     objectWord: opts.objectWord,
     objectSingular: opts.objectSingular,
-    count: ch.count,
+    count: ch.type === 'build_n' ? target : ch.count,
     target,
     startFrom,
     groupSize: ch.groupSize ?? undefined,
@@ -370,7 +397,7 @@ export function boardGroups(count: number, groupSize?: number | null, compareGro
 /** Objects on the board for this item. add_more lays out the extras from the start (faint,
  *  waiting to be put on), so putting one on never re-flows the objects already counted. */
 export const drawnCount = (item: CountingItem): number =>
-  item.kind === 'add_more' ? item.count + (item.changeBy ?? 0) : item.count;
+  item.kind === 'build_n' ? 0 : item.kind === 'add_more' ? item.count + (item.changeBy ?? 0) : item.count;
 
 /**
  * What a wrong handover or hand pick shows (`TeachingAttempt.miss`, handoff 20), from the number committed:
@@ -383,7 +410,7 @@ export const drawnCount = (item: CountingItem): number =>
 export type CountMiss = 'one_short' | 'one_over' | 'short_by_more' | 'over_by_more' | 'gave_all';
 
 export function countMiss(item: CountingItem | null, committed: number): CountMiss | undefined {
-  if (!item || (item.kind !== 'give_me_n' && item.kind !== 'subitize_perceptual')) return undefined;
+  if (!item || (!makesASet(item.kind) && item.kind !== 'subitize_perceptual')) return undefined;
   const off = committed - item.target;
   if (off === 0) return undefined;
   if (off === -1) return 'one_short';
@@ -516,6 +543,8 @@ export const stimulusFor = (item: CountingItem): string => {
       return `two groups of ${item.objectWord} side by side, one bigger than the other`;
     case 'give_me_n':
       return `a big pile of ${item.objectWord} to take some from`;
+    case 'build_n':
+      return `an empty scene to put ${item.objectWord} in`;
     case 'recount_moved':
       return `a group of ${item.objectWord} that will move once it has been counted`;
     case 'take_away':
@@ -553,6 +582,7 @@ const publicValuesFor = (item: CountingItem): number[] => {
     // The ask IS the number here ("Give me five bears"), so hearing it back is
     // the task, not a leak.
     case 'give_me_n':
+    case 'build_n':
       return [item.target];
     // "Take away two" / "put two more on" — the change is spoken, the total is
     // not, and the build gate refuses a draw where they are the same number.
@@ -631,9 +661,10 @@ export const countingBoardHarnessAnswers = (item: CountingItem): CountingHarness
           why: 'the starting number said back — the contract names it as NOT the answer',
         },
       };
+    case 'build_n':
     case 'give_me_n': {
       // One too many is the miss: the child keeps counting past the ask.
-      const wrongGive = item.target + 1 <= item.count ? item.target + 1 : Math.max(1, item.target - 1);
+      const wrongGive = item.kind === 'build_n' || item.target + 1 <= item.count ? item.target + 1 : Math.max(1, item.target - 1);
       return {
         ...base,
         correct: `handed over ${item.target} ${item.objectWord}`,

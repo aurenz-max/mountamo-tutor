@@ -1,0 +1,21 @@
+[
+ {
+  "scene": "puppy-house",
+  "title": "A House for Puppy",
+  "first": {
+   "label": "puppy-house-1-partial",
+   "met": false,
+   "miss": "missing_part",
+   "noticed": "You placed tall blocks on both sides of Puppy like walls.",
+   "nudge": "What will stop the rain from falling on top of Puppy?"
+  },
+  "retryOffered": true,
+  "nudgeVisibleAfterRetry": true,
+  "second": {
+   "label": "puppy-house-2-finished",
+   "met": true,
+   "noticed": "You put a pointy triangle block on top to make a cozy roof over Puppy!",
+   "nudge": ""
+  }
+ }
+]

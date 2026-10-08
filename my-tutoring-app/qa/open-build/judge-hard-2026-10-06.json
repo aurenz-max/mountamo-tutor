@@ -1,0 +1,1416 @@
+{
+  "date": "2026-10-06T23:53:43.111Z",
+  "model": "gemini-flash-latest",
+  "runs": 3,
+  "conditions": {
+    "facts": {
+      "verdict": "27/27",
+      "mustFlag": "27/27",
+      "mustNotFlag": "27/27",
+      "noFixCommand": "27/27",
+      "medianMs": 3503,
+      "rows": [
+        {
+          "name": "count-12-crowded-yes",
+          "runs": [
+            {
+              "ms": 2549,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see all twelve of your fish swimming all across the water!",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3503,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your fish swimming all across the water above the seaweed.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2692,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see all twelve of your fish swimming all over the sea above the green seaweed.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "count-12-crowded-13",
+          "runs": [
+            {
+              "ms": 4808,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your school of fish swimming all around the sea.",
+                "nudge": "How many fish are swimming in your sea if you count them all up?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 4322,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see all your fish swimming all over the sea!",
+                "nudge": "How many fish do you count in the water?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3566,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your fish swimming all together in the sea, including the one down at the bottom-right.",
+                "nudge": "How many fish do you count in your sea right now?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "count-12-crowded-11",
+          "runs": [
+            {
+              "ms": 3022,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your fish swimming all across the top and middle!",
+                "nudge": "How many fish do you have swimming in the sea if you count them all?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3107,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your swimming fish near the seaweed at the bottom.",
+                "nudge": "How many fish do you have swimming in the sea if you count them?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2618,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I notice your fish swimming together near the top-left.",
+                "nudge": "How many fish do you have swimming in the sea if you count them?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "big-symmetric-yes",
+          "runs": [
+            {
+              "ms": 3245,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You built matching towers with coral blocks on top and yellow blocks below.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2839,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You built matching towers on both sides with coral blocks right at the very top.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3781,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see matching towers with coral blocks at the top on both sides of your blue base.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "big-symmetric-one-off",
+          "runs": [
+            {
+              "ms": 3437,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "t3"
+                ],
+                "noticed": "I see the matching yellow blocks you placed on the long blue block.",
+                "nudge": "What do you notice about the very top block on the left side?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 6402,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "t3"
+                ],
+                "noticed": "I see your matching yellow towers resting on the long blue block.",
+                "nudge": "What do you notice about the very top of the two towers?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 4709,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "t3"
+                ],
+                "noticed": "I see your tall yellow towers standing on the blue long block.",
+                "nudge": "What do you notice about the very top of your left tower compared to the right tower?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "taller-than-5-exactly-5",
+          "runs": [
+            {
+              "ms": 3223,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your three yellow small blocks stacked right on top of the blue big block.",
+                "nudge": "How tall is your tower if you count up to the very top block?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3925,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see three yellow small blocks stacked right on top of your blue big block.",
+                "nudge": "How can you make your tower reach even higher than five blocks?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 5855,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "You stacked three yellow small blocks right on top of your blue big block.",
+                "nudge": "How high can you count the blocks from the ground up to the top?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "taller-than-5-six",
+          "runs": [
+            {
+              "ms": 2613,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You stacked four yellow small blocks high on top of your blue big block.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2675,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You stacked yellow small blocks all the way up on top of the blue big block.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3547,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You stacked four yellow small blocks high on top of the blue big block.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "same-height-5-vs-6",
+          "runs": [
+            {
+              "ms": 4323,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your tower of yellow blocks on the blue block and your second tall yellow tower on the right.",
+                "nudge": "Which tower reaches up a little higher?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 4039,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "s6"
+                ],
+                "noticed": "I see your tall yellow tower on the right and your blue block tower on the left.",
+                "nudge": "Which tower reaches up a little bit higher?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3987,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "s6"
+                ],
+                "noticed": "I see your tall yellow tower on the right next to your tower with the big blue block.",
+                "nudge": "What do you notice when you look across the tops of your two towers?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "same-height-mixed-yes",
+          "runs": [
+            {
+              "ms": 5088,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see both of your towers reaching up to row 4 with yellow blocks on top.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3324,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I noticed your blue and yellow tower on the left and your tall yellow tower on the right.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3499,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You built two tall towers that both reach four blocks high into the air.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "raw": {
+      "verdict": "27/27",
+      "mustFlag": "27/27",
+      "mustNotFlag": "27/27",
+      "noFixCommand": "26/27",
+      "medianMs": 4743,
+      "rows": [
+        {
+          "name": "count-12-crowded-yes",
+          "runs": [
+            {
+              "ms": 2783,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see twelve fish swimming all across the sea together.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2429,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your twelve fish swimming all across the water with the seaweed down at the bottom!",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3169,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your twelve fish swimming all across the sea above the green seaweed.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "count-12-crowded-13",
+          "runs": [
+            {
+              "ms": 5442,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see all your fish swimming all across the water!",
+                "nudge": "How many fish can you count in your sea right now?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3588,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see all your fish swimming all across the water!",
+                "nudge": "How many fish do you count swimming in your sea?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 4341,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see all your fish swimming all across the water!",
+                "nudge": "How many fish do you count if you tap them one by one?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "count-12-crowded-11",
+          "runs": [
+            {
+              "ms": 4239,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see eleven fish swimming all across the water!",
+                "nudge": "How many fish do you have if you count them all up?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3510,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your eleven fish swimming all across the sea!",
+                "nudge": "How many fish do you count in your sea right now?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2663,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your eleven fish swimming all across the water.",
+                "nudge": "How many fish do you count swimming in your sea?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "big-symmetric-yes",
+          "runs": [
+            {
+              "ms": 9533,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see matching towers on the left and right with coral blocks on top.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 6672,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see the blue block resting in the middle with matching yellow and coral blocks on both sides.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 7286,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You built matching towers on the left and right with coral blocks right at the top.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "big-symmetric-one-off",
+          "runs": [
+            {
+              "ms": 5925,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "t3"
+                ],
+                "noticed": "I see your matching yellow blocks on both sides of the blue base.",
+                "nudge": "What do you see way up at the very top on one side?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 5063,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "t3"
+                ],
+                "noticed": "I see your tower built on top of the long blue block.",
+                "nudge": "What do you notice about the coral block at the very top?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 6076,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "t3"
+                ],
+                "noticed": "I see your tall tower with matching yellow blocks on both sides.",
+                "nudge": "What do you notice about that coral block up at the very top?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "taller-than-5-exactly-5",
+          "runs": [
+            {
+              "ms": 3501,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your yellow blocks stacked tall on top of the big blue block.",
+                "nudge": "How high is your tower if you count from the ground to the very top?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 4966,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "You stacked three yellow blocks right on top of the big blue block.",
+                "nudge": "How can you make your tower reach even higher?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 4743,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "You stacked three yellow blocks right on top of your big blue block.",
+                "nudge": "What happens if you add another block to the very top?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": false
+              }
+            }
+          ]
+        },
+        {
+          "name": "taller-than-5-six",
+          "runs": [
+            {
+              "ms": 5123,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your big blue block at the bottom with a tall stack of yellow blocks reaching up high.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 5091,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You stacked yellow blocks all the way up on top of your big blue block.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3981,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You stacked four yellow blocks right on top of your big blue block!",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "same-height-5-vs-6",
+          "runs": [
+            {
+              "ms": 3864,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "s6"
+                ],
+                "noticed": "I see your tower with the big blue block on the left and your tall yellow tower on the right.",
+                "nudge": "How do the very tops of your two towers line up?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 5391,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "s6"
+                ],
+                "noticed": "I noticed your yellow tower on the right and the tower with the big blue block on the left.",
+                "nudge": "Can you count how tall each tower reaches from the ground?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 5819,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "s6"
+                ],
+                "noticed": "I noticed your blue big block at the bottom of the left tower with yellow blocks stacked on it.",
+                "nudge": "Can you count how tall each of your towers is?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "same-height-mixed-yes",
+          "runs": [
+            {
+              "ms": 4384,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You built a tower with four yellow blocks on the right and another tower with a big blue block on the left.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 5215,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You built a blue and yellow tower on the left and a tall yellow tower on the right that match in height!",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 4347,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You built a tower with a big blue block and another tower made of four yellow blocks!",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "vision": {
+      "verdict": "27/27",
+      "mustFlag": "27/27",
+      "mustNotFlag": "27/27",
+      "noFixCommand": "27/27",
+      "medianMs": 8844,
+      "rows": [
+        {
+          "name": "count-12-crowded-yes",
+          "runs": [
+            {
+              "ms": 6479,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your twelve blue fish swimming all across the water!",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 6077,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your twelve blue fish swimming all across the sea!",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 8542,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your twelve blue fish swimming happily all around the sea",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "count-12-crowded-13",
+          "runs": [
+            {
+              "ms": 12369,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "fish"
+                ],
+                "noticed": "I noticed your blue fish swimming all over the blue sea.",
+                "nudge": "How many fish do you count swimming in the water?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 12064,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I noticed your blue fish swimming all around the sea.",
+                "nudge": "How many fish do you count in the sea right now?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 15994,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I noticed your blue fish swimming all across the water near the hearts and seaweed.",
+                "nudge": "How many fish can you count swimming in the sea?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "count-12-crowded-11",
+          "runs": [
+            {
+              "ms": 10581,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "your eleven blue fish swimming all around the sea",
+                "nudge": "How many fish do you count swimming in the water right now?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 7216,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "your blue fish swimming all across the water",
+                "nudge": "How many fish do you count in the sea right now?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 8518,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your bright blue fish swimming all across the water with the hearts and plants.",
+                "nudge": "How many fish do you count swimming in your sea right now?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "big-symmetric-yes",
+          "runs": [
+            {
+              "ms": 9436,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I noticed the matching towers with red blocks on top sitting on the wide blue block.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 9292,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your matching towers with yellow and red blocks on each side",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 5334,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I notice your two matching towers on each side with the red blocks on top.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "big-symmetric-one-off",
+          "runs": [
+            {
+              "ms": 8087,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "red small block"
+                ],
+                "noticed": "I see your yellow towers standing on the wide blue block.",
+                "nudge": "How can you make the very top of both sides match?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 6291,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "red square block"
+                ],
+                "noticed": "I see your yellow towers standing on the long blue block.",
+                "nudge": "What is sitting at the very top of the left tower?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 8844,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "red square"
+                ],
+                "noticed": "I noticed your neat blue base with the matching yellow squares on each side.",
+                "nudge": "What do you see at the very top of the left side that might be missing on the right side?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "taller-than-5-exactly-5",
+          "runs": [
+            {
+              "ms": 9777,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "your three yellow blocks stacked on top of the big blue block",
+                "nudge": "How high can you build your tower so it grows taller than five blocks?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 7719,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your three yellow blocks stacked neatly on top of the big blue block.",
+                "nudge": "How many blocks tall is your tower if you count from the ground to the top?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 6086,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see three yellow blocks stacked right on top of your big blue block.",
+                "nudge": "How tall is your tower right now if you count the grid boxes up to the top?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "taller-than-5-six",
+          "runs": [
+            {
+              "ms": 20633,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your four yellow blocks stacked right on top of the big blue block",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 32867,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I noticed your tall tower with the big blue block on the bottom and four yellow blocks stacked on top.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 12598,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your tall stack of four yellow blocks resting right on top of the big blue block",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "same-height-5-vs-6",
+          "runs": [
+            {
+              "ms": 11993,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "your big blue block supporting the yellow blocks on the left",
+                "nudge": "What do you notice when you compare the very tops of your two towers?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 9816,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your tall stack of yellow blocks on the right and your tower with the big blue block on the left.",
+                "nudge": "What do you notice when you look across at the very tops of both towers?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 9859,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "yellow block"
+                ],
+                "noticed": "I see your yellow tower on the right and the tower resting on the big blue block on the left.",
+                "nudge": "How do the tops of your two towers line up with each other?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "same-height-mixed-yes",
+          "runs": [
+            {
+              "ms": 6133,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your two yellow blocks stacked right on top of the big blue block.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 7703,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I noticed your stack of four yellow blocks next to your tower with the big blue block.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 6196,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your tower with the big blue block and your tower of yellow blocks reaching the exact same height.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

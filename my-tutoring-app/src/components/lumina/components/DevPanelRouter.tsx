@@ -8,6 +8,7 @@ import { KnowledgeCheckTester } from './KnowledgeCheckTester';
 import { MediaPlayerTester } from './MediaPlayerTester';
 import { MathPrimitivesTester } from './MathPrimitivesTester';
 import { EngineeringPrimitivesTester } from './EngineeringPrimitivesTester';
+import { CreationPrimitivesTester } from './CreationPrimitivesTester';
 import AstronomyPrimitivesTester from './AstronomyPrimitivesTester';
 import { PhysicsPrimitivesTester } from './PhysicsPrimitivesTester';
 import { FeatureExhibitTester } from './FeatureExhibitTester';
@@ -54,6 +55,7 @@ const PANELS: Record<string, ComponentType<DevPanelProps>> = {
   'media-player-tester': MediaPlayerTester,
   'math-primitives-tester': MathPrimitivesTester,
   'engineering-primitives-tester': EngineeringPrimitivesTester,
+  'creation-primitives-tester': CreationPrimitivesTester,
   'astronomy-primitives-tester': AstronomyPrimitivesTester,
   'physics-primitives-tester': PhysicsPrimitivesTester,
   'feature-exhibit-tester': FeatureExhibitTester,

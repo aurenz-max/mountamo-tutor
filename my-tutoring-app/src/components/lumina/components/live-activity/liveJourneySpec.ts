@@ -1150,6 +1150,23 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: 'canvas[aria-label^="The route from"]' } },
   },
+  'open-builder': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/creation/OpenBuilder.tsx',
+    instanceId: 'ob',
+    defaults: { grade: 'Grade 1', mode: 'build_to_goal', di: false,
+      topic: 'Building a home: foundation, walls, a door and a roof' },
+    leakTokens: [],
+    prompts: WORKSPACE_PROMPTS,
+    // The check is the inspector (a Gemini judge over the build), which the dry sweep has no model for, as
+    // number-tracer's drawn modes have no vision judge; OpenBuilder.workspace.test.tsx drives the commit
+    // with a stubbed inspector.
+    inputsFor: (intent) => {
+      if (intent === 'warmup') return [];
+      throw new Error('Open-builder build_to_goal is judged by the inspector, not driven at W1');
+    },
+    probes: { mounted: { selector: '[aria-label^="Building site"]' } },
+  },
   'di-shapes': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/direct-instruction/DiShapes.tsx',

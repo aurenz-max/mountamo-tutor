@@ -352,8 +352,10 @@ describe('the build gate — items that cannot be ASKED are dropped, never backf
     expect(chOf({ id: 'n', type: 'give_me_n', targetAnswer: 3, count: 8 })!.answerKind)
       .toBe('gesture');
     expect(ACTION_FOR_KIND.count_all).toBe(ACTION_FOR_KIND.group_count); // one thing to DO
-    // count / compare / count-on / look / hands + the four counting-out actions.
-    expect(new Set(Object.values(ACTION_FOR_KIND)).size).toBe(9);
+    // An open build is answered with the hands too: the child makes the set on an empty scene.
+    expect(chOf({ id: 'b', type: 'build_n', targetAnswer: 6, count: 6 })!.answerKind).toBe('gesture');
+    // count / compare / count-on / look / hands + the four counting-out actions + build.
+    expect(new Set(Object.values(ACTION_FOR_KIND)).size).toBe(10);
   });
 
   it('drops a give_me_n whose pile is no bigger than the ask — that is handing over the board', () => {

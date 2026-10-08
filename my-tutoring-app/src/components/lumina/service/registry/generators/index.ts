@@ -34,6 +34,7 @@ import './literacyGenerators';
 import './calendarGenerators';
 import './diGenerators';
 import './historyGenerators';
+import './creationGenerators';
 
 // Re-export registry functions for convenience
 export {

@@ -359,6 +359,20 @@ async function handlePost(body: Record<string, unknown>) {
         return NextResponse.json(choiceVerdict);
       }
 
+      case 'judgeOpenBuild': {
+        const { judgeOpenBuild } = await import(
+          '@/components/lumina/service/creation/gemini-open-builder-judge'
+        );
+        return NextResponse.json(await judgeOpenBuild(params));
+      }
+
+      case 'watchBuild': {
+        const { watchBuild } = await import(
+          '@/components/lumina/service/build-layer/gemini-build-watch'
+        );
+        return NextResponse.json(await watchBuild(params));
+      }
+
       case 'evaluateDigitDrawing': {
         const { evaluateDigitDrawing } = await import(
           '@/components/lumina/service/math/gemini-digit-evaluation'

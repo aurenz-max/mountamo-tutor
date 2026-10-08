@@ -1,0 +1,145 @@
+{
+ "rows": [
+  {
+   "scene": "bridge",
+   "after": "plank@4",
+   "ms": 1890,
+   "seeing": "Ooh, a pink block is resting near the car!",
+   "shown": "👀 Ooh, a pink block is resting near the car!"
+  },
+  {
+   "scene": "bridge",
+   "after": "tall block@6",
+   "ms": 1529,
+   "seeing": "Ooh, two blocks are resting right by the little car!",
+   "shown": "👀 Ooh, two blocks are resting right by the little car!"
+  },
+  {
+   "scene": "bridge",
+   "after": "long block@6",
+   "ms": 862,
+   "seeing": "Ooh, three peachy blocks are bridging the river!",
+   "shown": "👀 Ooh, three peachy blocks are bridging the river!"
+  },
+  {
+   "scene": "giraffe",
+   "after": "big block@2",
+   "ms": 1129,
+   "seeing": "Ooh, a little block is sitting near the giraffe!",
+   "shown": "👀 Ooh, a little block is sitting near the giraffe!"
+  },
+  {
+   "scene": "giraffe",
+   "after": "big block@2",
+   "ms": 807,
+   "seeing": "Ooh, a cute pink tower is growing next to the giraffe!",
+   "shown": "👀 Ooh, a cute pink tower is growing next to the giraffe!"
+  },
+  {
+   "scene": "giraffe",
+   "after": "tall block@2",
+   "ms": 1078,
+   "seeing": "Ooh, a tall orange tower is growing next to the giraffe!",
+   "shown": "👀 Ooh, a tall orange tower is growing next to the giraffe!"
+  },
+  {
+   "scene": "puppy-house",
+   "after": "tall block@5",
+   "ms": 1210,
+   "seeing": "Ooh, a tall orange wall is standing right beside the puppy!",
+   "shown": "👀 Ooh, a tall orange wall is standing right beside the puppy!"
+  },
+  {
+   "scene": "puppy-house",
+   "after": "tall block@7",
+   "ms": 6221,
+   "seeing": "Ooh, two tall orange walls stand right beside the puppy!",
+   "shown": "👀 Ooh, two tall orange walls stand right beside the puppy!"
+  },
+  {
+   "scene": "puppy-house",
+   "after": "long block@5",
+   "ms": 1308,
+   "seeing": "Ooh, the puppy is right inside a little orange block house!",
+   "shown": "👀 Ooh, the puppy is right inside a little orange block house!"
+  },
+  {
+   "scene": "puppy-house",
+   "after": "triangle@5",
+   "ms": 708,
+   "seeing": "Ooh, a cute little doghouse is built right over the puppy!",
+   "shown": "👀 Ooh, a cute little doghouse is built right over the puppy!"
+  },
+  {
+   "scene": "robot",
+   "after": "tall block@5",
+   "ms": 1165,
+   "seeing": "Ooh, a single pink block is standing on the ground!",
+   "shown": "👀 Ooh, a single pink block is standing on the ground!"
+  },
+  {
+   "scene": "robot",
+   "after": "tall block@6",
+   "ms": 1153,
+   "seeing": "Ooh, two cute orange blocks standing side by side!",
+   "shown": "👀 Ooh, two cute orange blocks standing side by side!"
+  },
+  {
+   "scene": "robot",
+   "after": "big block@5",
+   "ms": 826,
+   "seeing": "Ooh, a little block person is standing up!",
+   "shown": "👀 Ooh, a little block person is standing up!"
+  },
+  {
+   "scene": "robot",
+   "after": "plank@4",
+   "ms": 965,
+   "seeing": "Ooh, a little robot friend is standing up!",
+   "shown": "👀 Ooh, a little robot friend is standing up!"
+  },
+  {
+   "scene": "robot",
+   "after": "plank@6",
+   "ms": 1317,
+   "seeing": "Ooh, a neat robot with big shoulders and sturdy legs!",
+   "shown": "👀 Ooh, a neat robot with big shoulders and sturdy legs!"
+  },
+  {
+   "scene": "robot",
+   "after": "small block@5",
+   "ms": 1610,
+   "seeing": "Ooh, that robot friend has two arms and two legs!",
+   "shown": "👀 Ooh, that robot friend has two arms and two legs!"
+  },
+  {
+   "scene": "truck",
+   "after": "wheel@4",
+   "ms": 1091,
+   "seeing": "The board is empty right now!",
+   "shown": "👀 The board is empty right now!"
+  },
+  {
+   "scene": "truck",
+   "after": "wheel@6",
+   "ms": 1287,
+   "seeing": "Ooh, two round wheels are ready near the tree!",
+   "shown": "👀 Ooh, two round wheels are ready near the tree!"
+  },
+  {
+   "scene": "truck",
+   "after": "long block@4",
+   "ms": 1114,
+   "seeing": "Ooh, a cute peach block with wheels is rolling by!",
+   "shown": "👀 Ooh, a cute peach block with wheels is rolling by!"
+  },
+  {
+   "scene": "truck",
+   "after": "big block@6",
+   "ms": 899,
+   "seeing": "Ooh, a pink truck with big wheels is rolling along!",
+   "shown": "👀 Ooh, a pink truck with big wheels is rolling along!"
+  }
+ ],
+ "fastBuilderLooks": 1
+}

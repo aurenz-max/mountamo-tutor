@@ -59,6 +59,8 @@ _DOMAIN_TO_SUBJECT: Dict[str, str] = {
     "physics": "SCIENCE",
     "astronomy": "SCIENCE",
     "engineering": "SCIENCE",
+    # Open-ended building to a goal (open-builder) is K-5 engineering design, which the curriculum files under science.
+    "creation": "SCIENCE",
     "history": "SOCIAL_STUDIES",
     # Direct Instruction packs are literacy-first (letter sounds, word reading)
     # — this removes the --domain literacy workaround for probes/attribution.

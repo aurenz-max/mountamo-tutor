@@ -1,0 +1,2841 @@
+{
+  "date": "2026-10-06T23:48:35.685Z",
+  "model": "gemini-flash-latest",
+  "runs": 3,
+  "conditions": {
+    "facts": {
+      "verdict": "54/54",
+      "mustFlag": "51/54",
+      "mustNotFlag": "54/54",
+      "noFixCommand": "53/54",
+      "medianMs": 3529,
+      "rows": [
+        {
+          "name": "undersea-all-belong",
+          "runs": [
+            {
+              "ms": 4150,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your two fish swimming right above the seaweed at the bottom.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3512,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your two fish swimming above the seaweed at the bottom.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3682,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You placed your seaweed along the bottom with fish swimming right above them.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "undersea-user-screenshot",
+          "runs": [
+            {
+              "ms": 15218,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "rocket1",
+                  "daisy1"
+                ],
+                "noticed": "I see your green seaweed along the bottom.",
+                "nudge": "Does that rocket at the top right belong under the sea?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 4926,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "rocket1",
+                  "daisy1",
+                  "sun1"
+                ],
+                "noticed": "I see your green seaweed at the bottom and fish swimming around.",
+                "nudge": "Do all of those things usually live deep down under the water?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 6036,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "rocket1",
+                  "daisy1"
+                ],
+                "noticed": "I noticed your two seaweed pieces growing at the bottom.",
+                "nudge": "Does a rocket belong deep under the sea?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "undersea-land-animals",
+          "runs": [
+            {
+              "ms": 3572,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "bunny1",
+                  "cat1",
+                  "tree1"
+                ],
+                "noticed": "I see your fish swimming near the top!",
+                "nudge": "Do bunnies, cats, and trees live deep down under the sea?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 4354,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "bunny1",
+                  "cat1",
+                  "tree1"
+                ],
+                "noticed": "I see your fish swimming at the top.",
+                "nudge": "Do bunnies, cats, and trees usually live deep down under the sea?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 4044,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "bunny1",
+                  "cat1",
+                  "tree1"
+                ],
+                "noticed": "I see your fish swimming at the top!",
+                "nudge": "Do bunnies, cats, and trees usually live deep down in the ocean?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "undersea-one-fish",
+          "runs": [
+            {
+              "ms": 3204,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your fish swimming right in the middle.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2746,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your fish right in the middle.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 4138,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your fish right in the middle.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "fish-under-rocket-yes",
+          "runs": [
+            {
+              "ms": 2754,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You lined up your three fish right below the rocket!",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 1555,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You placed all three fish right under your rocket at the top.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 1874,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You lined up three fish right underneath the rocket.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "fish-one-above",
+          "runs": [
+            {
+              "ms": 3055,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "fish1"
+                ],
+                "noticed": "I see your rocket in the middle with two fish below it.",
+                "nudge": "Can you find the fish swimming way up high above your rocket?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 5344,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "fish1"
+                ],
+                "noticed": "I see your rocket in the middle with two fish swimming below it.",
+                "nudge": "Can you spot the fish swimming high up near the top?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 4265,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "fish1"
+                ],
+                "noticed": "I see two fish swimming underneath your rocket in the middle.",
+                "nudge": "Where is that fish near the very top swimming?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "fish-only-two",
+          "runs": [
+            {
+              "ms": 2069,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "You placed two fish right under your rocket!",
+                "nudge": "How many fish do you see under your rocket right now?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3601,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "You put two fish right under your rocket at the top.",
+                "nudge": "How many fish do you see under the rocket right now?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2453,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your two fish swimming under the rocket.",
+                "nudge": "How many fish do you count under your rocket right now?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "fish-low-but-off-side",
+          "runs": [
+            {
+              "ms": 2824,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your rocket way up at the top right and your three fish on the left.",
+                "nudge": "What is swimming right beneath your rocket?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3702,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your rocket up at the top-right and your three fish over on the left.",
+                "nudge": "Where could your fish swim so they are right under your rocket?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3529,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your rocket up at the top right and your three fish on the left.",
+                "nudge": "How can you swim the fish over so they are right under the rocket?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "more-flowers-yes",
+          "runs": [
+            {
+              "ms": 3816,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You put three daisies along the bottom and a tree on the right.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2811,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your three daisies along the bottom and the tree on the right.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2722,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your three daisies along the bottom and the tree on the right.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "more-flowers-equal",
+          "runs": [
+            {
+              "ms": 3582,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your two daisies along the bottom and your two trees in the middle.",
+                "nudge": "Can you count your daisies and count your trees?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3010,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your two daisies along the bottom and your two trees in the middle.",
+                "nudge": "How many flowers do you have compared to your trees?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3227,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your two daisies along the bottom and two trees in the middle.",
+                "nudge": "How many flowers do you have compared to trees?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "tower4-smalls",
+          "runs": [
+            {
+              "ms": 2697,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your tall stack of four yellow small blocks.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2251,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your four yellow blocks neatly stacked into a tall tower.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2861,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your four yellow small blocks stacked right on top of each other!",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "tower4-big-plus-smalls",
+          "runs": [
+            {
+              "ms": 4588,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You stacked two yellow small blocks right on top of your blue big block!",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3784,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your yellow small blocks stacked right on top of the big blue block.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3592,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your yellow small blocks stacked right on top of the blue big block.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "tower-two-short",
+          "runs": [
+            {
+              "ms": 3481,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your two yellow towers that are each two blocks tall.",
+                "nudge": "How many blocks high do we need one tower to grow?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 4664,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your two yellow blocks stacked up on the left side and two on the right side.",
+                "nudge": "How tall can you make one of your stacks if you put more blocks on top?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": false
+              }
+            },
+            {
+              "ms": 3439,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your two yellow blocks stacked up on column two.",
+                "nudge": "How many more blocks do you need on top to reach four blocks tall?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "bridge-yes",
+          "runs": [
+            {
+              "ms": 2744,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You placed your coral long block right across the two blue blocks to make an opening underneath.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2160,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You placed a coral long block across two blue small blocks with an opening right in the middle.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3196,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You placed the coral long block across the two blue blocks to make an open tunnel.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "bridge-tall-yes",
+          "runs": [
+            {
+              "ms": 3240,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your coral long block resting on two yellow towers with a tunnel in the middle.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3071,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your coral long block sitting across the yellow towers with an open tunnel in the middle.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3673,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your coral long block resting on two yellow towers with an opening right in the middle.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "bridge-flat-on-ground",
+          "runs": [
+            {
+              "ms": 3893,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your long coral block sitting right on the ground with a yellow block on top.",
+                "nudge": "Where could a little car drive under?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": false,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3865,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your coral long block sitting on the ground with a yellow small block on top.",
+                "nudge": "Where could the little car drive under your bridge?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": false,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 4300,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your coral long block resting right on the ground with a yellow block on top.",
+                "nudge": "Where can the little car drive under?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": false,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "symmetry-pyramid",
+          "runs": [
+            {
+              "ms": 3270,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your coral block resting right in the middle on top of the yellow blocks.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2882,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your coral small block resting right in the middle on top of the yellow row.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2145,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You put the coral small block right in the middle on top of the yellow row.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "symmetry-user-screenshot",
+          "runs": [
+            {
+              "ms": 4447,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "s2"
+                ],
+                "noticed": "You placed yellow small blocks on top of your two big blue blocks.",
+                "nudge": "What would happen if you count the yellow blocks on each side?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 4075,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "s2"
+                ],
+                "noticed": "I see your two big blue blocks on the bottom with yellow blocks on top.",
+                "nudge": "What would happen if both sides had the exact same yellow blocks?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 4515,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "s2"
+                ],
+                "noticed": "I see your two blue big blocks sitting side by side on the ground.",
+                "nudge": "What do you notice when you look at the yellow blocks on top of each blue block?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "raw": {
+      "verdict": "54/54",
+      "mustFlag": "51/54",
+      "mustNotFlag": "54/54",
+      "noFixCommand": "54/54",
+      "medianMs": 3408,
+      "rows": [
+        {
+          "name": "undersea-all-belong",
+          "runs": [
+            {
+              "ms": 4766,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your seaweed planted down along the bottom.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2782,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your seaweed growing along the bottom with fish swimming above.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2820,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your seaweed growing along the bottom with two fish swimming above.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "undersea-user-screenshot",
+          "runs": [
+            {
+              "ms": 5357,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "rocket1",
+                  "daisy1"
+                ],
+                "noticed": "I see your swimming fish and the seaweed growing along the bottom.",
+                "nudge": "Does a rocket usually belong deep down under the sea?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 4311,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "rocket1",
+                  "daisy1"
+                ],
+                "noticed": "I see your two swimming fish and the tall seaweed at the bottom!",
+                "nudge": "Does a rocket usually travel deep down in the ocean?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 5811,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "rocket1",
+                  "daisy1",
+                  "sun1"
+                ],
+                "noticed": "I see your two swimming fish and the seaweed at the bottom.",
+                "nudge": "Does a rocket usually belong deep under the sea?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "undersea-land-animals",
+          "runs": [
+            {
+              "ms": 4598,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "bunny1",
+                  "cat1",
+                  "tree1"
+                ],
+                "noticed": "I see your little fish swimming near the middle of the water!",
+                "nudge": "Do bunnies, cats, and trees usually live deep under the sea?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 4731,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "bunny1",
+                  "cat1",
+                  "tree1"
+                ],
+                "noticed": "I see your little fish swimming near the top.",
+                "nudge": "Do cats, bunnies, and trees live deep under the sea?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2777,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "bunny1",
+                  "cat1",
+                  "tree1"
+                ],
+                "noticed": "I see your swimming fish near the top.",
+                "nudge": "Do cats, bunnies, and trees usually live deep under the water?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "undersea-one-fish",
+          "runs": [
+            {
+              "ms": 2574,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your fish swimming right in the middle!",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2029,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your fish swimming right in the middle.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2541,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your swimming fish right in the middle of the water.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "fish-under-rocket-yes",
+          "runs": [
+            {
+              "ms": 3174,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your rocket up high with three fish swimming below it.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3499,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your three fish swimming right under the rocket.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3041,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You placed three fish swimming below the rocket.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "fish-one-above",
+          "runs": [
+            {
+              "ms": 3250,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "fish1"
+                ],
+                "noticed": "I see two fish swimming below your rocket.",
+                "nudge": "Where is the fish near the very top swimming?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3892,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "fish1"
+                ],
+                "noticed": "I see your rocket in the middle with two fish swimming below it.",
+                "nudge": "Where is the fish at the very top swimming?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 4217,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "fish1"
+                ],
+                "noticed": "You put two fish swimming down below your rocket.",
+                "nudge": "Where is that fish near the very top swimming?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "fish-only-two",
+          "runs": [
+            {
+              "ms": 2378,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your two fish swimming down below the rocket.",
+                "nudge": "How many fish are under your rocket right now?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3229,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your rocket at the top with two fish swimming below it.",
+                "nudge": "How many fish are swimming under the rocket right now?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3404,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your two fish swimming below the rocket.",
+                "nudge": "How many fish do you have under the rocket so far?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "fish-low-but-off-side",
+          "runs": [
+            {
+              "ms": 4508,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your rocket high in the corner and three fish down on the other side.",
+                "nudge": "What would happen if your fish swam right below the rocket?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 5669,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your three fish swimming down on the left side.",
+                "nudge": "Where can the fish swim so they are right below the rocket?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 7293,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your three fish swimming down on the left side.",
+                "nudge": "Where could your fish swim to be right underneath your rocket?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "more-flowers-yes",
+          "runs": [
+            {
+              "ms": 3330,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your three daisies growing in a row along the bottom.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3374,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your three daisies blooming in a row along the bottom.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2484,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your row of three daisies along the bottom next to the tree!",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "more-flowers-equal",
+          "runs": [
+            {
+              "ms": 3751,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your two daisies and two trees side by side near the bottom.",
+                "nudge": "Can you count your flowers and your trees?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3266,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your two daisies blooming near the bottom left.",
+                "nudge": "How many flowers do you have compared to your trees?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3052,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your two daisies blooming on the bottom left.",
+                "nudge": "How many flowers do you have compared to your trees?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "tower4-smalls",
+          "runs": [
+            {
+              "ms": 2892,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You stacked four yellow blocks right on top of each other in a tall tower.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 4695,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You stacked your four yellow blocks straight up into a tall tower.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2911,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your straight stack of four yellow blocks.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "tower4-big-plus-smalls",
+          "runs": [
+            {
+              "ms": 6883,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You stacked two yellow blocks right on top of the big blue block.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 5273,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You stacked two yellow blocks right on top of the big blue block.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 5250,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your big blue block at the bottom with two yellow blocks stacked right on top.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "tower-two-short",
+          "runs": [
+            {
+              "ms": 2759,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "You made two yellow towers that are each two blocks tall.",
+                "nudge": "How tall can you make one of your towers if you keep stacking?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3408,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your two yellow blocks stacked up on the left!",
+                "nudge": "Can you make one of your towers reach all the way up to four blocks high?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3802,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see two yellow stacks that are both two blocks high.",
+                "nudge": "How high can you make one of your towers reach?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "bridge-yes",
+          "runs": [
+            {
+              "ms": 3133,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You put a long coral block across two blue blocks to make a tunnel in the middle.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2715,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You placed a long coral block across two blue blocks to make a tunnel underneath.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2591,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You placed a long coral block right across your two blue blocks with an opening underneath.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "bridge-tall-yes",
+          "runs": [
+            {
+              "ms": 3847,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You placed a long coral block across two tall yellow towers!",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2713,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your long coral block resting right across the two yellow towers.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 5196,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You placed a long coral block across your two yellow towers with an open space right beneath it.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "bridge-flat-on-ground",
+          "runs": [
+            {
+              "ms": 2830,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your long coral block sitting right on the ground with a yellow block on top.",
+                "nudge": "Where can the little car drive under your bridge?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": false,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3289,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your long coral block resting flat on the ground with a yellow block on top.",
+                "nudge": "How could you lift the bridge up so a car can drive underneath?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": false,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3038,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your long coral block resting flat on the ground.",
+                "nudge": "Where could a little car drive through under your bridge?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": false,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "symmetry-pyramid",
+          "runs": [
+            {
+              "ms": 4368,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your coral block resting right in the middle on top of the yellow row.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 5308,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your coral block sitting right in the middle on top of the row of yellow blocks.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 4648,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see the coral block sitting right in the middle above your row of yellow blocks.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "symmetry-user-screenshot",
+          "runs": [
+            {
+              "ms": 6041,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "s2"
+                ],
+                "noticed": "I see your two big blue blocks side by side with yellow blocks on top.",
+                "nudge": "How many yellow blocks are on the left side compared to the right side?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 5812,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "s2"
+                ],
+                "noticed": "You put two big blue blocks at the bottom with yellow blocks sitting on top.",
+                "nudge": "What do you notice about the yellow blocks on the right compared to the left?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 5445,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "s2"
+                ],
+                "noticed": "I see your two big blue blocks side by side at the bottom.",
+                "nudge": "How do the yellow blocks on the left compare to the yellow blocks on the right?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "vision": {
+      "verdict": "54/54",
+      "mustFlag": "46/54",
+      "mustNotFlag": "54/54",
+      "noFixCommand": "52/54",
+      "medianMs": 4255,
+      "rows": [
+        {
+          "name": "undersea-all-belong",
+          "runs": [
+            {
+              "ms": 4255,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I noticed your two blue fish swimming above the green plants at the bottom.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2695,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your two blue fish swimming above the green sea plants at the bottom.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2832,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your two blue fish swimming above the green plants at the bottom.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "undersea-user-screenshot",
+          "runs": [
+            {
+              "ms": 4974,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "rocket",
+                  "sun"
+                ],
+                "noticed": "I see your two blue fish swimming in the water.",
+                "nudge": "Do you see anything up near the top that might not belong under the water?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": false,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 7341,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "rocket",
+                  "sun"
+                ],
+                "noticed": "I see your two blue fish swimming in the middle.",
+                "nudge": "Do you see anything up near the top that usually flies in the sky or outer space?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": false,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 5587,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "rocket",
+                  "sun"
+                ],
+                "noticed": "I noticed your two blue fish swimming in the water.",
+                "nudge": "Do you see anything near the top that belongs high up in the sky or space instead of underwater?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": false,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "undersea-land-animals",
+          "runs": [
+            {
+              "ms": 3574,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "rabbit",
+                  "cat",
+                  "tree"
+                ],
+                "noticed": "I see your little blue fish swimming near the top.",
+                "nudge": "Do all of the friends and plants along the bottom live in the ocean?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": false,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3973,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "rabbit",
+                  "cat",
+                  "tree"
+                ],
+                "noticed": "I see your blue fish swimming near the top.",
+                "nudge": "Do all of the friends and plants down at the bottom live under the sea?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": false,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3639,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "bunny",
+                  "cat",
+                  "tree"
+                ],
+                "noticed": "I see your little blue fish swimming near the middle.",
+                "nudge": "Do bunnies, cats, and trees live deep down under the sea?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "undersea-one-fish",
+          "runs": [
+            {
+              "ms": 4045,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your little blue fish swimming right in the middle.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 5265,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your little blue fish swimming right in the middle.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 4669,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your little blue fish swimming right in the middle!",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "fish-under-rocket-yes",
+          "runs": [
+            {
+              "ms": 3765,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your three blue fish swimming down below the rocket!",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3908,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your three blue fish swimming down below the rocket.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2982,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your three blue fish swimming down below the rocket.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "fish-one-above",
+          "runs": [
+            {
+              "ms": 4831,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "fish"
+                ],
+                "noticed": "I see your two blue fish swimming below the rocket and one fish up at the very top.",
+                "nudge": "Where is that top fish swimming compared to the rocket?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3494,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "fish"
+                ],
+                "noticed": "I see your two blue fish swimming below the rocket.",
+                "nudge": "Where is that top fish swimming compared to the rocket?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 4129,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "fish"
+                ],
+                "noticed": "I see your two blue fish swimming below the rocket.",
+                "nudge": "How many fish are under the rocket right now?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "fish-only-two",
+          "runs": [
+            {
+              "ms": 3832,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your rocket way up high with two blue fish swimming below it.",
+                "nudge": "How many fish are swimming under the rocket right now?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 4622,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your rocket at the top with two blue fish swimming underneath it.",
+                "nudge": "How many fish are swimming under the rocket right now?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3907,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your rocket at the top and two blue fish swimming below it.",
+                "nudge": "How many fish are swimming under your rocket right now?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "fish-low-but-off-side",
+          "runs": [
+            {
+              "ms": 5402,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "fish"
+                ],
+                "noticed": "I see your three blue fish swimming down on the left side.",
+                "nudge": "How can you swim the fish right under the rocket?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 8693,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "fish",
+                  "fish",
+                  "fish"
+                ],
+                "noticed": "I see your three blue fish swimming down on the left side.",
+                "nudge": "What is directly below your rocket in the sky?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 6498,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your three blue fish swimming together on the left side.",
+                "nudge": "Can you move the fish so they are right under the rocket?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": false
+              }
+            }
+          ]
+        },
+        {
+          "name": "more-flowers-yes",
+          "runs": [
+            {
+              "ms": 2872,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your three flowers lined up near the bottom and the tree over on the right.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3353,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your row of three flowers along the bottom.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3045,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your three purple flowers lined up along the bottom!",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "more-flowers-equal",
+          "runs": [
+            {
+              "ms": 4830,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your two purple flowers down on the left and your two green trees on the right.",
+                "nudge": "How many flowers and how many trees do you count right now?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 4914,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your two purple flowers at the bottom and two green trees on the right.",
+                "nudge": "How many flowers do you have compared to your trees?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3684,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your two flowers on the left and two trees on the right.",
+                "nudge": "How many flowers and how many trees do you have right now?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "tower4-smalls",
+          "runs": [
+            {
+              "ms": 2395,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your stack of four yellow blocks standing tall on the ground.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3121,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your neat tower made of four yellow blocks stacked straight up.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3607,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your tall stack of four yellow blocks.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "tower4-big-plus-smalls",
+          "runs": [
+            {
+              "ms": 7529,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your two yellow blocks stacked right on top of the big blue block",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 16666,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your two yellow blocks stacked on the big blue block",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 18821,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You stacked two yellow small blocks right on top of the big blue block.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "tower-two-short",
+          "runs": [
+            {
+              "ms": 4762,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your two yellow towers that are both two blocks high.",
+                "nudge": "How many blocks tall is one of your towers if you count them up?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 4670,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your two yellow towers standing on the ground.",
+                "nudge": "How many blocks tall can you make one tower if you put them together?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": false
+              }
+            },
+            {
+              "ms": 3671,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your two yellow towers standing side by side.",
+                "nudge": "How high can you count the blocks in one of your towers?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "bridge-yes",
+          "runs": [
+            {
+              "ms": 3758,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your long red block resting right across two blue blocks to make an open tunnel.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 4443,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your long red block resting across two blue blocks with an opening underneath.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 4643,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You set a wide red block across two blue blocks with an open space underneath.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "bridge-tall-yes",
+          "runs": [
+            {
+              "ms": 3520,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I noticed the wide red block resting across your two yellow towers.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3434,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I noticed the wide red block resting across your two yellow block towers.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3946,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your red block resting right across the two yellow towers to make an opening.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "bridge-flat-on-ground",
+          "runs": [
+            {
+              "ms": 6326,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your yellow square block sitting on top of the long red block.",
+                "nudge": "Where could your little car drive through?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": false,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 7911,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your yellow block resting on top of the red block near the ground.",
+                "nudge": "Where could a little car drive underneath your blocks?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": false,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 6468,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your yellow square sitting on top of the long red block.",
+                "nudge": "Where could the little car drive through?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": false,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "symmetry-pyramid",
+          "runs": [
+            {
+              "ms": 4723,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your red block balanced right in the middle on top of three yellow blocks.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 3733,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your red block sitting right on top of the middle yellow block.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 2993,
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your red block sitting right on top of the middle yellow block.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "symmetry-user-screenshot",
+          "runs": [
+            {
+              "ms": 9142,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "yellow block"
+                ],
+                "noticed": "I noticed your two big blue blocks resting neatly side by side.",
+                "nudge": "How do the yellow blocks on the left side compare to the yellow blocks on the right side?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 7767,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "yellow small block"
+                ],
+                "noticed": "I see your two big blue blocks sitting side by side at the bottom.",
+                "nudge": "How many yellow blocks are on top of each blue block?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            },
+            {
+              "ms": 6494,
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "yellow small block"
+                ],
+                "noticed": "I see your two big blue blocks at the bottom with yellow blocks on top.",
+                "nudge": "How many yellow blocks are sitting on each side?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "noFixCommand": true
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

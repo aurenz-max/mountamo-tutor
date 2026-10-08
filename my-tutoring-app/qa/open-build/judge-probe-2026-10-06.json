@@ -1,0 +1,2184 @@
+{
+  "date": "2026-10-06T23:23:19.706Z",
+  "runs": 3,
+  "models": {
+    "gemini-flash-lite-latest": {
+      "pass": "45/54",
+      "verdict": "54/54",
+      "mustFlag": "48/54",
+      "mustNotFlag": "54/54",
+      "nudgeIsQuestion": "54/54",
+      "noFixCommand": "51/54",
+      "rows": [
+        {
+          "name": "undersea-all-belong",
+          "goal": "Make an undersea world where everything belongs under the sea.",
+          "expect": "met",
+          "runs": [
+            {
+              "facts": "Theme: undersea.\nPieces:\n- fish1: fish at middle-left\n- fish2: fish at middle-right\n- weed1: seaweed at bottom-left\n- weed2: seaweed at bottom-right\nUnder relations (horizontally within reach):\n- weed1 is under fish1\n- weed2 is under fish2\nCounts: fish 2, seaweed 2.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your two fish near the middle",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: undersea.\nPieces:\n- fish1: fish at middle-left\n- fish2: fish at middle-right\n- weed1: seaweed at bottom-left\n- weed2: seaweed at bottom-right\nUnder relations (horizontally within reach):\n- weed1 is under fish1\n- weed2 is under fish2\nCounts: fish 2, seaweed 2.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your two fish near the middle",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: undersea.\nPieces:\n- fish1: fish at middle-left\n- fish2: fish at middle-right\n- weed1: seaweed at bottom-left\n- weed2: seaweed at bottom-right\nUnder relations (horizontally within reach):\n- weed1 is under fish1\n- weed2 is under fish2\nCounts: fish 2, seaweed 2.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your two fish in the middle and your seaweed at the bottom",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "undersea-user-screenshot",
+          "goal": "Make an undersea world where everything belongs under the sea.",
+          "expect": "not_yet",
+          "runs": [
+            {
+              "facts": "Theme: undersea.\nPieces:\n- sun1: sunshine sticker at top-left\n- fish1: fish at top-left\n- rocket1: rocket at top-right\n- heart1: heart at middle-center\n- fish2: fish at middle-center\n- daisy1: daisy at bottom-center\n- weed1: seaweed at bottom-left\n- weed2: seaweed at bottom-right\nUnder relations (horizontally within reach):\n- heart1 is under fish1\n- fish2 is under rocket1\n- daisy1 is under fish1\n- daisy1 is under heart1\n- daisy1 is under fish2\n- weed1 is under sun1\n- weed1 is under fish1\n- weed2 is under rocket1\n- weed2 is under fish2\nCounts: sunshine sticker 1, fish 2, rocket 1, heart 1, daisy 1, seaweed 2.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "sun1",
+                  "rocket1"
+                ],
+                "noticed": "your two fish near the top",
+                "nudge": "Do rockets and sunshine live down in the deep blue sea?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": false,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": false
+            },
+            {
+              "facts": "Theme: undersea.\nPieces:\n- sun1: sunshine sticker at top-left\n- fish1: fish at top-left\n- rocket1: rocket at top-right\n- heart1: heart at middle-center\n- fish2: fish at middle-center\n- daisy1: daisy at bottom-center\n- weed1: seaweed at bottom-left\n- weed2: seaweed at bottom-right\nUnder relations (horizontally within reach):\n- heart1 is under fish1\n- fish2 is under rocket1\n- daisy1 is under fish1\n- daisy1 is under heart1\n- daisy1 is under fish2\n- weed1 is under sun1\n- weed1 is under fish1\n- weed2 is under rocket1\n- weed2 is under fish2\nCounts: sunshine sticker 1, fish 2, rocket 1, heart 1, daisy 1, seaweed 2.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "sun1",
+                  "rocket1"
+                ],
+                "noticed": "your two fish near the top and your seaweed near the bottom",
+                "nudge": "Do rockets and sunshine usually go deep down under the sea?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": false,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": false
+            },
+            {
+              "facts": "Theme: undersea.\nPieces:\n- sun1: sunshine sticker at top-left\n- fish1: fish at top-left\n- rocket1: rocket at top-right\n- heart1: heart at middle-center\n- fish2: fish at middle-center\n- daisy1: daisy at bottom-center\n- weed1: seaweed at bottom-left\n- weed2: seaweed at bottom-right\nUnder relations (horizontally within reach):\n- heart1 is under fish1\n- fish2 is under rocket1\n- daisy1 is under fish1\n- daisy1 is under heart1\n- daisy1 is under fish2\n- weed1 is under sun1\n- weed1 is under fish1\n- weed2 is under rocket1\n- weed2 is under fish2\nCounts: sunshine sticker 1, fish 2, rocket 1, heart 1, daisy 1, seaweed 2.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "sun1",
+                  "rocket1"
+                ],
+                "noticed": "your two fish near the top and your seaweed at the bottom",
+                "nudge": "Do rockets and sunshine live down in the deep blue sea?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": false,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": false
+            }
+          ]
+        },
+        {
+          "name": "undersea-land-animals",
+          "goal": "Make an undersea world where everything belongs under the sea.",
+          "expect": "not_yet",
+          "runs": [
+            {
+              "facts": "Theme: undersea.\nPieces:\n- bunny1: bunny at bottom-left\n- cat1: cat at bottom-center\n- tree1: tree at bottom-right\n- fish1: fish at top-center\nUnder relations (horizontally within reach):\n- bunny1 is under fish1\n- cat1 is under fish1\nCounts: bunny 1, cat 1, tree 1, fish 1.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "bunny1",
+                  "cat1",
+                  "tree1"
+                ],
+                "noticed": "your fish near the top",
+                "nudge": "Do bunnies, cats, and trees live under the sea, or do they belong on land?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: undersea.\nPieces:\n- bunny1: bunny at bottom-left\n- cat1: cat at bottom-center\n- tree1: tree at bottom-right\n- fish1: fish at top-center\nUnder relations (horizontally within reach):\n- bunny1 is under fish1\n- cat1 is under fish1\nCounts: bunny 1, cat 1, tree 1, fish 1.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "bunny1",
+                  "cat1",
+                  "tree1"
+                ],
+                "noticed": "your fish near the top",
+                "nudge": "Do bunnies, cats, and trees live under the sea?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: undersea.\nPieces:\n- bunny1: bunny at bottom-left\n- cat1: cat at bottom-center\n- tree1: tree at bottom-right\n- fish1: fish at top-center\nUnder relations (horizontally within reach):\n- bunny1 is under fish1\n- cat1 is under fish1\nCounts: bunny 1, cat 1, tree 1, fish 1.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "bunny1",
+                  "cat1",
+                  "tree1"
+                ],
+                "noticed": "your fish near the top",
+                "nudge": "Do bunnies and cats usually live way down deep in the ocean?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "undersea-one-fish",
+          "goal": "Make an undersea world where everything belongs under the sea.",
+          "expect": "met",
+          "runs": [
+            {
+              "facts": "Theme: undersea.\nPieces:\n- fish1: fish at middle-center\nCounts: fish 1.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your fish at the middle-center",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: undersea.\nPieces:\n- fish1: fish at middle-center\nCounts: fish 1.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your fish at middle-center",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: undersea.\nPieces:\n- fish1: fish at middle-center\nCounts: fish 1.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your fish at middle-center",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "fish-under-rocket-yes",
+          "goal": "Put 3 fish under the rocket.",
+          "expect": "met",
+          "runs": [
+            {
+              "facts": "Theme: space.\nPieces:\n- rocket1: rocket at top-center\n- fish1: fish at middle-center\n- fish2: fish at middle-center\n- fish3: fish at bottom-center\nUnder relations (horizontally within reach):\n- fish1 is under rocket1\n- fish2 is under rocket1\n- fish2 is under fish1\n- fish3 is under rocket1\n- fish3 is under fish1\n- fish3 is under fish2\nCounts: rocket 1, fish 3.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your three fish under the rocket",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: space.\nPieces:\n- rocket1: rocket at top-center\n- fish1: fish at middle-center\n- fish2: fish at middle-center\n- fish3: fish at bottom-center\nUnder relations (horizontally within reach):\n- fish1 is under rocket1\n- fish2 is under rocket1\n- fish2 is under fish1\n- fish3 is under rocket1\n- fish3 is under fish1\n- fish3 is under fish2\nCounts: rocket 1, fish 3.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your three fish under the rocket",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: space.\nPieces:\n- rocket1: rocket at top-center\n- fish1: fish at middle-center\n- fish2: fish at middle-center\n- fish3: fish at bottom-center\nUnder relations (horizontally within reach):\n- fish1 is under rocket1\n- fish2 is under rocket1\n- fish2 is under fish1\n- fish3 is under rocket1\n- fish3 is under fish1\n- fish3 is under fish2\nCounts: rocket 1, fish 3.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your three fish under the rocket",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "fish-one-above",
+          "goal": "Put 3 fish under the rocket.",
+          "expect": "not_yet",
+          "runs": [
+            {
+              "facts": "Theme: space.\nPieces:\n- fish1: fish at top-center\n- rocket1: rocket at middle-center\n- fish2: fish at middle-center\n- fish3: fish at bottom-center\nUnder relations (horizontally within reach):\n- rocket1 is under fish1\n- fish2 is under fish1\n- fish2 is under rocket1\n- fish3 is under fish1\n- fish3 is under rocket1\n- fish3 is under fish2\nCounts: fish 3, rocket 1.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "fish1"
+                ],
+                "noticed": "your fish at the top-center",
+                "nudge": "Where should that top fish go so all three fish are under the rocket?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: space.\nPieces:\n- fish1: fish at top-center\n- rocket1: rocket at middle-center\n- fish2: fish at middle-center\n- fish3: fish at bottom-center\nUnder relations (horizontally within reach):\n- rocket1 is under fish1\n- fish2 is under fish1\n- fish2 is under rocket1\n- fish3 is under fish1\n- fish3 is under rocket1\n- fish3 is under fish2\nCounts: fish 3, rocket 1.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "fish1"
+                ],
+                "noticed": "your fish near the top",
+                "nudge": "Can you check where your fish are compared to the rocket?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: space.\nPieces:\n- fish1: fish at top-center\n- rocket1: rocket at middle-center\n- fish2: fish at middle-center\n- fish3: fish at bottom-center\nUnder relations (horizontally within reach):\n- rocket1 is under fish1\n- fish2 is under fish1\n- fish2 is under rocket1\n- fish3 is under fish1\n- fish3 is under rocket1\n- fish3 is under fish2\nCounts: fish 3, rocket 1.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "fish1"
+                ],
+                "noticed": "your fish near the top",
+                "nudge": "Where should all three fish be compared to the rocket?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "fish-only-two",
+          "goal": "Put 3 fish under the rocket.",
+          "expect": "not_yet",
+          "runs": [
+            {
+              "facts": "Theme: space.\nPieces:\n- rocket1: rocket at top-center\n- fish1: fish at middle-center\n- fish2: fish at bottom-center\nUnder relations (horizontally within reach):\n- fish1 is under rocket1\n- fish2 is under rocket1\n- fish2 is under fish1\nCounts: rocket 1, fish 2.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "your two fish under the rocket",
+                "nudge": "How many fish do we need to have in total?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: space.\nPieces:\n- rocket1: rocket at top-center\n- fish1: fish at middle-center\n- fish2: fish at bottom-center\nUnder relations (horizontally within reach):\n- fish1 is under rocket1\n- fish2 is under rocket1\n- fish2 is under fish1\nCounts: rocket 1, fish 2.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "your two fish under the rocket",
+                "nudge": "How many fish do we need under the rocket altogether?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: space.\nPieces:\n- rocket1: rocket at top-center\n- fish1: fish at middle-center\n- fish2: fish at bottom-center\nUnder relations (horizontally within reach):\n- fish1 is under rocket1\n- fish2 is under rocket1\n- fish2 is under fish1\nCounts: rocket 1, fish 2.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "your two fish under the rocket",
+                "nudge": "Can you count how many fish are there, and add one more so you have three?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": false
+              },
+              "pass": false
+            }
+          ]
+        },
+        {
+          "name": "fish-low-but-off-side",
+          "goal": "Put 3 fish under the rocket.",
+          "expect": "not_yet",
+          "runs": [
+            {
+              "facts": "Theme: space.\nPieces:\n- rocket1: rocket at top-right\n- fish1: fish at middle-left\n- fish2: fish at bottom-left\n- fish3: fish at bottom-left\nUnder relations (horizontally within reach):\n- fish2 is under fish1\n- fish3 is under fish1\n- fish3 is under fish2\nCounts: rocket 1, fish 3.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "your three fish down on the left side",
+                "nudge": "Where is the rocket compared to your fish right now?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: space.\nPieces:\n- rocket1: rocket at top-right\n- fish1: fish at middle-left\n- fish2: fish at bottom-left\n- fish3: fish at bottom-left\nUnder relations (horizontally within reach):\n- fish2 is under fish1\n- fish3 is under fish1\n- fish3 is under fish2\nCounts: rocket 1, fish 3.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "your three fish on the left side",
+                "nudge": "Can you move your fish so they are right under the rocket?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": false
+              },
+              "pass": false
+            },
+            {
+              "facts": "Theme: space.\nPieces:\n- rocket1: rocket at top-right\n- fish1: fish at middle-left\n- fish2: fish at bottom-left\n- fish3: fish at bottom-left\nUnder relations (horizontally within reach):\n- fish2 is under fish1\n- fish3 is under fish1\n- fish3 is under fish2\nCounts: rocket 1, fish 3.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "your three fish on the left side",
+                "nudge": "Can you move your fish so they are right under the rocket at the top?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": false
+              },
+              "pass": false
+            }
+          ]
+        },
+        {
+          "name": "more-flowers-yes",
+          "goal": "Make a garden with more flowers than trees.",
+          "expect": "met",
+          "runs": [
+            {
+              "facts": "Theme: garden.\nPieces:\n- daisy1: daisy at bottom-left\n- daisy2: daisy at bottom-center\n- daisy3: daisy at bottom-center\n- tree1: tree at middle-right\nCounts: daisy 3, tree 1.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your three flowers at the bottom",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: garden.\nPieces:\n- daisy1: daisy at bottom-left\n- daisy2: daisy at bottom-center\n- daisy3: daisy at bottom-center\n- tree1: tree at middle-right\nCounts: daisy 3, tree 1.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your three flowers at the bottom",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: garden.\nPieces:\n- daisy1: daisy at bottom-left\n- daisy2: daisy at bottom-center\n- daisy3: daisy at bottom-center\n- tree1: tree at middle-right\nCounts: daisy 3, tree 1.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your three flowers at the bottom",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "more-flowers-equal",
+          "goal": "Make a garden with more flowers than trees.",
+          "expect": "not_yet",
+          "runs": [
+            {
+              "facts": "Theme: garden.\nPieces:\n- daisy1: daisy at bottom-left\n- daisy2: daisy at bottom-center\n- tree1: tree at middle-center\n- tree2: tree at middle-right\nCounts: daisy 2, tree 2.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "your two daisies at the bottom",
+                "nudge": "How many trees and flowers do we have right now?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: garden.\nPieces:\n- daisy1: daisy at bottom-left\n- daisy2: daisy at bottom-center\n- tree1: tree at middle-center\n- tree2: tree at middle-right\nCounts: daisy 2, tree 2.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "your two daisies at the bottom",
+                "nudge": "How many trees and flowers do we have right now?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: garden.\nPieces:\n- daisy1: daisy at bottom-left\n- daisy2: daisy at bottom-center\n- tree1: tree at middle-center\n- tree2: tree at middle-right\nCounts: daisy 2, tree 2.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "your two daisies at the bottom and your two trees in the middle",
+                "nudge": "Can you count your flowers and trees to see if there are more flowers?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "tower4-smalls",
+          "goal": "Build a tower that is 4 blocks tall.",
+          "expect": "met",
+          "runs": [
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- a: yellow small block, column 3, row 1, rests on ground\n- b: yellow small block, column 3, row 2, rests on a\n- c: yellow small block, column 3, row 3, rests on b\n- d: yellow small block, column 3, row 4, rests on c\nSolid stack height from the ground (in small-block units): column 3: 4.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your yellow small block at row 4",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- a: yellow small block, column 3, row 1, rests on ground\n- b: yellow small block, column 3, row 2, rests on a\n- c: yellow small block, column 3, row 3, rests on b\n- d: yellow small block, column 3, row 4, rests on c\nSolid stack height from the ground (in small-block units): column 3: 4.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your yellow small block at row 4",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- a: yellow small block, column 3, row 1, rests on ground\n- b: yellow small block, column 3, row 2, rests on a\n- c: yellow small block, column 3, row 3, rests on b\n- d: yellow small block, column 3, row 4, rests on c\nSolid stack height from the ground (in small-block units): column 3: 4.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your yellow small block at row 4",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "tower4-big-plus-smalls",
+          "goal": "Build a tower that is 4 blocks tall.",
+          "expect": "met",
+          "runs": [
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- big1: blue big block, columns 4-5, rows 1-2, rests on ground\n- a: yellow small block, column 4, row 3, rests on big1\n- b: yellow small block, column 4, row 4, rests on a\nSolid stack height from the ground (in small-block units): column 4: 4, column 5: 2.\nMirror check (left half vs right half of the building): the two sides do not match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your yellow small block at row 4",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- big1: blue big block, columns 4-5, rows 1-2, rests on ground\n- a: yellow small block, column 4, row 3, rests on big1\n- b: yellow small block, column 4, row 4, rests on a\nSolid stack height from the ground (in small-block units): column 4: 4, column 5: 2.\nMirror check (left half vs right half of the building): the two sides do not match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your tall tower right in the middle",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- big1: blue big block, columns 4-5, rows 1-2, rests on ground\n- a: yellow small block, column 4, row 3, rests on big1\n- b: yellow small block, column 4, row 4, rests on a\nSolid stack height from the ground (in small-block units): column 4: 4, column 5: 2.\nMirror check (left half vs right half of the building): the two sides do not match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your yellow small block at row 4",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "tower-two-short",
+          "goal": "Build a tower that is 4 blocks tall.",
+          "expect": "not_yet",
+          "runs": [
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- a: yellow small block, column 2, row 1, rests on ground\n- b: yellow small block, column 2, row 2, rests on a\n- c: yellow small block, column 6, row 1, rests on ground\n- d: yellow small block, column 6, row 2, rests on c\nSolid stack height from the ground (in small-block units): column 2: 2, column 6: 2.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "your two yellow towers",
+                "nudge": "Can you make one of the towers grow taller until it reaches four blocks high?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- a: yellow small block, column 2, row 1, rests on ground\n- b: yellow small block, column 2, row 2, rests on a\n- c: yellow small block, column 6, row 1, rests on ground\n- d: yellow small block, column 6, row 2, rests on c\nSolid stack height from the ground (in small-block units): column 2: 2, column 6: 2.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "your two yellow blocks stacked at column 2",
+                "nudge": "How many blocks tall is your tower right now, and how many do we need?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- a: yellow small block, column 2, row 1, rests on ground\n- b: yellow small block, column 2, row 2, rests on a\n- c: yellow small block, column 6, row 1, rests on ground\n- d: yellow small block, column 6, row 2, rests on c\nSolid stack height from the ground (in small-block units): column 2: 2, column 6: 2.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "your two towers that are each 2 blocks tall",
+                "nudge": "How can we make one of your towers reach all the way up to 4 blocks?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "bridge-yes",
+          "goal": "Build a bridge that a little car could drive under.",
+          "expect": "met",
+          "runs": [
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- p1: blue small block, column 2, row 1, rests on ground\n- p2: blue small block, column 4, row 1, rests on ground\n- deck: coral long block, columns 2-4, row 2, rests on p1 and p2; open space under it at column 3\nSolid stack height from the ground (in small-block units): column 2: 2, column 4: 2.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your coral long block resting on top of the two blue blocks",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- p1: blue small block, column 2, row 1, rests on ground\n- p2: blue small block, column 4, row 1, rests on ground\n- deck: coral long block, columns 2-4, row 2, rests on p1 and p2; open space under it at column 3\nSolid stack height from the ground (in small-block units): column 2: 2, column 4: 2.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your coral long block resting on two blue small blocks",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- p1: blue small block, column 2, row 1, rests on ground\n- p2: blue small block, column 4, row 1, rests on ground\n- deck: coral long block, columns 2-4, row 2, rests on p1 and p2; open space under it at column 3\nSolid stack height from the ground (in small-block units): column 2: 2, column 4: 2.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your coral long block resting on the blue small blocks",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "bridge-tall-yes",
+          "goal": "Build a bridge that a little car could drive under.",
+          "expect": "met",
+          "runs": [
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- p1: yellow small block, column 2, row 1, rests on ground\n- p2: yellow small block, column 2, row 2, rests on p1\n- p3: yellow small block, column 4, row 1, rests on ground\n- p4: yellow small block, column 4, row 2, rests on p3\n- deck: coral long block, columns 2-4, row 3, rests on p2 and p4; open space under it at column 3\nSolid stack height from the ground (in small-block units): column 2: 3, column 4: 3.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your coral long block across the two yellow stacks",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- p1: yellow small block, column 2, row 1, rests on ground\n- p2: yellow small block, column 2, row 2, rests on p1\n- p3: yellow small block, column 4, row 1, rests on ground\n- p4: yellow small block, column 4, row 2, rests on p3\n- deck: coral long block, columns 2-4, row 3, rests on p2 and p4; open space under it at column 3\nSolid stack height from the ground (in small-block units): column 2: 3, column 4: 3.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your coral long block across the top",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- p1: yellow small block, column 2, row 1, rests on ground\n- p2: yellow small block, column 2, row 2, rests on p1\n- p3: yellow small block, column 4, row 1, rests on ground\n- p4: yellow small block, column 4, row 2, rests on p3\n- deck: coral long block, columns 2-4, row 3, rests on p2 and p4; open space under it at column 3\nSolid stack height from the ground (in small-block units): column 2: 3, column 4: 3.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your coral long block across columns two to four",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "bridge-flat-on-ground",
+          "goal": "Build a bridge that a little car could drive under.",
+          "expect": "not_yet",
+          "runs": [
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- deck: coral long block, columns 3-5, row 1, rests on ground\n- a: yellow small block, column 3, row 2, rests on deck\nSolid stack height from the ground (in small-block units): column 3: 2, column 4: 1, column 5: 1.\nMirror check (left half vs right half of the building): the two sides do not match.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "a"
+                ],
+                "noticed": "your long block resting on the ground",
+                "nudge": "Can a little car drive under it right now?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": false,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": false
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- deck: coral long block, columns 3-5, row 1, rests on ground\n- a: yellow small block, column 3, row 2, rests on deck\nSolid stack height from the ground (in small-block units): column 3: 2, column 4: 1, column 5: 1.\nMirror check (left half vs right half of the building): the two sides do not match.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "a"
+                ],
+                "noticed": "your coral long block resting on the ground",
+                "nudge": "Can a little car drive under your bridge when the yellow block is sitting right on top?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": false,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": false
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- deck: coral long block, columns 3-5, row 1, rests on ground\n- a: yellow small block, column 3, row 2, rests on deck\nSolid stack height from the ground (in small-block units): column 3: 2, column 4: 1, column 5: 1.\nMirror check (left half vs right half of the building): the two sides do not match.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "a"
+                ],
+                "noticed": "your coral long block resting on the ground",
+                "nudge": "Can a little car drive under your bridge right now, or is something blocking the middle?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": false,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": false
+            }
+          ]
+        },
+        {
+          "name": "symmetry-pyramid",
+          "goal": "Build something that looks the same on both sides.",
+          "expect": "met",
+          "runs": [
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- a: yellow small block, column 3, row 1, rests on ground\n- b: yellow small block, column 4, row 1, rests on ground\n- c: yellow small block, column 5, row 1, rests on ground\n- d: coral small block, column 4, row 2, rests on b\nSolid stack height from the ground (in small-block units): column 3: 1, column 4: 2, column 5: 1.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your coral small block at column 4",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- a: yellow small block, column 3, row 1, rests on ground\n- b: yellow small block, column 4, row 1, rests on ground\n- c: yellow small block, column 5, row 1, rests on ground\n- d: coral small block, column 4, row 2, rests on b\nSolid stack height from the ground (in small-block units): column 3: 1, column 4: 2, column 5: 1.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your coral small block at column 4",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- a: yellow small block, column 3, row 1, rests on ground\n- b: yellow small block, column 4, row 1, rests on ground\n- c: yellow small block, column 5, row 1, rests on ground\n- d: coral small block, column 4, row 2, rests on b\nSolid stack height from the ground (in small-block units): column 3: 1, column 4: 2, column 5: 1.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "your coral small block in the middle at row 2",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "symmetry-user-screenshot",
+          "goal": "Build something that looks the same on both sides.",
+          "expect": "not_yet",
+          "runs": [
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- blue1: blue big block, columns 3-4, rows 1-2, rests on ground\n- blue2: blue big block, columns 5-6, rows 1-2, rests on ground\n- s1: yellow small block, column 3, row 3, rests on blue1\n- s2: yellow small block, column 5, row 3, rests on blue2\n- s3: yellow small block, column 6, row 3, rests on blue2\nSolid stack height from the ground (in small-block units): column 3: 3, column 4: 2, column 5: 3, column 6: 3.\nMirror check (left half vs right half of the building): the two sides do not match.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "s3"
+                ],
+                "noticed": "your yellow small block on column 6",
+                "nudge": "Can you check if both sides have the same number of yellow blocks?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- blue1: blue big block, columns 3-4, rows 1-2, rests on ground\n- blue2: blue big block, columns 5-6, rows 1-2, rests on ground\n- s1: yellow small block, column 3, row 3, rests on blue1\n- s2: yellow small block, column 5, row 3, rests on blue2\n- s3: yellow small block, column 6, row 3, rests on blue2\nSolid stack height from the ground (in small-block units): column 3: 3, column 4: 2, column 5: 3, column 6: 3.\nMirror check (left half vs right half of the building): the two sides do not match.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "s3"
+                ],
+                "noticed": "your yellow small block on column 6",
+                "nudge": "Can you check if both sides match when you look right down the middle?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- blue1: blue big block, columns 3-4, rows 1-2, rests on ground\n- blue2: blue big block, columns 5-6, rows 1-2, rests on ground\n- s1: yellow small block, column 3, row 3, rests on blue1\n- s2: yellow small block, column 5, row 3, rests on blue2\n- s3: yellow small block, column 6, row 3, rests on blue2\nSolid stack height from the ground (in small-block units): column 3: 3, column 4: 2, column 5: 3, column 6: 3.\nMirror check (left half vs right half of the building): the two sides do not match.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "your yellow small block on column 3",
+                "nudge": "Can you check if both sides have the exact same number of yellow blocks?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        }
+      ]
+    },
+    "gemini-flash-latest": {
+      "pass": "51/54",
+      "verdict": "54/54",
+      "mustFlag": "51/54",
+      "mustNotFlag": "54/54",
+      "nudgeIsQuestion": "54/54",
+      "noFixCommand": "54/54",
+      "rows": [
+        {
+          "name": "undersea-all-belong",
+          "goal": "Make an undersea world where everything belongs under the sea.",
+          "expect": "met",
+          "runs": [
+            {
+              "facts": "Theme: undersea.\nPieces:\n- fish1: fish at middle-left\n- fish2: fish at middle-right\n- weed1: seaweed at bottom-left\n- weed2: seaweed at bottom-right\nUnder relations (horizontally within reach):\n- weed1 is under fish1\n- weed2 is under fish2\nCounts: fish 2, seaweed 2.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You placed two fish swimming right above the seaweed at the bottom!",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: undersea.\nPieces:\n- fish1: fish at middle-left\n- fish2: fish at middle-right\n- weed1: seaweed at bottom-left\n- weed2: seaweed at bottom-right\nUnder relations (horizontally within reach):\n- weed1 is under fish1\n- weed2 is under fish2\nCounts: fish 2, seaweed 2.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You placed seaweed at the bottom with fish swimming right above it.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: undersea.\nPieces:\n- fish1: fish at middle-left\n- fish2: fish at middle-right\n- weed1: seaweed at bottom-left\n- weed2: seaweed at bottom-right\nUnder relations (horizontally within reach):\n- weed1 is under fish1\n- weed2 is under fish2\nCounts: fish 2, seaweed 2.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You placed seaweed at the bottom under each of your fish.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "undersea-user-screenshot",
+          "goal": "Make an undersea world where everything belongs under the sea.",
+          "expect": "not_yet",
+          "runs": [
+            {
+              "facts": "Theme: undersea.\nPieces:\n- sun1: sunshine sticker at top-left\n- fish1: fish at top-left\n- rocket1: rocket at top-right\n- heart1: heart at middle-center\n- fish2: fish at middle-center\n- daisy1: daisy at bottom-center\n- weed1: seaweed at bottom-left\n- weed2: seaweed at bottom-right\nUnder relations (horizontally within reach):\n- heart1 is under fish1\n- fish2 is under rocket1\n- daisy1 is under fish1\n- daisy1 is under heart1\n- daisy1 is under fish2\n- weed1 is under sun1\n- weed1 is under fish1\n- weed2 is under rocket1\n- weed2 is under fish2\nCounts: sunshine sticker 1, fish 2, rocket 1, heart 1, daisy 1, seaweed 2.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "rocket1",
+                  "daisy1"
+                ],
+                "noticed": "I see your green seaweed along the bottom and your swimming fish.",
+                "nudge": "Does a rocket fly high in space or swim deep under the sea?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: undersea.\nPieces:\n- sun1: sunshine sticker at top-left\n- fish1: fish at top-left\n- rocket1: rocket at top-right\n- heart1: heart at middle-center\n- fish2: fish at middle-center\n- daisy1: daisy at bottom-center\n- weed1: seaweed at bottom-left\n- weed2: seaweed at bottom-right\nUnder relations (horizontally within reach):\n- heart1 is under fish1\n- fish2 is under rocket1\n- daisy1 is under fish1\n- daisy1 is under heart1\n- daisy1 is under fish2\n- weed1 is under sun1\n- weed1 is under fish1\n- weed2 is under rocket1\n- weed2 is under fish2\nCounts: sunshine sticker 1, fish 2, rocket 1, heart 1, daisy 1, seaweed 2.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "rocket1",
+                  "daisy1"
+                ],
+                "noticed": "I see your green seaweed along the bottom and your swimming fish.",
+                "nudge": "Does a rocket zoom deep down under the sea?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: undersea.\nPieces:\n- sun1: sunshine sticker at top-left\n- fish1: fish at top-left\n- rocket1: rocket at top-right\n- heart1: heart at middle-center\n- fish2: fish at middle-center\n- daisy1: daisy at bottom-center\n- weed1: seaweed at bottom-left\n- weed2: seaweed at bottom-right\nUnder relations (horizontally within reach):\n- heart1 is under fish1\n- fish2 is under rocket1\n- daisy1 is under fish1\n- daisy1 is under heart1\n- daisy1 is under fish2\n- weed1 is under sun1\n- weed1 is under fish1\n- weed2 is under rocket1\n- weed2 is under fish2\nCounts: sunshine sticker 1, fish 2, rocket 1, heart 1, daisy 1, seaweed 2.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "rocket1",
+                  "daisy1"
+                ],
+                "noticed": "I see your seaweed at the bottom and fish swimming near the center.",
+                "nudge": "Do you think a rocket belongs deep down in the ocean?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "undersea-land-animals",
+          "goal": "Make an undersea world where everything belongs under the sea.",
+          "expect": "not_yet",
+          "runs": [
+            {
+              "facts": "Theme: undersea.\nPieces:\n- bunny1: bunny at bottom-left\n- cat1: cat at bottom-center\n- tree1: tree at bottom-right\n- fish1: fish at top-center\nUnder relations (horizontally within reach):\n- bunny1 is under fish1\n- cat1 is under fish1\nCounts: bunny 1, cat 1, tree 1, fish 1.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "bunny1",
+                  "cat1",
+                  "tree1"
+                ],
+                "noticed": "I see your fish swimming at the top.",
+                "nudge": "Do all of your friends at the bottom live in the ocean?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: undersea.\nPieces:\n- bunny1: bunny at bottom-left\n- cat1: cat at bottom-center\n- tree1: tree at bottom-right\n- fish1: fish at top-center\nUnder relations (horizontally within reach):\n- bunny1 is under fish1\n- cat1 is under fish1\nCounts: bunny 1, cat 1, tree 1, fish 1.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "bunny1",
+                  "cat1",
+                  "tree1"
+                ],
+                "noticed": "I see your fish swimming at the top.",
+                "nudge": "Do bunnies, cats, and trees usually live deep under the water?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: undersea.\nPieces:\n- bunny1: bunny at bottom-left\n- cat1: cat at bottom-center\n- tree1: tree at bottom-right\n- fish1: fish at top-center\nUnder relations (horizontally within reach):\n- bunny1 is under fish1\n- cat1 is under fish1\nCounts: bunny 1, cat 1, tree 1, fish 1.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "bunny1",
+                  "cat1",
+                  "tree1"
+                ],
+                "noticed": "I see your fish swimming near the top.",
+                "nudge": "Do bunnies, cats, and trees usually live deep under the water?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "undersea-one-fish",
+          "goal": "Make an undersea world where everything belongs under the sea.",
+          "expect": "met",
+          "runs": [
+            {
+              "facts": "Theme: undersea.\nPieces:\n- fish1: fish at middle-center\nCounts: fish 1.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your fish swimming right in the middle.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: undersea.\nPieces:\n- fish1: fish at middle-center\nCounts: fish 1.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your fish swimming right in the middle.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: undersea.\nPieces:\n- fish1: fish at middle-center\nCounts: fish 1.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your fish swimming right in the middle.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "fish-under-rocket-yes",
+          "goal": "Put 3 fish under the rocket.",
+          "expect": "met",
+          "runs": [
+            {
+              "facts": "Theme: space.\nPieces:\n- rocket1: rocket at top-center\n- fish1: fish at middle-center\n- fish2: fish at middle-center\n- fish3: fish at bottom-center\nUnder relations (horizontally within reach):\n- fish1 is under rocket1\n- fish2 is under rocket1\n- fish2 is under fish1\n- fish3 is under rocket1\n- fish3 is under fish1\n- fish3 is under fish2\nCounts: rocket 1, fish 3.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You put your three fish swimming right underneath the rocket.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: space.\nPieces:\n- rocket1: rocket at top-center\n- fish1: fish at middle-center\n- fish2: fish at middle-center\n- fish3: fish at bottom-center\nUnder relations (horizontally within reach):\n- fish1 is under rocket1\n- fish2 is under rocket1\n- fish2 is under fish1\n- fish3 is under rocket1\n- fish3 is under fish1\n- fish3 is under fish2\nCounts: rocket 1, fish 3.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You placed all three fish swimming right under your rocket!",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: space.\nPieces:\n- rocket1: rocket at top-center\n- fish1: fish at middle-center\n- fish2: fish at middle-center\n- fish3: fish at bottom-center\nUnder relations (horizontally within reach):\n- fish1 is under rocket1\n- fish2 is under rocket1\n- fish2 is under fish1\n- fish3 is under rocket1\n- fish3 is under fish1\n- fish3 is under fish2\nCounts: rocket 1, fish 3.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You placed all three fish swimming right below the rocket.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "fish-one-above",
+          "goal": "Put 3 fish under the rocket.",
+          "expect": "not_yet",
+          "runs": [
+            {
+              "facts": "Theme: space.\nPieces:\n- fish1: fish at top-center\n- rocket1: rocket at middle-center\n- fish2: fish at middle-center\n- fish3: fish at bottom-center\nUnder relations (horizontally within reach):\n- rocket1 is under fish1\n- fish2 is under fish1\n- fish2 is under rocket1\n- fish3 is under fish1\n- fish3 is under rocket1\n- fish3 is under fish2\nCounts: fish 3, rocket 1.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "fish1"
+                ],
+                "noticed": "I see your rocket in the middle with two fish swimming below it.",
+                "nudge": "Where is the fish at the top swimming compared to your rocket?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: space.\nPieces:\n- fish1: fish at top-center\n- rocket1: rocket at middle-center\n- fish2: fish at middle-center\n- fish3: fish at bottom-center\nUnder relations (horizontally within reach):\n- rocket1 is under fish1\n- fish2 is under fish1\n- fish2 is under rocket1\n- fish3 is under fish1\n- fish3 is under rocket1\n- fish3 is under fish2\nCounts: fish 3, rocket 1.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "fish1"
+                ],
+                "noticed": "I see your rocket in the middle with two fish below it.",
+                "nudge": "Where is the fish swimming near the top?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: space.\nPieces:\n- fish1: fish at top-center\n- rocket1: rocket at middle-center\n- fish2: fish at middle-center\n- fish3: fish at bottom-center\nUnder relations (horizontally within reach):\n- rocket1 is under fish1\n- fish2 is under fish1\n- fish2 is under rocket1\n- fish3 is under fish1\n- fish3 is under rocket1\n- fish3 is under fish2\nCounts: fish 3, rocket 1.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "fish1"
+                ],
+                "noticed": "I see your rocket with two fish down below it.",
+                "nudge": "Where is your top fish compared to the rocket?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "fish-only-two",
+          "goal": "Put 3 fish under the rocket.",
+          "expect": "not_yet",
+          "runs": [
+            {
+              "facts": "Theme: space.\nPieces:\n- rocket1: rocket at top-center\n- fish1: fish at middle-center\n- fish2: fish at bottom-center\nUnder relations (horizontally within reach):\n- fish1 is under rocket1\n- fish2 is under rocket1\n- fish2 is under fish1\nCounts: rocket 1, fish 2.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your two fish lined up under the rocket.",
+                "nudge": "How many fish do we have under the rocket right now?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: space.\nPieces:\n- rocket1: rocket at top-center\n- fish1: fish at middle-center\n- fish2: fish at bottom-center\nUnder relations (horizontally within reach):\n- fish1 is under rocket1\n- fish2 is under rocket1\n- fish2 is under fish1\nCounts: rocket 1, fish 2.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your two fish lined up under the rocket.",
+                "nudge": "How many fish are swimming under the rocket right now?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: space.\nPieces:\n- rocket1: rocket at top-center\n- fish1: fish at middle-center\n- fish2: fish at bottom-center\nUnder relations (horizontally within reach):\n- fish1 is under rocket1\n- fish2 is under rocket1\n- fish2 is under fish1\nCounts: rocket 1, fish 2.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your rocket at the top with two fish underneath it.",
+                "nudge": "How many fish do you see under the rocket?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "fish-low-but-off-side",
+          "goal": "Put 3 fish under the rocket.",
+          "expect": "not_yet",
+          "runs": [
+            {
+              "facts": "Theme: space.\nPieces:\n- rocket1: rocket at top-right\n- fish1: fish at middle-left\n- fish2: fish at bottom-left\n- fish3: fish at bottom-left\nUnder relations (horizontally within reach):\n- fish2 is under fish1\n- fish3 is under fish1\n- fish3 is under fish2\nCounts: rocket 1, fish 3.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your rocket up at the top right and three fish over on the left.",
+                "nudge": "Can you bring your fish over so they are underneath your rocket?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: space.\nPieces:\n- rocket1: rocket at top-right\n- fish1: fish at middle-left\n- fish2: fish at bottom-left\n- fish3: fish at bottom-left\nUnder relations (horizontally within reach):\n- fish2 is under fish1\n- fish3 is under fish1\n- fish3 is under fish2\nCounts: rocket 1, fish 3.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your three fish stacked on the left side.",
+                "nudge": "Where could the fish swim so they are beneath your rocket?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: space.\nPieces:\n- rocket1: rocket at top-right\n- fish1: fish at middle-left\n- fish2: fish at bottom-left\n- fish3: fish at bottom-left\nUnder relations (horizontally within reach):\n- fish2 is under fish1\n- fish3 is under fish1\n- fish3 is under fish2\nCounts: rocket 1, fish 3.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your rocket way up at the top-right and your three fish swimming on the left.",
+                "nudge": "Where could your fish swim so they are right under your rocket?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "more-flowers-yes",
+          "goal": "Make a garden with more flowers than trees.",
+          "expect": "met",
+          "runs": [
+            {
+              "facts": "Theme: garden.\nPieces:\n- daisy1: daisy at bottom-left\n- daisy2: daisy at bottom-center\n- daisy3: daisy at bottom-center\n- tree1: tree at middle-right\nCounts: daisy 3, tree 1.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your three daisies along the bottom and your tree on the right.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: garden.\nPieces:\n- daisy1: daisy at bottom-left\n- daisy2: daisy at bottom-center\n- daisy3: daisy at bottom-center\n- tree1: tree at middle-right\nCounts: daisy 3, tree 1.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You placed three daisies along the bottom and a tree on the right!",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: garden.\nPieces:\n- daisy1: daisy at bottom-left\n- daisy2: daisy at bottom-center\n- daisy3: daisy at bottom-center\n- tree1: tree at middle-right\nCounts: daisy 3, tree 1.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your three daisies blooming along the bottom next to your tree.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "more-flowers-equal",
+          "goal": "Make a garden with more flowers than trees.",
+          "expect": "not_yet",
+          "runs": [
+            {
+              "facts": "Theme: garden.\nPieces:\n- daisy1: daisy at bottom-left\n- daisy2: daisy at bottom-center\n- tree1: tree at middle-center\n- tree2: tree at middle-right\nCounts: daisy 2, tree 2.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your two daisies along the bottom and your two trees in the middle.",
+                "nudge": "Can you count your flowers and count your trees to see if they are the same?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: garden.\nPieces:\n- daisy1: daisy at bottom-left\n- daisy2: daisy at bottom-center\n- tree1: tree at middle-center\n- tree2: tree at middle-right\nCounts: daisy 2, tree 2.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your two daisies along the bottom and two trees in the middle.",
+                "nudge": "Can you count your flowers and count your trees?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Theme: garden.\nPieces:\n- daisy1: daisy at bottom-left\n- daisy2: daisy at bottom-center\n- tree1: tree at middle-center\n- tree2: tree at middle-right\nCounts: daisy 2, tree 2.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your two daisies along the bottom and your two trees in the middle.",
+                "nudge": "How many flowers do you have compared to your trees?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "tower4-smalls",
+          "goal": "Build a tower that is 4 blocks tall.",
+          "expect": "met",
+          "runs": [
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- a: yellow small block, column 3, row 1, rests on ground\n- b: yellow small block, column 3, row 2, rests on a\n- c: yellow small block, column 3, row 3, rests on b\n- d: yellow small block, column 3, row 4, rests on c\nSolid stack height from the ground (in small-block units): column 3: 4.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You stacked four yellow small blocks straight up from the ground!",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- a: yellow small block, column 3, row 1, rests on ground\n- b: yellow small block, column 3, row 2, rests on a\n- c: yellow small block, column 3, row 3, rests on b\n- d: yellow small block, column 3, row 4, rests on c\nSolid stack height from the ground (in small-block units): column 3: 4.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You stacked four yellow small blocks straight up to make a tall column.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- a: yellow small block, column 3, row 1, rests on ground\n- b: yellow small block, column 3, row 2, rests on a\n- c: yellow small block, column 3, row 3, rests on b\n- d: yellow small block, column 3, row 4, rests on c\nSolid stack height from the ground (in small-block units): column 3: 4.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your tall yellow tower standing four blocks high in column three.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "tower4-big-plus-smalls",
+          "goal": "Build a tower that is 4 blocks tall.",
+          "expect": "met",
+          "runs": [
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- big1: blue big block, columns 4-5, rows 1-2, rests on ground\n- a: yellow small block, column 4, row 3, rests on big1\n- b: yellow small block, column 4, row 4, rests on a\nSolid stack height from the ground (in small-block units): column 4: 4, column 5: 2.\nMirror check (left half vs right half of the building): the two sides do not match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You stacked two yellow small blocks right on top of your blue big block.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- big1: blue big block, columns 4-5, rows 1-2, rests on ground\n- a: yellow small block, column 4, row 3, rests on big1\n- b: yellow small block, column 4, row 4, rests on a\nSolid stack height from the ground (in small-block units): column 4: 4, column 5: 2.\nMirror check (left half vs right half of the building): the two sides do not match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You stacked two yellow small blocks right on top of the blue big block.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- big1: blue big block, columns 4-5, rows 1-2, rests on ground\n- a: yellow small block, column 4, row 3, rests on big1\n- b: yellow small block, column 4, row 4, rests on a\nSolid stack height from the ground (in small-block units): column 4: 4, column 5: 2.\nMirror check (left half vs right half of the building): the two sides do not match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your two yellow small blocks stacked right on top of the big blue block.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "tower-two-short",
+          "goal": "Build a tower that is 4 blocks tall.",
+          "expect": "not_yet",
+          "runs": [
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- a: yellow small block, column 2, row 1, rests on ground\n- b: yellow small block, column 2, row 2, rests on a\n- c: yellow small block, column 6, row 1, rests on ground\n- d: yellow small block, column 6, row 2, rests on c\nSolid stack height from the ground (in small-block units): column 2: 2, column 6: 2.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your two yellow blocks stacked up in column two and two more in column six.",
+                "nudge": "How tall is your tower right now if you count the blocks from the bottom to the top?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- a: yellow small block, column 2, row 1, rests on ground\n- b: yellow small block, column 2, row 2, rests on a\n- c: yellow small block, column 6, row 1, rests on ground\n- d: yellow small block, column 6, row 2, rests on c\nSolid stack height from the ground (in small-block units): column 2: 2, column 6: 2.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your two yellow blocks stacked up in column 2.",
+                "nudge": "How many blocks tall is your stack right now?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- a: yellow small block, column 2, row 1, rests on ground\n- b: yellow small block, column 2, row 2, rests on a\n- c: yellow small block, column 6, row 1, rests on ground\n- d: yellow small block, column 6, row 2, rests on c\nSolid stack height from the ground (in small-block units): column 2: 2, column 6: 2.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your two stacks of yellow blocks standing side by side.",
+                "nudge": "How many blocks tall is your tower if you count them up?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "bridge-yes",
+          "goal": "Build a bridge that a little car could drive under.",
+          "expect": "met",
+          "runs": [
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- p1: blue small block, column 2, row 1, rests on ground\n- p2: blue small block, column 4, row 1, rests on ground\n- deck: coral long block, columns 2-4, row 2, rests on p1 and p2; open space under it at column 3\nSolid stack height from the ground (in small-block units): column 2: 2, column 4: 2.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You set the coral long block across your two blue blocks to make an opening underneath.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- p1: blue small block, column 2, row 1, rests on ground\n- p2: blue small block, column 4, row 1, rests on ground\n- deck: coral long block, columns 2-4, row 2, rests on p1 and p2; open space under it at column 3\nSolid stack height from the ground (in small-block units): column 2: 2, column 4: 2.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You used a coral long block resting on two blue small blocks to make an open space in the middle.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- p1: blue small block, column 2, row 1, rests on ground\n- p2: blue small block, column 4, row 1, rests on ground\n- deck: coral long block, columns 2-4, row 2, rests on p1 and p2; open space under it at column 3\nSolid stack height from the ground (in small-block units): column 2: 2, column 4: 2.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You placed a coral long block across two blue blocks with an open space in the middle.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "bridge-tall-yes",
+          "goal": "Build a bridge that a little car could drive under.",
+          "expect": "met",
+          "runs": [
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- p1: yellow small block, column 2, row 1, rests on ground\n- p2: yellow small block, column 2, row 2, rests on p1\n- p3: yellow small block, column 4, row 1, rests on ground\n- p4: yellow small block, column 4, row 2, rests on p3\n- deck: coral long block, columns 2-4, row 3, rests on p2 and p4; open space under it at column 3\nSolid stack height from the ground (in small-block units): column 2: 3, column 4: 3.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your coral long block resting on the yellow towers with an open space in the middle.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- p1: yellow small block, column 2, row 1, rests on ground\n- p2: yellow small block, column 2, row 2, rests on p1\n- p3: yellow small block, column 4, row 1, rests on ground\n- p4: yellow small block, column 4, row 2, rests on p3\n- deck: coral long block, columns 2-4, row 3, rests on p2 and p4; open space under it at column 3\nSolid stack height from the ground (in small-block units): column 2: 3, column 4: 3.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your coral long block resting across the yellow towers with an open space in the middle.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- p1: yellow small block, column 2, row 1, rests on ground\n- p2: yellow small block, column 2, row 2, rests on p1\n- p3: yellow small block, column 4, row 1, rests on ground\n- p4: yellow small block, column 4, row 2, rests on p3\n- deck: coral long block, columns 2-4, row 3, rests on p2 and p4; open space under it at column 3\nSolid stack height from the ground (in small-block units): column 2: 3, column 4: 3.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your coral long block resting across two yellow towers with an open tunnel underneath.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "bridge-flat-on-ground",
+          "goal": "Build a bridge that a little car could drive under.",
+          "expect": "not_yet",
+          "runs": [
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- deck: coral long block, columns 3-5, row 1, rests on ground\n- a: yellow small block, column 3, row 2, rests on deck\nSolid stack height from the ground (in small-block units): column 3: 2, column 4: 1, column 5: 1.\nMirror check (left half vs right half of the building): the two sides do not match.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your coral long block on the ground with a yellow small block on top.",
+                "nudge": "Where could a little car drive underneath your bridge?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": false,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": false
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- deck: coral long block, columns 3-5, row 1, rests on ground\n- a: yellow small block, column 3, row 2, rests on deck\nSolid stack height from the ground (in small-block units): column 3: 2, column 4: 1, column 5: 1.\nMirror check (left half vs right half of the building): the two sides do not match.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your long coral block right on the ground with a yellow block on top.",
+                "nudge": "Where could a little car drive underneath?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": false,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": false
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- deck: coral long block, columns 3-5, row 1, rests on ground\n- a: yellow small block, column 3, row 2, rests on deck\nSolid stack height from the ground (in small-block units): column 3: 2, column 4: 1, column 5: 1.\nMirror check (left half vs right half of the building): the two sides do not match.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [],
+                "noticed": "I see your coral long block resting on the ground with a yellow small block on top.",
+                "nudge": "Where could a car drive under your coral block?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": false,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": false
+            }
+          ]
+        },
+        {
+          "name": "symmetry-pyramid",
+          "goal": "Build something that looks the same on both sides.",
+          "expect": "met",
+          "runs": [
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- a: yellow small block, column 3, row 1, rests on ground\n- b: yellow small block, column 4, row 1, rests on ground\n- c: yellow small block, column 5, row 1, rests on ground\n- d: coral small block, column 4, row 2, rests on b\nSolid stack height from the ground (in small-block units): column 3: 1, column 4: 2, column 5: 1.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your coral block right in the middle on top of the yellow row.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- a: yellow small block, column 3, row 1, rests on ground\n- b: yellow small block, column 4, row 1, rests on ground\n- c: yellow small block, column 5, row 1, rests on ground\n- d: coral small block, column 4, row 2, rests on b\nSolid stack height from the ground (in small-block units): column 3: 1, column 4: 2, column 5: 1.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "I see your coral block right in the middle on top of the yellow row.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- a: yellow small block, column 3, row 1, rests on ground\n- b: yellow small block, column 4, row 1, rests on ground\n- c: yellow small block, column 5, row 1, rests on ground\n- d: coral small block, column 4, row 2, rests on b\nSolid stack height from the ground (in small-block units): column 3: 1, column 4: 2, column 5: 1.\nMirror check (left half vs right half of the building): the two sides match.",
+              "out": {
+                "verdict": "met",
+                "offPieces": [],
+                "noticed": "You placed the coral block right in the middle on top of the yellow row.",
+                "nudge": ""
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        },
+        {
+          "name": "symmetry-user-screenshot",
+          "goal": "Build something that looks the same on both sides.",
+          "expect": "not_yet",
+          "runs": [
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- blue1: blue big block, columns 3-4, rows 1-2, rests on ground\n- blue2: blue big block, columns 5-6, rows 1-2, rests on ground\n- s1: yellow small block, column 3, row 3, rests on blue1\n- s2: yellow small block, column 5, row 3, rests on blue2\n- s3: yellow small block, column 6, row 3, rests on blue2\nSolid stack height from the ground (in small-block units): column 3: 3, column 4: 2, column 5: 3, column 6: 3.\nMirror check (left half vs right half of the building): the two sides do not match.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "s2"
+                ],
+                "noticed": "I see your two big blue blocks side by side on the ground.",
+                "nudge": "What do you notice when you count the yellow blocks on each side?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- blue1: blue big block, columns 3-4, rows 1-2, rests on ground\n- blue2: blue big block, columns 5-6, rows 1-2, rests on ground\n- s1: yellow small block, column 3, row 3, rests on blue1\n- s2: yellow small block, column 5, row 3, rests on blue2\n- s3: yellow small block, column 6, row 3, rests on blue2\nSolid stack height from the ground (in small-block units): column 3: 3, column 4: 2, column 5: 3, column 6: 3.\nMirror check (left half vs right half of the building): the two sides do not match.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "s2"
+                ],
+                "noticed": "I see your two blue blocks side by side on the ground with yellow blocks on top.",
+                "nudge": "How many yellow blocks are sitting on each blue block?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            },
+            {
+              "facts": "Pieces (columns 1-8, row 1 = ground level):\n- blue1: blue big block, columns 3-4, rows 1-2, rests on ground\n- blue2: blue big block, columns 5-6, rows 1-2, rests on ground\n- s1: yellow small block, column 3, row 3, rests on blue1\n- s2: yellow small block, column 5, row 3, rests on blue2\n- s3: yellow small block, column 6, row 3, rests on blue2\nSolid stack height from the ground (in small-block units): column 3: 3, column 4: 2, column 5: 3, column 6: 3.\nMirror check (left half vs right half of the building): the two sides do not match.",
+              "out": {
+                "verdict": "not_yet",
+                "offPieces": [
+                  "s2"
+                ],
+                "noticed": "You put two blue big blocks on the ground with yellow blocks on top.",
+                "nudge": "What would happen if you look at the blocks right in the middle?"
+              },
+              "checks": {
+                "verdict": true,
+                "mustFlag": true,
+                "mustNotFlag": true,
+                "nudgeIsQuestion": true,
+                "noFixCommand": true
+              },
+              "pass": true
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

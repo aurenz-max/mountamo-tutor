@@ -100,6 +100,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "subitize_perceptual": PriorConfig(0.5, "Pre-K: flash 1-3 objects, identify via hand image"),
         "count":     PriorConfig(1.0, "Count objects on board"),
         "give_me_n": PriorConfig(1.5, "Count out a named number from a pile (K.CC.B.5)"),
+        "build_n":   PriorConfig(1.6, "Open build: make a set of N on an empty scene, nothing drawn to count (K.CC.B.5)"),
         "recount_moved": PriorConfig(1.8, "Same number after the set rearranges — conservation (K.CC.B.4b)"),
         "add_more":  PriorConfig(2.2, "Put more on the board and say how many altogether"),
         "take_away": PriorConfig(2.4, "Take some off the board and say how many are left"),
@@ -883,6 +884,9 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "enough_cars": PriorConfig(-0.5, "Car given; couple the fewest cars that hold the load"),
         "enough_pull": PriorConfig(0.3, "Cars given; add the fewest engines that climb the hill"),
         "build_train": PriorConfig(0.8, "Build the Train"),
+    },
+    "open-builder": {
+        "build_to_goal": PriorConfig(0.0, "Build to the goal"),
     },
     "propulsion-lab": {
         "predict":    PriorConfig(-1.0, "Predict propulsion outcomes before testing"),

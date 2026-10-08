@@ -1,0 +1,89 @@
+{
+ "data": {
+  "title": "Starry Night Building",
+  "description": "Practice making sets of stars to help light up the night sky!",
+  "objects": {
+   "type": "stars"
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "build_n",
+    "instruction": "Put three stars in the night sky.",
+    "targetAnswer": 3,
+    "count": 3,
+    "arrangement": "scattered",
+    "hint": "Try tapping on the empty sky to place your stars one by one.",
+    "narration": "Let us make a special group of stars in the night sky."
+   },
+   {
+    "id": "c2",
+    "type": "build_n",
+    "instruction": "Put five stars in the night sky.",
+    "targetAnswer": 5,
+    "count": 5,
+    "arrangement": "scattered",
+    "hint": "Keep tapping to add more stars until you have enough.",
+    "narration": "Wonderful! Now let us build a bigger set of stars."
+   },
+   {
+    "id": "c3",
+    "type": "build_n",
+    "instruction": "Put eight stars in the night sky.",
+    "targetAnswer": 8,
+    "count": 8,
+    "arrangement": "scattered",
+    "hint": "Count each star as you place it to make sure you have the right amount.",
+    "narration": "You are doing great! Let us try building a new set."
+   },
+   {
+    "id": "c4",
+    "type": "build_n",
+    "instruction": "Put ten stars in the night sky.",
+    "targetAnswer": 10,
+    "count": 10,
+    "arrangement": "scattered",
+    "hint": "Take your time and count carefully as you build your final set.",
+    "narration": "This is our last challenge. Let us build our biggest set of stars yet!"
+   }
+  ],
+  "showOptions": {
+   "showRunningCount": true,
+   "showGroupCircles": false,
+   "highlightOnTap": true,
+   "showLastNumber": true
+  },
+  "gradeBand": "K"
+ },
+ "report": [
+  {
+   "item": 1,
+   "target": 3,
+   "instruction": "Put three stars in the night sky.",
+   "watcherShown": "👀 Yellow stars are glowing bright yellow near the moon!",
+   "watcherRaw": [
+    "Yellow stars are glowing bright yellow near the moon!"
+   ],
+   "afterWrong": "Attempts on this item\n\nwrong 4 · miss one_over",
+   "retryOffered": true,
+   "keptAfterRetry": 4,
+   "afterRemove": 3,
+   "afterRight": "Attempts on this item\n\nwrong 4 · miss one_over\n\nright 3"
+  },
+  {
+   "item": 2,
+   "target": 5,
+   "instruction": "Put five stars in the night sky.",
+   "watcherShown": "",
+   "watcherRaw": [],
+   "error": "TimeoutError: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'I\\'m done!' })\u001b[22m\n\u001b[2m    - locator resolved to <button disabled class=\"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background "
+  }
+ ],
+ "watch": [
+  {
+   "numbers": "never",
+   "task": "Put 3 stars in the night sky",
+   "seeing": "Yellow stars are glowing bright yellow near the moon!"
+  }
+ ]
+}

@@ -3387,6 +3387,22 @@ export interface TrainYardMetrics extends BasePrimitiveMetrics {
 }
 
 // -----------------------------------------------------------------------------
+// Creation Primitives
+// -----------------------------------------------------------------------------
+
+export interface OpenBuilderMetrics extends BasePrimitiveMetrics {
+  type: 'open-builder';
+  challengeType: 'build_to_goal';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+}
+
+// -----------------------------------------------------------------------------
 // Core Primitives
 // -----------------------------------------------------------------------------
 
@@ -3859,6 +3875,8 @@ export type PrimitiveMetrics =
   | VehicleDesignStudioMetrics
   | TransportChallengeMetrics
   | TrainYardMetrics
+  // Creation
+  | OpenBuilderMetrics
   // Assessment
   | MultipleChoiceMetrics
   | FillInBlanksMetrics

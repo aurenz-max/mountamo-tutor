@@ -50,7 +50,7 @@
 import { helpBranch } from '../../../hooks/judgedScriptContract';
 import { withHelpBranch } from '../../../hooks/judgedLoopModel';
 import type { JudgedCueSurface } from '../../../hooks/judgedScriptContract';
-import { askFor, cap, countWalk, countedNoun, howToPlayFor, numberWordFor, stimulusFor,
+import { askFor, buildPlaceFor, cap, countWalk, countedNoun, howToPlayFor, numberWordFor, stimulusFor,
   type CountingItem } from './countingBoardDomain';
 
 // The task itself is domain, not script. Re-exported so the generator, the
@@ -146,7 +146,7 @@ const judgingContract = (item: CountingItem): string => {
  *  so there is nothing to judge until the app reports what they gave. The one
  *  number the tutor may say is the one she just asked for. */
 const giveContract = (item: CountingItem): string =>
-  `The quoted line is the ONLY thing you say on this turn; the learner answers by TOUCHING ${item.objectWord}, not by speaking, so you then stay completely silent. `
+  `The quoted line is the ONLY thing you say on this turn; the learner answers by ${item.kind === 'build_n' ? 'PUTTING' : 'TOUCHING'} ${item.objectWord}, not by speaking, so you then stay completely silent. `
   + `Do not count aloud with them, do not say how many they have touched so far, and do not name any number other than the one you asked for. `
   + `You will be told how many they handed over and whether it is right; only then do you speak.`;
 
@@ -193,7 +193,7 @@ export const itemCue = (item: CountingItem, opts: CountingCueOptions = {}): stri
   const spoken = `${greeting}${how}${askFor(item)}`;
   const contract = item.kind === 'subitize_perceptual'
     ? perceptualContract(item)
-    : item.kind === 'give_me_n'
+    : item.kind === 'give_me_n' || item.kind === 'build_n'
       ? giveContract(item)
       : judgingContract(item);
   return `[COUNT_ITEM] Say exactly: "${spoken}" ${contract} ${NEVER_PERFORM}`;
@@ -226,6 +226,17 @@ export const handVerdictCue = (
 export const giveVerdictCue = (item: CountingItem, given: number): string => {
   const matches = given === item.target;
   const asked = countedNoun(item.target, item.objectWord, item.objectSingular);
+  if (item.kind === 'build_n') {
+    const where = buildPlaceFor(item.objectWord).place;
+    return (
+      `[COUNT_GIVE] The learner put ${given} ${item.objectWord} ${where}; you asked for ${item.target} — `
+      + `that is ${matches ? 'RIGHT' : 'WRONG'}. `
+      + (matches
+        ? `Say exactly: "Yes! You made ${asked}." `
+        : `Say exactly: "Let's check. Count the ${item.objectWord} you put in. Your turn. Make ${asked}." `)
+      + `Say nothing else — no praise, no hint, no count of what they put in. ${NEVER_PERFORM}`
+    );
+  }
   return (
     `[COUNT_GIVE] The learner handed over ${given} ${item.objectWord}; you asked for ${item.target} — `
     + `that is ${matches ? 'RIGHT' : 'WRONG'}. `
@@ -248,7 +259,7 @@ export const moveOnCue = (
   const how = opts.howToPlay ? howToPlayFor(next) : '';
   const contract = next.kind === 'subitize_perceptual'
     ? perceptualContract(next)
-    : next.kind === 'give_me_n'
+    : next.kind === 'give_me_n' || next.kind === 'build_n'
       ? giveContract(next)
       : judgingContract(next);
   return `[COUNT_MOVE] Say exactly: "Good try! Here comes the next one. ${how}${askFor(next)}" ${contract} ${NEVER_PERFORM}`;

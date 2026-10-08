@@ -1,0 +1,174 @@
+[
+ {
+  "scene": "bridge",
+  "title": "Over the River",
+  "first": {
+   "label": "bridge-1-partial",
+   "met": false,
+   "miss": "does_not_work",
+   "noticed": "I see your coral block sitting right by the edge of the water.",
+   "nudge": "Can your bridge reach all the way across to the other side of the river?"
+  },
+  "retryOffered": true,
+  "nudgeVisibleAfterRetry": true,
+  "second": {
+   "label": "bridge-2-finished",
+   "met": true,
+   "noticed": "I see you built a tall pillar in the water to hold up the road across the river.",
+   "nudge": ""
+  }
+ },
+ {
+  "scene": "giraffe",
+  "title": "As Tall as the Giraffe",
+  "first": {
+   "label": "giraffe-1-partial",
+   "met": false,
+   "miss": "does_not_work",
+   "noticed": "You have two pink blocks stacked up on the ground.",
+   "nudge": "How high does the giraffe's head reach compared to your blocks?"
+  },
+  "retryOffered": true,
+  "nudgeVisibleAfterRetry": true,
+  "second": {
+   "label": "giraffe-2-finished",
+   "met": true,
+   "noticed": "I see a skinny block balancing right on top of your two big blocks.",
+   "nudge": ""
+  }
+ },
+ {
+  "scene": "puppy-house",
+  "title": "A House for Puppy",
+  "first": {
+   "label": "puppy-house-1-partial",
+   "met": false,
+   "miss": "missing_part",
+   "noticed": "I see two tall blocks standing up like walls next to puppy.",
+   "nudge": "What will keep the rain from falling down between your walls?"
+  },
+  "retryOffered": true,
+  "nudgeVisibleAfterRetry": true,
+  "second": {
+   "label": "puppy-house-2-finished",
+   "met": false,
+   "miss": "does_not_work",
+   "noticed": "You put two standing blocks with a triangle roof resting on top.",
+   "nudge": "Where is puppy sitting right now?"
+  }
+ },
+ {
+  "scene": "cliff-steps",
+  "title": "Up to the Kitten",
+  "first": {
+   "label": "cliff-steps-1-partial",
+   "met": false,
+   "miss": "does_not_work",
+   "noticed": "You made three steps that climb higher and higher!",
+   "nudge": "Can the bunny reach the cliff from your tallest step?"
+  },
+  "retryOffered": true,
+  "nudgeVisibleAfterRetry": true,
+  "second": {
+   "label": "cliff-steps-2-finished",
+   "met": true,
+   "noticed": "I see your steps climbing up one by one until they reach right next to the kitten.",
+   "nudge": ""
+  }
+ },
+ {
+  "scene": "castle",
+  "title": "A Castle for the King",
+  "first": {
+   "label": "castle-1-partial",
+   "met": false,
+   "miss": "missing_part",
+   "noticed": "You stacked two peach blocks into a tall tower with a flat block right beside it.",
+   "nudge": "Where could the king's other tower go?"
+  },
+  "retryOffered": true,
+  "nudgeVisibleAfterRetry": true,
+  "second": {
+   "label": "castle-2-finished",
+   "met": true,
+   "noticed": "You made two towers from your tall pink blocks with a wall resting between them.",
+   "nudge": ""
+  }
+ },
+ {
+  "scene": "rocket",
+  "title": "Blast Off!",
+  "first": {
+   "label": "rocket-1-partial",
+   "met": false,
+   "miss": "missing_part",
+   "noticed": "I see two peach blocks stacked up tall towards the stars.",
+   "nudge": "How does the very top of your rocket look?"
+  },
+  "retryOffered": true,
+  "nudgeVisibleAfterRetry": true,
+  "second": {
+   "label": "rocket-2-finished",
+   "met": true,
+   "noticed": "I see your pointy triangle right on top and two little booster blocks at the bottom.",
+   "nudge": ""
+  }
+ },
+ {
+  "scene": "robot",
+  "title": "Robot Friend",
+  "first": {
+   "label": "robot-1-partial",
+   "met": false,
+   "miss": "missing_part",
+   "noticed": "I see your two standing blocks with a big square block resting right on top.",
+   "nudge": "How could your robot friend wave hello?"
+  },
+  "retryOffered": true,
+  "nudgeVisibleAfterRetry": true,
+  "second": {
+   "label": "robot-2-finished",
+   "met": true,
+   "noticed": "I see your robot standing tall on two legs with both arms stretched out wide.",
+   "nudge": ""
+  }
+ },
+ {
+  "scene": "truck",
+  "title": "The Apple Truck",
+  "first": {
+   "label": "truck-1-partial",
+   "met": false,
+   "miss": "missing_part",
+   "noticed": "I see your peach blocks set up to make a truck body right next to the farmer.",
+   "nudge": "How will the truck roll along the ground to carry the apples?"
+  },
+  "retryOffered": true,
+  "nudgeVisibleAfterRetry": true,
+  "second": {
+   "label": "truck-2-finished",
+   "met": true,
+   "noticed": "I see your peach truck with two round wheels and a tall cab!",
+   "nudge": ""
+  }
+ },
+ {
+  "scene": "sheep-wall",
+  "title": "Save the Flowers",
+  "first": {
+   "label": "sheep-wall-1-partial",
+   "met": false,
+   "miss": "does_not_work",
+   "noticed": "I see your wide orange block resting on the grass between the sheep and the flowers.",
+   "nudge": "Can the big sheep step right over that block?"
+  },
+  "retryOffered": true,
+  "nudgeVisibleAfterRetry": true,
+  "second": {
+   "label": "sheep-wall-2-finished",
+   "met": true,
+   "noticed": "You stacked your tall coral blocks right between the sheep and the flowers.",
+   "nudge": ""
+  }
+ }
+]

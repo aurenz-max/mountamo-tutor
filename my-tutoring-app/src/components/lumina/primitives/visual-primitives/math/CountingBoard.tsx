@@ -44,7 +44,9 @@ import {
   objectSingularFor,
   type CountingItem,
 } from './countingBoardScript';
-import { boardGroups, countMiss, workspaceAssignment, workspaceScene } from './countingBoardDomain';
+import { boardGroups, buildPlaceFor, countMiss, makesASet, workspaceAssignment, workspaceScene } from './countingBoardDomain';
+import { CountingBuildScene, type BuiltSpot } from './CountingBuildScene';
+import { useBuildWatcher } from '../../build-layer/buildLayer';
 import { COUNT_LEVER, HANDS_LEVER, LINE_LEVER, SMALLER_LEVER, TAGS_LEVER, countingBoardLevers, droppedHand, leverFacts,
   smallerGive, startLevers } from './countingBoardLevers';
 import { FIVES_LEVER, GROUP_TAG_LEVER, ROWS_LEVER, SPOKEN_SIMPLIFY, countingBoardSpokenLevers, spokenLeverFacts,
@@ -72,7 +74,7 @@ export interface CountingBoardChallenge {
   id: string;
   type:
     | 'count_all' | 'subitize' | 'subitize_perceptual' | 'count_on' | 'group_count' | 'compare'
-    | 'give_me_n' | 'recount_moved' | 'take_away' | 'add_more';
+    | 'give_me_n' | 'recount_moved' | 'take_away' | 'add_more' | 'build_n';
   instruction: string;
   targetAnswer: number;
   count: number;
@@ -132,6 +134,7 @@ export interface CountingBoardData {
 
 const CHALLENGE_TYPE_CONFIG: Record<string, { label: string; icon: string }> = {
   give_me_n: { label: 'Give Me', icon: '🤲' },
+  build_n: { label: 'Build It', icon: '🧺' },
   recount_moved: { label: 'They Moved', icon: '🔀' },
   take_away: { label: 'Take Away', icon: '➖' },
   add_more: { label: 'Add More', icon: '➕' },
@@ -431,6 +434,9 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
   const [removedObjects, setRemovedObjects] = useState<Set<number>>(new Set());
   /** add_more: extra objects the child has put on (indices past the start set). */
   const [addedExtras, setAddedExtras] = useState<Set<number>>(new Set());
+  /** build_n: where the child has put objects in the empty scene, in the order put in. */
+  const [built, setBuilt] = useState<BuiltSpot[]>([]);
+  const buildSvgRef = useRef<SVGSVGElement | null>(null);
   /** The count JUST affirmed — post-answer only (answer-leak rule), cleared
    *  the moment the next item opens. 'match' = pre-numeric affirm (no digits). */
   const [reward, setReward] = useState<string | null>(null);
@@ -687,6 +693,22 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
   const layoutLever = rowsApart ? 'rows-apart' : challengeArrangement === 'line' && pulledLevers.includes(LINE_LEVER) ? 'line-up'
     : challengeArrangement === 'groups' && pulledLevers.includes(FIVES_LEVER) ? 'five-groups' : undefined;
 
+  // build_n: a new item (or the easier practice ask) opens on an empty scene; Try again keeps the build to revise.
+  const builtFor = useRef<string | null>(null);
+  if (currentItem?.id !== builtFor.current) {
+    builtFor.current = currentItem?.id ?? null;
+    if (built.length) setBuilt([]);
+  }
+  const buildPlace = currentItem?.kind === 'build_n' ? buildPlaceFor(objectWord) : null;
+  // The live line (shared build layer): what the scene looks like so far, NEVER a number — counting is the task.
+  const buildSeeing = useBuildWatcher({
+    buildKey: built.map(b => `${b.x},${b.y}`).join('|'),
+    enabled: currentItem?.kind === 'build_n' && built.length > 0 && runner.canAttempt && !evaluation.hasSubmitted,
+    svg: buildSvgRef,
+    request: { task: currentItem ? `Put ${currentItem.target} ${objectWord} ${buildPlace?.place ?? ''}`.trim() : '',
+      sceneNote: buildPlace?.scene ?? '', numbers: 'never' },
+  });
+
   const isKSubitize = gradeBand === 'K' && currentItem?.kind === 'subitize';
   /**
    * The K route for count_on: the pre-counted group sits under a basket. At
@@ -772,7 +794,7 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
       judging: runner.stage === 'judging', tutorSpeaking: runner.tutorSpeaking,
       cueMatchesItem: runner.cuedItemId === currentItem.id,
       perceptual: ['subitize', 'subitize_perceptual'].includes(currentItem.kind) || hasMoved,
-      giving: currentItem.kind === 'give_me_n', visibleIds: targets.map((target) => target.id),
+      giving: makesASet(currentItem.kind), visibleIds: targets.map((target) => target.id),
       lastTouchedId: pip.lastTouchedId,
     });
     return {
@@ -887,6 +909,30 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
       miss: countMiss(item, countedObjects.size), cue: () => giveVerdictCue(item, countedObjects.size) });
   }, [runner, evaluation.hasSubmitted, countedObjects]);
 
+  // ── Open build (build_n): tap to put one in, tap one to take it out; "I'm done!" commits ──
+  const buildOpen = !!currentItem && currentItem.kind === 'build_n' && runner.canAttempt && !evaluation.hasSubmitted;
+  const handleBuildPlace = useCallback((spot: BuiltSpot) => {
+    if (!buildOpen || runner.isAwaitingGesture()) return;
+    SoundManager.tap();
+    setBuilt(b => [...b, spot]);
+  }, [buildOpen, runner]);
+  const handleBuildRemove = useCallback((index: number) => {
+    if (!buildOpen || runner.isAwaitingGesture()) return;
+    SoundManager.tap();
+    setBuilt(b => b.filter((_, i) => i !== index));
+  }, [buildOpen, runner]);
+
+  const handleBuildCommit = useCallback(() => {
+    const item = displayItemRef.current;
+    if (!runner.canAttempt || evaluation.hasSubmitted) return;
+    if (!item || item.kind !== 'build_n') return;
+    if (runner.isAwaitingGesture()) return;
+    SoundManager.tap();
+    givenCountRef.current = built.length;
+    commitGesture(runner, { response: String(built.length), correct: built.length === item.target,
+      miss: countMiss(item, built.length), cue: () => giveVerdictCue(item, built.length) });
+  }, [runner, evaluation.hasSubmitted, built]);
+
   // ── The hand pick (subitize_perceptual) — the tap IS the commit ───────────
   const handleHandPick = useCallback((fingers: number) => {
     const item = displayItemRef.current;
@@ -906,7 +952,7 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
   /** `subitize_perceptual` is answered by picking a hand, so an all-perceptual
    *  run was never counted "out loud". */
   useLayoutEffect(() => {
-    const scene = currentItem ? workspaceScene(currentItem, { counted: countedObjects, removed: removedObjects,
+    const scene = currentItem ? workspaceScene(currentItem, { counted: currentItem.kind === 'build_n' ? new Set(built.map((_, i) => i)) : countedObjects, removed: removedObjects,
       added: addedExtras, moved: hasMoved, covered: coveredCount, hidden: isKSubitize && !isSubitizeFlashing })
       : { objects: [], facts: {} };
     const spoken = sessionItem?.answerKind === 'voice';
@@ -1002,10 +1048,10 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
   }
 
   const kind = currentItem?.kind;
-  // On give_me_n the running count and the tags are levers; the tier only sets where they start.
-  const runningCountOn = kind === 'give_me_n' ? pulledLevers.includes(COUNT_LEVER) : showRunningCount;
-  const runningCountPulledLive = kind === 'give_me_n' && pulledLevers.includes(COUNT_LEVER) && !startPulled.includes(COUNT_LEVER);
-  const tagsOn = kind === 'give_me_n' ? pulledLevers.includes(TAGS_LEVER) : showLastNumber;
+  // On give_me_n and build_n the running count and the tags are levers; the tier only sets where they start.
+  const runningCountOn = makesASet(kind) ? pulledLevers.includes(COUNT_LEVER) : showRunningCount;
+  const runningCountPulledLive = makesASet(kind) && pulledLevers.includes(COUNT_LEVER) && !startPulled.includes(COUNT_LEVER);
+  const tagsOn = makesASet(kind) ? pulledLevers.includes(TAGS_LEVER) : showLastNumber;
   const boardTappable = kind !== 'subitize' && kind !== 'subitize_perceptual'
     && !(kind === 'recount_moved' && hasMoved);
   const stageWord = runner.stage === 'affirmed'
@@ -1038,7 +1084,7 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
             )}
           </div>
           <LuminaBadge accent="cyan" className="text-xs">
-            {kind === 'subitize_perceptual' ? 'Tap the hand' : kind === 'give_me_n' ? 'Choose and give' : 'Say it out loud'}
+            {kind === 'subitize_perceptual' ? 'Tap the hand' : kind === 'give_me_n' ? 'Choose and give' : kind === 'build_n' ? 'Build it' : 'Say it out loud'}
           </LuminaBadge>
         </div>
         {!isPreReader && description && (
@@ -1065,8 +1111,16 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
               </LuminaPrompt>
             )}
 
+            {/* Open build: the empty scene the child fills (build_n) */}
+            {kind === 'build_n' && (
+              <div className="flex justify-center">
+                <CountingBuildScene ref={buildSvgRef} objectWord={objectWord} emoji={emoji} built={built} tags={tagsOn}
+                  disabled={!buildOpen} onPlace={handleBuildPlace} onRemove={handleBuildRemove} />
+              </div>
+            )}
+
             {/* Counting Workspace */}
-            <div className="flex justify-center">
+            <div className={kind === 'build_n' ? 'hidden' : 'flex justify-center'}>
               <svg
                 data-lever={layoutLever}
                 width={WORKSPACE_WIDTH}
@@ -1250,12 +1304,31 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
             {/* Running count — the child's own trace ONLY. The "/ total" the
                 old tally printed was the answer, typeset next to the child's
                 progress; it does not survive the spoken-answer port. */}
-            {runningCountOn && boardTappable && (countedObjects.size > 0 || runningCountPulledLive) && (
+            {runningCountOn && boardTappable && kind !== 'build_n' && (countedObjects.size > 0 || runningCountPulledLive) && (
               <div className="flex items-center justify-center text-sm" data-lever="running-count">
                 <span className="text-slate-300">
                   Counted: <span className="text-orange-300 font-bold text-lg">{countedObjects.size}</span>
                 </span>
               </div>
+            )}
+
+            {/* Open build: the live line (never a number), the count lever, and the commit. */}
+            {kind === 'build_n' && (
+              <>
+                <div className="flex min-h-8 items-center justify-center" aria-live="polite" data-testid="build-watcher">
+                  {buildSeeing && <span className="rounded-full bg-white/10 px-4 py-1.5 text-base text-amber-100">👀 {buildSeeing}</span>}
+                </div>
+                {runningCountOn && (built.length > 0 || runningCountPulledLive) && (
+                  <div className="flex items-center justify-center text-sm" data-lever="running-count">
+                    <span className="text-slate-300">Put in: <span className="text-orange-300 font-bold text-lg">{built.length}</span></span>
+                  </div>
+                )}
+                <div className="flex justify-center">
+                  <LuminaButton tone="primary" disabled={!runner.canAttempt || built.length === 0} onClick={handleBuildCommit}>
+                    I&apos;m done!
+                  </LuminaButton>
+                </div>
+              </>
             )}
 
             {/* The handover — the give_me_n commit. The pile stays on the board;
@@ -1380,13 +1453,15 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
                   ? 'Look at the objects, then tap the matching hand.'
                   : kind === 'give_me_n'
                     ? 'Touch the ones you want to give, then hand them over.'
-                    : 'Tap each object as you count, then say how many out loud.'}
+                    : kind === 'build_n'
+                      ? `Tap the picture to put ${objectWord} in, then press I'm done.`
+                      : 'Tap each object as you count, then say how many out loud.'}
               </p>
             )}
 
             {/* The pre-K hand pick is answered with the hands — the orb names
                 that turn instead of claiming to listen for it. */}
-            <JudgedMicPanel run={runner} gestureLabel="Your turn — tap the hand" />
+            <JudgedMicPanel run={runner} gestureLabel={kind === 'build_n' ? 'Your turn — build it' : kind === 'give_me_n' ? 'Your turn — choose and give' : 'Your turn — tap the hand'} />
           </>
         )}
 
