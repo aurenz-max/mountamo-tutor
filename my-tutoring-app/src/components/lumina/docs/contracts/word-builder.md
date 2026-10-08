@@ -36,11 +36,17 @@
 ### R6 — The payload grade is a grade · OBSERVED
 - **Property:** `gradeLevel` is "Grade N", the lesson grade raised to the level's floor (simple 3, compound 4, greek_latin 5, multi 6), never the grade-context prose.
 
+### R7 — build_affix is a fork, not an edit of R1/R6 · OBSERVED
+- **Property:** `build_affix` (open build, 2026-10-07) is its own surface (`WordBuildAffix.tsx`, mounted when `task: 'build_affix'`): the learner taps cards into a row, so R1's "nothing is tapped" and R6's level floors do not apply to it (user ruling R11: the build's scope follows the lesson grade, 1-8). The four spoken modes are unchanged. No key ships: the row's shape is checked in code (`affixShapeMiss`), the word by the shared literacy judge (`judgeWordBuild`: Jev, flash-latest second opinion). An ask never names a word that passes; every ask has 2+ board words that fit (`askableBuildItem`).
+- **Probe:** `WordBuilder.buildAffix.workspace.test.tsx`; headless drive `qa/open-build/word-builder-2026-10-07/drive/`.
+
 ## Conflicts
 
 None open.
 
 ## Changelog
+
+- 2026-10-07: R7 added, build_affix fork (open build OB-3L L1). The generator moved from `resolveEvalModeConstraint` to `resolveEvalModes` (unpinned lessons now resolve a level from intent instead of always mixed). Catalog grades gained Grade 1-2 for the build.
 
 - 2026-10-04: derived (initial, static) with the lever slice. 6 requirements, 0 conflicts.
 - 2026-10-04: WB-5. Catalog `tutoring` block removed (runner protocol, dead on the workspace path). Re-based: the runner-era catalog pins in `WordBuilder.di-script.test.ts` §9 (scripted-correction rungs, sentinel scan, contextKeys) now assert no block. Their property, that the tutor never names the word, is carried by `teachingWorkspace.guidance` and R2/R3.

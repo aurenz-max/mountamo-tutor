@@ -1,0 +1,182 @@
+{
+  "log": [
+    {
+      "step": "generated",
+      "asks": [
+        "Make a real word that starts with two consonant sounds blended together.",
+        "Make a real word that ends with two consonant sounds blended together.",
+        "Make a real word that starts with two consonant sounds blended together.",
+        "Make a real word that ends with two consonant sounds blended together."
+      ]
+    },
+    {
+      "step": "item1 code miss \"man\"",
+      "feedback": "Listen to the start: a blend has two consonant sounds together."
+    },
+    {
+      "step": "item1 judged \"span\"",
+      "feedback": "Yes! \"span\" is a word."
+    },
+    {
+      "step": "item2 first \"land\"",
+      "feedback": "Yes! \"land\" is a word. Now make a different one."
+    },
+    {
+      "step": "item2 same word again",
+      "feedback": "You already made that word. Make a different one."
+    },
+    {
+      "step": "item2 second \"must\"",
+      "feedback": "Yes! \"must\" is a word."
+    }
+  ],
+  "judgeCalls": [
+    {
+      "params": {
+        "ask": "Make a real word that starts with two consonant sounds blended together.",
+        "made": "span",
+        "only": "real_word",
+        "grade": "1"
+      },
+      "verdict": {
+        "met": true,
+        "realWord": 0.98,
+        "fits": 1,
+        "judge": "jev"
+      }
+    },
+    {
+      "params": {
+        "ask": "Make a real word that ends with two consonant sounds blended together.",
+        "made": "land",
+        "only": "real_word",
+        "grade": "1"
+      },
+      "verdict": {
+        "met": true,
+        "realWord": 0.99,
+        "fits": 1,
+        "judge": "jev"
+      }
+    },
+    {
+      "params": {
+        "ask": "Make a real word that ends with two consonant sounds blended together.",
+        "made": "must",
+        "only": "real_word",
+        "grade": "1"
+      },
+      "verdict": {
+        "met": true,
+        "realWord": 0.98,
+        "fits": 1,
+        "judge": "jev"
+      }
+    }
+  ],
+  "asks": [
+    {
+      "id": "l1",
+      "kind": "blend_start",
+      "ways": 1,
+      "examples": [
+        "plug",
+        "plan",
+        "black",
+        "spin",
+        "drop"
+      ],
+      "ask": "Make a real word that starts with two consonant sounds blended together.",
+      "bank": [
+        "sp",
+        "an",
+        "bl",
+        "ack",
+        "dr",
+        "m",
+        "in",
+        "op",
+        "ug",
+        "pl",
+        "ug"
+      ]
+    },
+    {
+      "id": "l2",
+      "kind": "blend_end",
+      "ways": 1,
+      "examples": [
+        "land",
+        "must",
+        "dust",
+        "hand",
+        "soft"
+      ],
+      "ask": "Make a real word that ends with two consonant sounds blended together.",
+      "bank": [
+        "d",
+        "oft",
+        "and",
+        "bl",
+        "m",
+        "ust",
+        "h",
+        "s",
+        "l",
+        "at"
+      ]
+    },
+    {
+      "id": "l3",
+      "kind": "blend_start",
+      "ways": 1,
+      "examples": [
+        "clap",
+        "crack",
+        "grin",
+        "slap",
+        "slip"
+      ],
+      "ask": "Make a real word that starts with two consonant sounds blended together.",
+      "bank": [
+        "cr",
+        "sl",
+        "gr",
+        "ack",
+        "cl",
+        "ip",
+        "ug",
+        "ap",
+        "in",
+        "m"
+      ]
+    },
+    {
+      "id": "l4",
+      "kind": "blend_end",
+      "ways": 1,
+      "examples": [
+        "hunt",
+        "lift",
+        "sand",
+        "bump",
+        "desk"
+      ],
+      "ask": "Make a real word that ends with two consonant sounds blended together.",
+      "bank": [
+        "b",
+        "at",
+        "unt",
+        "s",
+        "ift",
+        "bl",
+        "ump",
+        "esk",
+        "and",
+        "d",
+        "l",
+        "h"
+      ]
+    }
+  ]
+}

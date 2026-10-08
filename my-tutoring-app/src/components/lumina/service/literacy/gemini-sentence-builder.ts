@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import { generateSentenceBuild } from './gemini-sentence-build';
 import type { GenerationContext } from "../generation/generationContext";
 import { SentenceBuilderData } from "../../primitives/visual-primitives/literacy/SentenceBuilder";
 import {
@@ -311,6 +312,10 @@ export const generateSentenceBuilder = async (
   const { topic } = ctx;
   const intent = ctx.intent;
   const config = ctx.raw as SentenceBuilderConfig;
+  // build_sentence (open build, qa/open-build/ROADMAP.md OB-3L L7): word tiles on the bound tile surface.
+  if (config?.targetEvalMode === 'build_sentence') {
+    return generateSentenceBuild(topic, ctx.gradeContext, { intent, grade: ctx.grade }) as unknown as Promise<SentenceBuilderData>;
+  }
 
   // ── Eval mode resolution ────────────────────────────────────────────
   const evalConstraint = resolveEvalModeConstraint(

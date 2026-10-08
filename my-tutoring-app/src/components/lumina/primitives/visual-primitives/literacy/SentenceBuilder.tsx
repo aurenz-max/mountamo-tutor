@@ -1,6 +1,9 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import SentenceBuildSurface, { type SentenceBuildSurfaceProps } from './SentenceBuildSurface';
+import type { SentenceItem } from './sentenceBuild';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -37,6 +40,9 @@ export interface SentenceBuilderData {
   title: string;
   gradeLevel: string;
   sentenceType: 'simple' | 'compound' | 'complex' | 'compound-complex';
+  /** `build_sentence` (open build): the bound tile surface runs the session from `sentences`; `challenges` is empty. */
+  task?: 'sentence_build';
+  sentences?: SentenceItem[];
 
   // Challenges - each is a sentence to build
   challenges: Array<{
@@ -917,4 +923,15 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
   );
 };
 
-export default SentenceBuilder;
+/** The open build runs only on the teaching workspace (an unbound mount shows the needs-the-tutor card). */
+const BoundSentenceBuild = withWorkspaceOnly<SentenceBuildSurfaceProps>('sentence-builder', SentenceBuildSurface,
+  props => props.data.title);
+
+/** One mount, one shape: `build_sentence` is the bound open build; the tile-order modes keep this component. */
+const SentenceBuilderHost: React.FC<SentenceBuilderProps & { runtimePlanItemId?: string; runtimeEvalMode?: string }> = props =>
+  props.data.task === 'sentence_build'
+    ? <BoundSentenceBuild data={{ ...props.data, task: 'sentence_build', sentences: props.data.sentences ?? [] } as never}
+        className={props.className} runtimePlanItemId={props.runtimePlanItemId} runtimeEvalMode={props.runtimeEvalMode} />
+    : <SentenceBuilder {...props} />;
+
+export default SentenceBuilderHost;

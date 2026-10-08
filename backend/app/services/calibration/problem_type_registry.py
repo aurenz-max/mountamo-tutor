@@ -517,12 +517,14 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "addition":     PriorConfig(2.0, "Addition: add a phoneme to make a new word"),
         "deletion":     PriorConfig(3.0, "Deletion: remove a phoneme to reveal a new word"),
         "substitution": PriorConfig(4.0, "Substitution: swap a phoneme to change the word"),
+        "swap_build":   PriorConfig(4.1, "Open build: change any one letter of a CVC word to make any real word"),
     },
     "phonics-blender": {
         "cvc":          PriorConfig(1.5, "CVC: simple 3-phoneme blending"),
         "cvce_blend":   PriorConfig(2.5, "CVCE/blends: silent-e and consonant blends"),
         "digraph":      PriorConfig(3.5, "Digraphs: two letters, one sound (sh, ch, th)"),
         "advanced":     PriorConfig(5.0, "Advanced: r-controlled vowels and diphthongs"),
+        "build_blend":  PriorConfig(2.6, "Open build: join start and ending tiles into any real word with a blend"),
     },
     "word-flip": {
         "plural_s":   PriorConfig(1.5, "Spoken production: regular plurals formed by adding -s"),
@@ -535,6 +537,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "rhyme-studio": {
         "recognition":    PriorConfig(1.5, "Recognition: SAY yes or no — do these words rhyme?"),
         "identification": PriorConfig(2.5, "Guided: SAY the rhyming word from 2-3 spoken choices"),
+        "pair_build":     PriorConfig(2.6, "Open build: tap two of eight pictures that rhyme; same-start decoys"),
         "production":     PriorConfig(5.0, "Open production: SAY any real word that rhymes with the target"),
         "collection":     PriorConfig(6.5, "Open family construction: retain three distinct valid rhymes"),
     },
@@ -568,6 +571,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "parse_structure":  PriorConfig(6.5, "Parse subject/predicate groups and classify sentence type"),
     },
     "sentence-builder": {
+        "build_sentence":   PriorConfig(1.6, "Open build: make any question or telling sentence about a named thing from word tiles"),
         "simple":           PriorConfig(1.5, "Simple: subject-verb-object sentence"),
         "compound":         PriorConfig(3.0, "Compound: two clauses with conjunction"),
         "complex":          PriorConfig(5.0, "Complex: subordinate clause construction"),
@@ -604,6 +608,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "problem_solution":          PriorConfig(3.5, "Problem-solution identification"),
     },
     "paragraph-architect": {
+        "build_paragraph": PriorConfig(2.6, "Open build: order sentence cards into a paragraph; leave out facts about another topic"),
         "informational": PriorConfig(2.5, "Informational paragraph construction"),
         "narrative":     PriorConfig(3.5, "Narrative paragraph with elements"),
         "opinion":       PriorConfig(5.0, "Opinion paragraph with claim + support"),
@@ -792,6 +797,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "match_pairs":  PriorConfig(3.5, "Match word pairs (singular→plural, antonyms, etc.)"),
     },
     "word-builder": {
+        "build_affix":     PriorConfig(2.1, "Open build: make any word for a stated meaning from prefix/root/suffix cards"),
         "simple_affix":    PriorConfig(1.5, "Simple: single prefix or suffix + common root"),
         "compound_affix":  PriorConfig(3.0, "Compound: prefix + root + suffix combinations"),
         "greek_latin":     PriorConfig(5.0, "Academic: Greek/Latin morpheme construction"),
@@ -813,6 +819,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         # vowels, so the answer changes from word to word instead of repeating.
         "fill_vowel": PriorConfig(1.5, "Production: say the middle sound of a heard CVC word, one vowel focus"),
         "spell_word": PriorConfig(2.5, "Guided: spell full CVC word in Elkonin boxes"),
+        "make_word":  PriorConfig(2.6, "Open build: make any real CVC word that fits a vowel or rhyme ask"),
         "word_sort":  PriorConfig(3.5, "Discrimination: say the middle sound across a pool mixing two vowels"),
     },
     "picture-vocabulary": {

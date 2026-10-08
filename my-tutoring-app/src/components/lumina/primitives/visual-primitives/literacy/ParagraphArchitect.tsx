@@ -1,6 +1,9 @@
 'use client';
 
 import React, { useState, useCallback, useMemo } from 'react';
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import ParagraphBuildSurface, { type ParagraphBuildSurfaceProps } from './ParagraphBuildSurface';
+import type { ParagraphItem } from './paragraphBuild';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   LuminaCard,
@@ -55,6 +58,9 @@ export interface ParagraphArchitectData {
    * bank). Absent ⇒ full-support legacy render, byte-identical to pre-tier.
    */
   supportTier?: 'easy' | 'medium' | 'hard';
+  /** `build_paragraph` (open build): the bound card surface runs the session from `paragraphs`. */
+  task?: 'paragraph_build';
+  paragraphs?: ParagraphItem[];
 
   // Evaluation props (optional, auto-injected)
   instanceId?: string;
@@ -1294,4 +1300,15 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
   );
 };
 
-export default ParagraphArchitect;
+/** The open build runs only on the teaching workspace (an unbound mount shows the needs-the-tutor card). */
+const BoundParagraphBuild = withWorkspaceOnly<ParagraphBuildSurfaceProps>('paragraph-architect', ParagraphBuildSurface,
+  props => props.data.title);
+
+/** One mount, one shape: `build_paragraph` is the bound open build; the three writing modes keep this component. */
+const ParagraphArchitectHost: React.FC<ParagraphArchitectProps & { runtimePlanItemId?: string; runtimeEvalMode?: string }> = props =>
+  props.data.task === 'paragraph_build'
+    ? <BoundParagraphBuild data={{ ...props.data, task: 'paragraph_build', paragraphs: props.data.paragraphs ?? [] } as never}
+        className={props.className} runtimePlanItemId={props.runtimePlanItemId} runtimeEvalMode={props.runtimeEvalMode} />
+    : <ParagraphArchitect {...props} />;
+
+export default ParagraphArchitectHost;

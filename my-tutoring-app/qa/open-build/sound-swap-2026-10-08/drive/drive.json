@@ -1,0 +1,222 @@
+{
+  "log": [
+    {
+      "step": "generated",
+      "asks": [
+        "Change one letter in bat to make a new real word.",
+        "Change one letter in pin to make a new real word.",
+        "Change one letter in cat to make a new real word.",
+        "Change one letter in can to make a new real word."
+      ]
+    },
+    {
+      "step": "item1 code miss \"bac\"",
+      "feedback": "Hmm, that is not a word we use. Try a different letter."
+    },
+    {
+      "step": "item1 judged \"bab\"",
+      "feedback": "Hmm, that is not a word we use. Try a different letter."
+    },
+    {
+      "step": "item1 example \"bad\"",
+      "feedback": "Yes! \"bad\" is a word."
+    },
+    {
+      "step": "item2 first \"bin\"",
+      "feedback": "Yes! \"bin\" is a word. Now make a different one."
+    },
+    {
+      "step": "item2 same word again",
+      "feedback": "You already made that word. Make a different one."
+    },
+    {
+      "step": "item2 second \"fin\"",
+      "feedback": "Yes! \"fin\" is a word."
+    }
+  ],
+  "judgeCalls": [
+    {
+      "params": {
+        "ask": "Change one letter in bat to make a new real word.",
+        "made": "bac",
+        "only": "real_word",
+        "grade": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+      },
+      "verdict": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0.19,
+        "fits": 1,
+        "judge": "jev+flash"
+      }
+    },
+    {
+      "params": {
+        "ask": "Change one letter in bat to make a new real word.",
+        "made": "bab",
+        "only": "real_word",
+        "grade": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+      },
+      "verdict": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0.14,
+        "fits": 1,
+        "judge": "jev+flash"
+      }
+    },
+    {
+      "params": {
+        "ask": "Change one letter in bat to make a new real word.",
+        "made": "bad",
+        "only": "real_word",
+        "grade": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+      },
+      "verdict": {
+        "met": true,
+        "realWord": 0.99,
+        "fits": 1,
+        "judge": "jev"
+      }
+    },
+    {
+      "params": {
+        "ask": "Change one letter in pin to make a new real word.",
+        "made": "bin",
+        "only": "real_word",
+        "grade": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+      },
+      "verdict": {
+        "met": true,
+        "realWord": 0.99,
+        "fits": 1,
+        "judge": "jev"
+      }
+    },
+    {
+      "params": {
+        "ask": "Change one letter in pin to make a new real word.",
+        "made": "fin",
+        "only": "real_word",
+        "grade": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+      },
+      "verdict": {
+        "met": true,
+        "realWord": 0.99,
+        "fits": 1,
+        "judge": "jev"
+      }
+    }
+  ],
+  "asks": [
+    {
+      "id": "l1",
+      "kind": "swap",
+      "word": "bat",
+      "ways": 1,
+      "examples": [
+        "bad",
+        "fat",
+        "pat",
+        "cat",
+        "bit",
+        "hat"
+      ],
+      "ask": "Change one letter in bat to make a new real word.",
+      "bank": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "f",
+        "h",
+        "i",
+        "p",
+        "t",
+        "v",
+        "w"
+      ]
+    },
+    {
+      "id": "l2",
+      "kind": "swap",
+      "word": "pin",
+      "ways": 1,
+      "examples": [
+        "bin",
+        "fin",
+        "tin",
+        "win",
+        "pan",
+        "pit"
+      ],
+      "ask": "Change one letter in pin to make a new real word.",
+      "bank": [
+        "a",
+        "b",
+        "f",
+        "i",
+        "n",
+        "p",
+        "r",
+        "t",
+        "w",
+        "z"
+      ]
+    },
+    {
+      "id": "l3",
+      "kind": "swap",
+      "word": "cat",
+      "ways": 1,
+      "examples": [
+        "vat",
+        "cap",
+        "mat",
+        "sat",
+        "pat",
+        "fat"
+      ],
+      "ask": "Change one letter in cat to make a new real word.",
+      "bank": [
+        "a",
+        "c",
+        "f",
+        "j",
+        "m",
+        "p",
+        "r",
+        "s",
+        "t",
+        "v"
+      ]
+    },
+    {
+      "id": "l4",
+      "kind": "swap",
+      "word": "can",
+      "ways": 1,
+      "examples": [
+        "man",
+        "fan",
+        "pan",
+        "cap",
+        "van",
+        "tan"
+      ],
+      "ask": "Change one letter in can to make a new real word.",
+      "bank": [
+        "a",
+        "c",
+        "f",
+        "k",
+        "m",
+        "n",
+        "p",
+        "t",
+        "v",
+        "x"
+      ]
+    }
+  ]
+}

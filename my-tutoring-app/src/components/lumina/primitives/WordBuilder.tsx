@@ -73,6 +73,7 @@ import { useStimulusPipSurface } from '../pip/useStimulusPipSurface';
 import PhaseSummaryPanel, { type PhaseResult } from '../components/PhaseSummaryPanel';
 import { phaseResultsFromSummary } from '../hooks/usePhaseResults';
 import type { WordBuilderData } from '../types';
+import WordBuildAffix from './visual-primitives/literacy/WordBuildAffix';
 
 // ============================================================================
 // Props
@@ -120,7 +121,7 @@ const SLOT_LABEL_COLORS: Record<string, string> = {
 // Component
 // ============================================================================
 
-function WordBuilderSurface({ data, className, runtimePlanItemId }: WordBuilderProps) {
+function SpokenWordBuilderSurface({ data, className, runtimePlanItemId }: WordBuilderProps) {
   const {
     title,
     targets = [],
@@ -450,6 +451,11 @@ function WordBuilderSurface({ data, className, runtimePlanItemId }: WordBuilderP
       </LuminaCardContent>
     </LuminaCard>
   );
+}
+
+/** One mount, one shape: the open build (`build_affix`) has its own surface; every other mode is spoken. */
+function WordBuilderSurface(props: WordBuilderProps) {
+  return props.data.task === 'build_affix' ? <WordBuildAffix {...props} /> : <SpokenWordBuilderSurface {...props} />;
 }
 
 // The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.

@@ -1,0 +1,250 @@
+{
+  "log": [
+    {
+      "step": "generated",
+      "asks": [
+        "Make a word that means to do it again.",
+        "Make a word that means it already happened.",
+        "Make a word that means happening right now.",
+        "Make a word that tells the way something is done.",
+        "Make a word that means to open or undo."
+      ],
+      "board": [
+        "re",
+        "un",
+        "ed",
+        "ing",
+        "ly",
+        "play",
+        "pack",
+        "paint",
+        "lock",
+        "slow",
+        "kind"
+      ]
+    },
+    {
+      "step": "item1 root alone",
+      "feedback": "That is a root on its own. Which part could change what it means?"
+    },
+    {
+      "step": "item1 row kept after Try again",
+      "row": "play"
+    },
+    {
+      "step": "item1 odd build un+play",
+      "feedback": "Hmm, that is not a word we use. Try a different part."
+    },
+    {
+      "step": "item1 example re+play",
+      "feedback": "Yes! \"replay\" fits."
+    },
+    {
+      "step": "item2 first play+ed",
+      "feedback": "Yes! \"played\" works. Now make a different word that means it too."
+    },
+    {
+      "step": "item2 same word again",
+      "feedback": "You already made that word. Make a different one."
+    },
+    {
+      "step": "item2 second paint+ed",
+      "feedback": "Yes! \"painted\" fits."
+    },
+    {
+      "step": "bench log",
+      "log": [
+        "Play the item. Wrong answers run the real ladder; the log shows what the tutor would be told.",
+        "What the ladder does next",
+        "PULL Ladder (visible): The learner answered this item wrong a second time; pulled model_word"
+      ]
+    }
+  ],
+  "judgeCalls": [
+    {
+      "params": {
+        "ask": "Make a word that means to do it again.",
+        "made": "unplay",
+        "pieces": "un + play",
+        "board": "re (prefix: again), un (prefix: not or opposite), ed (suffix: in the past), ing (suffix: happening now), ly (suffix: in that way), play (root: have fun), pack (root: put in boxes), paint (root: make art), lock (root: shut tight), slow (root: not fast), kind (root: nice to others)",
+        "grade": "Grade 2"
+      },
+      "verdict": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0.24,
+        "fits": 0.01,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "partly": 0.11,
+          "no": 0.88,
+          "fits": 0.01
+        }
+      }
+    },
+    {
+      "params": {
+        "ask": "Make a word that means to do it again.",
+        "made": "replay",
+        "pieces": "re + play",
+        "board": "re (prefix: again), un (prefix: not or opposite), ed (suffix: in the past), ing (suffix: happening now), ly (suffix: in that way), play (root: have fun), pack (root: put in boxes), paint (root: make art), lock (root: shut tight), slow (root: not fast), kind (root: nice to others)",
+        "grade": "Grade 2"
+      },
+      "verdict": {
+        "met": true,
+        "realWord": 1,
+        "fits": 1,
+        "judge": "flash"
+      }
+    },
+    {
+      "params": {
+        "ask": "Make a word that means it already happened.",
+        "made": "played",
+        "pieces": "play + ed",
+        "board": "re (prefix: again), un (prefix: not or opposite), ed (suffix: in the past), ing (suffix: happening now), ly (suffix: in that way), play (root: have fun), pack (root: put in boxes), paint (root: make art), lock (root: shut tight), slow (root: not fast), kind (root: nice to others)",
+        "grade": "Grade 2"
+      },
+      "verdict": {
+        "met": true,
+        "realWord": 0.99,
+        "fits": 0.94,
+        "judge": "jev",
+        "fitsOptions": {
+          "no": 0.03,
+          "fits": 0.94,
+          "partly": 0.03
+        }
+      }
+    },
+    {
+      "params": {
+        "ask": "Make a word that means it already happened.",
+        "made": "painted",
+        "pieces": "paint + ed",
+        "board": "re (prefix: again), un (prefix: not or opposite), ed (suffix: in the past), ing (suffix: happening now), ly (suffix: in that way), play (root: have fun), pack (root: put in boxes), paint (root: make art), lock (root: shut tight), slow (root: not fast), kind (root: nice to others)",
+        "grade": "Grade 2"
+      },
+      "verdict": {
+        "met": true,
+        "realWord": 0.98,
+        "fits": 0.92,
+        "judge": "jev",
+        "fitsOptions": {
+          "partly": 0.05,
+          "no": 0.03,
+          "fits": 0.92
+        }
+      }
+    }
+  ],
+  "asks": [
+    {
+      "id": "b1",
+      "ask": "Make a word that means to do it again.",
+      "examples": [
+        [
+          "pre-re",
+          "root-play"
+        ],
+        [
+          "pre-re",
+          "root-paint"
+        ],
+        [
+          "pre-re",
+          "root-pack"
+        ],
+        [
+          "pre-re",
+          "root-lock"
+        ]
+      ],
+      "ways": 1
+    },
+    {
+      "id": "b2",
+      "ask": "Make a word that means it already happened.",
+      "examples": [
+        [
+          "root-play",
+          "suf-ed"
+        ],
+        [
+          "root-paint",
+          "suf-ed"
+        ],
+        [
+          "root-pack",
+          "suf-ed"
+        ],
+        [
+          "root-lock",
+          "suf-ed"
+        ],
+        [
+          "root-slow",
+          "suf-ed"
+        ]
+      ],
+      "ways": 2
+    },
+    {
+      "id": "b3",
+      "ask": "Make a word that means happening right now.",
+      "examples": [
+        [
+          "root-play",
+          "suf-ing"
+        ],
+        [
+          "root-paint",
+          "suf-ing"
+        ],
+        [
+          "root-pack",
+          "suf-ing"
+        ],
+        [
+          "root-lock",
+          "suf-ing"
+        ],
+        [
+          "root-slow",
+          "suf-ing"
+        ]
+      ],
+      "ways": 1
+    },
+    {
+      "id": "b4",
+      "ask": "Make a word that tells the way something is done.",
+      "examples": [
+        [
+          "root-slow",
+          "suf-ly"
+        ],
+        [
+          "root-kind",
+          "suf-ly"
+        ]
+      ],
+      "ways": 2
+    },
+    {
+      "id": "b5",
+      "ask": "Make a word that means to open or undo.",
+      "examples": [
+        [
+          "pre-un",
+          "root-lock"
+        ],
+        [
+          "pre-un",
+          "root-pack"
+        ]
+      ],
+      "ways": 1
+    }
+  ]
+}

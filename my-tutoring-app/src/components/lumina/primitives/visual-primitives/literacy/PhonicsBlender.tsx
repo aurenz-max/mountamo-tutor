@@ -47,6 +47,8 @@ import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import LetterBuildSurface, { type LetterBuildSummary } from './LetterBuildSurface';
+import type { LetterBuildItem } from './letterBuild';
 import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import type { BlendItem } from './phonicsBlenderScript';
@@ -82,6 +84,9 @@ export interface PhonicsBlenderData {
   //    ctx.supportTier). Presentation / instruction ONLY — never the words, the
   //    sounds, or the answer. ALL OPTIONAL: absent ⇒ full help. ──
   supportTier?: 'easy' | 'medium' | 'hard';
+  /** `build_blend` (open build): the shared letter build surface runs the session from `buildItems`; `words` is empty. */
+  task?: 'letter_build';
+  buildItems?: LetterBuildItem[];
   /**
    * How much SEGMENTATION help the letter row gives:
    *   'full'  — separated letter cards with dots between (c · a · t)
@@ -442,7 +447,22 @@ function PhonicsBlenderSurface({ data, className, runtimePlanItemId }: PhonicsBl
 }
 
 // The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
-const PhonicsBlender = withWorkspaceOnly<PhonicsBlenderProps>('phonics-blender', PhonicsBlenderSurface,
+/** build_blend's metrics in this primitive's shape. */
+const buildBlendMetrics = (s: LetterBuildSummary): PhonicsBlenderMetrics => ({ type: 'phonics-blender', patternType: 'blend',
+  gradeLevel: '', wordsBlended: s.solved, wordsTotal: s.total, phonemeAccuracy: s.accuracy, averageBlendingSpeed: 0,
+  soundsCorrectOnFirstTry: s.firstTryCorrect, soundsTotal: s.total, attemptsCount: s.attemptsCount });
+
+/** One mount, one shape: the open build (`build_blend`) runs on the shared letter build surface. */
+function PhonicsBlenderHost(props: PhonicsBlenderProps) {
+  const { data } = props;
+  if (data.task === 'letter_build') {
+    return <LetterBuildSurface primitiveId="phonics-blender" className={props.className} runtimePlanItemId={props.runtimePlanItemId}
+      data={{ ...data, task: 'letter_build', buildItems: data.buildItems ?? [] } as never} metrics={buildBlendMetrics} />;
+  }
+  return <PhonicsBlenderSurface {...props} />;
+}
+
+const PhonicsBlender = withWorkspaceOnly<PhonicsBlenderProps>('phonics-blender', PhonicsBlenderHost,
   props => props.data.title);
 
 export default PhonicsBlender;

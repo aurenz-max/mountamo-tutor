@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import { generateParagraphBuild } from './gemini-paragraph-build';
 import type { GenerationContext } from "../generation/generationContext";
 import { ParagraphArchitectData } from "../../primitives/visual-primitives/literacy/ParagraphArchitect";
 import {
@@ -152,6 +153,10 @@ export const generateParagraphArchitect = async (
   const { topic } = ctx;
   const intent = ctx.intent;
   const config = ctx.raw as ParagraphArchitectConfig;
+  // build_paragraph (open build, qa/open-build/ROADMAP.md OB-3L L6): sentence cards on the bound card surface.
+  if (config?.targetEvalMode === 'build_paragraph') {
+    return generateParagraphBuild(topic, ctx.gradeContext, { intent, grade: ctx.grade }) as unknown as Promise<ParagraphArchitectData>;
+  }
 
   // ── Within-mode support tier (scaffolding withdrawal — axis 3) ──
   // Arrives already normalized ('easy'|'medium'|'hard'|undefined) from

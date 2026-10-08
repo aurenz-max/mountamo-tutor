@@ -98,6 +98,10 @@ Real-usage channel [4]: unknown (auth), not zero.
 - **Evidence:** `qa/eval-reports/cvc-speller-levers-2026-09-28.md`.
 - **Probe:** `npm test -- cvcSpellerLevers CvcSpeller.levers.workspace`.
 
+### make_word — open build fork · OBSERVED (2026-10-08)
+- **Property:** `make_word` is its own surface, the shared letter build (`LetterBuildSurface.tsx`, rules in `letterBuild.ts`), mounted when the payload has `task: 'letter_build'`; the existing modes are unchanged. Asks are code-owned from familiar CVC words (`letterBuildWords.ts`), scoped to the lesson's letters; no key ships. Code checks everything the ask states (shape, vowel, family, one letter changed, the given word, a repeat); the shared word judge (`judgeWordBuild`, `only: 'real_word'`) decides whether the word is real.
+- **Probe:** `LetterBuild.workspace.test.tsx`; headless drive `qa/open-build/cvc-speller-2026-10-08/drive/`.
+
 ## Conflicts
 
 None open.
@@ -110,6 +114,8 @@ None open.
 - **tutoring.aiDirectives:** stale. All directives order `[DI_CVC_ITEM]` / `[DI_CVC_BUILD]` / `[DI_CVC_MOVE_ON]` / `[DI_CVC_COMPLETE]` / `[SAY_WORD]` turns from the retired runner; the only emitters left are unused exports in `cvcSpellerScript.ts` (exercised only by `CvcSpeller.di-script.test.ts`). Bound workspace sessions send `tutoring: null`, so they do not receive these directives (R8). Removal is an `/add-live-tutor-tools` cleanup, like rhyme-studio's in handoff 22 L2.
 
 ## Changelog
+
+- 2026-10-08: `make_word` open build added as a fork (OB-3L). New challenge type; no existing requirement edited.
 
 - 2026-09-29 — R12 extended (handoff 24): `fill_vowel` and `word_sort` declare `middle_model` (help, both): another picture word in three boxes with the middle lit, never a session word or picture, its middle sound none the session asks (a long-vowel word such as rain when every short vowel is asked). R3 holds: the item's vowel and its keyword stay unshown before credit; `other_vowel` is unanswered by decision. Catalog `levers: true` added (the flag had been missing, so the lever doctrine never reached the tutor). `npm test -- cvcSpeller CvcSpeller` 136/136.
 

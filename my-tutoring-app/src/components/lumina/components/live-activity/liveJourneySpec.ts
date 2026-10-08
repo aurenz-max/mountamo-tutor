@@ -1170,13 +1170,15 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // One spoken word per item: the word itself, or a plainly different word.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
+      // build_blend is checked by the shared word judge (a model) after its code checks; LetterBuild.workspace.test.tsx drives it.
+      if (ctx.data.task === 'letter_build') throw new Error('phonics-blender build_blend is judged by the word judge, not driven at W1');
       const item = blendItems(ctx.data.words ?? []).find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current phonics-blender word');
       const answers = blendHarnessAnswers(item);
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     // The reward picture, counted so a transcript inspection can check it never shows before a credit.
-    probes: { mounted: { selector: '[data-pip-object="letters"]' }, reward: { selector: '[data-blend-reward]', kind: 'count' } },
+    probes: { mounted: { selector: '[data-pip-object="letters"], [data-testid="lb-row"]' }, reward: { selector: '[data-blend-reward]', kind: 'count' } },
   },
   'word-flip': {
     execution: 'workspace',
@@ -1207,12 +1209,14 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // One spoken word per item: the new word, or the starting word said back unchanged.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
+      // swap_build is checked by the shared word judge (a model) after its code checks; LetterBuild.workspace.test.tsx drives it.
+      if (ctx.data.task === 'letter_build') throw new Error('sound-swap swap_build is judged by the word judge, not driven at W1');
       const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
       if (!c) throw new Error('No current sound-swap challenge');
       const answers = swapHarnessAnswers(c);
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
-    probes: { mounted: { selector: '[data-pip-object="word"]' }, reward: { selector: '[data-swap-reward]', kind: 'count' } },
+    probes: { mounted: { selector: '[data-pip-object="word"], [data-testid="lb-row"]' }, reward: { selector: '[data-swap-reward]', kind: 'count' } },
   },
   'cvc-speller': {
     execution: 'workspace',
@@ -1226,13 +1230,15 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // into the boxes, the right word or its first letter swapped. The third letter is the commit.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
+      // make_word is checked by the shared word judge (a model) after its code checks; LetterBuild.workspace.test.tsx drives it.
+      if (ctx.data.task === 'letter_build') throw new Error('cvc-speller make_word is judged by the word judge, not driven at W1');
       const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
       if (!c) throw new Error('No current cvc-speller challenge');
       const answers = cvcHarnessAnswers(c, ctx.demand?.boxes as string | undefined)[intent === 'wrong' ? 'plainWrong' : 'correct'];
       return c.taskType === 'spell-word' ? answers.map(l => ({ type: 'choose' as const, label: `letter ${l}` }))
         : [{ type: 'answer', text: answers[0] }];
     },
-    probes: { mounted: { selector: '[aria-label="hear the word"]' }, reward: { selector: '[data-cvc-reward]', kind: 'count' } },
+    probes: { mounted: { selector: '[aria-label="hear the word"], [data-testid="lb-row"]' }, reward: { selector: '[data-cvc-reward]', kind: 'count' } },
   },
   'adaptation-investigator': {
     execution: 'teaching',
@@ -1543,7 +1549,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // code-owned answer, so their rows throw with the mode name (undriven at W1).
     inputsFor: spokenWorkspaceInputs(
       (challenges: any[]) => challenges.flatMap(c => rhymeItems(c)), rhymeHarnessAnswers, 'rhyme-studio'),
-    probes: { mounted: { selector: '[data-pip-object="target"], [data-pip-object="pair"]' } },
+    probes: { mounted: { selector: '[data-pip-object="target"], [data-pip-object="pair"], [data-testid="rp-tray"]' } },
   },
   'phoneme-explorer': {
     execution: 'workspace',
@@ -1568,6 +1574,8 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // A spoken read or answer per item; picture match taps the picture (a wrong tap is another picture).
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
+      // pair_build is driven by picture taps in RhymePair.workspace.test.tsx; the dry sweep has no picture input.
+      if (ctx.data.task === 'pair_build') throw new Error('rhyme-studio pair_build is driven in RhymePair.workspace.test.tsx, not at W1');
       const item = workoutItems(ctx.data.challenges ?? []).find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current word-workout item');
       const answers = wordWorkoutJourneyAnswers(item);
@@ -1590,13 +1598,16 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // One spoken word per item (the pool is `targets`): the word, or its parts in reverse order.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
+      // build_affix is checked by the shared literacy judge (a model), which the dry sweep has none of, as open-builder's
+      // inspector; WordBuildAffix.workspace.test.tsx drives the commit with a stubbed judge.
+      if (ctx.data.task === 'build_affix') throw new Error('word-builder build_affix is judged by the word judge, not driven at W1');
       const item = builderItems(ctx.data.targets ?? [], ctx.data.availableParts ?? [], ctx.data.complexityLevel ?? 'compound_affix')
         .find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current word-builder word');
       const answers = wordBuilderJourneyAnswers(item);
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
-    probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
+    probes: { mounted: { selector: '[data-pip-object="stimulus"], [data-pip-object="workspace"]' } },
   },
   'word-sorter': {
     execution: 'workspace',
@@ -2223,6 +2234,43 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return strategyPickerHarnessInputs(c, intent === 'wrong', picked);
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'sentence-builder': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/SentenceBuilder.tsx',
+    instanceId: 'sentences',
+    defaults: { grade: 'Grade 1', mode: 'build_sentence', di: false, topic: 'Questions and telling sentences about pets' },
+    leakTokens: [],
+    prompts: WORKSPACE_PROMPTS,
+    // build_sentence is checked by the shared literacy judge (a model) after its code checks;
+    // SentenceBuild.workspace.test.tsx drives it with a stubbed judge.
+    inputsFor: (intent) => {
+      if (intent === 'warmup') return [];
+      throw new Error('sentence-builder build_sentence is judged by the sentence judge, not driven at W1');
+    },
+    probes: { mounted: { selector: '[data-testid="sb-row"]' } },
+  },
+  'paragraph-architect': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/ParagraphArchitect.tsx',
+    instanceId: 'paragraphs',
+    defaults: { grade: 'Grade 2', mode: 'build_paragraph', di: false, topic: 'Informative paragraphs about animals' },
+    leakTokens: [],
+    prompts: WORKSPACE_PROMPTS,
+    // build_paragraph through its real cards: topic, two facts, closing for a pass; the closing first for a wrong one.
+    // Try again keeps the paragraph, so a correct try clears it first.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const p = (ctx.data.paragraphs ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!p) throw new Error('No current paragraph-architect paragraph');
+      const id = (role: string, n = 0) => p.cards.filter((c: { role: string }) => c.role === role)[n].id as string;
+      const order = intent === 'wrong' ? [id('closing'), id('detail'), id('detail', 1), id('topic')]
+        : [id('topic'), id('detail'), id('detail', 1), id('closing')];
+      const placed = Number(ctx.demand?.sentencesPlaced ?? 0) > 0;
+      return [...(placed ? [{ type: 'choose' as const, label: 'Clear' }] : []),
+        ...order.map(c => ({ type: 'choose' as const, label: `card ${c}` })), { type: 'choose' as const, label: "I'm done!" }];
+    },
+    probes: { mounted: { selector: '[data-testid="pb-paragraph"]' } },
   },
   'polygon-area-builder': {
     execution: 'workspace',

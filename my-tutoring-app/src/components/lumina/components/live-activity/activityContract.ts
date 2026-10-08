@@ -85,6 +85,8 @@ import { hundredsChartLiveDomain } from './adapters/hundredsChartLive';
 import { mathFactFluencyLiveDomain } from './adapters/mathFactFluencyLive';
 import { additionFactStrategiesLiveDomain } from './adapters/additionFactStrategiesLive';
 import { equationBuilderLiveDomain } from './adapters/equationBuilderLive';
+import { paragraphArchitectLiveDomain } from './adapters/paragraphArchitectLive';
+import { sentenceBuilderLiveDomain } from './adapters/sentenceBuilderLive';
 import { patternBuilderLiveDomain } from './adapters/patternBuilderLive';
 import { strategyPickerLiveDomain } from './adapters/strategyPickerLive';
 import { polygonAreaBuilderLiveDomain } from './adapters/polygonAreaBuilderLive';
@@ -181,6 +183,8 @@ export const LIVE_ADAPTERS = {
   'pattern-builder': workspaceAdapter('pattern-builder', patternBuilderLiveDomain),
   'strategy-picker': workspaceAdapter('strategy-picker', strategyPickerLiveDomain),
   'polygon-area-builder': workspaceAdapter('polygon-area-builder', polygonAreaBuilderLiveDomain),
+  'paragraph-architect': workspaceAdapter('paragraph-architect', paragraphArchitectLiveDomain),
+  'sentence-builder': workspaceAdapter('sentence-builder', sentenceBuilderLiveDomain),
 } satisfies Record<string, LiveActivityAdapter<any>>;
 
 export type LivePrimitiveId = keyof typeof LIVE_ADAPTERS;

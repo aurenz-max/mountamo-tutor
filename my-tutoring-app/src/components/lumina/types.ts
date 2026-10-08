@@ -4,6 +4,7 @@
 // The specific types remain in their source files for type-safety within generators.
 
 import type { PrimitiveEvaluationResult, WordBuilderMetrics } from './evaluation/types';
+import type { AffixBuildItem } from './primitives/visual-primitives/literacy/affixBuild';
 
 export enum GameState {
   IDLE = 'IDLE',
@@ -1244,6 +1245,10 @@ export interface WordBuilderData {
   gradeLevel?: string;
   /** config.difficulty: where the levers start (easy draws the empty part frame). Never the words. */
   supportTier?: 'easy' | 'medium' | 'hard';
+  /** `build_affix` (open build): the learner taps parts into a row for each ask; `targets` is empty. */
+  task?: 'build_affix';
+  /** build_affix asks, each with 2+ board words that fit (`affixBuild.ts`). */
+  buildItems?: AffixBuildItem[];
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;

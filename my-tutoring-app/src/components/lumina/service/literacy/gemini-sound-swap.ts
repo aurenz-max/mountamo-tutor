@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import { makeLetterItems } from '../../primitives/visual-primitives/literacy/letterBuild';
 import { themedFocusLine } from './themeFocus';
 import type { GenerationContext } from "../generation/generationContext";
 import { clampGradeToK2 } from "../scopeContext";
@@ -709,6 +710,18 @@ export const generateSoundSwap = async (
     CHALLENGE_TYPE_DOCS,
   );
   logEvalModeResolution('SoundSwap', config?.targetEvalMode, evalConstraint);
+
+  // swap_build (open build, qa/open-build/ROADMAP.md OB-3L L3): "change one letter in cat to make a new real word" on the
+  // shared letter build surface. Code-owned asks from familiar CVC words, no model call; any real word that changes one
+  // letter passes, judged by the shared word judge.
+  if (config?.targetEvalMode === 'swap_build') {
+    const tier = (config?.difficulty ?? '').toLowerCase().trim();
+    const supportTier = tier === 'easy' || tier === 'medium' || tier === 'hard' ? tier : undefined;
+    const buildItems = makeLetterItems(['swap'], 'abcdefghijklmnopqrstuvwxyz'.split(''), [], 4);
+    console.log('[SoundSwap] swap_build: letter build', { asks: buildItems.map(i => i.ask) });
+    return { title: 'Change One Letter', gradeLevel, challenges: [], task: 'letter_build', buildItems,
+      ...(supportTier ? { supportTier } : {}) };
+  }
 
   // ── Within-mode support tier (config.difficulty): scaffolding level, NOT numbers.
   //    pinnedType drives the prompt TONE only (which mode's scaffold wording to lead

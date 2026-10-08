@@ -1,0 +1,194 @@
+{
+  "log": [
+    {
+      "step": "generated",
+      "asks": [
+        "Make a real word with the short o sound in the middle, like in octopus.",
+        "Make a real word that rhymes with bed.",
+        "Make a real word with the short a sound in the middle, like in apple.",
+        "Make a real word that rhymes with hut."
+      ]
+    },
+    {
+      "step": "item1 code miss \"lat\"",
+      "feedback": "Listen to the middle sound. The ask wants the short o sound."
+    },
+    {
+      "step": "item1 judged \"coc\"",
+      "feedback": "Hmm, that is not a word we use. Try a different letter."
+    },
+    {
+      "step": "item1 example \"lot\"",
+      "feedback": "Yes! \"lot\" is a word."
+    },
+    {
+      "step": "item2 first \"fed\"",
+      "feedback": "Yes! \"fed\" is a word. Now make a different one."
+    },
+    {
+      "step": "item2 same word again",
+      "feedback": "You already made that word. Make a different one."
+    },
+    {
+      "step": "item2 second \"red\"",
+      "feedback": "Yes! \"red\" is a word."
+    }
+  ],
+  "judgeCalls": [
+    {
+      "params": {
+        "ask": "Make a real word with the short o sound in the middle, like in octopus.",
+        "made": "coc",
+        "only": "real_word"
+      },
+      "verdict": {
+        "met": false,
+        "miss": "not_a_word",
+        "realWord": 0.12,
+        "fits": 1,
+        "judge": "jev+flash"
+      }
+    },
+    {
+      "params": {
+        "ask": "Make a real word with the short o sound in the middle, like in octopus.",
+        "made": "lot",
+        "only": "real_word"
+      },
+      "verdict": {
+        "met": true,
+        "realWord": 0.98,
+        "fits": 1,
+        "judge": "jev"
+      }
+    },
+    {
+      "params": {
+        "ask": "Make a real word that rhymes with bed.",
+        "made": "fed",
+        "only": "real_word"
+      },
+      "verdict": {
+        "met": true,
+        "realWord": 0.99,
+        "fits": 1,
+        "judge": "jev"
+      }
+    },
+    {
+      "params": {
+        "ask": "Make a real word that rhymes with bed.",
+        "made": "red",
+        "only": "real_word"
+      },
+      "verdict": {
+        "met": true,
+        "realWord": 0.99,
+        "fits": 1,
+        "judge": "jev"
+      }
+    }
+  ],
+  "asks": [
+    {
+      "id": "l1",
+      "kind": "vowel",
+      "vowel": "o",
+      "ways": 1,
+      "examples": [
+        "lot",
+        "pop",
+        "dot",
+        "dog",
+        "fog",
+        "got"
+      ],
+      "ask": "Make a real word with the short o sound in the middle, like in octopus.",
+      "bank": [
+        "a",
+        "c",
+        "d",
+        "f",
+        "g",
+        "k",
+        "l",
+        "o",
+        "p",
+        "t"
+      ]
+    },
+    {
+      "id": "l2",
+      "kind": "rhyme",
+      "word": "bed",
+      "ways": 1,
+      "examples": [
+        "fed",
+        "red",
+        "led"
+      ],
+      "ask": "Make a real word that rhymes with bed.",
+      "bank": [
+        "b",
+        "d",
+        "e",
+        "f",
+        "l",
+        "r",
+        "s"
+      ]
+    },
+    {
+      "id": "l3",
+      "kind": "vowel",
+      "vowel": "a",
+      "ways": 1,
+      "examples": [
+        "sag",
+        "tan",
+        "man",
+        "cat",
+        "dam",
+        "bat"
+      ],
+      "ask": "Make a real word with the short a sound in the middle, like in apple.",
+      "bank": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g",
+        "m",
+        "n",
+        "p",
+        "s",
+        "t"
+      ]
+    },
+    {
+      "id": "l4",
+      "kind": "rhyme",
+      "word": "hut",
+      "ways": 1,
+      "examples": [
+        "rut",
+        "cut",
+        "but",
+        "nut"
+      ],
+      "ask": "Make a real word that rhymes with hut.",
+      "bank": [
+        "b",
+        "c",
+        "d",
+        "n",
+        "p",
+        "r",
+        "t",
+        "u"
+      ]
+    }
+  ]
+}

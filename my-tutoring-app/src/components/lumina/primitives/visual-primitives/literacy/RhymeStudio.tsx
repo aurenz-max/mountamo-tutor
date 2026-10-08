@@ -56,6 +56,8 @@ import type { RhymeStudioMetrics } from '../../../evaluation/types';
 import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import RhymePairSurface from './RhymePairSurface';
+import type { RhymePairItem } from './rhymePairBuild';
 import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import {
@@ -131,6 +133,9 @@ export interface RhymeStudioData {
   /** Within-mode support tier from the manifest. Drives the DISTAR lead-in ladder. */
   supportTier?: RhymeTier;
   challenges: RhymeChallenge[];
+  /** `pair_build` (open build): the pair surface runs the session from `pairItems`; `challenges` is empty. */
+  task?: 'pair_build';
+  pairItems?: RhymePairItem[];
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -727,6 +732,16 @@ function RhymeStudioSurface({ data, className, runtimePlanItemId }: RhymeStudioP
 }
 
 // The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
-const RhymeStudio = withWorkspaceOnly<RhymeStudioProps>('rhyme-studio', RhymeStudioSurface, props => props.data.title);
+/** One mount, one shape: the open build (`pair_build`) has its own surface. */
+function RhymeStudioHost(props: RhymeStudioProps) {
+  const { data } = props;
+  if (data.task === 'pair_build') {
+    return <RhymePairSurface className={props.className} runtimePlanItemId={props.runtimePlanItemId}
+      data={{ ...data, task: 'pair_build', pairItems: data.pairItems ?? [] }} />;
+  }
+  return <RhymeStudioSurface {...props} />;
+}
+
+const RhymeStudio = withWorkspaceOnly<RhymeStudioProps>('rhyme-studio', RhymeStudioHost, props => props.data.title);
 
 export default RhymeStudio;

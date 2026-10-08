@@ -77,6 +77,10 @@ and [4] not attempted (as for the L1 contracts, same day).
 - **Evidence:** `qa/eval-reports/rhyme-studio-levers-2026-09-28.md`.
 - **Probe:** `npm test -- rhymeStudioLevers RhymeStudio.levers.workspace`.
 
+### pair_build — open build fork · OBSERVED (2026-10-08)
+- **Property:** Its own surface (`RhymePairSurface.tsx`, rules in `rhymePairBuild.ts`), mounted for `task: 'pair_build'`. Eight code-owned emoji pictures, no print; two that rhyme pass, checked in code from the pictures' known rimes; every board holds a same-first-sound decoy (`same_start`). No model call. The existing modes are unchanged.
+- **Probe:** `RhymePair.workspace.test.tsx`; headless drive `qa/open-build/rhyme-studio-2026-10-08/drive/`.
+
 ## Conflicts
 
 ### C1 — R7 easy tier vs R2 — OPEN (existing, not caused by levers)
@@ -93,6 +97,8 @@ the item's own words is forbidden by R2. Resolution belongs to a support-tier pa
 - **tutoring:** stale DI block. `aiDirectives` order bracketed `[RS_ITEM]` turns and "Yes," / "My turn:" openers for the retired runner; bound sessions never receive them (R8). Removed 2026-09-28 (handoff 22 L2 step 1).
 
 ## Changelog
+
+- 2026-10-08: `pair_build` open build added as a fork (OB-3L). New challenge type; no existing requirement edited.
 
 - 2026-09-28 — R9 added (levers, handoff 22 L2). `aiDirectives` removed. The K word menu moved to `rhymeModels.ts` (R4 unchanged). --check COMPATIBLE: R1-R8 suites pass.
 - 2026-09-28 — derived (initial), step 1 of handoff 22 L2. 8 requirements (all OBSERVED), 1 open conflict (C1, pre-existing).

@@ -37,6 +37,9 @@ import type { SpokenTextStructureMiss } from '../../../primitives/visual-primiti
 import type { SpokenWordSorterMiss } from '../../../primitives/visual-primitives/literacy/wordSorterWorkspace';
 import type { SpokenSentenceMiss } from '../../../primitives/visual-primitives/literacy/sentenceAnalyzerWorkspace';
 import type { SpokenWordBuilderMiss } from '../../../primitives/visual-primitives/literacy/wordBuilderWorkspace';
+import type { AffixBuildMiss } from '../../../primitives/visual-primitives/literacy/affixBuild';
+import type { LetterBuildMiss } from '../../../primitives/visual-primitives/literacy/letterBuild';
+import type { RhymePairMiss } from '../../../primitives/visual-primitives/literacy/rhymePairBuild';
 import type { SpokenYouAndMeMiss } from '../../../primitives/visual-primitives/literacy/youAndMeWorkspace';
 import type { SpokenOralSentenceMiss } from '../../../primitives/visual-primitives/literacy/oralSentenceStudioWorkspace';
 import type { SpokenStoryRibbonMiss } from '../../../primitives/visual-primitives/literacy/storyRibbonWorkspace';
@@ -709,7 +712,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'Four complexity tiers from single affixes to Greek/Latin and multi-morpheme academic vocabulary. '
       + 'Requires a microphone. Ideal for vocabulary development, etymology and morphological analysis — and '
       + 'for the skill those exist to serve: meeting an unfamiliar academic word in text and being able to '
-      + 'say it and unpack it.',
+      + 'say it and unpack it. One mode is the exception: in build_affix (open build, grades 1-8) the learner taps part '
+      + 'cards into a row to MAKE a word for a stated meaning, and many words can pass.',
     constraints:
       'Requires the live tutor and a microphone. Best for grades 3-8 — the child READS the parts board, so '
       + 'this is not a pre-reader primitive. Requires words that break into morphemes that spell the word '
@@ -718,7 +722,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'or unpacking word meaning, not for spelling objectives — those need a written surface.',
     affordances: { representation: 'symbolic', answers: ['spoken'], role: 'apply', minutes: 5 },
     teachingWorkspace: {
-      grades: ['Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
+      // Grade 1-2 opens for build_affix (user ruling R11, 10-07: no heavy grade floors; the build's scope follows the lesson
+      // grade). The spoken levels keep their own floors in the generator (contract R6).
+      grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
       guidance: 'A board of prefixes, roots and suffixes, each printed with its meaning, stays on screen. You tell the '
         + 'learner what a word means (the clue) and the learner says the whole word out loud, built from parts on the '
         + 'board. Building it aloud part by part counts when the whole '
@@ -726,15 +732,21 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'from only some of the parts is not yet it. Open each word with the clue and ask for the whole word. '
         + 'Never say the word, name which parts or meanings make it, or ask about one part; after '
         + 'an attempt, pull a lever, and never walk the meanings of the parts in order. Say the clue again '
-        + 'asks you to repeat the clue only. You cannot mark or move a part.',
+        + 'asks you to repeat the clue only. You cannot mark or move a part. On build_affix the learner instead taps part '
+        + 'cards into a row to MAKE a word for a meaning and presses "I\'m done!"; many words can fit. Never say a word that '
+        + 'would fit or which parts to use; when they stop, invite them to read the word in their row and think what it means.',
       levers: true,
       // Every item is one spoken word: its known wrong answers (`wordBuilderSpokenMisses`, handoff 20 Part B; the lever
       // table 2026-10-03 adds four). A 2-part simple_affix word cannot show part_missing.
-      misses: missLists<SpokenWordBuilderMiss>({
+      misses: missLists<SpokenWordBuilderMiss | AffixBuildMiss>({
         simple_affix: ['root_only', 'other_part_only', 'parts_not_joined', 'parts_out_of_order', 'swapped_part', 'meaning_word'],
         ...Object.fromEntries(['compound_affix', 'greek_latin', 'multi_morpheme'].map(m => [m, ['root_only', 'other_part_only',
           'part_missing', 'parts_not_joined', 'parts_out_of_order', 'swapped_part', 'meaning_word'] as SpokenWordBuilderMiss[]])),
+        // The open build: the row's shape (code), then the shared literacy judge (`affixBuild.ts`).
+        build_affix: ['root_only', 'affix_only', 'parts_out_of_order', 'same_word', 'not_a_word', 'wrong_meaning'],
       }),
+      // build_affix `same_word` has no lever: the word already made stays on screen above the row.
+      unanswered: { build_affix: ['same_word'] },
     },
     // ── SPOKEN MODALITY (2026-08-16, user ruling) — all voice, no tap. The port
     // was queued as a hybrid ("tap to build, then speak"); the user overturned
@@ -749,6 +761,19 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     // states the meaning and the child produces the word (one target).
     audioInput: { manual_activity: true },
     evalModes: [
+      {
+        evalMode: 'build_affix',
+        affordances: { answers: ['build'] },
+        label: 'Make a Word (open build)',
+        beta: 2.1,
+        scaffoldingMode: 2,
+        challengeTypes: ['build_affix'],
+        description:
+          'Open build: tap prefix, root and suffix cards (each printed with its meaning) into a row to MAKE a word for a '
+          + 'stated meaning, then press done; some items ask for a second, different word. Many words pass (replay, redo, '
+          + 'rewrite for "do it again"); the row\'s shape is checked in code and the word by the shared literacy judge. '
+          + 'Grades 1-8, scoped to the lesson grade. β = simple_affix + 0.1, the offset build_n has over give_me_n.',
+      },
       {
         evalMode: 'simple_affix',
         label: 'Simple Affixes (Tier 1)',
@@ -841,6 +866,18 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         challengeTypes: ['r-controlled', 'diphthong'],
         description: 'R-controlled vowels and diphthongs.',
       },
+      {
+        evalMode: 'build_blend',
+        affordances: { answers: ['build'] },
+        label: 'Build a Blend Word (open build)',
+        beta: 2.6,
+        scaffoldingMode: 2,
+        challengeTypes: ['build_blend'],
+        description: 'Open build: join a start tile and an ending tile into any real word that STARTS with a blend (bl + ock, '
+          + 'st + op) or ENDS with one (l + amp, s + and), then press done; some items ask for a second word. Many words '
+          + 'pass. Code checks the blend and the tile order; the shared word judge checks it is a real word. Beta = '
+          + 'cvce_blend + 0.1.',
+      },
     ],
     supportsEvaluation: true,
     teachingWorkspace: {
@@ -850,10 +887,16 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'are given. Sounding it out and then saying the word is a correct blend. Separate sounds with no word at the '
         + 'end, letter names, or a close but different word (cap for cat) are not yet the word. A tapped letter asks you '
         + 'for its sound: say only that sound, never the word. The word is never printed and its picture appears only '
-        + 'after the word is credited. You cannot tap letters or show the picture.',
+        + 'after the word is credited. You cannot tap letters or show the picture. On build a blend word (the open build) '
+        + 'the learner joins a start tile and an ending tile into any real word with a blend at the start or the end and '
+        + 'presses "I am done"; many words pass. Never say a word that would fit or which tiles to use.',
       // The spoken blend's known wrong answers (`blendSpokenMisses`).
-      misses: sameMisses<SpokenBlendMiss>(['cvc', 'cvce_blend', 'digraph', 'advanced'], ['letter_name', 'sounds_no_word',
+      misses: { ...sameMisses<SpokenBlendMiss>(['cvc', 'cvce_blend', 'digraph', 'advanced'], ['letter_name', 'sounds_no_word',
         'read_backwards', 'first_sound_changed', 'middle_sound_changed', 'last_sound_changed']),
+        build_blend: ['wrong_order', 'no_blend', 'same_word', 'pick_another', 'not_a_word'] },
+      // build_blend (`letterBuild.ts` blend kinds): the tiles' order and the blend in code, then the word judge.
+      // `same_word` and `pick_another` have no lever: the word already made stays on screen.
+      unanswered: { build_blend: ['same_word', 'pick_another'] },
     },
     // ── DI MODALITY, PURELY VERBAL (2026-08-09, two user rulings) ──────────
     // The tutor owns the clock and the task is spoken end to end. It models the
@@ -1486,21 +1529,27 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'made-up word is not a rhyme. Before the learner has tried, never say which words rhyme, never name the '
         + 'ending, and never stretch a word to point at its ending. On identification read the choices aloud only '
         + 'when the namingChoices fact allows it. A tapped card asks you to repeat the question only. You cannot mark '
-        + 'a choice or fill a spot. A lever\'s model uses other words: say those freely.',
+        + 'a choice or fill a spot. A lever\'s model uses other words: say those freely. On rhyme pairs (the open build) '
+        + 'the learner taps two of eight pictures into a pair tray and presses "I am done"; several pairs are right. A '
+        + 'picture speaker asks you to say that picture\'s name only. Never say which pictures rhyme or name a pair.',
       levers: true,
       // The misses a spoken answer names (`rhymeStudioLevers.ts`), emitted by `rhymeSpokenMisses` on recognition and
       // identification. `unanswered` stays the levers' own list (`rhymeStudioLevers.test.ts` pins it).
-      misses: missLists<RhymeMiss>({
+      misses: missLists<RhymeMiss | RhymePairMiss>({
         recognition: ['yes_same_start', 'yes_no_rhyme', 'no_to_rhyme'],
         identification: ['onset_foil', 'echo_target', 'off_menu'],
         production: ['echo_target', 'same_start', 'meaning_neighbour', 'nonword'],
         collection: ['echo_target', 'same_start', 'meaning_neighbour', 'nonword', 'already_collected'],
+        // The open build (`rhymePairBuild.ts`), checked in code from the pictures' rimes.
+        pair_build: ['no_rhyme', 'same_start', 'same_pair'],
       }),
       unanswered: {
         recognition: ['yes_same_start', 'yes_no_rhyme', 'no_to_rhyme'],
         identification: ['onset_foil', 'echo_target', 'off_menu'],
         production: ['echo_target', 'same_start', 'meaning_neighbour', 'nonword'],
         collection: ['echo_target', 'same_start', 'meaning_neighbour', 'nonword', 'already_collected'],
+        // pair_build: the pair already found stays on screen.
+        pair_build: ['same_pair'],
       },
     },
     // ── DI MODALITY (2026-08-12) — eighth literacy port. The tutor owns the
@@ -1555,6 +1604,18 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
           'Rhyme identification — hear a target word and 2-3 choices, say the one that rhymes out loud. The tutor '
           + 'judges the audio in-band. An onset-sharing choice (cat → cap) is the distractor that diagnoses '
           + 'rhyme-versus-alliteration confusion.',
+      },
+      {
+        evalMode: 'pair_build',
+        affordances: { answers: ['build'] },
+        label: 'Rhyme Pairs (open build)',
+        beta: 2.6,
+        scaffoldingMode: 2,
+        challengeTypes: ['pair_build'],
+        description: 'Open build, pre-reader: eight pictures, no print; tap two that rhyme into a pair tray and press done '
+          + '(cat and hat, moon and spoon); some boards ask for a second pair. Several pairs pass. Every board holds a '
+          + 'same-first-sound decoy (cat and car), named same_start. Checked in code from the pictures\' known rimes. '
+          + 'Beta = identification + 0.1.',
       },
       {
         evalMode: 'production',
@@ -2183,6 +2244,17 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         challengeTypes: ['substitution'],
         description: 'Swap a phoneme to change the word.',
       },
+      {
+        evalMode: 'swap_build',
+        affordances: { answers: ['build'] },
+        label: 'Change One Letter (open build)',
+        beta: 4.1,
+        scaffoldingMode: 3,
+        challengeTypes: ['swap_build'],
+        description: 'Open build: the boxes hold a familiar CVC word (cat); the learner changes ONE letter from a bank to make '
+          + 'any new real word (bat, cot, cap) and presses done; some items ask for a second word. Many words pass. Code '
+          + 'checks one letter changed and the CVC shape; the shared word judge checks it is a real word. β = substitution + 0.1.',
+      },
     ],
     supportsEvaluation: true,
     teachingWorkspace: {
@@ -2191,14 +2263,19 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'the new word aloud; it is judged against the word you are given. The starting word said back, or a different '
         + 'word, is not yet the answer. Always name the sound to change: without it the ask has many right answers. A '
         + 'tapped sound asks you for that sound only. The new word is not shown until credited: never say it before the '
-        + 'learner has tried. You cannot tap sounds or show the new word.',
+        + 'learner has tried. You cannot tap sounds or show the new word. On change one letter (the open build) no sound is '
+        + 'named: the learner changes any one letter of the word in the boxes to make any real word and presses "I am done"; '
+        + 'many words pass. Never say a word that would fit or which letter to change.',
       levers: true,
       // Spoken misses (`soundSwapLevers.ts`), emitted by `swapSpokenMisses`. `unanswered` stays the levers' own list
       // (`soundSwapLevers.test.ts` pins it).
-      misses: missLists<SwapMiss>({ addition: ['echo_start', 'other_position', 'nonword', 'sounds_no_word'], deletion: ['echo_start', 'other_position', 'nonword', 'sounds_no_word'],
-        substitution: ['echo_start', 'other_position', 'nonword', 'sounds_no_word'] }),
+      misses: missLists<SwapMiss | LetterBuildMiss>({ addition: ['echo_start', 'other_position', 'nonword', 'sounds_no_word'], deletion: ['echo_start', 'other_position', 'nonword', 'sounds_no_word'],
+        substitution: ['echo_start', 'other_position', 'nonword', 'sounds_no_word'],
+        // The open build (`letterBuild.ts`): one letter changed in code, then the word judge's not_a_word.
+        swap_build: ['not_cvc', 'same_as_given', 'changed_more', 'same_word', 'pick_another', 'not_a_word'] }),
       unanswered: { addition: ['echo_start', 'other_position', 'nonword', 'sounds_no_word'], deletion: ['echo_start', 'other_position', 'nonword', 'sounds_no_word'],
-        substitution: ['echo_start', 'other_position', 'nonword', 'sounds_no_word'] },
+        substitution: ['echo_start', 'other_position', 'nonword', 'sounds_no_word'],
+        swap_build: ['same_word', 'pick_another'] },
     },
     // \u2500\u2500 DI MODALITY, PURELY VERBAL (2026-08-09) \u2014 second literacy port after
     // phonics-blender, same two user rulings. The tutor owns the clock and the
@@ -3204,6 +3281,18 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
           + 'is the answer; the tutor judges the build and its verdict is the advance.',
       },
       {
+        evalMode: 'make_word',
+        affordances: { answers: ['build'] },
+        label: 'Make a Word (open build)',
+        beta: 2.6,
+        scaffoldingMode: 2,
+        challengeTypes: ['make-word'],
+        description: 'Open build: put a letter from a bank in each of three boxes to MAKE any real CVC word that fits the ask '
+          + '(the short a sound in the middle; rhymes with cat), then press done; some items ask for a second word. Many '
+          + 'words pass. Code checks the vowel, the family and the shape; the shared word judge checks it is a real word. '
+          + 'K-2, scoped to the letter group. β = spell_word + 0.1.',
+      },
+      {
         evalMode: 'word_sort',
         label: 'Sound Groups (Tier 3)',
         beta: 3.5,
@@ -3334,19 +3423,25 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     },
     supportsEvaluation: true,
     teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1'],
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
       levers: true,
       guidance: 'Each item is a short word. On middle sound and sound groups the learner says the sound in the middle of '
         + 'the word aloud and it is judged against that sound; the whole word said back, an outside sound, or a letter '
         + 'name is not yet the answer. On spell it the learner taps a letter into each of three boxes and the activity '
         + 'checks the third letter itself: never name, sound out or spell a letter of the word for them. Hear It asks '
-        + 'you to say the whole word only. You cannot place letters or fill the blank.',
+        + 'you to say the whole word only. You cannot place letters or fill the blank. On make a word the learner fills the '
+        + 'three boxes with any real word that fits the ask (a short vowel sound, or a rhyme) and presses "I am done"; '
+        + 'many words pass. Never say a word that would fit or a letter to use.',
       // The boxes' own check (`cvcMiss`), and the spoken middle sound's known wrong answers (`cvcSpokenMisses`).
-      misses: missLists<CvcMiss | SpokenCvcMiss>({ spell_word: ['first_letter', 'middle_letter', 'last_letter', 'letters_out_of_order', 'two_or_more_letters'],
+      misses: missLists<CvcMiss | SpokenCvcMiss | LetterBuildMiss>({ spell_word: ['first_letter', 'middle_letter', 'last_letter', 'letters_out_of_order', 'two_or_more_letters'],
+        // The open build (`letterBuild.ts`): what the ask states, in code, then the word judge's not_a_word.
+        make_word: ['not_cvc', 'wrong_vowel', 'same_as_given', 'wrong_family', 'same_word', 'pick_another', 'not_a_word'],
         ...sameMisses<SpokenCvcMiss>(['fill_vowel', 'word_sort'], ['whole_word', 'letter_name', 'first_sound', 'last_sound', 'other_vowel']) }),
       // The spoken modes' one lever is `middle_model` (`cvcSpellerLevers.ts`). A wrong short vowel has none: any cue
       // that separates short vowels names the item's vowel or teaches one that answers a session item.
-      unanswered: sameMisses<SpokenCvcMiss>(['fill_vowel', 'word_sort'], ['other_vowel']),
+      unanswered: { ...sameMisses<SpokenCvcMiss>(['fill_vowel', 'word_sort'], ['other_vowel']),
+        // make_word: the word already made stays on screen; a word not for lessons has no smaller form.
+        make_word: ['same_word', 'pick_another'] },
     },
   },
   {
@@ -4631,8 +4726,33 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       { evalMode: 'informational', label: 'Informational (Tier 2)', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['informational'], description: 'Structured informational paragraph.' },
       { evalMode: 'narrative', label: 'Narrative (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['narrative'], description: 'Narrative paragraph with elements.' },
       { evalMode: 'opinion', label: 'Opinion (Tier 4)', beta: 5.0, scaffoldingMode: 4, challengeTypes: ['opinion'], description: 'Opinion with claim + support.' },
+      {
+        evalMode: 'build_paragraph',
+        affordances: { answers: ['build'] },
+        label: 'Build a Paragraph (open build)',
+        beta: 2.6,
+        scaffoldingMode: 2,
+        challengeTypes: ['build_paragraph'],
+        description: 'Open build, on the live tutor: tap sentence cards into a paragraph in order: the topic sentence first, '
+          + 'two or more facts that belong (any order), the closing last, leaving out the two facts about a different topic. '
+          + 'Many paragraphs pass. Checked in code from the cards\' roles. Organization only; the writing modes judge no '
+          + 'sentence. Beta = informational + 0.1.',
+      },
     ],
     supportsEvaluation: true,
+    // Bound ONLY for build_paragraph: the live adapter accepts a paragraph_build payload and refuses the writing modes'
+    // payloads, so those keep their scripted path and their tutoring block.
+    teachingWorkspace: {
+      grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4'],
+      guidance: 'Build a paragraph: sentence cards are on screen and the learner taps them into a paragraph in order, then '
+        + 'presses "I am done". A paragraph passes with the sentence that tells the topic first, two or more facts that '
+        + 'belong in any order, and the sentence that wraps it up last; the two facts about something else stay out. Many '
+        + 'paragraphs pass. A card speaker asks you to read that card only. Never say which card goes first or last or '
+        + 'which facts do not belong; ask what the paragraph is about and whether each fact tells about it. You cannot '
+        + 'move a card.',
+      levers: true,
+      misses: { build_paragraph: ['topic_not_first', 'closing_not_last', 'too_few_details', 'off_topic_detail'] },
+    },
     tutoring: {
       taskDescription:
         'You are the writing coach for this paragraph-building activity. '
@@ -5105,7 +5225,34 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         challengeTypes: ['compound-complex'],
         description: 'Multi-clause sentence building.',
       },
+      {
+        evalMode: 'build_sentence',
+        affordances: { answers: ['build'] },
+        label: 'Make a Sentence (open build)',
+        beta: 1.6,
+        scaffoldingMode: 1,
+        challengeTypes: ['build_sentence'],
+        description: 'Open build, on the live tutor: tap word tiles and an end mark to MAKE a question or a telling sentence '
+          + 'about a named thing ("Make a question about the dog."), then press done; some items ask for a second sentence. '
+          + 'Many sentences pass. Code checks the end mark and how a question starts; the shared judge checks it makes sense '
+          + 'and is about the thing. Beta = simple + 0.1.',
+      },
     ],
+    // Bound ONLY for build_sentence: the live adapter accepts a sentence_build payload and refuses the tile-order modes'
+    // payloads, so those keep their scripted path and their tutoring block.
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3'],
+      guidance: 'Make a sentence: word tiles and the end marks . and ? are on screen; the learner taps them into a row to '
+        + 'make a question or a telling sentence about the thing named, and presses "I am done". Many sentences pass. A '
+        + 'question starts with an asking word and ends with ?; a telling sentence ends with a period. Never say a '
+        + 'sentence that would work or which tile goes next; ask the learner to read their sentence aloud. You cannot '
+        + 'move a tile.',
+      levers: true,
+      misses: { build_sentence: ['no_end_mark', 'end_mark_inside', 'wrong_end_mark', 'too_short', 'not_question_start',
+        'question_start', 'same_sentence', 'not_sense', 'off_topic'] },
+      // same_sentence has no lever: the sentence already made stays on screen.
+      unanswered: { build_sentence: ['same_sentence'] },
+    },
     tutoring: {
       taskDescription:
         'Student is building {{sentenceType}} sentences by arranging color-coded tiles into grammatical order. '

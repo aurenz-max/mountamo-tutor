@@ -1,0 +1,149 @@
+{
+  "source": "qa/open-build/cvc-speller-2026-10-08/gen-g1a.json",
+  "primitiveId": "cvc-speller",
+  "evalMode": "make_word",
+  "data": {
+    "title": "Make Real Words",
+    "letterGroup": 3,
+    "availableLetters": [
+      "s",
+      "a",
+      "t",
+      "i",
+      "p",
+      "n",
+      "c",
+      "k",
+      "e",
+      "h",
+      "r",
+      "m",
+      "d",
+      "g",
+      "o",
+      "u",
+      "l",
+      "f",
+      "b"
+    ],
+    "challenges": [],
+    "task": "letter_build",
+    "buildItems": [
+      {
+        "id": "l1",
+        "kind": "vowel",
+        "vowel": "a",
+        "ways": 1,
+        "examples": [
+          "pan",
+          "ram",
+          "lap",
+          "sag",
+          "fan",
+          "cat"
+        ],
+        "ask": "Make a real word with the short a sound in the middle, like in apple.",
+        "bank": [
+          "a",
+          "c",
+          "d",
+          "e",
+          "f",
+          "g",
+          "h",
+          "l",
+          "m",
+          "n",
+          "p",
+          "r",
+          "s",
+          "t"
+        ]
+      },
+      {
+        "id": "l2",
+        "kind": "rhyme",
+        "word": "dad",
+        "ways": 1,
+        "examples": [
+          "had",
+          "sad",
+          "pad",
+          "mad",
+          "bad",
+          "lad"
+        ],
+        "ask": "Make a real word that rhymes with dad.",
+        "bank": [
+          "a",
+          "b",
+          "d",
+          "g",
+          "h",
+          "l",
+          "m",
+          "n",
+          "p",
+          "s"
+        ]
+      },
+      {
+        "id": "l3",
+        "kind": "vowel",
+        "vowel": "a",
+        "ways": 1,
+        "examples": [
+          "cat",
+          "man",
+          "fat",
+          "lap",
+          "fan",
+          "bag"
+        ],
+        "ask": "Make a real word with the short a sound in the middle, like in apple.",
+        "bank": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e",
+          "f",
+          "g",
+          "h",
+          "l",
+          "m",
+          "n",
+          "p",
+          "t"
+        ]
+      },
+      {
+        "id": "l4",
+        "kind": "rhyme",
+        "word": "fan",
+        "ways": 1,
+        "examples": [
+          "can",
+          "ran",
+          "man",
+          "tan",
+          "pan"
+        ],
+        "ask": "Make a real word that rhymes with fan.",
+        "bank": [
+          "a",
+          "b",
+          "c",
+          "g",
+          "m",
+          "n",
+          "p",
+          "r",
+          "t"
+        ]
+      }
+    ],
+    "vowelFocus": "short-a",
+    "supportTier": "medium"
+  }
+}

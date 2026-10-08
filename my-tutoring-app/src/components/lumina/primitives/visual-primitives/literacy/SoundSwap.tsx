@@ -39,6 +39,8 @@ import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import LetterBuildSurface, { type LetterBuildSummary } from './LetterBuildSurface';
+import type { LetterBuildItem } from './letterBuild';
 import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { swapAssignment, swapScene, swapSoundRequest } from './soundSwapWorkspace';
@@ -96,6 +98,9 @@ export interface SoundSwapData {
   /** Within-mode support tier from the manifest. Threaded to the tutor. */
   supportTier?: 'easy' | 'medium' | 'hard';
   challenges: SoundSwapChallenge[];
+  /** `swap_build` (open build): the shared letter build surface runs the session from `buildItems`; `challenges` is empty. */
+  task?: 'letter_build';
+  buildItems?: LetterBuildItem[];
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -473,6 +478,21 @@ function SoundSwapSurface({ data, className, runtimePlanItemId }: SoundSwapProps
 }
 
 // The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
-const SoundSwap = withWorkspaceOnly<SoundSwapProps>('sound-swap', SoundSwapSurface, props => props.data.title);
+/** swap_build's metrics in this primitive's shape. */
+const swapBuildMetrics = (s: LetterBuildSummary): SoundSwapMetrics => ({ type: 'sound-swap', operation: 'swap_build',
+  challengesCorrect: s.solved, challengesTotal: s.total, additionAccuracy: 0, deletionAccuracy: 0, substitutionAccuracy: s.accuracy,
+  attemptsCount: s.attemptsCount });
+
+/** One mount, one shape: the open build (`swap_build`) runs on the shared letter build surface. */
+function SoundSwapHost(props: SoundSwapProps) {
+  const { data } = props;
+  if (data.task === 'letter_build') {
+    return <LetterBuildSurface primitiveId="sound-swap" className={props.className} runtimePlanItemId={props.runtimePlanItemId}
+      data={{ ...data, task: 'letter_build', buildItems: data.buildItems ?? [] } as never} metrics={swapBuildMetrics} />;
+  }
+  return <SoundSwapSurface {...props} />;
+}
+
+const SoundSwap = withWorkspaceOnly<SoundSwapProps>('sound-swap', SoundSwapHost, props => props.data.title);
 
 export default SoundSwap;

@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import { makeLetterItems } from '../../primitives/visual-primitives/literacy/letterBuild';
 import type { GenerationContext, SupportTier } from "../generation/generationContext";
 import { buildRemediationPrompt } from "../generation/remediationPrompt";
 import { clampGradeToK2 } from "../scopeContext";
@@ -38,13 +39,15 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
   blend: {
     promptDoc:
-      `"blend": Words with consonant blends where each consonant is a separate phoneme (stop, clap, frog, drum). `
-      + `3-5 phonemes per word. Grade 1 level. 4-6 words per session.`,
+      `"blend": Words with consonant blends where each consonant is a separate phoneme: initial blends (stop, clap, frog, `
+      + `drum, blue) AND final blends (lamp, sand, jump, fast, milk). Mix initial and final blends in the session. No `
+      + `silent-e words. 3-5 phonemes per word. Grade 1 level. 4-6 words per session.`,
     schemaDescription: "'blend' (consonant blends)",
   },
   digraph: {
     promptDoc:
-      `"digraph": Words with digraphs (sh, ch, th, wh) where the digraph is ONE phoneme (ship, chop, thin). `
+      `"digraph": Words with digraphs (sh, ch, th, wh, ph) where the digraph is ONE phoneme (ship, chop, thin, whip, phone), `
+      + `at the start AND at the end (dash, rich, path, moth, graph). `
       + `3-4 phonemes per word. Grade 1 level. 4-6 words per session.`,
     schemaDescription: "'digraph' (two letters, one sound)",
   },
@@ -206,6 +209,15 @@ const phonicsBlenderSchema: Schema = {
  * @param config - Optional configuration overrides
  * @returns PhonicsBlenderData with grade-appropriate words and phoneme breakdowns
  */
+/** The pattern a bundled mode serves this session: the one the objective names, else a random one. Exported for tests. */
+export function pickBundledPattern(allowed: readonly string[], text: string, rand = Math.random): string {
+  const t = text.toLowerCase();
+  const named = allowed.filter(p => (p === 'blend' && /\bblends?\b|\bclusters?\b|\b(bl|cl|fl|gl|pl|sl|br|cr|dr|fr|gr|pr|tr|st|sp|sn|sk|sm|sw|mp|nd|nt|lk|ft)\b/.test(t))
+    || (p === 'cvce' && /silent[- ]?e\b|magic[- ]?e\b|\bcvce\b|long vowel/.test(t)));
+  const from = named.length === 1 ? named : allowed;
+  return from[Math.floor(rand() * from.length)] ?? allowed[0];
+}
+
 type PhonicsBlenderConfig = Partial<PhonicsBlenderData & {
   /** Target eval mode from the IRT calibration system. */
   targetEvalMode: string;
@@ -220,11 +232,26 @@ export const generatePhonicsBlender = async (
   const config = ctx.raw as PhonicsBlenderConfig;
 
   // ── Eval mode resolution ────────────────────────────────────────────
-  const evalConstraint = resolveEvalModeConstraint(
+  // build_blend (open build, qa/open-build/ROADMAP.md OB-3L L4): start-blend and end-blend asks on the shared letter
+  // build surface, code-owned; no model call. Any real word with the blend passes (the shared word judge).
+  if (config?.targetEvalMode === 'build_blend') {
+    const buildItems = makeLetterItems(['blend_start', 'blend_end'], [], [], 4);
+    console.log('[PhonicsBlender] build_blend: letter build', buildItems.map(i => i.ask));
+    return { title: 'Build Blend Words', gradeLevel: ctx.grade ?? '1', patternType: 'blend', words: [], task: 'letter_build',
+      buildItems, ...(ctx.supportTier ? { supportTier: ctx.supportTier } : {}) } as PhonicsBlenderData;
+  }
+  const bundled = resolveEvalModeConstraint(
     'phonics-blender',
     config?.targetEvalMode,
     CHALLENGE_TYPE_DOCS,
   );
+  // A session has ONE root patternType, so a mode that bundles two (cvce_blend = cvce + blend) used to pin
+  // allowedTypes[0] and never serve a blend (PHB-1, tracker SP-18). The session's pattern now follows the objective
+  // (blends/clusters → blend, silent e → cvce) and is drawn at random when it names neither, so both are reachable.
+  const sessionPattern = bundled && bundled.allowedTypes.length > 1
+    ? pickBundledPattern(bundled.allowedTypes, `${topic} ${intent ?? ''}`) : bundled?.allowedTypes[0];
+  const evalConstraint = bundled && sessionPattern ? { ...bundled, allowedTypes: [sessionPattern],
+    promptDocs: `- ${CHALLENGE_TYPE_DOCS[sessionPattern]?.promptDoc ?? ''}` } : bundled;
   logEvalModeResolution('PhonicsBlender', config?.targetEvalMode, evalConstraint);
 
   const activeSchema = evalConstraint

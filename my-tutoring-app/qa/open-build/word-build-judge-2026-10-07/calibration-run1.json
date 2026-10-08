@@ -1,0 +1,950 @@
+[
+  {
+    "ask": "Make a word that means to do something again.",
+    "made": "replay",
+    "pieces": "re + play",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 0.8,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means to do something again.",
+    "made": "redo",
+    "pieces": "re + do",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 1,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means to do something again.",
+    "made": "rewrite",
+    "pieces": "re + write",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 0.86,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means to do something again.",
+    "made": "repaint",
+    "pieces": "re + paint",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 0.75,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means to do something again.",
+    "made": "refill",
+    "pieces": "re + fill",
+    "expect": "pass",
+    "jev": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 0.98,
+      "fits": 0.27,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means to do something again.",
+    "made": "unpaint",
+    "pieces": "un + paint",
+    "expect": "not_a_word",
+    "jev": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.38,
+      "fits": 0.01,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means to do something again.",
+    "made": "replayed",
+    "pieces": "re + play + ed",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.96,
+      "fits": 0.75,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means to do something again.",
+    "made": "unlock",
+    "pieces": "un + lock",
+    "expect": "wrong_meaning",
+    "jev": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 0.94,
+      "fits": 0,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means to do something again.",
+    "made": "prepaint",
+    "pieces": "pre + paint",
+    "expect": "not_a_word",
+    "jev": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.15,
+      "fits": 0.01,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means to do something again.",
+    "made": "rejump",
+    "pieces": "re + jump",
+    "expect": "not_a_word",
+    "jev": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.16,
+      "fits": 0.65,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means not happy or not kind.",
+    "made": "unhappy",
+    "pieces": "un + happy",
+    "expect": "pass",
+    "jev": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 0.99,
+      "fits": 0.42,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means not happy or not kind.",
+    "made": "unkind",
+    "pieces": "un + kind",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 0.53,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means not happy or not kind.",
+    "made": "rehappy",
+    "pieces": "re + happy",
+    "expect": "not_a_word",
+    "jev": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.04,
+      "fits": 0.01,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means not happy or not kind.",
+    "made": "kindly",
+    "pieces": "kind + ly",
+    "expect": "wrong_meaning",
+    "jev": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 0.93,
+      "fits": 0,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means not happy or not kind.",
+    "made": "happyly",
+    "pieces": "happy + ly",
+    "expect": "not_a_word",
+    "jev": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.02,
+      "fits": 0,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that tells about something that is not true or not fair.",
+    "made": "unfair",
+    "pieces": "un + fair",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 0.5,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that tells about something that is not true or not fair.",
+    "made": "untrue",
+    "pieces": "un + true",
+    "expect": "pass",
+    "jev": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 0.87,
+      "fits": 0.19,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that tells about something that is not true or not fair.",
+    "made": "unlock",
+    "pieces": "un + lock",
+    "expect": "wrong_meaning",
+    "jev": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 0.96,
+      "fits": 0,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means something that happened in the past.",
+    "made": "jumped",
+    "pieces": "jump + ed",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.99,
+      "fits": 0.75,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means something that happened in the past.",
+    "made": "played",
+    "pieces": "play + ed",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.99,
+      "fits": 0.8,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means something that happened in the past.",
+    "made": "helped",
+    "pieces": "help + ed",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.99,
+      "fits": 0.69,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means something that happened in the past.",
+    "made": "jumping",
+    "pieces": "jump + ing",
+    "expect": "wrong_meaning",
+    "jev": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 0.94,
+      "fits": 0,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means something that happened in the past.",
+    "made": "quicked",
+    "pieces": "quick + ed",
+    "expect": "not_a_word",
+    "jev": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.19,
+      "fits": 0.35,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means something is happening right now.",
+    "made": "playing",
+    "pieces": "play + ing",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 0.92,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means something is happening right now.",
+    "made": "jumping",
+    "pieces": "jump + ing",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 0.87,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means something is happening right now.",
+    "made": "played",
+    "pieces": "play + ed",
+    "expect": "wrong_meaning",
+    "jev": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means something is happening right now.",
+    "made": "kinding",
+    "pieces": "kind + ing",
+    "expect": "not_a_word",
+    "jev": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.18,
+      "fits": 0.3,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that tells how someone does something.",
+    "made": "quickly",
+    "pieces": "quick + ly",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.99,
+      "fits": 1,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that tells how someone does something.",
+    "made": "slowly",
+    "pieces": "slow + ly",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.99,
+      "fits": 1,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that tells how someone does something.",
+    "made": "kindly",
+    "pieces": "kind + ly",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 0.98,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that tells how someone does something.",
+    "made": "jumply",
+    "pieces": "jump + ly",
+    "expect": "not_a_word",
+    "jev": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.3,
+      "fits": 0.68,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that tells how someone does something.",
+    "made": "quicker",
+    "pieces": "quick + er",
+    "expect": "wrong_meaning",
+    "jev": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 0.88,
+      "fits": 0.12,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means to look at or see something before.",
+    "made": "preview",
+    "pieces": "pre + view",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 0.98,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means to look at or see something before.",
+    "made": "review",
+    "pieces": "re + view",
+    "expect": "wrong_meaning",
+    "jev": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 0.83,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means to look at or see something before.",
+    "made": "preheat",
+    "pieces": "pre + heat",
+    "expect": "wrong_meaning",
+    "jev": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 0.95,
+      "fits": 0,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means to heat or cook something before.",
+    "made": "preheat",
+    "pieces": "pre + heat",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.97,
+      "fits": 0.81,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means to heat or cook something before.",
+    "made": "precook",
+    "pieces": "pre + cook",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means to heat or cook something before.",
+    "made": "reheat",
+    "pieces": "re + heat",
+    "expect": "wrong_meaning",
+    "jev": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 0.97,
+      "fits": 0.31,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means full of something.",
+    "made": "helpful",
+    "pieces": "help + ful",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 0.56,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means full of something.",
+    "made": "playful",
+    "pieces": "play + ful",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 0.74,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means full of something.",
+    "made": "careful",
+    "pieces": "care + ful",
+    "expect": "pass",
+    "jev": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 0.97,
+      "fits": 0.18,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means full of something.",
+    "made": "jumpful",
+    "pieces": "jump + ful",
+    "expect": "not_a_word",
+    "jev": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.04,
+      "fits": 0.65,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means full of something.",
+    "made": "helper",
+    "pieces": "help + er",
+    "expect": "wrong_meaning",
+    "jev": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 0.95,
+      "fits": 0,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means a person who does something.",
+    "made": "helper",
+    "pieces": "help + er",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.99,
+      "fits": 0.93,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means a person who does something.",
+    "made": "painter",
+    "pieces": "paint + er",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.99,
+      "fits": 1,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means a person who does something.",
+    "made": "jumper",
+    "pieces": "jump + er",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.95,
+      "fits": 0.95,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means a person who does something.",
+    "made": "painted",
+    "pieces": "paint + ed",
+    "expect": "wrong_meaning",
+    "jev": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 0.95,
+      "fits": 0.05,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means to open or take off something that was closed or tied.",
+    "made": "untie",
+    "pieces": "un + tie",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 0.54,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means to open or take off something that was closed or tied.",
+    "made": "unlock",
+    "pieces": "un + lock",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 0.55,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a word that means to open or take off something that was closed or tied.",
+    "made": "retie",
+    "pieces": "re + tie",
+    "expect": "wrong_meaning",
+    "jev": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.43,
+      "fits": 0,
+      "judge": "jev"
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  }
+]

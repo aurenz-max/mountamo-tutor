@@ -103,6 +103,10 @@ C3 there) are the same two conflicts, resolved the same two ways (band gate + sc
 - **Evidence:** before the change a themed K intent drew rig 2/4 and cop 1/4 (controls: cat dog sun bus hat); after, dig + mud only, 0/35 non-CVC words across pinned and unpinned draws.
 - **Probe:** `node scripts/probe-literacy-themed-targets.mjs --only=phonics-blender` — themed and control draws, 0 non-CVC words; R6 holds on every word.
 
+### build_blend — open build fork · OBSERVED (2026-10-08)
+- **Property:** The shared letter build (`LetterBuildSurface.tsx`, blend kinds in `letterBuild.ts`), mounted for `task: 'letter_build'`. A start tile and an ending tile; code checks the tile order and the blend, the shared word judge whether the word is real. Separately, PHB-1 (2026-10-08): `cvce_blend` now serves blends when the objective names them (R9 mode purity holds: one pattern per session). The existing modes are unchanged.
+- **Probe:** `LetterBuild.workspace.test.tsx`; headless drive `qa/open-build/phonics-blender-2026-10-08/drive/`.
+
 ## Conflicts
 
 ### C1 — PRE letter-primary/declutter (R3) vs Grade-1+ full chrome — RESOLVED 2026-07-15 via fork rung 2 (band gate)
@@ -190,6 +194,8 @@ scope per the handoff; only the sorting-station rider was authorized). Queue the
   descriptions are deliberately excluded from catalogContext for load — a resolver-only edit).
 
 ## Changelog
+
+- 2026-10-08: `build_blend` open build added as a fork (OB-3L). New challenge type; no existing requirement edited.
 
 - 2026-09-29 — handoff 24 (table from the L3 report, user OK 09-28): in-item levers on every mode, `phonicsBlenderLevers.ts`. Help is visual except one model: `blend_slide` (split rows), `sound_dots` (only on the hard tier's joined row, which it re-segments per the 09-28 ruling), `tracking_arrow`, and `name_sound_model` (a letter no session word has, name and sound side by side, voiced). Simplify `short_word`: cvc a two-letter word that is no session word's ending; other modes a CVC word with the item's vowel. R2 holds (tap-to-hear unchanged), R4 holds (the practice word is ungraded; only the full word is credited). The tier stays the starting position. Catalog `levers: true`. `npm test -- phonicsBlender PhonicsBlender` 25/25.
 

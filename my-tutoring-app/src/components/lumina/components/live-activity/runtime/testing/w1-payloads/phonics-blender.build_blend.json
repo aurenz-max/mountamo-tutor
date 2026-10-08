@@ -1,0 +1,116 @@
+{
+  "source": "qa/open-build/phonics-blender-2026-10-08/gen-g1.json",
+  "primitiveId": "phonics-blender",
+  "evalMode": "build_blend",
+  "data": {
+    "title": "Build Blend Words",
+    "gradeLevel": "1",
+    "patternType": "blend",
+    "words": [],
+    "task": "letter_build",
+    "buildItems": [
+      {
+        "id": "l1",
+        "kind": "blend_start",
+        "ways": 1,
+        "examples": [
+          "spin",
+          "snack",
+          "swim",
+          "spot",
+          "stop"
+        ],
+        "ask": "Make a real word that starts with two consonant sounds blended together.",
+        "bank": [
+          "ack",
+          "m",
+          "sw",
+          "ot",
+          "sp",
+          "im",
+          "sn",
+          "ug",
+          "op",
+          "st",
+          "in"
+        ]
+      },
+      {
+        "id": "l2",
+        "kind": "blend_end",
+        "ways": 1,
+        "examples": [
+          "tent",
+          "bump",
+          "desk",
+          "camp",
+          "pump"
+        ],
+        "ask": "Make a real word that ends with two consonant sounds blended together.",
+        "bank": [
+          "p",
+          "b",
+          "at",
+          "ump",
+          "amp",
+          "c",
+          "ent",
+          "bl",
+          "esk",
+          "d",
+          "t"
+        ]
+      },
+      {
+        "id": "l3",
+        "kind": "blend_start",
+        "ways": 1,
+        "examples": [
+          "slap",
+          "clock",
+          "trip",
+          "glad",
+          "snap"
+        ],
+        "ask": "Make a real word that starts with two consonant sounds blended together.",
+        "bank": [
+          "ug",
+          "cl",
+          "sl",
+          "ap",
+          "gl",
+          "ad",
+          "tr",
+          "sn",
+          "m",
+          "ip",
+          "ock"
+        ]
+      },
+      {
+        "id": "l4",
+        "kind": "blend_end",
+        "ways": 1,
+        "examples": [
+          "bend",
+          "last",
+          "best",
+          "nest",
+          "lift"
+        ],
+        "ask": "Make a real word that ends with two consonant sounds blended together.",
+        "bank": [
+          "l",
+          "n",
+          "ift",
+          "ast",
+          "est",
+          "at",
+          "bl",
+          "b",
+          "end"
+        ]
+      }
+    ]
+  }
+}

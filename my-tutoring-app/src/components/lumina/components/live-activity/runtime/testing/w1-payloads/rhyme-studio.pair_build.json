@@ -1,0 +1,70 @@
+{
+  "source": "qa/open-build/rhyme-studio-2026-10-08/gen-k.json",
+  "primitiveId": "rhyme-studio",
+  "evalMode": "pair_build",
+  "data": {
+    "title": "Rhyme Pairs",
+    "gradeLevel": "kindergarten students (ages 5-6) - Use clear language, relatable examples, foundational skills, and engaging visuals. Encourage exploration and basic problem-solving.",
+    "challenges": [],
+    "task": "pair_build",
+    "pairItems": [
+      {
+        "id": "r1",
+        "board": [
+          "rain",
+          "bell",
+          "ring",
+          "king",
+          "clock",
+          "cake",
+          "shell",
+          "snake"
+        ],
+        "ways": 1
+      },
+      {
+        "id": "r2",
+        "board": [
+          "tree",
+          "jar",
+          "pie",
+          "car",
+          "tie",
+          "box",
+          "fox",
+          "cat"
+        ],
+        "ways": 1
+      },
+      {
+        "id": "r3",
+        "board": [
+          "house",
+          "cake",
+          "star",
+          "car",
+          "moon",
+          "mouse",
+          "spoon",
+          "can"
+        ],
+        "ways": 1
+      },
+      {
+        "id": "r4",
+        "board": [
+          "train",
+          "light",
+          "spoon",
+          "kite",
+          "cow",
+          "rain",
+          "tree",
+          "moon"
+        ],
+        "ways": 1
+      }
+    ],
+    "supportTier": "medium"
+  }
+}

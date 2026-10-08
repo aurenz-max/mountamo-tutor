@@ -366,6 +366,13 @@ async function handlePost(body: Record<string, unknown>) {
         return NextResponse.json(await judgeOpenBuild(params));
       }
 
+      case 'judgeWordBuild': {
+        const { judgeWordBuild } = await import(
+          '@/components/lumina/service/build-layer/word-build-judge'
+        );
+        return NextResponse.json(await judgeWordBuild(params));
+      }
+
       case 'watchBuild': {
         const { watchBuild } = await import(
           '@/components/lumina/service/build-layer/gemini-build-watch'

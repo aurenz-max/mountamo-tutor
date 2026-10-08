@@ -624,12 +624,13 @@ describe('word-builder catalog · DI frame', () => {
   });
 
   it('keeps every eval mode identity and moves β only for the structural change', () => {
+    // build_affix (open build, 10-07) is the contract's stated fork: a new identity, not an edit of the spoken four.
     expect(entry.evalModes?.map((m) => m.evalMode)).toEqual([
-      'simple_affix', 'compound_affix', 'greek_latin', 'multi_morpheme',
+      'build_affix', 'simple_affix', 'compound_affix', 'greek_latin', 'multi_morpheme',
     ]);
     // Unlimited drag-and-Check became one spoken attempt plus two judged
     // corrections. That is a structural change to what a correct response
     // costs, and it is the only thing that licenses moving a β.
-    expect(entry.evalModes?.map((m) => m.beta)).toEqual([2.0, 3.5, 5.5, 7.5]);
+    expect(entry.evalModes?.map((m) => m.beta)).toEqual([2.1, 2.0, 3.5, 5.5, 7.5]);
   });
 });

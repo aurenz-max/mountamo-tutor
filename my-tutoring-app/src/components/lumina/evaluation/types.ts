@@ -2397,7 +2397,8 @@ export interface PhonicsBlenderMetrics extends BasePrimitiveMetrics {
 
 export interface RhymeStudioMetrics extends BasePrimitiveMetrics {
   type: 'rhyme-studio';
-  challengeMode: 'recognition' | 'identification' | 'production' | 'collection';
+  /** `pair_build` is the open build: two pictures that rhyme, found on a board of eight. */
+  challengeMode: 'recognition' | 'identification' | 'production' | 'collection' | 'pair_build';
   challengesCorrect: number;
   challengesTotal: number;
   recognitionAccuracy: number;
@@ -2423,7 +2424,8 @@ export interface SyllableClapperMetrics extends BasePrimitiveMetrics {
 
 export interface SoundSwapMetrics extends BasePrimitiveMetrics {
   type: 'sound-swap';
-  operation: 'addition' | 'deletion' | 'substitution';
+  /** `swap_build` is the open build (letter build): change one letter to make any real word. */
+  operation: 'addition' | 'deletion' | 'substitution' | 'swap_build';
   challengesCorrect: number;
   challengesTotal: number;
   additionAccuracy: number;
@@ -2478,7 +2480,8 @@ export interface CvcSpellerMetrics extends BasePrimitiveMetrics {
   /** Present only when the objective named a vowel; absent means the session
    *  spanned the letter group's vowels (the normal case since 2026-08-10). */
   vowelFocus?: 'short-a' | 'short-e' | 'short-i' | 'short-o' | 'short-u';
-  taskType: 'fill-vowel' | 'spell-word' | 'word-sort';
+  /** `make-word` is the open build (letter build): any real word that fits the ask. */
+  taskType: 'fill-vowel' | 'spell-word' | 'word-sort' | 'make-word';
   wordsSpelledCorrectly: number;
   wordsTotal: number;
   vowelAccuracy: number;
@@ -2658,6 +2661,8 @@ export interface WordSorterMetrics extends BasePrimitiveMetrics {
 export interface WordBuilderMetrics extends BasePrimitiveMetrics {
   type: 'word-builder';
   complexityLevel: 'simple_affix' | 'compound_affix' | 'greek_latin' | 'multi_morpheme';
+  /** Set on the open build (`build_affix`), where each word is made from cards and judged, not spoken. */
+  task?: 'build_affix';
   wordsCompleted: number;
   wordsTotal: number;
   accuracy: number;

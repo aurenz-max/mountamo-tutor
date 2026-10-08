@@ -355,6 +355,17 @@ export function validateChallengeTypes(
   const allowedList = modeDefinition.challengeTypes;
   const allowed = new Set(allowedList);
 
+  // An open build payload (qa/open-build/ROADMAP.md, OB-3L) names its task at the root and holds its items in its own
+  // array; the whole session is the pinned mode's one challenge type.
+  const buildArray = { build_affix: 'buildItems', letter_build: 'buildItems', pair_build: 'pairItems',
+    paragraph_build: 'paragraphs', sentence_build: 'sentences' }[String(data.task ?? '')];
+  if (buildArray) {
+    const n = Array.isArray(data[buildArray]) ? (data[buildArray] as unknown[]).length : 0;
+    return n > 0
+      ? { valid: true, challengeCount: n, typesFound: [...allowedList] }
+      : { valid: false, challengeCount: 0, typesFound: [], error: `Open build payload has no ${buildArray}` };
+  }
+
   // Try to find challenges in various array names
   const arrayNames = ['challenges', 'words', 'instances', 'questions', 'items', 'problems'];
   let challenges: Array<Record<string, unknown>> | null = null;

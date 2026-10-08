@@ -1,0 +1,123 @@
+{
+  "source": "qa/open-build/sound-swap-2026-10-08/gen-g1.json",
+  "primitiveId": "sound-swap",
+  "evalMode": "swap_build",
+  "data": {
+    "title": "Change One Letter",
+    "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding.",
+    "challenges": [],
+    "task": "letter_build",
+    "buildItems": [
+      {
+        "id": "l1",
+        "kind": "swap",
+        "word": "hop",
+        "ways": 1,
+        "examples": [
+          "hot",
+          "pop",
+          "hip",
+          "mop",
+          "hog",
+          "top"
+        ],
+        "ask": "Change one letter in hop to make a new real word.",
+        "bank": [
+          "f",
+          "g",
+          "h",
+          "i",
+          "j",
+          "m",
+          "o",
+          "p",
+          "t"
+        ]
+      },
+      {
+        "id": "l2",
+        "kind": "swap",
+        "word": "pot",
+        "ways": 1,
+        "examples": [
+          "dot",
+          "pop",
+          "lot",
+          "cot",
+          "hot",
+          "pat"
+        ],
+        "ask": "Change one letter in pot to make a new real word.",
+        "bank": [
+          "a",
+          "c",
+          "d",
+          "h",
+          "l",
+          "o",
+          "p",
+          "s",
+          "t",
+          "y"
+        ]
+      },
+      {
+        "id": "l3",
+        "kind": "swap",
+        "word": "wig",
+        "ways": 1,
+        "examples": [
+          "big",
+          "rig",
+          "jig",
+          "fig",
+          "pig",
+          "wag"
+        ],
+        "ask": "Change one letter in wig to make a new real word.",
+        "bank": [
+          "a",
+          "b",
+          "c",
+          "f",
+          "g",
+          "i",
+          "j",
+          "k",
+          "p",
+          "r",
+          "w"
+        ]
+      },
+      {
+        "id": "l4",
+        "kind": "swap",
+        "word": "leg",
+        "ways": 1,
+        "examples": [
+          "let",
+          "keg",
+          "beg",
+          "log",
+          "peg",
+          "led"
+        ],
+        "ask": "Change one letter in leg to make a new real word.",
+        "bank": [
+          "b",
+          "d",
+          "e",
+          "g",
+          "h",
+          "k",
+          "l",
+          "o",
+          "p",
+          "t",
+          "x"
+        ]
+      }
+    ],
+    "supportTier": "medium"
+  }
+}

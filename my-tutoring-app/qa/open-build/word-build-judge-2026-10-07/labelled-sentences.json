@@ -1,0 +1,22 @@
+[
+ {"ask":"Make a question about the dog.","made":"Can the dog run fast?","expect":"pass"},
+ {"ask":"Make a question about the dog.","made":"Where is the dog?","expect":"pass"},
+ {"ask":"Make a question about the dog.","made":"Is the dog big?","expect":"pass"},
+ {"ask":"Make a question about the dog.","made":"Does the dog like the ball?","expect":"pass"},
+ {"ask":"Make a question about the dog.","made":"Can the ball run the dog?","expect":"not_a_word"},
+ {"ask":"Make a question about the dog.","made":"Is the dog the?","expect":"not_a_word"},
+ {"ask":"Make a question about the dog.","made":"Can the cat jump high?","expect":"wrong_meaning"},
+ {"ask":"Make a question about the dog.","made":"Where is dog the big?","expect":"not_a_word"},
+ {"ask":"Make a telling sentence about the cat.","made":"The cat sleeps in the sun.","expect":"pass"},
+ {"ask":"Make a telling sentence about the cat.","made":"The cat is soft.","expect":"pass"},
+ {"ask":"Make a telling sentence about the cat.","made":"My cat likes milk.","expect":"pass"},
+ {"ask":"Make a telling sentence about the cat.","made":"The milk drinks the cat.","expect":"not_a_word"},
+ {"ask":"Make a telling sentence about the cat.","made":"The cat the sun.","expect":"not_a_word"},
+ {"ask":"Make a telling sentence about the cat.","made":"The bird sings a song.","expect":"wrong_meaning"},
+ {"ask":"Make a telling sentence about the frog.","made":"The frog jumps in the pond.","expect":"pass"},
+ {"ask":"Make a telling sentence about the frog.","made":"The green frog can swim.","expect":"pass"},
+ {"ask":"Make a telling sentence about the frog.","made":"Swim frog the green.","expect":"not_a_word"},
+ {"ask":"Make a question about the frog.","made":"What does the frog eat?","expect":"pass"},
+ {"ask":"Make a question about the frog.","made":"Why is the pond wet?","expect":"wrong_meaning"},
+ {"ask":"Make a question about the frog.","made":"Can the frog jump?","expect":"pass"}
+]

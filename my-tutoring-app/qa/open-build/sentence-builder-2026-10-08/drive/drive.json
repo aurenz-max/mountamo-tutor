@@ -1,0 +1,258 @@
+{
+  "log": [
+    {
+      "step": "item",
+      "kind": "question",
+      "about": "the dog",
+      "bank": "can the dog play or does it sleep bark run jump . ?"
+    },
+    {
+      "step": "no end mark",
+      "feedback": "Every sentence needs an end mark. Which one goes at the end?"
+    },
+    {
+      "step": "judged \"sleep it does or play dog the can?\"",
+      "feedback": "A question starts with an asking word, like who, what, where, is, or can."
+    },
+    {
+      "step": "example \"can the dog play or does it sleep ?\"",
+      "feedback": "Yes! \"Can the dog play or does it sleep?\""
+    }
+  ],
+  "judge": [
+    {
+      "p": {
+        "ask": "Make a question about the dog.",
+        "made": "Can the dog play or does it sleep?",
+        "unit": "sentence"
+      },
+      "v": {
+        "met": true,
+        "realWord": 0.92,
+        "fits": 1,
+        "judge": "jev",
+        "fitsOptions": {
+          "no": 0,
+          "partly": 0,
+          "fits": 1
+        }
+      }
+    }
+  ],
+  "sentences": [
+    {
+      "id": "s1",
+      "kind": "question",
+      "about": "the dog",
+      "ways": 1,
+      "bank": [
+        "can",
+        "the",
+        "dog",
+        "play",
+        "or",
+        "does",
+        "it",
+        "sleep",
+        "bark",
+        "run",
+        "jump",
+        ".",
+        "?"
+      ],
+      "examples": [
+        [
+          "can",
+          "the",
+          "dog",
+          "play",
+          "or",
+          "does",
+          "it",
+          "sleep",
+          "?"
+        ],
+        [
+          "can",
+          "the",
+          "dog",
+          "bark",
+          "or",
+          "does",
+          "it",
+          "sleep",
+          "?"
+        ],
+        [
+          "can",
+          "the",
+          "dog",
+          "run",
+          "or",
+          "does",
+          "it",
+          "play",
+          "?"
+        ]
+      ]
+    },
+    {
+      "id": "s2",
+      "kind": "telling",
+      "about": "the cat",
+      "ways": 1,
+      "bank": [
+        "the",
+        "cat",
+        "purrs",
+        "and",
+        "dogs",
+        "bark",
+        "birds",
+        "sing",
+        "sleep",
+        "softly",
+        "play",
+        ".",
+        "?"
+      ],
+      "examples": [
+        [
+          "the",
+          "cat",
+          "purrs",
+          "and",
+          "dogs",
+          "bark",
+          "."
+        ],
+        [
+          "the",
+          "cat",
+          "purrs",
+          "and",
+          "birds",
+          "sing",
+          "."
+        ],
+        [
+          "the",
+          "cat",
+          "purrs",
+          "and",
+          "dogs",
+          "sleep",
+          "."
+        ]
+      ]
+    },
+    {
+      "id": "s3",
+      "kind": "question",
+      "about": "my friend",
+      "ways": 1,
+      "bank": [
+        "did",
+        "my",
+        "friend",
+        "call",
+        "or",
+        "was",
+        "he",
+        "busy",
+        "help",
+        "wave",
+        "today",
+        ".",
+        "?"
+      ],
+      "examples": [
+        [
+          "did",
+          "my",
+          "friend",
+          "call",
+          "or",
+          "was",
+          "he",
+          "busy",
+          "?"
+        ],
+        [
+          "did",
+          "my",
+          "friend",
+          "help",
+          "or",
+          "was",
+          "he",
+          "busy",
+          "?"
+        ],
+        [
+          "did",
+          "my",
+          "friend",
+          "wave",
+          "or",
+          "was",
+          "he",
+          "busy",
+          "?"
+        ]
+      ]
+    },
+    {
+      "id": "s4",
+      "kind": "telling",
+      "about": "the bus",
+      "ways": 1,
+      "bank": [
+        "the",
+        "bus",
+        "stopped",
+        "arrived",
+        "waited",
+        "but",
+        "we",
+        "walked",
+        "home",
+        "slowly",
+        ".",
+        "?"
+      ],
+      "examples": [
+        [
+          "the",
+          "bus",
+          "stopped",
+          "but",
+          "we",
+          "walked",
+          "home",
+          "."
+        ],
+        [
+          "the",
+          "bus",
+          "arrived",
+          "but",
+          "we",
+          "walked",
+          "home",
+          "."
+        ],
+        [
+          "the",
+          "bus",
+          "waited",
+          "but",
+          "we",
+          "walked",
+          "home",
+          "."
+        ]
+      ]
+    }
+  ]
+}

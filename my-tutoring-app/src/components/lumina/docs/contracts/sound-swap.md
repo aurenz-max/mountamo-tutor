@@ -41,6 +41,10 @@ Static derivation for the sound-swap slice of handoff 22 L2.
 - **Evidence:** `qa/eval-reports/levers-literacy-L2-2026-09-28.md`.
 - **Probe:** `npm test -- soundSwapLevers SoundSwap.levers.workspace`.
 
+### swap_build — open build fork · OBSERVED (2026-10-08)
+- **Property:** `swap_build` is its own surface, the shared letter build (`LetterBuildSurface.tsx`, rules in `letterBuild.ts`), mounted when the payload has `task: 'letter_build'`; the existing modes are unchanged. Asks are code-owned from familiar CVC words (`letterBuildWords.ts`), scoped to the lesson's letters; no key ships. Code checks everything the ask states (shape, vowel, family, one letter changed, the given word, a repeat); the shared word judge (`judgeWordBuild`, `only: 'real_word'`) decides whether the word is real.
+- **Probe:** `LetterBuild.workspace.test.tsx`; headless drive `qa/open-build/sound-swap-2026-10-08/drive/`.
+
 ## Conflicts
 
 None open.
@@ -50,5 +54,7 @@ None open.
 - **description:** stale on the clock ("its own affirmation moves the lesson on"); true in effect. Not changed.
 
 ## Changelog
+
+- 2026-10-08: `swap_build` open build added as a fork (OB-3L). New challenge type; no existing requirement edited.
 
 - 2026-09-28 — derived (initial) with R4 (levers). --check COMPATIBLE: `SoundSwap.workspace` passes.

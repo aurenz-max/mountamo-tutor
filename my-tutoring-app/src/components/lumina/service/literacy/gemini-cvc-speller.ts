@@ -19,6 +19,7 @@ import {
   smallestGroupContaining,
   type LetterGroup,
 } from './letterGroups';
+import { makeLetterItems } from '../../primitives/visual-primitives/literacy/letterBuild';
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -607,6 +608,18 @@ export const generateCvcSpeller = async (
   const targetVowel = answerVowels[0] ?? 'a';
   const confusableVowel = CONFUSABLE_VOWELS[targetVowel] || (targetVowel === 'a' ? 'e' : 'a');
   const consonants = groupLetters.filter((l) => !availableVowels.includes(l));
+
+  // make_word (open build, qa/open-build/ROADMAP.md OB-3L L2): code-owned asks on the shared letter build surface,
+  // scoped to the same letter group and vowel focus. No model call: the asks come from `makeLetterItems`, and any real
+  // word the learner makes is judged by the shared word judge.
+  if (config?.targetEvalMode === 'make_word') {
+    const tier = (config?.difficulty ?? '').toLowerCase().trim();
+    const supportTier = tier === 'easy' || tier === 'medium' || tier === 'hard' ? tier : undefined;
+    const buildItems = makeLetterItems(['vowel', 'rhyme'], groupLetters, vowelFocus ? [VOWEL_MAP[vowelFocus]] : [], 4);
+    console.log('[CvcSpeller] make_word: letter build', { letterGroup, vowelFocus, asks: buildItems.map(i => i.ask) });
+    return { title: 'Make Real Words', letterGroup, availableLetters: groupLetters, challenges: [], task: 'letter_build',
+      buildItems, ...(vowelFocus ? { vowelFocus: vowelFocus as CvcSpellerData['vowelFocus'] } : {}), ...(supportTier ? { supportTier } : {}) };
+  }
 
   // -------------------------------------------------------------------------
   // Build prompt

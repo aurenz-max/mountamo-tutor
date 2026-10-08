@@ -1,0 +1,160 @@
+{
+  "log": [
+    {
+      "step": "paragraph",
+      "topic": "honeybees"
+    },
+    {
+      "step": "topic second",
+      "feedback": "Which sentence tells what the whole paragraph is about? That one goes first."
+    },
+    {
+      "step": "off-topic fact",
+      "feedback": "Read each fact. Is every one about honeybees?"
+    },
+    {
+      "step": "good paragraph, three facts",
+      "feedback": "Yes! That paragraph tells about honeybees from start to finish."
+    }
+  ],
+  "paragraphs": [
+    {
+      "id": "p1",
+      "topic": "honeybees",
+      "cards": [
+        {
+          "id": "1t",
+          "text": "Honeybees are insects that live in large hives.",
+          "role": "topic"
+        },
+        {
+          "id": "1f1",
+          "text": "They make sweet honey from flower nectar.",
+          "role": "detail"
+        },
+        {
+          "id": "1f2",
+          "text": "Worker bees collect pollen on their back legs.",
+          "role": "detail"
+        },
+        {
+          "id": "1f3",
+          "text": "A queen bee lays all the eggs.",
+          "role": "detail"
+        },
+        {
+          "id": "1f4",
+          "text": "Honeybees communicate by doing a waggle dance.",
+          "role": "detail"
+        },
+        {
+          "id": "1x1",
+          "text": "Butterflies taste their food with their feet.",
+          "role": "off_topic"
+        },
+        {
+          "id": "1x2",
+          "text": "Ants build tunnels under the dirt.",
+          "role": "off_topic"
+        },
+        {
+          "id": "1c",
+          "text": "These facts show how honeybees live and work.",
+          "role": "closing"
+        }
+      ]
+    },
+    {
+      "id": "p2",
+      "topic": "frogs",
+      "cards": [
+        {
+          "id": "2t",
+          "text": "Frogs are amphibians that can live on land.",
+          "role": "topic"
+        },
+        {
+          "id": "2f1",
+          "text": "They catch flying bugs with long, sticky tongues.",
+          "role": "detail"
+        },
+        {
+          "id": "2f2",
+          "text": "Most frogs lay their eggs in water.",
+          "role": "detail"
+        },
+        {
+          "id": "2f3",
+          "text": "Baby frogs hatch out as swimming tadpoles.",
+          "role": "detail"
+        },
+        {
+          "id": "2f4",
+          "text": "Frogs can absorb water through their skin.",
+          "role": "detail"
+        },
+        {
+          "id": "2x1",
+          "text": "Turtles carry hard shells on their backs.",
+          "role": "off_topic"
+        },
+        {
+          "id": "2x2",
+          "text": "Toads have dry, bumpy skin.",
+          "role": "off_topic"
+        },
+        {
+          "id": "2c",
+          "text": "Now you know all about frogs.",
+          "role": "closing"
+        }
+      ]
+    },
+    {
+      "id": "p3",
+      "topic": "the moon",
+      "cards": [
+        {
+          "id": "3t",
+          "text": "The moon is a rocky sphere orbiting Earth.",
+          "role": "topic"
+        },
+        {
+          "id": "3f1",
+          "text": "Craters cover the dusty surface of the moon.",
+          "role": "detail"
+        },
+        {
+          "id": "3f2",
+          "text": "Footprints stay on the moon for many years.",
+          "role": "detail"
+        },
+        {
+          "id": "3f3",
+          "text": "The moon reflects bright light from the sun.",
+          "role": "detail"
+        },
+        {
+          "id": "3f4",
+          "text": "Astronauts walked on the moon in spacesuits.",
+          "role": "detail"
+        },
+        {
+          "id": "3x1",
+          "text": "Mars has red dust covering its ground.",
+          "role": "off_topic"
+        },
+        {
+          "id": "3x2",
+          "text": "Stars are giant balls of burning gas.",
+          "role": "off_topic"
+        },
+        {
+          "id": "3c",
+          "text": "As you can see, the moon is special.",
+          "role": "closing"
+        }
+      ]
+    }
+  ]
+}

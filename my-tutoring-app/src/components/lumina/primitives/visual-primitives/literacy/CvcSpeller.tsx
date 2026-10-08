@@ -53,6 +53,8 @@ import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { vowelKeyword, type CvcTask } from './cvcSpellerScript';
 import { cvcAssignment, cvcItem, cvcMiss, cvcScene, describeSpelling, hearWordRequest, spellingMatches } from './cvcSpellerWorkspace';
+import LetterBuildSurface, { type LetterBuildSummary } from './LetterBuildSurface';
+import type { LetterBuildItem } from './letterBuild';
 import { KEYWORD_LEVER, MIDDLE_MODEL_LEVER, SMALL_WORD_LEVER, TOKENS_LEVER, VOWEL_LEVER, cvcLevers, isPracticeWord, keywordFor,
   middleModelFor, modelMiddleSaid, sessionStimuli, smallerWord, vowelStrip } from './cvcSpellerLevers';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
@@ -103,6 +105,9 @@ export interface CvcSpellerData {
    *  from config.difficulty. At `easy` the tutor repeats the word with its
    *  vowel HELD before handing over; it never changes the words. */
   supportTier?: 'easy' | 'medium' | 'hard';
+  /** `make_word` (open build): the shared letter build surface runs the session from `buildItems`; `challenges` is empty. */
+  task?: 'letter_build';
+  buildItems?: LetterBuildItem[];
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -758,6 +763,21 @@ function CvcSpellerSurface({ data, className, runtimePlanItemId }: CvcSpellerPro
 }
 
 // The teaching workspace is the only path: an unbound mount shows the "needs the tutor" card.
-const CvcSpeller = withWorkspaceOnly<CvcSpellerProps>('cvc-speller', CvcSpellerSurface, props => props.data.title);
+/** make_word's metrics in this primitive's shape. */
+const makeWordMetrics = (s: LetterBuildSummary): CvcSpellerMetrics => ({ type: 'cvc-speller', taskType: 'make-word',
+  wordsSpelledCorrectly: s.solved, wordsTotal: s.total, vowelAccuracy: s.accuracy, consonantAccuracy: s.accuracy,
+  commonErrors: [], stretchUsed: 0, attemptsCount: s.attemptsCount });
+
+/** One mount, one shape: the open build (`make_word`) runs on the shared letter build surface. */
+function CvcSpellerHost(props: CvcSpellerProps) {
+  const { data } = props;
+  if (data.task === 'letter_build') {
+    return <LetterBuildSurface primitiveId="cvc-speller" className={props.className} runtimePlanItemId={props.runtimePlanItemId}
+      data={{ ...data, task: 'letter_build', buildItems: data.buildItems ?? [] } as never} metrics={makeWordMetrics} />;
+  }
+  return <CvcSpellerSurface {...props} />;
+}
+
+const CvcSpeller = withWorkspaceOnly<CvcSpellerProps>('cvc-speller', CvcSpellerHost, props => props.data.title);
 
 export default CvcSpeller;

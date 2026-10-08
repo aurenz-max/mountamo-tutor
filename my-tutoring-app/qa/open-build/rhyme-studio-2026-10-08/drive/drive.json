@@ -1,0 +1,83 @@
+{
+  "log": [
+    {
+      "step": "board",
+      "board": [
+        "snake",
+        "sock",
+        "spoon",
+        "moon",
+        "coat",
+        "light",
+        "rock",
+        "kite"
+      ]
+    },
+    {
+      "step": "decoy snake+sock",
+      "feedback": "Those two start the same. Rhymes END the same. Listen to the ends."
+    },
+    {
+      "step": "rhyme moon+spoon",
+      "feedback": "Yes! moon and spoon rhyme."
+    }
+  ],
+  "boards": [
+    {
+      "id": "r1",
+      "board": [
+        "snake",
+        "sock",
+        "spoon",
+        "moon",
+        "coat",
+        "light",
+        "rock",
+        "kite"
+      ],
+      "ways": 1
+    },
+    {
+      "id": "r2",
+      "board": [
+        "moon",
+        "key",
+        "bee",
+        "bear",
+        "snake",
+        "star",
+        "spoon",
+        "cake"
+      ],
+      "ways": 1
+    },
+    {
+      "id": "r3",
+      "board": [
+        "house",
+        "lip",
+        "ship",
+        "cake",
+        "snake",
+        "mouse",
+        "key",
+        "can"
+      ],
+      "ways": 1
+    },
+    {
+      "id": "r4",
+      "board": [
+        "fox",
+        "moon",
+        "rock",
+        "sock",
+        "log",
+        "rain",
+        "spoon",
+        "frog"
+      ],
+      "ways": 1
+    }
+  ]
+}

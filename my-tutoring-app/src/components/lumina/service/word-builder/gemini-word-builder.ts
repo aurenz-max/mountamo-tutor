@@ -22,12 +22,14 @@
 import { Type, Schema } from '@google/genai';
 import { ai } from '../geminiClient';
 import {
-  resolveEvalModeConstraint,
+  resolveEvalModes,
   constrainChallengeTypeEnum,
-  buildChallengeTypePromptSection,
-  logEvalModeResolution,
+  buildModeConstraintSection,
   type ChallengeTypeDoc,
+  type EvalModeResolution,
 } from '../evalMode';
+import { generateAffixBuild } from './gemini-word-build-affix';
+import type { AffixBuildItem } from '../../primitives/visual-primitives/literacy/affixBuild';
 import {
   isSayableProse,
   isSayableWord,
@@ -63,6 +65,9 @@ export interface WordBuilderData {
   gradeLevel?: string;
   /** config.difficulty, normalized: where the levers start (`wordBuilderLevers.startingLevers`). Never the words. */
   supportTier?: 'easy' | 'medium' | 'hard';
+  /** The open build (`gemini-word-build-affix.ts`): asks in `buildItems`, `targets` empty. */
+  task?: 'build_affix';
+  buildItems?: AffixBuildItem[];
 }
 
 // ── Challenge type docs (one per eval mode) ──────────────────────────────��─
@@ -103,6 +108,24 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
        Distractors: 4-6 unused morphemes. Grade 6-8+ vocabulary.`,
     schemaDescription: "'multi_morpheme' (complex, multi-morpheme words)",
   },
+};
+
+/** The open build has its own generator; its doc only routes intent to it (never in the spoken prompt). */
+const BUILD_DOC: Record<string, ChallengeTypeDoc> = {
+  build_affix: {
+    promptDoc: `"build_affix": The learner MAKES a word for a stated meaning by tapping prefix, root and suffix cards into a row; many words can fit one ask.`,
+    schemaDescription: "'build_affix' (make a word from part cards)",
+  },
+};
+
+/** The resolution without the open build: what the spoken prompt and schema may use. Null when nothing spoken is left. */
+const spokenOnly = (r: EvalModeResolution | null): EvalModeResolution | null => {
+  if (!r) return null;
+  const modes = r.modes.filter(m => !m.challengeTypes.includes('build_affix'));
+  if (!modes.length) return null;
+  const allowedTypes = Array.from(new Set(modes.flatMap(m => m.challengeTypes)));
+  return { ...r, modes, allowedTypes,
+    promptDocs: allowedTypes.filter(t => CHALLENGE_TYPE_DOCS[t]).map(t => `- ${CHALLENGE_TYPE_DOCS[t].promptDoc}`).join('\n') };
 };
 
 // ── Schema ──────────────────────────���─────────────────────────────��────────
@@ -215,17 +238,21 @@ export const generateWordBuilder = async (
   config?: {
     intent?: string;
     targetEvalMode?: string;
+    objectiveText?: string;
     grade?: string;
     difficulty?: string;
   },
 ): Promise<WordBuilderData> => {
-  // Resolve eval mode constraint from catalog
-  const evalConstraint = resolveEvalModeConstraint(
-    'word-builder',
-    config?.targetEvalMode,
-    CHALLENGE_TYPE_DOCS,
-  );
-  logEvalModeResolution('WordBuilder', config?.targetEvalMode, evalConstraint);
+  // Pinned, or resolved from the intent. The open build is its own session shape: alone it goes to its generator; in a
+  // blend with spoken modes it is left out (one mount is one shape) and the spoken modes run.
+  const resolution = await resolveEvalModes('word-builder',
+    { targetEvalMode: config?.targetEvalMode, intent: config?.intent, objectiveText: config?.objectiveText },
+    { ...CHALLENGE_TYPE_DOCS, ...BUILD_DOC });
+  console.log(`[WordBuilder] modes: ${resolution ? `${resolution.modes.map(m => m.evalMode).join('+')} (${resolution.source})` : 'mixed'}`);
+  if (resolution?.allowedTypes.length === 1 && resolution.allowedTypes[0] === 'build_affix') {
+    return generateAffixBuild(topic, gradeContext, config);
+  }
+  const evalConstraint = spokenOnly(resolution);
 
   // Constrain schema — root-level complexityLevel field
   const activeSchema = evalConstraint
@@ -236,10 +263,7 @@ export const generateWordBuilder = async (
     : baseSchema;
 
   // Build prompt
-  const challengeTypeSection = buildChallengeTypePromptSection(
-    evalConstraint,
-    CHALLENGE_TYPE_DOCS,
-  );
+  const challengeTypeSection = buildModeConstraintSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
   const prompt = `Create a word-building morphology exercise for: "${topic}"
 

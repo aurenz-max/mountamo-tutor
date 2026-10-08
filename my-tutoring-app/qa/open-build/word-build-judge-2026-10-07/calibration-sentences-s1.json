@@ -1,0 +1,460 @@
+[
+  {
+    "ask": "Make a question about the dog.",
+    "made": "Can the dog run fast?",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.97,
+      "fits": 1,
+      "judge": "jev",
+      "fitsOptions": {
+        "fits": 1,
+        "partly": 0,
+        "no": 0
+      }
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a question about the dog.",
+    "made": "Where is the dog?",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.96,
+      "fits": 1,
+      "judge": "jev",
+      "fitsOptions": {
+        "fits": 1,
+        "no": 0,
+        "partly": 0
+      }
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a question about the dog.",
+    "made": "Is the dog big?",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.97,
+      "fits": 1,
+      "judge": "jev",
+      "fitsOptions": {
+        "partly": 0,
+        "fits": 1,
+        "no": 0
+      }
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a question about the dog.",
+    "made": "Does the dog like the ball?",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.97,
+      "fits": 1,
+      "judge": "jev",
+      "fitsOptions": {
+        "no": 0,
+        "fits": 1,
+        "partly": 0
+      }
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a question about the dog.",
+    "made": "Can the ball run the dog?",
+    "expect": "not_a_word",
+    "jev": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.09,
+      "fits": 0.42,
+      "judge": "jev+flash",
+      "fitsOptions": {
+        "no": 0.01,
+        "partly": 0.57,
+        "fits": 0.42
+      }
+    },
+    "flash": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a question about the dog.",
+    "made": "Is the dog the?",
+    "expect": "not_a_word",
+    "jev": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.06,
+      "fits": 0.98,
+      "judge": "jev+flash",
+      "fitsOptions": {
+        "no": 0,
+        "partly": 0.02,
+        "fits": 0.98
+      }
+    },
+    "flash": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a question about the dog.",
+    "made": "Can the cat jump high?",
+    "expect": "wrong_meaning",
+    "jev": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 0.93,
+      "fits": 0,
+      "judge": "jev+flash",
+      "fitsOptions": {
+        "partly": 0,
+        "no": 1,
+        "fits": 0
+      }
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a question about the dog.",
+    "made": "Where is dog the big?",
+    "expect": "not_a_word",
+    "jev": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.06,
+      "fits": 1,
+      "judge": "jev+flash",
+      "fitsOptions": {
+        "no": 0,
+        "fits": 1,
+        "partly": 0
+      }
+    },
+    "flash": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a telling sentence about the cat.",
+    "made": "The cat sleeps in the sun.",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 1,
+      "judge": "jev",
+      "fitsOptions": {
+        "fits": 1,
+        "partly": 0,
+        "no": 0
+      }
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a telling sentence about the cat.",
+    "made": "The cat is soft.",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 1,
+      "judge": "jev",
+      "fitsOptions": {
+        "fits": 1,
+        "no": 0,
+        "partly": 0
+      }
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a telling sentence about the cat.",
+    "made": "My cat likes milk.",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 1,
+      "judge": "jev",
+      "fitsOptions": {
+        "partly": 0,
+        "no": 0,
+        "fits": 1
+      }
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a telling sentence about the cat.",
+    "made": "The milk drinks the cat.",
+    "expect": "not_a_word",
+    "jev": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.04,
+      "fits": 0.51,
+      "judge": "jev+flash",
+      "fitsOptions": {
+        "no": 0.02,
+        "fits": 0.51,
+        "partly": 0.47
+      }
+    },
+    "flash": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a telling sentence about the cat.",
+    "made": "The cat the sun.",
+    "expect": "not_a_word",
+    "jev": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.04,
+      "fits": 0.69,
+      "judge": "jev+flash",
+      "fitsOptions": {
+        "fits": 0.69,
+        "partly": 0.29,
+        "no": 0.02
+      }
+    },
+    "flash": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a telling sentence about the cat.",
+    "made": "The bird sings a song.",
+    "expect": "wrong_meaning",
+    "jev": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 0.94,
+      "fits": 0,
+      "judge": "jev+flash",
+      "fitsOptions": {
+        "partly": 0,
+        "no": 1,
+        "fits": 0
+      }
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a telling sentence about the frog.",
+    "made": "The frog jumps in the pond.",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.97,
+      "fits": 1,
+      "judge": "jev",
+      "fitsOptions": {
+        "no": 0,
+        "partly": 0,
+        "fits": 1
+      }
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a telling sentence about the frog.",
+    "made": "The green frog can swim.",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 1,
+      "judge": "jev",
+      "fitsOptions": {
+        "partly": 0,
+        "no": 0,
+        "fits": 1
+      }
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a telling sentence about the frog.",
+    "made": "Swim frog the green.",
+    "expect": "not_a_word",
+    "jev": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.12,
+      "fits": 1,
+      "judge": "jev+flash",
+      "fitsOptions": {
+        "fits": 1,
+        "no": 0,
+        "partly": 0
+      }
+    },
+    "flash": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a question about the frog.",
+    "made": "What does the frog eat?",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.96,
+      "fits": 1,
+      "judge": "jev",
+      "fitsOptions": {
+        "no": 0,
+        "fits": 1,
+        "partly": 0
+      }
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a question about the frog.",
+    "made": "Why is the pond wet?",
+    "expect": "wrong_meaning",
+    "jev": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 0.94,
+      "fits": 0.02,
+      "judge": "jev+flash",
+      "fitsOptions": {
+        "no": 0.96,
+        "fits": 0.02,
+        "partly": 0.02
+      }
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Make a question about the frog.",
+    "made": "Can the frog jump?",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.97,
+      "fits": 1,
+      "judge": "jev",
+      "fitsOptions": {
+        "no": 0,
+        "partly": 0,
+        "fits": 1
+      }
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  }
+]

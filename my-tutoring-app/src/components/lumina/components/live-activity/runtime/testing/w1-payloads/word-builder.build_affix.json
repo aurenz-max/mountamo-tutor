@@ -1,0 +1,201 @@
+{
+  "source": "qa/open-build/word-builder-2026-10-07/gen-g2b.json",
+  "primitiveId": "word-builder",
+  "evalMode": "build_affix",
+  "data": {
+    "title": "Prefix and Suffix Word Builder",
+    "complexityLevel": "simple_affix",
+    "task": "build_affix",
+    "availableParts": [
+      {
+        "id": "pre-un",
+        "text": "un",
+        "type": "prefix",
+        "meaning": "not"
+      },
+      {
+        "id": "pre-re",
+        "text": "re",
+        "type": "prefix",
+        "meaning": "again"
+      },
+      {
+        "id": "pre-pre",
+        "text": "pre",
+        "type": "prefix",
+        "meaning": "before"
+      },
+      {
+        "id": "suf-ed",
+        "text": "ed",
+        "type": "suffix",
+        "meaning": "in the past"
+      },
+      {
+        "id": "suf-ing",
+        "text": "ing",
+        "type": "suffix",
+        "meaning": "happening now"
+      },
+      {
+        "id": "suf-ly",
+        "text": "ly",
+        "type": "suffix",
+        "meaning": "in a way"
+      },
+      {
+        "id": "root-play",
+        "text": "play",
+        "type": "root",
+        "meaning": "have fun"
+      },
+      {
+        "id": "root-help",
+        "text": "help",
+        "type": "root",
+        "meaning": "give aid"
+      },
+      {
+        "id": "root-heat",
+        "text": "heat",
+        "type": "root",
+        "meaning": "make warm"
+      },
+      {
+        "id": "root-view",
+        "text": "view",
+        "type": "root",
+        "meaning": "look at"
+      },
+      {
+        "id": "root-kind",
+        "text": "kind",
+        "type": "root",
+        "meaning": "nice"
+      },
+      {
+        "id": "root-safe",
+        "text": "safe",
+        "type": "root",
+        "meaning": "out of harm"
+      },
+      {
+        "id": "root-slow",
+        "text": "slow",
+        "type": "root",
+        "meaning": "not fast"
+      }
+    ],
+    "targets": [],
+    "buildItems": [
+      {
+        "id": "b1",
+        "ask": "Make a word that means to do it again.",
+        "examples": [
+          [
+            "pre-re",
+            "root-play"
+          ],
+          [
+            "pre-re",
+            "root-heat"
+          ],
+          [
+            "pre-re",
+            "root-view"
+          ]
+        ],
+        "ways": 1
+      },
+      {
+        "id": "b2",
+        "ask": "Make a word that means to do it before.",
+        "examples": [
+          [
+            "pre-pre",
+            "root-heat"
+          ],
+          [
+            "pre-pre",
+            "root-view"
+          ]
+        ],
+        "ways": 2
+      },
+      {
+        "id": "b3",
+        "ask": "Make a word that means not nice or in danger.",
+        "examples": [
+          [
+            "pre-un",
+            "root-kind"
+          ],
+          [
+            "pre-un",
+            "root-safe"
+          ]
+        ],
+        "ways": 1
+      },
+      {
+        "id": "b4",
+        "ask": "Make a word that means it already happened.",
+        "examples": [
+          [
+            "root-play",
+            "suf-ed"
+          ],
+          [
+            "root-help",
+            "suf-ed"
+          ],
+          [
+            "root-heat",
+            "suf-ed"
+          ]
+        ],
+        "ways": 2
+      },
+      {
+        "id": "b5",
+        "ask": "Make a word that is happening right now.",
+        "examples": [
+          [
+            "root-play",
+            "suf-ing"
+          ],
+          [
+            "root-help",
+            "suf-ing"
+          ],
+          [
+            "root-heat",
+            "suf-ing"
+          ]
+        ],
+        "ways": 1
+      },
+      {
+        "id": "b6",
+        "ask": "Make a word that tells how someone does something.",
+        "examples": [
+          [
+            "root-slow",
+            "suf-ly"
+          ],
+          [
+            "root-kind",
+            "suf-ly"
+          ],
+          [
+            "root-safe",
+            "suf-ly"
+          ]
+        ],
+        "ways": 2
+      }
+    ],
+    "gradeLevel": "Grade 2",
+    "supportTier": "medium"
+  }
+}

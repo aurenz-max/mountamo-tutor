@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import { makePairItems } from '../../primitives/visual-primitives/literacy/rhymePairBuild';
 import { themedFocusLine } from './themeFocus';
 import type { GenerationContext } from "../generation/generationContext";
 import { clampGradeToK2 } from "../scopeContext";
@@ -408,6 +409,13 @@ export const generateRhymeStudio = async (
   // resolveGenerationContext — never re-parse config.difficulty here. It is applied
   // in code AFTER the model responds; it never enters the prompt.
   const supportTier = ctx.supportTier;
+  // pair_build (open build, qa/open-build/ROADMAP.md OB-3L L5): code-owned picture boards, judged in code from the
+  // pictures' known rimes. No model call.
+  if (ctx.targetEvalMode === 'pair_build') {
+    const pairItems = makePairItems(4);
+    console.log('[RhymeStudio] pair_build boards', pairItems.map(i => i.board.join(' ')));
+    return { title: 'Rhyme Pairs', gradeLevel, challenges: [], task: 'pair_build', pairItems, ...(supportTier ? { supportTier } : {}) };
+  }
   // ── Eval mode resolution ────────────────────────────────────────────
   const resolution = await resolveEvalModes(
     'rhyme-studio',

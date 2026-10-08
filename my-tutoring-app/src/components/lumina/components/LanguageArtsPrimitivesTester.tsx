@@ -39,6 +39,7 @@ import LetterWorkshop from '../primitives/visual-primitives/literacy/LetterWorks
 import CvcSpeller from '../primitives/visual-primitives/literacy/CvcSpeller';
 import WordWorkout from '../primitives/visual-primitives/literacy/WordWorkout';
 import WordSorter from '../primitives/visual-primitives/literacy/WordSorter';
+import WordBuilder from '../primitives/WordBuilder';
 import PictureVocabulary from '../primitives/visual-primitives/literacy/PictureVocabulary';
 import StoryTalk from '../primitives/visual-primitives/literacy/StoryTalk';
 import WordFlip from '../primitives/visual-primitives/literacy/WordFlip';
@@ -66,6 +67,7 @@ interface LanguageArtsPrimitivesTesterProps {
 }
 
 type PrimitiveType =
+  | 'word-builder'
   | 'phonics-blender' | 'decodable-reader' | 'interactive-book'
   | 'story-map' | 'character-web' | 'poetry-lab' | 'genre-explorer'
   | 'text-structure-analyzer' | 'evidence-finder'
@@ -140,6 +142,7 @@ const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
   { value: 'context-clues-detective', label: 'Context Clues', icon: '🕵️', topic: 'Determining word meaning from context', strand: 'L', wave: 2 },
   { value: 'figurative-language-finder', label: 'Figurative Language', icon: '🎨', topic: 'Finding similes and metaphors', strand: 'L', wave: 3 },
   { value: 'spelling-pattern-explorer', label: 'Spelling Patterns', icon: '🔠', topic: 'Silent-e spelling rule', strand: 'L', wave: 4 },
+  { value: 'word-builder', label: 'Word Builder', icon: '🧩', topic: 'Prefixes and suffixes: un-, re-, pre-, -ed, -ing, -ly', strand: 'L', wave: 6 },
   { value: 'word-sorter', label: 'Word Sorter', icon: '📂', topic: 'Sorting nouns and verbs', strand: 'L', wave: 5 },
   { value: 'picture-vocabulary', label: 'Picture Vocabulary', icon: '🗣️', topic: 'Animals', strand: 'L', wave: 5 },
   { value: 'word-flip', label: 'Word Flip', icon: '🔁', topic: 'plurals — one and many', strand: 'L', wave: 5 },
@@ -284,6 +287,8 @@ const PrimitiveRenderer: React.FC<{
       return <CvcSpeller data={{ ...(data as Parameters<typeof CvcSpeller>[0]['data']), instanceId }} />;
     case 'word-workout':
       return <WordWorkout data={{ ...(data as Parameters<typeof WordWorkout>[0]['data']), instanceId }} />;
+    case 'word-builder':
+      return <WordBuilder data={{ ...(data as Parameters<typeof WordBuilder>[0]['data']), instanceId }} />;
     case 'word-sorter':
       return <WordSorter data={{ ...(data as Parameters<typeof WordSorter>[0]['data']), instanceId }} />;
     case 'picture-vocabulary':
@@ -823,6 +828,8 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
   const [selectedPrimitive, setSelectedPrimitive] = useState<PrimitiveType>('phonics-blender');
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel>('K');
   const [selectedEvalMode, setSelectedEvalMode] = useState<string | null>(null);
+  // The Creation tester's switch: the free no-model lever bench, or the paid Live tutor (this tester's old default).
+  const [tutorMode, setTutorMode] = useState<'offline' | 'live'>('live');
   const [letterDifficulty, setLetterDifficulty] = useState('');
   const [topic, setTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -1155,9 +1162,20 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
 
             {/* Pip joins a primitive that publishes a surface, as in a lesson;
                 no session needed. Others keep the companion's perch. */}
+            {generatedData != null && testerBinds(selectedPrimitive, previewInstanceId, selectedEvalMode, generatedData) && (
+              <div role="radiogroup" aria-label="Tutor" className="flex w-fit rounded-lg border border-slate-600 text-xs">
+                {(['offline', 'live'] as const).map(m => (
+                  <button key={m} type="button" role="radio" aria-checked={tutorMode === m} onClick={() => setTutorMode(m)}
+                    className={`px-3 py-1 ${tutorMode === m ? 'bg-cyan-600/40 text-cyan-100' : 'text-slate-400'}`}>
+                    {m === 'offline' ? 'Offline levers (free)' : 'Live tutor (paid)'}
+                  </button>
+                ))}
+              </div>
+            )}
             {generatedData != null && (
-              <div key={previewInstanceId} data-primitive-instance-id={previewInstanceId} className="space-y-6">
+              <div key={`${previewInstanceId}-${tutorMode}`} data-primitive-instance-id={previewInstanceId} className="space-y-6">
                 <TesterWorkspace primitiveId={selectedPrimitive} instanceId={previewInstanceId} evalMode={selectedEvalMode}
+                  offline={tutorMode === 'offline'}
                   data={generatedData} topic={topic || selectedOption?.topic || ''} gradeLevel={selectedGrade}
                   onEvaluationSubmit={handleEvaluationSubmit}>
                   <PrimitiveRenderer

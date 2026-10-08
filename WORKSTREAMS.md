@@ -83,7 +83,7 @@ its vitest gate; Live is 1-2 runs per class, never per primitive.
 
 | # | Item | Executor · queue | State |
 |---|---|---|---|
-| 4.1 | Build modes across primitives, by wave (OB-0..6); rulings R1 (stillness auto-submit), R2 (watcher voice) | `/add-eval-modes` · `my-tutoring-app/qa/open-build/ROADMAP.md` | waves 1-2 BUILT 10-07 (10 math build modes, c162eda0); wave 3 literacy PLANNED 10-07 (OB-3L: L0 word judge, L1 word-builder pilot, then L2-L7); ruling R11 owed before L1 (R10 withdrawn: Jev judge, no word list). Waves 1-2 must `/ship` first; handoff `my-tutoring-app/qa/HANDOFF-open-build-wave3-2026-10-07.md` |
+| 4.1 | Build modes across primitives, by wave (OB-0..6); rulings R1 (stillness auto-submit), R2 (watcher voice) | `/add-eval-modes` · `my-tutoring-app/qa/open-build/ROADMAP.md` | waves 1-2 BUILT 10-07 (10 math build modes, c162eda0); wave 3 literacy (OB-3L) BUILT 10-07/08, uncommitted: 7 build modes (word-builder, cvc-speller, sound-swap, rhyme-studio, phonics-blender, paragraph-architect, sentence-builder) on the shared word judge, all headless-driven; next: literacy class Live gate, rulings R12-R13. Waves 1-2 must `/ship` first; handoff `my-tutoring-app/qa/HANDOFF-open-build-wave3-2026-10-07.md` |
 
 ## Phase 5 — Parent report: "how is my child doing?" (CURRENT, user 10-07)
 

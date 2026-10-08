@@ -9,7 +9,8 @@ import { MODEL_LEVER, POOL, SLOTS_LEVER, SMALL_BOARD_LEVER, leversOnScreen, mode
   smallBoardWordFor, startingLevers, wordBuilderLevers } from './wordBuilderLevers';
 
 const DIR = join(__dirname, '../../../components/live-activity/runtime/testing/w1-payloads');
-const PAYLOADS = readdirSync(DIR).filter(f => f.startsWith('word-builder.')).map(f => {
+// The spoken modes' payloads; the open build (build_affix) has its own levers (affixBuild.ts).
+const PAYLOADS = readdirSync(DIR).filter(f => f.startsWith('word-builder.') && !f.includes('build_affix')).map(f => {
   const d = JSON.parse(readFileSync(join(DIR, f), 'utf-8')).data;
   const level = d.complexityLevel as WordBuilderComplexity;
   return { file: f, board: d.availableParts, items: itemsFromTargets(d.targets, d.availableParts, level) };
@@ -66,7 +67,8 @@ describe('catalog', () => {
   it('declares levers, and every mode miss is answered by a lever', () => {
     expect(tw.levers).toBe(true);
     const answered = new Set(PAYLOADS.flatMap(p => p.items.flatMap(i => wordBuilderLevers(i, p.items, p.board, []).flatMap(l => l.answers ?? []))));
-    for (const [mode, misses] of Object.entries(tw.misses!)) for (const m of misses) expect(answered.has(m), `${mode} ${m}`).toBe(true);
+    // build_affix's own levers answer its misses (WordBuilder.buildAffix.workspace.test.tsx).
+    for (const [mode, misses] of Object.entries(tw.misses!)) if (mode !== 'build_affix') for (const m of misses) expect(answered.has(m), `${mode} ${m}`).toBe(true);
     expect(tw.misses!.simple_affix).not.toContain('part_missing');
   });
 });
