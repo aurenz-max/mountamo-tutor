@@ -37,7 +37,9 @@ it.each([['K', 20, ['penny', 'nickel', 'dime']], ['1', 50, ['penny', 'nickel', '
       expect(new Set(amounts).size).toBe(4);
       for (const c of data.challenges) {
         expect(c.targetAmount).toBeLessThanOrEqual(ceiling);
-        expect([1, 5, 10, 25, 50, 100]).not.toContain(c.targetAmount);
+        // never one coin OF THE BINS OFFERED: 50¢ is a mix at grade 1, where there is no half-dollar
+        const binValues = { penny: 1, nickel: 5, dime: 10, quarter: 25, 'half-dollar': 50 } as const;
+        expect(bins.map(b => binValues[b])).not.toContain(c.targetAmount);
         expect(c.availableCoins).toEqual(bins);
         expect(c.instruction).toMatch(new RegExp(`^Show ${c.targetAmount}¢ (for (a|an) [a-z ]+, )?any way you like\\.$`));
         expect(c.instruction).not.toMatch(/gum|bag/);
