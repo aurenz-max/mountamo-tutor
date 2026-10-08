@@ -24,12 +24,11 @@ Every evaluable primitive built with this skill ships as multi-instance from day
 This skill builds **L0 of the primitive lifecycle** (ladder: [PRIMITIVE_LIFECYCLE.md](../../../my-tutoring-app/src/components/lumina/docs/PRIMITIVE_LIFECYCLE.md)): a pedagogically sound, kit-styled, multi-instance, answer-leak-audited primitive whose generator reliably produces its **one core task identity**, registered end-to-end and passing eval-test. Capabilities are layered on afterward by the add- skills — each is the single source of truth for its layer. Never inline another skill's template here.
 
 **Deliberately NOT built at birth** (deferred to layers):
-- **Eval-mode ladder** — catalog `evalModes[]`, β priors, backend `problem_type_registry.py`, mixed-path (SP-21) handling → `/add-eval-modes`
-- **Catalog `tutoring:` block** — scaffoldingLevels, commonStruggles, aiDirectives → `/add-tutoring-scaffold`. The component's `useLuminaAI` + `sendText` hooks ARE wired at birth (cheap in-flow, painful to retrofit); until scaffolded the primitive gets the generic tutor — acceptable degradation.
+- **Eval-mode ladder** — every mode beyond the core one, their β priors, `resolveEvalModes`, mixed-path (SP-21) handling → `/add-eval-modes`
 - **Support tiers, structural difficulty, sound, voice control** → their skills, in the ladder order the birth certificate prints (Phase 8). Spoken-production primitives wire voice with `/add-voice-control` (open-mic answer/choice); its doctrine — asymmetric grading + quiet-tutor laws, plus the push-to-talk reference — lives in `docs/SPOKEN_INTERACTION_DOCTRINE.md` (`/add-spoken-judge` was retired 2026-08-09).
 
 **Never deferred** (expensive or impossible to retrofit — the reason this skill front-loads them):
-multi-instance schema (`challenges[]` required), a challenge-type field in the schema (even with one value — it's what makes densification cheap later), the Fork A/B generator decision, the answer-leak gating audit, Lumina-kit chrome, `onEvaluationSubmit` wiring, and the Pip surface (Phase 2d — where Pip may point is an answer-leak decision, and the dock is a layout decision, both made while the component is written). A primitive that leaks answers or emits one binary signal is not "a lower rung" — it's debt (the Bucket A lesson).
+multi-instance schema (`challenges[]` required), a challenge-type field in the schema (even with one value — it's what makes densification cheap later), the Fork A/B generator decision, the answer-leak gating audit, Lumina-kit chrome, `onEvaluationSubmit` wiring, the Pip surface (Phase 2d — where Pip may point is an answer-leak decision, and the dock is a layout decision, both made while the component is written), and **the tutor: the teaching-workspace binding** (Phase 2b). A primitive is born on the canonical tutor path: the live tutor teaches from the workspace, the observer or the primitive's own check commits, the runtime owns progression. It is never born on the legacy channel (`useLuminaAI` + bracket-tag `sendText` + a catalog `tutoring:` block), which `/add-live-tutor-tools` would then have to tear out (WB-5: 34 workspace families carried a dead block). The binding needs one catalog eval mode to pin, so birth declares the core mode, and only that one. A primitive that leaks answers or emits one binary signal is not "a lower rung" — it's debt (the Bucket A lesson).
 
 ## Architecture: Sequential Focused Agents
 
@@ -48,13 +47,13 @@ Phase 8: Birth certificate     (main agent — lifecycle L0 record + follow-up q
 
 **Why the generator gets its own phase:** The generator is where quality lives or dies. It needs the component's render logic as input (to know which fields are required per challenge type) and focused attention on schema design and post-validation. Doing it in parallel with mechanical tasks produces sloppy generators.
 
-**DO NOT read `ADDING_PRIMITIVES.md` or `ADDING_TUTORING_SCAFFOLD.md`** — those are 1500+ lines of reference docs meant for humans. Everything you need is in this skill file.
+**DO NOT read `ADDING_PRIMITIVES.md` or `ADDING_TUTORING_SCAFFOLD.md`** — those are 1500+ lines of reference docs meant for humans, and the second describes the legacy tutor channel. Everything you need is in this skill file, plus `/add-live-tutor-tools`' **W1 minimal binding → Plain shape (P)** section, which Phase 2b follows.
 
 ---
 
 ## Phase 1: Gather Requirements (Main Agent)
 
-**If a PRD file is passed as an argument**, extract all requirements from it instead of asking the user. Read the PRD, identify the primitive(s) defined, and confirm with the user which one(s) to build. PRDs typically specify: name, domain, data structure, eval modes, challenge types, tutoring scaffold, and metrics — skip any questions already answered by the PRD. Build only the birth contract now: pick the CORE challenge type from the PRD's list and carry the rest (eval-mode ladder, tutoring scaffold) into the birth certificate as follow-up-queue input for `/add-eval-modes` and `/add-tutoring-scaffold`.
+**If a PRD file is passed as an argument**, extract all requirements from it instead of asking the user. Read the PRD, identify the primitive(s) defined, and confirm with the user which one(s) to build. PRDs typically specify: name, domain, data structure, eval modes, challenge types, tutoring scaffold, and metrics — skip any questions already answered by the PRD. Build only the birth contract now: pick the CORE challenge type from the PRD's list and carry the rest of the ladder into the birth certificate as follow-up-queue input for `/add-eval-modes`. A PRD's tutoring scaffold is not built as a `tutoring:` block: its domain rules (what stays hidden, what the tutor must never say) become `teachingWorkspace.guidance`, and its struggles become miss candidates.
 
 **Otherwise**, ask the user for:
 - **Primitive name** (e.g., "CountingBoard", "FractionBar")
@@ -95,6 +94,8 @@ Pick one from the same domain:
 | physics | `lumina/primitives/visual-primitives/physics/InclinedPlane.tsx` |
 | core (explore+challenge) | `lumina/primitives/visual-primitives/core/FactFile.tsx` |
 | core (timed drill) | `lumina/primitives/visual-primitives/core/FastFact.tsx` |
+
+These are references for chrome and interaction only. Most predate the workspace and still call `useLuminaAI` / `sendText`; do not copy that part. The tutor-wiring reference is `math/BarModel.tsx` + `barModelWorkspace.ts` + `BarModel.workspace.test.tsx` (workspace-only, Check-driven, gesture and spoken items). For a spoken-only answer, use `literacy/PhonicsBlender.tsx`; for a checked gesture beside speech, `literacy/CvcSpeller.tsx`.
 
 ### 2b. Write the component
 
@@ -171,30 +172,15 @@ Document the choice in the Required Fields Manifest in Phase 2c so the Phase 4 G
 - Need a shadcn part NOT in the kit (Tabs, Switch, Select, Collapsible, Dialog)? Import from `@/components/ui/*` and theme via exported tokens (`surface`, `text`, `accentText`, `accentSoftBg`, `accentChipBg`, `accentStrongText`) — do NOT reinvent class strings.
 - **Boundary:** the kit is the FRAME (chrome). The bespoke interaction surface — canvas, drag targets, the simulation object the student manipulates — stays custom per primitive. Never force it into kit components.
 
-**If interactive, add AI tutoring triggers:**
+**If interactive, bind the teaching workspace — the canonical tutor path.** Follow `/add-live-tutor-tools` → *W1 minimal binding* → *Plain shape (P)*; it is the single source of truth for the binding, so read it now instead of rebuilding it from this summary. Born, not migrated, so there is no scripted path to keep:
 
-```tsx
-const { sendText } = useLuminaAI({
-  primitiveType: '<id>',
-  instanceId: resolvedInstanceId,
-  primitiveData: aiPrimitiveData,
-  gradeLevel,
-});
+- **Domain module** `<x>Workspace.ts` beside the component, pure: `workspaceAssignment(challenge)` → `{ id, task, response }` (`'gesture'` when the primitive's own check judges; `'speech'` plus `expectedAnswer` and known spoken `misses` when the learner says the answer), `workspaceScene(challenge, view)` → the facts of what is drawn and asked, never the answer, and the check with its `describe<X>Work` (the learner's work in words, never the key) and `<x>Miss` (a named wrong answer).
+- **Component** `<Name>Surface`: `const use<Name>Progress = useWorkspaceProgressFor('<id>')` at module level, called with `{ challenges, getChallengeId, instanceId, objectiveId, planItemId, workspace, assignment: workspaceAssignment, onItemOpened }`. `onItemOpened(index, retry)` clears the working surface (fresh item and Try again). Every check calls `progress.commitCheck(describe(...), correct, miss)`. A `useLayoutEffect` with no dependency list sets `workspace.current = { ...workspaceScene(...) }`. Close input while `progress.canAttempt === false`.
+- **One progression owner:** the runtime moves the index. No Next button, no advance timer, no `useLuminaAI`, no `sendText`.
+- **Export** `withWorkspaceOnly('<id>', <Name>Surface, props => props.data.title)`. Outside a bound session it shows the needs-the-tutor card.
+- **Display-only (exposition)** primitives are an ungraded teaching surface: `teachingWorkspace.ungraded` (see `/add-live-tutor-tools` and `TEACHING_WORKSPACE.md`), not a bare component.
 
-// At pedagogical moments:
-sendText('[ANSWER_CORRECT] Student answered correctly. Congratulate briefly.', { silent: true });
-sendText('[ANSWER_INCORRECT] Student chose "X" but correct is "Y". Give a hint.', { silent: true });
-sendText('[NEXT_ITEM] Moving to item N of M. Introduce it briefly.', { silent: true });
-sendText('[ALL_COMPLETE] Student finished all items! Celebrate.', { silent: true });
-```
-
-**Rules for sendText:**
-- Always use `{ silent: true }` — system-to-AI messages, not student chat
-- Use bracketed tags: `[ANSWER_CORRECT]`, `[NEXT_ITEM]`, etc.
-- Include context (student answer, correct answer, attempt count)
-- Only trigger at moments where a human tutor would speak
-
-**REQUIRED: `useChallengeProgress` + `usePhaseResults` + `PhaseSummaryPanel`** for every evaluable primitive. These hooks are the canonical multi-instance wiring — skipping them produces Bucket A primitives that need an immediate refactor. Only display-only primitives (no scoring, no IRT routing) may skip.
+**REQUIRED: the workspace progress hook (above) + `usePhaseResults` + `PhaseSummaryPanel`** for every evaluable primitive. `useWorkspaceProgressFor` returns the `useChallengeProgress` shape (`currentIndex`, `results`, `isComplete`, `recordResult`) plus `commitCheck`, `canAttempt`, `practiceSummary` and `recordsEvaluation`. These hooks are the canonical multi-instance wiring — skipping them produces Bucket A primitives that need an immediate refactor. Only display-only primitives (no scoring, no IRT routing) may skip.
 
 ```tsx
 // Module-level phase config (one entry per challengeType; single-mode sessions get one entry)
@@ -203,16 +189,21 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   // /add-eval-modes adds one entry per ladder rung later
 };
 
-// Inside the component — replaces ~100 lines of manual state + useMemo:
-const {
-  currentIndex: currentChallengeIndex,
-  currentAttempts,
-  results: challengeResults,
-  isComplete: allChallengesComplete,
-  recordResult,       // replaces setChallengeResults(prev => [...prev, {...}])
-  incrementAttempts,  // replaces setCurrentAttempts(a => a + 1)
-  advance: advanceProgress,  // replaces setIndex(i+1); setAttempts(0)
-} = useChallengeProgress({ challenges: data.challenges, getChallengeId: (ch) => ch.id });
+// Module level: the teaching workspace is this primitive's only controller.
+const use<Name>Progress = useWorkspaceProgressFor('<id>');
+
+// Inside <Name>Surface — replaces ~100 lines of manual state + useMemo:
+const workspace = useRef<TeachingWorkspace | null>(null);
+const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+const progress = use<Name>Progress<<Name>Challenge>({
+  challenges: data.challenges, getChallengeId: (ch) => ch.id,
+  instanceId: resolvedInstanceId, objectiveId: data.objectiveId, planItemId: runtimePlanItemId,
+  workspace, assignment: workspaceAssignment,
+  onItemOpened: (index, retry) => openItem.current(index, retry),  // bound below, once the setters exist
+});
+const { currentIndex: currentChallengeIndex, results: challengeResults, isComplete, recordResult } = progress;
+const allChallengesComplete = isComplete || !!progress.practiceSummary;
+const learnerBlocked = () => progress.canAttempt === false;
 
 const currentChallenge = data.challenges[currentChallengeIndex] ?? null;
 
@@ -224,41 +215,29 @@ const phaseResults = usePhaseResults({
   // getScore: (rs) => Math.round(rs.reduce((s, r) => s + (r.score ?? 0), 0) / rs.length),
 });
 
-// REQUIRED — per-challenge reset useEffect (PRD §5 rule 8).
+// REQUIRED — per-challenge reset (PRD §5 rule 8), run by the runtime on a fresh item AND on Try again.
 // Enumerate EVERY useState slot that depends on the active challenge.
 // Grep for every useState and ask "would this be wrong for the next challenge?"
-useEffect(() => {
-  if (!currentChallenge) return;
-  setMyInteractionState(initial(currentChallenge));
+openItem.current = (index, retry) => {
+  setMyInteractionState(initial(data.challenges[index]));
   setFeedback('');
-  setFeedbackType('');
-  setAttempts(0);
-  recordedRef.current = false;
-}, [currentChallenge?.id]);
-
-// REQUIRED — stale-state guard (PRD §5 rule 9). Two variants:
-// HANDLER-DRIVEN (button submit — most common): use recordedRef.current at top of submit handler.
-const recordedRef = useRef(false);
-const completeCurrentChallenge = (correct: boolean, extras = {}) => {
-  if (!currentChallenge) return;
-  if (recordedRef.current) return; // already recorded for this challenge
-  recordedRef.current = true;
-  recordResult({ challengeId: currentChallenge.id, correct, attempts, score, ...extras });
 };
 
-// EFFECT-DRIVEN (passive completion-detect, e.g. factor-tree's "all leaves prime"):
-// useEffect(() => {
-//   if (!currentChallenge) return;
-//   if (!stateLooksComplete) return;
-//   if (recordedRef.current) return;
-//   if (!stateMatchesChallenge(currentChallenge)) return;  // content-match guard
-//   recordedRef.current = true;
-//   recordResult({ ... });
-// }, [stateLooksComplete, currentChallenge, /* ... */]);
+// REQUIRED — the check commits the verdict; never a direct incrementAttempts/recordResult for it.
+const handleCheck = () => {
+  if (learnerBlocked() || !currentChallenge) return;
+  const correct = <x>Matches(currentChallenge, view);
+  progress.commitCheck(describe<X>Work(currentChallenge, view), correct, <x>Miss(currentChallenge, view));
+  // Keep a recordResult only when it adds the primitive's own fields (a score, the strategy used).
+};
+
+// The scene the tutor and observer see, republished every render.
+useLayoutEffect(() => {
+  if (currentChallenge) workspace.current = { ...workspaceScene(currentChallenge, view) };
+});
 ```
 
-In check functions use `incrementAttempts()`. In submit handlers call `completeCurrentChallenge(correct)`.
-In advance handler: `if (!advanceProgress()) { /* all done — session-complete useEffect fires submit */ return; }`.
+A passive completion-detect (e.g. factor-tree's "all leaves prime") calls `commitCheck` from its handler or effect, behind a content-match guard so a stale state never commits. Submit the evaluation only when `progress.recordsEvaluation !== false` (the live host has no evaluation provider); the runtime's `advance()` returns `false`, so an "advance returned false → submit" path still runs once the last challenge is correct.
 
 **REQUIRED — answer-leak gating audit (PRD §5 rule 7).** Before declaring the component done, walk every label, tooltip, panel, stats display, frequency label, and default value in the rendered UI. Ask: *does this disclose the current mode's correct answer?* Labels correct as defaults are assessment-defeating as challenges. Examples:
 - `histogram` hides the stats panel (`showStatistics: false`) in `estimate_center` mode — the mean was printed in plain text otherwise.
@@ -269,7 +248,7 @@ Mode-specific visibility flips live in the component, reading `currentChallenge.
 
 **REQUIRED — no in-component phase navigator on a single problem (PRD §5 rule 13).** If you find yourself building `setPhase('explore' | 'practice' | 'apply')` UI that walks the student through multiple interaction shapes on ONE problem, STOP. Eval-mode pinning makes the phase walk redundant — each of those phases is a different challenge in the session, not stages within one. See `function-machine` (§6f #1) and `percent-bar` (PRD §6 backlog) for the anti-pattern.
 
-**Between-challenge interstitial** ("Next Number →", "Next Problem →"): when the final phase's celebration message would otherwise disappear instantly on advance, add a brief interstitial card with a "Next X →" button. The student needs ~2 seconds to read the success state. Reference: `PlaceValueChart.tsx` (`'challenge-done'` pseudo-phase).
+**Between-challenge pacing** belongs to the runtime: it advances after the committed outcome settles, so the success state stays readable without a primitive-owned "Next X →" button.
 
 Render the summary:
 ```tsx
@@ -285,11 +264,7 @@ Render the summary:
 )}
 ```
 
-Use `phaseResults` for `[ALL_COMPLETE]` AI message:
-```tsx
-const phaseScoreStr = phaseResults.map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`).join(', ');
-sendText(`[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. Give encouraging phase-specific feedback.`, { silent: true });
-```
+Completion speech comes from the shared lifecycle (`practiceSummary`); the component sends no `[ALL_COMPLETE]` message.
 
 **Display-only primitives may skip these hooks.** Reference: components without scoring, no IRT routing, no `usePrimitiveEvaluation`.
 
@@ -299,9 +274,9 @@ After writing the component, note:
 - The **component ID** (kebab-case, e.g., `counting-board`)
 - The **exported data interface name** (e.g., `CountingBoardData`)
 - The **component file path** relative to lumina/
-- Whether it's **interactive** (needs evaluation + tutoring)
-- The **pedagogical moments** you wired (sendText tags — birth-certificate input for `/add-tutoring-scaffold`)
-- The **key data fields** the AI tutor needs to see (birth-certificate input for `/add-tutoring-scaffold`'s contextKeys)
+- Whether it's **interactive** (needs evaluation + the workspace binding)
+- The **domain module** path (`<x>Workspace.ts`), the core mode's `response` (`gesture` / `speech`) and its named misses
+- The **guidance sentences** for `teachingWorkspace.guidance`: what checks the answer, what is hidden and why, what the tutor must say that the screen does not show, what the tutor cannot do (domain sentences only; the shared doctrine carries the rest)
 - **Additional challenge types the design implies** (birth-certificate ladder candidates for `/add-eval-modes` — NOT built now)
 - The **required fields per challenge type** — for each `render<Type>Challenge()` function in the component, list every data field it reads. This is the CONTRACT the generator must fulfill.
 
@@ -393,13 +368,18 @@ Tasks:
      description: '<Clear description>. Perfect for <use case>. ESSENTIAL for <grade> <subject>.',
      constraints: '<Any limitations>. The manifest must NOT supply specific per-challenge values — the pool service or orchestrator builds challenges deterministically.',
      supportsEvaluation: <true if interactive>,
+     // Interactive only: the ONE core mode, so the workspace has a mode to pin.
+     evalModes: [{ evalMode: '<coreType>', label: '<Core Mode Label>', beta: <prior>, scaffoldingMode: 1, challengeTypes: ['<coreType>'], description: '<what the mode asks>' }],
+     teachingWorkspace: { grades: [<grade labels>], guidance: '<guidance sentences from Phase 2c>' },
    },
    ```
 
+3. Interactive only: add the matching prior to `backend/app/services/calibration/problem_type_registry.py` (`"<id>": { "<coreType>": PriorConfig(<prior>, "<label>") }`), and register the adapter: a `WorkspaceDomain` (`{ validate, initialState }`, `initialState` from `workspaceOpening`) in `components/live-activity/adapters/<x>Live.ts`, and `workspaceAdapter('<id>', <x>LiveDomain)` in `activityContract.ts`. Shape: `/add-live-tutor-tools` W1 step 3.
+
 Rules:
 - `description` is the retrieval surface for BOTH manifest selection and /curriculum-fit — name the skill taught, the grade band, and the subject explicitly.
-- Do NOT add an `evalModes` field — the eval-mode ladder is /add-eval-modes' layer (it owns β priors + the backend registry, and is the single source of truth for the template).
-- Do NOT add a `tutoring` field — the tutoring scaffold is /add-tutoring-scaffold's layer. Until it runs, the primitive uses the generic tutor (the component's sendText hooks still fire) — expected L0 behavior, listed on the birth certificate.
+- `evalModes` holds the core mode ONLY. Every further mode is /add-eval-modes' layer (it owns the ladder, `resolveEvalModes` and the mixed path).
+- Do NOT add a `tutoring` field. A workspace-only family sends `tutoring: null`, so a block would reach no tutor (WB-5). The tutor's primitive-specific text is `teachingWorkspace.guidance`.
 ```
 
 ### Subagent C: "Evaluation types & tester"
@@ -720,6 +700,14 @@ Then run the Pip surface test (and, for math, the helper attach test): `cd "<abs
 
 **Known pre-existing error to IGNORE:** `ManifestViewer.tsx` has an incomplete `Record<ComponentId, string>` that is missing 140+ component IDs. This error predates your changes — do not try to fix it.
 
+### 5b. Workspace checks (interactive only)
+
+Run the checks in `/add-live-tutor-tools` → W1 → **Checks** after the generator is registered (it needs real content). In short:
+1. Save the core mode's payload: `backend/venv/Scripts/python.exe backend/tests/tutor_live/save_payload.py --primitive <id> --mode <coreType>` (one generation call, frontend on :3000, no Live session).
+2. Add the journey row in `liveJourneySpec.ts` (`execution: 'workspace'`, inputs through the real controls) and `<Name>.workspace.test.tsx` (spoken key published and gesture key not; a wrong commit that Try again reopens; a right one that completes once).
+3. `npm test -- src/components/lumina/components/live-activity src/components/lumina/service/manifest/catalog` — `workspaceContract.test.tsx`, the dry journey sweep and `misses.test.ts` must pass; `npm run typecheck:lumina` = 0.
+4. One tutor replay (`tutor_replay.py --primitive <id> --samples 5`, `--observe` for a spoken mode). Read the replies: a tutor that never says what the screen withholds is a finding. No Live run at birth.
+
 ---
 
 ## Phase 6: QA Agent
@@ -837,7 +825,7 @@ Format:
 
 After QA passes, report to the user:
 - Files created/modified (list all)
-- Pedagogical moments wired (if interactive) + sendText tags defined
+- Workspace binding (if interactive): the domain module, the core mode's response channel and misses, the guidance, and the W1 check results
 - Answer-leak audit result (what was walked, what got gated)
 - QA results (pass/fail, any G1/G2/G4/G5 issues found and fixed)
 - Pip surface (if interactive): where Pip points and never points, and the surface test result
@@ -864,11 +852,11 @@ Print it in the report AND save a copy to `my-tutoring-app/qa/eval-reports/<id>-
 ```markdown
 # Birth Certificate — <id> (<YYYY-MM-DD>)
 
-**Lifecycle layer: L0 (born)** — pedagogically sound, measurable, single core mode, generic tutor.
+**Lifecycle layer: L0 (born)** — pedagogically sound, measurable, single core mode, bound to the teaching workspace.
 
 - Core task identity: `<coreType>`
 - Generator fork: <A pool service | B orchestrator>
-- sendText tags wired: [ANSWER_CORRECT], [ANSWER_INCORRECT], [NEXT_ITEM], [ALL_COMPLETE]<, extras>
+- Workspace binding: `<x>Workspace.ts`; response `<gesture|speech>`; misses <…>; guidance <n> chars; W1 checks <workspaceContract / <Name>.workspace.test / journey sweep / tutor replay: pass|fail>
 - Answer-leak audit: <what was walked, what got gated>
 - Design gate (Phase 2): <five one-liners — manipulation / simulation / production / timer / layout-leak — each "pass: <how>" or "exception: <justification shown to user>">
 - Curriculum home: <MATCH <skill-id> | MISS — <gap/description/scoping> + action taken>
@@ -879,7 +867,6 @@ Print it in the report AND save a copy to `my-tutoring-app/qa/eval-reports/<id>-
 | # | Skill | Layer | Input from this birth |
 |---|-------|-------|----------------------|
 | 1 | `/add-eval-modes` | L1 eval-dense | Ladder candidates: <types the design/PRD implied beyond `<coreType>`, or "design from scratch"> |
-| 2 | `/add-tutoring-scaffold` | L2 tutored | contextKeys candidates: <key data fields from Phase 2c>; struggles seen in QA: <...> |
 | 3 | `/add-support-tiers` | L3 levered | Why learners fail each mode, as seen in this birth's QA: <...>; help/simplify lever candidates: <...> |
 | 5 | `/add-sound` | L5 polished | 2-4 candidate sound points: <manipulation handlers, check-answer moments> |
 | 6 | `/add-voice-control` | L5 polished | <only if a spoken-production primitive; else omit this row. Doctrine + push-to-talk reference: `docs/SPOKEN_INTERACTION_DOCTRINE.md`> |
@@ -888,7 +875,7 @@ Print it in the report AND save a copy to `my-tutoring-app/qa/eval-reports/<id>-
 
 Rules:
 - **Every row gets real input, not placeholders.** The birth session is when the design is freshest — ladder candidates and withdrawal-scaffold observations written now save the follow-up session its discovery phase.
-- L1 and L2 are ordered first because they change what students experience most (routing + tutoring); L3→L4 order is a hard prerequisite (structural difficulty rides the support-tier harness).
+- L1 is ordered first because it changes what students experience most (routing). The tutor is already bound at birth, so there is no L2 row; L3 levers plug into that binding.
 - `/eval-test` is the cross-cutting QA loop, not a rung: birth already ran it once (Phase 6); every follow-up skill re-runs it at its layer (per-mode after L1, tier sweep after L3/L4).
 - A display-only primitive's certificate marks rows 1-4 and 6 N/A and notes why.
 
