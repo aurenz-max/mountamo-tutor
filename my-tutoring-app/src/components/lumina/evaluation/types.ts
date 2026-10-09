@@ -2896,6 +2896,15 @@ export interface CircleExplorerMetrics extends BasePrimitiveMetrics {
   averageAttemptsPerChallenge: number;
 }
 
+export interface DistributionExplorerMetrics extends BasePrimitiveMetrics {
+  type: 'distribution-explorer';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  overallAccuracy: number;
+}
+
 export interface AngleWorkshopMetrics extends BasePrimitiveMetrics {
   type: 'angle-workshop';
   challengeType: 'measure' | 'classify_pairs' | 'solve_unknown' | 'solve_algebraic' | 'transversal' | 'make_angle';
@@ -3904,6 +3913,7 @@ export type PrimitiveMetrics =
   | SlopeTriangleMetrics
   | PolygonAreaBuilderMetrics
   | CircleExplorerMetrics
+  | DistributionExplorerMetrics
   | AngleWorkshopMetrics
   | TransformationLabMetrics
   | SystemsEquationsMetrics

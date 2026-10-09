@@ -1,0 +1,162 @@
+{
+ "source": "qa/tutor-reports/two-way-table-runtime-conditional_probability-payload-2026-10-09.json",
+ "primitiveId": "two-way-table",
+ "evalMode": "conditional_probability",
+ "data": {
+  "title": "Conditional Probability in Two-Way Tables",
+  "description": "Practice calculating conditional probabilities by analyzing contingency tables and determining marginal totals from given frequencies.",
+  "challenges": [
+   {
+    "id": "twt-1",
+    "challengeType": "conditional_probability",
+    "scenario": "Favorite subject by gender",
+    "rowLabel": "Gender",
+    "columnLabel": "Favorite subject",
+    "rowCategories": [
+     "Male",
+     "Female"
+    ],
+    "columnCategories": [
+     "Math",
+     "Reading"
+    ],
+    "frequencies": [
+     [
+      26,
+      14
+     ],
+     [
+      16,
+      24
+     ]
+    ],
+    "question": "Given a member is Male, what is the probability they are Reading? Enter P(Reading | Male) as a decimal (round to 2 decimals).",
+    "expectedProbability": 0.35,
+    "tolerance": 0.02,
+    "showTotals": false,
+    "answerTotalAxis": "row",
+    "answerTotalIndex": 0,
+    "target": {
+     "row": 0,
+     "col": 1,
+     "given": "row"
+    },
+    "hint": "Only look at the \"Male\" row. The cell Reading in that row is 14. The row total is 40. Divide: 14 \u00f7 40."
+   },
+   {
+    "id": "twt-2",
+    "challengeType": "conditional_probability",
+    "scenario": "Lunch choice by grade",
+    "rowLabel": "Grade",
+    "columnLabel": "Lunch",
+    "rowCategories": [
+     "Grade 6",
+     "Grade 7"
+    ],
+    "columnCategories": [
+     "Cafeteria",
+     "Packed"
+    ],
+    "frequencies": [
+     [
+      36,
+      24
+     ],
+     [
+      28,
+      32
+     ]
+    ],
+    "question": "Given a member is Cafeteria, what is the probability they are Grade 7? Enter P(Grade 7 | Cafeteria) as a decimal (round to 2 decimals).",
+    "expectedProbability": 0.4375,
+    "tolerance": 0.02,
+    "showTotals": false,
+    "answerTotalAxis": "col",
+    "answerTotalIndex": 0,
+    "target": {
+     "row": 1,
+     "col": 0,
+     "given": "col"
+    },
+    "hint": "Only look at the \"Cafeteria\" column. The cell Grade 7 in that column is 28. The column total is 64. Divide: 28 \u00f7 64."
+   },
+   {
+    "id": "twt-3",
+    "challengeType": "conditional_probability",
+    "scenario": "Phone brand by age group",
+    "rowLabel": "Age group",
+    "columnLabel": "Phone brand",
+    "rowCategories": [
+     "Under 30",
+     "30 and over"
+    ],
+    "columnCategories": [
+     "Brand A",
+     "Brand B"
+    ],
+    "frequencies": [
+     [
+      42,
+      18
+     ],
+     [
+      15,
+      45
+     ]
+    ],
+    "question": "Given a member is Under 30, what is the probability they are Brand B? Enter P(Brand B | Under 30) as a decimal (round to 2 decimals).",
+    "expectedProbability": 0.3,
+    "tolerance": 0.02,
+    "showTotals": false,
+    "answerTotalAxis": "row",
+    "answerTotalIndex": 0,
+    "target": {
+     "row": 0,
+     "col": 1,
+     "given": "row"
+    },
+    "hint": "Only look at the \"Under 30\" row. The cell Brand B in that row is 18. The row total is 60. Divide: 18 \u00f7 60."
+   },
+   {
+    "id": "twt-4",
+    "challengeType": "conditional_probability",
+    "scenario": "Breakfast habit by day type",
+    "rowLabel": "Day",
+    "columnLabel": "Breakfast",
+    "rowCategories": [
+     "Weekday",
+     "Weekend"
+    ],
+    "columnCategories": [
+     "Eats",
+     "Skips"
+    ],
+    "frequencies": [
+     [
+      45,
+      15
+     ],
+     [
+      50,
+      10
+     ]
+    ],
+    "question": "Given a member is Eats, what is the probability they are Weekend? Enter P(Weekend | Eats) as a decimal (round to 2 decimals).",
+    "expectedProbability": 0.5263,
+    "tolerance": 0.02,
+    "showTotals": false,
+    "answerTotalAxis": "col",
+    "answerTotalIndex": 0,
+    "target": {
+     "row": 1,
+     "col": 0,
+     "given": "col"
+    },
+    "hint": "Only look at the \"Eats\" column. The cell Weekend in that column is 50. The column total is 95. Divide: 50 \u00f7 95."
+   }
+  ],
+  "challengeType": "conditional_probability",
+  "educationalContext": "Conditional probability allows us to find the likelihood of an event occurring given that another specific condition has already been met, which is essential for analyzing statistical dependence in real-world data.",
+  "gradeBand": "statistics"
+ }
+}

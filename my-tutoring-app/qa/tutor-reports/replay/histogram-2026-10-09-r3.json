@@ -1,0 +1,2520 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ],
+   "no_change_before_receipt": [
+    0,
+    20
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "histogram.estimate_center",
+   "primitiveId": "histogram",
+   "evalMode": "estimate_center",
+   "keys": [
+    "15"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "hg-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "15"
+      ],
+      "ask": "Estimate the mean (in books) of this data.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "NEXT_HISTOGRAM",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Estimate the mean, in books, of this data. Think about where this histogram would balance along the bottom.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Estimate the mean, in books, of this data.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Estimate the mean, in books, of this data. Think about where all the bars would balance along the bottom.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Estimate the mean, in books, of this data. Think about where these bars would balance along the bottom.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Estimate the mean, in books, of this data.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "hg-1",
+     "trigger": "The learner submitted \"typed 25\". The board checked it: not right.",
+     "miss": "too_high",
+     "scoredWith": {
+      "keys": [
+       "15"
+      ],
+      "ask": "Estimate the mean (in books) of this data.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "NEXT_HISTOGRAM",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A model graph just appeared beside ours: \"The long tail pulls the balance point (the mean) toward it, away from the tallest bar.\" Notice where most of the books pile up, and try another estimate!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "balance_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the model graph that appeared on the side: \"The long tail pulls the balance point (the mean) toward it, away from the tallest bar.\" \n\nTake another look at where most of the bars sit, and try another estimate!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "balance_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the new model graph on the side: \"The long tail pulls the balance point (the mean) toward it, away from the tallest bar.\" \n\nTake another look at where most of the data sits on your graph and try a new estimate.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "balance_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the model graph that appeared: \"The long tail pulls the balance point (the mean) toward it, away from the tallest bar.\" \n\nTake another look at where the data clusters and try another estimate.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "balance_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The model shows: The long tail pulls the balance point\u2014the mean\u2014toward it, away from the tallest bar. Take another look at where most of the books fall and give it another try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "balance_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "hg-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "15"
+      ],
+      "ask": "Estimate the mean (in books) of this data.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "NEXT_HISTOGRAM",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A model graph appeared beside ours showing: \"The long tail pulls the balance point (the mean) toward it, away from the tallest bar.\" Look at our histogram to see where the bars are highest and where they trail off, then try an estimate near that balance spot.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "balance_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A model graph appeared beside the item with the note: \"The long tail pulls the balance point (the mean) toward it, away from the tallest bar.\" \n\nTake a look at where the bars are highest on your graph, and try typing a balance number closer to that cluster.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "balance_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A model graph just appeared beside our histogram: \"The long tail pulls the balance point (the mean) toward it, away from the tallest bar.\" Which bar or region has the tallest pile of books in our graph?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "simpler_graph",
+          "actionId": "test/3/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "balance_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The new model graph shows that the balance point sits where the data balances, pulled slightly toward the tail rather than at the very end. Look at the range where the tallest bars cluster and try typing a number in that area.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "balance_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A model graph is now on the screen showing: \"The long tail pulls the balance point (the mean) toward it, away from the tallest bar.\" Look at where the tallest bars are on our graph and see what number balances them.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "balance_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "hg-1",
+     "trigger": "The learner said they were stuck, so the host pulled balance_model (help). It is on screen now: Shows a small model graph beside the item with no numbers: a long tail, and a balance point drawn under it, pulled toward the tail and away from the tallest bar. Read its caption aloud. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a le",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "15"
+      ],
+      "ask": "Estimate the mean (in books) of this data.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "NEXT_HISTOGRAM",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A small model graph is now showing right beside our histogram with the note: \"The long tail pulls the balance point (the mean) toward it, away from the tallest bar.\" Take a look at where our bars are clustered versus where the tail goes, and give an estimate another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look beside our graph: there is a model showing that \"the long tail pulls the balance point (the mean) toward it, away from the tallest bar.\" See which side the taller bars and the tail are on, and give another estimate a try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look beside our histogram: a small model graph is now showing with the caption, \"The long tail pulls the balance point (the mean) toward it, away from the tallest bar.\" See which side our data balances on, and try another number along the bottom.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look beside our histogram: a small model graph appeared, showing how the balance point is pulled toward the long tail and away from the tallest bar. Its caption reads: \"The long tail pulls the balance point (the mean) toward it, away from the tallest bar.\" What number along the bottom do you think our histogram would balance at?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the model graph that just appeared beside ours: \"The long tail pulls the balance point (the mean) toward it, away from the tallest bar.\" See where our data is clustered and where the tail goes, and try another estimate!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "hg-1",
+     "trigger": "The learner submitted \"typed 15\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "15"
+      ],
+      "ask": "Estimate the mean (in books) of this data.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "NEXT_HISTOGRAM",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You adjusted your estimate and typed 15, right where the distribution balances.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You typed 15 by using that balance idea, and that was right in the target zone.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You checked 15, right in that balance zone where the mean lands.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You adjusted your estimate and typed 15 to find where the data balances.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You checked 15, and finding that balance point pulled toward the tail gave you a great estimate for the mean.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "histogram.find_modal_bin",
+   "primitiveId": "histogram",
+   "evalMode": "find_modal_bin",
+   "keys": [
+    "bar from 9 to 11",
+    "9"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "hg-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "bar from 9 to 11",
+       "9"
+      ],
+      "ask": "Which bin contains the most tenth-second values?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "NEXT_HISTOGRAM",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "bar from 1 to 3",
+       "bar from 3 to 5",
+       "bar from 5 to 7",
+       "bar from 7 to 9",
+       "bar from 9 to 11",
+       "bar from 11 to 13",
+       "bar from 13 to 15",
+       "bar from 15 to 17",
+       "bar from 17 to 19",
+       "bar from 19 to 21",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Which bin contains the most tenth-second values? Take a look at the bars, tap the one you think it is, and press Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Which bin contains the most tenth-second values? Take a look at the bars and tap the one you think it is.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Which bin contains the most tenth-second values? Take a look at the bars, tap the one you think it is, and press Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Which bin contains the most tenth-second values? Take a look at the bars and tap the one you think it is.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Which bin contains the most tenth-second values? Take a look at the bars and tap the one you think it is.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "hg-1",
+     "trigger": "The learner submitted \"tapped the bar from 11 to 13\". The board checked it: not right.",
+     "miss": "neighbor_bar",
+     "scoredWith": {
+      "keys": [
+       "bar from 9 to 11",
+       "9"
+      ],
+      "ask": "Which bin contains the most tenth-second values?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "NEXT_HISTOGRAM",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "bar from 1 to 3",
+       "bar from 3 to 5",
+       "bar from 5 to 7",
+       "bar from 7 to 9",
+       "bar from 9 to 11",
+       "bar from 11 to 13",
+       "bar from 13 to 15",
+       "bar from 15 to 17",
+       "bar from 17 to 19",
+       "bar from 19 to 21",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "I've added a line straight across at the top of that bar to help you compare heights. Take another look to see if any bar rises above it, tap your choice, and try Check again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "level_line",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A line is drawn across at the top of that bar so you can see if another bar reaches higher. Take another look and tap the bar you'd like to try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "level_line"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A guideline now stretches across the top of that bar to help compare heights. See if any other bar pokes above that line, tap your choice, and try Check again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "level_line"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I drew a line across the top of that bar to help you compare. Do you see another bar poking up taller above the line?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "level_line",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A level line is now drawn across the top of that bar to help you compare heights. Take another look to see if any bar reaches higher, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "level_line",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "hg-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "bar from 9 to 11",
+       "9"
+      ],
+      "ask": "Which bin contains the most tenth-second values?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "NEXT_HISTOGRAM",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "bar from 1 to 3",
+       "bar from 3 to 5",
+       "bar from 5 to 7",
+       "bar from 7 to 9",
+       "bar from 9 to 11",
+       "bar from 11 to 13",
+       "bar from 13 to 15",
+       "bar from 15 to 17",
+       "bar from 17 to 19",
+       "bar from 19 to 21",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Notice how the line marks the height of the bar you picked. Look across the chart to see which bar reaches higher than that line, tap it, and press Check.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "level_line",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A level line now runs across the chart from the top of the bar you tapped. Look across the graph to see which bar pokes up higher than that line.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "level_line",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Notice the level line that just appeared right across the top of that bar. Check if there's a bar that pokes up higher than that line, tap it, and press Check.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "level_line",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A level line now runs across the chart at the top of the bar you chose. Look for any bar that pokes above that line, tap it, and press Check.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "level_line",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Notice the line drawn across at the top of the bar you tapped\u2014see if another bar reaches higher above that line, tap it, and hit Check.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "level_line",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "hg-1",
+     "trigger": "The learner said they were stuck, so the host pulled level_line (help). It is on screen now: Draws a level line across the whole chart at the top of the bar the learner tapped, so any taller bar pokes above it. It follows the learner's tap and never marks the tallest bar itself. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a leve",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "bar from 9 to 11",
+       "9"
+      ],
+      "ask": "Which bin contains the most tenth-second values?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "NEXT_HISTOGRAM",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "bar from 1 to 3",
+       "bar from 3 to 5",
+       "bar from 5 to 7",
+       "bar from 7 to 9",
+       "bar from 9 to 11",
+       "bar from 11 to 13",
+       "bar from 13 to 15",
+       "bar from 15 to 17",
+       "bar from 17 to 19",
+       "bar from 19 to 21",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A level line is now drawn straight across at the top of the bar you tapped. Look across to see if there is another bar that pokes above that line, tap it, and press Check.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is now a line running across the graph right at the top of the bar you chose. Look for any bar that pokes above that line, tap it, and press Check.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is now a line running across the chart right at the top of the bar you tapped. Look across the bars to see if any of them poke up above that line, tap it, and press Check.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is now a line running straight across at the top of the bar you tapped. Look for the bar that pokes above that line, tap it, and press Check.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A level line is now drawn straight across from the top of the bar you tapped. Look along that line to see which bar pokes above it, tap that bar, and press Check.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "hg-1",
+     "trigger": "The learner submitted \"tapped the bar from 9 to 11\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "bar from 9 to 11",
+       "9"
+      ],
+      "ask": "Which bin contains the most tenth-second values?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "NEXT_HISTOGRAM",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "bar from 1 to 3",
+       "bar from 3 to 5",
+       "bar from 5 to 7",
+       "bar from 7 to 9",
+       "bar from 9 to 11",
+       "bar from 11 to 13",
+       "bar from 13 to 15",
+       "bar from 15 to 17",
+       "bar from 17 to 19",
+       "bar from 19 to 21",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You found it! By comparing with the line, you spotted that the bar from 9 to 11 rises the highest of all.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it! By comparing the heights against that line, you spotted that the bar from 9 to 11 rises the highest, making it the bin with the most values.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You spotted that the bar from 9 to 11 rises higher than the rest and tapped the tallest one. Great job comparing the heights to find the bin with the most values!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You spotted it! By comparing the tops of the bars with that level line, you found that the bar from 9 to 11 stood the tallest.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it by comparing the bar heights against that line and tapping the bin from 9 to 11!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "histogram.identify_shape",
+   "primitiveId": "histogram",
+   "evalMode": "identify_shape",
+   "keys": [
+    "bimodal"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "hg-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "bimodal"
+      ],
+      "ask": "Which best describes the shape of this distribution?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "NEXT_HISTOGRAM",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "symmetric",
+       "right-skewed",
+       "left-skewed",
+       "bimodal",
+       "uniform",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Which best describes the shape of this distribution? Take a look at where the bars are tallest and how they spread out.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Which best describes the shape of this distribution? Take a look at how the bars are spread out.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Which best describes the shape of this distribution?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Which best describes the shape of this distribution? Take a look at the bars and pick the word that fits.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Which best describes the shape of this distribution? Take a look at where the bars are tallest and how they spread out.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "hg-1",
+     "trigger": "The learner submitted \"chose \\\"Symmetric\\\"\". The board checked it: not right.",
+     "miss": "peak_count",
+     "scoredWith": {
+      "keys": [
+       "bimodal"
+      ],
+      "ask": "Which best describes the shape of this distribution?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "NEXT_HISTOGRAM",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "symmetric",
+       "right-skewed",
+       "left-skewed",
+       "bimodal",
+       "uniform",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Notice the model graph on the side showing how peaks look. How many high peaks do you see across the bars in your graph?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "peak_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice how many distinct high points or peaks there are across the bars. How many separate peaks do you spot in this graph?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "peak_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice how many high points, or peaks, our histogram has across the bars. Compare that with having just one center peak versus two separate tall spots.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "peak_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice how a single peak looks compared to having more than one peak. How many high points or peaks do you see across these bars?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "peak_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice how many high points, or peaks, the bars form across the graph. Take another look and choose the shape that matches what you see.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "peak_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "hg-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "bimodal"
+      ],
+      "ask": "Which best describes the shape of this distribution?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "NEXT_HISTOGRAM",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "symmetric",
+       "right-skewed",
+       "left-skewed",
+       "bimodal",
+       "uniform",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A line now connects the tops of the bars to show the overall outline. How many separate peaks does that outline go up to?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "outline_tops",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A line now connects the tops of the bars to show their outline. Where do you see the tall points along that line?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "outline_tops",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A model graph just appeared beside yours showing how peaks look. Look at where the tall spots are on your graph compared to the model.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "peak_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A model graph appeared on the side showing how peaks work. Compare your graph with the model to see if it has one peak, two peaks, or none.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "peak_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A line now traces across the tops of the bars to show their outline. Look along that line to see how many separate high points or peaks stand up.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "outline_tops",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "hg-1",
+     "trigger": "The learner said they were stuck, so the host pulled outline_tops (help). It is on screen now: Draws a line joining the tops of the bars, so the peaks, dips and any long tail read as one outline. It names nothing. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not wor",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "bimodal"
+      ],
+      "ask": "Which best describes the shape of this distribution?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "NEXT_HISTOGRAM",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "symmetric",
+       "right-skewed",
+       "left-skewed",
+       "bimodal",
+       "uniform",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the line now connecting the tops of the bars across the graph. Follow where it rises and dips, and pick the shape word that fits best.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A line is now drawn across the tops of the bars showing the overall curve. Take a look at where that line rises and falls, and try choosing the shape that fits it best.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the line now connecting the tops of the bars across the graph. Follow where it rises and falls to pick the matching shape.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the new line drawn across the tops of the bars\u2014it traces the whole shape of the data. \n\nFollow that line from left to right: how many high peaks do you see along the top?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the line connecting the tops of the bars across the graph. Follow where it rises and falls to pick the best shape and give it a check!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "hg-1",
+     "trigger": "The learner submitted \"chose \\\"Bimodal\\\"\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "bimodal"
+      ],
+      "ask": "Which best describes the shape of this distribution?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "NEXT_HISTOGRAM",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "symmetric",
+       "right-skewed",
+       "left-skewed",
+       "bimodal",
+       "uniform",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it\u2014by tracing that outline, you spotted the two clear peaks and correctly chose Bimodal!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You spotted the two distinct peaks in that outline and chose Bimodal!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You spotted both peaks and chose Bimodal after following the outline!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You chose Bimodal and found both peaks along that line! Nice work reading the shape from the outline.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You checked the two clear peaks on the outline and picked Bimodal.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "histogram.read_frequency",
+   "primitiveId": "histogram",
+   "evalMode": "read_frequency",
+   "keys": [
+    "6"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "hg-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "6"
+      ],
+      "ask": "How many values fall in the bin [155, 160)?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "NEXT_HISTOGRAM",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "How many values fall in the bin [155, 160)? Take a look at the outlined bar and check its height on the frequency axis.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "How many values fall in the bin [155, 160)? Look at the outlined bar and read its height on the frequency axis.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "How many values fall in the bin [155, 160)?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "How many values fall in the bin [155, 160)? Take a look at the outlined bar.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "How many values fall in the bin [155, 160)? Look at the outlined bar and trace its top straight across to the Frequency axis.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "hg-1",
+     "trigger": "The learner submitted \"typed 155\". The board checked it: not right.",
+     "miss": "bin_edge",
+     "scoredWith": {
+      "keys": [
+       "6"
+      ],
+      "ask": "How many values fall in the bin [155, 160)?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "NEXT_HISTOGRAM",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The labels now show what each axis measures: values run along the bottom, and how many values go up the side. Follow the top of that outlined bar straight across to the vertical frequency axis.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "axis_names",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Labels were added to the axes: the bottom shows the height values, while the side shows how many values are in each bar. Try looking at the top of that outlined bar and reading straight across to the side axis.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "axis_names",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The bottom shows the height values, while the side axis shows how many values are in that bar. Look straight across from the top of the outlined bar to the vertical axis to find the count.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "axis_names",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The labels now show that the bottom axis gives the height values, while the side axis shows how many values are in each bin. Look across from the top of the outlined bar to the vertical axis to find the count.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "axis_names",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The axes are now labeled so you can see values along the bottom and how many values go up the side. Follow the top of that outlined bar straight across to the frequency axis to see its count.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "axis_names",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "hg-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "6"
+      ],
+      "ask": "How many values fall in the bin [155, 160)?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "NEXT_HISTOGRAM",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "I added labels to the axes: the bottom shows values, and the vertical axis counts how many. Look at the top of the outlined bar and see which number it matches on that side axis.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "count_marks"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "axis_names",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The axes now have labels reminding you that heights are along the bottom, while the count goes up the side. Look at the top edge of the outlined bar and see which number it matches on that side axis.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "axis_names",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Captions are now showing on the axes to help you see what they mean. Look at the vertical axis on the left\u2014what number lines up with the top of the outlined bar?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "axis_names"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I added captions to both axes: the bottom shows the height ranges, while the side shows how many values are in that range. Find the outlined bar for [155, 160) and look straight across to the number on the vertical axis.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "axis_names",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I added labels to each axis so you can see what they measure: values go along the bottom, and counts go up the side. Look straight across from the top of that outlined bar to the vertical axis\u2014what number does it line up with?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "axis_names",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "hg-1",
+     "trigger": "The learner said they were stuck, so the host pulled axis_names (help). It is on screen now: Captions the two axes with what they count: values along the bottom (the bar edges), how many values up the side. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it th",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "6"
+      ],
+      "ask": "How many values fall in the bin [155, 160)?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "NEXT_HISTOGRAM",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Notice the new labels on the axes showing that values are along the bottom, while the count goes up the side. Follow the top edge of that outlined bar straight across to the side axis to see how high it reaches.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Labels have appeared along the axes to show what they mean: the bottom line shows the heights, while the vertical side shows how many students. Trace your finger from the top of the outlined bar across to that side axis and see what number you land on.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You can now see labels on the axes: the bottom shows the height values, and the side shows the count. Look at how tall that outlined bar is, and type the number it lines up with on the side.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the new labels on the axes showing that values run along the bottom while the count is up the side. Follow the top of that outlined bar over to the vertical side to see what number it lines up with.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the new labels on the axes: the bottom shows values, and the side axis shows how many values. Find the top of that outlined bar and trace it over to the side axis to see how many values it reaches.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "hg-1",
+     "trigger": "The learner submitted \"typed 6\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "6"
+      ],
+      "ask": "How many values fall in the bin [155, 160)?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "NEXT_HISTOGRAM",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it\u20146 values fall in that bin because you tracked the bar's height straight to 6 on the frequency axis!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You checked the height straight across to the vertical axis and got 6.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nice work reading the height of that bar right across to 6 on the frequency axis!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it\u2014you read the height across to the vertical axis and found that 6 values fall in that bin!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You matched the top of that bar straight across to 6 on the frequency axis!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,18 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, ChevronRight, Lightbulb } from 'lucide-react';
 import { Card } from '../../../ui/card';
 import { Button } from '../../../ui/button';
-import { FAMILIES } from '../../lib/probability';
-import type {
-  ComputeChallenge,
-  DistributionChallenge,
-  DistributionFamily,
-  IdentifyChallenge,
-  PredictShapeChallenge,
-} from './types';
+import { distributionChoices, distributionCorrect } from './distributionExplorerWorkspace';
+import type { DistributionChallenge } from './types';
 
 interface ChallengeStripProps {
   challenges: DistributionChallenge[];
@@ -20,26 +14,41 @@ interface ChallengeStripProps {
   activeIndex: number;
   /** Per-challenge result: undefined = pending, true = correct/committed, false = wrong (still pending). */
   results: Record<string, boolean>;
-  onCommit: (challengeId: string, correct: boolean) => void;
+  /** The choice picked on the active challenge (its `key`). Parent owns it, so the tutor's scene can read it. */
+  selected: string | null;
+  onSelect: (key: string) => void;
+  /** Check (or Got it on a guided exploration). The parent runs the check. */
+  onCheck: () => void;
   onAdvance: () => void;
+  /** With the tutor: no Next (the runtime advances), and a wrong check shows neither the rationale nor the key. */
+  tutorOwned?: boolean;
+  /** With the tutor, while a checked answer waits for Try again: every control is closed. */
+  blocked?: boolean;
+  /** A line under each choice, keyed by the choice's `key` (the `family_facts` lever: the same kind of fact on every one). */
+  notes?: Record<string, string>;
 }
 
 /**
  * Renders the active challenge with type-specific UI. Once committed, the
  * rationale is shown and the parent can advance to the next challenge.
  *
- * Gating policy:
- *   - guided_exploration → "Got it" button always commits as correct.
- *   - identify           → radio of families; commit checks correctFamily.
- *   - compute            → 4-option numeric MCQ; commit checks selected === correctValue.
- *   - predict_shape      → MCQ of shape descriptors; commit checks lexical match.
+ * Gating policy (the checks live in `distributionExplorerWorkspace.ts`):
+ *   - guided_exploration → "Got it"; scripted always credits it, the tutor path credits it after the workbench moved.
+ *   - identify           → choice of families; Check compares with correctFamily.
+ *   - compute            → 4-option numeric MCQ; Check compares with correctValue.
+ *   - predict_shape      → MCQ of shape descriptors; Check matches acceptableAnswers.
  */
 export const ChallengeStrip: React.FC<ChallengeStripProps> = ({
   challenges,
   activeIndex,
   results,
-  onCommit,
+  selected,
+  onSelect,
+  onCheck,
   onAdvance,
+  tutorOwned = false,
+  blocked = false,
+  notes,
 }) => {
   const challenge = challenges[activeIndex];
   if (!challenge) {
@@ -74,11 +83,26 @@ export const ChallengeStrip: React.FC<ChallengeStripProps> = ({
 
       <p className="text-sm text-slate-100 leading-relaxed">{challenge.prompt}</p>
 
-      <ChallengeBody
-        challenge={challenge}
-        isCommitted={isCommitted}
-        onCommit={(correct) => onCommit(challenge.id, correct)}
-      />
+      {challenge.type === 'guided_exploration' ? (
+        <Button
+          variant="ghost"
+          disabled={isCommitted || blocked}
+          onClick={onCheck}
+          className="bg-emerald-500/15 border border-emerald-400/30 hover:bg-emerald-500/25 text-emerald-100 gap-1.5"
+        >
+          <Check size={14} /> Got it
+        </Button>
+      ) : (
+        <ChoiceBody
+          challenge={challenge}
+          isCommitted={isCommitted}
+          selected={selected}
+          blocked={blocked}
+          notes={notes}
+          onSelect={onSelect}
+          onCheck={onCheck}
+        />
+      )}
 
       <AnimatePresence>
         {isCommitted && (
@@ -98,7 +122,7 @@ export const ChallengeStrip: React.FC<ChallengeStripProps> = ({
               {isCorrect ? <Check size={16} className="mt-0.5 flex-shrink-0" /> : <Lightbulb size={16} className="mt-0.5 flex-shrink-0" />}
               <span>{challenge.rationale}</span>
             </div>
-            {hasNext && (
+            {hasNext && !tutorOwned && (
               <Button
                 variant="ghost"
                 onClick={onAdvance}
@@ -114,242 +138,38 @@ export const ChallengeStrip: React.FC<ChallengeStripProps> = ({
   );
 };
 
-// ── Per-type body ────────────────────────────────────────────────────
+// ── Choice body (identify, compute, predict_shape) ───────────────────
 
-interface ChallengeBodyProps {
+const ChoiceBody: React.FC<{
   challenge: DistributionChallenge;
   isCommitted: boolean;
-  onCommit: (correct: boolean) => void;
-}
-
-const ChallengeBody: React.FC<ChallengeBodyProps> = ({ challenge, isCommitted, onCommit }) => {
-  switch (challenge.type) {
-    case 'guided_exploration':
-      return <GuidedBody isCommitted={isCommitted} onCommit={onCommit} />;
-    case 'identify':
-      return <IdentifyBody challenge={challenge} isCommitted={isCommitted} onCommit={onCommit} />;
-    case 'compute':
-      return <ComputeBody challenge={challenge} isCommitted={isCommitted} onCommit={onCommit} />;
-    case 'predict_shape':
-      return <PredictShapeBody challenge={challenge} isCommitted={isCommitted} onCommit={onCommit} />;
-  }
-};
-
-const GuidedBody: React.FC<{ isCommitted: boolean; onCommit: (correct: boolean) => void }> = ({
-  isCommitted,
-  onCommit,
-}) => (
-  <Button
-    variant="ghost"
-    disabled={isCommitted}
-    onClick={() => onCommit(true)}
-    className="bg-emerald-500/15 border border-emerald-400/30 hover:bg-emerald-500/25 text-emerald-100 gap-1.5"
-  >
-    <Check size={14} /> Got it
-  </Button>
-);
-
-const IdentifyBody: React.FC<{
-  challenge: IdentifyChallenge;
-  isCommitted: boolean;
-  onCommit: (correct: boolean) => void;
-}> = ({ challenge, isCommitted, onCommit }) => {
-  const [selected, setSelected] = useState<DistributionFamily | null>(null);
-  const choices = useShuffledFamilies(challenge);
-
-  const submit = () => {
-    if (!selected) return;
-    onCommit(selected === challenge.correctFamily);
-  };
+  selected: string | null;
+  blocked: boolean;
+  notes?: Record<string, string>;
+  onSelect: (key: string) => void;
+  onCheck: () => void;
+}> = ({ challenge, isCommitted, selected, blocked, notes, onSelect, onCheck }) => {
+  const choices = React.useMemo(() => distributionChoices(challenge), [challenge]);
+  const numeric = challenge.type === 'compute';
+  const closed = isCommitted || blocked;
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        {choices.map((f) => {
-          const isSelected = selected === f;
-          const isCorrect = f === challenge.correctFamily;
-          return (
-            <button
-              key={f}
-              type="button"
-              disabled={isCommitted}
-              onClick={() => setSelected(f)}
-              className={`text-sm px-3 py-2 rounded border transition-colors text-left ${
-                isCommitted
-                  ? isCorrect
-                    ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-100'
-                    : isSelected
-                    ? 'bg-rose-500/10 border-rose-400/40 text-rose-200'
-                    : 'bg-slate-800/40 border-slate-700 text-slate-500'
-                  : isSelected
-                  ? 'bg-indigo-500/20 border-indigo-400 text-indigo-100'
-                  : 'bg-slate-800/40 border-slate-700 text-slate-300 hover:bg-slate-800/70'
-              }`}
-            >
-              {FAMILIES[f].label}
-            </button>
-          );
-        })}
-      </div>
-      {!isCommitted && (
-        <Button
-          variant="ghost"
-          disabled={!selected}
-          onClick={submit}
-          className="bg-indigo-500/15 border border-indigo-400/30 hover:bg-indigo-500/25 text-indigo-100"
-        >
-          Commit answer
-        </Button>
-      )}
-    </div>
-  );
-};
-
-function useShuffledFamilies(challenge: IdentifyChallenge): DistributionFamily[] {
-  // Stable shuffle — keyed off challenge.id so it doesn't reorder on re-render.
-  return React.useMemo(() => {
-    const all: DistributionFamily[] = [challenge.correctFamily, ...challenge.distractors];
-    // Fisher-Yates seeded by challenge.id hash so renders are stable.
-    let seed = 0;
-    for (let i = 0; i < challenge.id.length; i++) seed = (seed * 31 + challenge.id.charCodeAt(i)) | 0;
-    const a = [...all];
-    for (let i = a.length - 1; i > 0; i--) {
-      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-      const j = seed % (i + 1);
-      [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
-  }, [challenge.id, challenge.correctFamily, challenge.distractors]);
-}
-
-const ComputeBody: React.FC<{
-  challenge: ComputeChallenge;
-  isCommitted: boolean;
-  onCommit: (correct: boolean) => void;
-}> = ({ challenge, isCommitted, onCommit }) => {
-  const [selected, setSelected] = useState<number | null>(null);
-  const choices = useShuffledNumericChoices(challenge);
-  const decimals = challenge.decimals ?? pickDefaultDecimals(challenge.correctValue);
-
-  const submit = () => {
-    if (selected === null) return;
-    onCommit(selected === challenge.correctValue);
-  };
-
-  return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {choices.map((value) => {
-          const isSelected = selected === value;
-          const isCorrect = value === challenge.correctValue;
-          return (
-            <button
-              key={value}
-              type="button"
-              disabled={isCommitted}
-              onClick={() => setSelected(value)}
-              className={`text-sm px-3 py-2 rounded border transition-colors text-left font-mono ${
-                isCommitted
-                  ? isCorrect
-                    ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-100'
-                    : isSelected
-                    ? 'bg-rose-500/10 border-rose-400/40 text-rose-200'
-                    : 'bg-slate-800/40 border-slate-700 text-slate-500'
-                  : isSelected
-                  ? 'bg-indigo-500/20 border-indigo-400 text-indigo-100'
-                  : 'bg-slate-800/40 border-slate-700 text-slate-300 hover:bg-slate-800/70'
-              }`}
-            >
-              {formatNumber(value, decimals)}
-              {challenge.unit && <span className="text-slate-400 ml-1.5">{challenge.unit}</span>}
-            </button>
-          );
-        })}
-      </div>
-      {!isCommitted && (
-        <Button
-          variant="ghost"
-          disabled={selected === null}
-          onClick={submit}
-          className="bg-indigo-500/15 border border-indigo-400/30 hover:bg-indigo-500/25 text-indigo-100"
-        >
-          Commit answer
-        </Button>
-      )}
-    </div>
-  );
-};
-
-function useShuffledNumericChoices(challenge: ComputeChallenge): number[] {
-  return React.useMemo(() => {
-    const all = [challenge.correctValue, ...challenge.distractors];
-    let seed = 0;
-    for (let i = 0; i < challenge.id.length; i++) seed = (seed * 31 + challenge.id.charCodeAt(i)) | 0;
-    const a = [...all];
-    for (let i = a.length - 1; i > 0; i--) {
-      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-      const j = seed % (i + 1);
-      [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
-  }, [challenge.id, challenge.correctValue, challenge.distractors]);
-}
-
-function pickDefaultDecimals(value: number): number {
-  // Probabilities and rates are usually <1 — show 4 decimals. Whole-ish answers (E[X]=3) — show 2.
-  return Math.abs(value) < 1 ? 4 : 2;
-}
-
-function formatNumber(value: number, decimals: number): string {
-  // Strip trailing zeros for readability ("3" not "3.00") while preserving precision when needed.
-  const fixed = value.toFixed(decimals);
-  return fixed.includes('.') ? fixed.replace(/\.?0+$/, '') || '0' : fixed;
-}
-
-const PredictShapeBody: React.FC<{
-  challenge: PredictShapeChallenge;
-  isCommitted: boolean;
-  onCommit: (correct: boolean) => void;
-}> = ({ challenge, isCommitted, onCommit }) => {
-  const [selected, setSelected] = useState<string | null>(null);
-
-  const normalize = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
-  const acceptable = challenge.acceptableAnswers.map(normalize);
-
-  const choices = React.useMemo(() => {
-    const all = [challenge.acceptableAnswers[0], ...challenge.distractors];
-    // Stable shuffle keyed off challenge id (same trick as IdentifyBody).
-    let seed = 0;
-    for (let i = 0; i < challenge.id.length; i++) seed = (seed * 31 + challenge.id.charCodeAt(i)) | 0;
-    const a = [...all];
-    for (let i = a.length - 1; i > 0; i--) {
-      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-      const j = seed % (i + 1);
-      [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
-  }, [challenge.id, challenge.acceptableAnswers, challenge.distractors]);
-
-  const submit = () => {
-    if (!selected) return;
-    onCommit(acceptable.includes(normalize(selected)));
-  };
-
-  return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-1 gap-2">
+      <div className={`grid gap-2 ${challenge.type === 'identify' ? 'grid-cols-1 sm:grid-cols-3' : numeric ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
         {choices.map((c) => {
-          const isSelected = selected === c;
-          const isCorrect = acceptable.includes(normalize(c));
+          const isSelected = selected === c.key;
+          // The key is marked only once the item is committed (scripted: right or wrong; tutor: right only).
+          const isKey = isCommitted && distributionCorrect(challenge, { picked: c.key, explored: false, family: 'binomial', params: {} });
           return (
             <button
-              key={c}
+              key={c.key}
               type="button"
-              disabled={isCommitted}
-              onClick={() => setSelected(c)}
-              className={`text-sm px-3 py-2 rounded border transition-colors text-left ${
+              aria-label={c.label}
+              disabled={closed}
+              onClick={() => onSelect(c.key)}
+              className={`text-sm px-3 py-2 rounded border transition-colors text-left ${numeric ? 'font-mono' : ''} ${
                 isCommitted
-                  ? isCorrect
+                  ? isKey
                     ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-100'
                     : isSelected
                     ? 'bg-rose-500/10 border-rose-400/40 text-rose-200'
@@ -359,7 +179,10 @@ const PredictShapeBody: React.FC<{
                   : 'bg-slate-800/40 border-slate-700 text-slate-300 hover:bg-slate-800/70'
               }`}
             >
-              {c}
+              {c.label}
+              {notes?.[c.key] && (
+                <span data-lever="family-facts" className="block text-[11px] text-slate-400 mt-0.5">{notes[c.key]}</span>
+              )}
             </button>
           );
         })}
@@ -367,11 +190,11 @@ const PredictShapeBody: React.FC<{
       {!isCommitted && (
         <Button
           variant="ghost"
-          disabled={!selected}
-          onClick={submit}
+          disabled={!selected || blocked}
+          onClick={onCheck}
           className="bg-indigo-500/15 border border-indigo-400/30 hover:bg-indigo-500/25 text-indigo-100"
         >
-          Commit answer
+          Check
         </Button>
       )}
     </div>

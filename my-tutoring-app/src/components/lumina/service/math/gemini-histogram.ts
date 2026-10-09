@@ -5,6 +5,7 @@ import {
   HistogramChallengeType,
   HistogramShapeKind,
 } from "../../primitives/visual-primitives/math/Histogram";
+import { binRange, classifyShape, computeBins } from "../../primitives/visual-primitives/math/histogramWorkspace";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection } from '../scopeContext';
@@ -169,34 +170,15 @@ const DEFAULT_SHAPE: ProblemShape = {
   forceShape: null,
 };
 
-/** A computed bin (start/end/count) — local mirror of the component's Bin. */
-interface Bin {
-  start: number;
-  end: number;
-  count: number;
-}
+/** A computed bin (start/end/count): the component's own bars. */
+type Bin = ReturnType<typeof computeBins>[number];
 
 /**
- * Mirror of the component's `computeBins` so the generator can recompute the
- * EXACT bars the student will see — used to (a) pin find_modal_bin's expected
- * bin to the actual tallest bar (answer can't desync, Gotcha #1) and (b) target
- * read_frequency bins by their real height.
+ * The component's `computeBins` (histogramWorkspace.ts), so the generator keys every answer on the EXACT bars the
+ * student will see: (a) find_modal_bin's expected bin is the actual tallest bar, (b) read_frequency targets bins by
+ * their real height. One function since 2026-10-09: the mirror had dropped values on the axis maximum.
  */
-function computeBinFreqs(data: number[], binWidth: number, binStart: number): Bin[] {
-  if (data.length === 0 || binWidth <= 0) return [];
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const effectiveStart = binStart <= min ? binStart : Math.floor(min / binWidth) * binWidth;
-  const effectiveEnd = Math.ceil((max - effectiveStart) / binWidth) * binWidth + effectiveStart;
-  const numBins = Math.max(1, Math.ceil((effectiveEnd - effectiveStart) / binWidth));
-  const out: Bin[] = [];
-  for (let i = 0; i < numBins; i++) {
-    const start = effectiveStart + i * binWidth;
-    const end = start + binWidth;
-    out.push({ start, end, count: data.filter((v) => v >= start && v < end).length });
-  }
-  return out;
-}
+const computeBinFreqs = computeBins;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -302,11 +284,17 @@ function buildBimodal(
   return out;
 }
 
-/** Uniform: roughly equal frequency across bins. */
-function buildUniform(min: number, max: number, n: number): number[] {
+/** Uniform: equal frequency across bins. Dealt round-robin into the bins (each value at a random spot inside its
+ *  bin), so every bar is within one of the others and the drawn graph reads flat; independent draws of 25-40 values
+ *  came out lumpy enough to read as another shape. */
+function buildUniform(min: number, max: number, n: number, binWidth: number): number[] {
+  const numBins = Math.max(1, Math.floor((max - min) / binWidth));
   const out: number[] = [];
+  const offset = randInt(0, numBins - 1);
   for (let i = 0; i < n; i++) {
-    out.push(randInt(min, max));
+    const bin = (i + offset) % numBins;
+    const lo = min + bin * binWidth;
+    out.push(randInt(lo, Math.min(max, lo + binWidth - 1)));
   }
   return out;
 }
@@ -406,7 +394,7 @@ function buildDataForShape(
     case 'uniform':
       // Kept clean at every tier — a "subtle" uniform reads as symmetric, which
       // would make the labeled answer genuinely ambiguous (shape IS the answer).
-      return buildUniform(min, max, n);
+      return buildUniform(min, max, n, topic.binWidth);
   }
 }
 
@@ -421,10 +409,26 @@ function buildIdentifyShape(
   idx: number,
   forcedShape?: HistogramShapeKind,
   clarity: ShapeClarity = 'moderate',
-): ChallengeBuildResult {
-  const shape = forcedShape ?? SHAPE_OPTIONS[idx % SHAPE_OPTIONS.length];
-  const n = randInt(25, 40);
-  const data = buildDataForShape(shape, topic, n, clarity);
+): ChallengeBuildResult | null {
+  const intended = forcedShape ?? SHAPE_OPTIONS[idx % SHAPE_OPTIONS.length];
+  // The key is the shape the DRAWN bars have (`classifyShape`), not the builder's intent: a random draw can come out
+  // reading as another shape. Redraw until the bars read as the intended shape; failing that, key the last clear draw
+  // by what it reads as; a graph that never reads clearly as one shape is dropped.
+  let shape: HistogramShapeKind | null = null;
+  let data: number[] = [];
+  let n = 0;
+  let fallback: { shape: HistogramShapeKind; data: number[]; n: number } | null = null;
+  for (let attempt = 0; attempt < 60 && shape === null; attempt++) {
+    n = randInt(25, 40);
+    data = buildDataForShape(intended, topic, n, clarity);
+    const read = classifyShape(data, computeBins(data, topic.binWidth, topic.min));
+    if (read === intended) shape = intended;
+    else if (read) fallback = { shape: read, data, n };
+  }
+  if (shape === null) {
+    if (!fallback) return null;
+    ({ shape, data, n } = fallback);
+  }
   return {
     challenge: {
       id: `hg-${idx + 1}`,
@@ -442,7 +446,7 @@ function buildIdentifyShape(
             `A single peak in the middle is symmetric; two peaks is bimodal; ` +
             `a long tail to one side is skewed in that direction.`,
     },
-    summary: `[identify_shape] ${topic.context} → ${shape} (n=${n})`,
+    summary: `[identify_shape] ${topic.context} → ${shape}${shape !== intended ? ` (drawn as ${intended})` : ''} (n=${n})`,
   };
 }
 
@@ -518,7 +522,7 @@ function buildReadFrequency(
     const ti = randInt(0, Math.max(0, numBins - 1));
     const start = topic.min + ti * topic.binWidth;
     target = bins.find((b) => b.start === start)
-      ?? { start, end: start + topic.binWidth, count: data.filter((v) => v >= start && v < start + topic.binWidth).length };
+      ?? { start, end: start + topic.binWidth, count: 0 };
   } else {
     const nonEmpty = bins.filter((b) => b.count > 0);
     const pool = nonEmpty.length > 0 ? nonEmpty : bins;
@@ -543,7 +547,7 @@ function buildReadFrequency(
       contextTitle: topic.context,
       xAxisLabel: topic.xAxisLabel,
       yAxisLabel: 'Frequency',
-      prompt: `How many values fall in the bin [${targetBinStart}, ${targetBinEnd})?`,
+      prompt: `How many values fall in the bin ${binRange(targetBinStart, targetBinEnd, target.start === bins[bins.length - 1]?.start)}?`,
       targetBinStart,
       targetBinEnd,
       targetFrequency,
@@ -648,7 +652,7 @@ function selectHistogramChallenges(
   }
 
   topics.forEach((topic, idx) => {
-    let result: ChallengeBuildResult;
+    let result: ChallengeBuildResult | null;
     switch (mode) {
       case 'identify_shape':
         result = buildIdentifyShape(topic, idx, distinctShapes[idx], shapeParams.shapeClarity);
@@ -663,6 +667,8 @@ function selectHistogramChallenges(
         result = buildEstimateCenter(topic, idx, shapeParams);
         break;
     }
+    // A graph that never read clearly as one shape is dropped, not asked.
+    if (!result) return;
     out.push(result.challenge);
     summaries.push(result.summary);
   });

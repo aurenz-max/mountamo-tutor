@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -21,11 +21,23 @@ import {
 } from '../../../evaluation';
 import type { TwoWayTableMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  colSum, describeTwoWayWork, formatProbability, grandSum, parseProbabilityInput, rowSum, totalsVisibility,
+  twoWayCorrect, twoWayMiss, workspaceAssignment, workspaceScene, type TableTarget,
+} from './twoWayTableWorkspace';
+import {
+  MODEL_LEVER, OUTLINE_LEVER, OUT_OF_LEVER, SIMPLER_LEVER, SUM_LEVER, isPracticeTable, leverFacts, outOfFrame,
+  outlineCells, simplerTable, sumFrames, tableModel, twoWayLevers,
+} from './twoWayTableLevers';
 
 // ============================================================================
 // Data Types — canonical interface re-exported from the generator
@@ -65,6 +77,8 @@ export interface TwoWayTableChallenge {
   showGrandTotal?: boolean;
   /** Easy-tier worked "sum reminder" anchor line (never states the answer total). */
   sumReminder?: string;
+  /** Which cell, row or column the question names (generator-built; never rendered). */
+  target?: TableTarget;
 }
 
 export interface TwoWayTableData {
@@ -95,48 +109,8 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   independence_test:       { label: 'Independence', icon: '⊥', accentColor: 'emerald' },
 };
 
-// ============================================================================
-// Helpers
-// ============================================================================
-
 function phaseScore(attempts: number): number {
   return Math.max(20, 100 - (Math.max(0, attempts - 1) * 20));
-}
-
-function parseProbabilityInput(raw: string): number | null {
-  const s = raw.trim();
-  if (!s) return null;
-  // Accept percentage form ("25%" or "25") if input ends with %.
-  if (s.endsWith('%')) {
-    const v = parseFloat(s.slice(0, -1));
-    return Number.isFinite(v) ? v / 100 : null;
-  }
-  const v = parseFloat(s);
-  if (!Number.isFinite(v)) return null;
-  // If value is > 1, treat as a percentage entered without the %.
-  return v > 1 ? v / 100 : v;
-}
-
-function formatProbability(p: number): string {
-  return p.toFixed(2);
-}
-
-/**
- * Resolve which totals the table renders. Support tiers set the fine-grained
- * show* flags; when none is present we fall back to the legacy mode-fixed
- * showTotals switch (every total on, or every total off, as before).
- */
-function resolveTotalsVisibility(challenge: TwoWayTableChallenge): {
-  showRow: boolean;
-  showCol: boolean;
-  showGrand: boolean;
-  anyTotals: boolean;
-} {
-  const tiered = challenge.supportTier != null;
-  const showRow = tiered ? !!challenge.showRowTotals : challenge.showTotals;
-  const showCol = tiered ? !!challenge.showColTotals : challenge.showTotals;
-  const showGrand = tiered ? !!challenge.showGrandTotal : challenge.showTotals;
-  return { showRow, showCol, showGrand, anyTotals: showRow || showCol || showGrand };
 }
 
 // ============================================================================
@@ -146,42 +120,26 @@ function resolveTotalsVisibility(challenge: TwoWayTableChallenge): {
 // pedagogically color-coded contingency table (purple columns, blue rows,
 // amber totals) the student reads counts out of. Support tiers withdraw the
 // amber total scaffolds independently (row / column / grand) so a hard tier
-// makes the student compute every sum; the cell counts never change.
+// makes the student compute every sum; the cell counts never change. The
+// `outline_question` lever rings the cells the question is about.
 // ============================================================================
 
 interface FrequencyTableProps {
   challenge: TwoWayTableChallenge;
+  outline?: { cells: Array<[number, number]>; mark: [number, number] | null } | null;
 }
 
-const FrequencyTable: React.FC<FrequencyTableProps> = ({ challenge }) => {
-  const {
-    rowLabel,
-    columnLabel,
-    rowCategories,
-    columnCategories,
-    frequencies,
-    sumReminder,
-  } = challenge;
+const FrequencyTable: React.FC<FrequencyTableProps> = ({ challenge, outline }) => {
+  const { rowLabel, columnLabel, rowCategories, columnCategories, frequencies, sumReminder } = challenge;
+  const { showRow, showCol, showGrand } = totalsVisibility(challenge);
+  const anyTotals = showRow || showCol || showGrand;
 
-  const { showRow, showCol, showGrand, anyTotals } = resolveTotalsVisibility(challenge);
+  const rowTotals = useMemo(() => frequencies.map((_, r) => rowSum(frequencies, r)), [frequencies]);
+  const columnTotals = useMemo(() => columnCategories.map((_, c) => colSum(frequencies, c)), [frequencies, columnCategories]);
+  const grandTotal = useMemo(() => grandSum(frequencies), [frequencies]);
 
-  const rowTotals = useMemo(
-    () => frequencies.map((row) => row.reduce((s, v) => s + v, 0)),
-    [frequencies],
-  );
-
-  const columnTotals = useMemo(
-    () =>
-      columnCategories.map((_, c) =>
-        frequencies.reduce((s, row) => s + (row[c] ?? 0), 0),
-      ),
-    [frequencies, columnCategories],
-  );
-
-  const grandTotal = useMemo(
-    () => rowTotals.reduce((s, v) => s + v, 0),
-    [rowTotals],
-  );
+  const outlined = (r: number, c: number) => !!outline?.cells.some(([i, j]) => i === r && j === c);
+  const marked = (r: number, c: number) => !!outline?.mark && outline.mark[0] === r && outline.mark[1] === c;
 
   return (
     <div className="overflow-x-auto rounded-xl border border-white/10 bg-slate-950/40 p-4">
@@ -194,10 +152,7 @@ const FrequencyTable: React.FC<FrequencyTableProps> = ({ challenge }) => {
               <span className="font-mono text-slate-400">{columnLabel}</span>
             </th>
             {columnCategories.map((col, ci) => (
-              <th
-                key={ci}
-                className="p-2 text-center font-semibold text-purple-200 border-b border-white/10"
-              >
+              <th key={ci} className="p-2 text-center font-semibold text-purple-200 border-b border-white/10">
                 {col}
               </th>
             ))}
@@ -211,13 +166,14 @@ const FrequencyTable: React.FC<FrequencyTableProps> = ({ challenge }) => {
         <tbody>
           {frequencies.map((row, ri) => (
             <tr key={ri} className="border-t border-white/5">
-              <td className="p-2 font-semibold text-blue-200 border-r border-white/10">
-                {rowCategories[ri]}
-              </td>
+              <td className="p-2 font-semibold text-blue-200 border-r border-white/10">{rowCategories[ri]}</td>
               {row.map((cell, ci) => (
                 <td
                   key={ci}
-                  className="p-2 text-center font-mono text-base text-white border border-white/5"
+                  data-lever={marked(ri, ci) ? 'outline-mark' : outlined(ri, ci) ? 'outline' : undefined}
+                  className={`p-2 text-center font-mono text-base text-white border border-white/5 ${
+                    marked(ri, ci) ? 'ring-2 ring-inset ring-amber-300 bg-amber-400/10'
+                      : outlined(ri, ci) ? 'ring-2 ring-inset ring-cyan-400/80 bg-cyan-400/10' : ''}`}
                 >
                   {cell}
                 </td>
@@ -231,14 +187,9 @@ const FrequencyTable: React.FC<FrequencyTableProps> = ({ challenge }) => {
           ))}
           {(showCol || showGrand) && (
             <tr className="border-t-2 border-t-white/20 bg-slate-900/50">
-              <td className="p-2 font-semibold text-amber-300 border-r border-white/10">
-                Total
-              </td>
+              <td className="p-2 font-semibold text-amber-300 border-r border-white/10">Total</td>
               {columnTotals.map((t, ci) => (
-                <td
-                  key={ci}
-                  className="p-2 text-center font-mono text-amber-200 font-bold"
-                >
+                <td key={ci} className="p-2 text-center font-mono text-amber-200 font-bold">
                   {showCol ? t : ''}
                 </td>
               ))}
@@ -252,11 +203,7 @@ const FrequencyTable: React.FC<FrequencyTableProps> = ({ challenge }) => {
       </table>
 
       {/* Easy-tier worked "sum reminder" — a safe (non-answer) total demonstrated. */}
-      {sumReminder && (
-        <p className="mt-2 text-xs text-emerald-300/90 italic">
-          {sumReminder}
-        </p>
-      )}
+      {sumReminder && <p className="mt-2 text-xs text-emerald-300/90 italic">{sumReminder}</p>}
 
       {!anyTotals && (
         <p className="mt-2 text-xs text-slate-500 italic">
@@ -268,12 +215,9 @@ const FrequencyTable: React.FC<FrequencyTableProps> = ({ challenge }) => {
 };
 
 // ============================================================================
-// Tutor reveal policy — keep the AI tutor in sync with the on-screen scaffold so
-// a hard tier (every total hidden) isn't undone by the tutor naming a total or
-// the answer. The task identity (joint / marginal / conditional / independence)
-// is the SAME at every tier; the tier only dials how much the tutor may pre-sum.
-// In every mode the relationship to compute IS the assessed skill, so the tutor
-// never states the final probability at any tier.
+// Tutor reveal policy (scripted path) — keep the AI tutor in sync with the
+// on-screen scaffold so a hard tier (every total hidden) isn't undone by the
+// tutor naming a total or the answer.
 // ============================================================================
 function tutorRevealClause(tier?: TwoWayTableSupportTier): string {
   switch (tier) {
@@ -295,13 +239,19 @@ function tutorRevealClause(tier?: TwoWayTableSupportTier): string {
 interface TwoWayTableProps {
   data: TwoWayTableData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
-const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
+const TwoWayTableSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  TwoWayTableProps & { tutorOwned: boolean; useController: (options: ProgressOptions<TwoWayTableChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
-    challenges,
+    challenges = [],
     challengeType: sessionChallengeType,
     educationalContext,
     gradeBand = '7-8',
@@ -327,32 +277,68 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── Challenge progression ─────────────────────────────────────────
+  // ── Challenge progression. On the workspace path the runtime moves the index. ──
+  /** Bound below, once the setters exist; the progress hook calls them only after render. */
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onFinished: (result) => finish.current(result),
+  });
   const {
     currentIndex,
     currentAttempts,
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
-    incrementAttempts,
+    mergeResult,
     advance: advanceProgress,
-  } = useChallengeProgress({ challenges, getChallengeId: (ch) => ch.id });
+  } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const blocked = tutorOwned && progress.canAttempt === false;
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = blocked;
+  const learnerBlocked = () => workspaceClosed.current;
 
-  const currentChallenge = challenges[currentIndex];
+  // In-item levers (`twoWayTableLevers.ts`), keyed by the session item they were pulled on, and the easier table a
+  // simplify lever put on screen in its place.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<TwoWayTableChallenge | null>(null);
+  const sessionChallenge = challenges[currentIndex] ?? null;
+  /** What is on screen: the easier table while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  /** A runtime pull on the session item; never drawn on a practice table. */
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
 
   // ── Per-challenge state ───────────────────────────────────────────
   const [answerInput, setAnswerInput] = useState<string>('');
   const [feedback, setFeedback] = useState<{ correct: boolean; message: string } | null>(null);
   const [showHint, setShowHint] = useState<boolean>(false);
 
-  const recordedRef = useRef(false);
   const hintViewedRef = useRef(false);
   const submittedRef = useRef(false);
   const startTimeRef = useRef(Date.now());
 
-  // ── AI Tutoring ───────────────────────────────────────────────────
-  // The tutor reads supportTier so it can calibrate reveal: at hard it must NOT
-  // name any total it hid, nor the answer (see tutorRevealClause).
+  /** A fresh item (both paths) or Try again (workspace): the answer box empty, the feedback gone. */
+  const resetWork = (keepHint: boolean) => {
+    setAnswerInput('');
+    setFeedback(null);
+    if (!keepHint) { setShowHint(false); hintViewedRef.current = false; }
+  };
+  openItem.current = (_index, retry) => {
+    // Try again on a practice table keeps it; a fresh item (or the full item back after practice) drops it.
+    if (retry) { resetWork(true); return; }
+    setPractice(null);
+    resetWork(false);
+  };
+
+  // ── AI Tutoring (scripted path). The legacy context carries the answer; on the workspace path the tutor reads the
+  // scene instead. ──
   const aiPrimitiveData = useMemo(() => ({
     title,
     challengeType: currentChallenge?.challengeType ?? sessionChallengeType,
@@ -361,26 +347,26 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
     rowLabel: currentChallenge?.rowLabel ?? '',
     columnLabel: currentChallenge?.columnLabel ?? '',
     supportTier: currentChallenge?.supportTier ?? null,
-    // Answer for the tutor's internal reasoning ONLY — the reveal clause forbids
-    // naming it; the tutor coaches toward it without stating it.
+    // Answer for the tutor's internal reasoning ONLY — the reveal clause forbids naming it.
     correctAnswer: currentChallenge ? formatProbability(currentChallenge.expectedProbability) : '',
     totalChallenges: challenges.length,
     currentChallengeIndex: currentIndex + 1,
     attemptNumber: currentAttempts + 1,
     gradeBand,
-  }), [
-    title, currentChallenge, sessionChallengeType, challenges.length,
-    currentIndex, currentAttempts, gradeBand,
-  ]);
+  }), [title, currentChallenge, sessionChallengeType, challenges.length, currentIndex, currentAttempts, gradeBand]);
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'two-way-table',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: gradeBand === 'statistics' ? 'Statistics' : 'Grade 7-8',
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
-  // Activity introduction (once, when connected)
+  // Activity introduction (once, when connected; scripted path)
   const hasIntroducedRef = useRef(false);
   useEffect(() => {
     if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
@@ -395,27 +381,19 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
     );
   }, [isConnected, challenges.length, sessionChallengeType, currentChallenge, sendText]);
 
-  // ── Reset per-challenge state on advance ──────────────────────────
+  // ── Scripted path: reset per-challenge state on advance ───────────
   useEffect(() => {
-    if (!currentChallenge) return;
-    setAnswerInput('');
-    setFeedback(null);
-    setShowHint(false);
-    recordedRef.current = false;
-    hintViewedRef.current = false;
-  }, [currentChallenge?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (tutorOwned || !sessionChallenge) return;
+    resetWork(false);
+  }, [sessionChallenge?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Aggregate score (live preview) ────────────────────────────────
   const localOverallScore = useMemo(() => {
     if (challengeResults.length === 0) return 0;
-    const sum = challengeResults.reduce(
-      (s, r) => s + ((r.score as number) ?? (r.correct ? 100 : 0)),
-      0,
-    );
+    const sum = challengeResults.reduce((s, r) => s + ((r.score as number) ?? (r.correct ? 100 : 0)), 0);
     return Math.round(sum / challengeResults.length);
   }, [challengeResults]);
 
-  // ── Phase results for the summary panel ───────────────────────────
   const phaseResults = usePhaseResults({
     challenges,
     results: challengeResults,
@@ -432,11 +410,9 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
   const [submittedResult, setSubmittedResult] =
     useState<PrimitiveEvaluationResult<TwoWayTableMetrics> | null>(null);
 
-  // ── Session-complete: submit aggregate evaluation exactly once ────
+  // ── Scripted path: submit the aggregate evaluation exactly once ────
   useEffect(() => {
-    if (!allChallengesComplete) return;
-    if (submittedRef.current) return;
-    if (hasSubmitted) return;
+    if (tutorOwned || !allChallengesComplete || submittedRef.current || hasSubmitted) return;
     submittedRef.current = true;
 
     const totalChallenges = challengeResults.length;
@@ -466,50 +442,55 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
     const result = submitResult(overallAccuracy >= 60, overallAccuracy, metrics);
     setSubmittedResult(result);
 
-    // Tutor wrap-up
     sendText(
       `[ALL_COMPLETE] Session done. Overall accuracy ${overallAccuracy}% across ${totalChallenges} tables. `
       + `Give brief encouraging feedback about their two-way-table reasoning.`,
       { silent: true },
     );
-  }, [allChallengesComplete, challengeResults, hasSubmitted, sessionChallengeType, submitResult, sendText]);
+  }, [tutorOwned, allChallengesComplete, challengeResults, hasSubmitted, sessionChallengeType, submitResult, sendText]);
 
-  // ── Check answer ──────────────────────────────────────────────────
+  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // corrections and whose evidence carries each wrong check's named miss.
+  finish.current = (result) => {
+    if (hasSubmitted || submittedRef.current || challenges.length === 0) return;
+    submittedRef.current = true;
+    const metrics: TwoWayTableMetrics = {
+      type: 'two-way-table',
+      challengeType: sessionChallengeType,
+      totalChallenges: challenges.length,
+      correctCount: result.solvedCount,
+      attemptsCount: result.attemptsCount,
+      firstTryCount: result.firstTryCount,
+      hintsViewed: 0,
+      overallAccuracy: result.accuracy,
+      averageAttemptsPerChallenge: Math.round((result.attemptsCount / challenges.length) * 10) / 10,
+    };
+    setSubmittedResult(submitResult(result.passed, result.accuracy, metrics,
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence));
+  };
+
+  // ── Check answer. Every check commits (right or wrong); an entry that is not a number is not a check. ──
   const handleCheck = useCallback(() => {
-    if (!currentChallenge) return;
-    if (recordedRef.current) return;
-    if (feedback?.correct) return;
+    if (!currentChallenge || learnerBlocked() || feedback?.correct) return;
 
-    const parsed = parseProbabilityInput(answerInput);
-    if (parsed === null) {
+    if (parseProbabilityInput(answerInput) === null) {
       SoundManager.invalid();
-      setFeedback({
-        correct: false,
-        message: 'Please enter a decimal between 0 and 1 (e.g., 0.25).',
-      });
+      setFeedback({ correct: false, message: 'Please enter a decimal between 0 and 1, or a percent with %.' });
       return;
     }
 
     const attempts = currentAttempts + 1;
-    incrementAttempts();
-
-    const correct = Math.abs(parsed - currentChallenge.expectedProbability) <= currentChallenge.tolerance;
+    const correct = twoWayCorrect(currentChallenge, answerInput);
 
     if (correct) {
       SoundManager.playCorrect();
       const score = phaseScore(attempts);
       setFeedback({
         correct: true,
-        message: `Correct! P = ${formatProbability(currentChallenge.expectedProbability)} (+${score} points)`,
-      });
-      recordedRef.current = true;
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts,
-        score,
-        challengeType: currentChallenge.challengeType,
-        hintViewed: hintViewedRef.current,
+        message: `Correct! P = ${formatProbability(currentChallenge.expectedProbability)}`
+          + (isPracticeTable(currentChallenge) ? '' : ` (+${score} points)`),
       });
       sendText(
         `[ANSWER_CORRECT] Student correctly answered the ${currentChallenge.challengeType} table `
@@ -522,7 +503,7 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
         correct: false,
         message: attempts === 1
           ? 'Not quite — re-check which counts go into the numerator and denominator.'
-          : `Still off. Try the hint, or check your division.`,
+          : tutorOwned ? 'Still off. Check which group the probability is out of.' : 'Still off. Try the hint, or check your division.',
       });
       sendText(
         `[ANSWER_INCORRECT] Student answered "${answerInput}" on the ${currentChallenge.challengeType} table `
@@ -532,27 +513,35 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
         { silent: true },
       );
     }
-  }, [
-    currentChallenge,
-    currentAttempts,
-    feedback,
-    answerInput,
-    incrementAttempts,
-    recordResult,
-    sendText,
-  ]);
+    // The checked gesture (counts the attempt, records the verdict on both paths), then this primitive's own fields.
+    progress.commitCheck(describeTwoWayWork(answerInput), correct, twoWayMiss(currentChallenge, answerInput));
+    // An easier practice table (a simplify lever) is not the session's challenge: it records nothing of its own.
+    if (correct && !isPracticeTable(currentChallenge)) {
+      mergeResult({
+        challengeId: currentChallenge.id,
+        correct: true,
+        attempts,
+        score: phaseScore(attempts),
+        challengeType: currentChallenge.challengeType,
+        hintViewed: hintViewedRef.current,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChallenge, currentAttempts, feedback, answerInput, mergeResult, sendText, progress.commitCheck, tutorOwned]);
 
   const handleShowHint = useCallback(() => {
+    if (learnerBlocked()) return;
     SoundManager.pop();
     setShowHint(true);
     hintViewedRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Advance to next challenge ─────────────────────────────────────
+  // ── Advance to next challenge (scripted path; the workspace path hides Next and the runtime advances) ──
   const handleNext = useCallback(() => {
-    if (!currentChallenge) return;
-    if (!recordedRef.current) {
-      recordedRef.current = true;
+    if (!currentChallenge || tutorOwned) return;
+    const solved = challengeResults.some((r) => r.challengeId === currentChallenge.id && r.correct);
+    if (!solved) {
       recordResult({
         challengeId: currentChallenge.id,
         correct: false,
@@ -572,18 +561,47 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
         { silent: true },
       );
     }
-  }, [advanceProgress, currentAttempts, currentChallenge, recordResult, challenges, currentIndex, sendText]);
+  }, [advanceProgress, currentAttempts, currentChallenge, challengeResults, recordResult, challenges, currentIndex, sendText, tutorOwned]);
 
-  // ── Early return ──────────────────────────────────────────────────
+  // ── Workspace path: what the tutor and the observer are shown, republished every render. ──
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    const scene = workspaceScene(currentChallenge, { typed: answerInput });
+    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
+    const levers = practice ? [] : twoWayLevers(sessionChallenge, pulledLevers);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice table is on screen in place of the item. It is not graded; the full item comes back after it.' } : {}) },
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find((l) => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = simplerTable(sessionChallenge);
+          if (!easier) return 'This item has no easier version; try a help lever.';
+          setLeverState(pulled); setPractice(easier); resetWork(true);
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { setPractice(null); resetWork(true); },
+    };
+  });
+
   // ── Pip shared surface ───────────────────────────────────────────
   // A projection of this item's check state, the tutor's speech on it, and
   // the child's touches; Pip points only at the workspace as a whole and never
   // chooses, checks, or advances.
+  const isCurrentChallengeComplete = !practice && challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct);
   const pip = useWorkspacePipSurface({
     instanceId: resolvedInstanceId,
     scopeId: allChallengesComplete || hasSubmitted ? null : currentChallenge?.id ?? null,
     label: 'The two-way table and your answer',
-    solved: challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct),
+    solved: isCurrentChallengeComplete,
     tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
   });
 
@@ -598,20 +616,24 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
   }
 
   const elapsedMs = Date.now() - startTimeRef.current;
-  const canSubmit = answerInput.trim().length > 0;
+  const inputClosed = !!feedback?.correct || blocked || allChallengesComplete;
+  const canSubmit = answerInput.trim().length > 0 && !inputClosed;
   const phaseLabel = currentChallenge
     ? PHASE_TYPE_CONFIG[currentChallenge.challengeType]?.label ?? currentChallenge.challengeType
     : '';
+
+  // Lever pictures (`twoWayTableLevers.ts`), on the session item only.
+  const outline = sessionChallenge && leverOn(OUTLINE_LEVER) ? outlineCells(sessionChallenge) : null;
+  const frames = sessionChallenge && leverOn(SUM_LEVER) ? sumFrames(sessionChallenge) : [];
+  const outOf = sessionChallenge && leverOn(OUT_OF_LEVER) ? outOfFrame(sessionChallenge) : null;
+  const model = sessionChallenge && leverOn(MODEL_LEVER) ? tableModel(sessionChallenge) : null;
 
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <LuminaCardTitle>{title}</LuminaCardTitle>
-          <LuminaChallengeCounter
-            current={Math.min(currentIndex + 1, challenges.length)}
-            total={challenges.length}
-          />
+          <LuminaChallengeCounter current={Math.min(currentIndex + 1, challenges.length)} total={challenges.length} />
         </div>
         {description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
       </LuminaCardHeader>
@@ -635,9 +657,8 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
             {/* Scenario + question */}
             <LuminaPrompt>
               <div className="flex items-center gap-2 mb-2">
-                <LuminaBadge accent="purple" className="text-[10px] uppercase tracking-wider">
-                  {phaseLabel}
-                </LuminaBadge>
+                <LuminaBadge accent="purple" className="text-[10px] uppercase tracking-wider">{phaseLabel}</LuminaBadge>
+                {practice && <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-wider">Practice</LuminaBadge>}
                 <span className="text-xs text-slate-400">{currentChallenge.scenario}</span>
               </div>
               <p className="text-slate-100 text-sm font-medium">{currentChallenge.question}</p>
@@ -646,46 +667,74 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
             {/* Pip's dock sits above the workspace, which it outlines as a region. */}
             {pip.store && !allChallengesComplete && <div {...pip.dock} />}
             <div {...pip.workspace} className="space-y-4">
-            {/* Frequency table (tier-gated totals) — bespoke painting */}
-            <FrequencyTable challenge={currentChallenge} />
+              {/* Frequency table (tier-gated totals) — bespoke painting */}
+              <FrequencyTable challenge={currentChallenge} outline={outline} />
 
-            {/* Answer input */}
-            <div className="flex items-center gap-3 p-4 bg-slate-950/30 rounded-lg border border-white/10">
-              <label
-                htmlFor="twt-answer"
-                className="text-sm font-mono text-emerald-300 font-semibold"
-              >
-                P =
-              </label>
-              <LuminaInput
-                id="twt-answer"
-                type="text"
-                inputMode="decimal"
-                value={answerInput}
-                onChange={(e) => setAnswerInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && canSubmit && !feedback?.correct) handleCheck();
-                }}
-                disabled={!!feedback?.correct}
-                placeholder="0.25"
-                className="w-40 h-12 text-center text-lg font-mono font-semibold border-2 border-emerald-500/40 focus:border-emerald-400 focus:ring-emerald-500/30"
-              />
-              <span className="text-xs text-slate-500 italic">
-                Decimal 0-1 (e.g., 0.25). Percentages accepted with %.
-              </span>
-            </div>
+              {frames.length > 0 && (
+                <div data-lever="sum-frame" className="space-y-1 rounded-lg border border-cyan-500/30 bg-slate-950/40 p-3 font-mono text-sm text-cyan-200">
+                  {frames.map((fr) => (
+                    <p key={fr.label}>{fr.label}: {fr.addends.join(' + ')} = ?</p>
+                  ))}
+                </div>
+              )}
+              {outOf && (
+                <p data-lever="out-of-frame" className="rounded-lg border border-cyan-500/30 bg-slate-950/40 p-3 text-center text-sm text-cyan-200">
+                  {outOf}
+                </p>
+              )}
+              {model && (
+                <figure data-lever="model-table" className="mx-auto w-72 rounded-lg border border-white/10 bg-slate-900/40 p-2 text-center">
+                  <figcaption className="mb-1 text-xs uppercase tracking-wider text-slate-400">Worked example</figcaption>
+                  <table className="mx-auto border-collapse text-xs">
+                    <thead>
+                      <tr>
+                        <th className="p-1 text-slate-500">{model.rowLabel} / {model.columnLabel}</th>
+                        {model.cols.map((c) => <th key={c} className="p-1 text-purple-200">{c}</th>)}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {model.frequencies.map((row, r) => (
+                        <tr key={model.rows[r]}>
+                          <td className="p-1 text-blue-200">{model.rows[r]}</td>
+                          {row.map((v, c) => <td key={c} className="p-1 font-mono text-white">{v}</td>)}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <p className="mt-1 font-mono text-xs text-emerald-200">{model.line}</p>
+                </figure>
+              )}
 
+              {/* Answer input */}
+              <div className="flex items-center gap-3 p-4 bg-slate-950/30 rounded-lg border border-white/10">
+                <label htmlFor="twt-answer" className="text-sm font-mono text-emerald-300 font-semibold">P =</label>
+                <LuminaInput
+                  id="twt-answer"
+                  aria-label="Your answer"
+                  type="text"
+                  inputMode="decimal"
+                  value={answerInput}
+                  onChange={(e) => { if (!learnerBlocked()) setAnswerInput(e.target.value); }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && canSubmit && !learnerBlocked()) handleCheck();
+                  }}
+                  disabled={inputClosed}
+                  placeholder="0.00"
+                  className="w-40 h-12 text-center text-lg font-mono font-semibold border-2 border-emerald-500/40 focus:border-emerald-400 focus:ring-emerald-500/30"
+                />
+                <span className="text-xs text-slate-500 italic">
+                  A decimal from 0 to 1, to 2 places. A percent works with %.
+                </span>
+              </div>
             </div>
 
             {/* Feedback */}
             {feedback && (
-              <LuminaFeedbackCard status={feedback.correct ? 'correct' : 'incorrect'}>
-                {feedback.message}
-              </LuminaFeedbackCard>
+              <LuminaFeedbackCard status={feedback.correct ? 'correct' : 'incorrect'}>{feedback.message}</LuminaFeedbackCard>
             )}
 
-            {/* Hint reveal */}
-            {showHint && (
+            {/* Hint reveal (scripted path; with the tutor, help is the tutor's) */}
+            {!tutorOwned && showHint && (
               <div className="p-3 bg-slate-950/40 rounded-lg border border-purple-500/30 text-xs text-slate-300">
                 <span className="font-mono uppercase tracking-wider text-purple-400 mr-2">Hint:</span>
                 {currentChallenge.hint}
@@ -695,26 +744,18 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
             {/* Controls */}
             <div className="flex flex-wrap items-center gap-2">
               {!feedback?.correct && (
-                <LuminaActionButton
-                  action="check"
-                  onClick={handleCheck}
-                  disabled={!canSubmit}
-                />
+                <LuminaActionButton action="check" onClick={handleCheck} disabled={!canSubmit} />
               )}
-              {!showHint && !feedback?.correct && (
-                <LuminaButton tone="ghost" onClick={handleShowHint}>
-                  Show hint
-                </LuminaButton>
+              {!tutorOwned && !showHint && !feedback?.correct && (
+                <LuminaButton tone="ghost" onClick={handleShowHint}>Show hint</LuminaButton>
               )}
-              {feedback?.correct && (
+              {!tutorOwned && feedback?.correct && (
                 <LuminaActionButton action="next" onClick={handleNext}>
                   {currentIndex + 1 < challenges.length ? 'Next Table →' : 'Finish'}
                 </LuminaActionButton>
               )}
-              {!feedback?.correct && currentAttempts >= 3 && (
-                <LuminaButton tone="subtle" onClick={handleNext}>
-                  Skip →
-                </LuminaButton>
+              {!tutorOwned && !feedback?.correct && currentAttempts >= 3 && (
+                <LuminaButton tone="subtle" onClick={handleNext}>Skip →</LuminaButton>
               )}
             </div>
           </>
@@ -722,13 +763,15 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
 
         {/* Educational context (session-level) */}
         {educationalContext && !allChallengesComplete && (
-          <LuminaCallout accent="purple" label="In Context">
-            {educationalContext}
-          </LuminaCallout>
+          <LuminaCallout accent="purple" label="In Context">{educationalContext}</LuminaCallout>
         )}
       </LuminaCardContent>
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const TwoWayTable = withWorkspaceController<TwoWayTableProps, ProgressOptions<TwoWayTableChallenge>, Progress>(
+  'two-way-table', TwoWayTableSurface, useScriptedProgress, useWorkspaceProgressFor('two-way-table'));
 
 export default TwoWayTable;

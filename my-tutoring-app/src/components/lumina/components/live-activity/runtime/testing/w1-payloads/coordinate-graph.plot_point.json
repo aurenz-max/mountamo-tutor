@@ -1,0 +1,64 @@
+{
+ "source": "qa/tutor-reports/coordinate-graph-runtime-plot_point-payload-2026-10-09.json",
+ "primitiveId": "coordinate-graph",
+ "evalMode": "plot_point",
+ "data": {
+  "title": "Navigating the Four Quadrants: Advanced Coordinate Challenge",
+  "description": "Practice coordinate plane skills with Ordered pairs on the coordinate plane",
+  "challenges": [
+   {
+    "id": "pp-0",
+    "type": "plot_point",
+    "instruction": "Plot the point (-4, 7) on the coordinate plane to mark the location of a stationary drone.",
+    "hint": "Begin at the origin, move 4 units horizontally to the left along the x-axis, and then travel 7 units vertically upward.",
+    "x1": -4,
+    "y1": 7,
+    "x2": 0,
+    "y2": 0
+   },
+   {
+    "id": "pp-1",
+    "type": "plot_point",
+    "instruction": "Plot the point (5, -8) on the coordinate plane to identify a submerged treasure.",
+    "hint": "This point resides in Quadrant IV, where x-coordinates are positive and y-coordinates are negative.",
+    "x1": 5,
+    "y1": -8,
+    "x2": 0,
+    "y2": 0
+   },
+   {
+    "id": "pp-2",
+    "type": "plot_point",
+    "instruction": "Plot the point (-6, -3) on the coordinate plane to locate an archaeological artifact.",
+    "hint": "Since both coordinates are negative, your final destination lies in the third quadrant.",
+    "x1": -6,
+    "y1": -3,
+    "x2": 0,
+    "y2": 0
+   },
+   {
+    "id": "pp-3",
+    "type": "plot_point",
+    "instruction": "Plot the point (8, 2) on the coordinate plane representing a satellite's tracking coordinate.",
+    "hint": "Focus on the y-axis: from the origin, move 8 units right and then elevate 2 units straight up.",
+    "x1": 8,
+    "y1": 2,
+    "x2": 0,
+    "y2": 0
+   },
+   {
+    "id": "pp-4",
+    "type": "plot_point",
+    "instruction": "Plot the point (-9, -5) on the coordinate plane to plot a seismic anomaly.",
+    "hint": "Count 9 units left along the horizontal axis before descending 5 units parallel to the vertical axis.",
+    "x1": -9,
+    "y1": -5,
+    "x2": 0,
+    "y2": 0
+   }
+  ],
+  "gridMin": -10,
+  "gridMax": 10,
+  "gradeBand": "K-2"
+ }
+}

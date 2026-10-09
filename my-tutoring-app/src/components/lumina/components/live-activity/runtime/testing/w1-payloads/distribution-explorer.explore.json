@@ -1,0 +1,63 @@
+{
+ "source": "qa/tutor-reports/distribution-explorer-runtime-explore-payload-2026-10-09.json",
+ "primitiveId": "distribution-explorer",
+ "evalMode": "explore",
+ "data": {
+  "title": "Binomial and Poisson Distributions: From Discrete Trials to Continuous Rates",
+  "subject": "Probability",
+  "evalMode": "explore",
+  "initial": {
+   "family": "binomial",
+   "parameters": {
+    "n": 15,
+    "p": 0.4
+   }
+  },
+  "lessonContext": "In actuarial science and applied probability, modeling discrete events is foundational for pricing risk and forecasting aggregate losses. The Binomial distribution governs the exact number of successes across a finite number of independent trials, whereas the Poisson distribution models rare event frequencies over continuous intervals. Investigating these discrete architectures reveals deep structural bridges between finite trial frameworks and infinite rate approximations.",
+  "challenges": [
+   {
+    "id": "c-0",
+    "type": "guided_exploration",
+    "prompt": "Adjust the parameter p while holding n constant at 15. Observe how the probability mass function shifts from right-skewed to symmetric, and finally to left-skewed. At what value of p does the distribution achieve exact structural symmetry?",
+    "rationale": "Symmetry in the binomial distribution occurs precisely when p equals 0.5, because the probability of success matches the probability of failure, balancing the combinatorial expansion."
+   },
+   {
+    "id": "c-1",
+    "type": "guided_exploration",
+    "prompt": "Increase the number of trials n to its maximum value of 50 while keeping the product of n and p constant (e.g., set n = 50 and p = 0.1). Observe the resulting shape of the probability mass function and consider how this discrete distribution begins to mimic a continuous density curve.",
+    "rationale": "As n grows large while the expected value remains fixed, the binomial distribution asymptotically converges to a continuous-like bell curve, illustrating the foundational mechanics of the De Moivre-Laplace theorem."
+   }
+  ],
+  "debug": {
+   "rawOrchestrator": {
+    "title": "Binomial and Poisson Distributions: From Discrete Trials to Continuous Rates",
+    "subject": "Probability",
+    "initialFamily": "binomial",
+    "initialParameters": [
+     {
+      "name": "n",
+      "value": 15
+     },
+     {
+      "name": "p",
+      "value": 0.4
+     }
+    ],
+    "lessonContext": "In actuarial science and applied probability, modeling discrete events is foundational for pricing risk and forecasting aggregate losses. The Binomial distribution governs the exact number of successes across a finite number of independent trials, whereas the Poisson distribution models rare event frequencies over continuous intervals. Investigating these discrete architectures reveals deep structural bridges between finite trial frameworks and infinite rate approximations.",
+    "challenges": [
+     {
+      "type": "guided_exploration",
+      "prompt": "Adjust the parameter p while holding n constant at 15. Observe how the probability mass function shifts from right-skewed to symmetric, and finally to left-skewed. At what value of p does the distribution achieve exact structural symmetry?",
+      "rationale": "Symmetry in the binomial distribution occurs precisely when p equals 0.5, because the probability of success matches the probability of failure, balancing the combinatorial expansion."
+     },
+     {
+      "type": "guided_exploration",
+      "prompt": "Increase the number of trials n to its maximum value of 50 while keeping the product of n and p constant (e.g., set n = 50 and p = 0.1). Observe the resulting shape of the probability mass function and consider how this discrete distribution begins to mimic a continuous density curve.",
+      "rationale": "As n grows large while the expected value remains fixed, the binomial distribution asymptotically converges to a continuous-like bell curve, illustrating the foundational mechanics of the De Moivre-Laplace theorem."
+     }
+    ]
+   },
+   "durationMs": 2088
+  }
+ }
+}

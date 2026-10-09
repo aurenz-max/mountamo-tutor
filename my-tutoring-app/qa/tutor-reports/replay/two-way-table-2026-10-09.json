@@ -1,0 +1,2457 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ],
+   "no_change_before_receipt": [
+    0,
+    20
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "two-way-table.conditional_probability",
+   "primitiveId": "two-way-table",
+   "evalMode": "conditional_probability",
+   "keys": [
+    "0.35"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "twt-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "0.35"
+      ],
+      "ask": "Given a member is Male, what is the probability they are Reading? Enter P(Reading | Male) as a decimal (round to 2 decimals).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "TIER:"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Given a member is Male, what is the probability they are Reading? Enter your answer as a decimal rounded to two places.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Given a member is Male, what is the probability they are Reading? Take a look at the Male row to see which numbers you need.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Given a member is Male, what is the probability they are Reading? Take a look at the Male row to get started.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Given a member is Male, what is the probability they are Reading? Take your time looking at the table.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Given a member is Male, what is the probability they are Reading? Take a look at the Male row to get started.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "twt-1",
+     "trigger": "The learner submitted \"typed 0.17\". The board checked it: not right.",
+     "miss": "joint_instead",
+     "scoredWith": {
+      "keys": [
+       "0.35"
+      ],
+      "ask": "Given a member is Male, what is the probability they are Reading? Enter P(Reading | Male) as a decimal (round to 2 decimals).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "TIER:"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Notice the words below the table showing which group we are counting out of. Since we are given the member is Male, we only look at the males, not everyone.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "out_of_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look below the table: it shows which group we are counting out of the given group only. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "out_of_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the new words under the table: because it says \"Given a member is Male,\" we are only looking at the males, not everyone. Take another look at the Male row and try again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "out_of_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look below the table: it now shows the probability in words, comparing the count we want to just that given group. Since we are given that the member is Male, what total are we dividing by?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "out_of_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look under the table: because we are given the member is Male, we only divide by the total number of males, not everyone. Which group are you dividing by?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "out_of_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "twt-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "0.35"
+      ],
+      "ask": "Given a member is Male, what is the probability they are Reading? Enter P(Reading | Male) as a decimal (round to 2 decimals).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "TIER:"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A guide appeared under the table showing that we divide the males who like reading by the total number of males. How many total males are there in that row?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "out_of_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A guide appeared under the table showing that we divide the males who like reading by the total number of males. Try finding the total for just the male row first.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "out_of_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Under the table, you can now see the fraction written out in words: the number of males who like reading divided by the total number of males. Try finding those two numbers in the Male row.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "out_of_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The screen now shows that we want the males who prefer reading divided by the total number of males. Try adding the male cells together first to find that total.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "out_of_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the words that appeared below the table. How many total members are in the Male group?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "out_of_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "twt-1",
+     "trigger": "The learner said they were stuck, so the host pulled out_of_frame (help). It is on screen now: Writes the probability in words under the table: how many of the given group are the asked category, divided by the given group only, not everyone. No number. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "0.35"
+      ],
+      "ask": "Given a member is Male, what is the probability they are Reading? Enter P(Reading | Male) as a decimal (round to 2 decimals).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "TIER:"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look right under the table\u2014there is a new phrase showing we want the reading males divided by all the males. Give it another shot with that in mind!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look right under the table\u2014it now shows the fraction in words, dividing the males who chose Reading by the total number of males. Give it another try using those two values!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look below the table: it now shows in words that we divide the males who like reading by the total number of males. Give it a try by finding the male row total and dividing!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look under the table\u2014it now shows the fraction in words, dividing the males who chose Reading by just the males. Give it another try with those numbers!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look just below the table\u2014words are now written showing to divide the males who like reading by the total males. Use those counts from the table to give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "twt-1",
+     "trigger": "The learner submitted \"typed 0.35\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "0.35"
+      ],
+      "ask": "Given a member is Male, what is the probability they are Reading? Enter P(Reading | Male) as a decimal (round to 2 decimals).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "TIER:"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it right with 0.35! By dividing the 14 reading males by the total of 40 males, you found the exact conditional probability.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You found the total number of males, divided the 14 who like reading by that total, and got 0.35.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it with 0.35! Dividing the 14 reading males by the 40 total males in that row gave the exact probability.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nicely done! You adjusted your denominator to just the male group and found 0.35.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You found 0.35 by dividing the 14 reading males by the total of 40 males. Great job fixing that!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "two-way-table.independence_test",
+   "primitiveId": "two-way-table",
+   "evalMode": "independence_test",
+   "keys": [
+    "0.23"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "twt-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "0.23"
+      ],
+      "ask": "If Teen and Rock were independent, the expected joint probability would be P(Teen) \u00d7 P(Rock). Compute this expected joint probability (round to 2 decimals).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "TIER:"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "If Teen and Rock were independent, the expected joint probability would be P(Teen) times P(Rock). Take a look at the totals in the table to compute this expected joint probability.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take your time reading the table and finding the expected joint probability.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! If Teen and Rock were independent, the expected joint probability would be P(Teen) \u00d7 P(Rock). Take a look at the totals in the table to compute this expected joint probability.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the table, and let's find the expected joint probability of Teen and Rock.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The question asks: If Teen and Rock were independent, what is the expected joint probability P(Teen) \u00d7 P(Rock)? Take a look at the row and column totals to find each probability.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "twt-1",
+     "trigger": "The learner submitted \"typed 0.10\". The board checked it: not right.",
+     "miss": "observed_joint",
+     "scoredWith": {
+      "keys": [
+       "0.23"
+      ],
+      "ask": "If Teen and Rock were independent, the expected joint probability would be P(Teen) \u00d7 P(Rock). Compute this expected joint probability (round to 2 decimals).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "TIER:"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The Teen row and the Rock column are now outlined on the table. Try finding each category's overall probability out of the whole group first, then multiply them together.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "outline_question"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The table now outlines the Teen row and the Rock column. Find the total probability for each category out of the grand total, then multiply them together.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "outline_question",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The Teen row and the Rock column are now outlined on the table. Try finding the probability of Teen and the probability of Rock separately out of the grand total, then multiply them together.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "outline_question"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That showed the observed Teen and Rock count, but we need the expected probability if they were independent. Take each category's total out of the grand total, multiply those two probabilities together, and try again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "out_of_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I have outlined the Teen row and the Rock column in the table. To find the expected joint probability under independence, multiply the probability of being a Teen by the probability of preferring Rock.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "outline_question",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "twt-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "0.23"
+      ],
+      "ask": "If Teen and Rock were independent, the expected joint probability would be P(Teen) \u00d7 P(Rock). Compute this expected joint probability (round to 2 decimals).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "TIER:"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "",
+       "before": "",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "model_table"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "out_of_frame",
+          "actionId": "test/3/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/1"
+         }
+        }
+       ],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "",
+       "before": "",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_table",
+          "actionId": "test/3/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "out_of_frame"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/1"
+         }
+        }
+       ],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A worked example is now open beside the table to show how this works. First find the probability of Teen out of the grand total, find the probability of Rock out of the grand total, and then multiply those two values together.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_table",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Take a look at the worked example beside our table. It shows how to find the total for each category out of the grand total, and then multiply those two probabilities together.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "model_table"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Notice the note under the table showing each category's total divided by the grand total, multiplied together. What is the total count for Teen, and what is the total count for Rock?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "out_of_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "twt-1",
+     "trigger": "The learner said they were stuck, so the host pulled outline_question (help). It is on screen now: Outlines the row and the column the question names in the table. No number is written. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "0.23"
+      ],
+      "ask": "If Teen and Rock were independent, the expected joint probability would be P(Teen) \u00d7 P(Rock). Compute this expected joint probability (round to 2 decimals).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "TIER:"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The Teen row and the Rock column are now outlined on the table. Use their totals along with the grand total to find each probability, and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The Teen row and the Rock column are now outlined on the table. Look at their total counts compared to the grand total of 80, and try multiplying those two probabilities.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The Teen row and the Rock column are outlined on the table for you. Use their totals along with the grand total of 80 to calculate P(Teen) and P(Rock), then multiply them together.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The Teen row and Rock column are outlined on the table now. Look at the total for Teen and the total for Rock out of the grand total, and try multiplying those two probabilities together.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The Teen row and the Rock column are now outlined on the table. Use their totals along with the grand total to find each probability and multiply them.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "twt-1",
+     "trigger": "The learner submitted \"typed 0.23\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "0.23"
+      ],
+      "ask": "If Teen and Rock were independent, the expected joint probability would be P(Teen) \u00d7 P(Rock). Compute this expected joint probability (round to 2 decimals).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "TIER:"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You found the expected joint probability by multiplying the two individual probabilities together and typed 0.23.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right with 0.23! You correctly used the totals from the table to multiply the probabilities together.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right with 0.23! You used the totals from the table to multiply the probabilities together and fix your answer.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right with 0.23 by multiplying the Teen probability and the Rock probability together!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nice job typing 0.23! You multiplied the probability of Teen by the probability of Rock to find the expected joint probability.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "two-way-table.joint_probability",
+   "primitiveId": "two-way-table",
+   "evalMode": "joint_probability",
+   "keys": [
+    "0.15"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "twt-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "0.15"
+      ],
+      "ask": "What is P(Under 30 AND Brand B)? Enter your answer as a decimal between 0 and 1 (round to 2 decimals).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "TIER:"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "What is P(Under 30 AND Brand B)? Enter your answer as a decimal between 0 and 1, rounded to two decimal places.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "What is P(Under 30 AND Brand B)? Enter your answer as a decimal rounded to two places.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "What is P(Under 30 AND Brand B)? Enter your answer as a decimal between 0 and 1, rounded to two decimal places.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "What is P(Under 30 AND Brand B)? Take a look at where that row and column meet in the table.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "What is P(Under 30 AND Brand B)? Enter your answer as a decimal between 0 and 1.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "twt-1",
+     "trigger": "The learner submitted \"typed 0.30\". The board checked it: not right.",
+     "miss": "row_denominator",
+     "scoredWith": {
+      "keys": [
+       "0.15"
+      ],
+      "ask": "What is P(Under 30 AND Brand B)? Enter your answer as a decimal between 0 and 1 (round to 2 decimals).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "TIER:"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look under the table\u2014it now shows the probability in words: the count for both categories divided by everyone surveyed. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "out_of_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the note below the table: this probability is the count of people who are Under 30 and Brand B, out of everyone in the entire table. Try dividing by the grand total!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "out_of_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the note under the table showing that this probability is out of everyone surveyed, not just one group. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "out_of_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look below the table: it now shows that this probability is the count for both categories together divided by everyone in the whole table. Give it another shot!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "out_of_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look under the table: it shows that this probability is the group counted, divided by everyone in the whole table. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "out_of_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "twt-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "0.15"
+      ],
+      "ask": "What is P(Under 30 AND Brand B)? Enter your answer as a decimal between 0 and 1 (round to 2 decimals).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "TIER:"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A worked example just popped up beside the table showing how to find a joint probability. Notice how it takes the count from that single cell and divides it by the grand total of everyone surveyed.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "model_table"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A worked example has appeared beside the table showing how to find this probability from a different set of numbers. Take a look at how it divides that cell's count by the grand total of everyone, and try that here!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_table",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Here is a worked example beside the table showing how to find this kind of probability: you take the count where both categories meet and divide it by the grand total of everyone. Try using that same approach on your table!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_table",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A guide appeared under the table showing that this probability is the group counted divided by everyone surveyed. Which cell matches both \"Under 30\" and \"Brand B\", and what is the grand total of everyone?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "out_of_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I've brought up a worked example beside the table showing how to find a joint probability by dividing the overlapping cell count by the grand total. Take a look at how that example divides by everyone in the table, and try applying that here!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_table",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "twt-1",
+     "trigger": "The learner said they were stuck, so the host pulled out_of_frame (help). It is on screen now: Writes the probability in words under the table: the group the question counts, divided by everyone in the table. No number. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do n",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "0.15"
+      ],
+      "ask": "What is P(Under 30 AND Brand B)? Enter your answer as a decimal between 0 and 1 (round to 2 decimals).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "TIER:"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look right under the table\u2014it now shows the probability written out in words as the group counted divided by everyone in the table. See if you can use that to set up your division and try again.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under the table: words are now written there showing that the probability is the count for both categories divided by everyone in the table. Try using the grand total of everyone surveyed for your division!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right beneath the table\u2014there's now a guide written out in words showing that we divide the group counted by everyone in the table. Try using that to calculate your answer!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under the table\u2014it now shows the probability written in words as the group counted divided by everyone in the table. See if you can use the cell count and the grand total to give it another shot!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right below the table\u2014words have appeared showing the group counted divided by everyone in the table. Use that guide to find the two numbers you need and give it another shot!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "twt-1",
+     "trigger": "The learner submitted \"typed 0.15\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "0.15"
+      ],
+      "ask": "What is P(Under 30 AND Brand B)? Enter your answer as a decimal between 0 and 1 (round to 2 decimals).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "TIER:"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it\u20140.15 is correct! You divided the 18 people who are Under 30 and Brand B by the grand total of 120.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it with 0.15 by dividing the 18 people in that cell by the total of 120. Great job adjusting your denominator!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed it and got 0.15 by dividing the cell count by the grand total.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You took that cell count and divided by the grand total to find 0.15.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nicely done! You adjusted your denominator to divide by everyone in the table and typed 0.15.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "two-way-table.marginal_distribution",
+   "primitiveId": "two-way-table",
+   "evalMode": "marginal_distribution",
+   "keys": [
+    "0.40"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "twt-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "0.40"
+      ],
+      "ask": "What is P(Under 1 mile)? Enter your answer as a decimal between 0 and 1 (round to 2 decimals).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "TIER:"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "What is P(Under 1 mile)? Enter your answer as a decimal between 0 and 1, rounded to two decimal places.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "What is the probability of a student living under 1 mile from school? You can type your answer as a decimal or percentage and hit Check when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! The question asks: What is P(Under 1 mile)?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! The question asks: \"What is P(Under 1 mile)?\" Take your time looking at the table, and enter your answer as a decimal rounded to two decimal places when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "What is P(Under 1 mile)? Take a look at the table and see what numbers you need.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "twt-1",
+     "trigger": "The learner submitted \"typed 0.35\". The board checked it: not right.",
+     "miss": "one_cell",
+     "scoredWith": {
+      "keys": [
+       "0.40"
+      ],
+      "ask": "What is P(Under 1 mile)? Enter your answer as a decimal between 0 and 1 (round to 2 decimals).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "TIER:"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Notice how the entire \"Under 1 mile\" row is outlined now, which includes both walkers and bus riders. Take another look at all the students in that row compared to everyone surveyed.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "outline_question",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice how the whole \"Under 1 mile\" row is outlined now, which includes both walking and riding the bus. Give it another try using everyone in that row compared to the grand total.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "outline_question",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The whole \"Under 1 mile\" row is now outlined on the table. Take a look at all the students in that row and try again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "outline_question"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The whole row for \"Under 1 mile\" is outlined on the screen. Take a look at all the students in that row and try again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "outline_question"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice that the whole \"Under 1 mile\" row is outlined now, so we need everyone who travels under 1 mile out of the entire group. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "outline_question",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "twt-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "0.40"
+      ],
+      "ask": "What is P(Under 1 mile)? Enter your answer as a decimal between 0 and 1 (round to 2 decimals).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "TIER:"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at the worked example that appeared beside the table to see how a row total is divided by the grand total. Now find the total for the \"Under 1 mile\" row and divide it by the total number of students in our table.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_table",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A guide has appeared below the table showing that we want the total for \"Under 1 mile\" divided by everyone in the whole table. What do you get when you add up all the students in the \"Under 1 mile\" row?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "out_of_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Here is a worked example beside the table showing how to find a row's probability by adding that row's counts and dividing by the total of all students. Try using those same steps on our table!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_table",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "To find the probability of a student being \"Under 1 mile\", we look at all students in that row divided by all students in the entire table. How many total students are in the \"Under 1 mile\" row?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "model_table"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Take a look at the worked example that just appeared beside the table to see how finding a row total over the grand total works. Give that same approach a try with our numbers!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_table",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "twt-1",
+     "trigger": "The learner said they were stuck, so the host pulled outline_question (help). It is on screen now: Outlines the whole row or column the question names in the table. No number is written. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "0.40"
+      ],
+      "ask": "What is P(Under 1 mile)? Enter your answer as a decimal between 0 and 1 (round to 2 decimals).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "TIER:"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the table\u2014the entire \"Under 1 mile\" row is now outlined with an outline around both the 35 who walk and the 5 who take the bus. Try finding the total for that row compared to everyone in the whole table!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The entire \"Under 1 mile\" row is now outlined in the table. See how many students are in that whole row, and compare that to everyone surveyed.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The entire \"Under 1 mile\" row is now outlined in the table. See if you can add up all the students in that outlined row and compare them to everyone in the whole table.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The entire \"Under 1 mile\" row is now outlined on the table, showing both the 35 who walk and the 5 who take the bus. What total does that row make, and what is the grand total of everyone surveyed?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The entire \"Under 1 mile\" row is now outlined on the table, showing everyone who travels under a mile. Add up that whole row and divide it by the total number of students in the entire table.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "twt-1",
+     "trigger": "The learner submitted \"typed 0.40\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "0.40"
+      ],
+      "ask": "What is P(Under 1 mile)? Enter your answer as a decimal between 0 and 1 (round to 2 decimals).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "TIER:"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Spot on! You added the whole row together to get 0.40.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You took both groups in that row, added them up, and compared them to everyone surveyed to find 0.40.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it\u20140.40 is correct! You added up both groups in that row to find the row total and divided by everyone surveyed.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found the whole row total and divided it by everyone in the table to get 0.40. Excellent work working through that!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You added the whole row together to get 0.40.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

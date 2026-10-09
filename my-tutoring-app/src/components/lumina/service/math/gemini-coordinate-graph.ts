@@ -11,6 +11,7 @@ import {
   type ChallengeTypeDoc,
 } from "../evalMode";
 import { buildScopePromptSection } from "../scopeContext";
+import { optionIsKey, parseNumber, parsePoint } from "../../primitives/visual-primitives/math/coordinateGraphWorkspace";
 
 // ============================================================================
 // Eval Mode Configuration
@@ -252,6 +253,37 @@ function getGridRange(
     return { gridMin: -10, gridMax: 10 };
   }
   return { gridMin: 0, gridMax: 10 };
+}
+
+
+/**
+ * One choice is the key and the four are different: a repeated choice, or a second one whose value is the key
+ * ("4/6" beside "2/3"), is replaced by the first unused distractor from `extras`. The live adapter refuses an item
+ * that still breaks this.
+ */
+function repairChoices(ch: CoordinateGraphChallenge, extras: string[]): void {
+  const opts = [ch.option0 ?? "", ch.option1 ?? "", ch.option2 ?? "", ch.option3 ?? ""];
+  const key = ch.correctOptionIndex ?? 0;
+  // Compared by value, so "5/5" beside "1" counts as a repeat.
+  const norm = (o: string) => {
+    const v = ch.type === "read_point" ? parsePoint(o) : parseNumber(o);
+    return v == null ? o.replace(/\s/g, "") : JSON.stringify(v);
+  };
+  const seen = new Set([norm(opts[key])]);
+  for (let i = 0; i < 4; i++) {
+    if (i === key) continue;
+    if (!opts[i] || seen.has(norm(opts[i])) || optionIsKey(ch, opts[i])) {
+      const next = extras.find((e) => !seen.has(norm(e)) && !optionIsKey(ch, e));
+      if (next) opts[i] = next;
+    }
+    seen.add(norm(opts[i]));
+  }
+  [ch.option0, ch.option1, ch.option2, ch.option3] = opts;
+}
+
+/** An instruction that states the answer is replaced by the plain ask. */
+function plainAsk(instruction: string, leaks: boolean, ask: string): string {
+  return leaks ? ask : instruction;
 }
 
 // ============================================================================
@@ -616,10 +648,12 @@ RULES:
       correctIdx = safeIdx;
     }
 
-    challenges.push({
+    const item: CoordinateGraphChallenge = {
       id: `rp-${challenges.length}`,
       type: "read_point",
-      instruction: ch.instruction,
+      // The pair is the answer: an instruction that prints it asks nothing.
+      instruction: plainAsk(ch.instruction, ch.instruction.replace(/\s/g, "").includes(correctStr.replace(/\s/g, "")),
+        "What are the coordinates of the highlighted point?"),
       hint: ch.hint,
       x1: x,
       y1: y,
@@ -630,7 +664,9 @@ RULES:
       option2: opts[2],
       option3: opts[3],
       correctOptionIndex: correctIdx,
-    });
+    };
+    repairChoices(item, [`(${y}, ${x})`, `(${-x}, ${y})`, `(${x}, ${-y})`, `(${x + 1}, ${y})`, `(${x}, ${y + 1})`, `(${x - 1}, ${y})`]);
+    challenges.push(item);
   }
 
   if (challenges.length === 0) {
@@ -713,10 +749,14 @@ RULES:
       correctIdx = claimedIdx;
     }
 
-    challenges.push({
+    const rise = y2 - y1, run = x2 - x1;
+    const item: CoordinateGraphChallenge = {
       id: `fs-${challenges.length}`,
       type: "find_slope",
-      instruction: ch.instruction,
+      // A stated slope, or "horizontal" on a flat line (its slope is 0), answers the item.
+      instruction: plainAsk(ch.instruction, /\b(slope|m)\s*(is|=)\s*-?\d/i.test(ch.instruction)
+        || (rise === 0 && /horizontal|flat/i.test(ch.instruction)),
+        "Find the slope of the line through the two points."),
       hint: ch.hint,
       x1,
       y1,
@@ -727,7 +767,10 @@ RULES:
       option2: opts[2],
       option3: opts[3],
       correctOptionIndex: correctIdx,
-    });
+    };
+    repairChoices(item, [simplifyFraction(-rise, run), rise !== 0 ? simplifyFraction(run, rise) : "1", `${rise}`, `${run}`,
+      simplifyFraction(rise + run, run), simplifyFraction(rise - run, run)]);
+    challenges.push(item);
   }
 
   if (challenges.length === 0) {
@@ -823,10 +866,11 @@ RULES:
       correctIdx = claimedIdx;
     }
 
-    challenges.push({
+    const item: CoordinateGraphChallenge = {
       id: `fi-${challenges.length}`,
       type: "find_intercept",
-      instruction: ch.instruction,
+      // An equation in the instruction ("y = 2x + 3") or the crossing's pair prints the answer.
+      instruction: plainAsk(ch.instruction, /y\s*=|\(\s*0\s*,/i.test(ch.instruction), "Where does this line cross the y-axis?"),
       hint: ch.hint,
       x1,
       y1,
@@ -838,7 +882,9 @@ RULES:
       option3: opts[3],
       correctOptionIndex: correctIdx,
       equationLabel: ch.equationLabel || `y = ${simplifyFraction(y2 - y1, x2 - x1)}x + ${yInt}`,
-    });
+    };
+    repairChoices(item, [`${-yInt}`, `${yInt + 1}`, `${yInt - 1}`, simplifyFraction(y2 - y1, x2 - x1), `${y1}`, `${y2}`, `${yInt + 2}`]);
+    challenges.push(item);
   }
 
   if (challenges.length === 0) {

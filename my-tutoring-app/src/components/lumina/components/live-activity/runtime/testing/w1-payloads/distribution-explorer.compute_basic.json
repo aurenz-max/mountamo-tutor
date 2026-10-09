@@ -1,0 +1,105 @@
+{
+ "source": "qa/tutor-reports/distribution-explorer-runtime-compute_basic-payload-2026-10-09.json",
+ "primitiveId": "distribution-explorer",
+ "evalMode": "compute_basic",
+ "data": {
+  "title": "Modeling Rare Events: Binomial to Poisson",
+  "subject": "Probability",
+  "evalMode": "compute_basic",
+  "initial": {
+   "family": "poisson",
+   "parameters": {
+    "lambda": 4
+   }
+  },
+  "lessonContext": "In actuarial science and stochastic modeling, counting occurrences over continuous intervals is fundamental for pricing risk. While the Binomial distribution governs fixed-trial success counts, its limiting case\u2014the Poisson distribution\u2014models the arrival of rare, independent events over time or space. Understanding this transition enables underwriters to accurately forecast catastrophe frequencies without enumerating every individual Bernoulli trial.",
+  "challenges": [
+   {
+    "id": "c-0",
+    "type": "compute",
+    "prompt": "Determine the expected number of events E[X] for this stochastic process.",
+    "rationale": "The expected value of a Poisson distribution is identically equal to its rate parameter lambda.",
+    "scenario": "A regional portfolio experiences catastrophic property losses modeled by a Poisson process with lambda = 4 per month.",
+    "hint": "Recall the fundamental characteristic linking the rate parameter to the first moment in a Poisson process.",
+    "correctValue": 4,
+    "distractors": [
+     16,
+     0.25,
+     2
+    ],
+    "unit": "claims",
+    "decimals": 2
+   },
+   {
+    "id": "c-1",
+    "type": "compute",
+    "prompt": "Calculate the probability of observing exactly zero catastrophic claims in a given month.",
+    "rationale": "Evaluating the Poisson PMF at k=0 yields P(X=0) = e^(-lambda) * lambda^0 / 0! = e^(-4) approx 0.0183.",
+    "scenario": "A regional portfolio experiences catastrophic property losses modeled by a Poisson process with lambda = 4 per month.",
+    "hint": "Evaluate the Poisson probability mass function with k = 0, noting that e^(-4) is approximately 0.0183.",
+    "correctValue": 0.0183,
+    "distractors": [
+     0.0733,
+     0.9817,
+     0.0498
+    ],
+    "decimals": 4
+   }
+  ],
+  "debug": {
+   "rawOrchestrator": {
+    "title": "Modeling Rare Events: Binomial to Poisson",
+    "subject": "Probability",
+    "initialFamily": "poisson",
+    "initialParameters": [
+     {
+      "name": "lambda",
+      "value": 4
+     }
+    ],
+    "lessonContext": "In actuarial science and stochastic modeling, counting occurrences over continuous intervals is fundamental for pricing risk. While the Binomial distribution governs fixed-trial success counts, its limiting case\u2014the Poisson distribution\u2014models the arrival of rare, independent events over time or space. Understanding this transition enables underwriters to accurately forecast catastrophe frequencies without enumerating every individual Bernoulli trial.",
+    "challenges": [
+     {
+      "type": "compute",
+      "prompt": "Determine the expected number of events E[X] for this stochastic process.",
+      "rationale": "The expected value of a Poisson distribution is identically equal to its rate parameter lambda.",
+      "acceptableAnswers": null,
+      "correctFamily": null,
+      "correctValue": 4,
+      "decimals": 2,
+      "distractorFamilies": null,
+      "distractors": null,
+      "hint": "Recall the fundamental characteristic linking the rate parameter to the first moment in a Poisson process.",
+      "numericDistractors": [
+       16,
+       0.25,
+       2
+      ],
+      "scenario": "A regional portfolio experiences catastrophic property losses modeled by a Poisson process with lambda = 4 per month.",
+      "unit": "claims"
+     },
+     {
+      "type": "compute",
+      "prompt": "Calculate the probability of observing exactly zero catastrophic claims in a given month.",
+      "rationale": "Evaluating the Poisson PMF at k=0 yields P(X=0) = e^(-lambda) * lambda^0 / 0! = e^(-4) approx 0.0183.",
+      "acceptableAnswers": null,
+      "correctFamily": null,
+      "correctValue": 0.0183,
+      "decimals": 4,
+      "distractorFamilies": null,
+      "distractors": null,
+      "hint": "Evaluate the Poisson probability mass function with k = 0, noting that e^(-4) is approximately 0.0183.",
+      "numericDistractors": [
+       0.0733,
+       0.9817,
+       0.0498
+      ],
+      "scenario": "A regional portfolio experiences catastrophic property losses modeled by a Poisson process with lambda = 4 per month.",
+      "unit": ""
+     }
+    ]
+   },
+   "durationMs": 2231
+  }
+ }
+}

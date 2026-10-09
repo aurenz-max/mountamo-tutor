@@ -1,0 +1,154 @@
+{
+ "source": "qa/tutor-reports/two-way-table-runtime-marginal_distribution-payload-2026-10-09.json",
+ "primitiveId": "two-way-table",
+ "evalMode": "marginal_distribution",
+ "data": {
+  "title": "Finding Marginal Probabilities from Two-Way Tables",
+  "description": "Practice calculating the probability of a single category by summing across rows and columns when totals are hidden.",
+  "challenges": [
+   {
+    "id": "twt-1",
+    "challengeType": "marginal_distribution",
+    "scenario": "Transportation to school by distance",
+    "rowLabel": "Distance from school",
+    "columnLabel": "Transportation",
+    "rowCategories": [
+     "Under 1 mile",
+     "Over 1 mile"
+    ],
+    "columnCategories": [
+     "Walks",
+     "Bus"
+    ],
+    "frequencies": [
+     [
+      35,
+      5
+     ],
+     [
+      10,
+      50
+     ]
+    ],
+    "question": "What is P(Under 1 mile)? Enter your answer as a decimal between 0 and 1 (round to 2 decimals).",
+    "expectedProbability": 0.4,
+    "tolerance": 0.02,
+    "showTotals": false,
+    "answerTotalAxis": "row",
+    "answerTotalIndex": 0,
+    "target": {
+     "row": 0
+    },
+    "hint": "Add the counts in the \"Under 1 mile\" row (gives 40). Divide by the grand total (sum of all cells = 100)."
+   },
+   {
+    "id": "twt-2",
+    "challengeType": "marginal_distribution",
+    "scenario": "Music preference by age group",
+    "rowLabel": "Age group",
+    "columnLabel": "Music",
+    "rowCategories": [
+     "Teen",
+     "Adult"
+    ],
+    "columnCategories": [
+     "Pop",
+     "Rock"
+    ],
+    "frequencies": [
+     [
+      32,
+      8
+     ],
+     [
+      12,
+      28
+     ]
+    ],
+    "question": "What is P(Rock)? Enter your answer as a decimal between 0 and 1 (round to 2 decimals).",
+    "expectedProbability": 0.45,
+    "tolerance": 0.02,
+    "showTotals": false,
+    "answerTotalAxis": "col",
+    "answerTotalIndex": 1,
+    "target": {
+     "col": 1
+    },
+    "hint": "Add the counts in the \"Rock\" column (gives 36). Divide by the grand total (sum of all cells = 80)."
+   },
+   {
+    "id": "twt-3",
+    "challengeType": "marginal_distribution",
+    "scenario": "Sport participation by grade",
+    "rowLabel": "Grade",
+    "columnLabel": "Sport",
+    "rowCategories": [
+     "Grade 7",
+     "Grade 8"
+    ],
+    "columnCategories": [
+     "Soccer",
+     "Basketball"
+    ],
+    "frequencies": [
+     [
+      24,
+      16
+     ],
+     [
+      20,
+      30
+     ]
+    ],
+    "question": "What is P(Grade 7)? Enter your answer as a decimal between 0 and 1 (round to 2 decimals).",
+    "expectedProbability": 0.4444,
+    "tolerance": 0.02,
+    "showTotals": false,
+    "answerTotalAxis": "row",
+    "answerTotalIndex": 0,
+    "target": {
+     "row": 0
+    },
+    "hint": "Add the counts in the \"Grade 7\" row (gives 40). Divide by the grand total (sum of all cells = 90)."
+   },
+   {
+    "id": "twt-4",
+    "challengeType": "marginal_distribution",
+    "scenario": "Phone brand by age group",
+    "rowLabel": "Age group",
+    "columnLabel": "Phone brand",
+    "rowCategories": [
+     "Under 30",
+     "30 and over"
+    ],
+    "columnCategories": [
+     "Brand A",
+     "Brand B"
+    ],
+    "frequencies": [
+     [
+      42,
+      18
+     ],
+     [
+      15,
+      45
+     ]
+    ],
+    "question": "What is P(Brand B)? Enter your answer as a decimal between 0 and 1 (round to 2 decimals).",
+    "expectedProbability": 0.525,
+    "tolerance": 0.02,
+    "showTotals": false,
+    "answerTotalAxis": "col",
+    "answerTotalIndex": 1,
+    "target": {
+     "col": 1
+    },
+    "hint": "Add the counts in the \"Brand B\" column (gives 63). Divide by the grand total (sum of all cells = 120)."
+   }
+  ],
+  "challengeType": "marginal_distribution",
+  "educationalContext": "Calculating marginal distributions is an essential skill in data analysis, allowing you to find the overall probability of a single event from multivariate data without relying on pre-calculated totals.",
+  "gradeBand": "7-8"
+ }
+}

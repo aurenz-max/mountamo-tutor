@@ -10,6 +10,8 @@ interface ParameterPanelProps {
   onChange: (name: string, value: number) => void;
   /** Disable controls (e.g. while an identify challenge is pending). */
   disabled?: boolean;
+  /** Parameter names ringed by the `slider_glow` lever. */
+  highlight?: readonly string[];
 }
 
 /**
@@ -23,6 +25,7 @@ export const ParameterPanel: React.FC<ParameterPanelProps> = ({
   values,
   onChange,
   disabled,
+  highlight,
 }) => {
   return (
     <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4 space-y-4">
@@ -33,13 +36,18 @@ export const ParameterPanel: React.FC<ParameterPanelProps> = ({
         const value = values[schema.name] ?? schema.defaultValue;
         const formatted = schema.integer ? value.toString() : value.toFixed(2);
         return (
-          <div key={schema.name} className="space-y-1.5">
+          <div
+            key={schema.name}
+            data-lever={highlight?.includes(schema.name) ? 'slider-glow' : undefined}
+            className={`space-y-1.5 ${highlight?.includes(schema.name) ? 'rounded-md ring-2 ring-amber-300/70 p-2 -m-2' : ''}`}
+          >
             <div className="flex items-baseline justify-between">
               <label className="text-sm text-slate-200 font-medium">{schema.label}</label>
               <span className="text-sm font-mono text-indigo-300">{formatted}</span>
             </div>
             <input
               type="range"
+              aria-label={schema.label}
               min={schema.min}
               max={schema.max}
               step={schema.step}

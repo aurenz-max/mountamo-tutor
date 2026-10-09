@@ -13,6 +13,8 @@ interface DistributionPlotProps {
   view: 'pdf' | 'cdf';
   /** Optional title above the chart. */
   title?: string;
+  /** While a compute item is pending: no hover readout of P(X = x), f(x) or F(x) (it would print the answer). */
+  hideValues?: boolean;
 }
 
 /**
@@ -20,7 +22,7 @@ interface DistributionPlotProps {
  * chart. Same component handles CDF view — the engine produces a parallel
  * `cdf` array so we just swap the data source.
  */
-export const DistributionPlot: React.FC<DistributionPlotProps> = ({ evaluated, view, title }) => {
+export const DistributionPlot: React.FC<DistributionPlotProps> = ({ evaluated, view, title, hideValues = false }) => {
   const yLabel = view === 'pdf'
     ? (evaluated.kind === 'discrete' ? 'P(X = x)' : 'f(x)')
     : 'F(x)';
@@ -48,12 +50,12 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({ evaluated, v
               label={{ value: yLabel, angle: -90, position: 'insideLeft', fill: '#94a3b8', fontSize: 11 }}
               tickFormatter={(v) => v.toFixed(view === 'cdf' ? 2 : 3)}
             />
-            <Tooltip
+            {!hideValues && <Tooltip
               contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 6, fontSize: 12 }}
               labelStyle={{ color: '#cbd5e1' }}
               formatter={(v: number) => [v.toFixed(4), yLabel]}
               labelFormatter={(x) => `x = ${x}`}
-            />
+            />}
             <Bar dataKey="y" fill="#6366f1" radius={[2, 2, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
@@ -84,12 +86,12 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({ evaluated, v
             label={{ value: yLabel, angle: -90, position: 'insideLeft', fill: '#94a3b8', fontSize: 11 }}
             tickFormatter={(v) => v.toFixed(view === 'cdf' ? 2 : 3)}
           />
-          <Tooltip
+          {!hideValues && <Tooltip
             contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 6, fontSize: 12 }}
             labelStyle={{ color: '#cbd5e1' }}
             formatter={(v: number) => [v.toFixed(4), yLabel]}
             labelFormatter={(x: number) => `x = ${x.toFixed(2)}`}
-          />
+          />}
           <Line
             type="monotone"
             dataKey="y"

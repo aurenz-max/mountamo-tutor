@@ -1,0 +1,154 @@
+{
+ "source": "qa/tutor-reports/two-way-table-runtime-independence_test-payload-2026-10-09.json",
+ "primitiveId": "two-way-table",
+ "evalMode": "independence_test",
+ "data": {
+  "title": "Testing for Independence in Two-Way Tables",
+  "description": "Practice calculating expected joint probabilities under the assumption of independence and comparing them to observed frequencies across multiple real-world contingency tables.",
+  "challenges": [
+   {
+    "id": "twt-1",
+    "challengeType": "independence_test",
+    "scenario": "Music preference by age group",
+    "rowLabel": "Age group",
+    "columnLabel": "Music",
+    "rowCategories": [
+     "Teen",
+     "Adult"
+    ],
+    "columnCategories": [
+     "Pop",
+     "Rock"
+    ],
+    "frequencies": [
+     [
+      32,
+      8
+     ],
+     [
+      12,
+      28
+     ]
+    ],
+    "question": "If Teen and Rock were independent, the expected joint probability would be P(Teen) \u00d7 P(Rock). Compute this expected joint probability (round to 2 decimals).",
+    "expectedProbability": 0.225,
+    "tolerance": 0.02,
+    "showTotals": true,
+    "answerTotalAxis": "both",
+    "target": {
+     "row": 0,
+     "col": 1
+    },
+    "hint": "P(Teen) = 40/80 = 0.5. P(Rock) = 36/80 = 0.45. Multiply."
+   },
+   {
+    "id": "twt-2",
+    "challengeType": "independence_test",
+    "scenario": "Phone brand by age group",
+    "rowLabel": "Age group",
+    "columnLabel": "Phone brand",
+    "rowCategories": [
+     "Under 30",
+     "30 and over"
+    ],
+    "columnCategories": [
+     "Brand A",
+     "Brand B"
+    ],
+    "frequencies": [
+     [
+      42,
+      18
+     ],
+     [
+      15,
+      45
+     ]
+    ],
+    "question": "If 30 and over and Brand A were independent, the expected joint probability would be P(30 and over) \u00d7 P(Brand A). Compute this expected joint probability (round to 2 decimals).",
+    "expectedProbability": 0.2375,
+    "tolerance": 0.02,
+    "showTotals": true,
+    "answerTotalAxis": "both",
+    "target": {
+     "row": 1,
+     "col": 0
+    },
+    "hint": "P(30 and over) = 60/120 = 0.5. P(Brand A) = 57/120 = 0.48. Multiply."
+   },
+   {
+    "id": "twt-3",
+    "challengeType": "independence_test",
+    "scenario": "Lunch choice by grade",
+    "rowLabel": "Grade",
+    "columnLabel": "Lunch",
+    "rowCategories": [
+     "Grade 6",
+     "Grade 7"
+    ],
+    "columnCategories": [
+     "Cafeteria",
+     "Packed"
+    ],
+    "frequencies": [
+     [
+      36,
+      24
+     ],
+     [
+      28,
+      32
+     ]
+    ],
+    "question": "If Grade 6 and Packed were independent, the expected joint probability would be P(Grade 6) \u00d7 P(Packed). Compute this expected joint probability (round to 2 decimals).",
+    "expectedProbability": 0.2333,
+    "tolerance": 0.02,
+    "showTotals": true,
+    "answerTotalAxis": "both",
+    "target": {
+     "row": 0,
+     "col": 1
+    },
+    "hint": "P(Grade 6) = 60/120 = 0.5. P(Packed) = 56/120 = 0.47. Multiply."
+   },
+   {
+    "id": "twt-4",
+    "challengeType": "independence_test",
+    "scenario": "Transportation to school by distance",
+    "rowLabel": "Distance from school",
+    "columnLabel": "Transportation",
+    "rowCategories": [
+     "Under 1 mile",
+     "Over 1 mile"
+    ],
+    "columnCategories": [
+     "Walks",
+     "Bus"
+    ],
+    "frequencies": [
+     [
+      35,
+      5
+     ],
+     [
+      10,
+      50
+     ]
+    ],
+    "question": "If Over 1 mile and Walks were independent, the expected joint probability would be P(Over 1 mile) \u00d7 P(Walks). Compute this expected joint probability (round to 2 decimals).",
+    "expectedProbability": 0.27,
+    "tolerance": 0.02,
+    "showTotals": true,
+    "answerTotalAxis": "both",
+    "target": {
+     "row": 1,
+     "col": 0
+    },
+    "hint": "P(Over 1 mile) = 60/100 = 0.6. P(Walks) = 45/100 = 0.45. Multiply."
+   }
+  ],
+  "challengeType": "independence_test",
+  "educationalContext": "Assessing whether two categorical variables are independent is a fundamental statistical tool used to determine if an association or relationship exists between them in a given population.",
+  "gradeBand": "statistics"
+ }
+}

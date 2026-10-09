@@ -11,7 +11,11 @@ import { TRANSFORM_MISSES_BY_MODE } from '../../../primitives/visual-primitives/
 import { NET_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/netFolderWorkspace';
 import { FORMULA_MISSES_BY_MODE, type FormulaLabMiss } from '../../../primitives/visual-primitives/math/formulaLabWorkspace';
 import { RATIO_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/ratioTableWorkspace';
+import { HISTOGRAM_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/histogramWorkspace';
+import { TWO_WAY_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/twoWayTableWorkspace';
+import { COORDINATE_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/coordinateGraphWorkspace';
 import { CIRCLE_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/circleExplorerWorkspace';
+import { DISTRIBUTION_MISSES_BY_MODE } from '../../../primitives/distribution-explorer/distributionExplorerWorkspace';
 import { RATIO_LINE_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/doubleNumberLineWorkspace';
 import { FACTOR_TREE_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/factorTreeWorkspace';
 import { EQUATION_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/equationWorkspaceDomain';
@@ -1923,6 +1927,25 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Student confuses slope and y-intercept', response: 'The y-intercept is WHERE the line crosses the y-axis (the vertical line). The slope is HOW STEEP the line is. They are different properties of the line.' },
       ],
     },
+    teachingWorkspace: {
+      grades: ['Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10'],
+      guidance: 'The activity checks each answer itself, and you are not told it: to plot, the learner taps a grid '
+        + 'crossing; otherwise the learner taps one of four choices. Before a check and after a wrong one, never say the '
+        + 'highlighted point\'s ordered pair, the slope, the y-intercept, which choice is right, or a rise or run the '
+        + 'plane does not label: reading and working them out is the task. You may read the instruction, the choices, '
+        + 'and any pair or number the plane labels. Teaching is direction and order: from the origin, x first, across '
+        + '(negative is left), then y, up or down (negative is down); slope is rise over run, the change in y over the '
+        + 'change in x, negative when the line falls from left to right; the y-intercept is where the line meets the '
+        + 'y-axis, where x is 0, not a marked point and not the slope. Ask which way to move first and how many steps, '
+        + 'or how far the line goes up for each step across. A wrong choice\'s named miss tells you how it differs from '
+        + 'the answer: ask about that difference, and never turn it into the direction or number the answer has. When '
+        + 'the learner is stuck, give one step and let them take the next: on a slope, ask which number goes on top, and '
+        + 'never say the fraction or what it simplifies to. You cannot tap the grid or a choice.',
+      // Every mode declares levers (`coordinateGraphLevers.ts`); every miss is answered by a help lever on every item.
+      levers: true,
+      // The activity's own check (`coordinateMiss`), every mode.
+      misses: { ...COORDINATE_MISSES_BY_MODE },
+    },
     supportsEvaluation: true,
   },
   {
@@ -2655,6 +2678,25 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'histogram',
+    teachingWorkspace: {
+      grades: ['Grade 6', 'Grade 7', 'Grade 8'],
+      guidance: 'The activity checks each answer itself, and you are not told it: the learner taps a shape word, taps a bar, '
+        + 'or types a number, then presses Check. Before a check and after a wrong one, never say which shape the graph is '
+        + '(the shape words on the buttons are the choices), which bar is tallest or its range, the asked bar\'s count, or '
+        + 'the mean or median. You are not told the bar heights; ask the learner what they see. Teaching: each bar covers '
+        + 'a range of values, from its left edge up to, not including, its right edge; its height, read straight across to '
+        + 'the frequency axis, is how many values fall in that range; the tallest bar is the modal bin; the shape is read '
+        + 'from where the tall bars sit and which side a long, low tail runs to, and a skew is named for the side of the '
+        + 'tail, not the peak; the median is the value with half the values on each side, the mean is where the bars would '
+        + 'balance, and a long tail pulls the mean toward it. A wrong check\'s miss names the confusion: peak_count is one '
+        + 'peak against two, flat_vs_peaked even bars against one middle peak, skew_reversed the tail\'s side, missed_skew '
+        + 'and called_skewed whether there is a long tail at all; teach that contrast, never a shape you guessed. An estimate is accepted within one bar width, so the learner '
+        + 'reads it from the picture rather than calculating. Read the question aloud. You cannot tap, type, or press Check.',
+      // Every mode declares levers (`histogramLevers.ts`); every miss is answered by a help lever on every item.
+      levers: true,
+      // The activity's own check (`histogramMiss`), every mode.
+      misses: { ...HISTOGRAM_MISSES_BY_MODE },
+    },
     description: 'Multi-histogram analysis session (3-6 distinct histograms of the same challenge type) for grades 6-8 statistics. Each challenge presents its own dataset with a real-world context (test scores, heights, temperatures, etc.) and a single mode-specific prompt: identify the distribution shape (symmetric, skewed, bimodal, uniform), find the modal bin, read a specific bin frequency, or estimate the mean/median from the visual. Pool-service generator: bin widths, datasets, and answer keys are built deterministically per mode. ESSENTIAL for 6.SP (statistical questions, shape & center), 7.SP (comparing populations from displays).',
     constraints: 'Multi-instance: a session walks the student through 3-6 challenges of the same eval mode, each with its own dataset, bin width, and prompt. The manifest MUST NOT supply specific data arrays, bin widths, bin starts, contexts, or answer keys — the generator builds every challenge deterministically from the eval mode + topic via the pool service. Stats panel is auto-hidden in estimate_center mode to prevent the student from reading the mean/median directly off the UI.',
     affordances: { representation: 'symbolic', answers: ['tap', 'type'], role: 'apply', minutes: 5 },
@@ -2803,6 +2845,23 @@ export const MATH_CATALOG: ComponentDefinition[] = [
             'This is a {{totalChallenges}}-table session. After each correct answer, the student clicks "Next Table →". Encourage progression: "Nice — on to table {{currentChallengeIndex}}!" After a wrong attempt, point at the specific cell or total that needs another look — do NOT just repeat the formula.',
         },
       ],
+    },
+    teachingWorkspace: {
+      grades: ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
+      guidance: 'The activity checks each answer itself, and you are not told it: the learner reads the counts in the '
+        + 'table, types a probability (a decimal from 0 to 1, or a percent with %) and presses Check; it accepts the '
+        + 'answer within 0.02. Before a check and after a wrong one, never say the probability, the division that gives '
+        + 'it, or its result, and never say a row, column or grand total the table hides: adding those up is part of the '
+        + 'task. You may read the cells and any total the table draws. Teaching is which group the question counts and '
+        + 'which group it is out of: a joint probability is one cell out of everyone; a marginal is a whole row or column '
+        + 'added up, out of everyone; a conditional "given B" is out of only the B row or column, not everyone; under '
+        + 'independence the expected joint is P(A) times P(B), each out of everyone, compared with the observed cell. Ask '
+        + 'which cells the question names and what the probability is out of. Read the question aloud. You cannot type '
+        + 'or press Check.',
+      // Every mode declares levers (`twoWayTableLevers.ts`); every miss is answered by a help lever on every item.
+      levers: true,
+      // The activity's own check (`twoWayMiss`), every mode.
+      misses: { ...TWO_WAY_MISSES_BY_MODE },
     },
     supportsEvaluation: true,
   },
@@ -7071,8 +7130,26 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'distribution-explorer',
+    teachingWorkspace: {
+      grades: ['Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
+      guidance: 'The activity checks every answer itself, and you are not told it. On identify, compute and shape items the '
+        + 'learner taps one choice and presses Check; on explore they move a slider or change the family, then press Got it, '
+        + 'which is credited only after the workbench moved. On explore the learner finds the pattern by looking: say which '
+        + 'slider to try, never what the chart will do or the value where it happens, and ask what they noticed. Before a '
+        + 'check and after a wrong one, never name the family, the value or the shape that answers, never say which choice '
+        + 'is right, and never work the calculation through to its number. When one formula is the whole item (a mean, a '
+        + 'variance), stating that formula is the answer: ask which formula fits, do not say it. Ask what the scenario '
+        + 'counts or measures, whether it is discrete or continuous, and which probability is asked (exactly, at most, more '
+        + 'than). On identify the workbench hides the family\'s name, formula and sliders until the check; on compute it '
+        + 'hides the mean, variance and the chart\'s value readout. Read the question aloud. You cannot tap a choice, move '
+        + 'a slider, or press Check or Got it.',
+      // Every mode declares levers (`distributionExplorerLevers.ts`).
+      levers: true,
+      // The activity's own check (`distributionMiss`), every mode.
+      misses: { ...DISTRIBUTION_MISSES_BY_MODE },
+    },
     description: 'Live workbench for probability distributions (binomial, Poisson, exponential). Students manipulate parameter sliders and watch the PMF/PDF, CDF, and moments update in real time. Supports four phase-gated challenge modes: free guided exploration, family identification from shape/moments, basic single-distribution probability computation, and advanced conditional/tail/percentile reasoning. ESSENTIAL for probability, statistics, and actuarial topics.',
-    constraints: 'Requires a topic with a probabilistic structure. Each eval mode produces phase-appropriate challenges: explore (no graded answer), identify (family MCQ), compute (numeric input with tolerance), predict_shape (free-text or MCQ description). Math is computed client-side from the chosen family — Gemini authors framing + challenges only.',
+    constraints: 'Requires a topic with a probabilistic structure. Each eval mode produces phase-appropriate challenges: explore (no graded answer), identify (family MCQ), compute (multiple choice), predict_shape (multiple choice). Math is computed client-side from the chosen family — Gemini authors framing + challenges only.',
     affordances: { representation: 'symbolic', answers: ['manipulate', 'type'], role: ['visualize', 'apply'], minutes: 6 },
     evalModes: [
       {

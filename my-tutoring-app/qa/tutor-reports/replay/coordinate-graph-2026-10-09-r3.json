@@ -1,0 +1,2459 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    1,
+    20
+   ],
+   "no_change_before_receipt": [
+    0,
+    20
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "coordinate-graph.find_intercept",
+   "primitiveId": "coordinate-graph",
+   "evalMode": "find_intercept",
+   "keys": [
+    "4"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "fi-0",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "4"
+      ],
+      "ask": "Analyze the linear function passing through the given points. Determine the coordinate where the line intersects the y-axis.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "4",
+       "2",
+       "-4",
+       "5"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at the line on the graph and see where it crosses the vertical y-axis.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the line on the graph and see where it crosses the vertical y-axis.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the line on the graph and see where it crosses the vertical y-axis. Tap the choice that matches that value whenever you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the line on the graph and see where it crosses the vertical y-axis.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Look at where the line crosses the vertical y-axis, right by the question mark, and choose the number that matches that spot.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "fi-0",
+     "trigger": "The learner submitted \"chose the second choice\". The board checked it: not right.",
+     "miss": "slope_instead",
+     "scoredWith": {
+      "keys": [
+       "4"
+      ],
+      "ask": "Analyze the linear function passing through the given points. Determine the coordinate where the line intersects the y-axis.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "4",
+       "2",
+       "-4",
+       "5"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Notice the note under the plane: the y-intercept is where the line meets the vertical y-axis where x is zero, not the slope. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "intercept_frame",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A note appeared below: the y-intercept is the value where the line meets the vertical y-axis, not the slope. Look at where the line crosses that vertical axis and try again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "intercept_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the note below the grid: the y-intercept is the y-value where the line meets the vertical y-axis where x is zero, rather than the slope. Take another look at where that question mark sits on the y-axis and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "intercept_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the note below the grid: the y-intercept is the y-value right where the line crosses the vertical y-axis, not the slope. Take another look at where that question mark is on the y-axis and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "intercept_frame",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A reminder appeared below the graph: the y-intercept is the y-value where the line meets the vertical y-axis, not the slope. Look at the question mark on that up-and-down axis and try another choice.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "intercept_frame",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "fi-0",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "4"
+      ],
+      "ask": "Analyze the linear function passing through the given points. Determine the coordinate where the line intersects the y-axis.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "4",
+       "2",
+       "-4",
+       "5"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A tip just appeared under the plane to remind you that the y-intercept is where the line crosses the vertical y-axis. Find the question mark on that up-and-down axis and check what number it sits on.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "intercept_frame",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A reminder is now on screen under the plane explaining that the y-intercept is where the line meets the vertical y-axis where x is zero. Look right where that question mark is sitting on the up-and-down axis and count up from zero.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "intercept_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A reminder just popped up underneath the grid to help you out. Look at the vertical line where x is zero and find the number where the line crosses it.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "intercept_frame",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Take a look at the worked example beside the plane, which shows how the y-axis crossing is marked on a line. Find that question mark on your graph's vertical line and see what number it sits on.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_line",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the up-and-down y-axis and find the question mark where the line crosses it. What number on that vertical axis is the line touching?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "intercept_frame",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "fi-0",
+     "trigger": "The learner said they were stuck, so the host pulled intercept_frame (help). It is on screen now: Writes under the plane: the y-intercept is the y-value where the line meets the up-and-down axis, where x is zero; not the slope, not where it meets the across axis. No number. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or ",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "4"
+      ],
+      "ask": "Analyze the linear function passing through the given points. Determine the coordinate where the line intersects the y-axis.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "4",
+       "2",
+       "-4",
+       "5"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look right below the graph: there is a note explaining that the y-intercept is the y-value where the line meets the up-and-down axis. Look at that vertical axis to see where the line crosses it, and pick the number that matches.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under the coordinate plane\u2014there's a new note reminding us that the y-intercept is where the line crosses the vertical y-axis where x is zero. Take a look at the vertical axis on your graph and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is a reminder written right below the grid showing that the y-intercept is where the line meets the vertical up-and-down axis. Look along that vertical axis to see where the line crosses it, and choose the number that matches.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is a helpful reminder written right below the coordinate plane. Follow the vertical y-axis to see where the line crosses it, and tap your answer from the choices.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is now a helpful note written right under the coordinate plane explaining that the y-intercept is where the line meets the up-and-down axis. Look along that vertical axis to find the question mark, and choose that number from the list.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "fi-0",
+     "trigger": "The learner submitted \"chose the first choice\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "4"
+      ],
+      "ask": "Analyze the linear function passing through the given points. Determine the coordinate where the line intersects the y-axis.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "4",
+       "2",
+       "-4",
+       "5"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You found it\u2014you looked at the y-axis and chose 4 where the line crosses!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it\u20144 is where the line crosses the y-axis!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it by reading the line right where it crosses the y-axis at 4!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You spotted the right crossing point on the vertical axis and chose 4. Great job working it out!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it! By checking where the line crosses that vertical axis, you picked 4, which is the exact y-intercept.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "coordinate-graph.find_slope",
+   "primitiveId": "coordinate-graph",
+   "evalMode": "find_slope",
+   "keys": [
+    "1/2"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "fs-0",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "1/2"
+      ],
+      "ask": "Find the slope of the line passing through the points (-4, 2) and (2, 5).",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "2",
+       "1/2",
+       "-1/2",
+       "-2"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Take a look at the line and the labeled triangle to find the slope.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the line and the rise and run triangle shown on the graph. When you're ready, choose the slope that matches.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the line and the labeled triangle to find the slope.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the line and the rise and run triangle shown on the graph. When you are ready, choose the slope that matches it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the line and the labeled triangle on the screen whenever you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "fs-0",
+     "trigger": "The learner submitted \"chose the first choice\". The board checked it: not right.",
+     "miss": "reciprocal",
+     "scoredWith": {
+      "keys": [
+       "1/2"
+      ],
+      "ask": "Find the slope of the line passing through the points (-4, 2) and (2, 5).",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "2",
+       "1/2",
+       "-1/2",
+       "-2"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The note below the graph reminds us that slope is rise divided by run. Which number goes on top, and which goes on the bottom?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "slope_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the reminder below the grid: slope is rise divided by run. Which number goes on top, and which goes on the bottom?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "slope_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the reminder on screen: slope is rise divided by run, which puts the vertical rise over the horizontal run. Try setting up the ratio of rise to run and pick again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "slope_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the reminder below the plane: slope is rise divided by run. Which number goes on top?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "slope_frame",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A reminder appeared below the graph: slope is rise divided by run. Which number goes on top in the fraction?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "slope_frame",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "fs-0",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "1/2"
+      ],
+      "ask": "Find the slope of the line passing through the points (-4, 2) and (2, 5).",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "2",
+       "1/2",
+       "-1/2",
+       "-2"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A note appeared below the grid showing that slope is rise divided by run. Look at the labeled rise of 3 and run of 6, and try setting up that fraction.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "slope_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A guide appeared below the plane showing that slope is rise divided by run. Look at the labeled rise of 3 and run of 6 to write that fraction and simplify it.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "slope_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A helpful reminder appeared below the graph showing that slope is rise divided by run. Look at the labeled rise of 3 and run of 6, and try putting them into that fraction.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "slope_frame",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look below the graph: it now shows that slope is rise divided by run. Put the labeled rise of 3 over the run of 6, and see which fraction that simplifies to!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "slope_frame",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": false,
+        "no_change_before_receipt": true
+       },
+       "evidence": {
+        "no_fix_before_try": "Put the labeled rise of 3"
+       },
+       "pulledLever": true
+      },
+      {
+       "text": "A helpful hint appeared below the plane showing that slope is rise divided by run. Look at the labeled rise of 3 and run of 6, and try simplifying that fraction!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "slope_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "fs-0",
+     "trigger": "The learner said they were stuck, so the host pulled slope_frame (help). It is on screen now: Writes under the plane: slope is rise divided by run, the change in y over the change in x, and a line that falls from left to right has a negative slope. No number. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then le",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "1/2"
+      ],
+      "ask": "Find the slope of the line passing through the points (-4, 2) and (2, 5).",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "2",
+       "1/2",
+       "-1/2",
+       "-2"
+      ]
+     },
+     "samples": [
+      {
+       "text": "There is a new note right under the graph that explains slope is rise divided by run. Use that guide with the triangle labels to choose your answer.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A note appeared right under the graph showing that slope is rise divided by run. Use that to compare the rise of 3 and run of 6, then pick the slope that matches.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A note appeared under the plane reminding you that slope is rise divided by run. Use the labeled rise and run to try choosing the slope again!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right below the coordinate plane: a new note shows that slope is rise divided by run, and that lines falling from left to right have negative slope. Take another look at the labeled rise of 3 and run of 6, and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under the plane, there is now a note showing that slope is rise divided by run. Take a look at that formula and try choosing the slope again!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "fs-0",
+     "trigger": "The learner submitted \"chose the second choice\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "1/2"
+      ],
+      "ask": "Find the slope of the line passing through the points (-4, 2) and (2, 5).",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "2",
+       "1/2",
+       "-1/2",
+       "-2"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You set up the rise of 3 over the run of 6, simplified it, and found the slope of 1/2!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You divided the rise of 3 by the run of 6 to find the slope of 1/2.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You put the rise of 3 over the run of 6 and got 1/2. Nice work working through that ratio!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it, 1/2! You put the rise of 3 over the run of 6 and simplified it nicely.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You took the rise of 3 over the run of 6 and simplified it to 1/2.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "coordinate-graph.plot_point",
+   "primitiveId": "coordinate-graph",
+   "evalMode": "plot_point",
+   "keys": [],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "pp-0",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Plot the point (-4, 7) on the coordinate plane to mark the location of a stationary drone.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "-10-10-8-8-6-6-4-4-2-2224466881010"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Take a look at the drone's coordinates and tap the grid where that point belongs.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Go ahead and tap the grid where you think the drone is located at (-4, 7).",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! To place the drone at (-4, 7), tap the coordinate plane where that point belongs.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Go ahead and tap the grid where you think the drone should go.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Tap the grid crossing to plot the point (-4, 7) for the drone.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "pp-0",
+     "trigger": "The learner submitted \"placed a point at (7, -4)\". The board checked it: not right.",
+     "miss": "swapped",
+     "scoredWith": {
+      "keys": [],
+      "ask": "Plot the point (-4, 7) on the coordinate plane to mark the location of a stationary drone.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "-10-10-8-8-6-6-4-4-2-2224466881010"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The axes now show their directions and signs to guide you. Remember that the first number tells us how far to move across, and the second tells us how far to move up or down.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "axis_guide",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The axes now show their directions: x runs across first, and y goes up or down second. Which way should you move from the origin for the first number, -4?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "axis_guide"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I added axis directions and sign guides to the screen to help out. Remember that the x-coordinate comes first to tell you how far to move across, then y tells you how far up or down. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "axis_guide",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I added labels showing that the x-axis goes across and the y-axis goes up and down. Starting from the origin, which direction do we move first for (-4, 7)?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "axis_guide"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the labels showing that the x-axis goes across and the y-axis goes up and down. Which coordinate tells you how far to move across first?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "axis_guide"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "pp-0",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Plot the point (-4, 7) on the coordinate plane to mark the location of a stationary drone.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "-10-10-8-8-6-6-4-4-2-2224466881010"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The screen now labels the x-axis across and the y-axis up and down, along with the signs for each section. Which direction along the x-axis does a negative first number tell you to go from the center?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "axis_guide",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The screen now shows which way each axis goes and the signs for each quadrant. Starting at the center, which direction should you move first for -4?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "axis_guide"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An example point is now on the screen showing how to move across from the center first, and then up or down. Starting from the center, which way should you move along the horizontal line for -4?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "model_point"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The grid now labels each axis with its direction and shows the sign patterns. Starting from the center (0, 0), which direction along the horizontal x-axis should you move first?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "axis_guide"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The screen now shows which direction each axis goes, along with the sign signs for each area. Starting at the center, which direction should you move first for -4?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "axis_guide",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "pp-0",
+     "trigger": "The learner said they were stuck, so the host pulled axis_guide (help). It is on screen now: Names each axis on the plane with its direction (x across, y up or down) and writes each quadrant's sign pattern. No number. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Plot the point (-4, 7) on the coordinate plane to mark the location of a stationary drone.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "-10-10-8-8-6-6-4-4-2-2224466881010"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The plane now shows the labels for the x-axis across and the y-axis up and down, along with the sign pattern in each section. Take another look at (-4, 7) and give it a try on the grid!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the coordinate plane now: the x-axis across and the y-axis up and down are clearly labeled, along with the signs for each section. Give the drone's coordinates another try using those guides.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the grid\u2014the axes now show that x goes across and y goes up or down, along with the signs for each section. Give the point (-4, 7) another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the new labels on the axes showing that x goes across and y goes up or down, along with the signs for each section. Give it another try starting from the center.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The axes now label which direction to go across and up or down, and each quadrant shows its signs. Using that guide, try moving along the x-axis first and then along the y-axis to tap the drone's spot.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "pp-0",
+     "trigger": "The learner submitted \"placed a point at (-4, 7)\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Plot the point (-4, 7) on the coordinate plane to mark the location of a stationary drone.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "-10-10-8-8-6-6-4-4-2-2224466881010"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Nice work plotting (-4, 7)! You went left 4 along the x-axis and then up 7 on the y-axis to land right on target.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed your mistake and placed the point right at (-4, 7) by moving across first and then up.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You went left 4 and up 7 to place (-4, 7) right on target. Excellent job fixing that point!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You placed the point right at (-4, 7) by fixing the order and going across to -4 first, then up to 7!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You plotted (-4, 7) right on target by going left 4 and up 7. Nicely done!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "coordinate-graph.read_point",
+   "primitiveId": "coordinate-graph",
+   "evalMode": "read_point",
+   "keys": [
+    "(-4, 7)"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "rp-0",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "(-4, 7)"
+      ],
+      "ask": "Analyze the coordinate plane and determine the exact location of the targeted analytical node. What are the coordinates of the highlighted point?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "-10-10-8-8-6-6-4-4-2-2224466881010",
+       "(4, -7)",
+       "(-4, 7)",
+       "(-7, 4)",
+       "(-4, 6)"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at the highlighted point on the grid. Remember to start at the origin and check the horizontal distance first, then the vertical distance.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the highlighted point on the grid and see which coordinates match it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the highlighted point on the coordinate plane, and see which ordered pair matches its location.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the highlighted point on the grid. Remember to start at the origin and check which way you move across first, then up or down.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the highlighted point on the grid and choose the ordered pair that matches its location.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "rp-0",
+     "trigger": "The learner submitted \"chose (4, -7)\". The board checked it: not right.",
+     "miss": "both_signs",
+     "scoredWith": {
+      "keys": [
+       "(-4, 7)"
+      ],
+      "ask": "Analyze the coordinate plane and determine the exact location of the targeted analytical node. What are the coordinates of the highlighted point?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "-10-10-8-8-6-6-4-4-2-2224466881010",
+       "(4, -7)",
+       "(-4, 7)",
+       "(-7, 4)",
+       "(-4, 6)"
+      ]
+     },
+     "samples": [
+      {
+       "text": "I've added the axis directions and sign patterns for each quadrant to help you out. Take another look at which directions you need to move from the origin to reach that point.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "axis_guide",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The screen now shows which directions are positive and negative along each axis. From the origin, are you moving in a positive or negative direction along the x-axis to reach that point?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "axis_guide",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The axes now show their directions and the positive and negative signs for each section. Starting from the center, check whether you need to move left or right, and then up or down to reach the point.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "axis_guide",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the axis directions and sign guides now shown on the screen. Starting from the origin, which direction do you move along the horizontal axis to line up with the point?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "axis_guide",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I added axis guides showing the directions and sign patterns for each quadrant. Starting from the origin, which direction along the horizontal axis leads toward the point?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "axis_guide",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "rp-0",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "(-4, 7)"
+      ],
+      "ask": "Analyze the coordinate plane and determine the exact location of the targeted analytical node. What are the coordinates of the highlighted point?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "-10-10-8-8-6-6-4-4-2-2224466881010",
+       "(4, -7)",
+       "(-4, 7)",
+       "(-7, 4)",
+       "(-4, 6)"
+      ]
+     },
+     "samples": [
+      {
+       "text": "I've drawn dashed lines from the point straight to each axis to make it easier to trace. What number does the line hit on the horizontal x-axis?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "drop_lines",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Notice the new labels on the axes and the signs in each quadrant. From the center, do we move left or right along the x-axis to line up with that point?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_point",
+          "actionId": "test/2/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "axis_guide",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The screen now marks the x-axis across and the y-axis up and down, along with the sign pattern for each section. Starting from the center (0,0), do you move left or right along the x-axis to line up with the point?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "axis_guide",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The axes now show their directions and sign patterns. Notice whether you have to move left or right along the x-axis first to line up with that point.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "axis_guide",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I\u2019ve added the axis directions and sign guides to the screen. Which way do you move along the x-axis first from the center?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "drop_lines"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "axis_guide"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "rp-0",
+     "trigger": "The learner said they were stuck, so the host pulled axis_guide (help). It is on screen now: Names each axis on the plane with its direction (x across, y up or down) and writes each quadrant's sign pattern. No number. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "(-4, 7)"
+      ],
+      "ask": "Analyze the coordinate plane and determine the exact location of the targeted analytical node. What are the coordinates of the highlighted point?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "-10-10-8-8-6-6-4-4-2-2224466881010",
+       "(4, -7)",
+       "(-4, 7)",
+       "(-7, 4)",
+       "(-4, 6)"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You can now see labels on each axis showing the directions, along with the positive and negative signs for each quadrant. Look at which quadrant the highlighted point is in, and try picking the matching coordinates!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the coordinate plane: each axis now shows its direction, and each quadrant shows whether its coordinates are positive or negative. Use those signs to check which quadrant your point is in and try picking an answer again.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The grid now shows the direction for each axis and the plus or minus signs for each section. Take another look at where your point sits, and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the new guide showing each axis and the signs for each section: x tells us how far across, and y tells us how far up or down. Starting from the center, which direction and how far across do you go first?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The plane now shows the direction for each axis and the signs for each quadrant. Look at which side of zero the point sits on, and try picking your answer again.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "rp-0",
+     "trigger": "The learner submitted \"chose (-4, 7)\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "(-4, 7)"
+      ],
+      "ask": "Analyze the coordinate plane and determine the exact location of the targeted analytical node. What are the coordinates of the highlighted point?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "-10-10-8-8-6-6-4-4-2-2224466881010",
+       "(4, -7)",
+       "(-4, 7)",
+       "(-7, 4)",
+       "(-4, 6)"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Spot on! You checked the quadrant signs, moved left 4 to -4, and went up 7 to get (-4, 7).",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nice job! You used the quadrant signs to spot that moving left means negative 4 and moving up means positive 7, leading right to (-4, 7).",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You used the sign guides to see that moving left is negative and moving up is positive, finding (-4, 7).",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You used the quadrant signs to find (-4, 7).",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You used the quadrant signs to find (-4, 7).",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

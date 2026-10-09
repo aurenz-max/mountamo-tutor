@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -17,11 +17,23 @@ import {
 } from '../../../evaluation';
 import type { CoordinateGraphMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  PLANE, choiceCorrect, coordinateMiss, describeCoordinateWork, interceptOf, maskedEquation, nearestCrossing,
+  plotCorrect, workspaceAssignment, workspaceScene, type GridPoint,
+} from './coordinateGraphWorkspace';
+import {
+  AXIS_GUIDE, CROSSING, DROP_LINES, EVERY_LINE, INTERCEPT_FRAME, MODEL_LINE, MODEL_POINT, RISE_RUN, SLOPE_FRAME, UNIT_STEPS,
+  coordinateLevers, isPracticeItem, leverFacts, lineModel, pointModel, simplerItem, type LineModel,
+} from './coordinateGraphLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -44,7 +56,7 @@ export interface CoordinateGraphChallenge {
   option2?: string;
   option3?: string;
   correctOptionIndex?: number;
-  /** Optional equation label shown on the graph for find_intercept */
+  /** Optional equation label for find_intercept. Drawn with the intercept masked (`maskedEquation`): it would state the answer. */
   equationLabel?: string;
 
   /**
@@ -58,7 +70,7 @@ export interface CoordinateGraphChallenge {
   showRiseRunGuides?: boolean; // find_slope: dashed rise/run triangle
   showRiseRunLabels?: boolean; // find_slope: "rise = N" / "run = N" labels
   showPointLabels?: boolean; // find_slope: (x,y) text beside each point
-  showEquationLabel?: boolean; // find_intercept: y = mx + b label
+  showEquationLabel?: boolean; // find_intercept: y = mx + ? label
   showInterceptMarker?: boolean; // find_intercept: pulsing "?" marker at the crossing
   supportTier?: 'easy' | 'medium' | 'hard';
 }
@@ -84,8 +96,8 @@ export interface CoordinateGraphData {
 // Constants
 // ============================================================================
 
-const SVG_SIZE = 500;
-const PAD = 50;
+const SVG_SIZE = PLANE.size;
+const PAD = PLANE.pad;
 const DRAW = SVG_SIZE - 2 * PAD;
 
 const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
@@ -96,7 +108,7 @@ const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
 };
 
 // ============================================================================
-// Tutor reveal policy — keep the AI tutor in sync with the on-screen scaffold so
+// Tutor reveal policy (scripted path) — keep the AI tutor in sync with the on-screen scaffold so
 // it never names what a harder tier withheld.
 // ============================================================================
 
@@ -121,22 +133,93 @@ function tutorRevealClause(type: string, tier?: string): string {
   }
 }
 
+/** A pointer position in the plane's viewBox (the screen matrix inverted), or by its box where there is none. */
+function viewBoxPoint(svg: SVGSVGElement, clientX: number, clientY: number): { x: number; y: number } | null {
+  const matrix = svg.getScreenCTM?.();
+  if (matrix && typeof svg.createSVGPoint === 'function') {
+    const p = svg.createSVGPoint();
+    p.x = clientX; p.y = clientY;
+    const local = p.matrixTransform(matrix.inverse());
+    return { x: local.x, y: local.y };
+  }
+  const rect = svg.getBoundingClientRect();
+  if (!rect.width || !rect.height) return null;
+  return { x: (clientX - rect.left) * (SVG_SIZE / rect.width), y: (clientY - rect.top) * (SVG_SIZE / rect.height) };
+}
+
+/** The model_line lever's worked example: a different line on a small plane from -4 to 4, with its caption. */
+const LineModelInset: React.FC<{ model: LineModel }> = ({ model }) => {
+  const S = 160, P = 12, D = S - 2 * P, lo = -4, hi = 4;
+  const tx = (x: number) => P + ((x - lo) / (hi - lo)) * D;
+  const ty = (y: number) => P + ((hi - y) / (hi - lo)) * D;
+  const m = (model.b.y - model.a.y) / (model.b.x - model.a.x);
+  const at = (x: number) => model.a.y + m * (x - model.a.x);
+  return (
+    <figure data-lever="model-line" className="mx-auto w-64 rounded-lg border border-white/10 bg-slate-900/40 p-2 text-center">
+      <figcaption className="mb-1 text-xs uppercase tracking-wider text-slate-400">Worked example</figcaption>
+      <svg viewBox={`0 0 ${S} ${S}`} className="mx-auto w-40">
+        {Array.from({ length: hi - lo + 1 }, (_, i) => lo + i).map(v => (
+          <React.Fragment key={v}>
+            <line x1={tx(v)} y1={P} x2={tx(v)} y2={S - P} stroke="white" strokeOpacity={v === 0 ? 0.5 : 0.08} />
+            <line x1={P} y1={ty(v)} x2={S - P} y2={ty(v)} stroke="white" strokeOpacity={v === 0 ? 0.5 : 0.08} />
+          </React.Fragment>
+        ))}
+        <line x1={tx(lo)} y1={ty(at(lo))} x2={tx(hi)} y2={ty(at(hi))} stroke="#a78bfa" strokeWidth={2} />
+        {model.crossing == null && (
+          <path d={`M ${tx(model.a.x)} ${ty(model.a.y)} L ${tx(model.b.x)} ${ty(model.a.y)} L ${tx(model.b.x)} ${ty(model.b.y)}`}
+            fill="none" stroke="#fde68a" strokeDasharray="4 3" />
+        )}
+        {[model.a, model.b].map((p, i) => <circle key={i} cx={tx(p.x)} cy={ty(p.y)} r={3.5} fill="#a78bfa" />)}
+        {model.crossing != null && <circle cx={tx(0)} cy={ty(model.crossing)} r={5} fill="none" stroke="#fde68a" strokeWidth={2} />}
+      </svg>
+      <p className="mt-1 font-mono text-xs text-violet-200">{model.caption}</p>
+    </figure>
+  );
+};
+
 // ============================================================================
 // Component
 // ============================================================================
 
-const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string }> = ({ data, className }) => {
+interface CoordinateGraphProps {
+  data: CoordinateGraphData;
+  className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
+}
+
+const CoordinateGraphSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  CoordinateGraphProps & { tutorOwned: boolean; useController: (options: ProgressOptions<CoordinateGraphChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const { gridMin, gridMax, challenges } = data;
   const svgRef = useRef<SVGSVGElement>(null);
   const stableInstanceIdRef = useRef(data.instanceId || `coordinate-graph-${Date.now()}`);
   const resolvedInstanceId = data.instanceId || stableInstanceIdRef.current;
 
-  // --- Shared hooks ---
+  // --- Challenge progression. On the workspace path the runtime moves the index. ---
+  /** Bound below, once the setters exist; the progress hook calls them only after render. */
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId, objectiveId: data.objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onFinished: (result) => finish.current(result),
+  });
   const {
     currentIndex, currentAttempts, results: challengeResults,
     isComplete: allChallengesComplete,
-    recordResult, incrementAttempts, advance: advanceProgress,
-  } = useChallengeProgress({ challenges, getChallengeId: (ch) => ch.id });
+    recordResult, mergeResult, advance: advanceProgress,
+  } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const blocked = tutorOwned && progress.canAttempt === false;
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = blocked;
+  const learnerBlocked = () => workspaceClosed.current;
 
   const phaseResults = usePhaseResults({
     challenges, results: challengeResults, isComplete: allChallengesComplete,
@@ -147,6 +230,7 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
   const {
     submitResult: submitEvaluation,
     submittedResult,
+    hasSubmitted,
     elapsedMs,
   } = usePrimitiveEvaluation<CoordinateGraphMetrics>({
     primitiveType: 'coordinate-graph',
@@ -158,9 +242,19 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
     onSubmit: data.onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const challenge = challenges[currentIndex] ?? null;
+  // In-item levers (`coordinateGraphLevers.ts`), keyed by the session item they were pulled on, and the easier item a
+  // simplify lever put on screen in its place.
+  const grid = useMemo(() => ({ gridMin, gridMax }), [gridMin, gridMax]);
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<CoordinateGraphChallenge | null>(null);
+  const sessionChallenge = challenges[currentIndex] ?? null;
+  /** What is on screen: the easier item while a simplify lever holds it, else the session item. */
+  const challenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  /** A runtime pull on the session item; never drawn on a practice item. */
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
 
-  // --- AI Tutoring ---
+  // --- AI Tutoring (scripted path; on the workspace path the tutor reads the scene instead) ---
   const aiData = useMemo(() => ({
     title: data.title,
     challenge: challenge ? { type: challenge.type, instruction: challenge.instruction } : null,
@@ -168,18 +262,30 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
     progress: `${currentIndex + 1}/${challenges.length}`,
   }), [data.title, challenge, currentIndex, challenges.length]);
 
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  const { sendText: sendLegacyText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'coordinate-graph',
     instanceId: resolvedInstanceId,
     primitiveData: aiData,
     gradeLevel: data.gradeBand || '6-8',
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   // --- Local state ---
-  const [hoverPt, setHoverPt] = useState<{ x: number; y: number } | null>(null);
-  const [placedPt, setPlacedPt] = useState<{ x: number; y: number } | null>(null);
+  const [hoverPt, setHoverPt] = useState<GridPoint | null>(null);
+  const [placedPt, setPlacedPt] = useState<GridPoint | null>(null);
   const [selectedOpt, setSelectedOpt] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | 'show_answer' | null>(null);
+
+  /** A fresh item (both paths) or Try again (workspace): nothing placed or chosen, the feedback gone. */
+  const resetWork = () => { setFeedback(null); setPlacedPt(null); setSelectedOpt(null); setHoverPt(null); };
+  openItem.current = (_index, retry) => {
+    // Try again on a practice item keeps it; a fresh item (or the full item back after practice) drops it.
+    if (!retry) setPractice(null);
+    resetWork();
+  };
 
   // --- SVG coordinate helpers ---
   const span = gridMax - gridMin;
@@ -200,7 +306,7 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
     const dx = challenge.x2 - challenge.x1;
     if (dx === 0) return null;
     const slope = (challenge.y2 - challenge.y1) / dx;
-    const yInt = challenge.y1 - slope * challenge.x1;
+    const yInt = interceptOf(challenge);
     return {
       slope, yInt,
       lineY1: challenge.y1 + slope * (gridMin - challenge.x1),
@@ -208,41 +314,45 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
     };
   }, [challenge, gridMin, gridMax]);
 
-  // --- Answer handling ---
-  const handleAnswer = useCallback((correct: boolean, student: string, answer: string) => {
-    if (feedback) return;
+  // --- Answer handling. Every tap that grades commits, right or wrong. ---
+  const handleAnswer = useCallback((correct: boolean, student: string, answer: string, work: { placed: GridPoint | null; chosen: number | null }) => {
+    if (feedback || !challenge) return;
+    const attempts = currentAttempts + 1;
     if (correct) {
       SoundManager.playCorrect();
       setFeedback('correct');
-      recordResult({
-        challengeId: challenge!.id, correct: true,
-        score: currentAttempts === 0 ? 100 : 50,
-        attempts: currentAttempts + 1, challengeType: challenge!.type,
-      });
-      sendText(`[ANSWER_CORRECT] Challenge ${currentIndex + 1}/${challenges.length}: "${challenge!.instruction}". Student answered "${student}" correctly on attempt ${currentAttempts + 1}. Congratulate briefly.`, { silent: true });
+      sendText(`[ANSWER_CORRECT] Challenge ${currentIndex + 1}/${challenges.length}: "${challenge.instruction}". Student answered "${student}" correctly on attempt ${attempts}. Congratulate briefly.`, { silent: true });
     } else {
       SoundManager.playIncorrect();
-      incrementAttempts();
-      if (currentAttempts >= 1) {
+      if (!tutorOwned && currentAttempts >= 1) {
         setFeedback('show_answer');
         recordResult({
-          challengeId: challenge!.id, correct: false, score: 0,
-          attempts: currentAttempts + 1, challengeType: challenge!.type,
+          challengeId: challenge.id, correct: false, score: 0,
+          attempts, challengeType: challenge.type,
         });
         sendText(`[ANSWER_INCORRECT] Challenge ${currentIndex + 1}/${challenges.length}: Student answered "${student}" but correct is "${answer}". Attempt 2. Show answer and explain.`, { silent: true });
       } else {
         setFeedback('incorrect');
-        sendText(`[ANSWER_INCORRECT] Challenge ${currentIndex + 1}/${challenges.length}: Student answered "${student}" but correct is "${answer}". Attempt 1. Give a hint.${tutorRevealClause(challenge!.type, challenge!.supportTier)}`, { silent: true });
+        sendText(`[ANSWER_INCORRECT] Challenge ${currentIndex + 1}/${challenges.length}: Student answered "${student}" but correct is "${answer}". Attempt 1. Give a hint.${tutorRevealClause(challenge.type, challenge.supportTier)}`, { silent: true });
       }
     }
-  }, [feedback, challenge, currentIndex, challenges.length, currentAttempts, recordResult, incrementAttempts, sendText]);
+    // The checked gesture (counts the attempt, records the verdict on both paths), then this primitive's own fields.
+    progress.commitCheck(describeCoordinateWork(challenge, work), correct, coordinateMiss(challenge, work));
+    // An easier practice item (a simplify lever) is not the session's challenge: it records nothing of its own.
+    if (correct && !isPracticeItem(challenge)) {
+      mergeResult({
+        challengeId: challenge.id, correct: true,
+        score: currentAttempts === 0 ? 100 : 50,
+        attempts, challengeType: challenge.type,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [feedback, challenge, currentIndex, challenges.length, currentAttempts, recordResult, mergeResult, sendText, tutorOwned, progress.commitCheck]);
 
-  // --- Advance ---
+  // --- Advance (scripted path; the workspace path has no Continue and the runtime advances) ---
   const advanceToNext = useCallback(() => {
-    setFeedback(null);
-    setPlacedPt(null);
-    setSelectedOpt(null);
-    setHoverPt(null);
+    if (tutorOwned) return;
+    resetWork();
     if (!advanceProgress()) {
       const totalCorrect = challengeResults.filter(r => r.correct).length;
       const score = Math.round((totalCorrect / challenges.length) * 100);
@@ -266,55 +376,100 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
     } else {
       sendText(`[NEXT_ITEM] Moving to challenge ${currentIndex + 2} of ${challenges.length}. Introduce it briefly.`, { silent: true });
     }
-  }, [advanceProgress, challengeResults, challenges, currentIndex, phaseResults, sendText, submitEvaluation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tutorOwned, advanceProgress, challengeResults, challenges, currentIndex, phaseResults, sendText, submitEvaluation, elapsedMs]);
 
-  // Auto-advance on correct
+  // Auto-advance on correct (scripted path only: on the workspace path the runtime owns progression)
   useEffect(() => {
-    if (feedback === 'correct') {
+    if (!tutorOwned && feedback === 'correct') {
       const t = setTimeout(advanceToNext, 1500);
       return () => clearTimeout(t);
     }
-  }, [feedback, advanceToNext]);
+  }, [tutorOwned, feedback, advanceToNext]);
+
+  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // corrections and whose evidence carries each wrong check's named miss.
+  const submittedRef = useRef(false);
+  finish.current = (result) => {
+    if (hasSubmitted || submittedRef.current || challenges.length === 0 || progress.recordsEvaluation === false) return;
+    submittedRef.current = true;
+    const types = challenges.map(c => c.type);
+    submitEvaluation(result.passed, result.accuracy, {
+      type: 'coordinate-graph',
+      totalCorrect: result.solvedCount,
+      totalChallenges: challenges.length,
+      challengeTypes: types.filter((t, i) => types.indexOf(t) === i),
+      averageAttempts: result.attemptsCount / challenges.length,
+      durationMs: elapsedMs,
+    }, { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+      teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+    undefined, result.diagnosisEvidence);
+  };
 
   // --- SVG interaction handlers ---
-  const svgToGraph = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
+  const pointerCrossing = useCallback((clientX: number, clientY: number) => {
     const svg = svgRef.current;
     if (!svg) return null;
-    const rect = svg.getBoundingClientRect();
-    const sx = (e.clientX - rect.left) * (SVG_SIZE / rect.width);
-    const sy = (e.clientY - rect.top) * (SVG_SIZE / rect.height);
-    const gx = Math.round(((sx - PAD) / DRAW) * span + gridMin);
-    const gy = Math.round(gridMax - ((sy - PAD) / DRAW) * span);
-    if (gx < gridMin || gx > gridMax || gy < gridMin || gy > gridMax) return null;
-    return { x: gx, y: gy };
-  }, [span, gridMin, gridMax]);
+    const p = viewBoxPoint(svg, clientX, clientY);
+    return p ? nearestCrossing(gridMin, gridMax, p.x, p.y) : null;
+  }, [gridMin, gridMax]);
 
-  const handleSvgClick = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
-    if (!challenge || challenge.type !== 'plot_point' || feedback) return;
-    const pt = svgToGraph(e);
+  const handlePlace = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
+    if (!challenge || challenge.type !== 'plot_point' || feedback || learnerBlocked()) return;
+    const pt = pointerCrossing(e.clientX, e.clientY);
     if (!pt) return;
     SoundManager.snap();
     setPlacedPt(pt);
-    const correct = pt.x === challenge.x1 && pt.y === challenge.y1;
-    handleAnswer(correct, `(${pt.x}, ${pt.y})`, `(${challenge.x1}, ${challenge.y1})`);
-  }, [challenge, feedback, svgToGraph, handleAnswer]);
+    handleAnswer(plotCorrect(challenge, pt), `(${pt.x}, ${pt.y})`, `(${challenge.x1}, ${challenge.y1})`, { placed: pt, chosen: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [challenge, feedback, pointerCrossing, handleAnswer]);
 
   const handleSvgMove = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
-    if (!challenge || challenge.type !== 'plot_point' || feedback) return;
-    setHoverPt(svgToGraph(e));
-  }, [challenge, feedback, svgToGraph]);
+    if (!challenge || challenge.type !== 'plot_point' || feedback || learnerBlocked()) return;
+    setHoverPt(pointerCrossing(e.clientX, e.clientY));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [challenge, feedback, pointerCrossing]);
 
   const handleOptionClick = useCallback((idx: number) => {
-    if (!challenge || feedback) return;
+    if (!challenge || feedback || learnerBlocked()) return;
     SoundManager.select();
     setSelectedOpt(idx);
     const opts = [challenge.option0, challenge.option1, challenge.option2, challenge.option3];
-    const correct = idx === challenge.correctOptionIndex;
-    handleAnswer(correct, opts[idx] ?? '', opts[challenge.correctOptionIndex ?? 0] ?? '');
+    handleAnswer(choiceCorrect(challenge, idx), opts[idx] ?? '', opts[challenge.correctOptionIndex ?? 0] ?? '', { placed: null, chosen: idx });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [challenge, feedback, handleAnswer]);
 
+  // --- Workspace path: what the tutor and the observer are shown, republished every render. ---
+  useLayoutEffect(() => {
+    if (!tutorOwned || !challenge || !sessionChallenge) return;
+    const scene = workspaceScene(challenge, { gridMin, gridMax, work: { placed: placedPt, chosen: selectedOpt } });
+    const onScreen = practice ? '' : leverFacts(sessionChallenge, grid, pulledLevers);
+    const levers = practice ? [] : coordinateLevers(sessionChallenge, grid, pulledLevers);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice item is on screen in place of the item. It is not graded; the full item comes back after it.' } : {}) },
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find((l) => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = simplerItem(sessionChallenge, grid);
+          if (!easier) return 'This item has no easier version; try a help lever.';
+          setLeverState(pulled); setPractice(easier); resetWork();
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { setPractice(null); resetWork(); },
+    };
+  });
+
   // --- Render helpers ---
-  // Map the option FSM onto the kit's grading-state language.
+  // Map the option FSM onto the kit's grading-state language. The workspace path never shows the right choice.
   const optionState = (idx: number): AnswerChoiceState => {
     if (!feedback || selectedOpt === null) return 'idle';
     const isSelected = idx === selectedOpt;
@@ -325,7 +480,6 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
     return 'dimmed';
   };
 
-  // --- Guard ---
   // ── Pip shared surface ───────────────────────────────────────────
   // A projection of this item's check state, the tutor's speech on it, and
   // the child's touches; Pip points only at the workspace as a whole and never
@@ -351,6 +505,22 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
   const overallScore = challengeResults.length > 0
     ? Math.round(challengeResults.filter(r => r.correct).length / challengeResults.length * 100)
     : 0;
+  const plotOpen = !!challenge && challenge.type === 'plot_point' && !feedback && !blocked;
+
+  // Lever pictures (`coordinateGraphLevers.ts`), on the session item only; each also turns on the aid a tier withheld.
+  const everyLine = leverOn(EVERY_LINE);
+  const axisNumbers = !!challenge && (challenge.showAxisLabels !== false || everyLine);
+  const tickStep = everyLine ? 1 : labelStep;
+  const dropLines = !!challenge?.showDropLines || leverOn(DROP_LINES);
+  const unitSteps = leverOn(UNIT_STEPS);
+  const triangle = !!challenge && (challenge.showRiseRunGuides !== false || leverOn(RISE_RUN) || unitSteps);
+  const crossingMarker = !!challenge && (challenge.showInterceptMarker !== false || leverOn(CROSSING));
+  const modelPoint = sessionChallenge && leverOn(MODEL_POINT) ? pointModel(sessionChallenge, grid) : null;
+  const modelLine = sessionChallenge && leverOn(MODEL_LINE) ? lineModel(sessionChallenge) : null;
+  const quadrants = [
+    { x: gridMax / 2, y: gridMax / 2, text: '(+, +)' }, { x: gridMin / 2, y: gridMax / 2, text: '(−, +)' },
+    { x: gridMin / 2, y: gridMin / 2, text: '(−, −)' }, { x: gridMax / 2, y: gridMin / 2, text: '(+, −)' },
+  ].filter(q => q.x !== 0 && q.y !== 0);
 
   return (
     <div className={`w-full max-w-3xl mx-auto my-12 animate-fade-in ${className || ''}`}>
@@ -390,14 +560,15 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
             {/* Pip's dock sits above the workspace, which it outlines as a region. */}
             {pip.store && !allChallengesComplete && <div {...pip.dock} />}
             <div {...pip.workspace} className="space-y-5">
-            {/* SVG Coordinate Plane — bespoke interaction surface, untouched */}
+            {/* SVG Coordinate Plane — bespoke interaction surface */}
             <div className="flex justify-center">
               <svg
                 ref={svgRef}
+                data-pip-object="plane"
                 viewBox={`0 0 ${SVG_SIZE} ${SVG_SIZE}`}
                 className="w-full max-w-md rounded-xl bg-slate-950/60 border border-white/5"
-                style={{ cursor: challenge.type === 'plot_point' && !feedback ? 'crosshair' : 'default' }}
-                onClick={handleSvgClick}
+                style={{ cursor: plotOpen ? 'crosshair' : 'default', touchAction: 'none' }}
+                onPointerUp={handlePlace}
                 onMouseMove={handleSvgMove}
                 onMouseLeave={() => setHoverPt(null)}
               >
@@ -427,8 +598,8 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
                   </>
                 )}
 
-                {/* Axis labels (withdrawn at the hard tier) */}
-                {challenge.showAxisLabels !== false && gridValues.filter(v => v !== 0 && v % labelStep === 0).map(v => (
+                {/* Axis labels (withdrawn at the hard tier; every line numbered by the every_line lever) */}
+                {axisNumbers && gridValues.filter(v => v !== 0 && v % tickStep === 0).map(v => (
                   <React.Fragment key={`l-${v}`}>
                     <text x={toX(v)} y={toY(0) + 14} fill="white" fillOpacity={0.35}
                       fontSize={9} textAnchor="middle" fontFamily="ui-monospace, monospace">{v}</text>
@@ -437,11 +608,36 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
                   </React.Fragment>
                 ))}
 
+                {/* axis_guide lever: each axis's direction and each quadrant's sign pattern. No number. */}
+                {leverOn(AXIS_GUIDE) && gridMin <= 0 && gridMax >= 0 && (
+                  <g data-lever="axis-guide" fill="#a78bfa" fontSize={11} fontFamily="ui-sans-serif, system-ui">
+                    <text x={SVG_SIZE - PAD} y={toY(0) - 8} textAnchor="end">x: across →</text>
+                    <text x={toX(0) + 8} y={PAD + 12}>y: up ↑ or down ↓</text>
+                    {quadrants.map(q => (
+                      <text key={q.text} x={toX(q.x)} y={toY(q.y)} textAnchor="middle" fillOpacity={0.55} fontSize={14}
+                        fontFamily="ui-monospace, monospace">{q.text}</text>
+                    ))}
+                  </g>
+                )}
+
                 {/* ===== Challenge-specific overlays ===== */}
                 <g clipPath="url(#grid-clip)">
 
+                  {/* model_point lever: a different example point, with its moves from the origin */}
+                  {modelPoint && (
+                    <g data-lever="model-point">
+                      <path d={`M ${toX(0)} ${toY(0)} L ${toX(modelPoint.point.x)} ${toY(0)} L ${toX(modelPoint.point.x)} ${toY(modelPoint.point.y)}`}
+                        fill="none" stroke="#a78bfa" strokeWidth={2} strokeDasharray="5 3" />
+                      <circle cx={toX(modelPoint.point.x)} cy={toY(modelPoint.point.y)} r={6} fill="#a78bfa" stroke="white" strokeWidth={1.5} />
+                      <text x={toX(modelPoint.point.x)} y={toY(modelPoint.point.y) + (modelPoint.point.y >= 0 ? -12 : 20)} fill="#c4b5fd"
+                        fontSize={10} textAnchor="middle" fontFamily="ui-monospace, monospace">
+                        Example ({modelPoint.point.x}, {modelPoint.point.y})
+                      </text>
+                    </g>
+                  )}
+
                   {/* plot_point: hover ghost */}
-                  {challenge.type === 'plot_point' && hoverPt && !feedback && (
+                  {challenge.type === 'plot_point' && hoverPt && plotOpen && (
                     <>
                       <circle cx={toX(hoverPt.x)} cy={toY(hoverPt.y)} r={7}
                         fill="#fbbf24" fillOpacity={0.25} stroke="#fbbf24" strokeOpacity={0.5} strokeWidth={1.5} />
@@ -457,12 +653,12 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
 
                   {/* plot_point: placed point */}
                   {challenge.type === 'plot_point' && placedPt && (
-                    <circle cx={toX(placedPt.x)} cy={toY(placedPt.y)} r={7}
+                    <circle data-pip-object="placed-point" cx={toX(placedPt.x)} cy={toY(placedPt.y)} r={7}
                       fill={feedback === 'correct' ? '#4ade80' : '#f87171'}
                       stroke="white" strokeWidth={2} />
                   )}
 
-                  {/* plot_point: show correct answer after 2 fails */}
+                  {/* plot_point: show correct answer after 2 fails (scripted path only) */}
                   {challenge.type === 'plot_point' && feedback === 'show_answer' && (
                     <>
                       <circle cx={toX(challenge.x1)} cy={toY(challenge.y1)} r={9}
@@ -480,7 +676,7 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
                   {challenge.type === 'read_point' && (
                     <>
                       {/* Easy-tier drop-lines: connect the point straight to each axis */}
-                      {challenge.showDropLines && (
+                      {dropLines && (
                         <>
                           <line x1={toX(challenge.x1)} y1={toY(challenge.y1)} x2={toX(challenge.x1)} y2={toY(0)}
                             stroke="#60a5fa" strokeOpacity={0.45} strokeWidth={1.5} strokeDasharray="4 3" />
@@ -504,9 +700,20 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
                       <line x1={toX(challenge.x1)} y1={toY(challenge.y1)}
                         x2={toX(challenge.x2)} y2={toY(challenge.y2)}
                         stroke="#60a5fa" strokeWidth={2.5} strokeLinecap="round" />
-                      {/* Rise/run triangle — withdrawn at the hard tier */}
-                      {challenge.showRiseRunGuides !== false && (
+                      {/* Rise/run triangle — withdrawn at the hard tier; drawn again by the rise_run_triangle and unit_steps levers */}
+                      {triangle && (
                         <>
+                          {/* unit_steps lever: a tick at every grid step along each leg, no number */}
+                          {unitSteps && (
+                            <g data-lever="unit-steps" stroke="#fde68a" strokeWidth={1.5}>
+                              {Array.from({ length: Math.abs(challenge.x2 - challenge.x1) + 1 }, (_, i) => challenge.x1 + i * Math.sign(challenge.x2 - challenge.x1)).map(x => (
+                                <line key={`rx-${x}`} x1={toX(x)} y1={toY(challenge.y1) - 5} x2={toX(x)} y2={toY(challenge.y1) + 5} />
+                              ))}
+                              {Array.from({ length: Math.abs(challenge.y2 - challenge.y1) + 1 }, (_, i) => challenge.y1 + i * Math.sign(challenge.y2 - challenge.y1)).map(y => (
+                                <line key={`ry-${y}`} x1={toX(challenge.x2) - 5} y1={toY(y)} x2={toX(challenge.x2) + 5} y2={toY(y)} />
+                              ))}
+                            </g>
+                          )}
                           {/* Run (horizontal) */}
                           <line x1={toX(challenge.x1)} y1={toY(challenge.y1)}
                             x2={toX(challenge.x2)} y2={toY(challenge.y1)}
@@ -536,7 +743,7 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
                         </>
                       )}
                       {/* Rise/run numeric labels — withdrawn at medium/hard */}
-                      {challenge.showRiseRunLabels !== false && (
+                      {challenge.showRiseRunGuides !== false && challenge.showRiseRunLabels !== false && !unitSteps && (
                         <>
                           <text x={toX(challenge.x2) + 12}
                             y={(toY(challenge.y1) + toY(challenge.y2)) / 2 + 4}
@@ -569,7 +776,7 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
                       <circle cx={toX(challenge.x2)} cy={toY(challenge.y2)} r={5}
                         fill="#60a5fa" stroke="white" strokeWidth={1.5} />
                       {/* Y-intercept marker — withdrawn at the hard tier */}
-                      {challenge.showInterceptMarker !== false && (
+                      {crossingMarker && (
                         <>
                           <circle cx={toX(0)} cy={toY(interceptData.yInt)} r={10}
                             fill="#fbbf24" fillOpacity={0.15} stroke="#fbbf24" strokeOpacity={0.4} strokeWidth={1}>
@@ -581,12 +788,13 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
                             fontSize={11} textAnchor="middle" fontWeight="bold">?</text>
                         </>
                       )}
-                      {/* Equation label (states the intercept) — withdrawn at medium/hard */}
+                      {/* Equation label — withdrawn at medium/hard. Drawn with the intercept masked: the generated
+                          label (y = mx + b) states the answer. */}
                       {challenge.equationLabel && challenge.showEquationLabel !== false && (
                         <text x={toX(gridMax) - 8} y={toY(interceptData.lineY2) - 8}
                           fill="white" fillOpacity={0.6} fontSize={11} textAnchor="end"
                           fontFamily="ui-monospace, monospace">
-                          {challenge.equationLabel}
+                          {maskedEquation(challenge)}
                         </text>
                       )}
                     </>
@@ -595,8 +803,21 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
               </svg>
             </div>
 
+            {/* Lever frames and the worked line (`coordinateGraphLevers.ts`) */}
+            {leverOn(SLOPE_FRAME) && (
+              <p data-lever="slope-frame" className="rounded-lg border border-violet-500/30 bg-slate-950/40 p-3 text-center text-sm text-violet-200">
+                slope = rise ÷ run = (change in y, up or down) ÷ (change in x, left to right). A line that falls from left to right has a negative slope.
+              </p>
+            )}
+            {leverOn(INTERCEPT_FRAME) && (
+              <p data-lever="intercept-frame" className="rounded-lg border border-violet-500/30 bg-slate-950/40 p-3 text-center text-sm text-violet-200">
+                The y-intercept is the y-value where the line meets the y-axis (the up-and-down axis), where x is zero. It is not the slope, and not where the line meets the x-axis.
+              </p>
+            )}
+            {modelLine && <LineModelInset model={modelLine} />}
+
             {/* plot_point click instruction */}
-            {challenge.type === 'plot_point' && !feedback && (
+            {plotOpen && (
               <p className="text-xs text-center text-slate-500">Click on the grid to plot your answer</p>
             )}
 
@@ -610,7 +831,7 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
                     <LuminaAnswerChoice
                       key={i}
                       state={optionState(i)}
-                      disabled={!!feedback}
+                      disabled={!!feedback || blocked}
                       className="p-3 text-center text-sm font-mono"
                       onClick={() => handleOptionClick(i)}
                     >
@@ -627,7 +848,11 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
             {feedback === 'correct' && (
               <LuminaFeedbackCard status="correct">Correct! Well done.</LuminaFeedbackCard>
             )}
-            {feedback === 'incorrect' && (
+            {/* With the tutor, Try again is the shell's and the hint is the tutor's. */}
+            {feedback === 'incorrect' && tutorOwned && (
+              <LuminaFeedbackCard status="incorrect">Not quite.</LuminaFeedbackCard>
+            )}
+            {feedback === 'incorrect' && !tutorOwned && (
               <LuminaFeedbackCard status="incorrect" teachingNote={challenge.hint}>
                 <div className="space-y-3">
                   <p className="text-sm">Not quite. Try again!</p>
@@ -662,5 +887,9 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
     </div>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose auto-advance would compete with the observer.
+const CoordinateGraph = withWorkspaceController<CoordinateGraphProps, ProgressOptions<CoordinateGraphChallenge>, Progress>(
+  'coordinate-graph', CoordinateGraphSurface, useScriptedProgress, useWorkspaceProgressFor('coordinate-graph'));
 
 export default CoordinateGraph;

@@ -1,0 +1,89 @@
+{
+ "source": "qa/tutor-reports/coordinate-graph-runtime-read_point-payload-2026-10-09.json",
+ "primitiveId": "coordinate-graph",
+ "evalMode": "read_point",
+ "data": {
+  "title": "Navigating the Four Quadrants: Advanced Coordinate Identification",
+  "description": "Practice coordinate plane skills with Ordered pairs on the coordinate plane",
+  "challenges": [
+   {
+    "id": "rp-0",
+    "type": "read_point",
+    "instruction": "Analyze the coordinate plane and determine the exact location of the targeted analytical node. What are the coordinates of the highlighted point?",
+    "hint": "Always trace horizontally along the x-axis first, then vertically along the y-axis. Pay careful attention to the positive and negative signs in each quadrant.",
+    "x1": -4,
+    "y1": 7,
+    "x2": 0,
+    "y2": 0,
+    "option0": "(4, -7)",
+    "option1": "(-4, 7)",
+    "option2": "(-7, 4)",
+    "option3": "(-4, 6)",
+    "correctOptionIndex": 1
+   },
+   {
+    "id": "rp-1",
+    "type": "read_point",
+    "instruction": "Locate the specified geographical marker on the Cartesian grid. What are the coordinates of the highlighted point?",
+    "hint": "Ensure you identify your starting point at the origin (0,0). Move left or right for the x-coordinate, and up or down for the y-coordinate.",
+    "x1": 8,
+    "y1": -3,
+    "x2": 0,
+    "y2": 0,
+    "option0": "(-8, 3)",
+    "option1": "(8, 3)",
+    "option2": "(8, -3)",
+    "option3": "(-3, 8)",
+    "correctOptionIndex": 2
+   },
+   {
+    "id": "rp-2",
+    "type": "read_point",
+    "instruction": "Examine the plotted vertex of a geometric transformation. What are the coordinates of the highlighted point?",
+    "hint": "Check the order of your ordered pair. The horizontal displacement must be written first, followed by the vertical displacement.",
+    "x1": -6,
+    "y1": -5,
+    "x2": 0,
+    "y2": 0,
+    "option0": "(-5, -6)",
+    "option1": "(6, 5)",
+    "option2": "(-6, 5)",
+    "option3": "(-6, -5)",
+    "correctOptionIndex": 3
+   },
+   {
+    "id": "rp-3",
+    "type": "read_point",
+    "instruction": "Determine the precise spatial position of the data point in quadrant I. What are the coordinates of the highlighted point?",
+    "hint": "Both the x-coordinate and y-coordinate will be positive values since the point lies in the upper-right quadrant.",
+    "x1": 5,
+    "y1": 9,
+    "x2": 0,
+    "y2": 0,
+    "option0": "(5, 9)",
+    "option1": "(9, 5)",
+    "option2": "(5, -9)",
+    "option3": "(-5, 9)",
+    "correctOptionIndex": 0
+   },
+   {
+    "id": "rp-4",
+    "type": "read_point",
+    "instruction": "Identify the exact intersection or point value corresponding to the given vector endpoint. What are the coordinates of the highlighted point?",
+    "hint": "Count carefully along the grid lines from the origin, noting whether you move in a negative or positive direction on each axis.",
+    "x1": -2,
+    "y1": -10,
+    "x2": 0,
+    "y2": 0,
+    "option0": "(-2, -9)",
+    "option1": "(-10, -2)",
+    "option2": "(-2, -10)",
+    "option3": "(2, -10)",
+    "correctOptionIndex": 2
+   }
+  ],
+  "gridMin": -10,
+  "gridMax": 10,
+  "gradeBand": "K-2"
+ }
+}

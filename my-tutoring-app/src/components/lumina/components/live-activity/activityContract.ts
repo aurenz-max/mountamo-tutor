@@ -27,7 +27,11 @@ import { areaModelLiveDomain } from './adapters/areaModelLive';
 import { percentBarLiveDomain } from './adapters/percentBarLive';
 import { formulaLabLiveDomain } from './adapters/formulaLabLive';
 import { ratioTableLiveDomain } from './adapters/ratioTableLive';
+import { twoWayTableLiveDomain } from './adapters/twoWayTableLive';
+import { histogramLiveDomain } from './adapters/histogramLive';
+import { coordinateGraphLiveDomain } from './adapters/coordinateGraphLive';
 import { circleExplorerLiveDomain } from './adapters/circleExplorerLive';
+import { distributionExplorerLiveDomain } from './adapters/distributionExplorerLive';
 import { doubleNumberLineLiveDomain } from './adapters/doubleNumberLineLive';
 import { factorTreeLiveDomain } from './adapters/factorTreeLive';
 import { equationWorkspaceLiveDomain } from './adapters/equationWorkspaceLive';
@@ -158,7 +162,11 @@ export const LIVE_ADAPTERS = {
   'percent-bar': workspaceAdapter('percent-bar', percentBarLiveDomain),
   'formula-lab': workspaceAdapter('formula-lab', formulaLabLiveDomain),
   'ratio-table': workspaceAdapter('ratio-table', ratioTableLiveDomain),
+  'two-way-table': workspaceAdapter('two-way-table', twoWayTableLiveDomain),
+  'histogram': workspaceAdapter('histogram', histogramLiveDomain),
+  'coordinate-graph': workspaceAdapter('coordinate-graph', coordinateGraphLiveDomain),
   'circle-explorer': workspaceAdapter('circle-explorer', circleExplorerLiveDomain),
+  'distribution-explorer': workspaceAdapter('distribution-explorer', distributionExplorerLiveDomain),
   'double-number-line': workspaceAdapter('double-number-line', doubleNumberLineLiveDomain),
   'factor-tree': workspaceAdapter('factor-tree', factorTreeLiveDomain),
   'equation-workspace': workspaceAdapter('equation-workspace', equationWorkspaceLiveDomain),

@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { Button } from '@/components/ui/button';
+import React, { useState, useMemo, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import {
   LuminaCard,
   LuminaCardHeader,
@@ -10,6 +9,7 @@ import {
   LuminaBadge,
   LuminaButton,
   LuminaActionButton,
+  LuminaChoiceChip,
   LuminaPanel,
   LuminaInput,
 } from '../../../ui';
@@ -18,12 +18,26 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { HistogramMetrics } from '../../../evaluation/types';
-import { useChallengeProgress, type ChallengeResult } from '../../../hooks/useChallengeProgress';
+import type { ChallengeResult } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  SHAPE_LABEL, binRange, computeBins, describeHistogramWork, frequencyAxis, histogramCorrect, histogramMiss, workIsCheckable,
+  workspaceAssignment, workspaceScene, type Bin, type HistogramWork,
+} from './histogramWorkspace';
+import {
+  AXIS_NAMES_LEVER, BALANCE_MODEL, BALANCE_MODEL_LEVER, COUNT_LABELS_LEVER, COUNT_MARKS_LEVER, ISOLATE_LEVER,
+  LEVEL_LINE_LEVER, OUTLINE_LEVER, PEAK_MODEL_LEVER, TAIL_MODEL_LEVER, histogramLevers, isPracticeGraph, leverFacts,
+  peakModel, simplerHistogram, tailModel,
+} from './histogramLevers';
 
 // =============================================================================
 // Data Interface (Single Source of Truth)
@@ -106,6 +120,10 @@ export interface HistogramData {
 interface HistogramProps {
   data: HistogramData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
 // =============================================================================
@@ -126,20 +144,12 @@ const PHASE_CONFIG: Record<string, PhaseConfig> = {
   estimate_center: { label: 'Estimate Center', icon: '🎯', accentColor: 'amber' },
 };
 
-const SHAPE_LABEL: Record<HistogramShapeKind, string> = {
-  symmetric: 'Symmetric',
-  'right-skewed': 'Right-Skewed',
-  'left-skewed': 'Left-Skewed',
-  bimodal: 'Bimodal',
-  uniform: 'Uniform',
-};
-
 const phaseScore = (attempts: number): number =>
   Math.max(20, 100 - Math.max(0, attempts - 1) * 20);
 
 /**
  * Keep the AI tutor's reveal level in sync with BOTH the support tier and the
- * mode, so it never leaks what the workspace withheld. Two rules combine:
+ * mode, so it never leaks what the workspace withheld (scripted path only). Two rules combine:
  *  - The ANSWER is never named at any tier. For identify_shape the shape-name
  *    IS the answer, so the tutor must never say symmetric/skewed/etc.; likewise
  *    the modal bin, the bin count, and the mean/median are answers.
@@ -181,29 +191,6 @@ const tutorRevealPolicy = (
   }
 };
 
-interface Bin {
-  start: number;
-  end: number;
-  count: number;
-}
-
-function computeBins(data: number[], binWidth: number, binStart: number): Bin[] {
-  if (data.length === 0 || binWidth <= 0) return [];
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const effectiveStart = binStart <= min ? binStart : Math.floor(min / binWidth) * binWidth;
-  const effectiveEnd = Math.ceil((max - effectiveStart) / binWidth) * binWidth + effectiveStart;
-  const numBins = Math.max(1, Math.ceil((effectiveEnd - effectiveStart) / binWidth));
-  const out: Bin[] = [];
-  for (let i = 0; i < numBins; i++) {
-    const start = effectiveStart + i * binWidth;
-    const end = start + binWidth;
-    const count = data.filter((v) => v >= start && v < end).length;
-    out.push({ start, end, count });
-  }
-  return out;
-}
-
 function computeStats(data: number[]) {
   if (data.length === 0) return { mean: 0, stdDev: 0, min: 0, max: 0, count: 0, skew: 'N/A' };
   const n = data.length;
@@ -239,7 +226,44 @@ interface ChartProps {
   clickable: boolean;
   onBinClick: (index: number) => void;
   onBinHover: (index: number | null) => void;
+  /** Lever pictures (`histogramLevers.ts`): a line over the bar tops, a level line at a tapped bar's height, every bar
+   *  but one faded, unnumbered count lines across one bar, captions on the axes. */
+  outline?: boolean;
+  levelAt?: number | null;
+  fadeExcept?: number | null;
+  marksOn?: number | null;
+  axisNames?: boolean;
 }
+
+/** A small model graph outside the item: bars only, no numbers, an optional balance point and tail marker. */
+const ModelHistogram: React.FC<{ counts: number[]; caption: string; lever: string; balanceAt?: number; tail?: 'left' | 'right' }> =
+  ({ counts, caption, lever, balanceAt, tail }) => {
+    const W = 180, H = 80, max = Math.max(...counts), slot = W / counts.length;
+    return (
+      <figure data-lever={lever} className="mx-auto w-64 rounded-lg border border-white/10 bg-slate-900/40 p-2 text-center">
+        <svg viewBox={`0 0 ${W} ${H + 16}`} className="w-full h-auto" aria-hidden="true">
+          {counts.map((n, i) => (
+            <rect key={i} x={i * slot + 2} y={H - (n / max) * (H - 6)} width={slot - 4} height={(n / max) * (H - 6)}
+              fill="#38bdf8" fillOpacity={0.6} rx={1} />
+          ))}
+          <line x1={0} y1={H} x2={W} y2={H} stroke="#64748b" />
+          {balanceAt !== undefined && (
+            <polygon points={`${balanceAt * slot},${H + 2} ${balanceAt * slot - 6},${H + 14} ${balanceAt * slot + 6},${H + 14}`} fill="#fbbf24" />
+          )}
+          {tail && (
+            <line x1={tail === 'right' ? W * 0.55 : W * 0.45} y1={H + 9} x2={tail === 'right' ? W - 4 : 4} y2={H + 9}
+              stroke="#f472b6" strokeWidth={2} markerEnd="url(#tail-arrow)" />
+          )}
+          <defs>
+            <marker id="tail-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 z" fill="#f472b6" />
+            </marker>
+          </defs>
+        </svg>
+        <figcaption className="text-xs text-slate-300 mt-1">{caption}</figcaption>
+      </figure>
+    );
+  };
 
 const HistogramChart: React.FC<ChartProps> = ({
   bins,
@@ -252,11 +276,13 @@ const HistogramChart: React.FC<ChartProps> = ({
   clickable,
   onBinClick,
   onBinHover,
+  outline = false,
+  levelAt = null,
+  fadeExcept = null,
+  marksOn = null,
+  axisNames = false,
 }) => {
-  const maxFrequency = useMemo(() => {
-    if (bins.length === 0) return 1;
-    return Math.max(...bins.map((b) => b.count), 1);
-  }, [bins]);
+  const axis = useMemo(() => frequencyAxis(Math.max(0, ...bins.map((b) => b.count))), [bins]);
 
   if (bins.length === 0) {
     return (
@@ -268,6 +294,7 @@ const HistogramChart: React.FC<ChartProps> = ({
 
   const plotWidth = PLOT_RIGHT - PLOT_LEFT;
   const plotHeight = PLOT_BOTTOM - PLOT_TOP;
+  const yOf = (count: number) => PLOT_BOTTOM - (count / axis.top) * plotHeight;
 
   return (
     <svg viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} className="w-full h-auto">
@@ -288,14 +315,16 @@ const HistogramChart: React.FC<ChartProps> = ({
         {xAxisLabel}
       </text>
 
-      {/* Axes */}
-      <line x1={PLOT_LEFT} y1={PLOT_TOP} x2={PLOT_LEFT} y2={PLOT_BOTTOM} stroke="#475569" strokeWidth={2} />
-      <line x1={PLOT_LEFT} y1={PLOT_BOTTOM} x2={PLOT_RIGHT} y2={PLOT_BOTTOM} stroke="#475569" strokeWidth={2} />
+      {/* Faint line at every whole count, when the labelled lines skip some */}
+      {axis.minor && Array.from({ length: axis.top + 1 }).map((_, c) => (c % axis.step === 0 ? null : (
+        <line key={`y-minor-${c}`} x1={PLOT_LEFT} y1={yOf(c)} x2={PLOT_RIGHT} y2={yOf(c)}
+          stroke="#334155" strokeWidth={1} opacity={0.25} />
+      )))}
 
-      {/* Y-ticks and gridlines */}
-      {Array.from({ length: 6 }).map((_, i) => {
-        const y = PLOT_BOTTOM - (i * plotHeight) / 5;
-        const value = Math.round((maxFrequency * 1.1 * i) / 5);
+      {/* Labelled lines at every step, on whole counts */}
+      {Array.from({ length: axis.top / axis.step + 1 }).map((_, i) => {
+        const value = i * axis.step;
+        const y = yOf(value);
         return (
           <g key={`y-tick-${i}`}>
             <line x1={PLOT_LEFT - 5} y1={y} x2={PLOT_LEFT} y2={y} stroke="#475569" strokeWidth={1} />
@@ -316,10 +345,14 @@ const HistogramChart: React.FC<ChartProps> = ({
         );
       })}
 
+      {/* Axes */}
+      <line x1={PLOT_LEFT} y1={PLOT_TOP} x2={PLOT_LEFT} y2={PLOT_BOTTOM} stroke="#475569" strokeWidth={2} />
+      <line x1={PLOT_LEFT} y1={PLOT_BOTTOM} x2={PLOT_RIGHT} y2={PLOT_BOTTOM} stroke="#475569" strokeWidth={2} />
+
       {/* Bars */}
       {bins.map((bin, index) => {
         const barWidth = plotWidth / bins.length - 4;
-        const barHeight = (bin.count / (maxFrequency * 1.1)) * plotHeight;
+        const barHeight = (bin.count / axis.top) * plotHeight;
         const x = PLOT_LEFT + index * (plotWidth / bins.length) + 2;
         const y = PLOT_BOTTOM - barHeight;
         const isHovered = highlightedBinIndex === index;
@@ -351,15 +384,25 @@ const HistogramChart: React.FC<ChartProps> = ({
               width={barWidth}
               height={barHeight}
               fill={fillColor}
-              fillOpacity={isSelected || isTarget ? 0.85 : isHovered ? 0.9 : 0.7}
+              fillOpacity={fadeExcept !== null && fadeExcept !== index ? 0.15
+                : isSelected || isTarget ? 0.85 : isHovered ? 0.9 : 0.7}
+              strokeOpacity={fadeExcept !== null && fadeExcept !== index ? 0.25 : 1}
               stroke={strokeColor}
               strokeWidth={isSelected || isTarget ? 2.5 : isHovered ? 2 : 1}
               rx={2}
               className={`transition-all duration-150 ${clickable ? 'cursor-pointer' : 'cursor-default'}`}
+              data-pip-object={clickable ? `bar-${index}` : undefined}
+              role={clickable ? 'button' : undefined}
+              aria-label={clickable ? `Bar from ${bin.start} to ${bin.end}` : undefined}
               onMouseEnter={() => onBinHover(index)}
               onMouseLeave={() => onBinHover(null)}
               onClick={() => clickable && onBinClick(index)}
             />
+
+            {marksOn === index && Array.from({ length: Math.max(0, bin.count - 1) }).map((_, k) => (
+              <line key={`mark-${k}`} data-lever="count-marks" x1={x + 2} x2={x + barWidth - 2}
+                y1={yOf(k + 1)} y2={yOf(k + 1)} stroke="#0f172a" strokeWidth={1.5} opacity={0.7} pointerEvents="none" />
+            ))}
 
             {showFrequency && bin.count > 0 && (
               <text
@@ -375,7 +418,7 @@ const HistogramChart: React.FC<ChartProps> = ({
             )}
 
             <text
-              x={x + barWidth / 2}
+              x={x + barWidth / 2 - (plotWidth / bins.length) / 2 + 2}
               y={PLOT_BOTTOM + 15}
               fill="#94a3b8"
               fontSize={10}
@@ -387,10 +430,30 @@ const HistogramChart: React.FC<ChartProps> = ({
         );
       })}
 
+      {/* Lever: a line joining the bar tops */}
+      {outline && (
+        <polyline data-lever="outline-tops" fill="none" stroke="#f472b6" strokeWidth={2.5} pointerEvents="none"
+          points={bins.map((b, i) => `${PLOT_LEFT + (i + 0.5) * (plotWidth / bins.length)},${yOf(b.count)}`).join(' ')} />
+      )}
+
+      {/* Lever: a level line at the top of the tapped bar */}
+      {levelAt !== null && (
+        <line data-lever="level-line" x1={PLOT_LEFT} x2={PLOT_RIGHT} y1={yOf(levelAt)} y2={yOf(levelAt)}
+          stroke="#f472b6" strokeWidth={2} strokeDasharray="6 4" pointerEvents="none" />
+      )}
+
+      {/* Lever: what each axis counts */}
+      {axisNames && (
+        <g data-lever="axis-names" pointerEvents="none">
+          <text x={PLOT_LEFT + 6} y={PLOT_TOP - 10} fill="#f9a8d4" fontSize={11}>↑ how many values</text>
+          <text x={PLOT_RIGHT} y={CHART_HEIGHT - 10} fill="#f9a8d4" fontSize={11} textAnchor="end">values (bar edges) →</text>
+        </g>
+      )}
+
       {/* Last x-axis label */}
       {bins.length > 0 && (
         <text
-          x={PLOT_LEFT + plotWidth - 2}
+          x={PLOT_LEFT + plotWidth}
           y={PLOT_BOTTOM + 15}
           fill="#94a3b8"
           fontSize={10}
@@ -407,7 +470,9 @@ const HistogramChart: React.FC<ChartProps> = ({
 // Main Component
 // =============================================================================
 
-const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
+const HistogramSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  HistogramProps & { tutorOwned: boolean; useController: (options: ProgressOptions<HistogramChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     challengeType,
@@ -425,18 +490,32 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
   const stableInstanceIdRef = useRef<string>(instanceId || `histogram-${Date.now()}`);
   const resolvedInstanceId = stableInstanceIdRef.current;
 
-  // -- Shared hooks ---------------------------------------------------------
-  const {
-    currentIndex,
-    results: challengeResults,
-    isComplete,
-    recordResult,
-    advance,
-    reset,
-  } = useChallengeProgress({
+  // -- Challenge progress. On the workspace path the runtime moves the index. --
+  /** Bound below, once the setters and the evaluation exist; the progress hook calls them only after render. */
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
     challenges,
     getChallengeId: (c) => c.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onFinished: (result) => finish.current(result),
   });
+  const {
+    currentIndex,
+    currentAttempts,
+    results: challengeResults,
+    isComplete,
+    mergeResult,
+    advance,
+    reset,
+  } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const blocked = tutorOwned && progress.canAttempt === false;
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = blocked;
+  const learnerBlocked = () => workspaceClosed.current;
 
   const phaseResults = usePhaseResults({
     challenges,
@@ -474,16 +553,42 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
   const [numericInput, setNumericInput] = useState('');
   const [feedback, setFeedback] = useState<{ message: string; correct: boolean } | null>(null);
   const [showHint, setShowHint] = useState(false);
-  const [attempts, setAttempts] = useState(0);
-  const attemptsRef = useRef(0);
   const hintViewedRef = useRef(false);
   const recordedRef = useRef(false);
   const [hintsViewedSession, setHintsViewedSession] = useState(0);
   const [hoveredBinIndex, setHoveredBinIndex] = useState<number | null>(null);
 
+  /** The working surface blank: a fresh item (both paths), or Try again (workspace). */
+  const clearWork = () => {
+    setSelectedShape(null);
+    setSelectedBinIndex(null);
+    setNumericInput('');
+    setFeedback(null);
+    setHoveredBinIndex(null);
+  };
+  // In-item levers (`histogramLevers.ts`), keyed by the session item they were pulled on, and the easier graph a
+  // simplify lever put on screen in its place.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<HistogramChallenge | null>(null);
+
+  openItem.current = (_index, retry) => {
+    clearWork();
+    // Try again on a practice graph keeps it; a fresh item (or the full item back after practice) drops it.
+    if (retry) return;
+    setPractice(null);
+    setShowHint(false);
+    hintViewedRef.current = false;
+    recordedRef.current = false;
+  };
+
   // -- Derived state --------------------------------------------------------
-  const currentChallenge = challenges[currentIndex] ?? null;
-  const currentChallengeId = currentChallenge?.id ?? null;
+  const sessionChallenge = challenges[currentIndex] ?? null;
+  /** What is on screen: the easier graph while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const currentChallengeId = sessionChallenge?.id ?? null;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  /** A runtime pull on the session item; never drawn on a practice graph. */
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
 
   const bins = useMemo<Bin[]>(() => {
     if (!currentChallenge) return [];
@@ -500,9 +605,11 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
   // For identify_shape and estimate_center: labels are fine — unless the support
   // tier withdrew them (hard). The generator drives this via data.showFrequencyLabels;
   // when absent, fall back to the mode default so un-tiered sessions are unchanged.
-  const showFrequencyLabels =
-    data.showFrequencyLabels ??
-    (challengeType === 'identify_shape' || challengeType === 'estimate_center');
+  const sessionShowsLabels =
+    (challengeType === 'identify_shape' || challengeType === 'estimate_center') &&
+    (data.showFrequencyLabels ?? true);
+  /** The session's labels, or the `count_labels` lever's on an estimate item. */
+  const showFrequencyLabels = sessionShowsLabels || (challengeType === 'estimate_center' && leverOn(COUNT_LABELS_LEVER));
 
   // Target bin outline for read_frequency
   const targetBin = useMemo(() => {
@@ -512,10 +619,7 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
     return { start: currentChallenge.targetBinStart, end: currentChallenge.targetBinEnd };
   }, [currentChallenge, challengeType]);
 
-  // -- AI tutoring ----------------------------------------------------------
-  // Catalog `tutoring` block (catalog/math.ts) supplies the scaffold; this hook
-  // wires the runtime context + speech triggers so the tutor stops falling back
-  // to the generic message. contextKeys in the catalog mirror these field names.
+  // -- AI tutoring (scripted path). The legacy context is muted on the workspace path, where the tutor reads the scene.
   const aiPrimitiveData = useMemo(
     () => ({
       challengeType,
@@ -526,19 +630,23 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
       xAxisLabel: currentChallenge?.xAxisLabel ?? '',
       binWidth: currentChallenge?.binWidth,
       binStart: currentChallenge?.binStart,
-      attempts,
+      attempts: currentAttempts,
       gradeBand,
       supportTier: data.supportTier,
     }),
-    [challengeType, currentIndex, challenges.length, currentChallenge, attempts, gradeBand, data.supportTier],
+    [challengeType, currentIndex, challenges.length, currentChallenge, currentAttempts, gradeBand, data.supportTier],
   );
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'histogram',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: gradeBand ?? '6-8',
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   // Session intro — once, on the first histogram.
   const hasIntroducedRef = useRef(false);
@@ -576,87 +684,66 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
     );
   }, [currentChallenge, currentIndex, challenges.length, isConnected, challengeType, data.supportTier, sendText]);
 
-  // -- Per-challenge reset (canonical pattern, §6c) -------------------------
+  // -- Per-challenge reset (scripted path; the workspace path also clears in onItemOpened) --
   useEffect(() => {
     if (!currentChallenge) return;
-    setSelectedShape(null);
-    setSelectedBinIndex(null);
-    setNumericInput('');
-    setFeedback(null);
+    clearWork();
     setShowHint(false);
-    setAttempts(0);
-    attemptsRef.current = 0;
     hintViewedRef.current = false;
     recordedRef.current = false;
-    setHoveredBinIndex(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChallengeId]);
 
-  // -- Submit handler -------------------------------------------------------
+  // -- Submit handler. Every check commits (right or wrong); a missing choice or a non-number is not a check. --
   const handleSubmit = useCallback(() => {
-    if (!currentChallenge || recordedRef.current || hasSubmitted) return;
+    if (!currentChallenge || recordedRef.current || hasSubmitted || learnerBlocked()) return;
+    const work: HistogramWork = { shape: selectedShape, binIndex: selectedBinIndex, typed: numericInput };
 
-    let isCorrect = false;
-    let studentAnswer: string | number = '';
-    let targetAnswer: string | number = '';
-    let validationError: string | null = null;
-
-    if (challengeType === 'identify_shape') {
-      if (!selectedShape) {
-        validationError = 'Pick a shape from the choices below.';
-      } else {
-        studentAnswer = selectedShape;
-        targetAnswer = currentChallenge.expectedShape ?? '';
-        isCorrect = selectedShape === currentChallenge.expectedShape;
-      }
-    } else if (challengeType === 'find_modal_bin') {
-      if (selectedBinIndex === null) {
-        validationError = 'Click the tallest bar to choose its bin.';
-      } else {
-        const chosenBin = bins[selectedBinIndex];
-        studentAnswer = chosenBin ? `[${chosenBin.start}, ${chosenBin.end})` : '';
-        targetAnswer = `[${currentChallenge.expectedBinStart}, ${currentChallenge.expectedBinEnd})`;
-        isCorrect = !!chosenBin && chosenBin.start === currentChallenge.expectedBinStart;
-      }
-    } else if (challengeType === 'read_frequency') {
-      const num = parseFloat(numericInput);
-      if (isNaN(num)) {
-        validationError = 'Type a whole number.';
-      } else {
-        studentAnswer = num;
-        targetAnswer = currentChallenge.targetFrequency ?? 0;
-        isCorrect = num === currentChallenge.targetFrequency;
-      }
-    } else if (challengeType === 'estimate_center') {
-      const num = parseFloat(numericInput);
-      if (isNaN(num)) {
-        validationError = 'Type a number.';
-      } else {
-        studentAnswer = num;
-        targetAnswer = currentChallenge.targetAnswer ?? 0;
-        const tol = currentChallenge.tolerance ?? 0;
-        isCorrect = Math.abs(num - (currentChallenge.targetAnswer ?? 0)) <= tol;
-      }
-    }
-
-    if (validationError) {
+    if (!workIsCheckable(currentChallenge, work, bins)) {
       SoundManager.invalid();
-      setFeedback({ message: validationError, correct: false });
+      setFeedback({
+        message: challengeType === 'identify_shape'
+          ? 'Pick a shape from the choices below.'
+          : challengeType === 'find_modal_bin'
+            ? 'Tap the bar you think is tallest.'
+            : challengeType === 'read_frequency' ? 'Type a whole number.' : 'Type a number.',
+        correct: false,
+      });
       return;
     }
 
-    const nextAttempts = attemptsRef.current + 1;
-    attemptsRef.current = nextAttempts;
-    setAttempts(nextAttempts);
+    const isCorrect = histogramCorrect(currentChallenge, work, bins);
+    const nextAttempts = currentAttempts + 1;
+    const chosenBin = selectedBinIndex === null ? undefined : bins[selectedBinIndex];
+    const studentAnswer: string | number =
+      challengeType === 'identify_shape' ? (selectedShape ?? '')
+        : challengeType === 'find_modal_bin' ? (chosenBin ? binRange(chosenBin.start, chosenBin.end, selectedBinIndex === bins.length - 1) : '')
+          : parseFloat(numericInput);
+    const targetAnswer: string | number =
+      challengeType === 'identify_shape' ? (currentChallenge.expectedShape ?? '')
+        : challengeType === 'find_modal_bin' ? `[${currentChallenge.expectedBinStart}, ${currentChallenge.expectedBinEnd})`
+          : challengeType === 'read_frequency' ? (currentChallenge.targetFrequency ?? 0) : (currentChallenge.targetAnswer ?? 0);
+
+    // The checked gesture (counts the attempt, records the verdict on both paths), then this primitive's own fields.
+    progress.commitCheck(describeHistogramWork(currentChallenge, work, bins), isCorrect,
+      histogramMiss(currentChallenge, work, bins));
+
+    // An easier practice graph (a simplify lever) is not the session's challenge: it records nothing of its own, and the
+    // full item comes back after it.
+    if (isCorrect && isPracticeGraph(currentChallenge)) {
+      SoundManager.playCorrect();
+      setFeedback({ message: 'Correct! Now back to the full graph.', correct: true });
+      return;
+    }
 
     if (isCorrect) {
       SoundManager.playCorrect();
       recordedRef.current = true;
-      const score = phaseScore(nextAttempts);
-      recordResult({
+      mergeResult({
         challengeId: currentChallenge.id,
         correct: true,
         attempts: nextAttempts,
-        score,
+        score: phaseScore(nextAttempts),
         studentAnswer,
         targetAnswer,
       });
@@ -675,7 +762,8 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
           }`,
         { silent: true },
       );
-      setTimeout(() => advance(), 1100);
+      // Scripted path only: the workspace advances when the runtime does.
+      if (!tutorOwned) setTimeout(() => advance(), 1100);
     } else {
       SoundManager.playIncorrect();
       const msg =
@@ -684,7 +772,7 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
           : challengeType === 'find_modal_bin'
             ? 'Not the tallest bar — look again.'
             : challengeType === 'read_frequency'
-              ? 'Not quite — count the bar height again.'
+              ? 'Not quite — read the bar height again.'
               : 'Not quite — try a different estimate.';
       setFeedback({ message: msg, correct: false });
       sendText(
@@ -695,6 +783,7 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
         { silent: true },
       );
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     currentChallenge,
     challengeType,
@@ -703,15 +792,18 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
     numericInput,
     bins,
     advance,
-    recordResult,
+    mergeResult,
+    progress.commitCheck,
+    currentAttempts,
     hasSubmitted,
     sendText,
     currentIndex,
     challenges.length,
     data.supportTier,
+    tutorOwned,
   ]);
 
-  // -- Hint handler ---------------------------------------------------------
+  // -- Hint handler (scripted path; with the tutor, help is the tutor's) ----
   const handleShowHint = useCallback(() => {
     setShowHint(true);
     if (!hintViewedRef.current) {
@@ -720,9 +812,10 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
     }
   }, []);
 
-  // -- Submit metrics on completion -----------------------------------------
+  // -- Submit metrics on completion (scripted path) -------------------------
   const submittedRef = useRef(false);
   useEffect(() => {
+    if (tutorOwned) return;
     if (!isComplete || hasSubmitted || submittedRef.current) return;
     submittedRef.current = true;
 
@@ -764,6 +857,7 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
       { silent: true },
     );
   }, [
+    tutorOwned,
     isComplete,
     hasSubmitted,
     challengeResults,
@@ -774,22 +868,38 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
     sendText,
   ]);
 
-  // -- Reset ----------------------------------------------------------------
+  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // corrections and whose evidence carries each wrong check's named miss.
+  finish.current = (result) => {
+    if (hasSubmitted || challenges.length === 0 || progress.recordsEvaluation === false) return;
+    const metrics: HistogramMetrics = {
+      type: 'histogram',
+      challengeType,
+      totalChallenges: challenges.length,
+      correctCount: result.solvedCount,
+      attemptsCount: result.attemptsCount,
+      firstTryCount: result.firstTryCount,
+      hintsViewed: 0,
+      overallAccuracy: result.accuracy,
+      averageAttemptsPerChallenge: Math.round((result.attemptsCount / challenges.length) * 10) / 10,
+    };
+    submitResult(result.passed, result.accuracy, metrics,
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
+
+  // -- Reset (scripted path) --------------------------------------------------
   const handleReset = useCallback(() => {
     reset();
     resetAttempt();
     submittedRef.current = false;
-    setSelectedShape(null);
-    setSelectedBinIndex(null);
-    setNumericInput('');
-    setFeedback(null);
+    clearWork();
     setShowHint(false);
-    setAttempts(0);
-    attemptsRef.current = 0;
     hintViewedRef.current = false;
     recordedRef.current = false;
     setHintsViewedSession(0);
-    setHoveredBinIndex(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reset, resetAttempt]);
 
   // -- Mode-specific copy ---------------------------------------------------
@@ -815,6 +925,9 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
     () => new Set(challengeResults.filter((r) => r.correct).map((r) => r.challengeId)),
     [challengeResults],
   );
+  const solved = !!currentChallenge && completedIds.has(currentChallenge.id);
+  /** Input closed once the item is done, and on the workspace path while a checked answer waits for Try again. */
+  const inputClosed = isComplete || hasSubmitted || solved || blocked;
 
   const localOverallScore = useMemo(() => {
     if (!isComplete || challenges.length === 0) return 0;
@@ -826,6 +939,46 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
     );
   }, [isComplete, challenges.length, challengeResults]);
 
+  // Workspace path: what the tutor and the observer are shown, republished every render. No demonstration, no
+  // presentation.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    const scene = workspaceScene(currentChallenge, {
+      shape: selectedShape, binIndex: selectedBinIndex, typed: numericInput,
+      showFrequencyLabels, showStatistics,
+    });
+    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
+    const levers = practice ? [] : histogramLevers(sessionChallenge, pulledLevers, { countLabelsShown: sessionShowsLabels });
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice graph is on screen in place of the item. It is not graded; the full item comes back after it.' } : {}) },
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find((l) => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        if (id === LEVEL_LINE_LEVER && selectedBinIndex === null) {
+          return 'No bar is tapped yet: the level line is drawn at the top of the bar the learner taps. Ask them to tap one first.';
+        }
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = simplerHistogram(sessionChallenge);
+          if (!easier) return 'This item has no easier version; try a help lever.';
+          setLeverState(pulled); setPractice(easier); clearWork();
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { setPractice(null); clearWork(); },
+    };
+  });
+
+  const tail = leverOn(TAIL_MODEL_LEVER) && sessionChallenge ? tailModel(sessionChallenge) : null;
+  const peak = leverOn(PEAK_MODEL_LEVER) && sessionChallenge ? peakModel(sessionChallenge) : null;
+  const askedIndex = targetBin ? bins.findIndex((b) => b.start === targetBin.start) : -1;
+
   // ── Pip shared surface ───────────────────────────────────────────
   // A projection of this item's check state, the tutor's speech on it, and
   // the child's touches; Pip points only at the workspace as a whole and never
@@ -834,7 +987,7 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
     instanceId: resolvedInstanceId,
     scopeId: isComplete || hasSubmitted ? null : currentChallenge?.id ?? null,
     label: 'The histogram and your answer',
-    solved: challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct),
+    solved,
     tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
   });
 
@@ -910,20 +1063,40 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
                 selectedBinIndex={selectedBinIndex}
                 targetBin={targetBin}
                 clickable={challengeType === 'find_modal_bin'}
-                onBinClick={(idx) => { SoundManager.select(); setSelectedBinIndex(idx); }}
+                onBinClick={(idx) => {
+                  if (inputClosed || learnerBlocked()) return;
+                  SoundManager.select();
+                  setSelectedBinIndex(idx);
+                }}
                 onBinHover={setHoveredBinIndex}
+                outline={leverOn(OUTLINE_LEVER)}
+                levelAt={leverOn(LEVEL_LINE_LEVER) && selectedBinIndex !== null ? bins[selectedBinIndex]?.count ?? null : null}
+                fadeExcept={leverOn(ISOLATE_LEVER) && askedIndex >= 0 ? askedIndex : null}
+                marksOn={leverOn(COUNT_MARKS_LEVER) && askedIndex >= 0 ? askedIndex : null}
+                axisNames={leverOn(AXIS_NAMES_LEVER)}
               />
+
+              {/* Model graphs outside the item (`histogramLevers.ts`), on the session item only. */}
+              {(tail || peak || leverOn(BALANCE_MODEL_LEVER)) && (
+                <div className="mt-3 flex flex-wrap justify-center gap-3">
+                  {tail && <ModelHistogram lever="tail-model" counts={tail.counts} caption={tail.caption}
+                    tail={tail.shape === 'right-skewed' ? 'right' : 'left'} />}
+                  {peak && <ModelHistogram lever="peak-model" counts={peak.counts} caption={peak.caption} />}
+                  {leverOn(BALANCE_MODEL_LEVER) && <ModelHistogram lever="balance-model" counts={BALANCE_MODEL.counts}
+                    caption={BALANCE_MODEL.caption} balanceAt={BALANCE_MODEL.balanceAt} tail="right" />}
+                </div>
+              )}
 
               {hoveredBinIndex !== null && bins[hoveredBinIndex] && (
                 <div className="mt-2 text-xs text-slate-400 text-center font-mono">
-                  Bin [{bins[hoveredBinIndex].start}, {bins[hoveredBinIndex].end}){' '}
+                  Bin {binRange(bins[hoveredBinIndex].start, bins[hoveredBinIndex].end, hoveredBinIndex === bins.length - 1)}{' '}
                   {showFrequencyLabels && <>— frequency {bins[hoveredBinIndex].count}</>}
                 </div>
               )}
             </LuminaPanel>
 
             {/* Statistics panel — hidden in estimate_center to avoid revealing the answer */}
-            {showStatistics && stats && (
+            {showStatistics && stats && challengeType !== 'estimate_center' && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <StatCard label="Count" value={stats.count} accent="emerald" />
                 <StatCard label="Min" value={stats.min} accent="slate" />
@@ -934,22 +1107,22 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
 
             {/* MODE-SPECIFIC INPUT */}
             <div className="space-y-3">
-              {/* identify_shape: MC chips */}
+              {/* identify_shape: choice chips */}
               {challengeType === 'identify_shape' && (
                 <div className="flex flex-wrap gap-2 justify-center">
                   {(currentChallenge.shapeOptions ?? []).map((opt) => (
-                    <Button
+                    <LuminaChoiceChip
                       key={opt}
-                      variant="ghost"
-                      onClick={() => { SoundManager.select(); setSelectedShape(opt); }}
-                      className={`bg-white/5 border hover:bg-white/10 ${
-                        selectedShape === opt
-                          ? 'border-emerald-400/60 text-emerald-300'
-                          : 'border-white/20 text-slate-200'
-                      }`}
-                    >
-                      {SHAPE_LABEL[opt]}
-                    </Button>
+                      accent="emerald"
+                      label={SHAPE_LABEL[opt]}
+                      selected={selectedShape === opt}
+                      disabled={inputClosed}
+                      onClick={() => {
+                        if (inputClosed || learnerBlocked()) return;
+                        SoundManager.select();
+                        setSelectedShape(opt);
+                      }}
+                    />
                   ))}
                 </div>
               )}
@@ -958,24 +1131,27 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
               {challengeType === 'find_modal_bin' && (
                 <div className="text-center text-sm text-slate-400">
                   {selectedBinIndex === null
-                    ? 'Click on the bar you think is tallest.'
-                    : `Selected: [${bins[selectedBinIndex]?.start}, ${bins[selectedBinIndex]?.end})`}
+                    ? 'Tap the bar you think is tallest.'
+                    : `Selected: ${binRange(bins[selectedBinIndex]?.start ?? 0, bins[selectedBinIndex]?.end ?? 0, selectedBinIndex === bins.length - 1)}`}
                 </div>
               )}
 
               {/* read_frequency / estimate_center: numeric entry */}
               {(challengeType === 'read_frequency' || challengeType === 'estimate_center') && (
                 <div className="flex flex-col items-center gap-2">
-                  <label className="text-sm text-slate-300">
+                  <label className="text-sm text-slate-300" htmlFor={`${resolvedInstanceId}-answer`}>
                     {challengeType === 'read_frequency'
                       ? 'How many values are in that bin?'
                       : `Your estimate for the ${currentChallenge.targetStatistic ?? 'center'}:`}
                   </label>
                   <LuminaInput
+                    id={`${resolvedInstanceId}-answer`}
+                    aria-label="Your answer"
                     type="number"
                     inputMode="numeric"
                     value={numericInput}
-                    onChange={(e) => setNumericInput(e.target.value)}
+                    disabled={inputClosed}
+                    onChange={(e) => { if (!learnerBlocked()) setNumericInput(e.target.value); }}
                     onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                     className="w-32 text-center text-lg font-mono"
                     placeholder="?"
@@ -984,9 +1160,11 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
               )}
 
               {/* Check button */}
-              <div className="flex justify-center">
-                <LuminaActionButton action="check" onClick={handleSubmit} disabled={hasSubmitted} />
-              </div>
+              {!solved && (
+                <div className="flex justify-center">
+                  <LuminaActionButton action="check" onClick={handleSubmit} disabled={hasSubmitted || blocked} />
+                </div>
+              )}
 
               {feedback && (
                 <div
@@ -1002,13 +1180,14 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
                 </div>
               )}
 
-              {showHint && currentChallenge.hint && (
+              {/* Hint (scripted path; with the tutor, help is the tutor's) */}
+              {!tutorOwned && showHint && currentChallenge.hint && (
                 <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
                   <p className="text-amber-200 text-sm">{currentChallenge.hint}</p>
                 </div>
               )}
 
-              {!feedback?.correct && attempts >= 2 && !showHint && currentChallenge.hint && (
+              {!tutorOwned && !feedback?.correct && currentAttempts >= 2 && !showHint && currentChallenge.hint && (
                 <div className="flex justify-center">
                   <LuminaButton onClick={handleShowHint}>Need a Hint?</LuminaButton>
                 </div>
@@ -1019,7 +1198,7 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
           </>
         )}
 
-        {isComplete && (
+        {!tutorOwned && isComplete && (
           <div className="flex justify-center">
             <LuminaActionButton action="retry" onClick={handleReset} />
           </div>
@@ -1048,5 +1227,9 @@ const StatCard: React.FC<StatCardProps> = ({ label, value, accent }) => {
     </LuminaPanel>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose auto-advance would compete with the observer.
+const Histogram = withWorkspaceController<HistogramProps, ProgressOptions<HistogramChallenge>, Progress>(
+  'histogram', HistogramSurface, useScriptedProgress, useWorkspaceProgressFor('histogram'));
 
 export default Histogram;

@@ -1,0 +1,146 @@
+{
+ "source": "qa/tutor-reports/distribution-explorer-runtime-compute_advanced-payload-2026-10-09.json",
+ "primitiveId": "distribution-explorer",
+ "evalMode": "compute_advanced",
+ "data": {
+  "title": "Bridging Discrete Limits: Binomial to Poisson",
+  "subject": "Probability",
+  "evalMode": "compute_advanced",
+  "initial": {
+   "family": "poisson",
+   "parameters": {
+    "lambda": 4
+   }
+  },
+  "lessonContext": "Actuarial scientists and risk analysts frequently model rare, independent events occurring over continuous intervals, such as catastrophic insurance claims or server failures. While the Binomial distribution governs fixed trials with binary outcomes, the Poisson distribution serves as its limiting case when the number of trials approaches infinity and the probability of success scales proportionally. Understanding the nuanced interplay between these discrete paradigms allows us to evaluate tail probabilities and conditional expectations under extreme operational stress.",
+  "challenges": [
+   {
+    "id": "c-0",
+    "type": "compute",
+    "prompt": "An industrial portfolio experiences operational failures modeled by a Poisson process with an expected rate of lambda = 4 failures per quarter. Calculate the tail probability of observing at least 3 failures in a given quarter, denoted as P(X >= 3).",
+    "rationale": "To find P(X >= 3), we compute the complement of observing fewer than 3 failures: 1 - [P(X = 0) + P(X = 1) + P(X = 2)]. For lambda = 4, this yields 1 - e^-4 * (1 + 4 + 8) = 1 - 13e^-4 \u2248 0.7619.",
+    "scenario": "An industrial portfolio experiences operational failures modeled by a Poisson process with lambda = 4 per quarter.",
+    "hint": "Remember that 'at least 3' means taking the complement of the sum of probabilities for 0, 1, and 2 failures.",
+    "correctValue": 0.7619,
+    "distractors": [
+     0.2381,
+     0.6288,
+     0.1465
+    ],
+    "decimals": 4
+   },
+   {
+    "id": "c-1",
+    "type": "predict_shape",
+    "prompt": "Observe the probability mass function of a Poisson distribution when the parameter lambda is relatively small (e.g., lambda = 2.0). How would you characterize its directional asymmetry?",
+    "rationale": "When lambda is small, the probability mass is heavily compressed near zero, preventing the left side of the distribution from extending symmetrically. This produces a prominent right-skewed profile that gradually approaches asymptotic normality as lambda increases.",
+    "hint": "Look at how the tail stretches toward higher values while the bulk of the probability is bounded tightly near zero.",
+    "acceptableAnswers": [
+     "right-skewed",
+     "skewed right",
+     "positive skew",
+     "positively skewed"
+    ],
+    "distractors": [
+     "symmetric",
+     "left-skewed",
+     "uniform"
+    ]
+   },
+   {
+    "id": "c-2",
+    "type": "compute",
+    "prompt": "Consider a high-frequency trading firm executing transactions where a rare systemic anomaly occurs according to a Poisson regime with lambda = 5 per hour. If exactly 1 hour has elapsed without a recorded anomaly, find the probability that at least 2 anomalies occur in the subsequent hour.",
+    "rationale": "Due to the memoryless property inherent in Poisson processes, the event history of the previous hour has no bearing on future increments. Therefore, we simply evaluate P(X >= 2) for lambda = 5, which is 1 - [P(X = 0) + P(X = 1)] = 1 - e^-5(1 + 5) = 1 - 6e^-5 \u2248 0.9596.",
+    "scenario": "A trading firm monitors systemic anomalies occurring at a rate of lambda = 5 per hour.",
+    "hint": "Poisson increments are independent and stationary; the elapsed time with zero occurrences does not alter the underlying parameter for the next interval.",
+    "correctValue": 0.9596,
+    "distractors": [
+     0.0404,
+     0.8753,
+     0.4043
+    ],
+    "decimals": 4
+   }
+  ],
+  "debug": {
+   "rawOrchestrator": {
+    "title": "Bridging Discrete Limits: Binomial to Poisson",
+    "subject": "Probability",
+    "initialFamily": "poisson",
+    "initialParameters": [
+     {
+      "name": "lambda",
+      "value": 4
+     }
+    ],
+    "lessonContext": "Actuarial scientists and risk analysts frequently model rare, independent events occurring over continuous intervals, such as catastrophic insurance claims or server failures. While the Binomial distribution governs fixed trials with binary outcomes, the Poisson distribution serves as its limiting case when the number of trials approaches infinity and the probability of success scales proportionally. Understanding the nuanced interplay between these discrete paradigms allows us to evaluate tail probabilities and conditional expectations under extreme operational stress.",
+    "challenges": [
+     {
+      "type": "compute",
+      "prompt": "An industrial portfolio experiences operational failures modeled by a Poisson process with an expected rate of lambda = 4 failures per quarter. Calculate the tail probability of observing at least 3 failures in a given quarter, denoted as P(X >= 3).",
+      "rationale": "To find P(X >= 3), we compute the complement of observing fewer than 3 failures: 1 - [P(X = 0) + P(X = 1) + P(X = 2)]. For lambda = 4, this yields 1 - e^-4 * (1 + 4 + 8) = 1 - 13e^-4 \u2248 0.7619.",
+      "acceptableAnswers": null,
+      "correctFamily": null,
+      "correctValue": 0.7619,
+      "decimals": 4,
+      "distractorFamilies": null,
+      "distractors": null,
+      "hint": "Remember that 'at least 3' means taking the complement of the sum of probabilities for 0, 1, and 2 failures.",
+      "numericDistractors": [
+       0.2381,
+       0.6288,
+       0.1465
+      ],
+      "scenario": "An industrial portfolio experiences operational failures modeled by a Poisson process with lambda = 4 per quarter.",
+      "unit": ""
+     },
+     {
+      "type": "predict_shape",
+      "prompt": "Observe the probability mass function of a Poisson distribution when the parameter lambda is relatively small (e.g., lambda = 2.0). How would you characterize its directional asymmetry?",
+      "rationale": "When lambda is small, the probability mass is heavily compressed near zero, preventing the left side of the distribution from extending symmetrically. This produces a prominent right-skewed profile that gradually approaches asymptotic normality as lambda increases.",
+      "acceptableAnswers": [
+       "right-skewed",
+       "skewed right",
+       "positive skew",
+       "positively skewed"
+      ],
+      "correctFamily": null,
+      "correctValue": null,
+      "decimals": null,
+      "distractorFamilies": null,
+      "distractors": [
+       "symmetric",
+       "left-skewed",
+       "uniform"
+      ],
+      "hint": "Look at how the tail stretches toward higher values while the bulk of the probability is bounded tightly near zero.",
+      "numericDistractors": null,
+      "scenario": null,
+      "unit": null
+     },
+     {
+      "type": "compute",
+      "prompt": "Consider a high-frequency trading firm executing transactions where a rare systemic anomaly occurs according to a Poisson regime with lambda = 5 per hour. If exactly 1 hour has elapsed without a recorded anomaly, find the probability that at least 2 anomalies occur in the subsequent hour.",
+      "rationale": "Due to the memoryless property inherent in Poisson processes, the event history of the previous hour has no bearing on future increments. Therefore, we simply evaluate P(X >= 2) for lambda = 5, which is 1 - [P(X = 0) + P(X = 1)] = 1 - e^-5(1 + 5) = 1 - 6e^-5 \u2248 0.9596.",
+      "acceptableAnswers": null,
+      "correctFamily": null,
+      "correctValue": 0.9596,
+      "decimals": 4,
+      "distractorFamilies": null,
+      "distractors": null,
+      "hint": "Poisson increments are independent and stationary; the elapsed time with zero occurrences does not alter the underlying parameter for the next interval.",
+      "numericDistractors": [
+       0.0404,
+       0.8753,
+       0.4043
+      ],
+      "scenario": "A trading firm monitors systemic anomalies occurring at a rate of lambda = 5 per hour.",
+      "unit": ""
+     }
+    ]
+   },
+   "durationMs": 3371
+  }
+ }
+}

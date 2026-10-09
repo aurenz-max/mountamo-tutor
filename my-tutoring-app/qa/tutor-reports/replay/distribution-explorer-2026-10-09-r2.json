@@ -1,0 +1,2115 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "distribution-explorer.compute_advanced",
+   "primitiveId": "distribution-explorer",
+   "evalMode": "compute_advanced",
+   "keys": [
+    "0.7619"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c-0",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "0.7619"
+      ],
+      "ask": "An industrial portfolio experiences operational failures modeled by a Poisson process with lambda = 4 per quarter. An industrial portfolio experiences operational failures modeled by a Poisson process with an expected rate of lambda = 4 failures per quarter. Calculate the tail probability of observing at least 3 failures in a given quarter, denoted as P(X >= 3).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "EXPLORATION_DONE",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "binomialdiscrete",
+       "poissondiscrete",
+       "exponentialcontinuous",
+       "pdf",
+       "cdf",
+       "0.6288",
+       "0.7619",
+       "0.2381",
+       "0.1465",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "An industrial portfolio experiences operational failures modeled by a Poisson process with an expected rate of lambda = 4 failures per quarter. Calculate the tail probability of observing at least 3 failures in a given quarter, denoted as P(X >= 3).",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "An industrial portfolio experiences operational failures modeled by a Poisson process with an expected rate of lambda = 4 failures per quarter. Calculate the tail probability of observing at least 3 failures in a given quarter, denoted as P(X >= 3).",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "An industrial portfolio experiences operational failures modeled by a Poisson process with an expected rate of lambda = 4 failures per quarter. Calculate the tail probability of observing at least 3 failures in a given quarter, denoted as P(X >= 3).",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "An industrial portfolio experiences operational failures modeled by a Poisson process with an expected rate of lambda = 4 failures per quarter. Calculate the tail probability of observing at least 3 failures in a given quarter, denoted as P(X >= 3).",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "An industrial portfolio experiences operational failures modeled by a Poisson process with an expected rate of lambda = 4 failures per quarter. Calculate the tail probability of observing at least 3 failures in a given quarter, denoted as P(X >= 3).",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c-0",
+     "trigger": "The learner submitted \"picked \\\"0.6288\\\"\". The board checked it: not right.",
+     "miss": "wrong_value",
+     "scoredWith": {
+      "keys": [
+       "0.7619"
+      ],
+      "ask": "An industrial portfolio experiences operational failures modeled by a Poisson process with lambda = 4 per quarter. An industrial portfolio experiences operational failures modeled by a Poisson process with an expected rate of lambda = 4 failures per quarter. Calculate the tail probability of observing at least 3 failures in a given quarter, denoted as P(X >= 3).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "EXPLORATION_DONE",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "binomialdiscrete",
+       "poissondiscrete",
+       "exponentialcontinuous",
+       "pdf",
+       "cdf",
+       "0.6288",
+       "0.7619",
+       "0.2381",
+       "0.1465",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "That's not quite it, but you can try another option. To find $P(X \\ge 3)$, which simpler complementary outcomes can we subtract from $1$?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That's not quite it, but you're on the right track! Remember that $P(X \\ge 3) = 1 - P(X \\le 2)$\u2014which specific values of $X$ make up $P(X \\le 2)$?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite, but good try! Think about the complement: what outcomes are NOT included in $X \\ge 3$?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That attempt wasn't quite it, but you can try again. To find the tail probability P(X \u2265 3), consider which smaller outcomes make up its complement, 1 - P(X \u2264 2).",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! Think about using the complement rule: which exact failure counts make up the opposite event of observing at least 3 failures?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c-0",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "0.7619"
+      ],
+      "ask": "An industrial portfolio experiences operational failures modeled by a Poisson process with lambda = 4 per quarter. An industrial portfolio experiences operational failures modeled by a Poisson process with an expected rate of lambda = 4 failures per quarter. Calculate the tail probability of observing at least 3 failures in a given quarter, denoted as P(X >= 3).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "EXPLORATION_DONE",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "binomialdiscrete",
+       "poissondiscrete",
+       "exponentialcontinuous",
+       "pdf",
+       "cdf",
+       "0.6288",
+       "0.7619",
+       "0.2381",
+       "0.1465",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Since $P(X \\ge 3)$ means $3$ or more failures, the opposite is having $0$, $1$, or $2$ failures. You can find $1 - [P(X=0) + P(X=1) + P(X=2)]$ using the Poisson formula with $\\lambda = 4$.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Remember that $P(X \\ge 3)$ is equal to $1 - P(X \\le 2)$. You can find this by adding the probabilities for $X = 0$, $X = 1$, and $X = 2$, and subtracting that sum from $1$.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Instead of adding up all numbers $3$ and higher, think about the complement: $1 - P(X \\le 2)$. What are the only values of $X$ included in $P(X \\le 2)$?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "To find at least 3 failures, it is easiest to find $1 - P(X \\le 2)$. That means adding up the probabilities for $X = 0$, $X = 1$, and $X = 2$, then subtracting that sum from 1.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "To find $P(X \\ge 3)$, think about the opposite: finding $1 - P(X \\le 2)$. What three individual values of $X$ make up $P(X \\le 2)$?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c-0",
+     "trigger": "The learner submitted \"picked \\\"0.7619\\\"\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "0.7619"
+      ],
+      "ask": "An industrial portfolio experiences operational failures modeled by a Poisson process with lambda = 4 per quarter. An industrial portfolio experiences operational failures modeled by a Poisson process with an expected rate of lambda = 4 failures per quarter. Calculate the tail probability of observing at least 3 failures in a given quarter, denoted as P(X >= 3).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "EXPLORATION_DONE",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "binomialdiscrete",
+       "poissondiscrete",
+       "exponentialcontinuous",
+       "pdf",
+       "cdf",
+       "0.6288",
+       "0.7619",
+       "0.2381",
+       "0.1465",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it by picking 0.7619 after working through the complement rule!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it\u2014you picked 0.7619 and got it right after working through the complementary probabilities!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You corrected your approach and picked 0.7619 by subtracting the probabilities of 0, 1, and 2 failures from 1.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You corrected your previous attempt and found the right probability, 0.7619.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nicely done! You selected 0.7619 and got it right by taking the complement of the lower values.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "distribution-explorer.compute_basic",
+   "primitiveId": "distribution-explorer",
+   "evalMode": "compute_basic",
+   "keys": [
+    "4 claims"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c-0",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "4 claims"
+      ],
+      "ask": "A regional portfolio experiences catastrophic property losses modeled by a Poisson process with lambda = 4 per month. Determine the expected number of events E[X] for this stochastic process.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "EXPLORATION_DONE",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "binomialdiscrete",
+       "poissondiscrete",
+       "exponentialcontinuous",
+       "pdf",
+       "cdf",
+       "0.25 claims",
+       "4 claims",
+       "16 claims",
+       "2 claims",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A regional portfolio experiences catastrophic property losses modeled by a Poisson process with lambda = 4 per month. Determine the expected number of events E[X] for this stochastic process. Take a look at the choices and tap the one you think fits.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A regional portfolio experiences catastrophic property losses modeled by a Poisson process with lambda = 4 per month. Determine the expected number of events E[X] for this stochastic process.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A regional portfolio experiences catastrophic property losses modeled by a Poisson process with lambda equals 4 per month. Determine the expected number of events E[X] for this stochastic process. Take a look at the choices and see what you think!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A regional portfolio experiences catastrophic property losses modeled by a Poisson process with lambda = 4 per month. Determine the expected number of events E[X] for this stochastic process.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A regional portfolio experiences catastrophic property losses modeled by a Poisson process with lambda = 4 per month. Determine the expected number of events E[X] for this stochastic process.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c-0",
+     "trigger": "The learner submitted \"picked \\\"0.25 claims\\\"\". The board checked it: not right.",
+     "miss": "reciprocal",
+     "scoredWith": {
+      "keys": [
+       "4 claims"
+      ],
+      "ask": "A regional portfolio experiences catastrophic property losses modeled by a Poisson process with lambda = 4 per month. Determine the expected number of events E[X] for this stochastic process.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "EXPLORATION_DONE",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "binomialdiscrete",
+       "poissondiscrete",
+       "exponentialcontinuous",
+       "pdf",
+       "cdf",
+       "0.25 claims",
+       "4 claims",
+       "16 claims",
+       "2 claims",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Not quite, but good try. For a Poisson distribution, think about how the expected value relates directly to the rate parameter lambda. Give it another shot!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite, but good try. For a Poisson distribution, how does the expected value relate to the parameter lambda?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite, but good try. For a Poisson distribution, how does the expected value relate to the parameter lambda?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That was a good attempt, but not quite. How does the expected value of a Poisson distribution relate directly to the parameter lambda?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! For a Poisson distribution, think about how the rate parameter lambda connects to the expected value E[X].",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c-0",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "4 claims"
+      ],
+      "ask": "A regional portfolio experiences catastrophic property losses modeled by a Poisson process with lambda = 4 per month. Determine the expected number of events E[X] for this stochastic process.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "EXPLORATION_DONE",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "binomialdiscrete",
+       "poissondiscrete",
+       "exponentialcontinuous",
+       "pdf",
+       "cdf",
+       "0.25 claims",
+       "4 claims",
+       "16 claims",
+       "2 claims",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "What is the formula for the mean, or expected value E[X], of a Poisson distribution?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "What does the parameter lambda represent in a Poisson distribution?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "For a Poisson distribution, how is the expected value related to the parameter lambda?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "In a Poisson distribution, the rate lambda tells you the average number of occurrences per time period. How does the expected value E[X] compare to lambda?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "In a Poisson distribution, the rate lambda directly represents the average count per interval. Which formula connects the mean E[X] to lambda?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c-0",
+     "trigger": "The learner submitted \"picked \\\"4 claims\\\"\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "4 claims"
+      ],
+      "ask": "A regional portfolio experiences catastrophic property losses modeled by a Poisson process with lambda = 4 per month. Determine the expected number of events E[X] for this stochastic process.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "EXPLORATION_DONE",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "binomialdiscrete",
+       "poissondiscrete",
+       "exponentialcontinuous",
+       "pdf",
+       "cdf",
+       "0.25 claims",
+       "4 claims",
+       "16 claims",
+       "2 claims",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Spot on! You fixed that by realizing the expected value equals lambda, which gave you 4 claims.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nicely done! You corrected your answer and chose 4 claims, because for a Poisson distribution, the expected value E[X] is simply lambda itself.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You checked your work, fixed the mistake, and picked 4 claims because the expected value of a Poisson distribution simply equals lambda.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right\u2014you picked 4 claims by recognizing that for a Poisson distribution, the expected value is simply lambda.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You figured it out and picked 4 claims by recognizing that for a Poisson distribution, the expected value is simply equal to lambda.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "distribution-explorer.explore",
+   "primitiveId": "distribution-explorer",
+   "evalMode": "explore",
+   "keys": [
+    "50"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c-0",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "50"
+      ],
+      "ask": "Adjust the parameter p while holding n constant at 15. Observe how the probability mass function shifts from right-skewed to symmetric, and finally to left-skewed. At what value of p does the distribution achieve exact structural symmetry? Move the sliders or change the family, then press Got it.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "EXPLORATION_DONE",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "binomialdiscrete",
+       "poissondiscrete",
+       "exponentialcontinuous",
+       "pdf",
+       "cdf",
+       "got it"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Adjust the parameter p while holding n constant at 15. Observe how the probability mass function shifts from right-skewed to symmetric, and finally to left-skewed; at what value of p does the distribution achieve exact structural symmetry?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Adjust the parameter p while holding n constant at 15. Observe how the probability mass function shifts from right-skewed to symmetric, and finally to left-skewed, and see at what value of p it achieves exact structural symmetry.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Adjust the parameter p while holding n constant at 15. Observe how the probability mass function shifts from right-skewed to symmetric, and finally to left-skewed; at what value of p does the distribution achieve exact structural symmetry?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Adjust the parameter p while holding n constant at 15, and observe how the shape of the distribution changes. At what value of p does it look completely symmetric? Move the slider to explore, then tap Got it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Adjust the parameter p while holding n constant at 15. Observe how the probability mass function shifts from right-skewed to symmetric, and finally to left-skewed, then press Got it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c-0",
+     "trigger": "The learner submitted \"has not moved a slider or changed the family since this prompt opened; it shows Binomial with n (trials) = 15; p (success probability) = 0.4\". The board checked it: not right.",
+     "miss": "not_explored",
+     "scoredWith": {
+      "keys": [
+       "50"
+      ],
+      "ask": "Adjust the parameter p while holding n constant at 15. Observe how the probability mass function shifts from right-skewed to symmetric, and finally to left-skewed. At what value of p does the distribution achieve exact structural symmetry? Move the sliders or change the family, then press Got it.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "EXPLORATION_DONE",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "binomialdiscrete",
+       "poissondiscrete",
+       "exponentialcontinuous",
+       "pdf",
+       "cdf",
+       "got it"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Try moving the slider for p back and forth while watching the bars on the chart. What happens to the shape as you change p?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Try moving the slider for p back and forth to see how the chart's shape changes.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Try sliding the p slider back and forth to see how the shape changes, then press Got it. What do you notice happening to the distribution?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Try moving the slider for p back and forth to see how the shape changes before pressing Got it. What do you notice happening to the bars as you slide it?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Try dragging the p slider across different values to see how the shape changes before pressing Got it. What do you notice happening to the bars as you move p?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c-0",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "50"
+      ],
+      "ask": "Adjust the parameter p while holding n constant at 15. Observe how the probability mass function shifts from right-skewed to symmetric, and finally to left-skewed. At what value of p does the distribution achieve exact structural symmetry? Move the sliders or change the family, then press Got it.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "EXPLORATION_DONE",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "binomialdiscrete",
+       "poissondiscrete",
+       "exponentialcontinuous",
+       "pdf",
+       "cdf",
+       "got it"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Start by dragging the slider labeled **p** to different values. Notice when the left and right sides of the distribution look like mirror images, and then hit Got it.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Drag the slider labeled p to a new position, then press Got it. What do you see happen to the bars?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Find the slider labeled **p** on your screen and drag it to different values. Once you move the slider, the **Got it** button will unlock so you can press it!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Find the slider labeled **p** on your screen and drag it left or right. Once you see the bars shift and find where it looks perfectly balanced, press **Got it**.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Drag the slider labeled p to see how the graph shifts, and once you have explored it, press Got it.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c-0",
+     "trigger": "The learner submitted \"moved the workbench since this prompt opened; it shows Binomial with n (trials) = 50; p (success probability) = 0.4\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "50"
+      ],
+      "ask": "Adjust the parameter p while holding n constant at 15. Observe how the probability mass function shifts from right-skewed to symmetric, and finally to left-skewed. At what value of p does the distribution achieve exact structural symmetry? Move the sliders or change the family, then press Got it.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "EXPLORATION_DONE",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "binomialdiscrete",
+       "poissondiscrete",
+       "exponentialcontinuous",
+       "pdf",
+       "cdf",
+       "got it"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Nice work moving the slider and testing it out on the workbench.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nicely done adjusting the workbench! When you looked at how the distribution balanced, what value of p made it completely symmetric?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nice job moving the sliders to explore the changes on the workbench.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You explored the workbench with the sliders and pressed Got it. Nice job experimenting with the parameters to see the distribution shift!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Great job moving the workbench sliders to test how the shape responds. At what value of p did the distribution look perfectly balanced and symmetric?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "distribution-explorer.identify",
+   "primitiveId": "distribution-explorer",
+   "evalMode": "identify",
+   "keys": [
+    "binomial"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c-0",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "binomial"
+      ],
+      "ask": "An underwriter evaluates a portfolio of 50 independent mortgage applications, where each individual applicant has an identical default probability of 0.08. Which parametric family best models the total count of defaults in this fixed cohort?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "EXPLORATION_DONE",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "pdf",
+       "cdf",
+       "exponential",
+       "binomial",
+       "poisson",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "An underwriter evaluates a portfolio of 50 independent mortgage applications, where each individual applicant has an identical default probability of 0.08. Which parametric family best models the total count of defaults in this fixed cohort?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "An underwriter evaluates a portfolio of 50 independent mortgage applications, where each individual applicant has an identical default probability of 0.08. Which parametric family best models the total count of defaults in this fixed cohort?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "An underwriter evaluates a portfolio of 50 independent mortgage applications, where each individual applicant has an identical default probability of 0.08. Which parametric family best models the total count of defaults in this fixed cohort?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "An underwriter evaluates a portfolio of 50 independent mortgage applications, where each individual applicant has an identical default probability of 0.08. Which parametric family best models the total count of defaults in this fixed cohort?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "An underwriter evaluates a portfolio of 50 independent mortgage applications, where each individual applicant has an identical default probability of 0.08. Which parametric family best models the total count of defaults in this fixed cohort?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c-0",
+     "trigger": "The learner submitted \"picked \\\"Exponential\\\"\". The board checked it: not right.",
+     "miss": "discrete_continuous",
+     "scoredWith": {
+      "keys": [
+       "binomial"
+      ],
+      "ask": "An underwriter evaluates a portfolio of 50 independent mortgage applications, where each individual applicant has an identical default probability of 0.08. Which parametric family best models the total count of defaults in this fixed cohort?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "EXPLORATION_DONE",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "pdf",
+       "cdf",
+       "exponential",
+       "binomial",
+       "poisson",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Notice what we are tracking here: is the total count of defaults a discrete count of outcomes across fixed trials, or a continuous measurement of time? Take another look and give it another try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Think about what we are tracking here: is the total count of defaults discrete or continuous? Take another look at the remaining choices and give it another try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice whether the total count of defaults is discrete or continuous, and how many separate trials are involved. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try, but let's rethink: does this scenario count discrete occurrences out of a fixed number of trials, or measure continuous time? Take another look and give it another shot!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's look at what we are tracking here: is the total count of defaults a discrete number of separate events, or a continuous measurement? Try another choice based on that.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c-0",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "binomial"
+      ],
+      "ask": "An underwriter evaluates a portfolio of 50 independent mortgage applications, where each individual applicant has an identical default probability of 0.08. Which parametric family best models the total count of defaults in this fixed cohort?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "EXPLORATION_DONE",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "pdf",
+       "cdf",
+       "exponential",
+       "binomial",
+       "poisson",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "We have a fixed number of independent trials (50 mortgages), and each trial has only two outcomes: default or no default, with the same probability. Which of the remaining distributions models the count of successes in a set number of independent trials?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "We have a fixed number of 50 independent trials where each has two possible outcomes with the same probability. Which distribution counts the number of successes in fixed trials like that?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Think about whether we have a fixed number of separate trials with a constant success rate, or events occurring continuously over an open interval of time. Which discrete family models the number of successes in fixed independent trials?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "We have a fixed number of 50 separate trials, and each trial has the same probability of success or failure. Think about which discrete family models counting successes across a fixed set of trials.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "We have a set number of independent trials\u201450 applications\u2014and each one has the exact same probability of defaulting. Think about which discrete distribution counts successes or events over a fixed number of trials.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c-0",
+     "trigger": "The learner submitted \"picked \\\"Binomial\\\"\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "binomial"
+      ],
+      "ask": "An underwriter evaluates a portfolio of 50 independent mortgage applications, where each individual applicant has an identical default probability of 0.08. Which parametric family best models the total count of defaults in this fixed cohort?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "EXPLORATION_DONE",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "pdf",
+       "cdf",
+       "exponential",
+       "binomial",
+       "poisson",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Spot on\u2014you chose Binomial, recognizing that a fixed number of independent trials with identical success probability fits the binomial family perfectly.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You nailed it by picking Binomial! Because there is a fixed number of independent trials with a constant probability of success, the Binomial distribution is the exact match.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You worked through the conditions and correctly chose Binomial for counting successes across fixed trials.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You reasoned it out and chose Binomial, recognizing that a fixed number of independent binary trials fits that exact model.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You selected Binomial because we have a fixed number of independent trials, each with the same probability of success.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

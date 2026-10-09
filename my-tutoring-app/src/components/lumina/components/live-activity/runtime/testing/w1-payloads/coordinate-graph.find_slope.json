@@ -1,0 +1,89 @@
+{
+ "source": "qa/tutor-reports/coordinate-graph-runtime-find_slope-payload-2026-10-09.json",
+ "primitiveId": "coordinate-graph",
+ "evalMode": "find_slope",
+ "data": {
+  "title": "Finding the Slope of a Line",
+  "description": "Practice coordinate plane skills with Ordered pairs on the coordinate plane",
+  "challenges": [
+   {
+    "id": "fs-0",
+    "type": "find_slope",
+    "instruction": "Find the slope of the line passing through the points (-4, 2) and (2, 5).",
+    "hint": "Use the slope formula: m = (y2 - y1) / (x2 - x1)",
+    "x1": -4,
+    "y1": 2,
+    "x2": 2,
+    "y2": 5,
+    "option0": "2",
+    "option1": "1/2",
+    "option2": "-1/2",
+    "option3": "-2",
+    "correctOptionIndex": 1
+   },
+   {
+    "id": "fs-1",
+    "type": "find_slope",
+    "instruction": "Find the slope of the line passing through the points (-3, -1) and (1, 7).",
+    "hint": "Subtract the y-coordinates for the numerator and the x-coordinates for the denominator.",
+    "x1": -3,
+    "y1": -1,
+    "x2": 1,
+    "y2": 7,
+    "option0": "1/2",
+    "option1": "2",
+    "option2": "-2",
+    "option3": "4",
+    "correctOptionIndex": 1
+   },
+   {
+    "id": "fs-2",
+    "type": "find_slope",
+    "instruction": "Find the slope of the line passing through the points (-2, 4) and (3, -1).",
+    "hint": "Calculate the change in y divided by the change in x.",
+    "x1": -2,
+    "y1": 4,
+    "x2": 3,
+    "y2": -1,
+    "option0": "1",
+    "option1": "-1",
+    "option2": "5/5",
+    "option3": "0",
+    "correctOptionIndex": 1
+   },
+   {
+    "id": "fs-3",
+    "type": "find_slope",
+    "instruction": "Find the slope of the line passing through the points (-6, 3) and (2, 3).",
+    "hint": "Observe the y-values. When y does not change as x changes, what is the slope?",
+    "x1": -6,
+    "y1": 3,
+    "x2": 2,
+    "y2": 3,
+    "option0": "8",
+    "option1": "1",
+    "option2": "0",
+    "option3": "undefined",
+    "correctOptionIndex": 2
+   },
+   {
+    "id": "fs-4",
+    "type": "find_slope",
+    "instruction": "Find the slope of the line passing through the points (-5, -2) and (1, 1).",
+    "hint": "Find the vertical rise and divide by the horizontal run.",
+    "x1": -5,
+    "y1": -2,
+    "x2": 1,
+    "y2": 1,
+    "option0": "2",
+    "option1": "1/2",
+    "option2": "-1/2",
+    "option3": "-2",
+    "correctOptionIndex": 1
+   }
+  ],
+  "gridMin": -10,
+  "gridMax": 10,
+  "gradeBand": "K-2"
+ }
+}

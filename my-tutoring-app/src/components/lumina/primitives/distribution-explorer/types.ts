@@ -246,6 +246,13 @@ export interface DistributionExplorerData {
   instanceId?: string;
   gradeLevel?: string;
 
+  // ── Evaluation plumbing (auto-injected by the lesson host) ──
+  skillId?: string;
+  subskillId?: string;
+  objectiveId?: string;
+  exhibitId?: string;
+  onEvaluationSubmit?: (result: unknown) => void;
+
   /** Optional debug payload — visible in the tester but not in production. */
   debug?: DistributionExplorerDebug;
 }

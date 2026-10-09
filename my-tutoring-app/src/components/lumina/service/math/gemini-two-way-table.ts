@@ -82,6 +82,11 @@ export interface TwoWayTableChallenge {
   answerTotalAxis?: 'row' | 'col' | 'both' | 'none';
   /** Index of the answer-bearing row/col total (when axis is 'row' or 'col'). */
   answerTotalIndex?: number;
+  /**
+   * Which cell, row or column the question names (`given`: the conditioning axis of a conditional item). Read by the
+   * teaching workspace's miss check and levers (`twoWayTableWorkspace.ts`); never rendered.
+   */
+  target?: { row?: number; col?: number; given?: 'row' | 'col' };
 }
 
 export interface TwoWayTableData {
@@ -562,6 +567,7 @@ function buildJointChallenge(template: ScenarioTemplate, idx: number): TwoWayTab
     showTotals: true,
     // Answer = cell / grand total → no single margin total IS the answer.
     answerTotalAxis: 'none',
+    target: { row: r, col: c },
     hint: `Find the cell where ${template.rowCategories[r]} and ${template.columnCategories[c]} meet (${joint}). Divide by the grand total (${total}).`,
   };
 }
@@ -589,6 +595,7 @@ function buildMarginalChallenge(template: ScenarioTemplate, idx: number): TwoWay
       // Answer numerator IS this row's total → never reveal it, even at easy.
       answerTotalAxis: 'row',
       answerTotalIndex: r,
+      target: { row: r },
       hint: `Add the counts in the "${template.rowCategories[r]}" row (gives ${marginal}). Divide by the grand total (sum of all cells = ${total}).`,
     };
   }
@@ -609,6 +616,7 @@ function buildMarginalChallenge(template: ScenarioTemplate, idx: number): TwoWay
     // Answer numerator IS this column's total → never reveal it, even at easy.
     answerTotalAxis: 'col',
     answerTotalIndex: c,
+    target: { col: c },
     hint: `Add the counts in the "${template.columnCategories[c]}" column (gives ${marginal}). Divide by the grand total (sum of all cells = ${total}).`,
   };
 }
@@ -637,6 +645,7 @@ function buildConditionalChallenge(template: ScenarioTemplate, idx: number): Two
       // Answer denominator IS this row's total (the conditioning marginal) → hide it.
       answerTotalAxis: 'row',
       answerTotalIndex: r,
+      target: { row: r, col: c, given: 'row' },
       hint: `Only look at the "${template.rowCategories[r]}" row. The cell ${template.columnCategories[c]} in that row is ${joint}. The row total is ${condTotal}. Divide: ${joint} ÷ ${condTotal}.`,
     };
   }
@@ -658,6 +667,7 @@ function buildConditionalChallenge(template: ScenarioTemplate, idx: number): Two
     // Answer denominator IS this column's total (the conditioning marginal) → hide it.
     answerTotalAxis: 'col',
     answerTotalIndex: c,
+    target: { row: r, col: c, given: 'col' },
     hint: `Only look at the "${template.columnCategories[c]}" column. The cell ${template.rowCategories[r]} in that column is ${joint}. The column total is ${condTotal}. Divide: ${joint} ÷ ${condTotal}.`,
   };
 }
@@ -689,6 +699,7 @@ function buildIndependenceChallenge(template: ScenarioTemplate, idx: number): Tw
     // computation, so the tier suppresses BOTH per-row and per-col totals (only
     // the grand total stays as a safe anchor).
     answerTotalAxis: 'both',
+    target: { row: r, col: c },
     hint: `P(${template.rowCategories[r]}) = ${rowSum}/${total} = ${round(pA, 2)}. P(${template.columnCategories[c]}) = ${colSum}/${total} = ${round(pB, 2)}. Multiply.`,
   };
 }

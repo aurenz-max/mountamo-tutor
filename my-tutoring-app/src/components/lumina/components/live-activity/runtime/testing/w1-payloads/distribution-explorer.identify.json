@@ -1,0 +1,101 @@
+{
+ "source": "qa/tutor-reports/distribution-explorer-runtime-identify-payload-2026-10-09.json",
+ "primitiveId": "distribution-explorer",
+ "evalMode": "identify",
+ "data": {
+  "title": "Discrete Modeling: Binomial vs Poisson Paradigms",
+  "subject": "Probability",
+  "evalMode": "identify",
+  "initial": {
+   "family": "binomial",
+   "parameters": {
+    "n": 15,
+    "p": 0.35
+   }
+  },
+  "lessonContext": "In actuarial science and stochastic modeling, choosing the appropriate discrete probability distribution is paramount for assessing risk. While the binomial distribution naturally captures bounded trial-based successes with fixed parameters, the Poisson distribution governs unbounded rare events occurring continuously over fixed intervals. Mastering their structural divergence allows quantitative analysts to effectively approximate complex stochastic environments.",
+  "challenges": [
+   {
+    "id": "c-0",
+    "type": "identify",
+    "prompt": "An underwriter evaluates a portfolio of 50 independent mortgage applications, where each individual applicant has an identical default probability of 0.08. Which parametric family best models the total count of defaults in this fixed cohort?",
+    "rationale": "The binomial distribution is explicitly designed to model the exact number of successes in a fixed number (n) of independent Bernoulli trials with a constant success probability (p).",
+    "hint": "Consider whether the process involves a fixed ceiling of independent trials or an unbounded rate of events over time.",
+    "correctFamily": "binomial",
+    "distractors": [
+     "poisson",
+     "exponential"
+    ]
+   },
+   {
+    "id": "c-1",
+    "type": "identify",
+    "prompt": "A customer service center tracks the arrival of emergency outage calls, observing an average rate of 4.2 calls per hour over an unbounded state space of possible counts, with no upper limit on volume. Which family mathematically governs this unbounded count process?",
+    "rationale": "The Poisson distribution models the number of discrete events occurring in a fixed interval of time or space, characterized by a single rate parameter lambda and an unbounded upper support.",
+    "hint": "Think about processes that track event counts per unit time where there is no maximum possible number of occurrences.",
+    "correctFamily": "poisson",
+    "distractors": [
+     "binomial",
+     "exponential"
+    ]
+   }
+  ],
+  "debug": {
+   "rawOrchestrator": {
+    "title": "Discrete Modeling: Binomial vs Poisson Paradigms",
+    "subject": "Probability",
+    "initialFamily": "binomial",
+    "initialParameters": [
+     {
+      "name": "n",
+      "value": 15
+     },
+     {
+      "name": "p",
+      "value": 0.35
+     }
+    ],
+    "lessonContext": "In actuarial science and stochastic modeling, choosing the appropriate discrete probability distribution is paramount for assessing risk. While the binomial distribution naturally captures bounded trial-based successes with fixed parameters, the Poisson distribution governs unbounded rare events occurring continuously over fixed intervals. Mastering their structural divergence allows quantitative analysts to effectively approximate complex stochastic environments.",
+    "challenges": [
+     {
+      "type": "identify",
+      "prompt": "An underwriter evaluates a portfolio of 50 independent mortgage applications, where each individual applicant has an identical default probability of 0.08. Which parametric family best models the total count of defaults in this fixed cohort?",
+      "rationale": "The binomial distribution is explicitly designed to model the exact number of successes in a fixed number (n) of independent Bernoulli trials with a constant success probability (p).",
+      "acceptableAnswers": null,
+      "correctFamily": "binomial",
+      "correctValue": null,
+      "decimals": null,
+      "distractorFamilies": [
+       "poisson",
+       "exponential"
+      ],
+      "distractors": null,
+      "hint": "Consider whether the process involves a fixed ceiling of independent trials or an unbounded rate of events over time.",
+      "numericDistractors": null,
+      "scenario": null,
+      "unit": null
+     },
+     {
+      "type": "identify",
+      "prompt": "A customer service center tracks the arrival of emergency outage calls, observing an average rate of 4.2 calls per hour over an unbounded state space of possible counts, with no upper limit on volume. Which family mathematically governs this unbounded count process?",
+      "rationale": "The Poisson distribution models the number of discrete events occurring in a fixed interval of time or space, characterized by a single rate parameter lambda and an unbounded upper support.",
+      "acceptableAnswers": null,
+      "correctFamily": "poisson",
+      "correctValue": null,
+      "decimals": null,
+      "distractorFamilies": [
+       "binomial",
+       "exponential"
+      ],
+      "distractors": null,
+      "hint": "Think about processes that track event counts per unit time where there is no maximum possible number of occurrences.",
+      "numericDistractors": null,
+      "scenario": null,
+      "unit": null
+     }
+    ]
+   },
+   "durationMs": 2334
+  }
+ }
+}

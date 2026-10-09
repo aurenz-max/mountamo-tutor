@@ -1,5 +1,6 @@
 import type { ContentOracle, OracleResult, OracleViolation } from './types';
 import { asRecordArray, checkAnswerVariety, checkUniqueOptions } from './helpers';
+import { classifyShape } from '../../../primitives/visual-primitives/math/histogramWorkspace';
 
 /**
  * Histogram oracle — verifies the pre-built histogram challenge pool against the
@@ -57,10 +58,8 @@ import { asRecordArray, checkAnswerVariety, checkUniqueOptions } from './helpers
  *      {mean, median} with finite targetAnswer/tolerance).
  *
  * Deliberately NOT checked:
- *  - the SEMANTIC correctness of identify_shape's expectedShape (is this dataset
- *    "really" right-skewed?): shape classification is a perceptual/heuristic
- *    judgment (the component's own skew label uses a ±0.5 skewness cutoff) —
- *    /eval-test's call. The oracle only checks the answer is selectable.
+ *  - (since 2026-10-09 identify_shape IS checked: (e) the drawn bars must read as
+ *    expectedShape under the shared `classifyShape`, which the generator keys by.)
  *  - support-tier display flags (showStatistics / showFrequencyLabels): the
  *    checker never reads them; withdrawal quality is /eval-test.
  */
@@ -76,7 +75,7 @@ const near = (a: number, b: number): boolean => Math.abs(a - b) <= EPS;
 
 interface Bin { start: number; end: number; count: number }
 
-/** Exact replica of Histogram.tsx computeBins (:189-204) — the drawn bars. */
+/** Exact replica of histogramWorkspace.ts computeBins — the drawn bars (last bar closed on the right). */
 function computeBins(data: number[], binWidth: number, binStart: number): Bin[] {
   if (data.length === 0 || binWidth <= 0) return [];
   const min = Math.min(...data);
@@ -88,7 +87,9 @@ function computeBins(data: number[], binWidth: number, binStart: number): Bin[] 
   for (let i = 0; i < numBins; i++) {
     const start = effectiveStart + i * binWidth;
     const end = start + binWidth;
-    out.push({ start, end, count: data.filter((v) => v >= start && v < end).length });
+    // The last bar also holds its right edge (a value on the axis maximum), as the component draws it since 2026-10-09.
+    const last = i === numBins - 1;
+    out.push({ start, end, count: data.filter((v) => v >= start && (v < end || (last && v === end))).length });
   }
   return out;
 }
@@ -179,6 +180,14 @@ export const histogramOracle: ContentOracle = {
         if (!shapeOptions.includes(expectedShape)) {
           violations.push({ check: 'answer-key-desync', where: id, detail: `expectedShape "${expectedShape}" is not among shapeOptions [${shapeOptions.join(', ')}] — the correct choice is unselectable` });
         }
+        // ── (e): the drawn bars must read as the keyed shape (`classifyShape`, histogramWorkspace.ts). A graph that
+        //    reads as another shape, or as no clear shape, marks a correct reading wrong. ──
+        const drawn = classifyShape(dataset, bins);
+        if (drawn !== expectedShape) {
+          violations.push({ check: 'answer-key-desync', where: id, detail: drawn
+            ? `expectedShape "${expectedShape}" but the drawn bars read as "${drawn}" — the student reading the graph is marked wrong`
+            : `expectedShape "${expectedShape}" but the drawn bars read as no clear shape — the item is ambiguous` });
+        }
         answerValues.push(`shape:${expectedShape}`);
       } else if (type === 'find_modal_bin') {
         const eStart = c.expectedBinStart;
@@ -202,7 +211,7 @@ export const histogramOracle: ContentOracle = {
           continue;
         }
         // ── (b): the shipped count must equal the drawn bar height ──
-        const trueCount = dataset.filter((v) => v >= tStart && v < tEnd).length;
+        const trueCount = bins.find((b) => near(b.start, tStart))?.count ?? 0;
         if (trueCount !== tFreq) {
           violations.push({ check: 'answer-key-desync', where: id, detail: `targetFrequency=${tFreq} but [${tStart}, ${tEnd}) actually contains ${trueCount} data value(s) — the student counting the bar is marked wrong` });
         }

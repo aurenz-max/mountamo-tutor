@@ -55,8 +55,20 @@ import { practiceParent as factorPracticeParent, smallerTree } from '../../primi
 import { equationHarnessChoices, mergeCommutingSteps, stepsDoneFrom } from '../../primitives/visual-primitives/math/equationWorkspaceDomain';
 import { fewerSteps as equationFewerSteps, practiceParent as equationPracticeParent } from '../../primitives/visual-primitives/math/equationWorkspaceLevers';
 import { ratioHarnessInput } from '../../primitives/visual-primitives/math/ratioTableWorkspace';
+import { twoWayHarnessText } from '../../primitives/visual-primitives/math/twoWayTableWorkspace';
+import { coordinateHarnessInput, keyText as coordinateKeyText, planePixel }
+  from '../../primitives/visual-primitives/math/coordinateGraphWorkspace';
+import { practiceParent as coordinatePracticeParent, simplerItem as simplerCoordinate }
+  from '../../primitives/visual-primitives/math/coordinateGraphLevers';
+import { practiceParent as twoWayPracticeParent, simplerTable } from '../../primitives/visual-primitives/math/twoWayTableLevers';
+import { histogramHarnessInput } from '../../primitives/visual-primitives/math/histogramWorkspace';
+import { practiceParent as histogramPracticeParent, simplerHistogram } from '../../primitives/visual-primitives/math/histogramLevers';
 import { practiceParent as ratioPracticeParent, simplerRatio } from '../../primitives/visual-primitives/math/ratioTableLevers';
 import { circleHarnessText } from '../../primitives/visual-primitives/math/circleExplorerWorkspace';
+import { distributionHarnessChoice, distributionHarnessSlider }
+  from '../../primitives/distribution-explorer/distributionExplorerWorkspace';
+import { practiceItem as distributionPracticeItem, practiceParent as distributionPracticeParent }
+  from '../../primitives/distribution-explorer/distributionExplorerLevers';
 import { practiceParent as circlePracticeParent, simplerCircle } from '../../primitives/visual-primitives/math/circleExplorerLevers';
 import { practiceParent as regroupPracticeParent, smallerProblem as smallerRegroupProblem }
   from '../../primitives/visual-primitives/math/regroupingWorkbenchLevers';
@@ -1142,6 +1154,113 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return input.kind === 'type'
         ? [{ type: 'write', label: 'Your answer', text: input.text }, { type: 'check' }]
         : [{ type: 'write', label: 'Multiplier', text: String(input.value) }, { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'histogram': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/Histogram.tsx',
+    instanceId: 'histo',
+    defaults: { grade: 'Grade 7', mode: 'read_frequency', di: false, topic: 'Reading histograms: shape, modal bin, frequency and center' },
+    leakTokens: ['ACTIVITY_START', 'NEXT_HISTOGRAM', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ALL_COMPLETE', 'SUPPORT TIER'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls (`histogramHarnessInput`): a shape chip tapped, a bar tapped (`bar-<i>`), or
+    // a number typed into "Your answer", then Check. A wrong answer is the item's signature miss: the other skew or one
+    // peak for two, the bar next to the tallest, an edge of the asked bin, two bar widths off the center.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      // An easier practice graph (`~simpler`) is rebuilt from its parent with the same builder.
+      const parentId = histogramPracticeParent(String(ctx.itemId ?? ''));
+      const parent = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === parentId);
+      const c: any = parent && parentId !== ctx.itemId ? simplerHistogram(parent) : parent;
+      if (!c) throw new Error('No current histogram challenge');
+      const input = histogramHarnessInput(c, intent === 'wrong' ? 'wrong' : 'correct');
+      if (input.kind === 'choose') return [{ type: 'choose', label: input.label }, { type: 'check' }];
+      if (input.kind === 'bar') return [{ type: 'touch', target: `bar-${input.index}` }, { type: 'check' }];
+      return [{ type: 'write', label: 'Your answer', text: input.text }, { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'two-way-table': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/TwoWayTable.tsx',
+    instanceId: 'twt',
+    defaults: { grade: 'Grade 8', mode: 'joint_probability', di: false, topic: 'Probability from two-way tables' },
+    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'NEXT_ITEM', 'ALL_COMPLETE', 'TIER:'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls: a probability typed into "Your answer" and Check. A wrong answer is the
+    // item's signature miss from `twoWayMiss` (the cell out of its own row, a conditional out of everyone, one cell for a
+    // marginal, the observed cell for independence), else 0.3 off.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      // An easier practice table (`~simpler`) is rebuilt from its parent with the same builder.
+      const parentId = twoWayPracticeParent(String(ctx.itemId ?? ''));
+      const parent = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === parentId);
+      const c: any = parent && parentId !== ctx.itemId ? simplerTable(parent) : parent;
+      if (!c) throw new Error('No current two-way-table challenge');
+      return [{ type: 'write', label: 'Your answer', text: twoWayHarnessText(c, intent === 'wrong' ? 'wrong' : 'correct') },
+        { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'coordinate-graph': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/CoordinateGraph.tsx',
+    instanceId: 'coord',
+    defaults: { grade: 'Grade 6', mode: 'plot_point', di: false, topic: 'Ordered pairs on the coordinate plane' },
+    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'NEXT_ITEM', 'ALL_COMPLETE', 'Support tier'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls: plot_point taps the grid crossing on the plane (a one-point pointer stroke
+    // in its viewBox), the other modes tap a choice; the tap is the check. A wrong answer is the item's signature miss
+    // (`coordinateHarnessInput`): x and y swapped or a sign flipped, or the first wrong choice with a named miss.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const grid = { gridMin: ctx.data.gridMin, gridMax: ctx.data.gridMax };
+      // An easier practice item (`~simpler`) is rebuilt from its parent with the same builder.
+      const parentId = coordinatePracticeParent(String(ctx.itemId ?? ''));
+      const parent = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === parentId);
+      const c: any = parent && parentId !== ctx.itemId ? simplerCoordinate(parent, grid) : parent;
+      if (!c) throw new Error('No current coordinate-graph challenge');
+      const input = coordinateHarnessInput(c, intent === 'wrong' ? 'wrong' : 'correct', grid);
+      if (input.kind === 'choose') return [{ type: 'choose', label: input.label }];
+      return [{ type: 'draw', target: 'plane', strokes: [[planePixel(grid.gridMin, grid.gridMax, input.point)]] }];
+    },
+    // The key as the screen prints it: the pair, the slope or the intercept choice. plot_point's pair is its own ask.
+    replayKeys: ctx => {
+      const parentId = coordinatePracticeParent(String(ctx.itemId ?? ''));
+      const parent = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === parentId);
+      const c: any = parent && parentId !== ctx.itemId
+        ? simplerCoordinate(parent, { gridMin: ctx.data.gridMin, gridMax: ctx.data.gridMax }) : parent;
+      return c && c.type !== 'plot_point' ? [coordinateKeyText(c)] : [];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'distribution-explorer': {
+    execution: 'workspace',
+    component: 'primitives/DistributionExplorer.tsx',
+    instanceId: 'distribution',
+    defaults: { grade: 'Grade 11', mode: 'identify', di: false, topic: 'Binomial and Poisson distributions' },
+    leakTokens: ['ACTIVITY_START', 'EXPLORATION_DONE', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'NEXT_CHALLENGE', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls. A choice item: the choice's button (its aria-label), then Check; a wrong
+    // answer is the first other choice on screen. Explore: the first slider moved to a new value (read from the scene's
+    // workbench fact), then Got it; a wrong answer is Got it with nothing moved.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      // An easier practice item (`~simpler`) is rebuilt from its parent with the same builder.
+      const parentId = distributionPracticeParent(String(ctx.itemId ?? ''));
+      const parent = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === parentId);
+      const c: any = parent && parentId !== ctx.itemId ? distributionPracticeItem(parent) : parent;
+      if (!c) throw new Error('No current distribution-explorer challenge');
+      if (c.type === 'guided_exploration') {
+        if (intent === 'wrong') return [{ type: 'choose', label: 'Got it' }];
+        const slider = distributionHarnessSlider(String(ctx.demand?.workbench ?? ''));
+        if (!slider) throw new Error('distribution-explorer explore: no slider in the scene');
+        return [{ type: 'write', label: slider.label, text: slider.text }, { type: 'choose', label: 'Got it' }];
+      }
+      const label = distributionHarnessChoice(c, intent === 'wrong' ? 'wrong' : 'correct');
+      if (!label) throw new Error(`distribution-explorer ${c.type}: no choice to press`);
+      return [{ type: 'choose', label }, { type: 'check' }];
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },

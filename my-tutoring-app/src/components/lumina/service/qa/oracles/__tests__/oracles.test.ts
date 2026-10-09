@@ -1763,13 +1763,13 @@ const hgCenterClean = {
   ],
 };
 
-// identify_shape: expectedShape present in shapeOptions.
+// identify_shape: expectedShape present in shapeOptions, and the drawn bars read as it (`classifyShape`).
 const hgShapeClean = {
   title: 'Shape', description: 'Name the shape.', challengeType: 'identify_shape',
   challenges: [
-    { id: 's1', challengeType: 'identify_shape', data: [3, 4, 5, 5, 5, 6, 7], binWidth: 1, binStart: 3, contextTitle: 'A', xAxisLabel: 'x', yAxisLabel: 'freq', prompt: 'What shape?', expectedShape: 'symmetric', shapeOptions: ['symmetric', 'right-skewed', 'left-skewed', 'uniform'] },
-    { id: 's2', challengeType: 'identify_shape', data: [1, 1, 1, 2, 2, 3, 6], binWidth: 1, binStart: 1, contextTitle: 'B', xAxisLabel: 'x', yAxisLabel: 'freq', prompt: 'What shape?', expectedShape: 'right-skewed', shapeOptions: ['symmetric', 'right-skewed', 'left-skewed', 'uniform'] },
-    { id: 's3', challengeType: 'identify_shape', data: [1, 1, 2, 5, 6, 6], binWidth: 1, binStart: 1, contextTitle: 'C', xAxisLabel: 'x', yAxisLabel: 'freq', prompt: 'What shape?', expectedShape: 'bimodal', shapeOptions: ['bimodal', 'symmetric', 'uniform', 'left-skewed'] },
+    { id: 's1', challengeType: 'identify_shape', data: [5, 15, 15, 25, 25, 25, 25, 35, 35, 35, 35, 35, 35, 35, 45, 45, 45, 45, 45, 45, 45, 45, 45, 55, 55, 55, 55, 55, 55, 55, 55, 55, 65, 65, 65, 65, 65, 65, 65, 75, 75, 75, 75, 85, 85, 95], binWidth: 10, binStart: 0, contextTitle: 'A', xAxisLabel: 'x', yAxisLabel: 'freq', prompt: 'What shape?', expectedShape: 'symmetric', shapeOptions: ['symmetric', 'right-skewed', 'left-skewed', 'uniform'] },
+    { id: 's2', challengeType: 'identify_shape', data: [5, 5, 5, 5, 5, 5, 5, 5, 5, 15, 15, 15, 15, 15, 15, 15, 15, 25, 25, 25, 25, 25, 25, 35, 35, 35, 35, 45, 45, 45, 55, 55, 65, 75, 85], binWidth: 10, binStart: 0, contextTitle: 'B', xAxisLabel: 'x', yAxisLabel: 'freq', prompt: 'What shape?', expectedShape: 'right-skewed', shapeOptions: ['symmetric', 'right-skewed', 'left-skewed', 'uniform'] },
+    { id: 's3', challengeType: 'identify_shape', data: [5, 15, 15, 15, 15, 25, 25, 25, 25, 25, 25, 25, 35, 35, 35, 35, 45, 55, 65, 65, 65, 65, 75, 75, 75, 75, 75, 75, 75, 85, 85, 85, 85, 95], binWidth: 10, binStart: 0, contextTitle: 'C', xAxisLabel: 'x', yAxisLabel: 'freq', prompt: 'What shape?', expectedShape: 'bimodal', shapeOptions: ['bimodal', 'symmetric', 'uniform', 'left-skewed'] },
   ],
 };
 
@@ -1820,6 +1820,20 @@ describe('histogram oracle', () => {
     data.challenges[0].expectedShape = 'bimodal'; // options don't include bimodal
     const v = histogramOracle.verify(data, hgShapeCtx).violations;
     expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 's1' && /unselectable/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-key-desync — the drawn bars read as another shape than the key', () => {
+    const data = JSON.parse(JSON.stringify(hgShapeClean));
+    data.challenges[1].expectedShape = 'left-skewed'; // the bars trail off to the right
+    const v = histogramOracle.verify(data, hgShapeCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 's2' && /read as "right-skewed"/.test(x.detail))).toBe(true);
+  });
+
+  it('a value on the axis maximum is in the top bar (the read count includes it)', () => {
+    const data = JSON.parse(JSON.stringify(hgFreqClean));
+    data.challenges[0] = { ...data.challenges[0], data: [5, 95, 100, 100], binWidth: 10, binStart: 0, targetBinStart: 90, targetBinEnd: 100, targetFrequency: 3 };
+    const v = histogramOracle.verify(data, hgFreqCtx).violations;
+    expect(v.filter((x) => x.where === 'f1')).toEqual([]);
   });
 
   it('flags scope — an eval-mode identity mismatch', () => {
