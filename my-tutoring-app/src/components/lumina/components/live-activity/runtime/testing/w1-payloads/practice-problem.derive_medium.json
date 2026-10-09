@@ -1,0 +1,94 @@
+{
+ "source": "qa/tutor-reports/practice-problem-runtime-derive_medium-payload-2026-10-09.json",
+ "primitiveId": "practice-problem",
+ "evalMode": "derive_medium",
+ "data": {
+  "title": "Calculating Geodesic Pavilion Support Struts",
+  "subject": "Algebra",
+  "problem": {
+   "statement": "An architectural firm is designing a modern geodesic pavilion where the total budget for structural reinforcement is allocated across a base infrastructure fee and customized support struts. The firm incurs a fixed overhead cost of \\$4,500 for site preparation, and each manufactured strut incurs an additional variable fabrication cost of \\$125. If the total project expenditure reaches \\$11,875, determine the exact quantity of support struts manufactured by setting up and solving a linear equation.",
+   "inset": {
+    "insetType": "equation-setup",
+    "scenario": "Determining the number of customized support struts manufactured based on fixed overhead site preparation and variable fabrication costs that equal the total project expenditure.",
+    "quantities": [
+     {
+      "symbol": "s",
+      "meaning": "number of support struts manufactured"
+     },
+     {
+      "symbol": "C",
+      "meaning": "fixed overhead cost for site preparation in dollars",
+      "knownValue": "4500"
+     },
+     {
+      "symbol": "v",
+      "meaning": "variable fabrication cost per strut in dollars",
+      "knownValue": "125"
+     },
+     {
+      "symbol": "T",
+      "meaning": "total project expenditure in dollars",
+      "knownValue": "11875"
+     }
+    ],
+    "target": {
+     "symbol": "s",
+     "meaning": "exact quantity of support struts manufactured"
+    },
+    "canonicalEquation": "125s + 4500 = 11875",
+    "distractorEquations": [
+     {
+      "equation": "4500s + 125 = 11875",
+      "misconception": "Swapped operands by incorrectly applying the variable cost rate to the fixed overhead and treating the unit cost as a standalone constant."
+     },
+     {
+      "equation": "125s - 4500 = 11875",
+      "misconception": "Applied a sign flip by subtracting the fixed overhead cost instead of adding it to the total variable expenses."
+     },
+     {
+      "equation": "s + 4500 = 11875",
+      "misconception": "Dropped the coefficient representing the variable cost per strut, treating each strut as contributing only one unit of value."
+     }
+    ],
+    "rationale": "The total expenditure is equal to the sum of the fixed site preparation overhead and the product of the variable cost per strut and the total number of struts manufactured.",
+    "acceptableForms": [
+     "125s + 4500 = 11875",
+     "4500 + 125s = 11875",
+     "11875 = 125s + 4500"
+    ],
+    "label": "Equation Setup"
+   }
+  },
+  "solutionStrategy": "Isolate the variable term by applying inverse operations in reverse order of operations to determine the exact quantity.",
+  "canonicalAnswer": "s = 59",
+  "steps": [
+   {
+    "id": 0,
+    "title": "Set up the linear equation",
+    "type": "algebra",
+    "canonicalBody": "125s + 4500 = 11875 -> [translate problem constraints] -> 125s + 4500 = 11875",
+    "strategy": "Translate the real-world architectural costs and constraints into a mathematical model.",
+    "misconceptions": "Confusing the fixed overhead cost with the variable fabrication cost per strut."
+   },
+   {
+    "id": 1,
+    "title": "Isolate the variable term",
+    "type": "algebra",
+    "canonicalBody": "125s + 4500 = 11875 -> [subtract 4500 from both sides] -> 125s = 7375",
+    "strategy": "Use the inverse operation of addition to remove the fixed site preparation fee from the left side.",
+    "misconceptions": "Forgetting to subtract the fixed cost from the total expenditure on the right side."
+   },
+   {
+    "id": 2,
+    "title": "Solve for the number of struts",
+    "type": "algebra",
+    "canonicalBody": "125s = 7375 -> [divide both sides by 125] -> s = 59",
+    "strategy": "Use the inverse operation of multiplication to isolate the variable representing the number of support struts.",
+    "misconceptions": "Dividing the total expenditure instead of the remaining cost after subtracting the overhead."
+   }
+  ],
+  "difficulty": "medium",
+  "evalMode": "derive_medium",
+  "gradeLevel": "middle school students (grades 6-8) - Use more complex vocabulary, abstract concepts, real-world applications, and critical thinking opportunities. Encourage deeper analysis."
+ }
+}

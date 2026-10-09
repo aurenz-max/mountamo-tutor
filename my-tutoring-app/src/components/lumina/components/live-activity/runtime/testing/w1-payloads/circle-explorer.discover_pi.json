@@ -1,0 +1,69 @@
+{
+ "source": "qa/tutor-reports/circle-explorer-runtime-discover_pi-payload-2026-10-09.json",
+ "primitiveId": "circle-explorer",
+ "evalMode": "discover_pi",
+ "data": {
+  "title": "Unveiling the Constant of Circular Proportions",
+  "description": "Analyze the proportional relationship between a circle's perimeter and its linear span by measuring and comparing dimensions across multiple figures to discover the foundation of pi.",
+  "challengeType": "discover_pi",
+  "gradeBand": "7",
+  "challenges": [
+   {
+    "type": "discover_pi",
+    "narration": "A clock face is shaped like this circle.",
+    "instruction": "Unroll the circumference, then find how many diameters fit around: C \u00f7 d.",
+    "hint": "Divide the circumference by the diameter. For EVERY circle this ratio is the same \u2014 a little more than 3.",
+    "unitLabel": "cm",
+    "radius": 3,
+    "given": "diameter",
+    "usePiApprox": true,
+    "answerKind": "ratio",
+    "expectedAnswer": 3.14,
+    "tolerance": 0.15,
+    "id": "ce-1"
+   },
+   {
+    "type": "discover_pi",
+    "narration": "A clock face is shaped like this circle.",
+    "instruction": "Unroll the circumference, then find how many diameters fit around: C \u00f7 d.",
+    "hint": "Divide the circumference by the diameter. For EVERY circle this ratio is the same \u2014 a little more than 3.",
+    "unitLabel": "in",
+    "radius": 6,
+    "given": "diameter",
+    "usePiApprox": true,
+    "answerKind": "ratio",
+    "expectedAnswer": 3.14,
+    "tolerance": 0.15,
+    "id": "ce-2"
+   },
+   {
+    "type": "discover_pi",
+    "narration": "A bike wheel is shaped like this circle.",
+    "instruction": "Unroll the circumference, then find how many diameters fit around: C \u00f7 d.",
+    "hint": "Divide the circumference by the diameter. For EVERY circle this ratio is the same \u2014 a little more than 3.",
+    "unitLabel": "cm",
+    "radius": 8,
+    "given": "diameter",
+    "usePiApprox": true,
+    "answerKind": "ratio",
+    "expectedAnswer": 3.14,
+    "tolerance": 0.15,
+    "id": "ce-3"
+   },
+   {
+    "type": "discover_pi",
+    "narration": "A round pond is shaped like this circle.",
+    "instruction": "Unroll the circumference, then find how many diameters fit around: C \u00f7 d.",
+    "hint": "Divide the circumference by the diameter. For EVERY circle this ratio is the same \u2014 a little more than 3.",
+    "unitLabel": "cm",
+    "radius": 9,
+    "given": "diameter",
+    "usePiApprox": true,
+    "answerKind": "ratio",
+    "expectedAnswer": 3.14,
+    "tolerance": 0.15,
+    "id": "ce-4"
+   }
+  ]
+ }
+}

@@ -19,18 +19,25 @@ import { numberTracerLiveDomain } from './adapters/numberTracerLive';
 import { shapeTracerLiveDomain } from './adapters/shapeTracerLive';
 import { comparisonBuilderLiveDomain } from './adapters/comparisonBuilderLive';
 import { coinCounterLiveDomain } from './adapters/coinCounterLive';
+import { functionMachineLiveDomain } from './adapters/functionMachineLive';
 import { regroupingWorkbenchLiveDomain } from './adapters/regroupingWorkbenchLive';
 import { measureLabLiveDomain } from './adapters/measureLabLive';
 import { measurementToolsLiveDomain } from './adapters/measurementToolsLive';
 import { areaModelLiveDomain } from './adapters/areaModelLive';
 import { percentBarLiveDomain } from './adapters/percentBarLive';
+import { formulaLabLiveDomain } from './adapters/formulaLabLive';
 import { ratioTableLiveDomain } from './adapters/ratioTableLive';
+import { circleExplorerLiveDomain } from './adapters/circleExplorerLive';
 import { doubleNumberLineLiveDomain } from './adapters/doubleNumberLineLive';
 import { factorTreeLiveDomain } from './adapters/factorTreeLive';
+import { equationWorkspaceLiveDomain } from './adapters/equationWorkspaceLive';
+import { practiceProblemLiveDomain } from './adapters/practiceProblemLive';
 import { lengthLabLiveDomain } from './adapters/lengthLabLive';
 import { analogClockLiveDomain } from './adapters/analogClockLive';
 import { timeSequencerLiveDomain } from './adapters/timeSequencerLive';
 import { angleWorkshopLiveDomain } from './adapters/angleWorkshopLive';
+import { transformationLabLiveDomain } from './adapters/transformationLabLive';
+import { netFolderLiveDomain } from './adapters/netFolderLive';
 import { arrayGridLiveDomain } from './adapters/arrayGridLive';
 import { multiplicationExplorerLiveDomain } from './adapters/multiplicationExplorerLive';
 import { compareObjectsLiveDomain } from './adapters/compareObjectsLive';
@@ -143,18 +150,25 @@ export const LIVE_ADAPTERS = {
   'shape-tracer': workspaceAdapter('shape-tracer', shapeTracerLiveDomain),
   'comparison-builder': workspaceAdapter('comparison-builder', comparisonBuilderLiveDomain),
   'coin-counter': workspaceAdapter('coin-counter', coinCounterLiveDomain),
+  'function-machine': workspaceAdapter('function-machine', functionMachineLiveDomain),
   'regrouping-workbench': workspaceAdapter('regrouping-workbench', regroupingWorkbenchLiveDomain),
   'measure-lab': workspaceAdapter('measure-lab', measureLabLiveDomain),
   'measurement-tools': workspaceAdapter('measurement-tools', measurementToolsLiveDomain),
   'area-model': workspaceAdapter('area-model', areaModelLiveDomain),
   'percent-bar': workspaceAdapter('percent-bar', percentBarLiveDomain),
+  'formula-lab': workspaceAdapter('formula-lab', formulaLabLiveDomain),
   'ratio-table': workspaceAdapter('ratio-table', ratioTableLiveDomain),
+  'circle-explorer': workspaceAdapter('circle-explorer', circleExplorerLiveDomain),
   'double-number-line': workspaceAdapter('double-number-line', doubleNumberLineLiveDomain),
   'factor-tree': workspaceAdapter('factor-tree', factorTreeLiveDomain),
+  'equation-workspace': workspaceAdapter('equation-workspace', equationWorkspaceLiveDomain),
+  'practice-problem': workspaceAdapter('practice-problem', practiceProblemLiveDomain),
   'length-lab': workspaceAdapter('length-lab', lengthLabLiveDomain),
   'analog-clock': workspaceAdapter('analog-clock', analogClockLiveDomain),
   'time-sequencer': workspaceAdapter('time-sequencer', timeSequencerLiveDomain),
   'angle-workshop': workspaceAdapter('angle-workshop', angleWorkshopLiveDomain),
+  'transformation-lab': workspaceAdapter('transformation-lab', transformationLabLiveDomain),
+  'net-folder': workspaceAdapter('net-folder', netFolderLiveDomain),
   'array-grid': workspaceAdapter('array-grid', arrayGridLiveDomain),
   'multiplication-explorer': workspaceAdapter('multiplication-explorer', multiplicationExplorerLiveDomain),
   'compare-objects': workspaceAdapter('compare-objects', compareObjectsLiveDomain),

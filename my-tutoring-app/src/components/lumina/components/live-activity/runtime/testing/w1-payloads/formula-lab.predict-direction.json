@@ -1,0 +1,123 @@
+{
+ "source": "qa/tutor-reports/formula-lab-runtime-predict-direction-payload-2026-10-09.json",
+ "primitiveId": "formula-lab",
+ "evalMode": "predict-direction",
+ "data": {
+  "title": "Force and Motion Formula Lab",
+  "description": "Explore, represent, and apply how changing mass or acceleration changes force in a living system.",
+  "context": "Newton's second law models the net force on an object as the product of its mass and acceleration.",
+  "transferContext": "A different cart uses the same mass-times-acceleration relationship to determine the force needed for its motion.",
+  "formulaLatex": "F = m \\cdot a",
+  "expression": "m * a",
+  "outputSymbol": "F",
+  "outputName": "Force",
+  "outputUnit": "N",
+  "variables": [
+   {
+    "symbol": "m",
+    "name": "Mass",
+    "unit": "kg",
+    "min": 1,
+    "max": 12,
+    "step": 1,
+    "defaultValue": 4,
+    "accent": "amber"
+   },
+   {
+    "symbol": "a",
+    "name": "Acceleration",
+    "unit": "m/s^2",
+    "min": 1,
+    "max": 10,
+    "step": 1,
+    "defaultValue": 3,
+    "accent": "cyan"
+   }
+  ],
+  "sceneKind": "motion",
+  "challengeType": "predict-direction",
+  "gradeBand": "6-12",
+  "challenges": [
+   {
+    "id": "formula-lab-1",
+    "type": "predict-direction",
+    "changedVariableSymbol": "m",
+    "baselineValues": [
+     7,
+     3
+    ],
+    "targetValues": [
+     10,
+     3
+    ],
+    "expectedBaselineOutput": 21,
+    "expectedTargetOutput": 30,
+    "correctDirection": "increase"
+   },
+   {
+    "id": "formula-lab-2",
+    "type": "predict-direction",
+    "changedVariableSymbol": "m",
+    "baselineValues": [
+     10,
+     10
+    ],
+    "targetValues": [
+     4,
+     10
+    ],
+    "expectedBaselineOutput": 100,
+    "expectedTargetOutput": 40,
+    "correctDirection": "decrease"
+   },
+   {
+    "id": "formula-lab-3",
+    "type": "predict-direction",
+    "changedVariableSymbol": "a",
+    "baselineValues": [
+     3,
+     2
+    ],
+    "targetValues": [
+     3,
+     4
+    ],
+    "expectedBaselineOutput": 6,
+    "expectedTargetOutput": 12,
+    "correctDirection": "increase"
+   },
+   {
+    "id": "formula-lab-4",
+    "type": "predict-direction",
+    "changedVariableSymbol": "a",
+    "baselineValues": [
+     12,
+     3
+    ],
+    "targetValues": [
+     12,
+     10
+    ],
+    "expectedBaselineOutput": 36,
+    "expectedTargetOutput": 120,
+    "correctDirection": "increase"
+   },
+   {
+    "id": "formula-lab-5",
+    "type": "predict-direction",
+    "changedVariableSymbol": "m",
+    "baselineValues": [
+     1,
+     10
+    ],
+    "targetValues": [
+     4,
+     10
+    ],
+    "expectedBaselineOutput": 10,
+    "expectedTargetOutput": 40,
+    "correctDirection": "increase"
+   }
+  ]
+ }
+}

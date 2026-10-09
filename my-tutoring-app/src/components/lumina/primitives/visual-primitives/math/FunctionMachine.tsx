@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import {
   LuminaCard,
   LuminaCardHeader,
@@ -17,15 +17,29 @@ import {
 } from '../../../evaluation';
 import type { FunctionMachineMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress, type ChallengeResult } from '../../../hooks/useChallengeProgress';
+import type { ChallengeResult } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import {
   evaluateRule, rulesEquivalent, makeRuleKeys, MAKE_RULE_MAX_TILES, MAKE_RULE_WAYS, judgeMakeRule, makeRuleMissWords,
   makeRuleAsk, makeRuleTarget, compareInput, showRule as ruleText, type MakeRuleMiss,
 } from './functionMachineDomain';
+import {
+  CHECK_PAIRS_LEVER, MODEL_LEVER, OUTPUT_STEPS_LEVER, PRACTICE_NOTE, RUN_MACHINE_LEVER, SHAPES_LEVER, STEP_ORDER_LEVER,
+  isPracticeMachine, leverFacts, machineLevers, machineModel, machineRun, machineShapes, outputSteps, pairMarks,
+  ruleDisplay, ruleSteps, simplerMachine, substituted, type MachineLeverContext,
+} from './functionMachineLevers';
+import {
+  describeGuess, describeMachine, describeObserve, describePrediction, guessMiss, predictMiss, workspaceAssignment,
+  workspaceScene, type FunctionMachineView,
+} from './functionMachineWorkspace';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -160,9 +174,30 @@ const tutorRevealClause = (
 interface FunctionMachineProps {
   data: FunctionMachineData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
-const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) => {
+/** A number fed into the machine: in the hopper, then (after a beat) out of the chute. Display only. */
+interface Flight { input: number; output: number | null }
+
+/** What the pulled help levers draw (`functionMachineLevers.ts`). */
+interface LeverShow {
+  model: ReturnType<typeof machineModel>;
+  steps: [string, string] | null;
+  marks: ReturnType<typeof pairMarks>;
+  lastGuess: string;
+  changes: ReturnType<typeof outputSteps>;
+  run: string[] | null;
+  lastMachine: string;
+  shapes: string[] | null;
+}
+
+const FunctionMachineSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  FunctionMachineProps & { tutorOwned: boolean; useController: (options: ProgressOptions<FunctionMachineChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -189,20 +224,47 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
   const recordedRef = useRef(false);
 
   // -------------------------------------------------------------------------
-  // Challenge Progress (shared hook)
+  // Challenge Progress. On the workspace path the runtime moves the index.
   // -------------------------------------------------------------------------
+  // Bound below, once the setters and the evaluation exist.
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: (ch) => workspaceAssignment(ch, challengeType),
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onFinished: (result) => finish.current(result),
+  });
   const {
     currentIndex,
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
     advance,
-  } = useChallengeProgress<FunctionMachineChallenge>({
-    challenges,
-    getChallengeId: (ch) => ch.id,
-  });
+  } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  const learnerBlocked = () => workspaceClosed.current;
+  // The activity's own check is the workspace's checked gesture. A ref, so the check callbacks keep their deps.
+  const commitCheck = useRef(progress.commitCheck);
+  commitCheck.current = progress.commitCheck;
 
-  const currentChallenge = challenges[currentIndex];
+  // Levers (`functionMachineLevers.ts`), keyed by the session item they were pulled on, and the easier practice machine
+  // a simplify lever put on screen in its place.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<FunctionMachineChallenge | null>(null);
+  const sessionChallenge = challenges[currentIndex];
+  /** What is on screen: the practice machine while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  /** A runtime pull on the session item; never drawn on a practice machine. */
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
+  // The last rule / machine the learner checked on this item (the check_pairs and run_machine levers work on it).
+  const [lastGuess, setLastGuess] = useState('');
+  const [lastMachine, setLastMachine] = useState<string[]>([]);
 
   // -------------------------------------------------------------------------
   // Phase Results (shared hook) — uses per-challenge `score` field via getScore
@@ -227,9 +289,8 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
   // State — all reset on currentChallenge.id change.
   // -------------------------------------------------------------------------
   const [processedPairs, setProcessedPairs] = useState<Array<{ input: number; output: number }>>([]);
-  const [currentInput, setCurrentInput] = useState<number | null>(null);
-  const [currentOutput, setCurrentOutput] = useState<number | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [flight, setFlight] = useState<Flight | null>(null);
+  const flightTimers = useRef<Array<ReturnType<typeof setTimeout>>>([]);
   const [availableInputs, setAvailableInputs] = useState<number[]>(currentChallenge?.inputQueue ?? []);
 
   // Predict-mode state
@@ -253,38 +314,44 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
   const [makeMisses, setMakeMisses] = useState(0);
   const [makeVerdict, setMakeVerdict] = useState<{ kind: 'pass' | 'way' | MakeRuleMiss; words: string; gave: number | null } | null>(null);
 
+  const stopFlight = useCallback(() => {
+    flightTimers.current.forEach(clearTimeout);
+    flightTimers.current = [];
+    setFlight(null);
+  }, []);
+  useEffect(() => () => { flightTimers.current.forEach(clearTimeout); }, []);
+
   // -------------------------------------------------------------------------
-  // Per-challenge reset effect — runs whenever advance() flips currentChallenge.id
+  // Per-challenge reset: the scripted path runs it whenever the index moves to a new challenge; the workspace path
+  // runs it from `onItemOpened`, in the same render as the item change, so no stale scene is published for the item.
   // -------------------------------------------------------------------------
-  useEffect(() => {
-    if (!currentChallenge) return;
+  const resetForChallenge = (challenge: FunctionMachineChallenge | undefined) => {
+    if (!challenge) return;
     // discover_rule support tier may PRE-REVEAL some I/O pairs (easy = more, hard =
     // fewer). These are tier-derived; they MUST be seeded here so they reset per rule
     // and never leak across challenges. The rule itself stays hidden (mode identity).
     const prefill =
-      currentChallenge.showRule === false &&
+      challenge.showRule === false &&
       challengeType === 'discover_rule' &&
-      currentChallenge.prefilledPairCount != null
-        ? Math.min(currentChallenge.prefilledPairCount, currentChallenge.inputQueue.length)
+      challenge.prefilledPairCount != null
+        ? Math.min(challenge.prefilledPairCount, challenge.inputQueue.length)
         : 0;
     if (prefill > 0) {
       const seeded: Array<{ input: number; output: number }> = [];
-      const seededInputs = currentChallenge.inputQueue.slice(0, prefill);
+      const seededInputs = challenge.inputQueue.slice(0, prefill);
       for (const input of seededInputs) {
-        const output = evaluateRule(currentChallenge.rule, input);
+        const output = evaluateRule(challenge.rule, input);
         if (output !== null) seeded.push({ input, output });
       }
       setProcessedPairs(seeded);
       setAvailableInputs(
-        currentChallenge.inputQueue.filter((v) => !seededInputs.includes(v)),
+        challenge.inputQueue.filter((v) => !seededInputs.includes(v)),
       );
     } else {
       setProcessedPairs([]);
-      setAvailableInputs(currentChallenge.inputQueue);
+      setAvailableInputs(challenge.inputQueue);
     }
-    setCurrentInput(null);
-    setCurrentOutput(null);
-    setIsProcessing(false);
+    stopFlight();
     setPrediction('');
     setPredictionFeedback(null);
     setPredictionsCorrect(0);
@@ -297,8 +364,25 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
     setMadeMachines([]);
     setMakeMisses(0);
     setMakeVerdict(null);
+    setLastGuess('');
+    setLastMachine([]);
     recordedRef.current = false;
-  }, [currentChallenge?.id]);
+  };
+  useEffect(() => {
+    if (!tutorOwned) resetForChallenge(currentChallenge);
+  }, [currentChallenge?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Workspace path. A fresh item (or the full item back after a practice machine) resets everything. Try again after
+  // a checked miss clears the typed prediction or rule and keeps a practice machine; pairs already fed stay (they are
+  // data, not the answer). make_rule keeps its row and verdict, so the learner revises the machine.
+  openItem.current = (index, retry) => {
+    if (!retry) { setPractice(null); resetForChallenge(challenges[index]); return; }
+    stopFlight();
+    setPrediction('');
+    setPredictionFeedback(null);
+    setGuessedRule('');
+    setGuessResult(null);
+  };
 
   const makeTarget = challengeType === 'make_rule' && currentChallenge ? makeRuleTarget(currentChallenge) : null;
 
@@ -341,7 +425,7 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
   });
 
   // -------------------------------------------------------------------------
-  // AI Tutoring
+  // AI Tutoring (scripted path only: its context carries the rule)
   // -------------------------------------------------------------------------
   const aiPrimitiveData = useMemo(() => ({
     challengeType,
@@ -373,12 +457,17 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
     predictionsTotal, guessAttempts, guessResult, makeTarget?.input, makeTarget?.output, makeRow, madeMachines,
   ]);
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  // Its context carries the rule, so it is off on the workspace path, and its scripted cues send nothing there.
+  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'function-machine',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: gradeLabel(gradeBand),
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   // Introduction (once per session)
   const hasIntroducedRef = useRef(false);
@@ -397,53 +486,53 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
   }, [isConnected]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // -------------------------------------------------------------------------
-  // Process value through the machine (observe / predict / discover_rule)
+  // Feed a value through the machine (observe / predict / discover_rule). The pair is recorded at once; the hopper
+  // and chute animation that follows is display only, so a quick second feed is never lost.
   // -------------------------------------------------------------------------
-  const processValue = useCallback(async (input: number) => {
-    if (isProcessing || !currentChallenge) return;
-    SoundManager.tap();           // ← tactile feed of an input into the machine
-    setIsProcessing(true);
-    setCurrentInput(input);
-    setCurrentOutput(null);
-
-    await new Promise((resolve) => setTimeout(resolve, 600));
-
+  const processValue = useCallback((input: number) => {
+    if (!currentChallenge || learnerBlocked()) return;
     const output = evaluateRule(currentChallenge.rule, input);
-    if (output === null) {
-      setIsProcessing(false);
-      setCurrentInput(null);
-      return;
-    }
+    if (output === null) return;
+    if (challengeType === 'predict' && !prediction.trim()) return;
+    SoundManager.tap();           // ← tactile feed of an input into the machine
 
     // Predict-mode: judge the prediction BEFORE revealing the output.
-    let predictionWasCorrect: boolean | null = null;
-    if (challengeType === 'predict' && prediction.trim()) {
+    if (challengeType === 'predict') {
       const predicted = parseFloat(prediction);
-      predictionWasCorrect = !isNaN(predicted) && Math.abs(predicted - output) < 0.01;
-      setPredictionFeedback(predictionWasCorrect ? 'correct' : 'incorrect');
+      const right = !isNaN(predicted) && Math.abs(predicted - output) < 0.01;
+      setPredictionFeedback(right ? 'correct' : 'incorrect');
       setPredictionsTotal((t) => t + 1);
-      if (predictionWasCorrect) setPredictionsCorrect((c) => c + 1);
-      if (predictionWasCorrect) SoundManager.playCorrect();
+      if (right) setPredictionsCorrect((c) => c + 1);
+      if (right) SoundManager.playCorrect();
       else SoundManager.playIncorrect();
-      if (predictionWasCorrect) {
+      if (tutorOwned) {
+        // Workspace path: a wrong prediction is a checked miss and the output stays hidden until the learner gets
+        // it; the item's success is the last input predicted right.
+        if (!right) {
+          commitCheck.current(describePrediction(input, prediction), false, predictMiss(currentChallenge.rule, input, prediction));
+          return;
+        }
+        if (availableInputs.length === 1 && availableInputs[0] === input) {
+          commitCheck.current(describePrediction(input, prediction), true);
+        }
+      } else if (right) {
         sendText(`[PREDICTION_CORRECT] Student predicted ${predicted} for input ${input}. Output ${output}. Celebrate briefly.`, { silent: true });
       } else {
         sendText(`[PREDICTION_INCORRECT] Student predicted ${predicted} for input ${input}, actual output ${output}. ${tutorRevealClause('predict', supportTier)} Encourage and hint at the pattern.`, { silent: true });
       }
     }
 
-    setCurrentOutput(output);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
     setProcessedPairs((prev) => [...prev, { input, output }]);
     setAvailableInputs((prev) => prev.filter((v) => v !== input));
     setPrediction('');
 
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    setCurrentInput(null);
-    setCurrentOutput(null);
-    setIsProcessing(false);
-  }, [isProcessing, currentChallenge, challengeType, prediction, sendText, supportTier]);
+    flightTimers.current.forEach(clearTimeout);
+    setFlight({ input, output: null });
+    flightTimers.current = [
+      setTimeout(() => setFlight({ input, output }), 600),
+      setTimeout(() => setFlight(null), 1400),
+    ];
+  }, [currentChallenge, challengeType, prediction, availableInputs, sendText, supportTier, tutorOwned]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // -------------------------------------------------------------------------
   // Completion helpers — each mode has its own submit, all share stale-state guard
@@ -452,6 +541,8 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
   /** Stale-state guard: only record when the local state belongs to the active challenge. */
   const completeCurrentChallenge = useCallback((result: ChallengeResult) => {
     if (!currentChallenge) return;
+    // A practice machine (a simplify lever) is not the session's challenge: it records nothing and shows no interstitial.
+    if (isPracticeMachine(currentChallenge)) return;
     if (recordedRef.current) return;
     if (result.challengeId !== currentChallenge.id) return;
     recordedRef.current = true;
@@ -461,10 +552,11 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
 
   /** observe: complete on "Continue" button after >=3 pairs observed. */
   const completeObserve = useCallback(() => {
-    if (!currentChallenge) return;
+    if (!currentChallenge || learnerBlocked()) return;
     const pairsObserved = processedPairs.length;
     const allInputsUsed = availableInputs.length === 0;
     const score = allInputsUsed ? 100 : pairsObserved >= 3 ? 85 : 60;
+    commitCheck.current(describeObserve(pairsObserved), true);
     completeCurrentChallenge({
       challengeId: currentChallenge.id,
       correct: true,
@@ -476,12 +568,12 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
       `[PHASE_COMPLETE] Observe rule "${currentChallenge.rule}" complete with ${pairsObserved} pairs observed. Encourage moving to the next function.`,
       { silent: true },
     );
-  }, [currentChallenge, processedPairs.length, availableInputs.length, completeCurrentChallenge, sendText]);
+  }, [currentChallenge, processedPairs.length, availableInputs.length, completeCurrentChallenge, sendText]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /** predict: complete when all inputs have been predicted. */
   useEffect(() => {
     if (challengeType !== 'predict') return;
-    if (!currentChallenge) return;
+    if (!currentChallenge || isPracticeMachine(currentChallenge)) return;
     if (recordedRef.current) return;
     if (availableInputs.length !== 0) return;
     if (predictionsTotal === 0) return;
@@ -490,7 +582,8 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
     const score = Math.round((predictionsCorrect / predictionsTotal) * 100);
     completeCurrentChallenge({
       challengeId: currentChallenge.id,
-      correct: predictionsCorrect === predictionsTotal,
+      // Workspace path: every input was predicted right in the end (a miss reopens the same input).
+      correct: tutorOwned || predictionsCorrect === predictionsTotal,
       attempts: predictionsTotal,
       score,
       predictionsCorrect,
@@ -502,20 +595,24 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
     );
   }, [
     challengeType, currentChallenge, availableInputs.length, predictionsTotal,
-    predictionsCorrect, processedPairs.length, completeCurrentChallenge, sendText,
+    predictionsCorrect, processedPairs.length, completeCurrentChallenge, sendText, tutorOwned,
   ]);
 
   /** discover_rule / create_rule: complete on correct rule guess. */
   const checkRuleGuess = useCallback(() => {
-    if (!currentChallenge) return;
+    if (!currentChallenge || learnerBlocked()) return;
     if (!guessedRule.trim()) return;
     const nextAttempts = guessAttempts + 1;
     setGuessAttempts(nextAttempts);
+    setLastGuess(guessedRule);
 
     const isCorrect = rulesEquivalent(guessedRule, currentChallenge.rule);
     setGuessResult(isCorrect ? 'correct' : 'incorrect');
     if (isCorrect) SoundManager.playCorrect();
     else SoundManager.playIncorrect();
+    const shown = challengeType === 'create_rule' ? createRulePairs : processedPairs;
+    commitCheck.current(describeGuess(guessedRule), isCorrect,
+      isCorrect ? undefined : guessMiss(guessedRule, currentChallenge.rule, shown));
 
     if (isCorrect) {
       const score = phaseScore(nextAttempts);
@@ -536,36 +633,38 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
         { silent: true },
       );
     }
-  }, [currentChallenge, guessedRule, guessAttempts, challengeType, processedPairs, completeCurrentChallenge, sendText, supportTier]);
+  }, [currentChallenge, guessedRule, guessAttempts, challengeType, processedPairs, createRulePairs, completeCurrentChallenge, sendText, supportTier]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // -------------------------------------------------------------------------
   // make_rule (open build): tap tiles into the row, tap a row tile to take it out, "I'm done!" runs the machine.
   // -------------------------------------------------------------------------
   const addMakeTile = useCallback((tile: string) => {
-    if (challengeDone) return;
+    if (challengeDone || learnerBlocked()) return;
     SoundManager.tap();
     setMakeRow((row) => (row.length >= MAKE_RULE_MAX_TILES ? row : [...row, tile]));
-  }, [challengeDone]);
+  }, [challengeDone]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const removeMakeTile = useCallback((index: number) => {
-    if (challengeDone) return;
+    if (challengeDone || learnerBlocked()) return;
     setMakeRow((row) => row.filter((_, i) => i !== index));
-  }, [challengeDone]);
+  }, [challengeDone]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /**
    * "I'm done!": the machine runs the learner's rule on the asked input. A first accepted machine is kept on screen
    * and the row opens empty for the second; a miss keeps the row (Try again revises it); the second accepted machine
-   * completes the item.
+   * completes the item. Only a miss and the item's last machine are checked commits: the first machine is progress.
    */
   const handleMakeDone = useCallback(() => {
-    if (!currentChallenge || !makeTarget || makeRow.length === 0 || challengeDone) return;
+    if (!currentChallenge || !makeTarget || makeRow.length === 0 || challengeDone || learnerBlocked()) return;
     const { input, output } = makeTarget;
     const verdict = judgeMakeRule(makeRow, input, output, madeMachines.map((m) => m.rule));
     const built = ruleText(makeRow);
     if (verdict.miss) {
       SoundManager.playIncorrect();
       setMakeMisses((n) => n + 1);
+      setLastMachine([...makeRow]);
       setMakeVerdict({ kind: verdict.miss, words: makeRuleMissWords(verdict, input, output), gave: verdict.gave });
+      commitCheck.current(describeMachine(makeRow, input, verdict.gave), false, verdict.miss);
       sendText(
         `[MACHINE_CHECKED] The learner built f(x) = ${built} and pressed I'm done. `
         + (verdict.gave === null ? 'The machine could not run it. ' : `Fed ${input}, it gave ${verdict.gave}. `)
@@ -590,6 +689,7 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
     }
     setMakeVerdict({ kind: 'pass', words: `Two different machines, and both turn ${input} into ${output}!`, gave: verdict.gave });
     const attempts = makeMisses + 1;
+    commitCheck.current(describeMachine(makeRow, input, verdict.gave), true);
     completeCurrentChallenge({
       challengeId: currentChallenge.id,
       correct: true,
@@ -602,12 +702,13 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
       + `${makeMisses} miss(es) on the way. Celebrate that two different rules can share one input-output pair.`,
       { silent: true },
     );
-  }, [currentChallenge, makeTarget, makeRow, madeMachines, makeMisses, challengeDone, completeCurrentChallenge, sendText]);
+  }, [currentChallenge, makeTarget, makeRow, madeMachines, makeMisses, challengeDone, completeCurrentChallenge, sendText]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // -------------------------------------------------------------------------
-  // Submit aggregate evaluation when all challenges complete
+  // Submit aggregate evaluation when all challenges complete (scripted path; the workspace submits from onFinished)
   // -------------------------------------------------------------------------
   useEffect(() => {
+    if (tutorOwned) return;
     if (!allChallengesComplete) return;
     if (hasSubmittedEvaluation) return;
 
@@ -652,8 +753,89 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
     );
   }, [
     allChallengesComplete, hasSubmittedEvaluation, challenges.length, challengeResults,
-    challengeType, submitEvaluation, sendText,
+    challengeType, submitEvaluation, sendText, tutorOwned,
   ]);
+
+  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // corrections and whose evidence carries each wrong check's named miss.
+  finish.current = (result) => {
+    if (hasSubmittedEvaluation || challenges.length === 0) return;
+    const metrics: FunctionMachineMetrics = {
+      type: 'function-machine',
+      challengeType,
+      totalChallenges: challenges.length,
+      correctCount: result.solvedCount,
+      attemptsCount: result.attemptsCount,
+      firstTryCount: result.firstTryCount,
+      hintsViewed: 0,
+      overallAccuracy: result.accuracy,
+      averageAttemptsPerChallenge: Math.round((result.attemptsCount / challenges.length) * 10) / 10,
+    };
+    submitEvaluation(result.passed, result.accuracy, metrics,
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
+
+  // -------------------------------------------------------------------------
+  // Workspace path: what the tutor and the observer are shown, republished every render. W1 offers no
+  // demonstration targets and no presentation.
+  // -------------------------------------------------------------------------
+  const view: FunctionMachineView = {
+    pairs: challengeType === 'create_rule' ? createRulePairs : processedPairs,
+    inputsLeft: availableInputs,
+    prediction,
+    guess: guessedRule,
+    guessOpen: processedPairs.length >= 2,
+    makeRow,
+    made: madeMachines.map((m) => ruleText(m.tiles)),
+    lastCheck: makeVerdict?.words ?? '',
+  };
+  const viewRef = useRef(view);
+  viewRef.current = view;
+  const leverCtx: MachineLeverContext = { mode: challengeType, pairs: view.pairs, lastGuess, lastMachine };
+  // What each pulled help lever draws (never on a practice machine).
+  const leverShow: LeverShow = {
+    model: leverOn(MODEL_LEVER) && sessionChallenge ? machineModel(sessionChallenge, challengeType) : null,
+    steps: leverOn(STEP_ORDER_LEVER) && sessionChallenge ? ruleSteps(sessionChallenge.rule) : null,
+    marks: leverOn(CHECK_PAIRS_LEVER) ? pairMarks(lastGuess, view.pairs) : null,
+    lastGuess,
+    changes: leverOn(OUTPUT_STEPS_LEVER) ? outputSteps(view.pairs) : [],
+    run: leverOn(RUN_MACHINE_LEVER) && makeTarget && lastMachine.length ? machineRun(lastMachine, makeTarget.input) : null,
+    lastMachine: ruleText(lastMachine),
+    shapes: leverOn(SHAPES_LEVER) ? machineShapes(ruleComplexity) : null,
+  };
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    const scene = workspaceScene(currentChallenge, challengeType, viewRef.current);
+    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers, leverCtx);
+    const levers = practice ? [] : machineLevers(sessionChallenge, pulledLevers, leverCtx);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find((l) => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        // A help lever that would draw nothing yet is refused, so a pull is always something the learner can see.
+        if (id === CHECK_PAIRS_LEVER && !pairMarks(lastGuess, viewRef.current.pairs))
+          return 'No checked rule that runs yet: once the learner checks a rule, this marks it on every pair.';
+        if (id === RUN_MACHINE_LEVER && !(makeTarget && lastMachine.length && machineRun(lastMachine, makeTarget.input)))
+          return 'No checked machine that runs yet: once the learner checks a machine, this works it through.';
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = simplerMachine(sessionChallenge, challengeType);
+          if (!easier) return 'This item has no easier version; try a help lever.';
+          setLeverState(pulled); setPractice(easier); resetForChallenge(easier);
+          return { practice: workspaceAssignment(easier, challengeType) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { setPractice(null); resetForChallenge(sessionChallenge); },
+    };
+  });
 
   // -------------------------------------------------------------------------
   // Empty / error states
@@ -675,7 +857,104 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
     return null;
   }
 
+  return (
+    <FunctionMachineScreen
+      {...{
+        title, description, challengeType, ruleComplexity, outputDisplay, showComplexityBadge, className, challenges,
+        currentIndex, challengeResults, allChallengesComplete, hasSubmittedEvaluation, phaseResults, submittedResult,
+        elapsedMs, currentChallenge, guessResult, guessAttempts, challengeDone, makeTarget, madeMachines, makeRow,
+        makeVerdict, makeMisses, processedPairs, availableInputs, flight, prediction, predictionFeedback,
+        predictionsCorrect, predictionsTotal, guessedRule, createRulePairs, tutorOwned, resolvedInstanceId,
+        isAudioPlaying, activePrimitiveId, leverShow,
+      }}
+      isPractice={!!practice}
+      blocked={tutorOwned && progress.canAttempt === false}
+      onAdvance={() => advance()}
+      onFeed={processValue}
+      onPrediction={(v) => { if (!learnerBlocked()) { setPrediction(v); setPredictionFeedback(null); } }}
+      onGuess={(v) => { if (!learnerBlocked()) { setGuessedRule(v); setGuessResult(null); } }}
+      onCheckGuess={checkRuleGuess}
+      onAddTile={addMakeTile}
+      onRemoveTile={removeMakeTile}
+      onStartOver={() => { if (!learnerBlocked()) setMakeRow([]); }}
+      onMakeDone={handleMakeDone}
+      onContinue={completeObserve}
+    />
+  );
+};
+
+// ============================================================================
+// Rendering
+// ============================================================================
+
+interface FunctionMachineScreenProps {
+  title: string;
+  description: string;
+  challengeType: FunctionMachineChallengeType;
+  ruleComplexity: 'oneStep' | 'twoStep' | 'expression';
+  outputDisplay: 'immediate' | 'animated' | 'hidden';
+  showComplexityBadge: boolean;
+  className?: string;
+  challenges: FunctionMachineChallenge[];
+  currentIndex: number;
+  challengeResults: ChallengeResult[];
+  allChallengesComplete: boolean;
+  hasSubmittedEvaluation: boolean;
+  phaseResults: ReturnType<typeof usePhaseResults>;
+  submittedResult: { score?: number } | null | undefined;
+  elapsedMs: number;
+  currentChallenge: FunctionMachineChallenge;
+  guessResult: 'correct' | 'incorrect' | null;
+  guessAttempts: number;
+  challengeDone: boolean;
+  makeTarget: { input: number; output: number } | null;
+  madeMachines: Array<{ tiles: string[]; rule: string }>;
+  makeRow: string[];
+  makeVerdict: { kind: 'pass' | 'way' | MakeRuleMiss; words: string; gave: number | null } | null;
+  makeMisses: number;
+  processedPairs: Array<{ input: number; output: number }>;
+  availableInputs: number[];
+  flight: Flight | null;
+  prediction: string;
+  predictionFeedback: 'correct' | 'incorrect' | null;
+  predictionsCorrect: number;
+  predictionsTotal: number;
+  guessedRule: string;
+  createRulePairs: Array<{ input: number; output: number }>;
+  tutorOwned: boolean;
+  resolvedInstanceId: string;
+  isAudioPlaying: boolean;
+  activePrimitiveId: string | null | undefined;
+  leverShow: LeverShow;
+  /** A practice machine (a simplify lever) is on screen in place of the item. */
+  isPractice: boolean;
+  /** Workspace path: a checked answer waits for Try again or Next challenge. */
+  blocked: boolean;
+  onAdvance: () => void;
+  onFeed: (input: number) => void;
+  onPrediction: (value: string) => void;
+  onGuess: (value: string) => void;
+  onCheckGuess: () => void;
+  onAddTile: (tile: string) => void;
+  onRemoveTile: (index: number) => void;
+  onStartOver: () => void;
+  onMakeDone: () => void;
+  onContinue: () => void;
+}
+
+const FunctionMachineScreen: React.FC<FunctionMachineScreenProps> = (p) => {
+  const {
+    title, description, challengeType, ruleComplexity, outputDisplay, showComplexityBadge, className, challenges,
+    currentIndex, challengeResults, allChallengesComplete, hasSubmittedEvaluation, phaseResults, submittedResult,
+    elapsedMs, currentChallenge, guessResult, guessAttempts, challengeDone, makeTarget, madeMachines, makeRow,
+    makeVerdict, makeMisses, processedPairs, availableInputs, flight, prediction, predictionFeedback,
+    predictionsCorrect, predictionsTotal, guessedRule, createRulePairs, tutorOwned, blocked, leverShow,
+  } = p;
+
   const showRule = currentChallenge.showRule || guessResult === 'correct';
+  const isProcessing = flight !== null && flight.output === null;
+  // The pair in flight joins the table once it leaves the chute.
+  const shownPairs = isProcessing ? processedPairs.filter((pair) => pair.input !== flight!.input) : processedPairs;
 
   // Tier-derived UI gates (default = current behavior when no tier present).
   // hintLevel 'full' = how-it-works + early hint; 'minimal' = standard (hint after 2
@@ -687,19 +966,16 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
   const ruleHintThreshold = hintLevel === 'full' ? 1 : 2;
   const showRuleHint = hintLevel !== 'none' && guessAttempts >= ruleHintThreshold;
 
-  // -------------------------------------------------------------------------
-  // Render
-  // -------------------------------------------------------------------------
   // ── Pip shared surface ───────────────────────────────────────────
   // A projection of this item's check state, the tutor's speech on it, and
   // the child's touches; Pip points only at the workspace as a whole and never
   // chooses, checks, or advances.
   const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
+    instanceId: p.resolvedInstanceId,
     scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
     label: 'The function machine',
     solved: challengeDone && challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct),
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+    tutorSpeaking: p.isAudioPlaying && p.activePrimitiveId === p.resolvedInstanceId,
   });
 
   return (
@@ -793,16 +1069,19 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
                     {' '}gives {evaluateRule(m.rule, compareInput(makeTarget.input)) ?? '—'}
                   </p>
                 ))}
-                <p>Ready for the next one?</p>
+                {!tutorOwned && <p>Ready for the next one?</p>}
               </div>
             ) : (
               <p className="text-sm text-emerald-200/80 mb-4">
-                Rule was <span className="font-mono font-bold text-white">f(x) = {currentChallenge.rule}</span>. Ready for the next one?
+                Rule was <span className="font-mono font-bold text-white">f(x) = {currentChallenge.rule}</span>.{!tutorOwned && ' Ready for the next one?'}
               </p>
             )}
-            <LuminaActionButton action="next" onClick={() => advance()}>
-              Next Function →
-            </LuminaActionButton>
+            {/* The workspace's shell offers Next challenge; the runtime owns progression there. */}
+            {!tutorOwned && (
+              <LuminaActionButton action="next" onClick={p.onAdvance}>
+                Next Function →
+              </LuminaActionButton>
+            )}
           </LuminaCardContent>
         </LuminaCard>
       )}
@@ -823,9 +1102,9 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
                       <div className="w-11 h-11 rounded-full bg-blue-500/30 border-2 border-blue-400/60 flex items-center justify-center text-white font-bold text-sm">
                         {makeTarget.input}
                       </div>
-                    ) : currentInput !== null && (
+                    ) : flight !== null && (
                       <div className="w-11 h-11 rounded-full bg-blue-500/30 border-2 border-blue-400/60 flex items-center justify-center text-white font-bold animate-bounce text-sm">
-                        {currentInput}
+                        {flight.input}
                       </div>
                     )}
                   </div>
@@ -844,6 +1123,12 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
                     {challengeType === 'make_rule' ? (
                       <div data-make-machine className="text-lg font-bold text-white font-mono bg-slate-900/30 px-3 py-1.5 rounded-lg border border-blue-400/20 min-w-[6rem]">
                         f(x) = {makeRow.length ? ruleText(makeRow) : '…'}
+                      </div>
+                    ) : showRule && leverShow.steps ? (
+                      // step_order lever: the rule redrawn as its two steps, with only the rule's own numbers.
+                      <div data-lever="step-order" className="text-base font-bold text-white font-mono bg-slate-900/30 px-3 py-1.5 rounded-lg border border-amber-400/40 space-y-1">
+                        <div>first {leverShow.steps[0]}</div>
+                        <div>then {leverShow.steps[1]}</div>
                       </div>
                     ) : showRule ? (
                       <div className="text-xl font-bold text-white font-mono bg-slate-900/30 px-3 py-1.5 rounded-lg border border-blue-400/20">
@@ -878,9 +1163,9 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
                         {makeVerdict.gave}
                       </div>
                     )}
-                    {currentOutput !== null && outputDisplay !== 'hidden' && (
+                    {flight !== null && flight.output !== null && outputDisplay !== 'hidden' && (
                       <div className={`w-11 h-11 rounded-full bg-purple-500/30 border-2 border-purple-400/60 flex items-center justify-center text-white font-bold text-sm ${outputDisplay === 'animated' ? 'animate-bounce' : ''}`}>
-                        {currentOutput}
+                        {flight.output}
                       </div>
                     )}
                   </div>
@@ -888,6 +1173,76 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
               </div>
             </LuminaCardContent>
           </LuminaCard>
+
+          {/* A practice machine (simplify lever) is ungraded; the full item comes back after it. */}
+          {p.isPractice && (
+            <div data-practice className="text-center text-sm text-amber-200 bg-amber-500/10 border border-amber-400/30 rounded-lg py-2">
+              Practice machine first. It is not graded; your machine comes back after it.
+            </div>
+          )}
+
+          {/* Pulled help levers (functionMachineLevers.ts). Each draws what it names, never the item's answer. */}
+          {leverShow.model && (
+            <LuminaCard data-lever="model-machine" className="bg-sky-500/10 border-sky-400/30">
+              <LuminaCardContent className="py-4 text-center space-y-1">
+                <div className="text-xs uppercase tracking-wider text-sky-300 font-mono">A different machine</div>
+                <div className="font-mono text-white font-bold">f(x) = {ruleDisplay(leverShow.model.rule)}</div>
+                {leverShow.model.pairs.map((pair) => (
+                  <div key={pair.input} className="font-mono text-sky-100 text-sm">
+                    {substituted(leverShow.model!.rule, pair.input)} = {pair.output}
+                  </div>
+                ))}
+              </LuminaCardContent>
+            </LuminaCard>
+          )}
+          {leverShow.marks && (
+            <LuminaCard data-lever="check-pairs" className="bg-sky-500/10 border-sky-400/30">
+              <LuminaCardContent className="py-4 text-center space-y-2">
+                <div className="text-sm text-sky-200">Your rule f(x) = <span className="font-mono">{leverShow.lastGuess.trim()}</span> on each pair:</div>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {leverShow.marks.map((m) => (
+                    <span key={m.input} className={`font-mono text-sm px-2 py-1 rounded border ${m.fits ? 'border-emerald-400/50 text-emerald-200' : 'border-rose-400/50 text-rose-200'}`}>
+                      {m.input} → {m.output} {m.fits ? '✓' : '✗'}
+                    </span>
+                  ))}
+                </div>
+              </LuminaCardContent>
+            </LuminaCard>
+          )}
+          {leverShow.changes.length > 0 && (
+            <LuminaCard data-lever="output-steps" className="bg-sky-500/10 border-sky-400/30">
+              <LuminaCardContent className="py-4 text-center space-y-2">
+                <div className="text-sm text-sky-200">When the input goes up by 1, the output changes by:</div>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {leverShow.changes.map((c) => (
+                    <span key={c.from} className="font-mono text-sm px-2 py-1 rounded border border-sky-400/40 text-sky-100">
+                      {c.from} to {c.to}: {c.change}
+                    </span>
+                  ))}
+                </div>
+              </LuminaCardContent>
+            </LuminaCard>
+          )}
+          {leverShow.run && (
+            <LuminaCard data-lever="run-machine" className="bg-sky-500/10 border-sky-400/30">
+              <LuminaCardContent className="py-4 text-center space-y-1">
+                <div className="text-sm text-sky-200">Your machine f(x) = <span className="font-mono">{leverShow.lastMachine}</span>, worked through:</div>
+                {leverShow.run.map((line) => <div key={line} className="font-mono text-sky-100">{line}</div>)}
+              </LuminaCardContent>
+            </LuminaCard>
+          )}
+          {leverShow.shapes && (
+            <LuminaCard data-lever="machine-shapes" className="bg-sky-500/10 border-sky-400/30">
+              <LuminaCardContent className="py-4 text-center space-y-2">
+                <div className="text-sm text-sky-200">Machines are built like these. Each one uses x.</div>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {leverShow.shapes.map((shape) => (
+                    <span key={shape} className="font-mono px-3 py-1 rounded-lg border border-sky-400/40 text-white">{shape}</span>
+                  ))}
+                </div>
+              </LuminaCardContent>
+            </LuminaCard>
+          )}
 
           {/* Prediction Panel (predict mode only) */}
           {challengeType === 'predict' && (
@@ -902,10 +1257,11 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
                   <LuminaInput
                     type="text"
                     inputMode="numeric"
+                    aria-label="My prediction"
                     value={prediction}
-                    onChange={(e) => { setPrediction(e.target.value); setPredictionFeedback(null); }}
+                    onChange={(e) => p.onPrediction(e.target.value)}
                     placeholder="?"
-                    disabled={isProcessing}
+                    disabled={blocked}
                     className="w-24 text-center font-mono"
                   />
                   {predictionFeedback === 'correct' && (
@@ -914,7 +1270,8 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
                   {predictionFeedback === 'incorrect' && (
                     <LuminaBadge accent="rose">Not quite</LuminaBadge>
                   )}
-                  {predictionsTotal > 0 && hintLevel !== 'none' && (
+                  {/* The workspace's observer keeps the tally there. */}
+                  {!tutorOwned && predictionsTotal > 0 && hintLevel !== 'none' && (
                     <span className="text-xs text-amber-300/70 ml-auto">
                       {predictionsCorrect}/{predictionsTotal} correct
                     </span>
@@ -942,8 +1299,9 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
                       <button
                         key={idx}
                         type="button"
-                        disabled={isProcessing || (challengeType === 'predict' && !prediction.trim())}
-                        onClick={() => processValue(value)}
+                        aria-label={`Feed ${value}`}
+                        disabled={blocked || (challengeType === 'predict' && !prediction.trim())}
+                        onClick={() => p.onFeed(value)}
                         className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 bg-blue-500/15 border border-blue-400/40 hover:bg-blue-500/30 text-white font-bold"
                       >
                         {value}
@@ -962,15 +1320,15 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
           )}
 
           {/* Processed Pairs (observe / predict / discover_rule) */}
-          {challengeType !== 'create_rule' && challengeType !== 'make_rule' && processedPairs.length > 0 && (
+          {challengeType !== 'create_rule' && challengeType !== 'make_rule' && shownPairs.length > 0 && (
             <LuminaCard>
               <LuminaCardContent className="py-5">
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="text-sm font-mono uppercase tracking-wider text-purple-400">Input → Output Pairs</h4>
-                  <span className="text-xs text-purple-300/70">{processedPairs.length} so far</span>
+                  <span className="text-xs text-purple-300/70">{shownPairs.length} so far</span>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                  {processedPairs.map((pair, idx) => (
+                  {shownPairs.map((pair, idx) => (
                     <div
                       key={idx}
                       className="p-3 rounded-lg bg-slate-800/40 border border-slate-600/30 text-center"
@@ -1051,7 +1409,8 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
                       key={i}
                       type="button"
                       aria-label={`Take out ${tile}`}
-                      onClick={() => removeMakeTile(i)}
+                      disabled={blocked}
+                      onClick={() => p.onRemoveTile(i)}
                       className="min-w-[44px] h-11 px-2 rounded-lg bg-purple-500/25 border border-purple-400/50 text-white font-mono font-bold text-lg hover:bg-purple-500/40"
                     >
                       {tile}
@@ -1064,8 +1423,8 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
                       key={key}
                       type="button"
                       aria-label={`Add ${key}`}
-                      disabled={makeRow.length >= MAKE_RULE_MAX_TILES}
-                      onClick={() => addMakeTile(key)}
+                      disabled={blocked || makeRow.length >= MAKE_RULE_MAX_TILES}
+                      onClick={() => p.onAddTile(key)}
                       className="min-w-[44px] h-11 px-2 rounded-lg bg-slate-800/60 border border-slate-500/40 text-white font-mono font-bold text-lg hover:bg-slate-700/60 disabled:opacity-40"
                     >
                       {key}
@@ -1073,10 +1432,11 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
                   ))}
                 </div>
                 <div className="flex justify-center gap-3">
-                  <LuminaButton onClick={() => setMakeRow([])} disabled={makeRow.length === 0}>
+                  {/* Always pressable: clearing an empty row does nothing. */}
+                  <LuminaButton onClick={p.onStartOver} disabled={blocked}>
                     Start over
                   </LuminaButton>
-                  <LuminaActionButton action="check" onClick={handleMakeDone} disabled={makeRow.length === 0}>
+                  <LuminaActionButton action="check" onClick={p.onMakeDone} disabled={blocked || makeRow.length === 0}>
                     I&apos;m done!
                   </LuminaActionButton>
                 </div>
@@ -1112,17 +1472,21 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
                 </h4>
                 <div className="flex items-center gap-3 justify-center flex-wrap">
                   <span className="text-amber-300 font-mono">f(x) =</span>
+                  {/* No example rule in the placeholder: an example could be the answer. */}
                   <LuminaInput
                     type="text"
+                    aria-label="Your rule"
                     value={guessedRule}
-                    onChange={(e) => { setGuessedRule(e.target.value); setGuessResult(null); }}
-                    onKeyDown={(e) => e.key === 'Enter' && checkRuleGuess()}
-                    placeholder="e.g., x + 3"
+                    onChange={(e) => p.onGuess(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && p.onCheckGuess()}
+                    placeholder="use x"
+                    disabled={blocked}
                     className="flex-1 max-w-xs font-mono"
                   />
                   <button
                     type="button"
-                    onClick={checkRuleGuess}
+                    onClick={p.onCheckGuess}
+                    disabled={blocked}
                     className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 bg-amber-500/20 border border-amber-400/40 hover:bg-amber-500/30 text-amber-200"
                   >
                     Check
@@ -1148,7 +1512,8 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
             && (
             <div className="flex justify-center">
               <LuminaButton
-                onClick={completeObserve}
+                onClick={p.onContinue}
+                disabled={blocked}
                 className="bg-blue-500/20 border border-blue-400/40 hover:bg-blue-500/30 text-blue-100"
               >
                 Continue →
@@ -1210,5 +1575,9 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
     </div>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const FunctionMachine = withWorkspaceController<FunctionMachineProps, ProgressOptions<FunctionMachineChallenge>, Progress>(
+  'function-machine', FunctionMachineSurface, useScriptedProgress, useWorkspaceProgressFor('function-machine'));
 
 export default FunctionMachine;

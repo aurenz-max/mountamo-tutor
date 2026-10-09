@@ -1,0 +1,177 @@
+{
+ "source": "qa/tutor-reports/transformation-lab-runtime-apply_rotation-payload-2026-10-09.json",
+ "primitiveId": "transformation-lab",
+ "evalMode": "apply_rotation",
+ "data": {
+  "title": "Rotations on the Coordinate Plane",
+  "description": "Practice rotating geometric figures about the origin by 90, 180, and 270 degrees counterclockwise to analyze coordinate changes.",
+  "challengeType": "apply_rotation",
+  "gradeBand": "8",
+  "challenges": [
+   {
+    "type": "apply_rotation",
+    "answerKind": "drag",
+    "narration": "A clock hand sweeps around.",
+    "instruction": "Rotate the figure 90\u00b0 counterclockwise about the origin. Drag each pink corner to its image.",
+    "hint": "A 90\u00b0 counterclockwise turn sends (x, y) \u2192 (\u2212y, x).",
+    "preImage": [
+     {
+      "x": 1,
+      "y": 3
+     },
+     {
+      "x": 4,
+      "y": 3
+     },
+     {
+      "x": 2,
+      "y": 5
+     }
+    ],
+    "expectedImage": [
+     {
+      "x": -3,
+      "y": 1
+     },
+     {
+      "x": -3,
+      "y": 4
+     },
+     {
+      "x": -5,
+      "y": 2
+     }
+    ],
+    "transformLabel": "Rotation 90\u00b0 counterclockwise about the origin",
+    "id": "tl-1"
+   },
+   {
+    "type": "apply_rotation",
+    "answerKind": "drag",
+    "narration": "A figure pivots around the origin.",
+    "instruction": "Rotate the figure 180\u00b0 about the origin. Drag each pink corner to its image.",
+    "hint": "A 180\u00b0 turn sends (x, y) \u2192 (\u2212x, \u2212y).",
+    "preImage": [
+     {
+      "x": 2,
+      "y": 3
+     },
+     {
+      "x": 5,
+      "y": 3
+     },
+     {
+      "x": 5,
+      "y": 5
+     },
+     {
+      "x": 2,
+      "y": 4
+     }
+    ],
+    "expectedImage": [
+     {
+      "x": -2,
+      "y": -3
+     },
+     {
+      "x": -5,
+      "y": -3
+     },
+     {
+      "x": -5,
+      "y": -5
+     },
+     {
+      "x": -2,
+      "y": -4
+     }
+    ],
+    "transformLabel": "Rotation 180\u00b0 about the origin",
+    "id": "tl-2"
+   },
+   {
+    "type": "apply_rotation",
+    "answerKind": "drag",
+    "narration": "A Ferris-wheel car swings around the center.",
+    "instruction": "Rotate the figure 270\u00b0 counterclockwise about the origin. Drag each pink corner to its image.",
+    "hint": "A 270\u00b0 counterclockwise turn sends (x, y) \u2192 (y, \u2212x).",
+    "preImage": [
+     {
+      "x": 3,
+      "y": 1
+     },
+     {
+      "x": 5,
+      "y": 1
+     },
+     {
+      "x": 3,
+      "y": 4
+     }
+    ],
+    "expectedImage": [
+     {
+      "x": 1,
+      "y": -3
+     },
+     {
+      "x": 1,
+      "y": -5
+     },
+     {
+      "x": 4,
+      "y": -3
+     }
+    ],
+    "transformLabel": "Rotation 270\u00b0 counterclockwise about the origin",
+    "id": "tl-3"
+   },
+   {
+    "type": "apply_rotation",
+    "answerKind": "drag",
+    "narration": "A spinner turns about its pin.",
+    "instruction": "Rotate the figure 90\u00b0 counterclockwise about the origin. Drag each pink corner to its image.",
+    "hint": "A 90\u00b0 counterclockwise turn sends (x, y) \u2192 (\u2212y, x).",
+    "preImage": [
+     {
+      "x": 1,
+      "y": 3
+     },
+     {
+      "x": 3,
+      "y": 3
+     },
+     {
+      "x": 4,
+      "y": 5
+     },
+     {
+      "x": 1,
+      "y": 5
+     }
+    ],
+    "expectedImage": [
+     {
+      "x": -3,
+      "y": 1
+     },
+     {
+      "x": -3,
+      "y": 3
+     },
+     {
+      "x": -5,
+      "y": 4
+     },
+     {
+      "x": -5,
+      "y": 1
+     }
+    ],
+    "transformLabel": "Rotation 90\u00b0 counterclockwise about the origin",
+    "id": "tl-4"
+   }
+  ]
+ }
+}

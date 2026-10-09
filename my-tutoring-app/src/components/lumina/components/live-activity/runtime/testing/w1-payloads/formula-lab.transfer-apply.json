@@ -1,0 +1,123 @@
+{
+ "source": "qa/tutor-reports/formula-lab-runtime-transfer-apply-payload-2026-10-09.json",
+ "primitiveId": "formula-lab",
+ "evalMode": "transfer-apply",
+ "data": {
+  "title": "Kinetic Energy Dynamics",
+  "description": "Students investigate how alterations in an object's mass and velocity exponentially dictate its total kinetic energy.",
+  "context": "In classical mechanics, evaluating the capacity of a moving vehicle to perform work or sustain impact requires calculating its kinetic energy based on mass and speed.",
+  "transferContext": "An aerospace engineer evaluates the kinetic energy of a satellite debris fragment moving through the upper atmosphere given its mass and orbital velocity.",
+  "formulaLatex": "E = 0.5 * m * v^2",
+  "expression": "0.5 * m * v * v",
+  "outputSymbol": "E",
+  "outputName": "Kinetic Energy",
+  "outputUnit": "J",
+  "variables": [
+   {
+    "symbol": "m",
+    "name": "Mass",
+    "unit": "kg",
+    "min": 1,
+    "max": 50,
+    "step": 1,
+    "defaultValue": 10,
+    "accent": "blue"
+   },
+   {
+    "symbol": "v",
+    "name": "Velocity",
+    "unit": "m/s",
+    "min": 2,
+    "max": 20,
+    "step": 1,
+    "defaultValue": 5,
+    "accent": "purple"
+   }
+  ],
+  "sceneKind": "motion",
+  "challengeType": "transfer-apply",
+  "gradeBand": "6-8",
+  "challenges": [
+   {
+    "id": "formula-lab-1",
+    "type": "transfer-apply",
+    "changedVariableSymbol": "m",
+    "baselineValues": [
+     35,
+     17
+    ],
+    "targetValues": [
+     50,
+     17
+    ],
+    "expectedBaselineOutput": 5057.5,
+    "expectedTargetOutput": 7225,
+    "correctDirection": "increase"
+   },
+   {
+    "id": "formula-lab-2",
+    "type": "transfer-apply",
+    "changedVariableSymbol": "v",
+    "baselineValues": [
+     16,
+     17
+    ],
+    "targetValues": [
+     16,
+     11
+    ],
+    "expectedBaselineOutput": 2312,
+    "expectedTargetOutput": 968,
+    "correctDirection": "decrease"
+   },
+   {
+    "id": "formula-lab-3",
+    "type": "transfer-apply",
+    "changedVariableSymbol": "m",
+    "baselineValues": [
+     26,
+     17
+    ],
+    "targetValues": [
+     10,
+     17
+    ],
+    "expectedBaselineOutput": 3757,
+    "expectedTargetOutput": 1445,
+    "correctDirection": "decrease"
+   },
+   {
+    "id": "formula-lab-4",
+    "type": "transfer-apply",
+    "changedVariableSymbol": "v",
+    "baselineValues": [
+     35,
+     20
+    ],
+    "targetValues": [
+     35,
+     11
+    ],
+    "expectedBaselineOutput": 7000,
+    "expectedTargetOutput": 2117.5,
+    "correctDirection": "decrease"
+   },
+   {
+    "id": "formula-lab-5",
+    "type": "transfer-apply",
+    "changedVariableSymbol": "m",
+    "baselineValues": [
+     26,
+     15
+    ],
+    "targetValues": [
+     50,
+     15
+    ],
+    "expectedBaselineOutput": 2925,
+    "expectedTargetOutput": 5625,
+    "correctDirection": "increase"
+   }
+  ]
+ }
+}

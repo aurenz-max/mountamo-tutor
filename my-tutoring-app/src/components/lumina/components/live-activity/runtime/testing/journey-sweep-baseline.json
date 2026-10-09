@@ -27,6 +27,15 @@
   "fraction-circles.touch_fraction": {
     "J1-drivable": "handoff 21 SW-6"
   },
+  "practice-problem.derive_easy": {
+    "J1-drivable": "handwriting checked by a model judge (transcribeWork, compareWork): the sweep has no canvas image and no judge; PracticeProblem.workspace.test.tsx drives the miss, Try again and the pass with both routes stubbed"
+  },
+  "practice-problem.derive_medium": {
+    "J1-drivable": "handwriting checked by a model judge (transcribeWork, compareWork): the sweep has no canvas image and no judge; PracticeProblem.workspace.test.tsx drives the miss, Try again and the pass with both routes stubbed"
+  },
+  "practice-problem.derive_hard": {
+    "J1-drivable": "handwriting checked by a model judge (transcribeWork, compareWork): the sweep has no canvas image and no judge; PracticeProblem.workspace.test.tsx drives the miss, Try again and the pass with both routes stubbed"
+  },
   "number-tracer.copy": {
     "J1-drivable": "handoff 21 SW-7"
   },

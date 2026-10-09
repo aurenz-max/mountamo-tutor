@@ -13,6 +13,7 @@ import {
   type ChallengeTypeDoc,
 } from "../evalMode";
 import { buildScopePromptSection } from "../scopeContext";
+import { mergeCommutingSteps } from "../../primitives/visual-primitives/math/equationWorkspaceDomain";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -594,7 +595,16 @@ IMPORTANT:
       return null;
     }
 
-    return challenge;
+    // The model lists the solution's operations first (op0 = step 1 in every sampled item), so the first button was
+    // the answer. Shuffle the menu; the checker reads ids, never positions.
+    const ops = challenge.availableOperations;
+    for (let i = ops.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [ops[i], ops[j]] = [ops[j], ops[i]];
+    }
+
+    // Adjacent combine steps commute; one "Combine like terms" step, so either order is not marked wrong.
+    return mergeCommutingSteps(challenge);
   } catch (err) {
     console.error(`[EquationWorkspace] Error generating ${type} challenge ${index}:`, err);
     return null;

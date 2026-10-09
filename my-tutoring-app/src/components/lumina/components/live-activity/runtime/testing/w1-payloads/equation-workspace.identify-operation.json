@@ -1,0 +1,246 @@
+{
+ "source": "qa/tutor-reports/equation-workspace-runtime-identify-operation-payload-2026-10-09.json",
+ "primitiveId": "equation-workspace",
+ "evalMode": "identify-operation",
+ "data": {
+  "title": "Equation Workspace: Solving two-step linear equations",
+  "context": "Solve equations by applying algebraic operations step by step.",
+  "challenges": [
+   {
+    "id": "eq-identify-operation-0",
+    "type": "identify-operation",
+    "instruction": "Identify the primary inverse operation required to begin isolating the target variable m.",
+    "equation": "4m + 15 = 47",
+    "targetVariable": "m",
+    "solutionSteps": [
+     {
+      "operation": "Subtract 15 from both sides",
+      "operationId": "algebraic_subtract_15",
+      "resultLatex": "4m = 32"
+     },
+     {
+      "operation": "Divide both sides by 4",
+      "operationId": "arithmetic_divide_4",
+      "resultLatex": "m = 8"
+     }
+    ],
+    "availableOperations": [
+     {
+      "id": "algebraic_add_15",
+      "label": "Add 15 to both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "arithmetic_divide_4",
+      "label": "Divide both sides by 4",
+      "category": "arithmetic"
+     },
+     {
+      "id": "algebraic_subtract_47",
+      "label": "Subtract 47 from both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "arithmetic_multiply_4",
+      "label": "Multiply both sides by 4",
+      "category": "arithmetic"
+     },
+     {
+      "id": "algebraic_subtract_15",
+      "label": "Subtract 15 from both sides",
+      "category": "algebraic"
+     }
+    ],
+    "correctOperationId": "algebraic_subtract_15"
+   },
+   {
+    "id": "eq-identify-operation-1",
+    "type": "identify-operation",
+    "instruction": "Analyze the linear equation modeling the submersible's status and determine the most effective first algebraic operation to isolate the variable d.",
+    "equation": "4 \\cdot d + 18 = 66",
+    "targetVariable": "d",
+    "solutionSteps": [
+     {
+      "operation": "Subtract 18 from both sides",
+      "operationId": "algebraic_subtract_18",
+      "resultLatex": "4 \\cdot d = 48"
+     },
+     {
+      "operation": "Divide both sides by 4",
+      "operationId": "algebraic_divide_4",
+      "resultLatex": "d = 12"
+     }
+    ],
+    "availableOperations": [
+     {
+      "id": "algebraic_subtract_66",
+      "label": "Subtract 66 from both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_add_18",
+      "label": "Add 18 to both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_multiply_4",
+      "label": "Multiply both sides by 4",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_divide_4",
+      "label": "Divide both sides by 4",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_subtract_18",
+      "label": "Subtract 18 from both sides",
+      "category": "algebraic"
+     }
+    ],
+    "correctOperationId": "algebraic_subtract_18"
+   },
+   {
+    "id": "eq-identify-operation-2",
+    "type": "identify-operation",
+    "instruction": "Identify the mathematically valid first operation to begin isolating the target variable v.",
+    "equation": "4v + 15 = 47",
+    "targetVariable": "v",
+    "solutionSteps": [
+     {
+      "operation": "Subtract 15 from both sides",
+      "operationId": "algebraic_subtract_15",
+      "resultLatex": "4v = 32"
+     },
+     {
+      "operation": "Divide both sides by 4",
+      "operationId": "arithmetic_divide_4",
+      "resultLatex": "v = 8"
+     }
+    ],
+    "availableOperations": [
+     {
+      "id": "algebraic_subtract_15",
+      "label": "Subtract 15 from both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_add_15",
+      "label": "Add 15 to both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "arithmetic_divide_4",
+      "label": "Divide both sides by 4",
+      "category": "arithmetic"
+     },
+     {
+      "id": "arithmetic_multiply_4",
+      "label": "Multiply both sides by 4",
+      "category": "arithmetic"
+     },
+     {
+      "id": "algebraic_subtract_47",
+      "label": "Subtract 47 from both sides",
+      "category": "algebraic"
+     }
+    ],
+    "correctOperationId": "algebraic_subtract_15"
+   },
+   {
+    "id": "eq-identify-operation-3",
+    "type": "identify-operation",
+    "instruction": "Identify the mathematically optimal next operation required to begin isolating the variable t.",
+    "equation": "4t + 15 = 47",
+    "targetVariable": "t",
+    "solutionSteps": [
+     {
+      "operation": "Subtract 15 from both sides",
+      "operationId": "algebraic_subtract_15",
+      "resultLatex": "4t = 32"
+     },
+     {
+      "operation": "Divide both sides by 4",
+      "operationId": "arithmetic_divide_4",
+      "resultLatex": "t = 8"
+     }
+    ],
+    "availableOperations": [
+     {
+      "id": "arithmetic_multiply_4",
+      "label": "Multiply both sides by 4",
+      "category": "arithmetic"
+     },
+     {
+      "id": "algebraic_subtract_47",
+      "label": "Subtract 47 from both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_subtract_15",
+      "label": "Subtract 15 from both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "arithmetic_divide_4",
+      "label": "Divide both sides by 4",
+      "category": "arithmetic"
+     },
+     {
+      "id": "algebraic_add_15",
+      "label": "Add 15 to both sides",
+      "category": "algebraic"
+     }
+    ],
+    "correctOperationId": "algebraic_subtract_15"
+   },
+   {
+    "id": "eq-identify-operation-4",
+    "type": "identify-operation",
+    "instruction": "Identify the primary algebraic operation required as the first step to isolate the variable t in the equation.",
+    "equation": "4 \\cdot t + 18 = 50",
+    "targetVariable": "t",
+    "solutionSteps": [
+     {
+      "operation": "Subtract 18 from both sides",
+      "operationId": "algebraic_subtract_18",
+      "resultLatex": "4 \\cdot t = 32"
+     },
+     {
+      "operation": "Divide both sides by 4",
+      "operationId": "arithmetic_divide_4",
+      "resultLatex": "t = 8"
+     }
+    ],
+    "availableOperations": [
+     {
+      "id": "algebraic_subtract_50",
+      "label": "Subtract 50 from both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "arithmetic_multiply_4",
+      "label": "Multiply both sides by 4",
+      "category": "arithmetic"
+     },
+     {
+      "id": "arithmetic_divide_4",
+      "label": "Divide both sides by 4",
+      "category": "arithmetic"
+     },
+     {
+      "id": "algebraic_subtract_18",
+      "label": "Subtract 18 from both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_add_18",
+      "label": "Add 18 to both sides",
+      "category": "algebraic"
+     }
+    ],
+    "correctOperationId": "algebraic_subtract_18"
+   }
+  ]
+ }
+}

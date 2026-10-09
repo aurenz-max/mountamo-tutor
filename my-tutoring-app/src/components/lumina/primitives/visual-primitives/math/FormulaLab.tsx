@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import {
@@ -29,12 +29,24 @@ import {
 } from '../../../evaluation';
 import type { FormulaLabMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { evaluateFormulaExpression } from './formulaLabMath';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  EMPTY_WORK, describeFormulaWork, directionFromPosition, directionLabel, formatNumber, formulaCheck, formulaMiss,
+  observedPosition, tokenizeFormula, valuesToScope, workspaceAssignment, workspaceScene, type FormulaWork,
+} from './formulaLabWorkspace';
+import {
+  FIND_QUANTITY_LEVER, GROUP_TOKENS_LEVER, MODEL_PAIR_LEVER, NEW_INPUTS_LEVER, ORDER_CARD_LEVER, SUBSTITUTION_LEVER, TRACK_MARKS,
+  TRACK_SCALE_LEVER, VALUE_CHECK_LEVER, formulaLevers, isPracticeFormula, leverFacts, modelPair, orderCard, simplerFormula,
+} from './formulaLabLevers';
 
 export type FormulaLabDirection = 'increase' | 'decrease' | 'stay-same';
 export type FormulaLabSceneKind = 'motion' | 'geometry' | 'container' | 'relationship';
@@ -104,6 +116,10 @@ export interface FormulaLabData {
 interface FormulaLabProps {
   data: FormulaLabData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
 const PHASE_CONFIG: Record<string, PhaseConfig> = {
@@ -117,24 +133,6 @@ const PHASE_CONFIG: Record<string, PhaseConfig> = {
 const VARIABLE_ACCENTS: LuminaAccent[] = ['cyan', 'amber', 'purple', 'emerald'];
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
-
-const formatNumber = (value: number): string => {
-  if (!Number.isFinite(value)) return '—';
-  const abs = Math.abs(value);
-  if ((abs >= 100000 || (abs > 0 && abs < 0.001))) return value.toExponential(2);
-  return Number(value.toFixed(3)).toString();
-};
-
-const valuesToScope = (
-  variables: FormulaLabVariable[],
-  values: number[],
-): Record<string, number> => Object.fromEntries(
-  variables.map((variable, index) => [variable.symbol, values[index]]),
-);
-
-const tokenizeFormula = (expression: string): string[] => (
-  expression.match(/(?:\d+(?:\.\d+)?|[A-Za-z_][A-Za-z0-9_]*|[()+\-*/^])/g) ?? []
-);
 
 type FormulaTokenGroup = 'values' | 'operations' | 'grouping';
 
@@ -162,6 +160,7 @@ const substitutedExpression = (
   return token;
 }).join(' ');
 
+/** Scripted path only: the legacy tutor's reveal boundary for the support tier. */
 const tutorRevealPolicy = (
   tier: FormulaLabSupportTier | undefined,
   mode: FormulaLabChallengeType,
@@ -190,18 +189,6 @@ const shuffledIndexes = (length: number): number[] => {
     [indexes[index], indexes[swapIndex]] = [indexes[swapIndex], indexes[index]];
   }
   return indexes;
-};
-
-const directionFromPosition = (position: number): FormulaLabDirection => {
-  if (position < -0.18) return 'decrease';
-  if (position > 0.18) return 'increase';
-  return 'stay-same';
-};
-
-const directionLabel = (direction: FormulaLabDirection): string => {
-  if (direction === 'increase') return 'increase';
-  if (direction === 'decrease') return 'decrease';
-  return 'stay about the same';
 };
 
 function FormulaDisplay({ latex }: { latex: string }) {
@@ -403,7 +390,9 @@ function LivingScene({ kind, inputProgress, outputDelta, revealed, inputLabel, o
   );
 }
 
-const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
+const FormulaLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  FormulaLabProps & { tutorOwned: boolean; useController: (options: ProgressOptions<FormulaLabChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -430,15 +419,33 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
   const stableInstanceIdRef = useRef(instanceId || `formula-lab-${Date.now()}`);
   const resolvedInstanceId = stableInstanceIdRef.current;
 
+  // Challenge progress. On the workspace path the runtime moves the index; the hooks below are bound after render.
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges,
+    getChallengeId: (challenge) => challenge.id,
+    instanceId: resolvedInstanceId,
+    objectiveId,
+    planItemId: runtimePlanItemId,
+    workspace,
+    assignment: (challenge) => workspaceAssignment(data, challenge),
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onFinished: (result) => finish.current(result),
+  });
   const {
     currentIndex,
     currentAttempts,
     results: challengeResults,
     isComplete,
     recordResult,
-    incrementAttempts,
     advance,
-  } = useChallengeProgress({ challenges, getChallengeId: (challenge) => challenge.id });
+  } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const blocked = tutorOwned && progress.canAttempt === false;
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = blocked;
+  const learnerBlocked = () => workspaceClosed.current;
 
   const phaseResults = usePhaseResults({
     challenges,
@@ -463,7 +470,18 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const currentChallenge = challenges[currentIndex] ?? null;
+  // In-item levers (`formulaLabLevers.ts`), keyed by the session item they were pulled on, and the easier problem a
+  // simplify lever put on screen in its place.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<FormulaLabChallenge | null>(null);
+  const sessionChallenge = challenges[currentIndex] ?? null;
+  /** What is on screen: the easier problem while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  /** A runtime pull on the session item; never drawn on a practice problem. */
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
+  const tokensGrouped = !!currentChallenge?.groupFormulaTokens || leverOn(GROUP_TOKENS_LEVER);
+  const substitutionShown = !!currentChallenge?.showSubstitutionSetup || leverOn(SUBSTITUTION_LEVER);
   const currentMode = currentChallenge?.type ?? challengeType;
   const changedVariableIndex = currentChallenge
     ? variables.findIndex((variable) => variable.symbol === currentChallenge.changedVariableSymbol)
@@ -473,14 +491,15 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
   const formulaTokenOrder = useMemo(
     () => {
       const indexes = shuffledIndexes(formulaTokens.length);
-      if (!currentChallenge?.groupFormulaTokens || currentMode !== 'construct-formula') return indexes;
+      if (!tokensGrouped || currentMode !== 'construct-formula') return indexes;
       return indexes.sort((left, right) => {
         const leftRank = FORMULA_TOKEN_GROUPS.findIndex(({ id }) => id === formulaTokenGroup(formulaTokens[left]));
         const rightRank = FORMULA_TOKEN_GROUPS.findIndex(({ id }) => id === formulaTokenGroup(formulaTokens[right]));
         return leftRank - rightRank;
       });
     },
-    [currentChallenge?.id, currentChallenge?.groupFormulaTokens, currentMode, formulaTokens],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [currentChallenge?.id, tokensGrouped, currentMode, formulaTokens],
   );
 
   const [predictionPosition, setPredictionPosition] = useState<number | null>(null);
@@ -497,31 +516,51 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
   const recordedRef = useRef(false);
   const completionSubmittedRef = useRef(false);
 
-  useEffect(() => {
-    if (!currentChallenge) return;
+  // Resets. A fresh challenge opens blank at its starting values; Try again (workspace path) clears the checked work.
+  const resetWork = (challenge: FormulaLabChallenge | null) => {
     setPredictionPosition(null);
     setPredictionDirection(null);
     setPredictionLocked(false);
     setSelectedFormulaTokenIndexes([]);
     setTransferAnswer('');
     setJustification('');
-    setCurrentValues([...currentChallenge.baselineValues]);
-    setChallengeDone(false);
     setFeedback(null);
+    if (challenge) setCurrentValues([...challenge.baselineValues]);
+  };
+  const resetChallenge = (challenge: FormulaLabChallenge | null) => {
+    resetWork(challenge);
+    setChallengeDone(false);
     hintViewedRef.current = false;
     recordedRef.current = false;
+  };
+  // Workspace path: the runtime opens each item (and reopens it after a miss) in the same commit as the scene.
+  // Try again on a practice problem keeps it; a fresh item (or the full item back after practice) drops it.
+  openItem.current = (index, retry) => {
+    if (retry) resetWork(currentChallenge);
+    else { setPractice(null); resetChallenge(challenges[index] ?? null); }
+  };
+
+  // Both paths: a new challenge id opens blank (the scripted path's Next; on the workspace path a no-op repeat).
+  useEffect(() => {
+    if (!currentChallenge) return;
+    resetChallenge(currentChallenge);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChallenge?.id]);
+
+  /** What the living system shows: the `new_inputs` lever moves it to the transfer's new inputs (its output stays hidden). */
+  const shownValues = currentMode === 'transfer-apply' && leverOn(NEW_INPUTS_LEVER) && currentChallenge
+    ? currentChallenge.targetValues : currentValues;
 
   const currentOutput = useMemo(() => {
     if (!currentChallenge) return null;
-    return evaluateFormulaExpression(expression, valuesToScope(variables, currentValues));
-  }, [currentChallenge, expression, variables, currentValues]);
+    return evaluateFormulaExpression(expression, valuesToScope(variables, shownValues));
+  }, [currentChallenge, expression, variables, shownValues]);
 
   const inputProgress = useMemo(() => {
     if (!changedVariable || changedVariableIndex < 0) return 0.5;
     const span = changedVariable.max - changedVariable.min;
-    return span > 0 ? (currentValues[changedVariableIndex] - changedVariable.min) / span : 0.5;
-  }, [changedVariable, changedVariableIndex, currentValues]);
+    return span > 0 ? (shownValues[changedVariableIndex] - changedVariable.min) / span : 0.5;
+  }, [changedVariable, changedVariableIndex, shownValues]);
 
   const outputDelta = useMemo(() => {
     if (!currentChallenge || currentOutput === null) return 0;
@@ -530,13 +569,10 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
     return (currentOutput - currentChallenge.expectedBaselineOutput) / span;
   }, [currentChallenge, currentOutput]);
 
-  const observedPredictionPosition = useMemo(() => {
-    if (!currentChallenge) return 0;
-    const baseline = currentChallenge.expectedBaselineOutput;
-    const target = currentChallenge.expectedTargetOutput;
-    const relativeChange = (target - baseline) / Math.max(1, Math.abs(baseline));
-    return clamp(relativeChange, -1, 1);
-  }, [currentChallenge]);
+  const observedPredictionPosition = useMemo(
+    () => (currentChallenge ? observedPosition(currentChallenge) : 0),
+    [currentChallenge],
+  );
 
   const formulaContext = currentMode === 'construct-formula'
     ? 'the expression is withheld while the student constructs it'
@@ -545,6 +581,15 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
   const tierTutorPolicy = tutorRevealPolicy(supportTier, currentMode);
   const hasRequiredJustification = !currentChallenge?.requireJustification
     || justification.trim().length >= 8;
+  const isPredictionMode = currentMode === 'predict-direction' || currentMode === 'predict-magnitude';
+  const selectedFormulaTokens = selectedFormulaTokenIndexes.map((index) => formulaTokens[index]);
+  /** The learner's work as the domain module reads it. */
+  const work: FormulaWork = {
+    prediction: predictionPosition,
+    tokens: selectedFormulaTokens,
+    answer: transferAnswer,
+    value: changedVariableIndex >= 0 ? currentValues[changedVariableIndex] ?? null : null,
+  };
 
   const aiPrimitiveData = useMemo(() => ({
     title,
@@ -581,12 +626,17 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
     challengeDone,
   ]);
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  // The legacy context and its tagged messages are the scripted path's; on the workspace path the tutor reads the scene.
+  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'formula-lab',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: gradeBand,
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   const introducedRef = useRef(false);
   useEffect(() => {
@@ -600,55 +650,30 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
     );
   }, [isConnected, currentChallenge, title, formulaContext, challenges.length, currentMode, tierTutorPolicy, sendText]);
 
-  const handleLockPrediction = useCallback(() => {
-    if (
-      !currentChallenge
-      || !['predict-direction', 'predict-magnitude'].includes(currentMode)
-      || predictionPosition === null
-      || predictionLocked
-      || challengeDone
-      || !hasRequiredJustification
-    ) return;
-    SoundManager.select();
-    const direction = directionFromPosition(predictionPosition);
-    setPredictionDirection(direction);
-    setPredictionLocked(true);
-    incrementAttempts();
-    sendText(
-      `[PREDICTION_LOCKED] Challenge ${currentIndex + 1} of ${challenges.length}. ` +
-      `The student predicts ${outputName} will ${directionLabel(direction)}. ` +
-      `Briefly tell them to move ${changedVariable?.name ?? 'the variable'} to the target and compare the observation with their prediction. ` +
-      `${tierTutorPolicy}`,
-      { silent: true },
-    );
-  }, [
-    currentChallenge,
-    currentMode,
-    predictionPosition,
-    predictionLocked,
-    challengeDone,
-    hasRequiredJustification,
-    incrementAttempts,
-    sendText,
-    currentIndex,
-    challenges.length,
-    outputName,
-    changedVariable,
-    tierTutorPolicy,
-  ]);
-
+  /**
+   * A checked answer that finishes the challenge: the checked gesture (counts the attempt, records the verdict), then
+   * this primitive's own fields (the score, the prediction, the build). On the workspace path only a credited answer
+   * finishes; the scripted path also finishes a missed prediction.
+   */
   const finishChallenge = useCallback((
     correct: boolean,
     score: number,
     message: string,
     response: Record<string, unknown>,
-    attempts = Math.max(1, currentAttempts),
+    checked: FormulaWork,
   ) => {
     if (!currentChallenge || recordedRef.current) return;
     recordedRef.current = true;
     if (correct) SoundManager.playCorrect();
     else SoundManager.playIncorrect();
-    recordResult({
+    progress.commitCheck(
+      describeFormulaWork(data, currentChallenge, checked),
+      correct,
+      correct ? undefined : formulaMiss(data, currentChallenge, checked),
+    );
+    const attempts = currentAttempts + 1;
+    // An easier practice problem (a simplify lever) is not the session's challenge: it records nothing.
+    if (!isPracticeFormula(currentChallenge)) recordResult({
       challengeId: currentChallenge.id,
       correct,
       attempts,
@@ -659,25 +684,103 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
     });
     setChallengeDone(true);
     setFeedback({ correct, message });
-    const completedAttempts = Math.max(1, attempts);
     sendText(
       correct
-        ? `[ANSWER_CORRECT] The student completed the ${currentMode} task on challenge ${currentIndex + 1} after ${completedAttempts} attempt(s). `
+        ? `[ANSWER_CORRECT] The student completed the ${currentMode} task on challenge ${currentIndex + 1} after ${attempts} attempt(s). `
           + `Acknowledge briefly and connect the observed evidence to the relationship. ${tierTutorPolicy}`
-        : `[ANSWER_INCORRECT] The student completed the ${currentMode} task with a mismatch on challenge ${currentIndex + 1} after ${completedAttempts} attempt(s). `
+        : `[ANSWER_INCORRECT] The student completed the ${currentMode} task with a mismatch on challenge ${currentIndex + 1} after ${attempts} attempt(s). `
           + `Ask them to compare their response with the now-revealed relationship; do not just recite the answer. ${tierTutorPolicy}`,
       { silent: true },
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChallenge, currentAttempts, recordResult, currentMode, tierTutorPolicy, sendText, currentIndex, data, progress.commitCheck]);
+
+  /** A wrong check that leaves the challenge open (Try again on the workspace path, revise on the scripted one). */
+  const missed = (checked: FormulaWork, message: string, tag: string) => {
+    if (!currentChallenge) return;
+    SoundManager.playIncorrect();
+    setFeedback({ correct: false, message });
+    sendText(`${tag} Coach the next step within this tier policy. ${tierTutorPolicy}`, { silent: true });
+    progress.commitCheck(describeFormulaWork(data, currentChallenge, checked), false, formulaMiss(data, currentChallenge, checked));
+  };
+
+  const magnitudeMessage = (correct: boolean) => (correct
+    ? `Your signed prediction was close to the observed strength of change in ${outputName}.`
+    : 'Compare the cyan prediction with the amber observed marker. Direction and distance from the center both matter.');
+
+  const handleLockPrediction = useCallback(() => {
+    if (
+      !currentChallenge
+      || !isPredictionMode
+      || predictionPosition === null
+      || predictionLocked
+      || challengeDone
+      || !hasRequiredJustification
+      || learnerBlocked()
+    ) return;
+    SoundManager.select();
+    const direction = directionFromPosition(predictionPosition);
+    const checked: FormulaWork = { ...EMPTY_WORK, prediction: predictionPosition };
+    if (tutorOwned) {
+      // Workspace path: the locked prediction is the checked answer. A miss keeps the output hidden for Try again.
+      const { correct, score } = formulaCheck(data, currentChallenge, checked);
+      if (!correct) {
+        missed(checked, `That prediction does not match how ${outputName} responds yet. Look at where `
+          + `${changedVariable?.symbol ?? 'the changed quantity'} sits in the formula, then place it again.`, '[ANSWER_INCORRECT]');
+        return;
+      }
+      setPredictionDirection(direction);
+      setPredictionLocked(true);
+      setCurrentValues([...currentChallenge.targetValues]);
+      finishChallenge(
+        true,
+        score,
+        currentMode === 'predict-magnitude'
+          ? magnitudeMessage(true)
+          : `Your prediction matched the system: ${outputName} ${directionLabel(currentChallenge.correctDirection)}.`,
+        {
+          predictionPosition,
+          predictionDirection: direction,
+          ...(currentMode === 'predict-magnitude' ? { observedPosition: observedPredictionPosition } : {}),
+          justification: justification.trim() || undefined,
+          finalValues: currentChallenge.targetValues,
+        },
+        checked,
+      );
+      return;
+    }
+    setPredictionDirection(direction);
+    setPredictionLocked(true);
+    sendText(
+      `[PREDICTION_LOCKED] Challenge ${currentIndex + 1} of ${challenges.length}. ` +
+      `The student predicts ${outputName} will ${directionLabel(direction)}. ` +
+      `Briefly tell them to move ${changedVariable?.name ?? 'the variable'} to the target and compare the observation with their prediction. ` +
+      `${tierTutorPolicy}`,
+      { silent: true },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     currentChallenge,
-    currentAttempts,
-    recordResult,
+    isPredictionMode,
     currentMode,
-    tierTutorPolicy,
+    predictionPosition,
+    predictionLocked,
+    challengeDone,
+    hasRequiredJustification,
+    tutorOwned,
+    finishChallenge,
+    observedPredictionPosition,
+    justification,
     sendText,
     currentIndex,
+    challenges.length,
+    outputName,
+    changedVariable,
+    tierTutorPolicy,
+    data,
   ]);
 
+  /** The changed quantity reached its target: free-explore's finish, and the scripted path's test of a prediction. */
   const completeManipulation = useCallback((values: number[]) => {
     if (!currentChallenge) return;
     if (currentMode === 'free-explore') {
@@ -686,20 +789,18 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
         100,
         `You held the other quantities fixed and observed ${outputName} ${directionLabel(currentChallenge.correctDirection)}.`,
         { finalValues: values },
+        { ...EMPTY_WORK, value: values[changedVariableIndex] ?? null },
       );
       return;
     }
     if (predictionPosition === null || predictionDirection === null) return;
+    const checked: FormulaWork = { ...EMPTY_WORK, prediction: predictionPosition };
+    const { correct, score } = formulaCheck(data, currentChallenge, checked);
     if (currentMode === 'predict-magnitude') {
-      const distance = Math.abs(predictionPosition - observedPredictionPosition);
-      const score = Math.round(Math.max(0, 1 - distance / 2) * 100);
-      const correct = score >= 70;
       finishChallenge(
         correct,
         score,
-        correct
-          ? `Your signed prediction was close to the observed strength of change in ${outputName}.`
-          : `Compare the cyan prediction with the amber observed marker. Direction and distance from the center both matter.`,
+        magnitudeMessage(correct),
         {
           predictionPosition,
           observedPosition: observedPredictionPosition,
@@ -707,32 +808,36 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
           justification: justification.trim() || undefined,
           finalValues: values,
         },
+        checked,
       );
       return;
     }
-    const correct = predictionDirection === currentChallenge.correctDirection;
     finishChallenge(
       correct,
-      correct ? 100 : 0,
+      score,
       correct
         ? `Your prediction matched the system: ${outputName} ${directionLabel(currentChallenge.correctDirection)}.`
         : `The system showed that ${outputName} ${directionLabel(currentChallenge.correctDirection)}. Compare the two output markers.`,
       { predictionDirection, finalValues: values, justification: justification.trim() || undefined },
+      checked,
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     currentChallenge,
     currentMode,
+    changedVariableIndex,
     finishChallenge,
     observedPredictionPosition,
     outputName,
     predictionDirection,
     predictionPosition,
     justification,
+    data,
   ]);
 
   const handleVariableChange = useCallback((nextValue: number) => {
     const canManipulate = currentMode === 'free-explore' || predictionLocked;
-    if (!currentChallenge || !changedVariable || changedVariableIndex < 0 || !canManipulate || challengeDone) return;
+    if (!currentChallenge || !changedVariable || changedVariableIndex < 0 || !canManipulate || challengeDone || learnerBlocked()) return;
     const nextValues = [...currentValues];
     nextValues[changedVariableIndex] = nextValue;
     setCurrentValues(nextValues);
@@ -740,6 +845,7 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
     if (Math.abs(nextValue - target) <= changedVariable.step / 2) {
       completeManipulation(nextValues);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     currentChallenge,
     changedVariable,
@@ -752,21 +858,13 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
   ]);
 
   const handleCheckFormula = useCallback(() => {
-    if (!currentChallenge || currentMode !== 'construct-formula' || challengeDone) return;
-    incrementAttempts();
-    const assembled = selectedFormulaTokenIndexes.map((index) => formulaTokens[index]);
-    const correct = assembled.length === formulaTokens.length
-      && assembled.every((token, index) => token === formulaTokens[index]);
-    if (!correct) {
-      SoundManager.playIncorrect();
-      setFeedback({
-        correct: false,
-        message: 'That sequence does not represent the relationship yet. Check the operator order and parentheses, then revise it.',
-      });
-      sendText(
-        `[ANSWER_INCORRECT] The student's formula construction does not yet match on challenge ${currentIndex + 1}, attempt ${currentAttempts + 1}. ` +
-        `Coach the next step within this tier policy. ${tierTutorPolicy}`,
-        { silent: true },
+    if (!currentChallenge || currentMode !== 'construct-formula' || challengeDone || learnerBlocked()) return;
+    const checked: FormulaWork = { ...EMPTY_WORK, tokens: selectedFormulaTokens };
+    if (!formulaCheck(data, currentChallenge, checked).correct) {
+      missed(
+        checked,
+        'That sequence does not represent the relationship yet. Check the operator order and parentheses, then revise it.',
+        `[ANSWER_INCORRECT] The student's formula construction does not yet match on challenge ${currentIndex + 1}, attempt ${currentAttempts + 1}.`,
       );
       return;
     }
@@ -774,53 +872,36 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
       true,
       100,
       'Your constructed expression matches the living relationship.',
-      { assembledExpression: assembled.join(' ') },
-      currentAttempts + 1,
+      { assembledExpression: selectedFormulaTokens.join(' ') },
+      checked,
     );
-  }, [
-    challengeDone,
-    currentAttempts,
-    currentChallenge,
-    currentIndex,
-    currentMode,
-    finishChallenge,
-    formulaTokens,
-    incrementAttempts,
-    selectedFormulaTokenIndexes,
-    sendText,
-    tierTutorPolicy,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [challengeDone, currentAttempts, currentChallenge, currentIndex, currentMode, finishChallenge, selectedFormulaTokens, data]);
 
   const handleCheckTransfer = useCallback(() => {
-    if (!currentChallenge || currentMode !== 'transfer-apply' || challengeDone) return;
+    if (!currentChallenge || currentMode !== 'transfer-apply' || challengeDone || learnerBlocked()) return;
     if (transferAnswer.trim().length === 0 || !hasRequiredJustification) return;
     const answer = Number(transferAnswer);
     if (!Number.isFinite(answer)) return;
-    incrementAttempts();
-    const expected = currentChallenge.expectedTargetOutput;
-    const tolerance = Math.max(1e-6, Math.abs(expected) * 0.005);
-    const correct = Math.abs(answer - expected) <= tolerance;
-    if (!correct) {
-      SoundManager.playIncorrect();
-      setFeedback({
-        correct: false,
-        message: 'That output does not fit the transferred inputs yet. Substitute each shown value and keep the operation order intact.',
-      });
-      sendText(
-        `[ANSWER_INCORRECT] The student's transfer calculation is not yet correct on challenge ${currentIndex + 1}, attempt ${currentAttempts + 1}. ` +
-        `Coach the next step within this tier policy. ${tierTutorPolicy}`,
-        { silent: true },
+    const checked: FormulaWork = { ...EMPTY_WORK, answer: transferAnswer };
+    if (!formulaCheck(data, currentChallenge, checked).correct) {
+      missed(
+        checked,
+        'That output does not fit the transferred inputs yet. Substitute each shown value and keep the operation order intact.',
+        `[ANSWER_INCORRECT] The student's transfer calculation is not yet correct on challenge ${currentIndex + 1}, attempt ${currentAttempts + 1}.`,
       );
       return;
     }
+    const expected = currentChallenge.expectedTargetOutput;
     setCurrentValues([...currentChallenge.targetValues]);
     finishChallenge(
       true,
       100,
       `Yes — the relationship gives ${formatNumber(expected)} ${outputUnit} in the new setting.`,
       { submittedOutput: answer, expectedOutput: expected, justification: justification.trim() || undefined },
-      currentAttempts + 1,
+      checked,
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     challengeDone,
     currentAttempts,
@@ -829,12 +910,10 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
     currentMode,
     finishChallenge,
     hasRequiredJustification,
-    incrementAttempts,
     outputUnit,
-    sendText,
-    tierTutorPolicy,
     transferAnswer,
     justification,
+    data,
   ]);
 
   const announcedChallengeIdRef = useRef(currentChallenge?.id ?? null);
@@ -870,13 +949,17 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
     sendText,
   ]);
 
+  // Scripted path: the primitive's own Next (the workspace path hides it; the runtime advances).
   const handleNext = useCallback(() => {
     if (!challengeDone) return;
     advance();
   }, [challengeDone, advance]);
 
+  // Session complete (scripted path): the primitive's own tally, submitted once.
   useEffect(() => {
     if (!isComplete || hasSubmitted || completionSubmittedRef.current) return;
+    // The workspace path submits the scored session from `onFinished` (below), not this tally.
+    if (tutorOwned) return;
     completionSubmittedRef.current = true;
     const totalChallenges = challenges.length;
     const correctCount = challengeResults.filter((result) => result.correct).length;
@@ -909,6 +992,7 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
   }, [
     isComplete,
     hasSubmitted,
+    tutorOwned,
     challenges.length,
     challengeResults,
     challengeType,
@@ -917,6 +1001,63 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
     tierTutorPolicy,
     sendText,
   ]);
+
+  // Workspace path, under a lesson's evaluation provider only (the live host has none): the scored session, whose item
+  // scores count corrections and whose evidence carries each wrong check's named miss.
+  finish.current = (result) => {
+    if (hasSubmitted || completionSubmittedRef.current || challenges.length === 0 || progress.recordsEvaluation === false) return;
+    completionSubmittedRef.current = true;
+    const metrics: FormulaLabMetrics = {
+      type: 'formula-lab',
+      challengeType,
+      totalChallenges: challenges.length,
+      correctCount: result.solvedCount,
+      attemptsCount: result.attemptsCount,
+      firstTryCount: result.firstTryCount,
+      hintsViewed,
+      overallAccuracy: result.accuracy,
+      averageAttemptsPerChallenge: Math.round((result.attemptsCount / challenges.length) * 10) / 10,
+    };
+    submitResult(result.passed, result.accuracy, metrics,
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
+
+  const outputRevealed = currentMode === 'free-explore'
+    || (isPredictionMode && predictionLocked)
+    || challengeDone;
+
+  // Workspace path: what the tutor and the observer are shown, republished every render. No demonstration, no
+  // presentation.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    const scene = workspaceScene(data, currentChallenge, { ...work, revealed: outputRevealed });
+    const onScreen = practice ? '' : leverFacts(data, sessionChallenge, pulledLevers);
+    const levers = practice ? [] : formulaLevers(data, sessionChallenge, pulledLevers, {
+      tokensGrouped: !!sessionChallenge.groupFormulaTokens, substitutionShown: !!sessionChallenge.showSubstitutionSetup });
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice problem is on screen in place of the item. It is not graded; the full item comes back after it.' } : {}) },
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find((l) => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = simplerFormula(data, sessionChallenge);
+          if (!easier) return 'This item has no easier version; try a help lever.';
+          setLeverState(pulled); setPractice(easier); resetChallenge(easier);
+          return { practice: workspaceAssignment(data, easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { setPractice(null); resetChallenge(sessionChallenge); },
+    };
+  });
 
   if (!currentChallenge && !hasSubmitted) {
     return (
@@ -932,13 +1073,9 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
   const targetValue = changedVariable && changedVariableIndex >= 0
     ? currentChallenge?.targetValues[changedVariableIndex]
     : undefined;
-  const currentInputValue = changedVariableIndex >= 0 ? currentValues[changedVariableIndex] : undefined;
+  const currentInputValue = changedVariableIndex >= 0 ? shownValues[changedVariableIndex] : undefined;
   const hasMoreChallenges = currentIndex + 1 < challenges.length;
-  const isPredictionMode = currentMode === 'predict-direction' || currentMode === 'predict-magnitude';
   const canManipulate = currentMode === 'free-explore' || (isPredictionMode && predictionLocked);
-  const outputRevealed = currentMode === 'free-explore'
-    || (isPredictionMode && predictionLocked)
-    || challengeDone;
   const showLiveOutputReadout = currentChallenge?.showLiveOutputReadout ?? true;
   const numericOutputVisible = outputRevealed && (showLiveOutputReadout || challengeDone);
   const strategyCue = currentChallenge?.strategyCue ?? (isPredictionMode ? 'hint' : 'none');
@@ -956,13 +1093,26 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
       : currentMode === 'construct-formula'
         ? 'Sort the pieces mentally into quantities, operations, and grouping marks before choosing the first token.'
         : 'Replace each variable symbol with its shown value before doing any arithmetic.';
-  const selectedFormulaTokens = selectedFormulaTokenIndexes.map((index) => formulaTokens[index]);
   const availableFormulaTokenIndexes = formulaTokenOrder.filter(
     (index) => !selectedFormulaTokenIndexes.includes(index),
   );
   const transferSubstitution = currentMode === 'transfer-apply'
     ? substitutedExpression(expression, variables, currentChallenge?.targetValues ?? [])
     : '';
+  const pair = currentChallenge ? modelPair(data, currentChallenge) : null;
+  const builtValue = currentMode === 'construct-formula' && currentChallenge && selectedFormulaTokens.length
+    ? evaluateFormulaExpression(selectedFormulaTokens.join(' '), valuesToScope(variables, currentChallenge.baselineValues)) : null;
+  /** Prediction input: closed once locked, once the challenge is done, and while a checked miss waits for Try again. */
+  const predictionClosed = predictionLocked || challengeDone || blocked;
+  const placePrediction = (value: number) => {
+    if (predictionClosed || learnerBlocked()) return;
+    setPredictionPosition(clamp(value, -1, 1));
+    if (tutorOwned) setFeedback(null);
+  };
+  const pickToken = (index: number) => {
+    if (challengeDone || learnerBlocked()) return;
+    setSelectedFormulaTokenIndexes((current) => [...current, index]);
+  };
 
   // ── Pip shared surface ───────────────────────────────────────────
   // A projection of this item's check state, the tutor's speech on it, and
@@ -990,6 +1140,15 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
           {currentMode === 'construct-formula' && !challengeDone
             ? <p className="text-center text-3xl font-semibold text-cyan-100">{outputSymbol} = ?</p>
             : <FormulaDisplay latex={formulaLatex} />}
+          {/* `find_quantity` lever: the changed quantity's symbol ringed wherever it sits in the formula. */}
+          {leverOn(FIND_QUANTITY_LEVER) && changedVariable && (
+            <p data-lever="find-quantity" className="mt-2 text-center text-lg text-slate-200">
+              {outputSymbol} ={' '}
+              {formulaTokens.map((token, index) => (token === changedVariable.symbol
+                ? <span key={index} className="mx-0.5 rounded-full border-2 border-amber-300 px-2 text-amber-100">{token}</span>
+                : <span key={index} className="mx-0.5">{token === '*' ? '×' : token === '/' ? '÷' : token}</span>))}
+            </p>
+          )}
           <div className="mt-3 flex flex-wrap justify-center gap-2">
             {variables.map((variable, index) => (
               <LuminaBadge key={variable.symbol} accent={variable.accent ?? VARIABLE_ACCENTS[index % VARIABLE_ACCENTS.length]}>
@@ -1095,10 +1254,32 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
                     <p className="mb-3 text-sm font-semibold text-slate-200">1. Place your prediction</p>
                     <PredictionTrack
                       value={predictionPosition}
-                      disabled={predictionLocked}
+                      disabled={predictionClosed}
                       actualDirection={challengeDone ? currentChallenge.correctDirection : undefined}
                       actualPosition={challengeDone && currentMode === 'predict-magnitude' ? observedPredictionPosition : undefined}
-                      onChange={setPredictionPosition}
+                      onChange={placePrediction}
+                    />
+                    {/* `track_scale` lever: the track labelled in words, the same for every item. */}
+                    {leverOn(TRACK_SCALE_LEVER) && (
+                      <div data-lever="track-scale" className="relative mt-1 h-8 text-[10px] leading-tight text-slate-300" aria-hidden="true">
+                        {TRACK_MARKS.map((label, index) => (
+                          <span key={label} className="absolute w-16 -translate-x-1/2 text-center" style={{ left: `${50 + (index - 2) * 22.5}%` }}>
+                            {label}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {/* The keyboard's other way onto the track, and the journey's: the same position, in hundredths. */}
+                    <input
+                      type="range"
+                      className="sr-only"
+                      aria-label="Your prediction"
+                      min={-100}
+                      max={100}
+                      step={1}
+                      value={Math.round((predictionPosition ?? 0) * 100)}
+                      disabled={predictionClosed}
+                      onChange={(event) => placePrediction(Number(event.target.value) / 100)}
                     />
                     {currentChallenge.requireJustification && !predictionLocked && (
                       <div className="mt-4">
@@ -1107,8 +1288,10 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
                         </label>
                         <LuminaInput
                           id={`${resolvedInstanceId}-prediction-reason`}
+                          aria-label="Prediction reason"
                           value={justification}
-                          onChange={(event) => setJustification(event.target.value)}
+                          disabled={predictionClosed}
+                          onChange={(event) => { if (!learnerBlocked()) setJustification(event.target.value); }}
                           placeholder="State the variable's role or another piece of evidence"
                         />
                       </div>
@@ -1117,7 +1300,7 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
                       <div className="mt-4 flex justify-center">
                         <LuminaActionButton
                           action="check"
-                          disabled={predictionPosition === null || !hasRequiredJustification}
+                          disabled={predictionPosition === null || !hasRequiredJustification || predictionClosed}
                           onClick={handleLockPrediction}
                         >
                           Lock prediction
@@ -1141,9 +1324,21 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
                       max={changedVariable.max}
                       step={changedVariable.step}
                       value={[currentInputValue ?? changedVariable.defaultValue]}
-                      disabled={!canManipulate || challengeDone}
+                      disabled={!canManipulate || challengeDone || blocked}
                       onValueChange={([value]) => handleVariableChange(value)}
                       silent
+                    />
+                    {/* The keyboard's other way onto the slider, and the journey's. */}
+                    <input
+                      type="range"
+                      className="sr-only"
+                      aria-label="Changed quantity"
+                      min={changedVariable.min}
+                      max={changedVariable.max}
+                      step={changedVariable.step}
+                      value={currentInputValue ?? changedVariable.defaultValue}
+                      disabled={!canManipulate || challengeDone || blocked}
+                      onChange={(event) => handleVariableChange(Number(event.target.value))}
                     />
                     <p className="mt-3 text-xs text-slate-500">
                       {canManipulate
@@ -1162,7 +1357,7 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
                       </div>
                     </div>
                     <div className="flex flex-wrap justify-center gap-2">
-                      {currentChallenge.groupFormulaTokens
+                      {tokensGrouped
                         ? FORMULA_TOKEN_GROUPS.map((group) => {
                           const groupIndexes = availableFormulaTokenIndexes.filter(
                             (index) => formulaTokenGroup(formulaTokens[index]) === group.id,
@@ -1178,8 +1373,8 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
                                   <LuminaButton
                                     key={index}
                                     tone="ghost"
-                                    onClick={() => setSelectedFormulaTokenIndexes((current) => [...current, index])}
-                                    disabled={challengeDone}
+                                    onClick={() => pickToken(index)}
+                                    disabled={challengeDone || blocked}
                                   >
                                     {formulaTokens[index]}
                                   </LuminaButton>
@@ -1192,24 +1387,36 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
                           <LuminaButton
                             key={index}
                             tone="ghost"
-                            onClick={() => setSelectedFormulaTokenIndexes((current) => [...current, index])}
-                            disabled={challengeDone}
+                            onClick={() => pickToken(index)}
+                            disabled={challengeDone || blocked}
                           >
                             {formulaTokens[index]}
                           </LuminaButton>
                         ))}
                     </div>
+                    {/* `value_check` lever: what the learner's build gives at the starting values, beside the living system. */}
+                    {leverOn(VALUE_CHECK_LEVER) && (
+                      <div data-lever="value-check" className="rounded-xl border border-purple-400/20 bg-black/15 p-3 text-center text-sm text-slate-200">
+                        <p className="text-xs text-slate-400">
+                          At the starting values ({variables.map((variable, index) => `${variable.symbol} = ${formatNumber(currentChallenge.baselineValues[index])}`).join(', ')})
+                        </p>
+                        <p className="mt-1">
+                          your build gives <strong>{builtValue === null ? 'no value yet' : formatNumber(builtValue)}</strong>
+                          {' · '}the living system gives <strong>{formatNumber(currentChallenge.expectedBaselineOutput)}</strong>
+                        </p>
+                      </div>
+                    )}
                     <div className="flex flex-wrap justify-center gap-2">
                       <LuminaButton
                         tone="subtle"
-                        disabled={selectedFormulaTokenIndexes.length === 0 || challengeDone}
-                        onClick={() => setSelectedFormulaTokenIndexes((current) => current.slice(0, -1))}
+                        disabled={selectedFormulaTokenIndexes.length === 0 || challengeDone || blocked}
+                        onClick={() => { if (!learnerBlocked()) setSelectedFormulaTokenIndexes((current) => current.slice(0, -1)); }}
                       >
                         Undo token
                       </LuminaButton>
                       <LuminaActionButton
                         action="check"
-                        disabled={selectedFormulaTokenIndexes.length === 0 || challengeDone}
+                        disabled={selectedFormulaTokenIndexes.length === 0 || challengeDone || blocked}
                         onClick={handleCheckFormula}
                       >
                         Check formula
@@ -1227,7 +1434,7 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
                         </LuminaBadge>
                       ))}
                     </div>
-                    {currentChallenge.showSubstitutionSetup && (
+                    {substitutionShown && (
                       <div className="rounded-xl border border-rose-400/20 bg-rose-500/5 p-3 text-center">
                         <p className="text-xs font-semibold uppercase tracking-widest text-rose-300">Substitution setup</p>
                         <p className="mt-2 text-lg text-rose-100">{outputSymbol} = {transferSubstitution}</p>
@@ -1238,11 +1445,12 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
                     </label>
                     <LuminaInput
                       id={`${resolvedInstanceId}-transfer-answer`}
+                      aria-label="Transferred output"
                       type="number"
                       inputMode="decimal"
                       value={transferAnswer}
-                      disabled={challengeDone}
-                      onChange={(event) => setTransferAnswer(event.target.value)}
+                      disabled={challengeDone || blocked}
+                      onChange={(event) => { if (!learnerBlocked()) setTransferAnswer(event.target.value); }}
                       onKeyDown={(event) => {
                         if (event.key === 'Enter') handleCheckTransfer();
                       }}
@@ -1255,9 +1463,10 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
                         </label>
                         <LuminaInput
                           id={`${resolvedInstanceId}-transfer-reason`}
+                          aria-label="Calculation reason"
                           value={justification}
-                          disabled={challengeDone}
-                          onChange={(event) => setJustification(event.target.value)}
+                          disabled={challengeDone || blocked}
+                          onChange={(event) => { if (!learnerBlocked()) setJustification(event.target.value); }}
                           placeholder="Briefly justify how the formula gives your output"
                         />
                       </>
@@ -1265,7 +1474,7 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
                     <div className="flex justify-center">
                       <LuminaActionButton
                         action="check"
-                        disabled={transferAnswer.trim().length === 0 || challengeDone || !hasRequiredJustification}
+                        disabled={transferAnswer.trim().length === 0 || challengeDone || !hasRequiredJustification || blocked}
                         onClick={handleCheckTransfer}
                       >
                         Check transferred output
@@ -1278,7 +1487,30 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
 
             </div>
 
-            {strategyCue === 'hint' && !challengeDone && (!isPredictionMode || !predictionLocked) && (
+            {/* Lever pictures and cards outside the item: none of its symbols, numbers or order. */}
+            {(leverOn(MODEL_PAIR_LEVER) && pair) || leverOn(ORDER_CARD_LEVER) ? (
+              <div className="flex flex-wrap justify-center gap-4">
+                {leverOn(MODEL_PAIR_LEVER) && pair && (
+                  <figure data-lever="model-pair" className="rounded-xl border border-white/10 bg-black/15 p-3 text-sm text-slate-200">
+                    {pair.rows.map((row) => (
+                      <p key={row.rule} className="py-0.5">
+                        <strong>{row.rule}</strong>: {pair.input} {formatNumber(row.from)} → {formatNumber(row.to)},
+                        {' '}{pair.output} {formatNumber(row.outFrom)} → {formatNumber(row.outTo)}
+                      </p>
+                    ))}
+                    <figcaption className="mt-1 text-xs text-slate-400">Which rule is the formula like?</figcaption>
+                  </figure>
+                )}
+                {leverOn(ORDER_CARD_LEVER) && (
+                  <div data-lever="order-card" className="max-w-md rounded-xl border border-white/10 bg-black/15 p-3 text-sm text-slate-200">
+                    {orderCard(data).map((line) => <p key={line} className="py-0.5">{line}</p>)}
+                  </div>
+                )}
+              </div>
+            ) : null}
+
+            {/* Hint (scripted path). With the tutor, help is the tutor's. */}
+            {!tutorOwned && strategyCue === 'hint' && !challengeDone && (!isPredictionMode || !predictionLocked) && (
               <LuminaHintDisclosure
                 onOpenChange={(open) => {
                   if (open && !hintViewedRef.current) {
@@ -1303,7 +1535,8 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
               </LuminaFeedbackCard>
             )}
 
-            {challengeDone && (
+            {/* On the workspace path the shell's Try again / Next challenge replace Next. */}
+            {!tutorOwned && challengeDone && (
               <div className="flex justify-center">
                 <LuminaActionButton action="next" onClick={handleNext}>
                   {hasMoreChallenges ? 'Next experiment →' : 'See results →'}
@@ -1330,5 +1563,9 @@ const FormulaLab: React.FC<FormulaLabProps> = ({ data, className }) => {
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const FormulaLab = withWorkspaceController<FormulaLabProps, ProgressOptions<FormulaLabChallenge>, Progress>(
+  'formula-lab', FormulaLabSurface, useScriptedProgress, useWorkspaceProgressFor('formula-lab'));
 
 export default FormulaLab;

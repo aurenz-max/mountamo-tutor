@@ -1,0 +1,75 @@
+{
+ "source": "qa/tutor-reports/function-machine-runtime-observe-payload-2026-10-09.json",
+ "primitiveId": "function-machine",
+ "evalMode": "observe",
+ "data": {
+  "title": "Exploring Function Machines",
+  "description": "Watch how numbers go into the machine, follow the rule, and change into new output numbers across multiple fun challenges.",
+  "challengeType": "observe",
+  "challenges": [
+   {
+    "id": "fm-1",
+    "rule": "x + 2",
+    "inputQueue": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "showRule": true
+   },
+   {
+    "id": "fm-2",
+    "rule": "x - 5",
+    "inputQueue": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "showRule": true
+   },
+   {
+    "id": "fm-3",
+    "rule": "5*x",
+    "inputQueue": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "showRule": true
+   },
+   {
+    "id": "fm-4",
+    "rule": "x + 3",
+    "inputQueue": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "showRule": true
+   },
+   {
+    "id": "fm-5",
+    "rule": "x + 1",
+    "inputQueue": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "showRule": true
+   }
+  ],
+  "ruleComplexity": "oneStep",
+  "gradeBand": "3-4",
+  "outputDisplay": "animated"
+ }
+}

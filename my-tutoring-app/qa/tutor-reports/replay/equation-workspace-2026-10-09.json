@@ -1,0 +1,2694 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ],
+   "no_change_before_receipt": [
+    0,
+    20
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "equation-workspace.guided-solve",
+   "primitiveId": "equation-workspace",
+   "evalMode": "guided-solve",
+   "keys": [
+    "subtract 7 from both sides",
+    "divide both sides by 4",
+    "6"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "eq-guided-solve-0",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "subtract 7 from both sides",
+       "divide both sides by 4",
+       "6"
+      ],
+      "ask": "Isolate the target variable to determine the number of active sensor arrays operating on the rover. Solve 4 \u00d7 s + 7 = 31 for s by choosing operations from the menu, one step at a time, until s is alone.",
+      "leakTokens": [
+       "NEXT_ITEM",
+       "STEP_CORRECT",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "algebraicsimplify the isolated variable",
+       "simplify the isolated variable",
+       "algebraicsubtract 7 from both sides",
+       "subtract 7 from both sides",
+       "arithmeticmultiply both sides by 4",
+       "multiply both sides by 4",
+       "arithmeticdivide both sides by 4",
+       "divide both sides by 4",
+       "algebraicadd 7 to both sides",
+       "add 7 to both sides",
+       "algebraicsubtract 4 from both sides",
+       "subtract 4 from both sides"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Take a look at the highlighted option in the menu to get started on isolating s.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the highlighted operation in the menu to get started on isolating $s$.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the highlighted operation in the menu to get started on isolating the variable.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the equation and the highlighted operation to get started.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the highlighted operation in the menu to get started.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "eq-guided-solve-0",
+     "trigger": "The learner submitted \"Tried \\\"Add 7 to both sides\\\" on 4 \u00d7 s + 7 = 31\". The board checked it: not right.",
+     "miss": "not_inverse",
+     "scoredWith": {
+      "keys": [
+       "subtract 7 from both sides",
+       "divide both sides by 4",
+       "6"
+      ],
+      "ask": "Isolate the target variable to determine the number of active sensor arrays operating on the rover. Solve 4 \u00d7 s + 7 = 31 for s by choosing operations from the menu, one step at a time, until s is alone.",
+      "leakTokens": [
+       "NEXT_ITEM",
+       "STEP_CORRECT",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "algebraicsimplify the isolated variable",
+       "simplify the isolated variable",
+       "algebraicsubtract 7 from both sides",
+       "subtract 7 from both sides",
+       "arithmeticmultiply both sides by 4",
+       "multiply both sides by 4",
+       "arithmeticdivide both sides by 4",
+       "divide both sides by 4",
+       "algebraicadd 7 to both sides",
+       "add 7 to both sides",
+       "algebraicsubtract 4 from both sides",
+       "subtract 4 from both sides"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A reminder appeared below to help you think about undoing what is attached to s using the inverse operation. What operation undoes adding 7?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "inverse_reminder",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A reminder just appeared below the equation about undoing what is attached to the variable using inverse operations. What operation would undo adding 7?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "inverse_reminder",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A note appeared below reminding us to undo what is attached using the inverse operation on both sides. Look at what is added to the variable term, and try again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "inverse_reminder"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A reminder just appeared below the equation about using inverse operations to undo what is attached to the variable. Look at the highlighted option in the menu and give it another try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "inverse_reminder",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A helpful reminder just appeared below the equation about undoing what is attached to the variable using an inverse operation. Look at the highlighted option in the menu and give it another try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "inverse_reminder",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "eq-guided-solve-0",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "subtract 7 from both sides",
+       "divide both sides by 4",
+       "6"
+      ],
+      "ask": "Isolate the target variable to determine the number of active sensor arrays operating on the rover. Solve 4 \u00d7 s + 7 = 31 for s by choosing operations from the menu, one step at a time, until s is alone.",
+      "leakTokens": [
+       "NEXT_ITEM",
+       "STEP_CORRECT",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "algebraicsimplify the isolated variable",
+       "simplify the isolated variable",
+       "algebraicsubtract 7 from both sides",
+       "subtract 7 from both sides",
+       "arithmeticmultiply both sides by 4",
+       "multiply both sides by 4",
+       "arithmeticdivide both sides by 4",
+       "divide both sides by 4",
+       "algebraicadd 7 to both sides",
+       "add 7 to both sides",
+       "algebraicsubtract 4 from both sides",
+       "subtract 4 from both sides"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A worked example on a similar equation has popped up to guide you through each step. Take a look at how it solves its equation, and give yours another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "worked_model",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A reminder is now on the screen about undoing what is attached to the variable on both sides. Take a look at the highlighted menu option to see what undoes adding 7.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "inverse_reminder",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I've brought up a worked example showing how to undo each layer step by step. Notice how the outside operation is undone first, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "worked_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A reminder panel has appeared under the equation showing how to undo attached operations. Take a look at it and notice which operation in the menu is highlighted for your next try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "worked_model"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "inverse_reminder"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A panel appeared below reminding us to undo what is attached to the variable using an inverse operation. Look at the highlighted option in the menu and give that a try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "inverse_reminder"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "eq-guided-solve-0",
+     "trigger": "The learner said they were stuck, so the host pulled inverse_reminder (help). It is on screen now: Shows a panel under the equation, in words: undo whatever is attached to the variable with the inverse operation (addition and subtraction undo each other, and so do multiplication and division), on both sides. It names no operation in the menu. First point the learner to it: say what is now drawn an",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "subtract 7 from both sides",
+       "divide both sides by 4",
+       "6"
+      ],
+      "ask": "Isolate the target variable to determine the number of active sensor arrays operating on the rover. Solve 4 \u00d7 s + 7 = 31 for s by choosing operations from the menu, one step at a time, until s is alone.",
+      "leakTokens": [
+       "NEXT_ITEM",
+       "STEP_CORRECT",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "algebraicsimplify the isolated variable",
+       "simplify the isolated variable",
+       "algebraicsubtract 7 from both sides",
+       "subtract 7 from both sides",
+       "arithmeticmultiply both sides by 4",
+       "multiply both sides by 4",
+       "arithmeticdivide both sides by 4",
+       "divide both sides by 4",
+       "algebraicadd 7 to both sides",
+       "add 7 to both sides",
+       "algebraicsubtract 4 from both sides",
+       "subtract 4 from both sides"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A reminder panel has appeared right under the equation explaining how to undo operations with their opposites. Take a look at that note and see which operation undoes the plus seven.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A reminder panel has appeared right under the equation, reminding us that operations can be undone using their opposite on both sides. Give the menu another look and try your next step.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A reminder panel has appeared under the equation explaining how inverse operations work. Take a look at it and see which operation undoes what is attached to the variable.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is now a reminder panel right under the equation explaining how to undo what is attached using the inverse operation on both sides. Take a look at that panel and try your next step.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A reminder panel has appeared right under your equation about using inverse operations on both sides. Take a look at that note, and see which operation undoes the plus 7.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "eq-guided-solve-0",
+     "trigger": "The learner submitted \"Solved: Subtract 7 from both sides; Divide both sides by 4. The equation now reads s = 6\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "subtract 7 from both sides",
+       "divide both sides by 4",
+       "6"
+      ],
+      "ask": "Isolate the target variable to determine the number of active sensor arrays operating on the rover. Solve 4 \u00d7 s + 7 = 31 for s by choosing operations from the menu, one step at a time, until s is alone.",
+      "leakTokens": [
+       "NEXT_ITEM",
+       "STEP_CORRECT",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "algebraicsimplify the isolated variable",
+       "simplify the isolated variable",
+       "algebraicsubtract 7 from both sides",
+       "subtract 7 from both sides",
+       "arithmeticmultiply both sides by 4",
+       "multiply both sides by 4",
+       "arithmeticdivide both sides by 4",
+       "divide both sides by 4",
+       "algebraicadd 7 to both sides",
+       "add 7 to both sides",
+       "algebraicsubtract 4 from both sides",
+       "subtract 4 from both sides"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You subtracted 7 from both sides and then divided by 4 to get s = 6! That showed great persistence in working through each inverse step.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You subtracted 7 from both sides and then divided both sides by 4 to get s = 6. Great job working through both inverse operations to isolate s!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You subtracted 7 from both sides and then divided by 4 to get s = 6! That found the 6 active sensor arrays on the rover.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You solved it by subtracting 7 and then dividing by 4 to get s = 6! Outstanding work working through the inverse operations step by step.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nicely done! You subtracted 7 from both sides and then divided by 4 to get s = 6.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "equation-workspace.identify-operation",
+   "primitiveId": "equation-workspace",
+   "evalMode": "identify-operation",
+   "keys": [
+    "subtract 15 from both sides"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "eq-identify-operation-0",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "subtract 15 from both sides"
+      ],
+      "ask": "Identify the primary inverse operation required to begin isolating the target variable m. Choose the operation to apply next to 4m + 15 = 47 to solve for m, then press Check.",
+      "leakTokens": [
+       "NEXT_ITEM",
+       "STEP_CORRECT",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "algebraicadd 15 to both sides",
+       "add 15 to both sides",
+       "arithmeticdivide both sides by 4",
+       "divide both sides by 4",
+       "algebraicsubtract 47 from both sides",
+       "subtract 47 from both sides",
+       "arithmeticmultiply both sides by 4",
+       "multiply both sides by 4",
+       "algebraicsubtract 15 from both sides",
+       "subtract 15 from both sides",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Take a look at the equation 4m + 15 = 47 and choose the operation you'd use first to start isolating m.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the equation, choose the operation you want to apply first to both sides, and press Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to solving two-step equations! Look at $4m + 15 = 47$ and think about what is attached to $m$ that we should undo first.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Look at the equation $4m + 15 = 47$. Choose which operation will help us begin isolating $m$, then press Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the equation and decide which operation will start untangling the variable, then press Check when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "eq-identify-operation-0",
+     "trigger": "The learner submitted \"Chose \\\"Add 15 to both sides\\\"\". The board checked it: not right.",
+     "miss": "not_inverse",
+     "scoredWith": {
+      "keys": [
+       "subtract 15 from both sides"
+      ],
+      "ask": "Identify the primary inverse operation required to begin isolating the target variable m. Choose the operation to apply next to 4m + 15 = 47 to solve for m, then press Check.",
+      "leakTokens": [
+       "NEXT_ITEM",
+       "STEP_CORRECT",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "algebraicadd 15 to both sides",
+       "add 15 to both sides",
+       "arithmeticdivide both sides by 4",
+       "divide both sides by 4",
+       "algebraicsubtract 47 from both sides",
+       "subtract 47 from both sides",
+       "arithmeticmultiply both sides by 4",
+       "multiply both sides by 4",
+       "algebraicsubtract 15 from both sides",
+       "subtract 15 from both sides",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A reminder appeared below to help: to undo what is attached to the variable, use the inverse operation. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "inverse_reminder",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A reminder popped up below the equation: to undo what is attached to the variable, use the inverse operation. What operation undoes adding 15?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "inverse_reminder"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A reminder appeared below the equation to use the inverse operation to undo what is attached to the variable. Think about what operation undoes addition, and try choosing again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "inverse_reminder",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the reminder on the screen: we want to undo what is attached to the variable using an inverse operation. What operation undoes adding 15?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "inverse_reminder"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A reminder panel is now showing underneath the equation: to undo what is attached to the variable, use its inverse operation. What operation would undo adding 15?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "inverse_reminder",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "eq-identify-operation-0",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "subtract 15 from both sides"
+      ],
+      "ask": "Identify the primary inverse operation required to begin isolating the target variable m. Choose the operation to apply next to 4m + 15 = 47 to solve for m, then press Check.",
+      "leakTokens": [
+       "NEXT_ITEM",
+       "STEP_CORRECT",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "algebraicadd 15 to both sides",
+       "add 15 to both sides",
+       "arithmeticdivide both sides by 4",
+       "divide both sides by 4",
+       "algebraicsubtract 47 from both sides",
+       "subtract 47 from both sides",
+       "arithmeticmultiply both sides by 4",
+       "multiply both sides by 4",
+       "algebraicsubtract 15 from both sides",
+       "subtract 15 from both sides",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A helpful reminder panel has appeared under your equation. Since 15 is being added to 4m, what inverse operation would undo adding 15?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "inverse_reminder"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the + 15 attached to 4m\u2014what inverse operation undoes adding 15?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "inverse_reminder",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at what is added to 4m on that side of the equation. What opposite operation would undo adding 15?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "worked_model"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A reminder is now showing below the equation about using inverse operations on both sides. Since 15 is added to 4m, what operation undoes adding 15?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "inverse_reminder"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A note is now shown under the equation reminding us that inverse operations undo what is attached to the variable. Since 15 is being added to 4m, what operation would undo adding 15?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "inverse_reminder",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "eq-identify-operation-0",
+     "trigger": "The learner said they were stuck, so the host pulled inverse_reminder (help). It is on screen now: Shows a panel under the equation, in words: undo whatever is attached to the variable with the inverse operation (addition and subtraction undo each other, and so do multiplication and division), on both sides. It names no operation in the menu. First point the learner to it: say what is now drawn an",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "subtract 15 from both sides"
+      ],
+      "ask": "Identify the primary inverse operation required to begin isolating the target variable m. Choose the operation to apply next to 4m + 15 = 47 to solve for m, then press Check.",
+      "leakTokens": [
+       "NEXT_ITEM",
+       "STEP_CORRECT",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "algebraicadd 15 to both sides",
+       "add 15 to both sides",
+       "arithmeticdivide both sides by 4",
+       "divide both sides by 4",
+       "algebraicsubtract 47 from both sides",
+       "subtract 47 from both sides",
+       "arithmeticmultiply both sides by 4",
+       "multiply both sides by 4",
+       "algebraicsubtract 15 from both sides",
+       "subtract 15 from both sides",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A new reminder panel has appeared right under the equation explaining how inverse operations undo each other. Take a look at that note and choose your next operation from the menu!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the panel right under the equation, which reminds us that addition and subtraction undo each other. Go ahead and select the operation that undoes adding 15, then hit Check.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is a new panel under your equation explaining how inverse operations undo what is attached to the variable. Take a look at that note and try picking an operation again.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is a reminder panel right under the equation explaining how addition and subtraction undo each other. Take another look at the operations list and give it a try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look right under your equation: there is a reminder panel that explains how inverse operations undo what is attached to the variable. Select the operation that undoes adding 15, then press Check.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "eq-identify-operation-0",
+     "trigger": "The learner submitted \"Chose \\\"Subtract 15 from both sides\\\"\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "subtract 15 from both sides"
+      ],
+      "ask": "Identify the primary inverse operation required to begin isolating the target variable m. Choose the operation to apply next to 4m + 15 = 47 to solve for m, then press Check.",
+      "leakTokens": [
+       "NEXT_ITEM",
+       "STEP_CORRECT",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "algebraicadd 15 to both sides",
+       "add 15 to both sides",
+       "arithmeticdivide both sides by 4",
+       "divide both sides by 4",
+       "algebraicsubtract 47 from both sides",
+       "subtract 47 from both sides",
+       "arithmeticmultiply both sides by 4",
+       "multiply both sides by 4",
+       "algebraicsubtract 15 from both sides",
+       "subtract 15 from both sides",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Spot on! You fixed that mistake and chose to subtract 15 from both sides, which perfectly undoes the addition.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nice job choosing to subtract 15 from both sides to undo adding 15!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on\u2014you chose to subtract 15 from both sides, perfectly undoing that addition!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nice job! You saw that subtracting 15 from both sides uses the inverse to undo adding 15 and keeps the equation balanced.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! By choosing to subtract 15 from both sides, you used the inverse operation to undo adding 15.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "equation-workspace.multi-step",
+   "primitiveId": "equation-workspace",
+   "evalMode": "multi-step",
+   "keys": [
+    "apply the distributive property to expand 2(3x + 4)",
+    "combine constant terms on the left side: 8 + 7",
+    "subtract 15 from both sides",
+    "divide both sides by 4",
+    "8",
+    "15"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "eq-multi-step-0",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "apply the distributive property to expand 2(3x + 4)",
+       "combine constant terms on the left side: 8 + 7",
+       "subtract 15 from both sides",
+       "divide both sides by 4",
+       "8",
+       "15"
+      ],
+      "ask": "Isolate and determine the numerical value of the target variable x by systematically applying inverse operations, simplifying expressions, and maintaining algebraic balance. Solve 2(3x + 4) - 2x + 7 = 39 for x by choosing operations from the menu, one step at a time, until x is alone.",
+      "leakTokens": [
+       "NEXT_ITEM",
+       "STEP_CORRECT",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "algebraicadd 15 to both sides",
+       "add 15 to both sides",
+       "arithmeticdivide both sides by 4",
+       "divide both sides by 4",
+       "algebraicsubtract 15 from both sides",
+       "subtract 15 from both sides",
+       "arithmeticmultiply both sides by 4",
+       "multiply both sides by 4"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Take a look at the equation on your screen, and choose the first operation from the menu to get started.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the equation on your screen and choose the first operation from the menu to start simplifying.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the equation on your screen. What do you notice about the left side that we might want to simplify first?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the equation on your screen, and choose the first operation you'd like to try from the menu.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the equation on your screen, and choose the first operation you'd like to try from the menu.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "eq-multi-step-0",
+     "trigger": "The learner submitted \"Tried \\\"Combine variable like terms on the left side: 6x - 2x\\\" on 2(3x + 4) - 2x + 7 = 39\". The board checked it: not right.",
+     "miss": "later_step",
+     "scoredWith": {
+      "keys": [
+       "apply the distributive property to expand 2(3x + 4)",
+       "combine constant terms on the left side: 8 + 7",
+       "subtract 15 from both sides",
+       "divide both sides by 4",
+       "8",
+       "15"
+      ],
+      "ask": "Isolate and determine the numerical value of the target variable x by systematically applying inverse operations, simplifying expressions, and maintaining algebraic balance. Solve 2(3x + 4) - 2x + 7 = 39 for x by choosing operations from the menu, one step at a time, until x is alone.",
+      "leakTokens": [
+       "NEXT_ITEM",
+       "STEP_CORRECT",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "algebraicadd 15 to both sides",
+       "add 15 to both sides",
+       "arithmeticdivide both sides by 4",
+       "divide both sides by 4",
+       "algebraicsubtract 15 from both sides",
+       "subtract 15 from both sides",
+       "arithmeticmultiply both sides by 4",
+       "multiply both sides by 4"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at the new note below the equation: tidy each side first by clearing the parentheses before combining terms. Try picking a step to handle the parentheses first.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "layer_order",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A tip appeared below the equation about tidying up each side first. Take a look at the parentheses and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "layer_order",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A reminder just appeared below: remember to tidy the parentheses before combining like terms. Take another look and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "layer_order",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A guide has appeared below the equation reminding us to tidy each side first, starting with parentheses. Take another look at the operations menu and try the first step again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "layer_order"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A tip just appeared below: remember to tidy the parentheses before combining like terms. Take another look at the menu and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "layer_order",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "eq-multi-step-0",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "apply the distributive property to expand 2(3x + 4)",
+       "combine constant terms on the left side: 8 + 7",
+       "subtract 15 from both sides",
+       "divide both sides by 4",
+       "8",
+       "15"
+      ],
+      "ask": "Isolate and determine the numerical value of the target variable x by systematically applying inverse operations, simplifying expressions, and maintaining algebraic balance. Solve 2(3x + 4) - 2x + 7 = 39 for x by choosing operations from the menu, one step at a time, until x is alone.",
+      "leakTokens": [
+       "NEXT_ITEM",
+       "STEP_CORRECT",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "algebraicadd 15 to both sides",
+       "add 15 to both sides",
+       "arithmeticdivide both sides by 4",
+       "divide both sides by 4",
+       "algebraicsubtract 15 from both sides",
+       "subtract 15 from both sides",
+       "arithmeticmultiply both sides by 4",
+       "multiply both sides by 4"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A helper tip is now on your screen showing how to tidy the equation first. Which operation in the menu will expand the parentheses?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "layer_order"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A tip popped up below the equation reminding us to tidy each side first. What operation from the list clears those parentheses?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "layer_order",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A guide has appeared below the equation reminding us to tidy each side first. What operation would help you expand and clear those parentheses?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "layer_order",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A reminder panel is now showing under the equation. Start by clearing the parentheses on the left side before doing anything else.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "layer_order"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Notice the reminder on screen: start by clearing the parentheses to tidy up that side. Look for the operation in the menu that expands the group in parentheses first.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "layer_order"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "eq-multi-step-0",
+     "trigger": "The learner said they were stuck, so the host pulled layer_order (help). It is on screen now: Shows a panel under the equation, in words: where the equation has parentheses or like terms, tidy each side first; then undo in reverse order, the last thing done to the variable comes off first, from the outside in. It names no operation in the menu. First point the learner to it: say what is now drawn ",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "apply the distributive property to expand 2(3x + 4)",
+       "combine constant terms on the left side: 8 + 7",
+       "subtract 15 from both sides",
+       "divide both sides by 4",
+       "8",
+       "15"
+      ],
+      "ask": "Isolate and determine the numerical value of the target variable x by systematically applying inverse operations, simplifying expressions, and maintaining algebraic balance. Solve 2(3x + 4) - 2x + 7 = 39 for x by choosing operations from the menu, one step at a time, until x is alone.",
+      "leakTokens": [
+       "NEXT_ITEM",
+       "STEP_CORRECT",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "algebraicadd 15 to both sides",
+       "add 15 to both sides",
+       "arithmeticdivide both sides by 4",
+       "divide both sides by 4",
+       "algebraicsubtract 15 from both sides",
+       "subtract 15 from both sides",
+       "arithmeticmultiply both sides by 4",
+       "multiply both sides by 4"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the panel that just appeared under the equation: it reminds us to tidy each side first by clearing parentheses, then combine like terms. Take a look at your menu options and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new reminder panel has appeared right under the equation explaining how to tidy each side first. Take a look at that guide and choose your next operation from the menu.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under the equation\u2014a new guide reminds us to clear parentheses and tidy each side first. Give it another try by choosing which step opens up those parentheses.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new guide panel has appeared right under the equation, reminding us to tidy each side first. Take a look at that note, and see which operation helps you clear the parentheses first.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A panel just appeared right under your equation, reminding us to tidy each side by clearing parentheses first before combining terms. Take another look at the operations list and give that first step a try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "eq-multi-step-0",
+     "trigger": "The learner submitted \"Solved: Apply the distributive property to expand 2(3x + 4); Combine variable like terms on the left side: 6x - 2x; Combine constant terms on the left side: 8 + 7; Subtract 15 from both sides; Divide both sides by 4. The equation now reads x = 6\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "apply the distributive property to expand 2(3x + 4)",
+       "combine constant terms on the left side: 8 + 7",
+       "subtract 15 from both sides",
+       "divide both sides by 4",
+       "8",
+       "15"
+      ],
+      "ask": "Isolate and determine the numerical value of the target variable x by systematically applying inverse operations, simplifying expressions, and maintaining algebraic balance. Solve 2(3x + 4) - 2x + 7 = 39 for x by choosing operations from the menu, one step at a time, until x is alone.",
+      "leakTokens": [
+       "NEXT_ITEM",
+       "STEP_CORRECT",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "algebraicadd 15 to both sides",
+       "add 15 to both sides",
+       "arithmeticdivide both sides by 4",
+       "divide both sides by 4",
+       "algebraicsubtract 15 from both sides",
+       "subtract 15 from both sides",
+       "arithmeticmultiply both sides by 4",
+       "multiply both sides by 4"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You expanded the parentheses, combined the like terms step by step, and used inverse operations to isolate x and reach 6! Excellent work solving the entire equation.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You expanded the parentheses, combined the like terms step by step, and used inverse operations to isolate x and find 6. Outstanding work solving that entire equation!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You worked right through each step\u2014expanding, combining like terms, and undoing the operations until you reached x = 6. Excellent job working through that equation!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You expanded the parentheses, combined like terms, and used inverse operations to isolate x and reach 6! Great job working through all those steps systematically.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You solved it and found that x = 6! You did that by expanding the parentheses, combining your like terms, and then applying inverse operations step by step.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "equation-workspace.solve",
+   "primitiveId": "equation-workspace",
+   "evalMode": "solve",
+   "keys": [
+    "subtract 15 from both sides",
+    "divide both sides by 4",
+    "8"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "eq-solve-0",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "subtract 15 from both sides",
+       "divide both sides by 4",
+       "8"
+      ],
+      "ask": "Isolate and solve for the unknown sensor operation cycles, represented by x, by systematically undoing the operations applied to it. Solve 4x + 15 = 47 for x by choosing operations from the menu, one step at a time, until x is alone.",
+      "leakTokens": [
+       "NEXT_ITEM",
+       "STEP_CORRECT",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "arithmeticsimplify completely",
+       "simplify completely",
+       "algebraicdivide both sides by 4",
+       "divide both sides by 4",
+       "algebraicadd 15 to both sides",
+       "add 15 to both sides",
+       "algebraicsubtract 4 from both sides",
+       "subtract 4 from both sides",
+       "algebraicmultiply both sides by 4",
+       "multiply both sides by 4",
+       "algebraicsubtract 15 from both sides",
+       "subtract 15 from both sides"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Take a look at the equation, and choose an operation from the menu to start undoing what is attached to x.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the equation, and choose an operation from the menu to start peeling away what's attached to x.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the equation, and choose an operation from the menu to start peeling away the outer layer attached to x.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the equation 4x + 15 = 47. Which operation from the menu will undo what was added last to x?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the equation solver! Take a look at what is attached to $x$, and choose an operation from the menu to undo the first layer.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "eq-solve-0",
+     "trigger": "The learner submitted \"Tried \\\"Add 15 to both sides\\\" on 4x + 15 = 47\". The board checked it: not right.",
+     "miss": "not_inverse",
+     "scoredWith": {
+      "keys": [
+       "subtract 15 from both sides",
+       "divide both sides by 4",
+       "8"
+      ],
+      "ask": "Isolate and solve for the unknown sensor operation cycles, represented by x, by systematically undoing the operations applied to it. Solve 4x + 15 = 47 for x by choosing operations from the menu, one step at a time, until x is alone.",
+      "leakTokens": [
+       "NEXT_ITEM",
+       "STEP_CORRECT",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "arithmeticsimplify completely",
+       "simplify completely",
+       "algebraicdivide both sides by 4",
+       "divide both sides by 4",
+       "algebraicadd 15 to both sides",
+       "add 15 to both sides",
+       "algebraicsubtract 4 from both sides",
+       "subtract 4 from both sides",
+       "algebraicmultiply both sides by 4",
+       "multiply both sides by 4",
+       "algebraicsubtract 15 from both sides",
+       "subtract 15 from both sides"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A reminder appeared below the equation about undoing what is attached using the inverse operation. What operation will undo adding 15?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "inverse_reminder"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the reminder that just popped up below the equation about using inverse operations. What operation is the opposite of adding 15?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "inverse_reminder"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A reminder has appeared on screen to help: we undo whatever is attached to the variable by using its inverse operation on both sides. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "inverse_reminder",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A reminder appeared below the equation to use the inverse operation. Think about what undoes adding 15, and give it another try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "inverse_reminder"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A reminder appeared below the equation to use the inverse operation to undo what is attached to the variable. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "inverse_reminder",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "eq-solve-0",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "subtract 15 from both sides",
+       "divide both sides by 4",
+       "8"
+      ],
+      "ask": "Isolate and solve for the unknown sensor operation cycles, represented by x, by systematically undoing the operations applied to it. Solve 4x + 15 = 47 for x by choosing operations from the menu, one step at a time, until x is alone.",
+      "leakTokens": [
+       "NEXT_ITEM",
+       "STEP_CORRECT",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "arithmeticsimplify completely",
+       "simplify completely",
+       "algebraicdivide both sides by 4",
+       "divide both sides by 4",
+       "algebraicadd 15 to both sides",
+       "add 15 to both sides",
+       "algebraicsubtract 4 from both sides",
+       "subtract 4 from both sides",
+       "algebraicmultiply both sides by 4",
+       "multiply both sides by 4",
+       "algebraicsubtract 15 from both sides",
+       "subtract 15 from both sides"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A reminder has appeared on screen to help: we undo what is attached to the variable by using its inverse operation on both sides. Since 15 is being added, what is the inverse operation that will undo that?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "inverse_reminder",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A reminder is now on the screen showing that we undo operations using their opposites. Since 15 is added to x, think about what opposite operation will undo that addition.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "inverse_reminder",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A note is now shown under the equation reminding us to use inverse operations to undo what is attached to the variable. Since 15 is being added, what is the opposite operation?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "worked_model",
+          "actionId": "test/2/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "inverse_reminder",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A worked example has appeared on the screen showing how to solve an equation step by step. Take a look at how it undoes the addition first, and then give it a try on your equation.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "worked_model",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A guide has appeared below the equation reminding us to undo what is attached by using its opposite operation. To cancel out adding 15, which opposite operation from the menu should you try?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "inverse_reminder",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "eq-solve-0",
+     "trigger": "The learner said they were stuck, so the host pulled inverse_reminder (help). It is on screen now: Shows a panel under the equation, in words: undo whatever is attached to the variable with the inverse operation (addition and subtraction undo each other, and so do multiplication and division), on both sides. It names no operation in the menu. First point the learner to it: say what is now drawn an",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "subtract 15 from both sides",
+       "divide both sides by 4",
+       "8"
+      ],
+      "ask": "Isolate and solve for the unknown sensor operation cycles, represented by x, by systematically undoing the operations applied to it. Solve 4x + 15 = 47 for x by choosing operations from the menu, one step at a time, until x is alone.",
+      "leakTokens": [
+       "NEXT_ITEM",
+       "STEP_CORRECT",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "arithmeticsimplify completely",
+       "simplify completely",
+       "algebraicdivide both sides by 4",
+       "divide both sides by 4",
+       "algebraicadd 15 to both sides",
+       "add 15 to both sides",
+       "algebraicsubtract 4 from both sides",
+       "subtract 4 from both sides",
+       "algebraicmultiply both sides by 4",
+       "multiply both sides by 4",
+       "algebraicsubtract 15 from both sides",
+       "subtract 15 from both sides"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A new reminder panel has appeared right under the equation, showing that addition and subtraction undo each other. Take a look at that panel and try picking the operation that undoes adding 15.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A reminder panel is now visible right under the equation, showing that we undo operations with their opposites. Since 15 is added to 4x, choose the menu operation that undoes that addition.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the new reminder box that appeared right below your equation. It reminds us that addition and subtraction undo each other, so think about what operation will undo adding 15 and give that a try from the menu.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A reminder panel has appeared right under the equation, showing that addition and subtraction undo each other. Look at that reminder and choose the operation from the menu that undoes adding 15.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the panel that just appeared under the equation: it reminds us to undo what is attached to the variable using the opposite operation on both sides. Give it another try from the menu!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "eq-solve-0",
+     "trigger": "The learner submitted \"Solved: Subtract 15 from both sides; Divide both sides by 4. The equation now reads x = 8\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "subtract 15 from both sides",
+       "divide both sides by 4",
+       "8"
+      ],
+      "ask": "Isolate and solve for the unknown sensor operation cycles, represented by x, by systematically undoing the operations applied to it. Solve 4x + 15 = 47 for x by choosing operations from the menu, one step at a time, until x is alone.",
+      "leakTokens": [
+       "NEXT_ITEM",
+       "STEP_CORRECT",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "arithmeticsimplify completely",
+       "simplify completely",
+       "algebraicdivide both sides by 4",
+       "divide both sides by 4",
+       "algebraicadd 15 to both sides",
+       "add 15 to both sides",
+       "algebraicsubtract 4 from both sides",
+       "subtract 4 from both sides",
+       "algebraicmultiply both sides by 4",
+       "multiply both sides by 4",
+       "algebraicsubtract 15 from both sides",
+       "subtract 15 from both sides"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You subtracted 15 from both sides and then divided both sides by 4 to find x = 8. Excellent work using inverse operations to isolate x!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You solved it by subtracting 15 from both sides and then dividing by 4 to get x = 8. Excellent work using the inverse operations to isolate the variable!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You solved it by subtracting 15 from both sides and then dividing both sides by 4 to get x = 8. Great job working through those inverse steps!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nicely done! You subtracted 15 from both sides and then divided by 4 to get x = 8.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You solved it! By subtracting 15 from both sides and then dividing both sides by 4, you isolated x to find that x = 8.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

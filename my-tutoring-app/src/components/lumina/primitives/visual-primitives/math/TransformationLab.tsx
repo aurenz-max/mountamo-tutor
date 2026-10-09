@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -20,11 +20,24 @@ import {
 } from '../../../evaluation';
 import type { TransformationLabMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  CANVAS_H, CANVAS_W, GRID_MAX, GRID_MIN, GRID_TARGET, canvasToGrid, SEQUENCE_PALETTE, applyOp, describeTransformWork, gridToCanvas,
+  transformCorrect, transformMiss, workspaceAssignment, workspaceScene, type TransformWork,
+} from './transformationLabWorkspace';
+import {
+  CORNER_LETTERS_LEVER, LETTERS, MODEL_FLAG, MODEL_POINT_LEVER, MOTION_MODELS_LEVER, ORIGIN_RAYS_LEVER, PRE_COORDS_LEVER,
+  RULE_CARD_LEVER, TARGET_COORDS_LEVER, isPracticeTransform, leverFacts, modelPoint, motionModels, ruleFor, simplerItem,
+  transformLevers,
+} from './transformationLabLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -133,17 +146,9 @@ const PHASE_CONFIG_BY_TYPE: Record<TransformationLabChallengeType, PhaseConfig> 
 };
 
 // ============================================================================
-// Canvas constants
+// Canvas constants (the grid geometry lives in transformationLabWorkspace.ts)
 // ============================================================================
 
-const CANVAS_W = 460;
-const CANVAS_H = 460;
-const GRID_MIN = -7;
-const GRID_MAX = 7;
-const UNITS = GRID_MAX - GRID_MIN; // 14
-const ORIGIN_X = CANVAS_W / 2;
-const ORIGIN_Y = CANVAS_H / 2;
-const CELL = CANVAS_W / UNITS;
 const HANDLE_HIT = 16; // logical px
 
 const COL_GRID = 'rgba(148, 163, 184, 0.16)';
@@ -155,52 +160,9 @@ const FILL_IMG = 'rgba(244, 114, 182, 0.18)';
 const COL_GHOST = 'rgba(251, 191, 36, 0.65)'; // amber — ghost target (sequence)
 const COL_SHOWN = '#fbbf24';      // amber — shown image (identify)
 const FILL_SHOWN = 'rgba(251, 191, 36, 0.16)';
+const COL_MODEL = '#34d399';      // green — the model point a lever draws outside the item
 
-// ============================================================================
-// Pure geometry helpers
-// ============================================================================
-
-const worldToScreen = (p: GridPoint) => ({
-  x: ORIGIN_X + p.x * CELL,
-  y: ORIGIN_Y - p.y * CELL,
-});
-
-const ptKey = (p: GridPoint) => `${p.x},${p.y}`;
-
-/** Order-independent equality of two vertex sets. */
-function polygonsMatch(a: GridPoint[], b: GridPoint[]): boolean {
-  if (a.length !== b.length) return false;
-  const sa = a.map(ptKey).sort();
-  const sb = b.map(ptKey).sort();
-  return sa.every((v, i) => v === sb[i]);
-}
-
-/** Apply a single palette op to one point. */
-function applyOp(op: SequenceOp, p: GridPoint): GridPoint {
-  switch (op) {
-    case 'reflect_x':  return { x: p.x, y: -p.y };
-    case 'reflect_y':  return { x: -p.x, y: p.y };
-    case 'rotate90':   return { x: -p.y, y: p.x };  // 90° CCW about origin
-    case 'rotate180':  return { x: -p.x, y: -p.y };
-    case 'rotate270':  return { x: p.y, y: -p.x };  // 270° CCW (= 90° CW)
-    case 'tr_up':      return { x: p.x, y: p.y + 1 };
-    case 'tr_down':    return { x: p.x, y: p.y - 1 };
-    case 'tr_left':    return { x: p.x - 1, y: p.y };
-    case 'tr_right':   return { x: p.x + 1, y: p.y };
-  }
-}
-
-const SEQUENCE_PALETTE: { op: SequenceOp; label: string }[] = [
-  { op: 'reflect_x', label: 'Reflect over x-axis' },
-  { op: 'reflect_y', label: 'Reflect over y-axis' },
-  { op: 'rotate90', label: 'Rotate 90° ⟲' },
-  { op: 'rotate180', label: 'Rotate 180°' },
-  { op: 'rotate270', label: 'Rotate 270° ⟲' },
-  { op: 'tr_left', label: '← Left' },
-  { op: 'tr_right', label: 'Right →' },
-  { op: 'tr_up', label: '↑ Up' },
-  { op: 'tr_down', label: '↓ Down' },
-];
+const worldToScreen = gridToCanvas;
 
 /**
  * Tier-aware tutor reveal clause. The support tier withholds on-screen guides
@@ -240,9 +202,15 @@ function tutorRevealClause(
 interface TransformationLabProps {
   data: TransformationLabData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
-const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }) => {
+const TransformationLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  TransformationLabProps & { tutorOwned: boolean; useController: (options: ProgressOptions<TransformationLabChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -256,23 +224,50 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
     onEvaluationSubmit,
   } = data;
 
+  const stableInstanceIdRef = useRef(instanceId || `transformation-lab-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+
   // -------------------------------------------------------------------------
-  // Multi-challenge progression
+  // Multi-challenge progression. On the workspace path the runtime moves the index.
   // -------------------------------------------------------------------------
+  /** Bound below, once the setters and the evaluation exist; the progress hook calls them only after render. */
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onFinished: (result) => finish.current(result),
+  });
   const {
     currentIndex: currentChallengeIndex,
     currentAttempts,
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
-    incrementAttempts,
     advance: advanceProgress,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (ch) => ch.id,
-  });
+  } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const blocked = tutorOwned && progress.canAttempt === false;
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = blocked;
+  const learnerBlocked = () => workspaceClosed.current;
 
-  const currentChallenge = challenges[currentChallengeIndex] ?? null;
+  // In-item levers (`transformationLabLevers.ts`), keyed by the session item they were pulled on, and the easier item a
+  // simplify lever put on screen in its place.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<TransformationLabChallenge | null>(null);
+  const sessionChallenge = challenges[currentChallengeIndex] ?? null;
+  /** What is on screen: the easier item while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  /** A runtime pull on the session item; never drawn on a practice item. */
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
+  /** The rule card on screen: the tier's, or the `rule_card` lever's on the session item. */
+  const ruleOnScreen = currentChallenge?.ruleNotation
+    ?? (leverOn(RULE_CARD_LEVER) && sessionChallenge ? ruleFor(sessionChallenge) : null);
   const challengeType = currentChallenge?.type ?? 'apply_translation_reflection';
 
   // -------------------------------------------------------------------------
@@ -288,8 +283,6 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
   const [resizeTick, setResizeTick] = useState(0);
 
   // Refs
-  const stableInstanceIdRef = useRef(instanceId || `transformation-lab-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
   const recordedRef = useRef(false);
   const hintViewedRef = useRef(false);
   const hintsViewedRef = useRef(0);
@@ -297,13 +290,9 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dragIndexRef = useRef<number | null>(null);
 
-  // -------------------------------------------------------------------------
-  // Per-challenge reset — fires whenever advance() flips currentChallenge.id.
-  // -------------------------------------------------------------------------
-  useEffect(() => {
-    if (!currentChallenge) return;
-    // Drag / sequence start from a copy of the pre-image; the student moves it.
-    setWorkingImage(currentChallenge.preImage.map((p) => ({ ...p })));
+  /** A blank start on `ch`: the pink figure back on the pre-image, no moves, no option, no feedback. */
+  const resetWork = (ch: TransformationLabChallenge | null) => {
+    setWorkingImage(ch ? ch.preImage.map((p) => ({ ...p })) : []);
     setSequenceSteps([]);
     setSelectedOption(null);
     setFeedback('');
@@ -312,6 +301,19 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
     recordedRef.current = false;
     hintViewedRef.current = false;
     dragIndexRef.current = null;
+  };
+  // Workspace path: a fresh item and Try again both open blank (the scripted path resets in the effect below). Try again
+  // on a practice item keeps it; a fresh item (or the full item back after practice) drops it.
+  openItem.current = (index, retry) => {
+    if (retry) resetWork(practice ?? challenges[index] ?? null);
+    else { setPractice(null); resetWork(challenges[index] ?? null); }
+  };
+
+  // -------------------------------------------------------------------------
+  // Per-challenge reset — fires whenever the item on screen changes.
+  // -------------------------------------------------------------------------
+  useEffect(() => {
+    resetWork(currentChallenge);
   }, [currentChallenge?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // -------------------------------------------------------------------------
@@ -353,13 +355,14 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
       ctx.stroke();
     }
     // axes
+    const origin = worldToScreen({ x: 0, y: 0 });
     ctx.strokeStyle = COL_AXIS;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(0, ORIGIN_Y);
-    ctx.lineTo(CANVAS_W, ORIGIN_Y);
-    ctx.moveTo(ORIGIN_X, 0);
-    ctx.lineTo(ORIGIN_X, CANVAS_H);
+    ctx.moveTo(0, origin.y);
+    ctx.lineTo(CANVAS_W, origin.y);
+    ctx.moveTo(origin.x, 0);
+    ctx.lineTo(origin.x, CANVAS_H);
     ctx.stroke();
     // axis ticks every 2 units
     ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
@@ -369,9 +372,9 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
     for (let g = GRID_MIN; g <= GRID_MAX; g += 2) {
       if (g === 0) continue;
       const sx = worldToScreen({ x: g, y: 0 });
-      ctx.fillText(`${g}`, sx.x, ORIGIN_Y + 12);
+      ctx.fillText(`${g}`, sx.x, origin.y + 12);
       const sy = worldToScreen({ x: 0, y: g });
-      ctx.fillText(`${g}`, ORIGIN_X - 12, sy.y);
+      ctx.fillText(`${g}`, origin.x - 12, sy.y);
     }
 
     // ----- polygon drawing helper -----
@@ -427,7 +430,24 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
     // Pre-image is always shown (the object being transformed). Its (x, y) vertex
     // labels are a perception-aid scaffold withdrawn at harder tiers (default ON
     // when the field is absent, preserving legacy behavior). Never the answer.
-    const showPreCoords = ch.showPreImageCoords !== false;
+    const showPreCoords = ch.showPreImageCoords !== false || leverOn(PRE_COORDS_LEVER);
+    // `origin_rays` lever: a dashed ray from the origin through each cyan corner to the grid's edge, no point marked.
+    if (leverOn(ORIGIN_RAYS_LEVER)) {
+      ctx.save();
+      ctx.setLineDash([3, 5]);
+      ctx.strokeStyle = 'rgba(52, 211, 153, 0.55)';
+      ctx.lineWidth = 1.25;
+      ch.preImage.forEach((p) => {
+        if (p.x === 0 && p.y === 0) return;
+        const reach = GRID_MAX / Math.max(Math.abs(p.x), Math.abs(p.y));
+        const end = worldToScreen({ x: p.x * reach, y: p.y * reach });
+        ctx.beginPath();
+        ctx.moveTo(origin.x, origin.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
+      });
+      ctx.restore();
+    }
     drawPolygon(ch.preImage, COL_PRE, FILL_PRE, { labelPts: showPreCoords });
     drawVertices(ch.preImage, COL_PRE, 4);
 
@@ -446,7 +466,65 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
       drawPolygon(workingImage, COL_IMG, FILL_IMG, { dashed: true, labelPts: true });
       drawVertices(workingImage, COL_IMG, 6);
     }
-  }, [currentChallenge, workingImage, resizeTick]);
+
+    // `target_coords` lever (compose): the dashed target's corners labelled; the target is the WHERE, never the moves.
+    if (ch.answerKind === 'sequence' && leverOn(TARGET_COORDS_LEVER)) {
+      ch.expectedImage.forEach((p) => {
+        const s = worldToScreen(p);
+        ctx.fillStyle = COL_SHOWN;
+        ctx.font = '11px ui-sans-serif, system-ui, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'top';
+        ctx.fillText(`(${p.x}, ${p.y})`, s.x - 6, s.y + 4);
+      });
+    }
+    // `corner_letters` lever: A, B, C on the pre-image and A′, B′, C′ on its partners (A″ on a compose target).
+    if (leverOn(CORNER_LETTERS_LEVER)) {
+      const letter = (pts: GridPoint[], mark: string, color: string) => pts.forEach((p, i) => {
+        const s = worldToScreen(p);
+        ctx.fillStyle = color;
+        ctx.font = 'bold 12px ui-sans-serif, system-ui, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(`${LETTERS[i] ?? '?'}${mark}`, s.x - 6, s.y - 4);
+      });
+      letter(ch.preImage, '', COL_PRE);
+      if (ch.answerKind === 'identify') letter(ch.expectedImage, '′', COL_SHOWN);
+      else letter(workingImage, '′', COL_IMG);
+      if (ch.answerKind === 'sequence') letter(ch.expectedImage, '″', COL_SHOWN);
+    }
+    // `model_point` lever: the motion on a green point P away from the figure, and its image P′.
+    const model = leverOn(MODEL_POINT_LEVER) ? modelPoint(ch) : null;
+    if (model) {
+      const a = worldToScreen(model.from), b = worldToScreen(model.to);
+      ctx.save();
+      ctx.strokeStyle = COL_MODEL;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      const ang = Math.atan2(b.y - a.y, b.x - a.x);
+      ctx.beginPath();
+      ctx.moveTo(b.x, b.y);
+      ctx.lineTo(b.x - 9 * Math.cos(ang - 0.4), b.y - 9 * Math.sin(ang - 0.4));
+      ctx.lineTo(b.x - 9 * Math.cos(ang + 0.4), b.y - 9 * Math.sin(ang + 0.4));
+      ctx.closePath();
+      ctx.fillStyle = COL_MODEL;
+      ctx.fill();
+      ctx.restore();
+      drawVertices([model.from, model.to], COL_MODEL, 4);
+      ctx.fillStyle = COL_MODEL;
+      ctx.font = 'bold 11px ui-sans-serif, system-ui, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText(`P (${model.from.x}, ${model.from.y})`, a.x + 6, a.y + 4);
+      ctx.fillText(`P′ (${model.to.x}, ${model.to.y})`, b.x + 6, b.y + 4);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChallenge, workingImage, resizeTick, practice, leverState]);
 
   // Redraw crisply when the canvas's displayed size changes.
   useEffect(() => {
@@ -460,28 +538,23 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
   // -------------------------------------------------------------------------
   // Drag interaction (apply / dilation modes)
   // -------------------------------------------------------------------------
-  const eventToWorld = useCallback((clientX: number, clientY: number): GridPoint => {
+  /** A pointer position in the canvas's logical pixels. An unmeasured canvas (no layout) reads them 1:1. */
+  const toLogical = useCallback((clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
-    const lx = (clientX - rect.left) * (CANVAS_W / rect.width);
-    const ly = (clientY - rect.top) * (CANVAS_H / rect.height);
-    return {
-      x: Math.round((lx - ORIGIN_X) / CELL),
-      y: Math.round((ORIGIN_Y - ly) / CELL),
-    };
+    const sx = rect.width > 0 ? CANVAS_W / rect.width : 1;
+    const sy = rect.height > 0 ? CANVAS_H / rect.height : 1;
+    return { x: (clientX - rect.left) * sx, y: (clientY - rect.top) * sy };
   }, []);
 
   const isDragMode = currentChallenge?.answerKind === 'drag';
+  const inputClosed = blocked;
 
-  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!isDragMode || !currentChallenge) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const lx = (e.clientX - rect.left) * (CANVAS_W / rect.width);
-    const ly = (e.clientY - rect.top) * (CANVAS_H / rect.height);
-    // Find the nearest working handle within hit radius.
+  /** A drag starts on the nearest pink corner within the hit radius. */
+  const startDrag = (clientX: number, clientY: number): boolean => {
+    if (!isDragMode || !currentChallenge || learnerBlocked()) return false;
+    const { x: lx, y: ly } = toLogical(clientX, clientY);
     let best = -1;
     let bestDist = HANDLE_HIT;
     workingImage.forEach((p, i) => {
@@ -492,52 +565,66 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
         best = i;
       }
     });
-    if (best >= 0) {
-      dragIndexRef.current = best;
-      canvas.setPointerCapture(e.pointerId);
-      SoundManager.tap();
-    }
-  }, [isDragMode, currentChallenge, workingImage]);
-
-  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (best < 0) return false;
+    dragIndexRef.current = best;
+    SoundManager.tap();
+    return true;
+  };
+  const moveDrag = (clientX: number, clientY: number) => {
     const idx = dragIndexRef.current;
     if (idx === null) return;
-    const w = eventToWorld(e.clientX, e.clientY);
-    const cx = Math.max(GRID_MIN, Math.min(GRID_MAX, w.x));
-    const cy = Math.max(GRID_MIN, Math.min(GRID_MAX, w.y));
+    const { x: lx, y: ly } = toLogical(clientX, clientY);
+    const g = canvasToGrid(lx, ly);
+    const cx = Math.max(GRID_MIN, Math.min(GRID_MAX, g.x));
+    const cy = Math.max(GRID_MIN, Math.min(GRID_MAX, g.y));
     setWorkingImage((prev) => {
       if (prev[idx] && prev[idx].x === cx && prev[idx].y === cy) return prev;
       const next = prev.map((p) => ({ ...p }));
       if (next[idx]) next[idx] = { x: cx, y: cy };
       return next;
     });
-  }, [eventToWorld]);
-
-  const handlePointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (dragIndexRef.current !== null) {
-      dragIndexRef.current = null;
-      SoundManager.snap();
-      const canvas = canvasRef.current;
-      try { canvas?.releasePointerCapture(e.pointerId); } catch { /* noop */ }
+  };
+  const endDrag = () => {
+    if (dragIndexRef.current === null) return false;
+    dragIndexRef.current = null;
+    SoundManager.snap();
+    return true;
+  };
+  // Pointer events drive the drag; a mouse event acts only where no pointer event came first (a browser follows each
+  // pointer event with a mouse one, and a pointer-less host, like the journey driver, sends only mouse events).
+  const pointerSeenRef = useRef(false);
+  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    pointerSeenRef.current = true;
+    if (startDrag(e.clientX, e.clientY)) {
+      try { canvasRef.current?.setPointerCapture(e.pointerId); } catch { /* noop */ }
     }
-  }, []);
+  };
+  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => moveDrag(e.clientX, e.clientY);
+  const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (endDrag()) {
+      try { canvasRef.current?.releasePointerCapture(e.pointerId); } catch { /* noop */ }
+    }
+  };
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => { if (!pointerSeenRef.current) startDrag(e.clientX, e.clientY); };
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => { if (!pointerSeenRef.current) moveDrag(e.clientX, e.clientY); };
+  const handleMouseUp = () => { if (!pointerSeenRef.current) endDrag(); };
 
   // -------------------------------------------------------------------------
   // Sequence palette (compose mode)
   // -------------------------------------------------------------------------
-  const applySequenceOp = useCallback((op: SequenceOp) => {
-    if (!currentChallenge || currentChallenge.answerKind !== 'sequence') return;
+  const applySequenceOp = (op: SequenceOp) => {
+    if (!currentChallenge || currentChallenge.answerKind !== 'sequence' || learnerBlocked()) return;
     SoundManager.tap();
     setWorkingImage((prev) => prev.map((p) => applyOp(op, p)));
     setSequenceSteps((prev) => [...prev, op]);
-  }, [currentChallenge]);
+  };
 
-  const resetWorking = useCallback(() => {
-    if (!currentChallenge) return;
+  const resetWorking = () => {
+    if (!currentChallenge || learnerBlocked()) return;
     SoundManager.tick();
     setWorkingImage(currentChallenge.preImage.map((p) => ({ ...p })));
     setSequenceSteps([]);
-  }, [currentChallenge]);
+  };
 
   // -------------------------------------------------------------------------
   // Evaluation + phase results
@@ -573,7 +660,8 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
   });
 
   // -------------------------------------------------------------------------
-  // AI Tutoring
+  // AI Tutoring (scripted path). Its context carries the transformation's name, so the workspace path reads the
+  // scene instead: the legacy hook is disabled there and its sendText muted.
   // -------------------------------------------------------------------------
   const aiPrimitiveData = useMemo(() => ({
     challengeType,
@@ -595,12 +683,16 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
     currentAttempts,
   ]);
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'transformation-lab',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: `Grade ${gradeBand}`,
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   const hasIntroducedRef = useRef(false);
   useEffect(() => {
@@ -614,98 +706,86 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
   }, [isConnected, challenges.length, challengeType, gradeBand, sendText]);
 
   // -------------------------------------------------------------------------
-  // Record / submit
+  // Record / check
   // -------------------------------------------------------------------------
-  const completeChallenge = useCallback((correct: boolean) => {
-    if (!currentChallenge) return;
-    if (!correct) return; // record only on a correct attempt
+  /** This primitive's own score on a correct check (the commit already counted the attempt and the verdict). */
+  const completeChallenge = (ch: TransformationLabChallenge, attempts: number) => {
     if (recordedRef.current) return;
     recordedRef.current = true;
-    const attempts = currentAttempts + 1;
-    const score = Math.max(20, 100 - (attempts - 1) * 20);
-    recordResult({
-      challengeId: currentChallenge.id,
-      correct: true,
-      attempts,
-      score,
-    });
-  }, [currentChallenge, currentAttempts, recordResult]);
+    // An easier practice item (a simplify lever) is not the session's challenge: it records nothing.
+    if (isPracticeTransform(ch)) return;
+    recordResult({ challengeId: ch.id, correct: true, attempts, score: Math.max(20, 100 - (attempts - 1) * 20) });
+  };
 
-  const handleCheck = useCallback(() => {
-    if (!currentChallenge || hasSubmittedEvaluation) return;
+  const handleCheck = () => {
+    if (!currentChallenge || hasSubmittedEvaluation || learnerBlocked()) return;
+    if (recordedRef.current) return;
     const ch = currentChallenge;
+    if (ch.answerKind === 'identify' && selectedOption === null) {
+      setFeedback('Pick the transformation that maps the cyan pre-image onto the amber image.');
+      setFeedbackType('error');
+      return;
+    }
+    const work: TransformWork = { image: workingImage, steps: sequenceSteps, selected: selectedOption };
+    const correct = transformCorrect(ch, work);
+    const attempts = currentAttempts + 1;
+    const response = describeTransformWork(ch, work);
 
-    // --- identify (multiple choice) ---
-    if (ch.answerKind === 'identify') {
-      if (selectedOption === null) {
-        setFeedback('Pick the transformation that maps the cyan pre-image onto the amber image.');
-        setFeedbackType('error');
-        return;
-      }
-      incrementAttempts();
-      const correct = selectedOption === ch.correctOption;
-      if (correct) {
-        SoundManager.playCorrect();
+    if (correct) {
+      SoundManager.playCorrect();
+      if (ch.answerKind === 'identify') {
         setFeedback(`Correct — this is a ${ch.transformLabel.toLowerCase()}.`);
-        setFeedbackType('success');
         sendText(
-          `[ANSWER_CORRECT] Student identified the transformation as "${ch.options?.[selectedOption]}" (correct). Celebrate briefly and restate what stays invariant.`,
+          `[ANSWER_CORRECT] Student identified the transformation as "${ch.options?.[selectedOption ?? 0]}" (correct). Celebrate briefly and restate what stays invariant.`,
           { silent: true },
         );
-        completeChallenge(true);
       } else {
-        SoundManager.playIncorrect();
-        setFeedback('Not quite. Track ONE vertex from the pre-image to the image — did it slide, flip, turn, or scale?');
-        setFeedbackType('error');
+        const tail =
+          ch.answerKind === 'sequence'
+            ? ` You used ${sequenceSteps.length} step${sequenceSteps.length === 1 ? '' : 's'}.`
+            : ch.isSimilarity
+            ? ' The image is similar to the original — same shape, scaled size.'
+            : ' The image is congruent to the original.';
+        setFeedback(`Correct — that's the right image.${tail}`);
         sendText(
-          `[ANSWER_INCORRECT] Student chose "${ch.options?.[selectedOption ?? 0]}" but the transformation is "${ch.transformLabel}". `
-          + `Attempt ${currentAttempts + 1}. Tell them to follow one corner and notice what changed — do NOT name the answer.`
-          + tutorRevealClause(ch.supportTier, true),
+          `[ANSWER_CORRECT] Student produced the correct image for a ${challengeType} task (${ch.transformLabel}). `
+          + `Celebrate briefly and reinforce ${ch.isSimilarity ? 'why it is similar (not congruent)' : 'why size and shape were preserved'}.`,
           { silent: true },
         );
-        setSelectedOption(null);
       }
+      setFeedbackType('success');
+      progress.commitCheck(response, true);
+      completeChallenge(ch, attempts);
       return;
     }
 
-    // --- drag / sequence: working image must match the expected image ---
-    incrementAttempts();
-    const correct = polygonsMatch(workingImage, ch.expectedImage);
-    if (correct) {
-      SoundManager.playCorrect();
-      const tail =
-        ch.answerKind === 'sequence'
-          ? ` You used ${sequenceSteps.length} step${sequenceSteps.length === 1 ? '' : 's'}.`
-          : ch.isSimilarity
-          ? ' The image is similar to the original — same shape, scaled size.'
-          : ' The image is congruent to the original.';
-      setFeedback(`Correct — that's the right image.${tail}`);
-      setFeedbackType('success');
+    SoundManager.playIncorrect();
+    if (ch.answerKind === 'identify') {
+      setFeedback('Not quite. Track ONE vertex from the pre-image to the image — did it slide, flip, turn, or scale?');
       sendText(
-        `[ANSWER_CORRECT] Student produced the correct image for a ${challengeType} task (${ch.transformLabel}). `
-        + `Celebrate briefly and reinforce ${ch.isSimilarity ? 'why it is similar (not congruent)' : 'why size and shape were preserved'}.`,
+        `[ANSWER_INCORRECT] Student chose "${ch.options?.[selectedOption ?? 0]}" but the transformation is "${ch.transformLabel}". `
+        + `Attempt ${attempts}. Tell them to follow one corner and notice what changed — do NOT name the answer.`
+        + tutorRevealClause(ch.supportTier, true),
         { silent: true },
       );
-      completeChallenge(true);
+      // The scripted path clears the choice at once; the workspace path clears it on Try again.
+      if (!tutorOwned) setSelectedOption(null);
     } else {
-      SoundManager.playIncorrect();
-      const nudge =
+      setFeedback(
         ch.answerKind === 'sequence'
           ? 'Not there yet. Compare each working corner to the ghost target and pick the next transformation.'
-          : 'Not quite. Apply the rule to each vertex and drag it to the matching grid point.';
-      setFeedback(nudge);
-      setFeedbackType('error');
+          : 'Not quite. Apply the rule to each vertex and drag it to the matching grid point.',
+      );
       sendText(
         `[ANSWER_INCORRECT] Student's image does not match the target for ${challengeType} (${ch.transformLabel}). `
-        + `Attempt ${currentAttempts + 1}. Coach the coordinate rule for ONE vertex — do NOT give all the answer coordinates.`
+        + `Attempt ${attempts}. Coach the coordinate rule for ONE vertex — do NOT give all the answer coordinates.`
         + tutorRevealClause(ch.supportTier, false),
         { silent: true },
       );
     }
-  }, [
-    currentChallenge, hasSubmittedEvaluation, selectedOption, workingImage, sequenceSteps,
-    incrementAttempts, completeChallenge, currentAttempts, sendText, challengeType,
-  ]);
+    setFeedbackType('error');
+    progress.commitCheck(response, false, transformMiss(ch, work));
+  };
 
   const handleShowHint = useCallback(() => {
     if (showHint) return;
@@ -729,10 +809,12 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
   }, [advanceProgress, currentChallengeIndex, challenges, sendText]);
 
   // -------------------------------------------------------------------------
-  // Session complete — build metrics and submit exactly once.
+  // Session complete (scripted path) — build metrics and submit exactly once.
   // -------------------------------------------------------------------------
   useEffect(() => {
     if (!allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0) return;
+    // The workspace path submits the scored session from `onFinished` (below), not this tally.
+    if (tutorOwned) return;
     if (submittedRef.current) return;
     submittedRef.current = true;
 
@@ -765,7 +847,29 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
       `[ALL_COMPLETE] All ${total} transformation problems done. Correct: ${correctCount}/${total}. First-try: ${firstTryCount}. Accuracy: ${avgScore}%. Give an encouraging, transformation-focused summary (congruence vs similarity).`,
       { silent: true },
     );
-  }, [allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults, currentChallenge, submitEvaluation, sendText]);
+  }, [allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults, currentChallenge, submitEvaluation, sendText, tutorOwned]);
+
+  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // corrections and whose evidence carries each wrong check's named miss.
+  finish.current = (result) => {
+    if (hasSubmittedEvaluation || challenges.length === 0 || submittedRef.current) return;
+    submittedRef.current = true;
+    const metrics: TransformationLabMetrics = {
+      type: 'transformation-lab',
+      challengeType: (challenges[0]?.type ?? 'apply_translation_reflection') as TransformationLabMetrics['challengeType'],
+      totalChallenges: challenges.length,
+      correctCount: result.solvedCount,
+      attemptsCount: result.attemptsCount,
+      firstTryCount: result.firstTryCount,
+      hintsViewed: hintsViewedRef.current,
+      overallAccuracy: result.accuracy,
+      averageAttemptsPerChallenge: Math.round((result.attemptsCount / challenges.length) * 10) / 10,
+    };
+    submitEvaluation(result.passed, result.accuracy, metrics,
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
 
   // -------------------------------------------------------------------------
   // Derived UI state
@@ -783,6 +887,41 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
       ) / challengeResults.length,
     );
   }, [allChallengesComplete, challengeResults]);
+
+  // Workspace path: what the tutor and the observer are shown, republished every render. No demonstration, no
+  // presentation.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    const scene = workspaceScene(currentChallenge, {
+      image: workingImage, steps: sequenceSteps, selected: selectedOption,
+      preCoordsShown: currentChallenge.showPreImageCoords !== false || leverOn(PRE_COORDS_LEVER),
+      rule: ruleOnScreen,
+    });
+    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
+    const levers = practice ? [] : transformLevers(sessionChallenge, pulledLevers, {
+      preCoordsShown: sessionChallenge.showPreImageCoords !== false, ruleShown: !!sessionChallenge.ruleNotation });
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice item is on screen in place of the item. It is not graded; the full item comes back after it.' } : {}) },
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find((l) => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = simplerItem(sessionChallenge);
+          if (!easier) return 'This item has no easier version; try a help lever.';
+          setLeverState(pulled); setPractice(easier); resetWork(easier);
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { setPractice(null); resetWork(sessionChallenge); },
+    };
+  });
 
   // -------------------------------------------------------------------------
   // Render
@@ -837,10 +976,10 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
           <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
           {/* Rule-notation guide (perception/instruction scaffold; withdrawn at hard,
               never present for identify where the rule names the answer). */}
-          {currentChallenge.ruleNotation && (
-            <p className="text-xs text-cyan-300/90 font-mono mt-1">
+          {ruleOnScreen && (
+            <p className="text-xs text-cyan-300/90 font-mono mt-1" {...(!currentChallenge.ruleNotation ? { 'data-lever': 'rule-card' } : {})}>
               <span className="uppercase text-cyan-400/70 mr-2">Rule</span>
-              {currentChallenge.ruleNotation}
+              {ruleOnScreen}
             </p>
           )}
         </LuminaPanel>
@@ -869,6 +1008,7 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
         <div className="p-3 bg-slate-800/30 rounded-2xl border border-cyan-500/20">
           <canvas
             ref={canvasRef}
+            data-pip-object={GRID_TARGET}
             width={CANVAS_W}
             height={CANVAS_H}
             className="rounded-lg w-full mx-auto"
@@ -877,6 +1017,9 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
             onPointerCancel={handlePointerUp}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
           />
           {/* Legend */}
           <div className="flex justify-center gap-4 mt-2 text-xs text-slate-400">
@@ -901,12 +1044,40 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
               </span>
             )}
           </div>
+          {/* What a pulled lever drew on the grid, in words (the canvas has no text a reader can reach). */}
+          {(leverOn(CORNER_LETTERS_LEVER) || leverOn(MODEL_POINT_LEVER) || leverOn(ORIGIN_RAYS_LEVER)
+            || leverOn(PRE_COORDS_LEVER) || leverOn(TARGET_COORDS_LEVER)) && (
+            <div className="flex flex-wrap justify-center gap-3 mt-1 text-xs text-emerald-300/90">
+              {leverOn(CORNER_LETTERS_LEVER) && <span data-lever="corner-letters">Letters pair each corner with its partner</span>}
+              {leverOn(MODEL_POINT_LEVER) && <span data-lever="model-point">Green: a model point P and where this move sends it, P′</span>}
+              {leverOn(ORIGIN_RAYS_LEVER) && <span data-lever="origin-rays">Dashed rays from the origin through each cyan corner</span>}
+              {leverOn(PRE_COORDS_LEVER) && <span data-lever="pre-coords">Cyan corners labelled with their coordinates</span>}
+              {leverOn(TARGET_COORDS_LEVER) && <span data-lever="target-coords">Target corners labelled with their coordinates</span>}
+            </div>
+          )}
           {isDragMode && (
             <p className="text-center text-xs text-cyan-300/80 mt-1">
               Drag each pink corner to where the rule sends it. Corners snap to grid points.
             </p>
           )}
         </div>
+
+        {/* `motion_models` lever: a model flag (never the item's figure) moved by each motion on offer, none marked. */}
+        {leverOn(MOTION_MODELS_LEVER) && motionModels(currentChallenge).length > 0 && (
+          <div data-lever="motion-models" className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {motionModels(currentChallenge).map(({ caption, image }) => (
+              <figure key={caption} className="rounded-xl border border-white/10 bg-slate-900/40 p-2 text-center">
+                <svg viewBox="-5 -5 10 10" className="w-20 h-20 mx-auto" aria-hidden="true">
+                  <line x1={-5} y1={0} x2={5} y2={0} stroke="rgba(148,163,184,0.5)" strokeWidth={0.08} />
+                  <line x1={0} y1={-5} x2={0} y2={5} stroke="rgba(148,163,184,0.5)" strokeWidth={0.08} />
+                  <polygon points={MODEL_FLAG.map((p) => `${p.x},${-p.y}`).join(' ')} fill="rgba(34,211,238,0.2)" stroke={COL_PRE} strokeWidth={0.12} />
+                  <polygon points={image.map((p) => `${p.x},${-p.y}`).join(' ')} fill="rgba(52,211,153,0.2)" stroke={COL_MODEL} strokeWidth={0.12} />
+                </svg>
+                <figcaption className="text-[11px] text-slate-300 mt-1">{caption}</figcaption>
+              </figure>
+            ))}
+          </div>
+        )}
 
         {/* Answer panel */}
         {!isCurrentComplete && !allChallengesComplete && (
@@ -920,8 +1091,9 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
                       key={idx}
                       state={state}
                       className="!p-3"
-                      disabled={hasSubmittedEvaluation}
+                      disabled={hasSubmittedEvaluation || inputClosed}
                       onClick={() => {
+                        if (learnerBlocked()) return;
                         SoundManager.select();
                         setSelectedOption(idx);
                       }}
@@ -943,7 +1115,7 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
                       tone="subtle"
                       size="sm"
                       onClick={() => applySequenceOp(op)}
-                      disabled={hasSubmittedEvaluation}
+                      disabled={hasSubmittedEvaluation || inputClosed}
                     >
                       {label}
                     </LuminaButton>
@@ -953,7 +1125,7 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
                   <span className="text-xs text-slate-400">
                     Steps: {sequenceSteps.length}
                   </span>
-                  <LuminaButton tone="ghost" size="sm" onClick={resetWorking} disabled={hasSubmittedEvaluation}>
+                  <LuminaButton tone="ghost" size="sm" onClick={resetWorking} disabled={hasSubmittedEvaluation || inputClosed}>
                     Reset
                   </LuminaButton>
                 </div>
@@ -961,14 +1133,14 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
             ) : (
               // drag mode — direct manipulation on the canvas; offer a reset.
               <div className="flex justify-center">
-                <LuminaButton tone="ghost" size="sm" onClick={resetWorking} disabled={hasSubmittedEvaluation}>
+                <LuminaButton tone="ghost" size="sm" onClick={resetWorking} disabled={hasSubmittedEvaluation || inputClosed}>
                   Reset corners
                 </LuminaButton>
               </div>
             )}
 
             <div className="flex justify-center">
-              <LuminaButton tone="primary" onClick={handleCheck}>
+              <LuminaButton tone="primary" onClick={handleCheck} disabled={hasSubmittedEvaluation || inputClosed}>
                 Check
               </LuminaButton>
             </div>
@@ -988,31 +1160,33 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
           <LuminaFeedbackCard status="insight">{feedback}</LuminaFeedbackCard>
         )}
 
-        {/* Hint */}
-        {showHint && (
+        {/* Hint (scripted path). The generated hint states the coordinate rule; with the tutor, help is the tutor's. */}
+        {!tutorOwned && showHint && (
           <LuminaPrompt accent="amber">
             <span className="font-mono uppercase text-amber-300 text-xs mr-2">Hint</span>
             {currentChallenge.hint}
           </LuminaPrompt>
         )}
 
-        {/* Controls */}
-        <div className="flex justify-center gap-2 flex-wrap">
-          {isCurrentComplete && !allChallengesComplete && (
-            <LuminaButton
-              tone="primary"
-              className="border-emerald-400/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
-              onClick={advanceChallenge}
-            >
-              Next Problem →
-            </LuminaButton>
-          )}
-          {!isCurrentComplete && !allChallengesComplete && (
-            <LuminaButton tone="subtle" size="sm" onClick={handleShowHint} disabled={showHint}>
-              {showHint ? 'Hint shown' : 'Show hint'}
-            </LuminaButton>
-          )}
-        </div>
+        {/* Controls. On the workspace path the shell's Try again / Next challenge replace Next. */}
+        {!tutorOwned && (
+          <div className="flex justify-center gap-2 flex-wrap">
+            {isCurrentComplete && !allChallengesComplete && (
+              <LuminaButton
+                tone="primary"
+                className="border-emerald-400/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
+                onClick={advanceChallenge}
+              >
+                Next Problem →
+              </LuminaButton>
+            )}
+            {!isCurrentComplete && !allChallengesComplete && (
+              <LuminaButton tone="subtle" size="sm" onClick={handleShowHint} disabled={showHint}>
+                {showHint ? 'Hint shown' : 'Show hint'}
+              </LuminaButton>
+            )}
+          </div>
+        )}
 
         {/* Phase summary */}
         {allChallengesComplete && phaseResults.length > 0 && (
@@ -1029,5 +1203,9 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const TransformationLab = withWorkspaceController<TransformationLabProps, ProgressOptions<TransformationLabChallenge>, Progress>(
+  'transformation-lab', TransformationLabSurface, useScriptedProgress, useWorkspaceProgressFor('transformation-lab'));
 
 export default TransformationLab;

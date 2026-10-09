@@ -1,0 +1,45 @@
+{
+ "source": "qa/tutor-reports/function-machine-runtime-make_rule-payload-2026-10-09.json",
+ "primitiveId": "function-machine",
+ "evalMode": "make_rule",
+ "data": {
+  "title": "Build Your Own Function Machine",
+  "description": "Create different mathematical rules that turn the same input into the exact same output. Explore how multiple equations can fit a single pair of numbers.",
+  "challengeType": "make_rule",
+  "challenges": [
+   {
+    "id": "fm-1",
+    "rule": "2*x",
+    "inputQueue": [
+     5
+    ],
+    "showRule": false,
+    "makeInput": 5,
+    "makeOutput": 10
+   },
+   {
+    "id": "fm-2",
+    "rule": "5*x",
+    "inputQueue": [
+     4
+    ],
+    "showRule": false,
+    "makeInput": 4,
+    "makeOutput": 20
+   },
+   {
+    "id": "fm-3",
+    "rule": "x/5",
+    "inputQueue": [
+     25
+    ],
+    "showRule": false,
+    "makeInput": 25,
+    "makeOutput": 5
+   }
+  ],
+  "ruleComplexity": "oneStep",
+  "gradeBand": "3-4",
+  "outputDisplay": "animated"
+ }
+}

@@ -1,0 +1,63 @@
+{
+ "source": "qa/tutor-reports/function-machine-runtime-create_rule-payload-2026-10-09.json",
+ "primitiveId": "function-machine",
+ "evalMode": "create_rule",
+ "data": {
+  "title": "Function Machine Explorations",
+  "description": "Discover the hidden rules behind various input and output number patterns by analyzing input-output tables.",
+  "challengeType": "create_rule",
+  "challenges": [
+   {
+    "id": "fm-1",
+    "rule": "2*x",
+    "inputQueue": [
+     0,
+     1,
+     2,
+     3,
+     5
+    ],
+    "showRule": false
+   },
+   {
+    "id": "fm-2",
+    "rule": "x + 7",
+    "inputQueue": [
+     0,
+     1,
+     2,
+     3,
+     5
+    ],
+    "showRule": false
+   },
+   {
+    "id": "fm-3",
+    "rule": "x - 2",
+    "inputQueue": [
+     0,
+     1,
+     2,
+     3,
+     5
+    ],
+    "showRule": false
+   },
+   {
+    "id": "fm-4",
+    "rule": "3*x",
+    "inputQueue": [
+     0,
+     1,
+     2,
+     3,
+     5
+    ],
+    "showRule": false
+   }
+  ],
+  "ruleComplexity": "oneStep",
+  "gradeBand": "3-4",
+  "outputDisplay": "animated"
+ }
+}

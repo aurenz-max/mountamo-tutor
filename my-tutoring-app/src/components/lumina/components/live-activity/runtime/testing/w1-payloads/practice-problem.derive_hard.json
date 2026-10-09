@@ -1,0 +1,94 @@
+{
+ "source": "qa/tutor-reports/practice-problem-runtime-derive_hard-payload-2026-10-09.json",
+ "primitiveId": "practice-problem",
+ "evalMode": "derive_hard",
+ "data": {
+  "title": "Calculating Installed Louver Length From Subsidized Costs",
+  "subject": "Algebra",
+  "problem": {
+   "statement": "An architectural firm designs a sustainable commercial facade incorporating vertical louver systems. The total financial expenditure is modeled by a fixed logistical mobilization fee of \\$4,500 plus a variable manufacturing cost of \\$125 per linear meter of louvers installed, offset by a municipal green-building subsidy. Due to a regulatory revision, the subsidy reduces the final net expenditure to \\$11,375. Before proceeding with the algebra, formulate the mathematical relationship that encapsulates this scenario.",
+   "inset": {
+    "insetType": "equation-setup",
+    "scenario": "Determining the total linear meters of louver systems installed based on fixed mobilization fees, variable manufacturing costs, and the final subsidized net expenditure.",
+    "quantities": [
+     {
+      "symbol": "m",
+      "meaning": "number of linear meters of louvers installed"
+     },
+     {
+      "symbol": "F",
+      "meaning": "fixed logistical mobilization fee in dollars",
+      "knownValue": "4500"
+     },
+     {
+      "symbol": "v",
+      "meaning": "variable manufacturing cost per linear meter in dollars",
+      "knownValue": "125"
+     },
+     {
+      "symbol": "E",
+      "meaning": "final net financial expenditure in dollars",
+      "knownValue": "11375"
+     }
+    ],
+    "target": {
+     "symbol": "m",
+     "meaning": "the total linear meters of louver systems installed"
+    },
+    "canonicalEquation": "125m + 4500 = 11375",
+    "distractorEquations": [
+     {
+      "equation": "4500m + 125 = 11375",
+      "misconception": "Swapped operands by incorrectly applying the variable rate to the fixed mobilization fee and treating the unit cost as a standalone constant."
+     },
+     {
+      "equation": "125m - 4500 = 11375",
+      "misconception": "Used a sign flip on the constant by subtracting the mobilization fee instead of adding it to the total production cost."
+     },
+     {
+      "equation": "125m = 11375",
+      "misconception": "Dropped the fixed mobilization fee entirely from the financial model."
+     }
+    ],
+    "rationale": "The total net expenditure is formed by combining the fixed mobilization fee with the product of the variable manufacturing cost and the number of meters installed.",
+    "acceptableForms": [
+     "125m + 4500 = 11375",
+     "4500 + 125m = 11375",
+     "11375 = 125m + 4500"
+    ],
+    "label": "Equation Setup"
+   }
+  },
+  "solutionStrategy": "Isolate the variable term by applying inverse operations in reverse order of operations to determine the total meters installed.",
+  "canonicalAnswer": "m = 55",
+  "steps": [
+   {
+    "id": 0,
+    "title": "Formulate the linear equation from the scenario",
+    "type": "algebra",
+    "canonicalBody": "125m + 4500 = 11375 -> [translate problem statement] -> 125m + 4500 = 11375",
+    "strategy": "Translating the real-world narrative into a mathematical model establishes the baseline equation needed for solving.",
+    "misconceptions": "Confusing the fixed mobilization fee with the variable manufacturing cost rate per meter."
+   },
+   {
+    "id": 1,
+    "title": "Subtract the mobilization fee from both sides",
+    "type": "algebra",
+    "canonicalBody": "125m + 4500 = 11375 -> [subtract 4500 from both sides] -> 125m = 6875",
+    "strategy": "Isolating the variable term requires undoing the addition of the fixed fee using its inverse operation.",
+    "misconceptions": "Subtracting the mobilization fee from only one side of the equation or adding it instead of subtracting."
+   },
+   {
+    "id": 2,
+    "title": "Divide both sides by the variable cost rate",
+    "type": "algebra",
+    "canonicalBody": "125m = 6875 -> [divide both sides by 125] -> m = 55",
+    "strategy": "Isolating the variable itself requires undoing the multiplication through division by the coefficient.",
+    "misconceptions": "Dividing the net expenditure by the mobilization fee instead of the variable manufacturing cost per meter."
+   }
+  ],
+  "difficulty": "hard",
+  "evalMode": "derive_hard",
+  "gradeLevel": "middle school students (grades 6-8) - Use more complex vocabulary, abstract concepts, real-world applications, and critical thinking opportunities. Encourage deeper analysis."
+ }
+}

@@ -38,13 +38,26 @@ import { farThree } from '../../primitives/visual-primitives/math/compareObjects
 import { threeCards } from '../../primitives/visual-primitives/math/numberSequencerLevers';
 import { threePlaces } from '../../primitives/visual-primitives/math/ordinalLineLevers';
 import { COIN_CENTS, fewestCoins } from '../../primitives/visual-primitives/math/coinCounterWorkspace';
+import { evaluateRule as functionRuleAt } from '../../primitives/visual-primitives/math/functionMachineDomain';
+import { harnessMachines as functionMachines, harnessWrongRule as functionWrongRule, observePairsNeeded, ruleTiles }
+  from '../../primitives/visual-primitives/math/functionMachineWorkspace';
+import type { FunctionMachineChallenge } from '../../primitives/visual-primitives/math/FunctionMachine';
 import { operandsOf as regroupOperands, regroupingHarnessDigits } from '../../primitives/visual-primitives/math/regroupingWorkbenchWorkspace';
 import { percentHarnessSteps } from '../../primitives/visual-primitives/math/percentBarWorkspace';
+import { itemSolid as netItemSolid, netHarnessInput } from '../../primitives/visual-primitives/math/netFolderWorkspace';
+import { practiceParent as netPracticeParent, simplerNet } from '../../primitives/visual-primitives/math/netFolderLevers';
+import { formatNumber as formulaNumber, formulaHarnessInput, tokenizeFormula as formulaTokensOf }
+  from '../../primitives/visual-primitives/math/formulaLabWorkspace';
+import { practiceParent as formulaPracticeParent, simplerFormula } from '../../primitives/visual-primitives/math/formulaLabLevers';
 import { practiceParent as percentPracticeParent, simplerPercent } from '../../primitives/visual-primitives/math/percentBarLevers';
 import { factorHarnessSplits, factorizationForms } from '../../primitives/visual-primitives/math/factorTreeWorkspace';
 import { practiceParent as factorPracticeParent, smallerTree } from '../../primitives/visual-primitives/math/factorTreeLevers';
+import { equationHarnessChoices, mergeCommutingSteps, stepsDoneFrom } from '../../primitives/visual-primitives/math/equationWorkspaceDomain';
+import { fewerSteps as equationFewerSteps, practiceParent as equationPracticeParent } from '../../primitives/visual-primitives/math/equationWorkspaceLevers';
 import { ratioHarnessInput } from '../../primitives/visual-primitives/math/ratioTableWorkspace';
 import { practiceParent as ratioPracticeParent, simplerRatio } from '../../primitives/visual-primitives/math/ratioTableLevers';
+import { circleHarnessText } from '../../primitives/visual-primitives/math/circleExplorerWorkspace';
+import { practiceParent as circlePracticeParent, simplerCircle } from '../../primitives/visual-primitives/math/circleExplorerLevers';
 import { practiceParent as regroupPracticeParent, smallerProblem as smallerRegroupProblem }
   from '../../primitives/visual-primitives/math/regroupingWorkbenchLevers';
 import { practiceItem as coinPracticeItem, practiceParent as coinPracticeParent } from '../../primitives/visual-primitives/math/coinCounterLevers';
@@ -247,6 +260,16 @@ import { practiceItem as equationBuilderPracticeItem, practiceParent as equation
 import { patternBuilderHarnessInputs } from '../../primitives/visual-primitives/math/patternBuilderWorkspace';
 import { practiceItem as patternPracticeItem, practiceParent } from '../../primitives/visual-primitives/math/patternBuilderLevers';
 import { angleWorkshopHarnessInputs } from '../../primitives/visual-primitives/math/angleWorkshopWorkspace';
+import { transformHarnessInputs, transformReplayKeys } from '../../primitives/visual-primitives/math/transformationLabWorkspace';
+import { practiceParent as transformPracticeParent, simplerItem as simplerTransform }
+  from '../../primitives/visual-primitives/math/transformationLabLevers';
+
+/** transformation-lab's current challenge; an easier one (`~simpler`) is rebuilt from its parent with the same builder. */
+function transformItem(ctx: { data: Record<string, any>; itemId: string | null }): any {
+  const parentId = transformPracticeParent(String(ctx.itemId ?? ''));
+  const parent = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === parentId);
+  return parent && parentId !== ctx.itemId ? simplerTransform(parent) : parent;
+}
 import { practiceFor as angleWorkshopPracticeFor, practiceParent as angleWorkshopPracticeParent }
   from '../../primitives/visual-primitives/math/angleWorkshopLevers';
 import { sentenceOf as figSentenceOf, sentencesOf as figSentencesOf, typeChoices as figTypeChoices } from '../../primitives/visual-primitives/literacy/figurativeSteps';
@@ -342,11 +365,27 @@ export interface LiveJourney {
 const WORKSPACE_PROMPTS = { opening: 'What do I do?', hint: 'Can you help me?', example: 'Can you show me what you mean?' };
 
 /** regrouping-workbench's current item; an easier practice problem (`~simpler`) is rebuilt from its parent with the same builder. */
+/** net-folder's current challenge and the solid it draws; an easier one (`~simpler`) is rebuilt from its parent. */
+function netFolderItem(ctx: JourneyContext): { challenge: any; solid: any } | null {
+  const parentId = netPracticeParent(String(ctx.itemId ?? ''));
+  const parent = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === parentId);
+  if (!parent) return null;
+  const challenge = parentId !== ctx.itemId ? simplerNet(parent, netItemSolid(ctx.data.solid, parent)) : parent;
+  return challenge ? { challenge, solid: netItemSolid(ctx.data.solid, challenge) } : null;
+}
+
 /** percent-bar's current challenge; an easier one (`~simpler`) is rebuilt from its parent with the same builder. */
 function percentBarItem(ctx: JourneyContext): any {
   const parentId = percentPracticeParent(String(ctx.itemId ?? ''));
   const parent = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === parentId);
   return parent && parentId !== ctx.itemId ? simplerPercent(parent) : parent;
+}
+
+/** formula-lab's current challenge; an easier one (`~simpler`) is rebuilt from its parent with the same builder. */
+function formulaLabItem(ctx: JourneyContext): any {
+  const parentId = formulaPracticeParent(String(ctx.itemId ?? ''));
+  const parent = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === parentId);
+  return parent && parentId !== ctx.itemId ? simplerFormula(ctx.data as any, parent) : parent;
 }
 
 function regroupItem(ctx: JourneyContext): any {
@@ -792,6 +831,64 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
+  'function-machine': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/FunctionMachine.tsx',
+    instanceId: 'fm',
+    defaults: { grade: 'Grade 5', mode: 'discover_rule', di: false, topic: 'Function machines: input and output rules' },
+    leakTokens: ['PREDICTION_CORRECT', 'PREDICTION_INCORRECT', 'GUESS_INCORRECT', 'MACHINE_CHECKED', 'PHASE_COMPLETE', 'ALL_COMPLETE', 'ACTIVITY_START'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls: feed buttons, the prediction and rule boxes, the tile keypad. The inputs
+    // and pairs still on screen are read from the scene facts, since a miss keeps what was already fed. Observe has no
+    // wrong answer (Continue is its end). A wrong answer is the mode's signature error: a prediction one over, the
+    // shape's typical wrong rule (`harnessWrongRule`), a machine that gives one more than the pair asks.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = ctx.challenge;
+      if (!c) throw new Error('No current function-machine challenge');
+      const mode = ctx.data.challengeType as string, wrong = intent === 'wrong';
+      const left = String(ctx.demand?.inputsToFeed ?? '').split(',').map(t => t.trim()).filter(t => /^-?\d+(\.\d+)?$/.test(t)).map(Number);
+      const shown = (String(ctx.demand?.pairsOnScreen ?? '').match(/→/g) ?? []).length;
+      const feed = (x: number): DriverInput => ({ type: 'choose', label: `Feed ${x}` });
+      const check: DriverInput = { type: 'check' };
+      const out = (x: number) => functionRuleAt(c.rule, x)!;
+      if (mode === 'observe') {
+        if (wrong) return [];
+        return [...left.slice(0, Math.max(0, observePairsNeeded(c as FunctionMachineChallenge) - shown)).map(feed), { type: 'choose', label: 'Continue →' }];
+      }
+      if (mode === 'predict') {
+        const predict = (x: number, value: number): DriverInput[] => [{ type: 'write', label: 'My prediction', text: String(value) }, feed(x)];
+        if (!wrong) return left.flatMap(x => predict(x, out(x)));
+        // An input that is no other input's output, so naming it after the miss names no key.
+        const outputs = new Set(left.map(out));
+        const x = left.find(i => !outputs.has(i)) ?? left[0];
+        return predict(x, out(x) + 1);
+      }
+      if (mode === 'discover_rule' || mode === 'create_rule') {
+        const feeds = mode === 'discover_rule' ? left.slice(0, Math.max(0, 2 - shown)).map(feed) : [];
+        return [...feeds, { type: 'write', label: 'Your rule', text: wrong ? functionWrongRule(c.rule) : c.rule }, check];
+      }
+      if (mode === 'make_rule') {
+        const machines = functionMachines(c as FunctionMachineChallenge);
+        if (!machines) throw new Error('function-machine make_rule: the item names no pair');
+        const build = (rule: string): DriverInput[] => [...ruleTiles(rule).map((t): DriverInput => ({ type: 'choose', label: `Add ${t}` })),
+          { type: 'choose', label: "I'm done!" }];
+        if (wrong) return build(machines.wrong);
+        return [{ type: 'choose', label: 'Start over' }, ...build(machines.right[0]), ...build(machines.right[1])];
+      }
+      throw new Error(`function-machine: no driver for mode ${mode}`);
+    },
+    // The key per mode: the hidden rule (discover, create), the outputs not yet fed (predict), the stored machine (make,
+    // one of many that pass). A pair already on screen is not a key.
+    replayKeys: ctx => {
+      const c = ctx.challenge, mode = ctx.data.challengeType as string;
+      if (!c) return [];
+      if (mode === 'predict') return (c.inputQueue as number[]).map(x => String(functionRuleAt(c.rule, x)));
+      if (mode === 'discover_rule' || mode === 'create_rule' || mode === 'make_rule') return [c.rule];
+      return [];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
   'coin-counter': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/math/CoinCounter.tsx',
@@ -961,6 +1058,68 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
+  'net-folder': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/NetFolder.tsx',
+    instanceId: 'netfold',
+    defaults: { grade: 'Grade 4', mode: 'match_faces', di: false, topic: '3D solids and their nets' },
+    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'NEXT_ITEM', 'ALL_COMPLETE', 'SUPPORT TIER'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls (`netHarnessInput`): the three counts typed into Faces, Edges and Vertices;
+    // a solid, a face, or Valid net / Invalid net tapped; the total typed into "Total surface area"; then Check. A wrong
+    // answer is the mode's signature miss: faces and edges swapped, a solid from the other family, the opposite face,
+    // the other verdict, half the total.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = netFolderItem(ctx);
+      if (!item) throw new Error('No current net-folder challenge');
+      const input = netHarnessInput(item.challenge, item.solid, intent === 'wrong' ? 'wrong' : 'correct');
+      if (input.kind === 'counts') return [{ type: 'write', label: 'Faces', text: String(input.faces) },
+        { type: 'write', label: 'Edges', text: String(input.edges) }, { type: 'write', label: 'Vertices', text: String(input.vertices) },
+        { type: 'check' }];
+      if (input.kind === 'total') return [{ type: 'write', label: 'Total surface area', text: String(input.value) }, { type: 'check' }];
+      return [{ type: 'choose', label: input.label }, { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'formula-lab': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/FormulaLab.tsx',
+    instanceId: 'formula',
+    defaults: { grade: 'Grade 8', mode: 'predict-direction', di: false, topic: 'How changing one quantity in a formula changes the output' },
+    leakTokens: ['ACTIVITY_START', 'PREDICTION_LOCKED', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'NEXT_ITEM', 'ALL_COMPLETE',
+      'EASY support', 'MEDIUM support', 'HARD support'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls (`formulaHarnessInput`): the slider ("Changed quantity") set to the target;
+    // the prediction ("Your prediction", hundredths of the track) and Lock prediction; the tokens tapped in order and
+    // Check formula; the output typed ("Transferred output") and Check. A wrong answer is the mode's signature miss
+    // (the other direction, the far end of the track, the reciprocal or another order, the starting values' output).
+    // free-explore has no wrong move: every finished move is credited.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c: any = formulaLabItem(ctx);
+      if (!c) throw new Error('No current formula-lab challenge');
+      const input = formulaHarnessInput(ctx.data as any, c, intent === 'wrong' ? 'wrong' : 'correct');
+      if (!input) return [];
+      const reason = (label: string, text?: string): DriverInput[] => (text ? [{ type: 'write', label, text }] : []);
+      switch (input.kind) {
+        case 'value': return [{ type: 'write', label: 'Changed quantity', text: String(input.value) }];
+        case 'predict': return [...reason('Prediction reason', input.reason),
+          { type: 'write', label: 'Your prediction', text: String(input.percent) }, { type: 'choose', label: 'Lock prediction' }];
+        case 'build': return [...input.tokens.map((label): DriverInput => ({ type: 'choose', label })), { type: 'check' }];
+        case 'type': return [{ type: 'write', label: 'Transferred output', text: input.text },
+          ...reason('Calculation reason', input.reason), { type: 'check' }];
+      }
+    },
+    // The answer as the screen would print it: the output, and on construct the hidden expression.
+    replayKeys: (ctx) => {
+      const c: any = formulaLabItem(ctx);
+      if (!c) return [];
+      return c.type === 'construct-formula' ? [formulaTokensOf(String(ctx.data.expression)).join(' ')]
+        : c.type === 'free-explore' ? [] : [formulaNumber(c.expectedTargetOutput)];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
   'ratio-table': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/math/RatioTable.tsx',
@@ -983,6 +1142,31 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return input.kind === 'type'
         ? [{ type: 'write', label: 'Your answer', text: input.text }, { type: 'check' }]
         : [{ type: 'write', label: 'Multiplier', text: String(input.value) }, { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'circle-explorer': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/CircleExplorer.tsx',
+    instanceId: 'circle',
+    defaults: { grade: 'Grade 7', mode: 'circumference', di: false, topic: 'Circumference and area of a circle' },
+    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'NEXT_ITEM', 'ALL_COMPLETE', 'SUPPORT TIER'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls: on discover π "Unroll the circumference" first (until the scene says it is
+    // unrolled; Try again keeps it), then the number typed into "Your answer" and Check. A wrong answer is the item's
+    // signature error from `circleMiss` (the radius for the diameter, the radius not squared, the diameter for the
+    // radius, the whole circle for the half, d ÷ C), else half again too high.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      // An easier practice problem (`~simpler`) is rebuilt from its parent with the same builder.
+      const parentId = circlePracticeParent(String(ctx.itemId ?? ''));
+      const parent = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === parentId);
+      const c: any = parent && parentId !== ctx.itemId ? simplerCircle(parent) : parent;
+      if (!c) throw new Error('No current circle-explorer challenge');
+      const unroll: DriverInput[] = c.type === 'discover_pi' && /has not unrolled/.test(String(ctx.demand?.learnerWork ?? ''))
+        ? [{ type: 'choose', label: 'Unroll the circumference' }] : [];
+      return [...unroll, { type: 'write', label: 'Your answer', text: circleHarnessText(c, intent === 'wrong' ? 'wrong' : 'correct') },
+        { type: 'check' }];
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
@@ -1041,6 +1225,51 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return c ? factorizationForms(c.rootValue) : [];
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'equation-workspace': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/EquationWorkspace.tsx',
+    instanceId: 'equation',
+    defaults: { grade: 'Grade 8', mode: 'solve', di: false, topic: 'Solving two-step linear equations' },
+    leakTokens: ['NEXT_ITEM', 'STEP_CORRECT', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ALL_COMPLETE', 'SUPPORT TIER'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls, from the line the scene reports (Try again keeps the applied steps): tap
+    // each remaining step's operation by its label, or under identify-operation choose one and press Check. A wrong
+    // answer is the item's signature error from `equationMiss`: the opposite operation on the same number, else a
+    // later step, else another operation in the menu.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      // A practice equation (`~simpler`) is rebuilt from its parent with the same builder.
+      const parentId = equationPracticeParent(String(ctx.itemId ?? ''));
+      // The component merges adjacent combine steps (`mergeCommutingSteps`); the row drives what it renders.
+      const raw: any = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === parentId);
+      const parent: any = raw ? mergeCommutingSteps(raw) : raw;
+      const c: any = parent && parentId !== ctx.itemId ? equationFewerSteps(parent) : parent;
+      if (!c) throw new Error('No current equation-workspace challenge');
+      const done = stepsDoneFrom(c, ctx.demand?.currentEquation as string | undefined);
+      const labels = equationHarnessChoices(c, done, intent === 'wrong' ? 'wrong' : 'correct');
+      if (!labels.length) throw new Error(`equation-workspace ${c.type}: no ${intent} operation in the menu`);
+      const taps = labels.map((label): DriverInput => ({ type: 'choose', label }));
+      return c.type === 'identify-operation' ? [...taps, { type: 'check' }] : taps;
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'practice-problem': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/PracticeProblem.tsx',
+    instanceId: 'practice',
+    defaults: { grade: 'Grade 8', mode: 'derive_medium', di: false, topic: 'Solving two-step linear equations' },
+    leakTokens: ['PROBLEM_LOADED', 'VERDICT_CORRECT', 'VERDICT_PARTIAL', 'VERDICT_INCORRECT', 'SUPPORT TIER'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode is a handwritten derivation the checker reads with a vision transcription and a model judge
+    // (`transcribeWork`, `compareWork`). The driver's jsdom has no canvas image and the sweep no judge, so the row
+    // cannot produce a checked answer: every mode throws. `PracticeProblem.workspace.test.tsx` drives the binding
+    // with both routes stubbed.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      throw new Error(`practice-problem ${String(ctx.data.evalMode ?? 'derive')} is not driven at W1 (handwriting read by a model judge)`);
+    },
+    probes: { mounted: { selector: 'canvas' } },
   },
   'measure-lab': {
     execution: 'workspace',
@@ -1285,6 +1514,30 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return angleWorkshopHarnessInputs(c, intent === 'wrong', ctx.demand);
     },
     probes: { mounted: { selector: '[data-pip-object="angle-build"], canvas' } },
+  },
+  'transformation-lab': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/TransformationLab.tsx',
+    instanceId: 'transform',
+    defaults: { grade: 'Grade 8', mode: 'apply_rotation', di: false, topic: 'Rigid motions and dilations on the coordinate plane' },
+    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'NEXT_ITEM', 'ALL_COMPLETE', 'REVEAL'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls, from a blank start (Try again puts the figure back on the pre-image): the
+    // drag modes drag each pink corner on the grid canvas; identify taps an option; compose presses
+    // the flip or turn and then the slides; then Check. Wrong is the mode's signature miss (`transformHarnessInputs`).
+    // An easier practice item (`~simpler`) is rebuilt from its parent with the same builder.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = transformItem(ctx);
+      if (!c) throw new Error('No current transformation-lab challenge');
+      return transformHarnessInputs(c, intent === 'wrong' ? 'wrong' : 'correct');
+    },
+    // A drag's key is its image corners as printed, "(6, 0)", not the lone digits of the credited response.
+    replayKeys: ctx => {
+      const c = transformItem(ctx);
+      return c ? transformReplayKeys(c) : [];
+    },
+    probes: { mounted: { selector: 'canvas[data-pip-object="canvas"]' } },
   },
   'array-grid': {
     execution: 'workspace',

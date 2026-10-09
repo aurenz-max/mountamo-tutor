@@ -1,0 +1,164 @@
+{
+ "source": "qa/tutor-reports/net-folder-runtime-identify_solid-payload-2026-10-09.json",
+ "primitiveId": "net-folder",
+ "evalMode": "identify_solid",
+ "data": {
+  "title": "3D Shape Identification",
+  "description": "Practice 3d shape identification.",
+  "solid": {
+   "type": "triangular_pyramid",
+   "name": "Triangular Pyramid",
+   "dimensions": {
+    "length": 70,
+    "width": 70,
+    "height": 60
+   },
+   "faces": 4,
+   "edges": 6,
+   "vertices": 4
+  },
+  "net": {
+   "layout": "cross",
+   "faceLabels": [
+    "base",
+    "front",
+    "left",
+    "right"
+   ],
+   "gridOverlay": true
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "identify_solid",
+    "instruction": "Look at this 3D solid used for the roof peak of our birdhouse. Can you name it?",
+    "hint": "Look at the base and count the faces.",
+    "narration": "Let us start by identifying the shape of the birdhouse roof peak!",
+    "targetAnswer": "triangular_pyramid",
+    "options": [
+     "triangular_prism",
+     "cube",
+     "rectangular_prism",
+     "triangular_pyramid"
+    ],
+    "solid": {
+     "type": "triangular_pyramid",
+     "name": "Triangular Pyramid",
+     "dimensions": {
+      "length": 70,
+      "width": 70,
+      "height": 60
+     },
+     "faces": 4,
+     "edges": 6,
+     "vertices": 4
+    }
+   },
+   {
+    "id": "c2",
+    "type": "identify_solid",
+    "instruction": "Look at this 3D solid used for the main walls and body of our birdhouse. Can you name it?",
+    "hint": "Look at the base and count the faces.",
+    "narration": "Great job! Now let us identify the main body walls of the birdhouse.",
+    "targetAnswer": "rectangular_prism",
+    "options": [
+     "rectangular_prism",
+     "square_pyramid",
+     "triangular_pyramid",
+     "cube"
+    ],
+    "solid": {
+     "type": "rectangular_prism",
+     "name": "Rectangular Prism",
+     "dimensions": {
+      "length": 100,
+      "width": 60,
+      "height": 50
+     },
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8
+    }
+   },
+   {
+    "id": "c3",
+    "type": "identify_solid",
+    "instruction": "Look at the solid on the screen. What is its name?",
+    "hint": "Look at the base and count the faces.",
+    "narration": "Let's name this solid!",
+    "targetAnswer": "cube",
+    "options": [
+     "rectangular_prism",
+     "triangular_prism",
+     "cube",
+     "square_pyramid"
+    ],
+    "solid": {
+     "type": "cube",
+     "name": "Cube",
+     "dimensions": {
+      "length": 80,
+      "width": 80,
+      "height": 80
+     },
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8
+    }
+   },
+   {
+    "id": "c4",
+    "type": "identify_solid",
+    "instruction": "Look at this 3D solid used for the decorative topper on our birdhouse post. Can you name it?",
+    "hint": "Look at the base and count the faces.",
+    "narration": "Keep up the fantastic work! Here is another fun rooftop shape.",
+    "targetAnswer": "square_pyramid",
+    "options": [
+     "triangular_pyramid",
+     "cube",
+     "rectangular_prism",
+     "square_pyramid"
+    ],
+    "solid": {
+     "type": "square_pyramid",
+     "name": "Square Pyramid",
+     "dimensions": {
+      "length": 80,
+      "width": 80,
+      "height": 70
+     },
+     "faces": 5,
+     "edges": 8,
+     "vertices": 5
+    }
+   },
+   {
+    "id": "c5",
+    "type": "identify_solid",
+    "instruction": "Look at the solid on the screen. What is its name?",
+    "hint": "Look at the base and count the faces.",
+    "narration": "This is our final challenge to complete the birdhouse pieces!",
+    "targetAnswer": "triangular_prism",
+    "options": [
+     "triangular_prism",
+     "rectangular_prism",
+     "square_pyramid",
+     "cube"
+    ],
+    "solid": {
+     "type": "triangular_prism",
+     "name": "Triangular Prism",
+     "dimensions": {
+      "length": 80,
+      "width": 60,
+      "height": 70
+     },
+     "faces": 5,
+     "edges": 9,
+     "vertices": 6
+    }
+   }
+  ],
+  "gradeBand": "4-5"
+ }
+}

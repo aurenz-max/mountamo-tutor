@@ -1,0 +1,161 @@
+{
+ "source": "qa/tutor-reports/transformation-lab-runtime-apply_translation_reflection-payload-2026-10-09.json",
+ "primitiveId": "transformation-lab",
+ "evalMode": "apply_translation_reflection",
+ "data": {
+  "title": "Mastering Translations and Reflections",
+  "description": "Practice applying precise translations and reflections to various geometric figures on the coordinate plane.",
+  "challengeType": "apply_translation_reflection",
+  "gradeBand": "8",
+  "challenges": [
+   {
+    "type": "apply_translation_reflection",
+    "answerKind": "drag",
+    "narration": "A sticker is peeled and re-placed.",
+    "instruction": "Translate the figure by (-3, 1). Drag each pink corner to its new position.",
+    "hint": "Add (-3, 1) to every vertex: x \u2192 x + -3, y \u2192 y + 1.",
+    "preImage": [
+     {
+      "x": -1,
+      "y": -3
+     },
+     {
+      "x": 1,
+      "y": -3
+     },
+     {
+      "x": -1,
+      "y": 0
+     }
+    ],
+    "expectedImage": [
+     {
+      "x": -4,
+      "y": -2
+     },
+     {
+      "x": -2,
+      "y": -2
+     },
+     {
+      "x": -4,
+      "y": 1
+     }
+    ],
+    "transformLabel": "Translation by (-3, 1)",
+    "id": "tl-1"
+   },
+   {
+    "type": "apply_translation_reflection",
+    "answerKind": "drag",
+    "narration": "A logo flipped across a fold line.",
+    "instruction": "Reflect the figure over the y-axis. Drag each pink corner to its mirror position.",
+    "hint": "Reflecting over the y-axis flips the sign of x: (x, y) \u2192 (\u2212x, y).",
+    "preImage": [
+     {
+      "x": 1,
+      "y": -2
+     },
+     {
+      "x": 3,
+      "y": -1
+     },
+     {
+      "x": 2,
+      "y": 1
+     }
+    ],
+    "expectedImage": [
+     {
+      "x": -1,
+      "y": -2
+     },
+     {
+      "x": -3,
+      "y": -1
+     },
+     {
+      "x": -2,
+      "y": 1
+     }
+    ],
+    "transformLabel": "Reflection over the y-axis",
+    "id": "tl-2"
+   },
+   {
+    "type": "apply_translation_reflection",
+    "answerKind": "drag",
+    "narration": "A reflection in a window.",
+    "instruction": "Reflect the figure over the line y = x. Drag each pink corner to its image.",
+    "hint": "Reflecting over y = x swaps the coordinates: (x, y) \u2192 (y, x).",
+    "preImage": [
+     {
+      "x": -1,
+      "y": 0
+     },
+     {
+      "x": 1,
+      "y": 1
+     },
+     {
+      "x": 0,
+      "y": 3
+     }
+    ],
+    "expectedImage": [
+     {
+      "x": 0,
+      "y": -1
+     },
+     {
+      "x": 1,
+      "y": 1
+     },
+     {
+      "x": 3,
+      "y": 0
+     }
+    ],
+    "transformLabel": "Reflection over the line y = x",
+    "id": "tl-3"
+   },
+   {
+    "type": "apply_translation_reflection",
+    "answerKind": "drag",
+    "narration": "A shape and its mirror image in a calm pond.",
+    "instruction": "Reflect the figure over the x-axis. Drag each pink corner to where it lands.",
+    "hint": "Reflecting over the x-axis keeps x and flips the sign of y: (x, y) \u2192 (x, \u2212y).",
+    "preImage": [
+     {
+      "x": 0,
+      "y": 2
+     },
+     {
+      "x": 2,
+      "y": 3
+     },
+     {
+      "x": 1,
+      "y": 5
+     }
+    ],
+    "expectedImage": [
+     {
+      "x": 0,
+      "y": -2
+     },
+     {
+      "x": 2,
+      "y": -3
+     },
+     {
+      "x": 1,
+      "y": -5
+     }
+    ],
+    "transformLabel": "Reflection over the x-axis",
+    "id": "tl-4"
+   }
+  ]
+ }
+}

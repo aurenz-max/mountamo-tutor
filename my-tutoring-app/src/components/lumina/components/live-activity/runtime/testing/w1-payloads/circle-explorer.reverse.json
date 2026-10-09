@@ -1,0 +1,77 @@
+{
+ "source": "qa/tutor-reports/circle-explorer-runtime-reverse-payload-2026-10-09.json",
+ "primitiveId": "circle-explorer",
+ "evalMode": "reverse",
+ "data": {
+  "title": "Reverse Engineering Circular Dimensions",
+  "description": "Engage in critical analysis by working backward from known circumferences and areas to deduce underlying radii. Apply algebraic reasoning to solve complex geometric challenges in real-world contexts.",
+  "challengeType": "reverse",
+  "gradeBand": "7",
+  "challenges": [
+   {
+    "type": "reverse",
+    "narration": "A circular pool has the circumference shown.",
+    "instruction": "The circumference is given. Work backward to find the radius.",
+    "hint": "C = 2 \u00d7 \u03c0 \u00d7 r, so r = C \u00f7 (2 \u00d7 \u03c0). Divide by 2 \u00d7 3.14.",
+    "unitLabel": "in",
+    "radius": 6,
+    "given": "radius",
+    "usePiApprox": true,
+    "answerKind": "length",
+    "reverseGiven": "circumference",
+    "givenValue": 37.7,
+    "expectedAnswer": 6,
+    "tolerance": 0.2,
+    "id": "ce-1"
+   },
+   {
+    "type": "reverse",
+    "narration": "A round mirror has the area shown.",
+    "instruction": "The area is given. Work backward to find the radius.",
+    "hint": "A = \u03c0 \u00d7 r\u00b2, so r = \u221a(A \u00f7 \u03c0). Divide by 3.14, then take the square root.",
+    "unitLabel": "in",
+    "radius": 9,
+    "given": "radius",
+    "usePiApprox": true,
+    "answerKind": "length",
+    "reverseGiven": "area",
+    "givenValue": 254.3,
+    "expectedAnswer": 9,
+    "tolerance": 0.2,
+    "id": "ce-2"
+   },
+   {
+    "type": "reverse",
+    "narration": "A ferris wheel has the area shown.",
+    "instruction": "The area is given. Work backward to find the radius.",
+    "hint": "A = \u03c0 \u00d7 r\u00b2, so r = \u221a(A \u00f7 \u03c0). Divide by 3.14, then take the square root.",
+    "unitLabel": "mm",
+    "radius": 11,
+    "given": "radius",
+    "usePiApprox": true,
+    "answerKind": "length",
+    "reverseGiven": "area",
+    "givenValue": 379.9,
+    "expectedAnswer": 11,
+    "tolerance": 0.2,
+    "id": "ce-3"
+   },
+   {
+    "type": "reverse",
+    "narration": "A round mirror has the circumference shown.",
+    "instruction": "The circumference is given. Work backward to find the radius.",
+    "hint": "C = 2 \u00d7 \u03c0 \u00d7 r, so r = C \u00f7 (2 \u00d7 \u03c0). Divide by 2 \u00d7 3.14.",
+    "unitLabel": "cm",
+    "radius": 13,
+    "given": "radius",
+    "usePiApprox": true,
+    "answerKind": "length",
+    "reverseGiven": "circumference",
+    "givenValue": 81.6,
+    "expectedAnswer": 13,
+    "tolerance": 0.2,
+    "id": "ce-4"
+   }
+  ]
+ }
+}

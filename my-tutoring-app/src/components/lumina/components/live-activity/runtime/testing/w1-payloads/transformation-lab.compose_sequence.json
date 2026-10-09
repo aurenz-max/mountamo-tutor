@@ -1,0 +1,177 @@
+{
+ "source": "qa/tutor-reports/transformation-lab-runtime-compose_sequence-payload-2026-10-09.json",
+ "primitiveId": "transformation-lab",
+ "evalMode": "compose_sequence",
+ "data": {
+  "title": "Sequences of Rigid Motions and Congruence",
+  "description": "Practice building sequences of reflections, rotations, and translations to map figures onto target images and explore congruence on the coordinate plane.",
+  "challengeType": "compose_sequence",
+  "gradeBand": "8",
+  "challenges": [
+   {
+    "type": "compose_sequence",
+    "answerKind": "sequence",
+    "narration": "A puzzle piece needs several moves to fit.",
+    "instruction": "Use the transformation buttons to move the pink figure exactly onto the dashed target. It takes more than one move.",
+    "hint": "First match the orientation with a flip or a turn, then slide the figure onto the target with the arrow buttons.",
+    "preImage": [
+     {
+      "x": 1,
+      "y": 2
+     },
+     {
+      "x": 4,
+      "y": 2
+     },
+     {
+      "x": 2,
+      "y": 4
+     }
+    ],
+    "expectedImage": [
+     {
+      "x": -2,
+      "y": 1
+     },
+     {
+      "x": -5,
+      "y": 1
+     },
+     {
+      "x": -3,
+      "y": 3
+     }
+    ],
+    "transformLabel": "Reflection over the y-axis followed by a translation by (-1, -1)",
+    "id": "tl-1"
+   },
+   {
+    "type": "compose_sequence",
+    "answerKind": "sequence",
+    "narration": "A robot arm must move the part onto the target.",
+    "instruction": "Use the transformation buttons to move the pink figure exactly onto the dashed target. It takes more than one move.",
+    "hint": "First match the orientation with a flip or a turn, then slide the figure onto the target with the arrow buttons.",
+    "preImage": [
+     {
+      "x": 0,
+      "y": 3
+     },
+     {
+      "x": 2,
+      "y": 3
+     },
+     {
+      "x": 3,
+      "y": 5
+     },
+     {
+      "x": 0,
+      "y": 5
+     }
+    ],
+    "expectedImage": [
+     {
+      "x": 2,
+      "y": -2
+     },
+     {
+      "x": 4,
+      "y": -2
+     },
+     {
+      "x": 5,
+      "y": -4
+     },
+     {
+      "x": 2,
+      "y": -4
+     }
+    ],
+    "transformLabel": "Reflection over the x-axis followed by a translation by (2, 1)",
+    "id": "tl-2"
+   },
+   {
+    "type": "compose_sequence",
+    "answerKind": "sequence",
+    "narration": "Plan the moves to dock the shape on the target.",
+    "instruction": "Use the transformation buttons to move the pink figure exactly onto the dashed target. It takes more than one move.",
+    "hint": "First match the orientation with a flip or a turn, then slide the figure onto the target with the arrow buttons.",
+    "preImage": [
+     {
+      "x": 2,
+      "y": 2
+     },
+     {
+      "x": 5,
+      "y": 2
+     },
+     {
+      "x": 3,
+      "y": 4
+     }
+    ],
+    "expectedImage": [
+     {
+      "x": -3,
+      "y": 4
+     },
+     {
+      "x": -3,
+      "y": 7
+     },
+     {
+      "x": -5,
+      "y": 5
+     }
+    ],
+    "transformLabel": "Rotation 90\u00b0 counterclockwise about the origin followed by a translation by (-1, 2)",
+    "id": "tl-3"
+   },
+   {
+    "type": "compose_sequence",
+    "answerKind": "sequence",
+    "narration": "Plan the moves to dock the shape on the target.",
+    "instruction": "Use the transformation buttons to move the pink figure exactly onto the dashed target. It takes more than one move.",
+    "hint": "First match the orientation with a flip or a turn, then slide the figure onto the target with the arrow buttons.",
+    "preImage": [
+     {
+      "x": 1,
+      "y": 3
+     },
+     {
+      "x": 4,
+      "y": 3
+     },
+     {
+      "x": 4,
+      "y": 5
+     },
+     {
+      "x": 1,
+      "y": 4
+     }
+    ],
+    "expectedImage": [
+     {
+      "x": 0,
+      "y": 0
+     },
+     {
+      "x": -3,
+      "y": 0
+     },
+     {
+      "x": -3,
+      "y": -2
+     },
+     {
+      "x": 0,
+      "y": -1
+     }
+    ],
+    "transformLabel": "Rotation 180\u00b0 about the origin followed by a translation by (1, 3)",
+    "id": "tl-4"
+   }
+  ]
+ }
+}

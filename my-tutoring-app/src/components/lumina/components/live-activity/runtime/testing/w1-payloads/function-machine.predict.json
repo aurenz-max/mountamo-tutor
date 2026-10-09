@@ -1,0 +1,75 @@
+{
+ "source": "qa/tutor-reports/function-machine-runtime-predict-payload-2026-10-09.json",
+ "primitiveId": "function-machine",
+ "evalMode": "predict",
+ "data": {
+  "title": "Function Machine Adventures",
+  "description": "Practice applying input and output rules to figure out what comes out of the machine next.",
+  "challengeType": "predict",
+  "challenges": [
+   {
+    "id": "fm-1",
+    "rule": "4*x",
+    "inputQueue": [
+     2,
+     3,
+     4,
+     6,
+     8
+    ],
+    "showRule": true
+   },
+   {
+    "id": "fm-2",
+    "rule": "x + 1",
+    "inputQueue": [
+     2,
+     3,
+     4,
+     6,
+     8
+    ],
+    "showRule": true
+   },
+   {
+    "id": "fm-3",
+    "rule": "x - 5",
+    "inputQueue": [
+     2,
+     3,
+     4,
+     6,
+     8
+    ],
+    "showRule": true
+   },
+   {
+    "id": "fm-4",
+    "rule": "10*x",
+    "inputQueue": [
+     2,
+     3,
+     4,
+     6,
+     8
+    ],
+    "showRule": true
+   },
+   {
+    "id": "fm-5",
+    "rule": "3*x",
+    "inputQueue": [
+     2,
+     3,
+     4,
+     6,
+     8
+    ],
+    "showRule": true
+   }
+  ],
+  "ruleComplexity": "oneStep",
+  "gradeBand": "3-4",
+  "outputDisplay": "hidden"
+ }
+}

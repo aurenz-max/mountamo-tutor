@@ -1,0 +1,266 @@
+{
+ "source": "qa/tutor-reports/equation-workspace-runtime-solve-payload-2026-10-09.json",
+ "primitiveId": "equation-workspace",
+ "evalMode": "solve",
+ "data": {
+  "title": "Equation Workspace: Solving two-step linear equations",
+  "context": "Solve equations by applying algebraic operations step by step.",
+  "challenges": [
+   {
+    "id": "eq-solve-0",
+    "type": "solve",
+    "instruction": "Isolate and solve for the unknown sensor operation cycles, represented by x, by systematically undoing the operations applied to it.",
+    "equation": "4x + 15 = 47",
+    "targetVariable": "x",
+    "solutionSteps": [
+     {
+      "operation": "Subtract 15 from both sides",
+      "operationId": "algebraic_subtract_15",
+      "resultLatex": "4x = 32"
+     },
+     {
+      "operation": "Divide both sides by 4",
+      "operationId": "algebraic_divide_4",
+      "resultLatex": "x = 8"
+     }
+    ],
+    "availableOperations": [
+     {
+      "id": "arithmetic_identity_x",
+      "label": "Simplify completely",
+      "category": "arithmetic"
+     },
+     {
+      "id": "algebraic_divide_4",
+      "label": "Divide both sides by 4",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_add_15",
+      "label": "Add 15 to both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_subtract_4",
+      "label": "Subtract 4 from both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_multiply_4",
+      "label": "Multiply both sides by 4",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_subtract_15",
+      "label": "Subtract 15 from both sides",
+      "category": "algebraic"
+     }
+    ]
+   },
+   {
+    "id": "eq-solve-1",
+    "type": "solve",
+    "instruction": "Isolate the unknown variable x to calibrate the sensor reading by applying inverse operations systematically.",
+    "equation": "4x + 18 = 50",
+    "targetVariable": "x",
+    "solutionSteps": [
+     {
+      "operation": "Subtract 18 from both sides",
+      "operationId": "algebraic_subtract_18",
+      "resultLatex": "4x = 32"
+     },
+     {
+      "operation": "Divide both sides by 4",
+      "operationId": "algebraic_divide_4",
+      "resultLatex": "x = 8"
+     }
+    ],
+    "availableOperations": [
+     {
+      "id": "algebraic_divide_4",
+      "label": "Divide both sides by 4",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_add_18",
+      "label": "Add 18 to both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_multiply_4",
+      "label": "Multiply both sides by 4",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_simplify_identity",
+      "label": "Simplify the isolated variable expression",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_subtract_18",
+      "label": "Subtract 18 from both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_subtract_4",
+      "label": "Subtract 4 from both sides",
+      "category": "algebraic"
+     }
+    ]
+   },
+   {
+    "id": "eq-solve-2",
+    "type": "solve",
+    "instruction": "Isolate the target variable d by applying inverse operations in the correct sequence.",
+    "equation": "4d + 15 = 75",
+    "targetVariable": "d",
+    "solutionSteps": [
+     {
+      "operation": "Subtract 15 from both sides",
+      "operationId": "algebraic_subtract_15",
+      "resultLatex": "4d = 60"
+     },
+     {
+      "operation": "Divide both sides by 4",
+      "operationId": "arithmetic_divide_4",
+      "resultLatex": "d = 15"
+     }
+    ],
+    "availableOperations": [
+     {
+      "id": "arithmetic_multiply_4",
+      "label": "Multiply both sides by 4",
+      "category": "arithmetic"
+     },
+     {
+      "id": "algebraic_simplify_identity",
+      "label": "Simplify identity",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_add_15",
+      "label": "Add 15 to both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "arithmetic_divide_4",
+      "label": "Divide both sides by 4",
+      "category": "arithmetic"
+     },
+     {
+      "id": "arithmetic_divide_15",
+      "label": "Divide both sides by 15",
+      "category": "arithmetic"
+     },
+     {
+      "id": "algebraic_subtract_15",
+      "label": "Subtract 15 from both sides",
+      "category": "algebraic"
+     }
+    ]
+   },
+   {
+    "id": "eq-solve-3",
+    "type": "solve",
+    "instruction": "Isolate and solve for the unknown parameter x in the linear calibration equation.",
+    "equation": "4x + 15 = 47",
+    "targetVariable": "x",
+    "solutionSteps": [
+     {
+      "operation": "Subtract 15 from both sides",
+      "operationId": "algebraic_subtract_15",
+      "resultLatex": "4x = 32"
+     },
+     {
+      "operation": "Divide both sides by 4",
+      "operationId": "arithmetic_divide_4",
+      "resultLatex": "x = 8"
+     }
+    ],
+    "availableOperations": [
+     {
+      "id": "algebraic_identity",
+      "label": "Simplify the isolated variable",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_add_15",
+      "label": "Add 15 to both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "arithmetic_divide_4",
+      "label": "Divide both sides by 4",
+      "category": "arithmetic"
+     },
+     {
+      "id": "algebraic_subtract_15",
+      "label": "Subtract 15 from both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_subtract_4",
+      "label": "Subtract 4 from both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "arithmetic_multiply_4",
+      "label": "Multiply both sides by 4",
+      "category": "arithmetic"
+     }
+    ]
+   },
+   {
+    "id": "eq-solve-4",
+    "type": "solve",
+    "instruction": "Isolate the variable t to determine the total elapsed time of the descent in minutes.",
+    "equation": "4 \\cdot t + 15 = 47",
+    "targetVariable": "t",
+    "solutionSteps": [
+     {
+      "operation": "Subtract 15 from both sides",
+      "operationId": "algebraic_subtract_15",
+      "resultLatex": "4 \\cdot t = 32"
+     },
+     {
+      "operation": "Divide both sides by 4",
+      "operationId": "arithmetic_divide_4",
+      "resultLatex": "t = 8"
+     }
+    ],
+    "availableOperations": [
+     {
+      "id": "algebraic_subtract_15",
+      "label": "Subtract 15 from both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "arithmetic_multiply_4",
+      "label": "Multiply both sides by 4",
+      "category": "arithmetic"
+     },
+     {
+      "id": "algebraic_add_15",
+      "label": "Add 15 to both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "arithmetic_simplify_value",
+      "label": "Simplify the expression",
+      "category": "arithmetic"
+     },
+     {
+      "id": "algebraic_subtract_4",
+      "label": "Subtract 4 from both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "arithmetic_divide_4",
+      "label": "Divide both sides by 4",
+      "category": "arithmetic"
+     }
+    ]
+   }
+  ]
+ }
+}

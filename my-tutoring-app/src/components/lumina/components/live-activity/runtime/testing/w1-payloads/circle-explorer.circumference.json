@@ -1,0 +1,69 @@
+{
+ "source": "qa/tutor-reports/circle-explorer-runtime-circumference-payload-2026-10-09.json",
+ "primitiveId": "circle-explorer",
+ "evalMode": "circumference",
+ "data": {
+  "title": "Calculating Circle Circumferences",
+  "description": "Practice computing the circumference of various circles using the radius or diameter. Apply the formula C = 2\u03c0r or C = \u03c0d with \u03c0 \u2248 3.14 to solve real-world measurement problems.",
+  "challengeType": "circumference",
+  "gradeBand": "7",
+  "challenges": [
+   {
+    "type": "circumference",
+    "narration": "A circular running track has the radius shown.",
+    "instruction": "Find the circumference \u2014 the distance all the way around.",
+    "hint": "Circumference = 2 \u00d7 \u03c0 \u00d7 r. Use \u03c0 \u2248 3.14.",
+    "unitLabel": "ft",
+    "radius": 2,
+    "given": "radius",
+    "usePiApprox": true,
+    "answerKind": "length",
+    "expectedAnswer": 12.56,
+    "tolerance": 0.5,
+    "id": "ce-1"
+   },
+   {
+    "type": "circumference",
+    "narration": "A bicycle tire has the diameter shown.",
+    "instruction": "Find the circumference \u2014 the distance all the way around.",
+    "hint": "Circumference = \u03c0 \u00d7 d (or 2 \u00d7 \u03c0 \u00d7 r). Use \u03c0 \u2248 3.14.",
+    "unitLabel": "cm",
+    "radius": 7,
+    "given": "diameter",
+    "usePiApprox": true,
+    "answerKind": "length",
+    "expectedAnswer": 43.96,
+    "tolerance": 0.8792,
+    "id": "ce-2"
+   },
+   {
+    "type": "circumference",
+    "narration": "A trampoline has the diameter shown.",
+    "instruction": "Find the circumference \u2014 the distance all the way around.",
+    "hint": "Circumference = \u03c0 \u00d7 d (or 2 \u00d7 \u03c0 \u00d7 r). Use \u03c0 \u2248 3.14.",
+    "unitLabel": "ft",
+    "radius": 10,
+    "given": "diameter",
+    "usePiApprox": true,
+    "answerKind": "length",
+    "expectedAnswer": 62.8,
+    "tolerance": 1.256,
+    "id": "ce-3"
+   },
+   {
+    "type": "circumference",
+    "narration": "A trampoline has the radius shown.",
+    "instruction": "Find the circumference \u2014 the distance all the way around.",
+    "hint": "Circumference = 2 \u00d7 \u03c0 \u00d7 r. Use \u03c0 \u2248 3.14.",
+    "unitLabel": "ft",
+    "radius": 14,
+    "given": "radius",
+    "usePiApprox": true,
+    "answerKind": "length",
+    "expectedAnswer": 87.92,
+    "tolerance": 1.7584,
+    "id": "ce-4"
+   }
+  ]
+ }
+}

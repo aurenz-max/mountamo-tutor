@@ -1,0 +1,261 @@
+{
+ "source": "qa/tutor-reports/net-folder-runtime-match_faces-payload-2026-10-09.json",
+ "primitiveId": "net-folder",
+ "evalMode": "match_faces",
+ "data": {
+  "title": "Net-to-Solid Face Matching: Cube",
+  "description": "Practice net-to-solid face matching.",
+  "solid": {
+   "type": "cube",
+   "name": "Cube",
+   "dimensions": {
+    "length": 80,
+    "width": 80,
+    "height": 80
+   },
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8
+  },
+  "net": {
+   "layout": "cross",
+   "faceLabels": [
+    "front",
+    "back",
+    "left",
+    "right",
+    "top",
+    "bottom"
+   ],
+   "gridOverlay": false
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "match_faces",
+    "instruction": "The yellow square with a question mark is part of this cube net. When the net folds up into a cube, which face of the cube does the yellow square become?",
+    "hint": "Start at the front square and fold the squares around it one at a time.",
+    "narration": "Fold the net in your mind to find where the yellow square goes.",
+    "targetAnswer": "bottom",
+    "netCells": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      0
+     ],
+     [
+      1,
+      1
+     ],
+     [
+      1,
+      2
+     ],
+     [
+      1,
+      3
+     ],
+     [
+      2,
+      0
+     ]
+    ],
+    "anchorCells": [
+     4,
+     3
+    ],
+    "highlightCell": 5,
+    "faceOptions": [
+     "top",
+     "bottom",
+     "right",
+     "back"
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "match_faces",
+    "instruction": "The yellow square with a question mark is part of this cube net. When the net folds up into a cube, which face of the cube does the yellow square become?",
+    "hint": "Start at the front square and fold the squares around it one at a time.",
+    "narration": "Fold the net in your mind to find where the yellow square goes.",
+    "targetAnswer": "back",
+    "netCells": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      0
+     ],
+     [
+      1,
+      1
+     ],
+     [
+      1,
+      2
+     ],
+     [
+      1,
+      3
+     ],
+     [
+      2,
+      1
+     ]
+    ],
+    "anchorCells": [
+     2,
+     3
+    ],
+    "highlightCell": 4,
+    "faceOptions": [
+     "top",
+     "bottom",
+     "left",
+     "back"
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "match_faces",
+    "instruction": "The yellow square with a question mark is part of this cube net. When the net folds up into a cube, which face of the cube does the yellow square become?",
+    "hint": "Start at the front square and fold the squares around it one at a time.",
+    "narration": "Fold the net in your mind to find where the yellow square goes.",
+    "targetAnswer": "right",
+    "netCells": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      0
+     ],
+     [
+      1,
+      1
+     ],
+     [
+      1,
+      2
+     ],
+     [
+      1,
+      3
+     ],
+     [
+      2,
+      2
+     ]
+    ],
+    "anchorCells": [
+     0,
+     1
+    ],
+    "highlightCell": 2,
+    "faceOptions": [
+     "top",
+     "left",
+     "right",
+     "back"
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "match_faces",
+    "instruction": "The yellow square with a question mark is part of this cube net. When the net folds up into a cube, which face of the cube does the yellow square become?",
+    "hint": "Start at the front square and fold the squares around it one at a time.",
+    "narration": "Fold the net in your mind to find where the yellow square goes.",
+    "targetAnswer": "back",
+    "netCells": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      0
+     ],
+     [
+      1,
+      1
+     ],
+     [
+      1,
+      2
+     ],
+     [
+      1,
+      3
+     ],
+     [
+      2,
+      3
+     ]
+    ],
+    "anchorCells": [
+     4,
+     5
+    ],
+    "highlightCell": 2,
+    "faceOptions": [
+     "top",
+     "left",
+     "right",
+     "back"
+    ]
+   },
+   {
+    "id": "c5",
+    "type": "match_faces",
+    "instruction": "The yellow square with a question mark is part of this cube net. When the net folds up into a cube, which face of the cube does the yellow square become?",
+    "hint": "Start at the front square and fold the squares around it one at a time.",
+    "narration": "Fold the net in your mind to find where the yellow square goes.",
+    "targetAnswer": "left",
+    "netCells": [
+     [
+      0,
+      1
+     ],
+     [
+      1,
+      0
+     ],
+     [
+      1,
+      1
+     ],
+     [
+      1,
+      2
+     ],
+     [
+      1,
+      3
+     ],
+     [
+      2,
+      1
+     ]
+    ],
+    "anchorCells": [
+     5,
+     2
+    ],
+    "highlightCell": 1,
+    "faceOptions": [
+     "bottom",
+     "left",
+     "right",
+     "back"
+    ]
+   }
+  ],
+  "gradeBand": "3-4"
+ }
+}

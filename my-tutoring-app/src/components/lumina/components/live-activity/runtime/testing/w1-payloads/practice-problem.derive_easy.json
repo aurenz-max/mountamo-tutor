@@ -1,0 +1,40 @@
+{
+ "source": "qa/tutor-reports/practice-problem-runtime-derive_easy-payload-2026-10-09.json",
+ "primitiveId": "practice-problem",
+ "evalMode": "derive_easy",
+ "data": {
+  "title": "Solving a Linear Equation with Subtraction and Division",
+  "subject": "Algebra",
+  "problem": {
+   "statement": "Solve the linear equation $3x - 7 = 14$ for $x$. State your final answer in simplest form.",
+   "inset": {
+    "insetType": "katex",
+    "expression": "3x - 7 = 14",
+    "displayMode": "display"
+   }
+  },
+  "solutionStrategy": "Isolate the variable term by applying inverse operations in reverse order of operations.",
+  "canonicalAnswer": "x = 7",
+  "steps": [
+   {
+    "id": 0,
+    "title": "Isolate the variable term by adding 7 to both sides",
+    "type": "algebra",
+    "canonicalBody": "3x - 7 = 14 -> [add 7 to both sides] -> 3x = 21",
+    "strategy": "Addition undoes subtraction, allowing us to gather all constant terms on the right side of the equation.",
+    "misconceptions": "Adding 7 only to the left side or incorrectly subtracting 7 instead of adding."
+   },
+   {
+    "id": 1,
+    "title": "Isolate the variable by dividing both sides by 3",
+    "type": "algebra",
+    "canonicalBody": "3x = 21 -> [divide both sides by 3] -> x = 7",
+    "strategy": "Division undoes multiplication, which successfully isolates the variable completely.",
+    "misconceptions": "Dividing only the coefficient or dividing the constant by the wrong number."
+   }
+  ],
+  "difficulty": "easy",
+  "evalMode": "derive_easy",
+  "gradeLevel": "middle school students (grades 6-8) - Use more complex vocabulary, abstract concepts, real-world applications, and critical thinking opportunities. Encourage deeper analysis."
+ }
+}

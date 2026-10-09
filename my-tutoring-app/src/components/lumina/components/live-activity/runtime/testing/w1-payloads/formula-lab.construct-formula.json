@@ -1,0 +1,123 @@
+{
+ "source": "qa/tutor-reports/formula-lab-runtime-construct-formula-payload-2026-10-09.json",
+ "primitiveId": "formula-lab",
+ "evalMode": "construct-formula",
+ "data": {
+  "title": "Kinetic Energy Dynamics",
+  "description": "Predict and test how mass and velocity non-linearly influence the total kinetic energy of a moving object.",
+  "context": "In classical mechanics, the kinetic energy of an object depends on its mass and the square of its velocity.",
+  "transferContext": "Analyzing the destructive potential of various vehicles traveling at different highway speeds.",
+  "formulaLatex": "E = \\frac{1}{2} \\cdot m \\cdot v^2",
+  "expression": "0.5 * m * v ^ 2",
+  "outputSymbol": "E",
+  "outputName": "Kinetic Energy",
+  "outputUnit": "J",
+  "variables": [
+   {
+    "symbol": "m",
+    "name": "Mass",
+    "unit": "kg",
+    "min": 1,
+    "max": 50,
+    "step": 1,
+    "defaultValue": 10,
+    "accent": "blue"
+   },
+   {
+    "symbol": "v",
+    "name": "Velocity",
+    "unit": "m/s",
+    "min": 1,
+    "max": 20,
+    "step": 1,
+    "defaultValue": 5,
+    "accent": "purple"
+   }
+  ],
+  "sceneKind": "motion",
+  "challengeType": "construct-formula",
+  "gradeBand": "6-8",
+  "challenges": [
+   {
+    "id": "formula-lab-1",
+    "type": "construct-formula",
+    "changedVariableSymbol": "m",
+    "baselineValues": [
+     50,
+     17
+    ],
+    "targetValues": [
+     35,
+     17
+    ],
+    "expectedBaselineOutput": 7225,
+    "expectedTargetOutput": 5057.5,
+    "correctDirection": "decrease"
+   },
+   {
+    "id": "formula-lab-2",
+    "type": "construct-formula",
+    "changedVariableSymbol": "m",
+    "baselineValues": [
+     35,
+     7
+    ],
+    "targetValues": [
+     16,
+     7
+    ],
+    "expectedBaselineOutput": 857.5,
+    "expectedTargetOutput": 392,
+    "correctDirection": "decrease"
+   },
+   {
+    "id": "formula-lab-3",
+    "type": "construct-formula",
+    "changedVariableSymbol": "v",
+    "baselineValues": [
+     35,
+     11
+    ],
+    "targetValues": [
+     35,
+     5
+    ],
+    "expectedBaselineOutput": 2117.5,
+    "expectedTargetOutput": 437.5,
+    "correctDirection": "decrease"
+   },
+   {
+    "id": "formula-lab-4",
+    "type": "construct-formula",
+    "changedVariableSymbol": "m",
+    "baselineValues": [
+     9,
+     7
+    ],
+    "targetValues": [
+     42,
+     7
+    ],
+    "expectedBaselineOutput": 220.5,
+    "expectedTargetOutput": 1029,
+    "correctDirection": "increase"
+   },
+   {
+    "id": "formula-lab-5",
+    "type": "construct-formula",
+    "changedVariableSymbol": "v",
+    "baselineValues": [
+     35,
+     4
+    ],
+    "targetValues": [
+     35,
+     14
+    ],
+    "expectedBaselineOutput": 280,
+    "expectedTargetOutput": 3430,
+    "correctDirection": "increase"
+   }
+  ]
+ }
+}

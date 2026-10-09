@@ -1,0 +1,386 @@
+{
+ "source": "qa/tutor-reports/equation-workspace-runtime-multi-step-payload-2026-10-09.json",
+ "primitiveId": "equation-workspace",
+ "evalMode": "multi-step",
+ "data": {
+  "title": "Equation Workspace: Solving two-step linear equations",
+  "context": "Solve equations by applying algebraic operations step by step.",
+  "challenges": [
+   {
+    "id": "eq-multi-step-0",
+    "type": "multi-step",
+    "instruction": "Isolate and determine the numerical value of the target variable x by systematically applying inverse operations, simplifying expressions, and maintaining algebraic balance.",
+    "equation": "2(3x + 4) - 2x + 7 = 39",
+    "targetVariable": "x",
+    "solutionSteps": [
+     {
+      "operation": "Apply the distributive property to expand 2(3x + 4)",
+      "operationId": "algebraic_distribute_2",
+      "resultLatex": "6x + 8 - 2x + 7 = 39"
+     },
+     {
+      "operation": "Combine variable like terms on the left side: 6x - 2x",
+      "operationId": "algebraic_combine_variable_terms",
+      "resultLatex": "4x + 8 + 7 = 39"
+     },
+     {
+      "operation": "Combine constant terms on the left side: 8 + 7",
+      "operationId": "arithmetic_combine_constants",
+      "resultLatex": "4x + 15 = 39"
+     },
+     {
+      "operation": "Subtract 15 from both sides",
+      "operationId": "algebraic_subtract_15",
+      "resultLatex": "4x = 24"
+     },
+     {
+      "operation": "Divide both sides by 4",
+      "operationId": "arithmetic_divide_4",
+      "resultLatex": "x = 6"
+     }
+    ],
+    "availableOperations": [
+     {
+      "id": "algebraic_distribute_2",
+      "label": "Apply the distributive property to expand 2(3x + 4)",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_combine_variable_terms",
+      "label": "Combine variable like terms on the left side: 6x - 2x",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_add_15",
+      "label": "Add 15 to both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "arithmetic_divide_4",
+      "label": "Divide both sides by 4",
+      "category": "arithmetic"
+     },
+     {
+      "id": "algebraic_subtract_15",
+      "label": "Subtract 15 from both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_distribute_incorrect",
+      "label": "Distribute 2 across all terms including -2x",
+      "category": "algebraic"
+     },
+     {
+      "id": "arithmetic_multiply_4",
+      "label": "Multiply both sides by 4",
+      "category": "arithmetic"
+     },
+     {
+      "id": "arithmetic_combine_constants",
+      "label": "Combine constant terms on the left side: 8 + 7",
+      "category": "arithmetic"
+     }
+    ]
+   },
+   {
+    "id": "eq-multi-step-1",
+    "type": "multi-step",
+    "instruction": "Isolate the variable x to determine the baseline operational value of each sensor component.",
+    "equation": "3(2x + 4) + 5x - 7 = 38",
+    "targetVariable": "x",
+    "solutionSteps": [
+     {
+      "operation": "Distribute 3 across (2x + 4)",
+      "operationId": "algebraic_distribute_3",
+      "resultLatex": "6x + 12 + 5x - 7 = 38"
+     },
+     {
+      "operation": "Combine variable terms (6x + 5x)",
+      "operationId": "algebraic_combine_variable_terms",
+      "resultLatex": "11x + 12 - 7 = 38"
+     },
+     {
+      "operation": "Combine constant terms (12 - 7)",
+      "operationId": "arithmetic_combine_constants",
+      "resultLatex": "11x + 5 = 38"
+     },
+     {
+      "operation": "Subtract 5 from both sides",
+      "operationId": "arithmetic_subtract_5",
+      "resultLatex": "11x = 33"
+     },
+     {
+      "operation": "Divide both sides by 11",
+      "operationId": "arithmetic_divide_11",
+      "resultLatex": "x = 3"
+     }
+    ],
+    "availableOperations": [
+     {
+      "id": "arithmetic_combine_constants",
+      "label": "Combine constant terms (12 - 7)",
+      "category": "arithmetic"
+     },
+     {
+      "id": "algebraic_multiply_11",
+      "label": "Multiply both sides by 11",
+      "category": "algebraic"
+     },
+     {
+      "id": "arithmetic_add_5",
+      "label": "Add 5 to both sides",
+      "category": "arithmetic"
+     },
+     {
+      "id": "arithmetic_divide_11",
+      "label": "Divide both sides by 11",
+      "category": "arithmetic"
+     },
+     {
+      "id": "algebraic_distribute_3",
+      "label": "Distribute 3 across (2x + 4)",
+      "category": "algebraic"
+     },
+     {
+      "id": "arithmetic_subtract_5",
+      "label": "Subtract 5 from both sides",
+      "category": "arithmetic"
+     },
+     {
+      "id": "algebraic_combine_variable_terms",
+      "label": "Combine variable terms (6x + 5x)",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_distribute_error",
+      "label": "Distribute 3 as (6x + 4)",
+      "category": "algebraic"
+     }
+    ]
+   },
+   {
+    "id": "eq-multi-step-2",
+    "type": "multi-step",
+    "instruction": "Determine the operating parameter x by applying algebraic transformations systematically to isolate the target variable.",
+    "equation": "3(2x + 4) + 4x - 7 = 35",
+    "targetVariable": "x",
+    "solutionSteps": [
+     {
+      "operation": "Apply the distributive property to expand 3(2x + 4)",
+      "operationId": "algebraic_distribute_3",
+      "resultLatex": "6x + 12 + 4x - 7 = 35"
+     },
+     {
+      "operation": "Combine like constant terms on the left side",
+      "operationId": "algebraic_combine_constants",
+      "resultLatex": "6x + 4x + 5 = 35"
+     },
+     {
+      "operation": "Combine variable terms on the left side",
+      "operationId": "algebraic_combine_variable_terms",
+      "resultLatex": "10x + 5 = 35"
+     },
+     {
+      "operation": "Subtract 5 from both sides",
+      "operationId": "algebraic_subtract_5",
+      "resultLatex": "10x = 30"
+     },
+     {
+      "operation": "Divide both sides by 10",
+      "operationId": "arithmetic_divide_10",
+      "resultLatex": "x = 3"
+     }
+    ],
+    "availableOperations": [
+     {
+      "id": "algebraic_combine_constants",
+      "label": "Combine like constant terms on the left side",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_add_5",
+      "label": "Add 5 to both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_combine_variable_terms",
+      "label": "Combine variable terms on the left side",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_subtract_5",
+      "label": "Subtract 5 from both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_subtract_7",
+      "label": "Subtract 7 from both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_distribute_3",
+      "label": "Apply the distributive property to expand 3(2x + 4)",
+      "category": "algebraic"
+     },
+     {
+      "id": "arithmetic_multiply_10",
+      "label": "Multiply both sides by 10",
+      "category": "arithmetic"
+     },
+     {
+      "id": "arithmetic_divide_10",
+      "label": "Divide both sides by 10",
+      "category": "arithmetic"
+     }
+    ]
+   },
+   {
+    "id": "eq-multi-step-3",
+    "type": "multi-step",
+    "instruction": "Systematically isolate the target variable x by expanding expressions, aggregating like terms, and applying inverse algebraic operations.",
+    "equation": "3(2x + 4) - 4x + 6 = 34",
+    "targetVariable": "x",
+    "solutionSteps": [
+     {
+      "operation": "Apply the distributive property to 3(2x + 4)",
+      "operationId": "algebraic_distribute_3",
+      "resultLatex": "6x + 12 - 4x + 6 = 34"
+     },
+     {
+      "operation": "Combine variable terms 6x - 4x",
+      "operationId": "algebraic_combine_variable_terms",
+      "resultLatex": "2x + 12 + 6 = 34"
+     },
+     {
+      "operation": "Combine constant terms 12 + 6",
+      "operationId": "arithmetic_combine_constants",
+      "resultLatex": "2x + 18 = 34"
+     },
+     {
+      "operation": "Subtract 18 from both sides",
+      "operationId": "algebraic_subtract_18",
+      "resultLatex": "2x = 16"
+     },
+     {
+      "operation": "Divide both sides by 2",
+      "operationId": "algebraic_divide_2",
+      "resultLatex": "x = 8"
+     }
+    ],
+    "availableOperations": [
+     {
+      "id": "algebraic_distribute_3",
+      "label": "Apply the distributive property to 3(2x + 4)",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_add_18",
+      "label": "Add 18 to both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "arithmetic_combine_constants",
+      "label": "Combine constant terms 12 + 6",
+      "category": "arithmetic"
+     },
+     {
+      "id": "algebraic_divide_2",
+      "label": "Divide both sides by 2",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_multiply_2",
+      "label": "Multiply both sides by 2",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_combine_variable_terms",
+      "label": "Combine variable terms 6x - 4x",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_subtract_12",
+      "label": "Subtract 12 from both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_subtract_18",
+      "label": "Subtract 18 from both sides",
+      "category": "algebraic"
+     }
+    ]
+   },
+   {
+    "id": "eq-multi-step-4",
+    "type": "multi-step",
+    "instruction": "Determine the value of the target variable x by systematically applying algebraic properties to simplify and isolate the variable.",
+    "equation": "3(2x + 4) + 4x - 7 = 35",
+    "targetVariable": "x",
+    "solutionSteps": [
+     {
+      "operation": "Apply the distributive property to expand 3(2x + 4)",
+      "operationId": "algebraic_distribute_3",
+      "resultLatex": "6x + 12 + 4x - 7 = 35"
+     },
+     {
+      "operation": "Combine like terms on the left side of the equation",
+      "operationId": "algebraic_combine_like_terms",
+      "resultLatex": "10x + 5 = 35"
+     },
+     {
+      "operation": "Subtract 5 from both sides of the equation",
+      "operationId": "arithmetic_subtract_5",
+      "resultLatex": "10x = 30"
+     },
+     {
+      "operation": "Divide both sides of the equation by 10",
+      "operationId": "arithmetic_divide_10",
+      "resultLatex": "x = 3"
+     }
+    ],
+    "availableOperations": [
+     {
+      "id": "arithmetic_identity_simplify",
+      "label": "State solution in simplified form",
+      "category": "arithmetic"
+     },
+     {
+      "id": "arithmetic_add_5",
+      "label": "Add 5 to both sides of the equation",
+      "category": "arithmetic"
+     },
+     {
+      "id": "algebraic_distribute_3",
+      "label": "Apply the distributive property to expand 3(2x + 4)",
+      "category": "algebraic"
+     },
+     {
+      "id": "arithmetic_subtract_5",
+      "label": "Subtract 5 from both sides of the equation",
+      "category": "arithmetic"
+     },
+     {
+      "id": "arithmetic_divide_10",
+      "label": "Divide both sides of the equation by 10",
+      "category": "arithmetic"
+     },
+     {
+      "id": "algebraic_subtract_4x",
+      "label": "Subtract 4x from both sides of the equation",
+      "category": "algebraic"
+     },
+     {
+      "id": "arithmetic_multiply_10",
+      "label": "Multiply both sides of the equation by 10",
+      "category": "arithmetic"
+     },
+     {
+      "id": "algebraic_combine_like_terms",
+      "label": "Combine like terms on the left side of the equation",
+      "category": "algebraic"
+     }
+    ]
+   }
+  ]
+ }
+}

@@ -14,6 +14,8 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from '../evalMode';
+import { boxDims, matchItem, solidWords, validItem } from '../../primitives/visual-primitives/math/netFolderWorkspace';
+import { INVALID_CUBE_NETS, VALID_CUBE_NETS, cellsOf } from '../../primitives/visual-primitives/math/netFolderGeometry';
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -491,35 +493,32 @@ const countFEVSchema: Schema = {
 // Per-type sub-generators
 // ===========================================================================
 
+/**
+ * One challenge per solid (`solids`, in order): the model writes the words, code sets each challenge's solid, its
+ * answer and its options (the answer and three other solids). Five challenges on one solid had one answer five times.
+ */
 async function generateIdentifyChallenges(
   topic: string,
   scopeSection: string,
   gradeLevel: string,
-  gradeBand: string,
-  chosenSolid: string,
-  challengeCount: number,
+  solids: string[],
   tierSection: string,
 ): Promise<{ solidType: string; challenges: NetFolderChallenge[] }> {
-  const pool = gradeSolidPool(gradeBand);
   const prompt = `
 Create an educational 3D solid IDENTIFICATION activity for "${topic}" (${gradeLevel} students).
 ${scopeSection}
 Theme: ${randomTheme()}.
 ${tierSection}
 
-The student sees a 3D "${chosenSolid}" displayed on screen and must identify it from multiple choice options.
-IMPORTANT: The solid shown is ALWAYS a ${chosenSolid} for every challenge. Set solidType to "${chosenSolid}".
-Set targetAnswer to "${chosenSolid}" for every challenge.
-
-Available distractor solids for options: ${pool.filter(s => s !== chosenSolid).join(', ')}.
+The student sees a 3D solid drawn on screen and names it from multiple choice options.
+Write exactly ${solids.length} challenges, in this order, one for each solid: ${solids.map((x, i) => `${i + 1}. ${x}`).join(', ')}.
 
 For each challenge:
-- Write a unique kid-friendly description of the ${chosenSolid} (real-world analogy, property clues, etc.).
-- Set option0..option3: 4 plausible solid names. targetAnswer ("${chosenSolid}") MUST be one of the options.
-- Vary the descriptions and difficulty, NOT the target solid.
-- Do NOT describe a different solid in the instruction text — the student sees a ${chosenSolid}.
-
-Generate exactly ${challengeCount} challenges progressing in difficulty.
+- instruction: ask the student to name the solid shown. NEVER write the solid's name. Do NOT describe its faces, base,
+  edges or point; the picture shows them. You may say what real-world thing it is used for in the theme.
+- hint: one property to look at (count the faces, look at the base), without naming the solid.
+- narration: a short encouraging line.
+- targetAnswer: the solid's id as written in the list; option0..option3: any four solid ids (code replaces them).
 `;
 
   const result = await ai.models.generateContent({
@@ -529,184 +528,67 @@ Generate exactly ${challengeCount} challenges progressing in difficulty.
   });
 
   const data = result.text ? JSON.parse(result.text) : null;
-  if (!data?.challenges?.length) return { solidType: chosenSolid, challenges: [] };
-
-  const challenges = (data.challenges as FlatChallenge[])
-    .map((flat): NetFolderChallenge | null => {
-      if (!hasBaseFields(flat)) return null;
-
-      const targetAnswer = typeof flat.targetAnswer === 'string' ? flat.targetAnswer.trim() : '';
-      if (!targetAnswer) return null;
-
-      let options = collectStrings(flat, 'option', 4);
-      if (!options || options.length < 2) {
-        // Derive options from pool
-        const others = pool.filter(s => s !== targetAnswer);
-        const shuffled = others.sort(() => Math.random() - 0.5);
-        options = [targetAnswer, ...shuffled.slice(0, 3)];
-        options.sort(() => Math.random() - 0.5);
-      }
-      // Ensure targetAnswer is in options
-      if (!options.includes(targetAnswer)) {
-        options[options.length - 1] = targetAnswer;
-        options.sort(() => Math.random() - 0.5);
-      }
-
-      return {
-        id: flat.id as string,
-        type: 'identify_solid',
-        instruction: flat.instruction as string,
-        hint: flat.hint as string,
-        narration: flat.narration as string,
-        targetAnswer,
-        options,
-      };
-    })
-    .filter((c): c is NetFolderChallenge => c !== null);
-
-  return { solidType: chosenSolid, challenges };
+  const flats: FlatChallenge[] = Array.isArray(data?.challenges) ? data.challenges : [];
+  const all = Object.keys(SOLID_GEOMETRY);
+  const challenges = solids.map((target, i): NetFolderChallenge => {
+    const flat = flats[i] ?? {};
+    // A sentence that names the solid, or describes its faces, base or point, answers from the words instead of the
+    // picture; the code's own words then stand.
+    const named = (t: string) => t.toLowerCase().replace(/_/g, ' ').includes(solidWords(target))
+      || /\b(faces?|bases?|edges?|vertex|vertices|corners?|points?|pointy|triangles?|triangular|squares?|rectangles?|rectangular|sides?|pyramids?|prisms?|cubes?)\b/i.test(t);
+    const text = (v: unknown, fallback: string) => (typeof v === 'string' && v.trim() && !named(v) ? v.trim() : fallback);
+    const others = all.filter(x => x !== target).sort(() => Math.random() - 0.5).slice(0, 3);
+    return {
+      id: `identify-${i + 1}`,
+      type: 'identify_solid',
+      instruction: text(flat.instruction, 'Look at the solid on the screen. What is its name?'),
+      hint: text(flat.hint, 'Look at the base and count the faces.'),
+      narration: text(flat.narration, "Let's name this solid!"),
+      targetAnswer: target,
+      options: [target, ...others].sort(() => Math.random() - 0.5),
+      solid: buildSolid(target, ''),
+    };
+  });
+  return { solidType: solids[0], challenges };
 }
 
-async function generateMatchFacesChallenges(
-  topic: string,
-  scopeSection: string,
-  gradeLevel: string,
-  _gradeBand: string,
-  chosenSolid: string,
-  challengeCount: number,
-  tierSection: string,
-): Promise<{ solidType: string; challenges: NetFolderChallenge[] }> {
-  const geo = SOLID_GEOMETRY[chosenSolid] ?? SOLID_GEOMETRY.cube;
-
-  const prompt = `
-Create an educational FACE MATCHING activity for "${topic}" (${gradeLevel} students).
-${scopeSection}
-Theme: ${randomTheme()}.
-${tierSection}
-
-The solid is a ${chosenSolid} with face labels: ${geo.faceLabels.join(', ')}.
-Students see a 2D net with one face highlighted and must identify which face it corresponds to on the 3D solid.
-
-For each challenge:
-- Set highlightedFace: which face is highlighted on the net (must be one of: ${geo.faceLabels.join(', ')}).
-- Set targetAnswer: the correct face label on the 3D solid (same as highlightedFace for this activity).
-- Set faceOption0..faceOption3: 4 face label options from the solid. targetAnswer MUST be one of them.
-- Vary which face is highlighted across challenges.
-- Use kid-friendly, encouraging instructions like "Which face on the solid matches the highlighted part of the net?"
-
-Generate exactly ${challengeCount} challenges.
-`;
-
-  const result = await ai.models.generateContent({
-    model: 'gemini-flash-lite-latest',
-    contents: prompt,
-    config: { responseMimeType: 'application/json', responseSchema: matchFacesSchema },
-  });
-
-  const data = result.text ? JSON.parse(result.text) : null;
-  if (!data?.challenges?.length) return { solidType: chosenSolid, challenges: [] };
-
-  const challenges = (data.challenges as FlatChallenge[])
-    .map((flat): NetFolderChallenge | null => {
-      if (!hasBaseFields(flat)) return null;
-
-      const highlightedFace = typeof flat.highlightedFace === 'string' ? flat.highlightedFace.trim() : '';
-      const targetAnswer = typeof flat.targetAnswer === 'string' ? flat.targetAnswer.trim() : '';
-      if (!highlightedFace || !targetAnswer) return null;
-
-      let faceOptions = collectStrings(flat, 'faceOption', 4);
-      if (!faceOptions || faceOptions.length < 2) {
-        const others = geo.faceLabels.filter(f => f !== targetAnswer);
-        const shuffled = others.sort(() => Math.random() - 0.5);
-        faceOptions = [targetAnswer, ...shuffled.slice(0, 3)];
-        faceOptions.sort(() => Math.random() - 0.5);
-      }
-      if (!faceOptions.includes(targetAnswer)) {
-        faceOptions[faceOptions.length - 1] = targetAnswer;
-        faceOptions.sort(() => Math.random() - 0.5);
-      }
-
-      return {
-        id: flat.id as string,
-        type: 'match_faces',
-        instruction: flat.instruction as string,
-        hint: flat.hint as string,
-        narration: flat.narration as string,
-        highlightedFace,
-        targetAnswer,
-        faceOptions,
-      };
-    })
-    .filter((c): c is NetFolderChallenge => c !== null);
-
-  return { solidType: chosenSolid, challenges };
+/**
+ * Code-built: a cube net from the eleven, two squares labelled (front, and one beside it), one square yellow. The fold
+ * decides the answer (`matchItem`). The model's version labelled every square with its face, the yellow square's own
+ * label was the answer, and the yellow was never drawn.
+ */
+function buildMatchFacesChallenges(count: number): NetFolderChallenge[] {
+  const nets = [...VALID_CUBE_NETS].sort(() => Math.random() - 0.5);
+  const out: NetFolderChallenge[] = [];
+  let lastTarget = '';
+  for (let n = 0; out.length < count && n < 200; n++) {
+    const cells = cellsOf(nets[n % nets.length]);
+    const root = Math.floor(Math.random() * cells.length);
+    const beside = cells.map((_, i) => i)
+      .filter(i => Math.abs(cells[i][0] - cells[root][0]) + Math.abs(cells[i][1] - cells[root][1]) === 1);
+    if (!beside.length) continue;
+    const anchor = beside[Math.floor(Math.random() * beside.length)];
+    const rest = cells.map((_, i) => i).filter(i => i !== root && i !== anchor);
+    const item = matchItem(`match-${out.length + 1}`, cells, root, anchor, rest[Math.floor(Math.random() * rest.length)]);
+    if (!item || item.targetAnswer === lastTarget) continue;
+    lastTarget = String(item.targetAnswer);
+    out.push(item);
+  }
+  return out;
 }
 
-async function generateValidNetChallenges(
-  topic: string,
-  scopeSection: string,
-  gradeLevel: string,
-  _gradeBand: string,
-  chosenSolid: string,
-  challengeCount: number,
-  tierSection: string,
-): Promise<{ solidType: string; challenges: NetFolderChallenge[] }> {
-
-  const prompt = `
-Create an educational VALID NET CHECK activity for "${topic}" (${gradeLevel} students).
-${scopeSection}
-Theme: ${randomTheme()}.
-${tierSection}
-
-The solid is a ${chosenSolid}. Students see a 2D net arrangement and must decide if it can fold into the solid.
-
-IMPORTANT: Generate a MIX of valid and invalid nets. At least 1 valid and 1 invalid.
-- For valid nets: describe standard net arrangements that correctly fold.
-- For invalid nets: describe arrangements where faces overlap, are disconnected, or don't form the solid.
-
-For each challenge:
-- netLayout: describe the net arrangement (e.g. "cross shape with 4 squares in a row and 1 on top and bottom")
-- isValidNet: true if the net folds correctly, false if not
-- netExplanation: why it's valid or invalid (1-2 sentences)
-- Use encouraging instructions like "Does this net fold into a ${chosenSolid}?"
-
-Generate exactly ${challengeCount} challenges.
-`;
-
-  const result = await ai.models.generateContent({
-    model: 'gemini-flash-lite-latest',
-    contents: prompt,
-    config: { responseMimeType: 'application/json', responseSchema: validNetSchema },
-  });
-
-  const data = result.text ? JSON.parse(result.text) : null;
-  if (!data?.challenges?.length) return { solidType: chosenSolid, challenges: [] };
-
-  const challenges = (data.challenges as FlatChallenge[])
-    .map((flat): NetFolderChallenge | null => {
-      if (!hasBaseFields(flat)) return null;
-
-      const netLayout = typeof flat.netLayout === 'string' ? flat.netLayout.trim() : '';
-      const isValidNet = typeof flat.isValidNet === 'boolean' ? flat.isValidNet : undefined;
-      const netExplanation = typeof flat.netExplanation === 'string' ? flat.netExplanation.trim() : '';
-
-      if (!netLayout || isValidNet === undefined || !netExplanation) return null;
-
-      return {
-        id: flat.id as string,
-        type: 'valid_net',
-        instruction: flat.instruction as string,
-        hint: flat.hint as string,
-        narration: flat.narration as string,
-        netLayout,
-        isValidNet,
-        netExplanation,
-        targetAnswer: isValidNet ? 'valid' : 'invalid',
-      };
-    })
-    .filter((c): c is NetFolderChallenge => c !== null);
-
-  return { solidType: chosenSolid, challenges };
+/**
+ * Code-built: nets drawn from the eleven cube nets and from arrangements that do not fold, at least one of each; the
+ * fold decides the verdict (`validItem`). The model's version described a net in words that were never shown, and the
+ * screen always drew the solid's own net, so an invalid item could not be answered from the picture.
+ */
+function buildValidNetChallenges(count: number): NetFolderChallenge[] {
+  const valid = [...VALID_CUBE_NETS].sort(() => Math.random() - 0.5);
+  const invalid = [...INVALID_CUBE_NETS].sort(() => Math.random() - 0.5);
+  const verdicts = Array.from({ length: count }, (_, i) => (i === 0 ? true : i === 1 ? false : Math.random() < 0.5))
+    .sort(() => Math.random() - 0.5);
+  let v = 0, x = 0;
+  return verdicts.map((ok, i) => validItem(`net-${i + 1}`, cellsOf(ok ? valid[v++ % valid.length] : invalid[x++ % invalid.length])));
 }
 
 async function generateSurfaceAreaChallenges(
@@ -756,8 +638,20 @@ Generate exactly ${challengeCount} challenges progressing in difficulty (larger 
 
       const unitLabel = typeof flat.unitLabel === 'string' ? flat.unitLabel.trim() : 'square units';
 
-      const faceDimensions = collectFaceDimensions(flat, 'face', 6);
-      if (!faceDimensions || faceDimensions.length < 4) return null;
+      let faceDimensions = collectFaceDimensions(flat, 'face', 6);
+      let instruction = flat.instruction as string;
+      // Six faces in a box's three pairs, or a box built here: the drawn box and its net are built from them.
+      const dims = boxDims(faceDimensions);
+      const cubeAsked = chosenSolid === 'cube';
+      if (!dims || (cubeAsked && !(dims[0] === dims[1] && dims[1] === dims[2]))) {
+        const r = (lo: number, hi: number) => lo + Math.floor(Math.random() * (hi - lo + 1));
+        const [lo, hi] = _gradeBand === '3-4' ? [2, 6] : [3, 10];
+        const l = r(lo, hi), w = cubeAsked ? l : r(lo, hi), h = cubeAsked ? l : r(lo, hi);
+        faceDimensions = [{ width: l, height: w }, { width: l, height: w }, { width: l, height: h }, { width: l, height: h },
+          { width: w, height: h }, { width: w, height: h }];
+        instruction = `Find the total surface area of this ${cubeAsked ? 'cube' : 'box'}: find the area of each face, then add all six.`;
+      }
+      if (!faceDimensions) return null;
 
       // ALWAYS derive targetAnswer from face dimensions — never trust Gemini
       const totalArea = faceDimensions.reduce((sum, fd) => sum + fd.width * fd.height, 0);
@@ -765,7 +659,7 @@ Generate exactly ${challengeCount} challenges progressing in difficulty (larger 
       return {
         id: flat.id as string,
         type: 'surface_area',
-        instruction: flat.instruction as string,
+        instruction,
         hint: flat.hint as string,
         narration: flat.narration as string,
         faceDimensions,
@@ -778,15 +672,16 @@ Generate exactly ${challengeCount} challenges progressing in difficulty (larger 
   return { solidType: chosenSolid, challenges };
 }
 
+/** One challenge per solid (`solids`): each item counts its own solid, so the items are not one answer repeated. */
 async function generateCountFEVChallenges(
   topic: string,
   scopeSection: string,
   gradeLevel: string,
-  _gradeBand: string,
-  chosenSolid: string,
-  challengeCount: number,
+  solids: string[],
   tierSection: string,
 ): Promise<{ solidType: string; challenges: NetFolderChallenge[] }> {
+  const chosenSolid = solids[0];
+  const challengeCount = solids.length;
 
   const prompt = `
 Create an educational COUNTING FACES, EDGES, AND VERTICES activity for "${topic}" (${gradeLevel} students).
@@ -794,11 +689,11 @@ ${scopeSection}
 Theme: ${randomTheme()}.
 ${tierSection}
 
-The solid is a ${chosenSolid}. Students count the number of faces, edges, and vertices.
+Each challenge shows a different solid, in this order: ${solids.join(', ')}. Students count its faces, edges, and vertices.
 
 For each challenge:
-- instruction: ask the student to count faces, edges, and vertices of the solid.
-  Vary the phrasing — sometimes ask about all three, sometimes focus on one property.
+- instruction: ask the student to count the faces, edges, and vertices of the solid shown and type all three.
+  NEVER state a count. Vary the phrasing.
 - hint: a helpful hint about how to count (e.g. "Remember, an edge is where two faces meet.")
 - narration: encouraging tutor narration.
 
@@ -813,23 +708,18 @@ Generate exactly ${challengeCount} challenges with varied instructions.
   });
 
   const data = result.text ? JSON.parse(result.text) : null;
-  if (!data?.challenges?.length) return { solidType: chosenSolid, challenges: [] };
-
-  const challenges = (data.challenges as FlatChallenge[])
-    .map((flat): NetFolderChallenge | null => {
-      if (!hasBaseFields(flat)) return null;
-
-      return {
-        id: flat.id as string,
-        type: 'count_faces_edges_vertices',
-        instruction: flat.instruction as string,
-        hint: flat.hint as string,
-        narration: flat.narration as string,
-        targetAnswer: 'check-solid',
-      };
-    })
-    .filter((c): c is NetFolderChallenge => c !== null);
-
+  const flats: FlatChallenge[] = Array.isArray(data?.challenges) ? data.challenges : [];
+  // A digit in the model's words could be a count; the code's own words then stand.
+  const text = (v: unknown, fallback: string) => (typeof v === 'string' && v.trim() && !/[0-9]/.test(v) ? v.trim() : fallback);
+  const challenges = solids.map((type, i): NetFolderChallenge => ({
+    id: `count-${i + 1}`,
+    type: 'count_faces_edges_vertices',
+    instruction: text(flats[i]?.instruction, 'Count the faces, edges, and vertices of this solid. Type all three, then press Check.'),
+    hint: text(flats[i]?.hint, 'A face is a flat side, an edge is where two faces meet, and a vertex is a corner.'),
+    narration: text(flats[i]?.narration, "Let's count the parts of this 3D shape together!"),
+    targetAnswer: 'check-solid',
+    solid: buildSolid(type, ''),
+  }));
   return { solidType: chosenSolid, challenges };
 }
 
@@ -855,27 +745,8 @@ const FALLBACKS: Record<string, NetFolderChallenge> = {
     narration: "Let's count the parts of this 3D shape together!",
     targetAnswer: 'check-solid',
   },
-  match_faces: {
-    id: 'c1',
-    type: 'match_faces',
-    instruction: 'The highlighted face on the net is shown in yellow. Which face is it on the 3D solid?',
-    hint: 'Try imagining folding the net in your mind — where would this face end up?',
-    narration: 'Can you match this face on the net to the solid?',
-    highlightedFace: 'top',
-    targetAnswer: 'top',
-    faceOptions: ['front', 'top', 'right', 'bottom'],
-  },
-  valid_net: {
-    id: 'c1',
-    type: 'valid_net',
-    instruction: 'Does this net fold into a cube?',
-    hint: 'A valid cube net must have exactly 6 connected squares with no overlaps when folded.',
-    narration: "Let's see if this flat shape can fold up into a cube!",
-    netLayout: 'A cross shape with 4 squares in a row and 1 square above and 1 below the second square.',
-    isValidNet: true,
-    netExplanation: 'This cross-shaped net is one of the 11 valid cube nets.',
-    targetAnswer: 'valid',
-  },
+  match_faces: matchItem('c1', cellsOf('.X../XXXX/.X..'), 2, 0, 3)!,
+  valid_net: validItem('c1', cellsOf('.X../XXXX/.X..')),
   surface_area: {
     id: 'c1',
     type: 'surface_area',
@@ -942,38 +813,37 @@ export const generateNetFolder = async (
     ? `\n## WITHIN-MODE SUPPORT TIER (fold-scaffold level — NOT net complexity)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
     : '';
 
-  // ── Pick ONE solid upfront — all sub-generators use the same shape ──
-  const chosenSolidType = randomSolid(gradeBand);
-
-  // Single-type mode → 4-5 challenges; mixed mode → 1-2 per type
+  // ── Solids. identify and count give each item its own solid (no two items one answer); match_faces and valid_net
+  // fold cube nets; surface_area draws each item's own box. The session solid is what the other items fall back to.
+  const pool = [...gradeSolidPool(gradeBand)].sort(() => Math.random() - 0.5);
   const isMixed = allowedTypes.length > 1;
   const perTypeCount = isMixed ? 2 : 5;
+  const itemSolids = pool.slice(0, Math.min(perTypeCount, pool.length));
+  const boxSolid = Math.random() < 0.5 ? 'cube' : 'rectangular_prism';
+  const chosenSolidType = isMixed || allowedTypes.includes('match_faces') || allowedTypes.includes('valid_net') ? 'cube'
+    : allowedTypes.includes('surface_area') ? boxSolid : itemSolids[0] ?? randomSolid(gradeBand);
 
   // ── Dispatch sub-generators ──
   type SubResult = { solidType: string; challenges: NetFolderChallenge[] };
   const generators: Promise<SubResult>[] = [];
-  const typeOrder: string[] = [];
 
   for (const type of allowedTypes) {
-    typeOrder.push(type);
-    // In a mixed session there is no single pinnedType, so the prompt-tone
-    // section is only injected on single-mode sessions; the deterministic
-    // scaffold is still applied per-challenge from each challenge's OWN type below.
     switch (type) {
       case 'identify_solid':
-        generators.push(generateIdentifyChallenges(topic, scopeSection, gradeLevel, gradeBand, chosenSolidType, perTypeCount, tierSection));
+        generators.push(generateIdentifyChallenges(topic, scopeSection, gradeLevel, itemSolids, tierSection));
         break;
       case 'count_faces_edges_vertices':
-        generators.push(generateCountFEVChallenges(topic, scopeSection, gradeLevel, gradeBand, chosenSolidType, perTypeCount, tierSection));
+        generators.push(generateCountFEVChallenges(topic, scopeSection, gradeLevel, itemSolids, tierSection));
         break;
       case 'match_faces':
-        generators.push(generateMatchFacesChallenges(topic, scopeSection, gradeLevel, gradeBand, chosenSolidType, perTypeCount, tierSection));
+        generators.push(Promise.resolve({ solidType: 'cube', challenges: buildMatchFacesChallenges(perTypeCount) }));
         break;
       case 'valid_net':
-        generators.push(generateValidNetChallenges(topic, scopeSection, gradeLevel, gradeBand, chosenSolidType, perTypeCount, tierSection));
+        generators.push(Promise.resolve({ solidType: 'cube', challenges: buildValidNetChallenges(perTypeCount) }));
         break;
       case 'surface_area':
-        generators.push(generateSurfaceAreaChallenges(topic, scopeSection, gradeLevel, gradeBand, chosenSolidType, perTypeCount, tierSection));
+        generators.push(generateSurfaceAreaChallenges(topic, scopeSection, gradeLevel, gradeBand,
+          isMixed ? 'cube' : boxSolid, perTypeCount, tierSection));
         break;
     }
   }
@@ -1006,11 +876,13 @@ export const generateNetFolder = async (
     surface_area: 'Surface Area Calculation',
   };
 
-  let title = `3D Shapes: Exploring ${solid.name}`;
-  let description = `Explore the ${solid.name}, its net, and solve challenges about 3D geometry.`;
+  // Each identify and count item has its own solid, and an identify item asks for the name: no title names one.
+  const named = !allowedTypes.some(t => t === 'identify_solid' || t === 'count_faces_edges_vertices' || t === 'surface_area');
+  let title = named ? `3D Shapes: Exploring the ${solid.name}` : '3D Shapes: Solids and Their Nets';
+  let description = 'Explore 3D solids, their nets, and solve challenges about 3D geometry.';
   if (allowedTypes.length === 1) {
-    title = `${typeLabels[allowedTypes[0]] ?? '3D Shapes'}: ${solid.name}`;
-    description = `Practice ${(typeLabels[allowedTypes[0]] ?? '3D shapes').toLowerCase()} with a ${solid.name.toLowerCase()}.`;
+    title = `${typeLabels[allowedTypes[0]] ?? '3D Shapes'}${named ? `: ${solid.name}` : ''}`;
+    description = `Practice ${(typeLabels[allowedTypes[0]] ?? '3D shapes').toLowerCase()}.`;
   }
 
   const typeBreakdown = challenges.map(c => c.type).join(', ');

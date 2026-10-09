@@ -1,0 +1,437 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "practice-problem.derive_easy",
+   "primitiveId": "practice-problem",
+   "evalMode": "derive_easy",
+   "keys": [
+    "x = 7",
+    "21"
+   ],
+   "stopped": "practice-problem derive_easy is not driven at W1 (handwriting read by a model judge)",
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "problem",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "x = 7",
+       "21"
+      ],
+      "ask": "Solve on the whiteboard, showing each step: Solve the linear equation $3x - 7 = 14$ for $x$. Express your answer in simplest form.",
+      "leakTokens": [
+       "PROBLEM_LOADED",
+       "VERDICT_CORRECT",
+       "VERDICT_PARTIAL",
+       "VERDICT_INCORRECT",
+       "SUPPORT TIER"
+      ],
+      "menu": []
+     },
+     "samples": [
+      {
+       "text": "Welcome! Take a look at the equation on the whiteboard, and feel free to write out your steps whenever you are ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the equation on the whiteboard and write out your steps whenever you are ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the equation on your screen, and try writing your first step on the whiteboard whenever you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Whenever you're ready, take a look at the equation on the whiteboard and try writing out your first step.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the equation on your whiteboard, and write out your steps whenever you are ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "practice-problem.derive_hard",
+   "primitiveId": "practice-problem",
+   "evalMode": "derive_hard",
+   "keys": [
+    "300",
+    "105000",
+    "3300",
+    "275"
+   ],
+   "stopped": "practice-problem derive_hard is not driven at W1 (handwriting read by a model judge)",
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "problem",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "300",
+       "105000",
+       "3300",
+       "275"
+      ],
+      "ask": "Solve on the whiteboard, showing each step: A decentralized renewable energy cooperative is analyzing the financial viability of a new municipal microgrid. The initial infrastructure capital expenditure requires an upfront investment of \\$45,000. Operating the microgrid incurs a variable maintenance cost of \\$125 per household connected per month, while each household generates \\$400 per month in utility revenue for the cooperative. Determine the exact number of households $h$ that must be connected so that the net profit reaches \\$60,000 after accounting for both the initial capital expenditure and the cumulative monthly net operating income over a single year (12 months). First, construct the appropriate linear equation to model this financial trajectory.",
+      "leakTokens": [
+       "PROBLEM_LOADED",
+       "VERDICT_CORRECT",
+       "VERDICT_PARTIAL",
+       "VERDICT_INCORRECT",
+       "SUPPORT TIER"
+      ],
+      "menu": []
+     },
+     "samples": [
+      {
+       "text": "Welcome! To start off, let's look at the first step slot: how might you combine the monthly revenue and cost for each household over a full year to set up your equation?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take your time reading through the scenario, and write down your first step on the whiteboard whenever you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the scenario and see how each piece connects to the cooperative's net profit over the year. When you're ready, write out your first equation on the whiteboard.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the scenario on the screen, and write out your first step on the whiteboard whenever you are ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the scenario on the screen, and write out your first step on the whiteboard whenever you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "practice-problem.derive_medium",
+   "primitiveId": "practice-problem",
+   "evalMode": "derive_medium",
+   "keys": [
+    "120",
+    "m = 27",
+    "m = 28",
+    "30"
+   ],
+   "stopped": "practice-problem derive_medium is not driven at W1 (handwriting read by a model judge)",
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "problem",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "120",
+       "m = 27",
+       "m = 28",
+       "30"
+      ],
+      "ask": "Solve on the whiteboard, showing each step: A civic architectural firm is designing a multi-tiered public pavilion. The blueprint specifies that the primary steel support beam must have a total length of \\$134$ meters. Engineers plan to partition this beam into a fixed structural anchor of \\$14$ meters and four identical modular segments, though manufacturing tolerances require incorporating a \\$2$ meter expansion joint into each of the four modular segments after they are cast. Determine the exact length of each unadjusted modular segment before the expansion joint is integrated, and select the appropriate algebraic model that accurately represents this configuration.",
+      "leakTokens": [
+       "PROBLEM_LOADED",
+       "VERDICT_CORRECT",
+       "VERDICT_PARTIAL",
+       "VERDICT_INCORRECT",
+       "SUPPORT TIER"
+      ],
+      "menu": []
+     },
+     "samples": [
+      {
+       "text": "Take a look at the blueprint specifications on your whiteboard. What algebraic equation can we set up to represent the total length of the support beam?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the blueprint specifications on your whiteboard, and start by setting up your equation.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the blueprint problem and notice how the total length of the beam is broken down into its parts. When you're ready, write out your first step on the whiteboard.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the blueprint problem on your whiteboard, and write down your first step when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the blueprint problem and notice how the beam is broken into parts. What equation can you set up to model the total length?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

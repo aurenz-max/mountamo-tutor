@@ -1,0 +1,211 @@
+{
+ "source": "qa/tutor-reports/net-folder-runtime-surface_area-payload-2026-10-09.json",
+ "primitiveId": "net-folder",
+ "evalMode": "surface_area",
+ "data": {
+  "title": "Surface Area Calculation",
+  "description": "Practice surface area calculation.",
+  "solid": {
+   "type": "rectangular_prism",
+   "name": "Rectangular Prism",
+   "dimensions": {
+    "length": 100,
+    "width": 60,
+    "height": 50
+   },
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8
+  },
+  "net": {
+   "layout": "cross",
+   "faceLabels": [
+    "front",
+    "back",
+    "left",
+    "right",
+    "top",
+    "bottom"
+   ],
+   "gridOverlay": false
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "surface_area",
+    "instruction": "Welcome to the gift box factory! Find the total surface area of the small gift box net. The box has dimensions 2 by 3 by 4 units.",
+    "hint": "Calculate the area of each of the 6 faces by multiplying width times height, then add all 6 areas together.",
+    "narration": "Let us start our shift at the gift box factory! Calculate the area of all 6 faces and add them up to find the total wrapping paper needed.",
+    "faceDimensions": [
+     {
+      "width": 2,
+      "height": 3
+     },
+     {
+      "width": 2,
+      "height": 3
+     },
+     {
+      "width": 2,
+      "height": 4
+     },
+     {
+      "width": 2,
+      "height": 4
+     },
+     {
+      "width": 3,
+      "height": 4
+     },
+     {
+      "width": 3,
+      "height": 4
+     }
+    ],
+    "targetAnswer": 52,
+    "unitLabel": "square units"
+   },
+   {
+    "id": "c2",
+    "type": "surface_area",
+    "instruction": "Great job on the first box! Now assemble and find the total surface area for a gift box with dimensions 3 by 3 by 5 units.",
+    "hint": "Remember that opposite faces are identical in a rectangular prism. Find the area of the three unique face sizes and double them.",
+    "narration": "You are getting the hang of this! Keep track of your pairs of faces as you calculate the total surface area.",
+    "faceDimensions": [
+     {
+      "width": 3,
+      "height": 3
+     },
+     {
+      "width": 3,
+      "height": 3
+     },
+     {
+      "width": 3,
+      "height": 5
+     },
+     {
+      "width": 3,
+      "height": 5
+     },
+     {
+      "width": 3,
+      "height": 5
+     },
+     {
+      "width": 3,
+      "height": 5
+     }
+    ],
+    "targetAnswer": 78,
+    "unitLabel": "square units"
+   },
+   {
+    "id": "c3",
+    "type": "surface_area",
+    "instruction": "An order for a medium gift box has arrived! This box has dimensions 4 by 2 by 6 units. Find its total surface area.",
+    "hint": "Check your multiplication for each face: two 4x2 faces, two 4x6 faces, and two 2x6 faces.",
+    "narration": "Orders are coming in faster now! Calculate the six face areas carefully to ensure we have enough shiny wrapping paper.",
+    "faceDimensions": [
+     {
+      "width": 4,
+      "height": 2
+     },
+     {
+      "width": 4,
+      "height": 2
+     },
+     {
+      "width": 4,
+      "height": 6
+     },
+     {
+      "width": 4,
+      "height": 6
+     },
+     {
+      "width": 2,
+      "height": 6
+     },
+     {
+      "width": 2,
+      "height": 6
+     }
+    ],
+    "targetAnswer": 88,
+    "unitLabel": "square units"
+   },
+   {
+    "id": "c4",
+    "type": "surface_area",
+    "instruction": "Time for a large shipping box! This box has dimensions 5 by 4 by 3 units. What is the total surface area?",
+    "hint": "Take it step by step: find the area of the 5x4 faces, the 5x3 faces, and the 4x3 faces, then sum all six.",
+    "narration": "Impressive work! This larger box requires calculating areas of 5 by 4, 5 by 3, and 4 by 3.",
+    "faceDimensions": [
+     {
+      "width": 5,
+      "height": 4
+     },
+     {
+      "width": 5,
+      "height": 4
+     },
+     {
+      "width": 5,
+      "height": 3
+     },
+     {
+      "width": 5,
+      "height": 3
+     },
+     {
+      "width": 4,
+      "height": 3
+     },
+     {
+      "width": 4,
+      "height": 3
+     }
+    ],
+    "targetAnswer": 94,
+    "unitLabel": "square units"
+   },
+   {
+    "id": "c5",
+    "type": "surface_area",
+    "instruction": "The final boss level at the factory! Calculate the total surface area for our largest gift box with dimensions 6 by 5 by 4 units.",
+    "hint": "Double-check your addition for all six faces: two 6x5 faces, two 6x4 faces, and two 5x4 faces.",
+    "narration": "This is our biggest challenge yet! Combine your area skills to wrap up this final master-level gift box.",
+    "faceDimensions": [
+     {
+      "width": 6,
+      "height": 5
+     },
+     {
+      "width": 6,
+      "height": 5
+     },
+     {
+      "width": 6,
+      "height": 4
+     },
+     {
+      "width": 6,
+      "height": 4
+     },
+     {
+      "width": 5,
+      "height": 4
+     },
+     {
+      "width": 5,
+      "height": 4
+     }
+    ],
+    "targetAnswer": 148,
+    "unitLabel": "square units"
+   }
+  ],
+  "gradeBand": "3-4"
+ }
+}

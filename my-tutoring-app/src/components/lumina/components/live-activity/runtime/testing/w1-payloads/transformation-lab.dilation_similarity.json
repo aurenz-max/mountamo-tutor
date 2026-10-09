@@ -1,0 +1,169 @@
+{
+ "source": "qa/tutor-reports/transformation-lab-runtime-dilation_similarity-payload-2026-10-09.json",
+ "primitiveId": "transformation-lab",
+ "evalMode": "dilation_similarity",
+ "data": {
+  "title": "Scaling Figures and Analyzing Similarity",
+  "description": "Practice applying scale factors about the origin to create dilated figures and explore the relationship between size, shape, and similarity on the coordinate plane.",
+  "challengeType": "dilation_similarity",
+  "gradeBand": "8",
+  "challenges": [
+   {
+    "type": "dilation_similarity",
+    "answerKind": "drag",
+    "narration": "A photo is enlarged on screen.",
+    "instruction": "Dilate the figure by a scale factor of 3 about the origin. Drag each pink corner to its image.",
+    "hint": "Multiply every coordinate by 3: (x, y) \u2192 (3x, 3y). The shape stays the same; only its size changes.",
+    "preImage": [
+     {
+      "x": 0,
+      "y": 0
+     },
+     {
+      "x": 1,
+      "y": 0
+     },
+     {
+      "x": 1,
+      "y": 2
+     }
+    ],
+    "expectedImage": [
+     {
+      "x": 0,
+      "y": 0
+     },
+     {
+      "x": 3,
+      "y": 0
+     },
+     {
+      "x": 3,
+      "y": 6
+     }
+    ],
+    "transformLabel": "Dilation about the origin by scale factor 3",
+    "isSimilarity": true,
+    "scaleFactor": 3,
+    "id": "tl-1"
+   },
+   {
+    "type": "dilation_similarity",
+    "answerKind": "drag",
+    "narration": "A shape zoomed by the projector.",
+    "instruction": "Dilate the figure by a scale factor of 2 about the origin. Drag each pink corner to its image.",
+    "hint": "Multiply every coordinate by 2: (x, y) \u2192 (2x, 2y). The shape stays the same; only its size changes.",
+    "preImage": [
+     {
+      "x": 1,
+      "y": 0
+     },
+     {
+      "x": 2,
+      "y": 0
+     },
+     {
+      "x": 2,
+      "y": 2
+     }
+    ],
+    "expectedImage": [
+     {
+      "x": 2,
+      "y": 0
+     },
+     {
+      "x": 4,
+      "y": 0
+     },
+     {
+      "x": 4,
+      "y": 4
+     }
+    ],
+    "transformLabel": "Dilation about the origin by scale factor 2",
+    "isSimilarity": true,
+    "scaleFactor": 2,
+    "id": "tl-2"
+   },
+   {
+    "type": "dilation_similarity",
+    "answerKind": "drag",
+    "narration": "A shadow grows on the wall.",
+    "instruction": "Dilate the figure by a scale factor of 2 about the origin. Drag each pink corner to its image.",
+    "hint": "Multiply every coordinate by 2: (x, y) \u2192 (2x, 2y). The shape stays the same; only its size changes.",
+    "preImage": [
+     {
+      "x": 1,
+      "y": 1
+     },
+     {
+      "x": 3,
+      "y": 2
+     },
+     {
+      "x": 1,
+      "y": 3
+     }
+    ],
+    "expectedImage": [
+     {
+      "x": 2,
+      "y": 2
+     },
+     {
+      "x": 6,
+      "y": 4
+     },
+     {
+      "x": 2,
+      "y": 6
+     }
+    ],
+    "transformLabel": "Dilation about the origin by scale factor 2",
+    "isSimilarity": true,
+    "scaleFactor": 2,
+    "id": "tl-3"
+   },
+   {
+    "type": "dilation_similarity",
+    "answerKind": "drag",
+    "narration": "A photo is enlarged on screen.",
+    "instruction": "Dilate the figure by a scale factor of 2 about the origin. Drag each pink corner to its image.",
+    "hint": "Multiply every coordinate by 2: (x, y) \u2192 (2x, 2y). The shape stays the same; only its size changes.",
+    "preImage": [
+     {
+      "x": 0,
+      "y": 1
+     },
+     {
+      "x": 1,
+      "y": 1
+     },
+     {
+      "x": 1,
+      "y": 3
+     }
+    ],
+    "expectedImage": [
+     {
+      "x": 0,
+      "y": 2
+     },
+     {
+      "x": 2,
+      "y": 2
+     },
+     {
+      "x": 2,
+      "y": 6
+     }
+    ],
+    "transformLabel": "Dilation about the origin by scale factor 2",
+    "isSimilarity": true,
+    "scaleFactor": 2,
+    "id": "tl-4"
+   }
+  ]
+ }
+}

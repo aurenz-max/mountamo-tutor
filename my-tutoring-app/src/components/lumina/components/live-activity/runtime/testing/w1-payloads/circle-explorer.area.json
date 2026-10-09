@@ -1,0 +1,69 @@
+{
+ "source": "qa/tutor-reports/circle-explorer-runtime-area-payload-2026-10-09.json",
+ "primitiveId": "circle-explorer",
+ "evalMode": "area",
+ "data": {
+  "title": "Calculating the Area of Circles",
+  "description": "Practice applying the formula A = \u03c0r\u00b2 to determine the area of various circles given their radii or diameters, utilizing 3.14 for pi.",
+  "challengeType": "area",
+  "gradeBand": "7",
+  "challenges": [
+   {
+    "type": "area",
+    "narration": "A circular flower bed is shaped like this circle.",
+    "instruction": "Find the area \u2014 the amount of space inside the circle.",
+    "hint": "Area = \u03c0 \u00d7 r\u00b2. Square the radius first, then multiply by \u03c0 \u2248 3.14. Area is in square units.",
+    "unitLabel": "ft",
+    "radius": 3,
+    "given": "radius",
+    "usePiApprox": true,
+    "answerKind": "area",
+    "expectedAnswer": 28.26,
+    "tolerance": 0.5652,
+    "id": "ce-1"
+   },
+   {
+    "type": "area",
+    "narration": "A drum head is shaped like this circle.",
+    "instruction": "Find the area \u2014 the amount of space inside the circle.",
+    "hint": "Area = \u03c0 \u00d7 r\u00b2. Square the radius first, then multiply by \u03c0 \u2248 3.14. Area is in square units.",
+    "unitLabel": "mm",
+    "radius": 7,
+    "given": "radius",
+    "usePiApprox": true,
+    "answerKind": "area",
+    "expectedAnswer": 153.86,
+    "tolerance": 3.0772000000000004,
+    "id": "ce-2"
+   },
+   {
+    "type": "area",
+    "narration": "A circular pizza is shaped like this circle.",
+    "instruction": "Find the area \u2014 the amount of space inside the circle.",
+    "hint": "Area = \u03c0 \u00d7 r\u00b2. Square the radius first, then multiply by \u03c0 \u2248 3.14. Area is in square units.",
+    "unitLabel": "mm",
+    "radius": 7,
+    "given": "diameter",
+    "usePiApprox": true,
+    "answerKind": "area",
+    "expectedAnswer": 153.86,
+    "tolerance": 3.0772000000000004,
+    "id": "ce-3"
+   },
+   {
+    "type": "area",
+    "narration": "A circular flower bed is shaped like this circle.",
+    "instruction": "Find the area \u2014 the amount of space inside the circle.",
+    "hint": "Area = \u03c0 \u00d7 r\u00b2. Square the radius first, then multiply by \u03c0 \u2248 3.14. Area is in square units.",
+    "unitLabel": "mm",
+    "radius": 9,
+    "given": "diameter",
+    "usePiApprox": true,
+    "answerKind": "area",
+    "expectedAnswer": 254.34,
+    "tolerance": 5.0868,
+    "id": "ce-4"
+   }
+  ]
+ }
+}

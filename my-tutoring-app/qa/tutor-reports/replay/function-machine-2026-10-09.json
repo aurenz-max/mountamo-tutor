@@ -1,0 +1,2488 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ],
+   "no_key_before_try": [
+    0,
+    25
+   ],
+   "no_fix_before_try": [
+    0,
+    25
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    3,
+    20
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    1,
+    20
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "function-machine.create_rule",
+   "primitiveId": "function-machine",
+   "evalMode": "create_rule",
+   "keys": [
+    "2*x"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "fm-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2*x"
+      ],
+      "ask": "Write the rule that turns every input in the table into its output, then press Check.",
+      "leakTokens": [
+       "PREDICTION_CORRECT",
+       "PREDICTION_INCORRECT",
+       "GUESS_INCORRECT",
+       "MACHINE_CHECKED",
+       "PHASE_COMPLETE",
+       "ALL_COMPLETE",
+       "ACTIVITY_START"
+      ],
+      "menu": [
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at how each input changes to make its output. What do you notice happening each time?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to function machines! Look at how each input turns into its output in the table, and try typing the rule you notice.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the pairs in the table and see what pattern turns each input into its output.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the function machine! Take a look at what happens to each input number to turn it into its output, and see if you can find the pattern.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the function machine! Take a look at what happens to each input number to find the rule, type it in, and press Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "fm-1",
+     "trigger": "The learner submitted \"Wrote f(x) = x+2\". The board checked it: not right.",
+     "miss": "fits_some_pairs",
+     "scoredWith": {
+      "keys": [
+       "2*x"
+      ],
+      "ask": "Write the rule that turns every input in the table into its output, then press Check.",
+      "leakTokens": [
+       "PREDICTION_CORRECT",
+       "PREDICTION_INCORRECT",
+       "GUESS_INCORRECT",
+       "MACHINE_CHECKED",
+       "PHASE_COMPLETE",
+       "ALL_COMPLETE",
+       "ACTIVITY_START"
+      ],
+      "menu": [
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "That rule works for 1 giving 2, but what happens when the input is 0 or 2? Try testing a rule that fits every row.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Adding 2 works when the input is 1, but when the input is 0, adding 2 would give 2 instead of 0. Test out another relationship that works for every pair in the table.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": false,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_fix_before_try": "Adding 2"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Adding 2 works for an input of 1, but when the input is 0, the output is 0. What other operation could turn 1 into 2, 2 into 4, and 3 into 6?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": false,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_fix_before_try": "Adding 2"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Adding 2 works for 1, but what happens when you start with 0 or 2? Try testing a rule that fits all of the pairs!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That works for 1 becoming 2, but what happens when the input is 0 or 2? Try testing another pair from the table.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "fm-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2*x"
+      ],
+      "ask": "Write the rule that turns every input in the table into its output, then press Check.",
+      "leakTokens": [
+       "PREDICTION_CORRECT",
+       "PREDICTION_INCORRECT",
+       "GUESS_INCORRECT",
+       "MACHINE_CHECKED",
+       "PHASE_COMPLETE",
+       "ALL_COMPLETE",
+       "ACTIVITY_START"
+      ],
+      "menu": [
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Notice how the output doubles each input, like 2 times 1 is 2 and 2 times 2 is 4. Think about an operation that multiplies your input.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Look at what happens to the output each time the input increases by 1: from 2 to 4, then to 6. What operation doubles a number or turns 3 into 6 and 5 into 10?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Notice how each output is double its input. Think about what operation doubles a number.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Notice how when the input goes up by 1, the output goes up by 2. What operation lets you turn 3 into 6 and 5 into 10?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Notice how each output is double its input. Think about which operation doubles a number, and give that a try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "fm-1",
+     "trigger": "The learner submitted \"Wrote f(x) = 2*x\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2*x"
+      ],
+      "ask": "Write the rule that turns every input in the table into its output, then press Check.",
+      "leakTokens": [
+       "PREDICTION_CORRECT",
+       "PREDICTION_INCORRECT",
+       "GUESS_INCORRECT",
+       "MACHINE_CHECKED",
+       "PHASE_COMPLETE",
+       "ALL_COMPLETE",
+       "ACTIVITY_START"
+      ],
+      "menu": [
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You did it! Writing f(x) = 2*x worked because multiplying by 2 fits every single row in the table.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it by seeing that every input was multiplied by 2 to get its output!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You found the rule f(x) = 2*x by checking how every single input changes to make its output.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it! By checking each pair, you saw that multiplying by 2 made 2*x fit every single row.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found the rule by writing 2*x, which matches every single pair in the table!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "function-machine.discover_rule",
+   "primitiveId": "function-machine",
+   "evalMode": "discover_rule",
+   "keys": [
+    "x + 4",
+    "4"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "fm-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "x + 4",
+       "4"
+      ],
+      "ask": "The rule is hidden. Feed numbers into the machine, look at what comes out, then type the rule and press Check.",
+      "leakTokens": [
+       "PREDICTION_CORRECT",
+       "PREDICTION_INCORRECT",
+       "GUESS_INCORRECT",
+       "MACHINE_CHECKED",
+       "PHASE_COMPLETE",
+       "ALL_COMPLETE",
+       "ACTIVITY_START"
+      ],
+      "menu": [
+       "0",
+       "feed 0",
+       "1",
+       "feed 1",
+       "2",
+       "feed 2",
+       "3",
+       "feed 3",
+       "4",
+       "feed 4"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome to the function machine! Try feeding a number into the machine to see what comes out.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the function machine! Try feeding a number into the machine to see what comes out.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Try feeding a number into the machine to see what comes out.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Try feeding a number into the machine to see what comes out!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the function machine! Try feeding a number into the machine to see what happens.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "fm-1",
+     "trigger": "The learner submitted \"Wrote f(x) = 5*x\". The board checked it: not right.",
+     "miss": "fits_some_pairs",
+     "scoredWith": {
+      "keys": [
+       "x + 4",
+       "4"
+      ],
+      "ask": "The rule is hidden. Feed numbers into the machine, look at what comes out, then type the rule and press Check.",
+      "leakTokens": [
+       "PREDICTION_CORRECT",
+       "PREDICTION_INCORRECT",
+       "GUESS_INCORRECT",
+       "MACHINE_CHECKED",
+       "PHASE_COMPLETE",
+       "ALL_COMPLETE",
+       "ACTIVITY_START"
+      ],
+      "menu": [
+       "0",
+       "feed 0",
+       "1",
+       "feed 1",
+       "2",
+       "feed 2",
+       "3",
+       "feed 3",
+       "4",
+       "feed 4"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Notice what happens when the input is 0 and the output is 4. What rule could work for both 0 turning into 4 and 1 turning into 5?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "When you feed 0 into the machine, 4 comes out, but 5 times 0 would be 0. What rule works for turning 0 into 4 and 1 into 5?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice what happens when the input is 0 and the output is 4. Does multiplying 0 by 5 give 4?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's test that rule with 0: 5 times 0 would give 0, but the machine gave 4. What operation turns 0 into 4 and 1 into 5?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! Check what happens when the input is 0\u2014multiplying by 5 would give 0, but the output is 4.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "fm-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "x + 4",
+       "4"
+      ],
+      "ask": "The rule is hidden. Feed numbers into the machine, look at what comes out, then type the rule and press Check.",
+      "leakTokens": [
+       "PREDICTION_CORRECT",
+       "PREDICTION_INCORRECT",
+       "GUESS_INCORRECT",
+       "MACHINE_CHECKED",
+       "PHASE_COMPLETE",
+       "ALL_COMPLETE",
+       "ACTIVITY_START"
+      ],
+      "menu": [
+       "0",
+       "feed 0",
+       "1",
+       "feed 1",
+       "2",
+       "feed 2",
+       "3",
+       "feed 3",
+       "4",
+       "feed 4"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at how the output changes: when the input goes from 0 to 1, the output goes from 4 to 5. What can you add to 0 to get 4?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/6/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Let's compare the inputs and outputs: when the input grows from 0 to 1, the output grows from 4 to 5. What number are we adding each time?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/6/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Try feeding the number 2 into the machine to see another pair!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/6/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Look at how the output changes when the input goes up by 1. What can you add to 0 to get 4?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/6/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Let's look at how much the output increases each time the input goes up by 1. Try feeding in 2 to see what comes out next!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/6/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "fm-1",
+     "trigger": "The learner submitted \"Wrote f(x) = x + 4\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "x + 4",
+       "4"
+      ],
+      "ask": "The rule is hidden. Feed numbers into the machine, look at what comes out, then type the rule and press Check.",
+      "leakTokens": [
+       "PREDICTION_CORRECT",
+       "PREDICTION_INCORRECT",
+       "GUESS_INCORRECT",
+       "MACHINE_CHECKED",
+       "PHASE_COMPLETE",
+       "ALL_COMPLETE",
+       "ACTIVITY_START"
+      ],
+      "menu": [
+       "0",
+       "feed 0",
+       "1",
+       "feed 1",
+       "2",
+       "feed 2",
+       "3",
+       "feed 3",
+       "4",
+       "feed 4"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You found it! By comparing how the pairs grew, you figured out the rule is adding 4 to x.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You figured it out by checking the pairs and finding the rule x + 4! Great job adjusting your strategy.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it! By comparing how the outputs changed, you figured out the rule is adding 4 to x.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it by comparing the pairs: adding 4 works for every input!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it! You saw that adding 4 turned 0 into 4 and 1 into 5, and wrote f(x) = x + 4.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "function-machine.make_rule",
+   "primitiveId": "function-machine",
+   "evalMode": "make_rule",
+   "keys": [
+    "start over",
+    "add 2",
+    "add 5"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "fm-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "start over",
+       "add 2",
+       "add 5"
+      ],
+      "ask": "Make a machine that turns 5 into 10. Then make a different machine that also turns 5 into 10.",
+      "leakTokens": [
+       "PREDICTION_CORRECT",
+       "PREDICTION_INCORRECT",
+       "GUESS_INCORRECT",
+       "MACHINE_CHECKED",
+       "PHASE_COMPLETE",
+       "ALL_COMPLETE",
+       "ACTIVITY_START"
+      ],
+      "menu": [
+       "x",
+       "add x",
+       "1",
+       "add 1",
+       "2",
+       "add 2",
+       "3",
+       "add 3",
+       "4",
+       "add 4",
+       "5",
+       "add 5",
+       "6",
+       "add 6",
+       "7",
+       "add 7",
+       "8",
+       "add 8",
+       "9",
+       "add 9",
+       "0",
+       "add 0",
+       "+",
+       "add +",
+       "\u2212",
+       "add \u2212",
+       "\u00d7",
+       "add \u00d7",
+       "\u00f7",
+       "add \u00f7",
+       "start over",
+       "i'm done!"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! We're exploring function machines today. Take a look at the challenge on your screen and build your first machine when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! You can tap the tiles on your screen to build a machine that turns 5 into 10.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! You can build a machine by tapping the tiles to turn 5 into 10 whenever you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Build a machine that turns 5 into 10 whenever you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the function machine! Try building a machine that turns 5 into 10.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "fm-1",
+     "trigger": "The learner submitted \"Built f(x) = x + 6; fed 5, it gave 11\". The board checked it: not right.",
+     "miss": "wrong_output",
+     "scoredWith": {
+      "keys": [
+       "start over",
+       "add 2",
+       "add 5"
+      ],
+      "ask": "Make a machine that turns 5 into 10. Then make a different machine that also turns 5 into 10.",
+      "leakTokens": [
+       "PREDICTION_CORRECT",
+       "PREDICTION_INCORRECT",
+       "GUESS_INCORRECT",
+       "MACHINE_CHECKED",
+       "PHASE_COMPLETE",
+       "ALL_COMPLETE",
+       "ACTIVITY_START"
+      ],
+      "menu": [
+       "x",
+       "add x",
+       "1",
+       "add 1",
+       "2",
+       "add 2",
+       "3",
+       "add 3",
+       "4",
+       "add 4",
+       "5",
+       "add 5",
+       "6",
+       "add 6",
+       "7",
+       "add 7",
+       "8",
+       "add 8",
+       "9",
+       "add 9",
+       "0",
+       "add 0",
+       "+",
+       "add +",
+       "\u2212",
+       "add \u2212",
+       "\u00d7",
+       "add \u00d7",
+       "\u00f7",
+       "add \u00f7",
+       "start over",
+       "i'm done!"
+      ]
+     },
+     "samples": [
+      {
+       "text": "That machine turned 5 into 11, which was very close. Try adjusting your rule so it gives an output of 10.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That machine turned 5 into 11. Give it another try with a different tile!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Your machine took in 5 and gave out 11. Give it another try to see what gets you to 10!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That machine gave 11 when you fed it 5. Go ahead and adjust a tile to see what gets you to 10.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Adding 6 gave 11 instead of 10. Adjust your tile and try it again!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": false,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_fix_before_try": "Adding 6"
+       },
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "fm-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "start over",
+       "add 2",
+       "add 5"
+      ],
+      "ask": "Make a machine that turns 5 into 10. Then make a different machine that also turns 5 into 10.",
+      "leakTokens": [
+       "PREDICTION_CORRECT",
+       "PREDICTION_INCORRECT",
+       "GUESS_INCORRECT",
+       "MACHINE_CHECKED",
+       "PHASE_COMPLETE",
+       "ALL_COMPLETE",
+       "ACTIVITY_START"
+      ],
+      "menu": [
+       "x",
+       "add x",
+       "1",
+       "add 1",
+       "2",
+       "add 2",
+       "3",
+       "add 3",
+       "4",
+       "add 4",
+       "5",
+       "add 5",
+       "6",
+       "add 6",
+       "7",
+       "add 7",
+       "8",
+       "add 8",
+       "9",
+       "add 9",
+       "0",
+       "add 0",
+       "+",
+       "add +",
+       "\u2212",
+       "add \u2212",
+       "\u00d7",
+       "add \u00d7",
+       "\u00f7",
+       "add \u00f7",
+       "start over",
+       "i'm done!"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Adding 6 to 5 gave you 11. What could you add to 5 instead so it lands right on 10?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/6/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": false,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_fix_before_try": "Adding 6"
+       },
+       "pulledLever": false
+      },
+      {
+       "text": "When you added 6 to 5, you got 11, which was just one more than 10. Think about what you could add to 5 to get exactly 10.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/6/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Think about what you can do to 5 to reach exactly 10. What number can you add to 5 to get 10?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/6/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Think about how the number 5 can change to become 10. What could you add or multiply?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/6/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Think about what you can do to 5 to reach exactly 10. What number can you add to 5, or multiply 5 by?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/6/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "fm-1",
+     "trigger": "The learner submitted \"Built f(x) = x + 5; fed 5, it gave 10\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "start over",
+       "add 2",
+       "add 5"
+      ],
+      "ask": "Make a machine that turns 5 into 10. Then make a different machine that also turns 5 into 10.",
+      "leakTokens": [
+       "PREDICTION_CORRECT",
+       "PREDICTION_INCORRECT",
+       "GUESS_INCORRECT",
+       "MACHINE_CHECKED",
+       "PHASE_COMPLETE",
+       "ALL_COMPLETE",
+       "ACTIVITY_START"
+      ],
+      "menu": [
+       "x",
+       "add x",
+       "1",
+       "add 1",
+       "2",
+       "add 2",
+       "3",
+       "add 3",
+       "4",
+       "add 4",
+       "5",
+       "add 5",
+       "6",
+       "add 6",
+       "7",
+       "add 7",
+       "8",
+       "add 8",
+       "9",
+       "add 9",
+       "0",
+       "add 0",
+       "+",
+       "add +",
+       "\u2212",
+       "add \u2212",
+       "\u00d7",
+       "add \u00d7",
+       "\u00f7",
+       "add \u00f7",
+       "start over",
+       "i'm done!"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You did it\u2014you built two different machines, adding 5 and multiplying by 2, that both turn 5 into 10!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You adjusted the rule to add 5, and it turned 5 right into 10! You've successfully built both machines.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You made two different machines that both turn 5 into 10 by using multiplication and addition!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nice work adjusting your rule to plus 5 to get 10! You built two different machines that both turn 5 into 10.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You adjusted your machine to add 5, and it gave 10 right on target! Now you have built both machines that turn 5 into 10.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "function-machine.observe",
+   "primitiveId": "function-machine",
+   "evalMode": "observe",
+   "keys": [
+    "feed 1",
+    "feed 2",
+    "feed 3",
+    "continue \u2192"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "fm-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "feed 1",
+       "feed 2",
+       "feed 3",
+       "continue \u2192"
+      ],
+      "ask": "Feed at least 3 numbers into the machine and watch what f(x) = x + 2 does to each one, then press Continue.",
+      "leakTokens": [
+       "PREDICTION_CORRECT",
+       "PREDICTION_INCORRECT",
+       "GUESS_INCORRECT",
+       "MACHINE_CHECKED",
+       "PHASE_COMPLETE",
+       "ALL_COMPLETE",
+       "ACTIVITY_START"
+      ],
+      "menu": [
+       "1",
+       "feed 1",
+       "2",
+       "feed 2",
+       "3",
+       "feed 3",
+       "4",
+       "feed 4",
+       "5",
+       "feed 5"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome to the function machine! Try feeding a few numbers in to see what happens to them.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Choose a number to feed into the function machine and see what happens.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Try picking a number to feed into the function machine and see what happens.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Try choosing a number to feed into the function machine and see what happens.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the function machine! Try feeding a few numbers in to see what comes out.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "fm-1",
+     "trigger": "The learner submitted \"Fed 3 numbers and pressed Continue\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "feed 1",
+       "feed 2",
+       "feed 3",
+       "continue \u2192"
+      ],
+      "ask": "Feed at least 3 numbers into the machine and watch what f(x) = x + 2 does to each one, then press Continue.",
+      "leakTokens": [
+       "PREDICTION_CORRECT",
+       "PREDICTION_INCORRECT",
+       "GUESS_INCORRECT",
+       "MACHINE_CHECKED",
+       "PHASE_COMPLETE",
+       "ALL_COMPLETE",
+       "ACTIVITY_START"
+      ],
+      "menu": [
+       "1",
+       "feed 1",
+       "2",
+       "feed 2",
+       "3",
+       "feed 3",
+       "4",
+       "feed 4",
+       "5",
+       "feed 5"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You fed in 1, 2, and 3, and watched each one grow by 2 to make 3, 4, and 5!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fed 1, 2, and 3 into the machine and saw how each output was 2 more than the input.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fed in 1, 2, and 3, and watched them turn into 3, 4, and 5! Notice how each number grew by 2 on its way through.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fed 1, 2, and 3 into the machine and saw how each output added 2. Great job observing the pattern!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nice job feeding those numbers in! Each input went up by 2 to make 3, 4, and 5.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "function-machine.predict",
+   "primitiveId": "function-machine",
+   "evalMode": "predict",
+   "keys": [
+    "8",
+    "12",
+    "feed 3",
+    "16",
+    "feed 4",
+    "24",
+    "feed 6",
+    "32",
+    "feed 8"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "fm-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "8",
+       "12",
+       "feed 3",
+       "16",
+       "feed 4",
+       "24",
+       "feed 6",
+       "32",
+       "feed 8"
+      ],
+      "ask": "The machine's rule is f(x) = 4*x. Before you feed each input, type what will come out, then feed it.",
+      "leakTokens": [
+       "PREDICTION_CORRECT",
+       "PREDICTION_INCORRECT",
+       "GUESS_INCORRECT",
+       "MACHINE_CHECKED",
+       "PHASE_COMPLETE",
+       "ALL_COMPLETE",
+       "ACTIVITY_START"
+      ],
+      "menu": [
+       "2",
+       "feed 2",
+       "3",
+       "feed 3",
+       "4",
+       "feed 4",
+       "6",
+       "feed 6",
+       "8",
+       "feed 8"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Take a look at the machine's rule, type your prediction for the first input, and feed it through to see what happens.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the function machine! Take a look at the rule shown on the machine, type your prediction for the first input, and feed it in to test it out.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the function machine! Take a look at the rule on the machine, type your prediction for the first input, and feed it in when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the function machine! Take a look at the rule on the machine, type your prediction for the first input, and feed it through when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the function machine! Take a look at the rule on the machine and try typing what will come out for the first input.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "fm-1",
+     "trigger": "The learner submitted \"Predicted 9 for input 2\". The board checked it: not right.",
+     "miss": "too_high",
+     "scoredWith": {
+      "keys": [
+       "8",
+       "12",
+       "feed 3",
+       "16",
+       "feed 4",
+       "24",
+       "feed 6",
+       "32",
+       "feed 8"
+      ],
+      "ask": "The machine's rule is f(x) = 4*x. Before you feed each input, type what will come out, then feed it.",
+      "leakTokens": [
+       "PREDICTION_CORRECT",
+       "PREDICTION_INCORRECT",
+       "GUESS_INCORRECT",
+       "MACHINE_CHECKED",
+       "PHASE_COMPLETE",
+       "ALL_COMPLETE",
+       "ACTIVITY_START"
+      ],
+      "menu": [
+       "2",
+       "feed 2",
+       "3",
+       "feed 3",
+       "4",
+       "feed 4",
+       "6",
+       "feed 6",
+       "8",
+       "feed 8"
+      ]
+     },
+     "samples": [
+      {
+       "text": "That was close! Remember, the rule multiplies each input by 4, so give it another try with 2.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! The rule tells us to multiply the input by 4, so what do you get when you multiply 4 times 2?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice that the rule multiplies the input by 4. What do you get when you multiply 2 by 4?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The rule says to multiply the input by 4. What do you get when you multiply 2 by 4?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Remember, the rule multiplies each input by 4. What do you get when you multiply 2 by 4?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "fm-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "8",
+       "12",
+       "feed 3",
+       "16",
+       "feed 4",
+       "24",
+       "feed 6",
+       "32",
+       "feed 8"
+      ],
+      "ask": "The machine's rule is f(x) = 4*x. Before you feed each input, type what will come out, then feed it.",
+      "leakTokens": [
+       "PREDICTION_CORRECT",
+       "PREDICTION_INCORRECT",
+       "GUESS_INCORRECT",
+       "MACHINE_CHECKED",
+       "PHASE_COMPLETE",
+       "ALL_COMPLETE",
+       "ACTIVITY_START"
+      ],
+      "menu": [
+       "2",
+       "feed 2",
+       "3",
+       "feed 3",
+       "4",
+       "feed 4",
+       "6",
+       "feed 6",
+       "8",
+       "feed 8"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You're doing great, and we can take it one step at a time! What do you get when you multiply 4 by 2?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "What do you get when you calculate 4 times 2?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "What is 4 times 2?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "When the input is 2, the rule asks us to calculate 4 times 2. What do you get when you multiply 4 by 2?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "To find what comes out, we replace the x in the rule with our input number, 2. What is 4 times 2?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "fm-1",
+     "trigger": "The learner submitted \"Predicted 32 for input 8\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "8",
+       "12",
+       "feed 3",
+       "16",
+       "feed 4",
+       "24",
+       "feed 6",
+       "32",
+       "feed 8"
+      ],
+      "ask": "The machine's rule is f(x) = 4*x. Before you feed each input, type what will come out, then feed it.",
+      "leakTokens": [
+       "PREDICTION_CORRECT",
+       "PREDICTION_INCORRECT",
+       "GUESS_INCORRECT",
+       "MACHINE_CHECKED",
+       "PHASE_COMPLETE",
+       "ALL_COMPLETE",
+       "ACTIVITY_START"
+      ],
+      "menu": [
+       "2",
+       "feed 2",
+       "3",
+       "feed 3",
+       "4",
+       "feed 4",
+       "6",
+       "feed 6",
+       "8",
+       "feed 8"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You did it! You predicted 32 by multiplying 8 by 4, and you've found every single output for this machine.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Awesome job predicting 32 for input 8\u2014you worked through every input and mastered that rule!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You worked all the way through to 32 for the input 8! Multiplying each input by 4 got every single output right.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You predicted 32 for 8 by multiplying by 4, and now all the pairs are completed.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You figured out 32 by multiplying the input 8 by 4, and you completed the whole set!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -20,11 +20,24 @@ import {
 } from '../../../evaluation';
 import type { CircleExplorerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  answerLead as answerLeadOf, circleCorrect, circleMiss, describeCircleWork, parseCircleAnswer, unitSuffix,
+  workspaceAssignment, workspaceScene, type CircleWork,
+} from './circleExplorerWorkspace';
+import {
+  AROUND_LEVER, CHAIN_LEVER, CORNERS_LEVER, EDGES_LEVER, FIGURE_LEVERS, FORMULA_LEVER, LEVER_CAPTIONS, OTHER_LENGTH_LEVER,
+  RATIO_FRAME_LEVER, SQUARE_LEVER, TENTHS_LEVER, WHOLE_LEVER,
+  circleLevers, discoverTrack, isPracticeCircle, leverFacts, otherLengthLabel, ratioFrame, simplerCircle, undoChain,
+} from './circleExplorerLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -148,7 +161,7 @@ function lerp(a: number, b: number, t: number): number {
 }
 
 // ============================================================================
-// Tutor reveal policy — keep the AI tutor's help in sync with the on-screen tier
+// Tutor reveal policy (scripted path) — keep the AI tutor's help in sync with the on-screen tier
 // so it never names a formula the instruction/figure deliberately withheld.
 // ============================================================================
 
@@ -171,9 +184,15 @@ function tutorRevealPolicy(tier?: 'easy' | 'medium' | 'hard'): string {
 interface CircleExplorerProps {
   data: CircleExplorerData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
-const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
+const CircleExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  CircleExplorerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<CircleExplorerChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -188,23 +207,48 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
+  const stableInstanceIdRef = useRef(instanceId || `circle-explorer-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+
   // -------------------------------------------------------------------------
-  // Multi-challenge progression
+  // Multi-challenge progression. On the workspace path the runtime moves the index.
   // -------------------------------------------------------------------------
+  /** Bound below, once the setters and the evaluation exist; the progress hook calls them only after render. */
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onFinished: (result) => finish.current(result),
+  });
   const {
     currentIndex: currentChallengeIndex,
     currentAttempts,
     results: challengeResults,
     isComplete: allChallengesComplete,
-    recordResult,
-    incrementAttempts,
+    mergeResult,
     advance: advanceProgress,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (ch) => ch.id,
-  });
+  } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const blocked = tutorOwned && progress.canAttempt === false;
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = blocked;
+  const learnerBlocked = () => workspaceClosed.current;
 
-  const currentChallenge = challenges[currentChallengeIndex] ?? null;
+  // In-item levers (`circleExplorerLevers.ts`), keyed by the session item they were pulled on, and the easier problem a
+  // simplify lever put on screen in its place.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<CircleExplorerChallenge | null>(null);
+  const sessionChallenge = challenges[currentChallengeIndex] ?? null;
+  /** What is on screen: the easier problem while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  /** The runtime pulls drawn on screen now: never on a practice problem. */
+  const onScreenLevers = practice ? [] : pulledLevers;
+  const leverOn = (id: string) => onScreenLevers.includes(id);
   const challengeType = currentChallenge?.type ?? 'circumference';
 
   // -------------------------------------------------------------------------
@@ -224,8 +268,6 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
   const [resizeTick, setResizeTick] = useState(0);
 
   // Refs
-  const stableInstanceIdRef = useRef(instanceId || `circle-explorer-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
   const recordedRef = useRef(false);
   const hintViewedRef = useRef(false);
   const hintsViewedRef = useRef(0);
@@ -236,24 +278,44 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
   // discover_pi gates the answer on unrolling first; area's slice is an optional reveal.
   const needsUnrollFirst = challengeType === 'discover_pi' && !unrolled;
 
-  // -------------------------------------------------------------------------
-  // Per-challenge reset — fires whenever advance() flips currentChallenge.id.
-  // -------------------------------------------------------------------------
-  useEffect(() => {
-    if (!currentChallenge) return;
+  const stopAnimation = () => {
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+  };
+
+  /**
+   * A fresh item (both paths) or Try again (workspace): the answer box empty. Try again keeps what the learner already
+   * unrolled or sliced (exploration, not the answer); a fresh item starts the figure over.
+   */
+  const resetWork = (keepFigure: boolean) => {
     setAnswerInput('');
     setFeedback('');
     setFeedbackType('');
+    if (keepFigure) return;
     setShowHint(false);
     setUnrollProgress(0);
     setSliceProgress(0);
     setUnrolled(false);
     recordedRef.current = false;
     hintViewedRef.current = false;
-    if (rafRef.current !== null) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
+    stopAnimation();
+  };
+  openItem.current = (_index, retry) => {
+    // Try again on a practice problem keeps it; a fresh item (or the full item back after practice) drops it.
+    if (retry) { resetWork(true); return; }
+    setPractice(null);
+    resetWork(false);
+  };
+
+  // -------------------------------------------------------------------------
+  // Per-challenge reset — fires whenever the item changes (the scripted path's Next; the workspace path also resets
+  // in `openItem`).
+  // -------------------------------------------------------------------------
+  useEffect(() => {
+    if (!currentChallenge) return;
+    resetWork(false);
   }, [currentChallenge?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // -------------------------------------------------------------------------
@@ -282,26 +344,28 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
   );
 
   const handleUnroll = useCallback(() => {
-    if (unrolled) return;
+    if (unrolled || learnerBlocked()) return;
     SoundManager.tick();
-    runAnimation(setUnrollProgress, () => {
-      setUnrolled(true);
-      SoundManager.snap();
-      if (challengeType === 'discover_pi') {
-        // At hard the tier withholds the "≈ 3.14" reveal — nudge to measure instead.
-        setFeedback(
-          currentChallenge?.showFormulaReveal === false
-            ? 'Now lay the unrolled length against the diameter — how many diameters long is it?'
-            : 'See? The circumference wraps a little more than 3 diameters — always about 3.14.',
-        );
-        setFeedbackType('info');
-      }
-    });
+    // The learner's move is done when they press it; the animation only draws it.
+    setUnrolled(true);
+    if (challengeType === 'discover_pi') {
+      // Never the ratio itself: the learner finds it by dividing (or, at hard, by measuring the track).
+      setFeedback(
+        currentChallenge?.showFormulaReveal === false
+          ? 'Now lay the unrolled length against the diameter — how many diameters long is it?'
+          : 'The circumference is unrolled under the circle. How many diameters long is it? Work out C ÷ d.',
+      );
+      setFeedbackType('info');
+    }
+    runAnimation(setUnrollProgress, () => SoundManager.snap());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unrolled, runAnimation, challengeType, currentChallenge]);
 
   const handleSlice = useCallback(() => {
+    if (learnerBlocked()) return;
     SoundManager.tick();
     runAnimation(setSliceProgress, () => SoundManager.snap());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runAnimation]);
 
   useEffect(() => () => {
@@ -335,8 +399,10 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
     const r = currentChallenge.radius;
     const diameter = 2 * r;
     // Support-tier perception lever: at the hard tier the generator sets this
-    // false so the canvas withholds the explicit formula/answer labels.
-    const showFormula = currentChallenge.showFormulaReveal !== false;
+    // false so the canvas withholds the explicit formula labels; the `formula_labels` lever puts them back.
+    const showFormula = currentChallenge.showFormulaReveal !== false || onScreenLevers.includes(FORMULA_LEVER);
+    const lever = (id: string) => onScreenLevers.includes(id);
+    const LEVER_COLOR = '#f472b6';
 
     const label = (x: number, y: number, txt: string, color = '#e2e8f0', align: CanvasTextAlign = 'center') => {
       ctx.fillStyle = color;
@@ -383,6 +449,22 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
       label(cx, cy - 12, txt, RADIUS_COLOR);
     };
 
+    /** `other_length` lever: a dashed vertical diameter, or a radius drawn down and to the left, named by letter only. */
+    const drawOtherLength = (cx: number, cy: number, diameterAcross: boolean) => {
+      ctx.save();
+      ctx.setLineDash([6, 4]);
+      ctx.strokeStyle = LEVER_COLOR;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      if (diameterAcross) { ctx.moveTo(cx, cy - RV); ctx.lineTo(cx, cy + RV); }
+      else { ctx.moveTo(cx, cy); ctx.lineTo(cx - RV * Math.cos(Math.PI / 3), cy + RV * Math.sin(Math.PI / 3)); }
+      ctx.stroke();
+      ctx.restore();
+      const txt = otherLengthLabel(currentChallenge);
+      if (diameterAcross) label(cx - 12, cy + RV / 2, txt, LEVER_COLOR, 'right');
+      else label(cx - RV * 0.25 - 10, cy + RV * 0.45, txt, LEVER_COLOR, 'right');
+    };
+
     // ----- Mode-specific rendering -----
     if (challengeType === 'discover_pi') {
       const cx = CANVAS_W / 2;
@@ -397,8 +479,8 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
 
       // Unroll track: a straight segment of length = π diameters, with diameter ticks.
       const trackY = 300;
-      const trackStartX = 60;
-      const diaPx = (CANVAS_W - 2 * trackStartX) / 3.3; // ~3.3 diameters fits the width
+      // Four diameters fit between the margins, so the `tenth_marks` ruler past the third one is never clipped.
+      const { startX: trackStartX, diaPx, tenths } = discoverTrack(CANVAS_W);
       const fullLen = Math.PI * diaPx;
       const drawnLen = fullLen * unrollProgress;
 
@@ -434,7 +516,7 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
         }
       }
 
-      // the unrolling circumference (cyan), thick
+      // the unrolling circumference (cyan), thick. No "≈ 3.14 d" label: that number is this item's answer.
       ctx.strokeStyle = CIRCLE_STROKE;
       ctx.lineWidth = 5;
       ctx.beginPath();
@@ -442,8 +524,20 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
       ctx.lineTo(trackStartX + drawnLen, trackY);
       ctx.stroke();
       label(trackStartX, trackY - 18, 'Circumference unrolled', CIRCLE_STROKE, 'left');
-      if (unrollProgress >= 1 && showFormula) {
-        label(trackStartX + fullLen + 4, trackY, '≈ 3.14 d', CIRCLE_STROKE, 'left');
+      // `tenth_marks` lever: one diameter cut into ten equal, unlabelled parts, starting where the whole diameters end,
+      // so the leftover piece of the unrolled line can be read in tenths.
+      if (lever(TENTHS_LEVER) && unrollProgress >= 1) {
+        const x3 = tenths[0], y = trackY + 62;
+        ctx.strokeStyle = LEVER_COLOR;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x3, y); ctx.lineTo(tenths[10], y); ctx.stroke();
+        tenths.forEach((x, k) => {
+          ctx.beginPath(); ctx.moveTo(x, y - (k % 5 === 0 ? 8 : 5)); ctx.lineTo(x, y + (k % 5 === 0 ? 8 : 5)); ctx.stroke();
+        });
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath(); ctx.moveTo(x3, trackY); ctx.lineTo(x3, y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(trackStartX + fullLen, trackY); ctx.lineTo(trackStartX + fullLen, y); ctx.stroke();
+        ctx.setLineDash([]);
       }
     } else if (challengeType === 'circumference') {
       const cx = CANVAS_W / 2;
@@ -473,12 +567,38 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
           'left',
         );
       }
+      // `other_length` lever: the length the figure does not give, named by letter only.
+      if (lever(OTHER_LENGTH_LEVER)) drawOtherLength(cx, cy, currentChallenge.given === 'radius');
+      // `diameters_around` lever: the circumference laid straight with diameter-length bars along it, unlabelled.
+      if (lever(AROUND_LEVER)) {
+        const startX = 60, y = 392, dp = (CANVAS_W - 2 * startX) / 3.3;
+        ctx.strokeStyle = CIRCLE_STROKE;
+        ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(startX, y); ctx.lineTo(startX + Math.PI * dp, y); ctx.stroke();
+        for (let k = 0; k < 3; k++) {
+          ctx.strokeStyle = k % 2 === 0 ? LEVER_COLOR : 'rgba(244,114,182,0.5)';
+          ctx.lineWidth = 6;
+          ctx.beginPath(); ctx.moveTo(startX + k * dp + 1, y + 9); ctx.lineTo(startX + (k + 1) * dp - 1, y + 9); ctx.stroke();
+        }
+      }
     } else if (challengeType === 'area') {
       const cx = CANVAS_W / 2;
       const cy = 150;
       if (sliceProgress < 0.02) {
         drawCircle(cx, cy, RV);
-        drawRadius(cx, cy, RV, currentChallenge.given === 'diameter' ? `d = ${diameter} ${unit}` : `r = ${r} ${unit}`);
+        // A given diameter is drawn all the way across, not along the radius.
+        if (currentChallenge.given === 'diameter') drawDiameter(cx, cy, RV, `d = ${diameter} ${unit}`);
+        else drawRadius(cx, cy, RV, `r = ${r} ${unit}`);
+        // `radius_square` lever: a square on the radius, r by r, above it.
+        if (lever(SQUARE_LEVER)) {
+          ctx.fillStyle = 'rgba(244,114,182,0.18)';
+          ctx.strokeStyle = LEVER_COLOR;
+          ctx.lineWidth = 2;
+          ctx.fillRect(cx, cy - RV, RV, RV);
+          ctx.strokeRect(cx, cy - RV, RV, RV);
+          label(cx + RV / 2, cy - RV / 2, 'r × r', LEVER_COLOR);
+        }
+        if (lever(OTHER_LENGTH_LEVER)) drawOtherLength(cx, cy, false);
       } else {
         // Wedge rearrangement: interpolate each sector from radial → parallelogram strip.
         const dθ = (2 * Math.PI) / N_WEDGES;
@@ -545,6 +665,7 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
       ctx.stroke();
       ctx.restore();
       label(cx + RV / 2, cy - 12, `r = ?`, RADIUS_COLOR);
+      if (lever(OTHER_LENGTH_LEVER)) drawOtherLength(cx, cy, true);
     } else if (challengeType === 'composite') {
       const cx = CANVAS_W / 2;
       const cy = CANVAS_H / 2;
@@ -563,6 +684,18 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
         drawCircle(cx, cy, half);
         label(cx, cy - half - 16, `side = ${currentChallenge.squareSide} ${unit}`, ACCENT_2);
         label(cx, cy + half + 18, `Shaded = square − circle`, '#cbd5e1');
+        // `shade_corners` lever: the square without the circle shaded, and the circle's radius as half the side.
+        if (lever(CORNERS_LEVER)) {
+          ctx.beginPath();
+          ctx.rect(cx - half, cy - half, 2 * half, 2 * half);
+          ctx.arc(cx, cy, half, 0, 2 * Math.PI, true);
+          ctx.fillStyle = 'rgba(244,114,182,0.35)';
+          ctx.fill('evenodd');
+          ctx.strokeStyle = LEVER_COLOR;
+          ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + half, cy); ctx.stroke();
+          label(cx + half / 2, cy - 12, 'r = half the side', LEVER_COLOR);
+        }
       } else {
         // semicircle (flat side down)
         ctx.beginPath();
@@ -587,9 +720,32 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
           shape === 'semicircle_perimeter' ? 'Find the perimeter (curve + diameter)' : 'Find the area (half a circle)',
           '#cbd5e1',
         );
+        // `whole_circle` lever: the missing half, dashed.
+        if (lever(WHOLE_LEVER)) {
+          ctx.save();
+          ctx.setLineDash([6, 5]);
+          ctx.beginPath();
+          ctx.arc(cx, cy + RV / 2, RV, 0, Math.PI, false);
+          ctx.strokeStyle = LEVER_COLOR;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.restore();
+          label(cx, cy + RV / 2 + RV + 16, 'the whole circle', LEVER_COLOR);
+        }
+        // `trace_edges` lever: the curved edge and the straight edge in two colours, each named.
+        if (lever(EDGES_LEVER)) {
+          ctx.lineWidth = 5;
+          ctx.strokeStyle = LEVER_COLOR;
+          ctx.beginPath(); ctx.arc(cx, cy + RV / 2, RV, Math.PI, 2 * Math.PI, false); ctx.stroke();
+          ctx.strokeStyle = RADIUS_COLOR;
+          ctx.beginPath(); ctx.moveTo(cx - RV, cy + RV / 2); ctx.lineTo(cx + RV, cy + RV / 2); ctx.stroke();
+          label(cx - RV - 8, cy - RV / 4, 'curved edge', LEVER_COLOR, 'right');
+          label(cx, cy + RV / 2 + 18, 'straight edge = d', RADIUS_COLOR);
+        }
       }
     }
-  }, [currentChallenge, challengeType, unrollProgress, sliceProgress, resizeTick]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChallenge, challengeType, unrollProgress, sliceProgress, resizeTick, onScreenLevers.join('|')]);
 
   // Redraw crisply when the canvas's displayed size changes.
   useEffect(() => {
@@ -634,7 +790,8 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
   });
 
   // -------------------------------------------------------------------------
-  // AI Tutoring
+  // AI Tutoring (scripted path). The legacy context carries the answer; on the workspace path the tutor reads the
+  // scene instead.
   // -------------------------------------------------------------------------
   const aiPrimitiveData = useMemo(() => ({
     challengeType,
@@ -660,12 +817,16 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
     currentAttempts,
   ]);
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'circle-explorer',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: 'Grade 7',
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   const hasIntroducedRef = useRef(false);
   useEffect(() => {
@@ -680,31 +841,16 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
   }, [isConnected, challenges.length, challengeType, supportTier, sendText]);
 
   // -------------------------------------------------------------------------
-  // Submit handler (handler-driven with stale-state guard)
+  // Check. Every numeric check commits (right or wrong); an empty or non-numeric entry is not a check.
   // -------------------------------------------------------------------------
-  const completeChallenge = useCallback((correct: boolean) => {
-    if (!currentChallenge) return;
-    if (!correct) return; // wait for a correct attempt before recording
-    if (recordedRef.current) return;
-    recordedRef.current = true;
-    const attempts = currentAttempts + 1;
-    const score = Math.max(20, 100 - (attempts - 1) * 20);
-    recordResult({
-      challengeId: currentChallenge.id,
-      correct: true,
-      attempts,
-      score,
-    });
-  }, [currentChallenge, currentAttempts, recordResult]);
-
-  const unitSuffix = (ch: CircleExplorerChallenge): string => {
-    if (ch.answerKind === 'ratio') return '';
-    if (ch.answerKind === 'area') return `${ch.unitLabel}²`;
-    return ch.unitLabel;
-  };
+  const isCurrentComplete = challengeResults.some(
+    (r) => r.challengeId === currentChallenge?.id && r.correct,
+  );
+  /** Input closed once the item is done, and on the workspace path while a checked answer waits for Try again. */
+  const inputClosed = allChallengesComplete || hasSubmittedEvaluation || isCurrentComplete || blocked;
 
   const handleCheck = useCallback(() => {
-    if (!currentChallenge || hasSubmittedEvaluation) return;
+    if (!currentChallenge || hasSubmittedEvaluation || learnerBlocked() || isCurrentComplete) return;
     if (needsUnrollFirst) {
       SoundManager.invalid();
       setFeedback('First unroll the circumference to compare it against the diameter.');
@@ -717,20 +863,14 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
       setFeedbackType('error');
       return;
     }
-    let parsed: number;
-    if (trimmed.includes('/')) {
-      const [num, den] = trimmed.split('/').map((s) => parseFloat(s.trim()));
-      parsed = (Number.isFinite(num) && Number.isFinite(den) && den !== 0) ? num / den : NaN;
-    } else {
-      parsed = parseFloat(trimmed);
-    }
+    const parsed = parseCircleAnswer(trimmed);
     if (!Number.isFinite(parsed)) {
       setFeedback('Enter a number (e.g. 31.4 or 3.14).');
       setFeedbackType('error');
       return;
     }
-    const correct = Math.abs(parsed - currentChallenge.expectedAnswer) <= currentChallenge.tolerance;
-    incrementAttempts();
+    const work: CircleWork = { typed: trimmed, unrolled, sliced: sliceProgress >= 1 };
+    const correct = circleCorrect(currentChallenge, work);
     const suffix = unitSuffix(currentChallenge);
     if (correct) {
       SoundManager.playCorrect();
@@ -741,7 +881,6 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
         + `Expected ${currentChallenge.expectedAnswer}. Celebrate briefly and reinforce the relationship used.`,
         { silent: true },
       );
-      completeChallenge(true);
     } else {
       SoundManager.playIncorrect();
       setFeedback('Not quite. Check your formula and whether you used the radius or the diameter, then try again.');
@@ -755,9 +894,18 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
         { silent: true },
       );
     }
+    // The checked gesture (counts the attempt, records the verdict on both paths), then this primitive's own score.
+    progress.commitCheck(describeCircleWork(currentChallenge, work), correct, circleMiss(currentChallenge, work));
+    // An easier practice problem (a simplify lever) is not the session's challenge: it records nothing of its own.
+    if (correct && !recordedRef.current && !isPracticeCircle(currentChallenge)) {
+      recordedRef.current = true;
+      const attempts = currentAttempts + 1;
+      mergeResult({ challengeId: currentChallenge.id, correct: true, attempts, score: Math.max(20, 100 - (attempts - 1) * 20) });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    currentChallenge, hasSubmittedEvaluation, needsUnrollFirst, answerInput,
-    incrementAttempts, completeChallenge, currentAttempts, sendText, challengeType, supportTier,
+    currentChallenge, hasSubmittedEvaluation, needsUnrollFirst, answerInput, unrolled, sliceProgress, isCurrentComplete,
+    mergeResult, currentAttempts, sendText, challengeType, supportTier, progress.commitCheck,
   ]);
 
   const handleShowHint = useCallback(() => {
@@ -769,6 +917,7 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
     }
   }, [showHint]);
 
+  // Scripted path only: the workspace path hides Next and the runtime advances.
   const advanceChallenge = useCallback(() => {
     if (advanceProgress()) {
       const nextIdx = currentChallengeIndex + 1;
@@ -782,9 +931,10 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
   }, [advanceProgress, currentChallengeIndex, challenges, sendText]);
 
   // -------------------------------------------------------------------------
-  // Session complete — build metrics and submit exactly once.
+  // Scripted path: session complete — build metrics and submit exactly once.
   // -------------------------------------------------------------------------
   useEffect(() => {
+    if (tutorOwned) return;
     if (!allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0) return;
     if (submittedRef.current) return;
     submittedRef.current = true;
@@ -818,15 +968,32 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
       `[ALL_COMPLETE] All ${total} circles done. Correct: ${correctCount}/${total}. First-try: ${firstTryCount}. Accuracy: ${avgScore}%. Give an encouraging, π-focused summary.`,
       { silent: true },
     );
-  }, [allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults, currentChallenge, submitEvaluation, sendText]);
+  }, [tutorOwned, allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults, currentChallenge, submitEvaluation, sendText]);
+
+  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // corrections and whose evidence carries each wrong check's named miss.
+  finish.current = (result) => {
+    if (hasSubmittedEvaluation || challenges.length === 0 || progress.recordsEvaluation === false) return;
+    const metrics: CircleExplorerMetrics = {
+      type: 'circle-explorer',
+      challengeType: (challenges[0]?.type ?? 'circumference') as CircleExplorerMetrics['challengeType'],
+      totalChallenges: challenges.length,
+      correctCount: result.solvedCount,
+      attemptsCount: result.attemptsCount,
+      firstTryCount: result.firstTryCount,
+      hintsViewed: 0,
+      overallAccuracy: result.accuracy,
+      averageAttemptsPerChallenge: Math.round((result.attemptsCount / challenges.length) * 10) / 10,
+    };
+    submitEvaluation(result.passed, result.accuracy, metrics,
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
 
   // -------------------------------------------------------------------------
   // Derived UI state
   // -------------------------------------------------------------------------
-  const isCurrentComplete = challengeResults.some(
-    (r) => r.challengeId === currentChallenge?.id && r.correct,
-  );
-
   const localOverallScore = useMemo(() => {
     if (!allChallengesComplete || challengeResults.length === 0) return 0;
     return Math.round(
@@ -836,6 +1003,37 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
       ) / challengeResults.length,
     );
   }, [allChallengesComplete, challengeResults]);
+
+  // Workspace path: what the tutor and the observer are shown, republished every render. No demonstration, no
+  // presentation.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    const shown = leverOn(FORMULA_LEVER) ? { ...currentChallenge, showFormulaReveal: true } : currentChallenge;
+    const scene = workspaceScene(shown, { typed: answerInput, unrolled, sliced: sliceProgress >= 1 });
+    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
+    const levers = practice ? [] : circleLevers(sessionChallenge, pulledLevers, unrolled);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice problem is on screen in place of the item. It is not graded; the full item comes back after it.' } : {}) },
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find((l) => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = simplerCircle(sessionChallenge);
+          if (!easier) return 'This item has no easier version; try a help lever.';
+          setLeverState(pulled); setPractice(easier); resetWork(false);
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { setPractice(null); resetWork(false); },
+    };
+  });
 
   // -------------------------------------------------------------------------
   // Render
@@ -863,18 +1061,7 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
   }
 
   const answerSuffix = unitSuffix(currentChallenge);
-  const answerLead =
-    challengeType === 'discover_pi'
-      ? 'C ÷ d ='
-      : challengeType === 'reverse'
-      ? 'r ='
-      : currentChallenge.answerKind === 'area'
-      ? 'Area ='
-      : challengeType === 'composite' && currentChallenge.compositeShape === 'semicircle_perimeter'
-      ? 'Perimeter ='
-      : challengeType === 'composite'
-      ? 'Area ='
-      : 'C =';
+  const answerLead = answerLeadOf(currentChallenge);
 
   const showUnrollBtn = challengeType === 'discover_pi' || challengeType === 'circumference';
   const showSliceBtn = challengeType === 'area';
@@ -939,7 +1126,7 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
                 tone="subtle"
                 size="sm"
                 onClick={handleUnroll}
-                disabled={unrolled || hasSubmittedEvaluation}
+                disabled={unrolled || hasSubmittedEvaluation || blocked}
               >
                 {unrolled ? 'Circumference unrolled ✓' : 'Unroll the circumference'}
               </LuminaButton>
@@ -949,7 +1136,7 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
                 tone="subtle"
                 size="sm"
                 onClick={handleSlice}
-                disabled={sliceProgress > 0 && sliceProgress < 1 ? true : hasSubmittedEvaluation}
+                disabled={sliceProgress > 0 && sliceProgress < 1 ? true : hasSubmittedEvaluation || blocked}
               >
                 {sliceProgress >= 1 ? 'Rearranged into a rectangle ✓' : 'Slice into wedges & rearrange'}
               </LuminaButton>
@@ -960,6 +1147,28 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
               Unroll the circumference first — count how many diameters long it is.
             </p>
           )}
+          {/* Lever pictures and captions (`circleExplorerLevers.ts`), on the session item only. None writes the answer. */}
+          {!allChallengesComplete && onScreenLevers.length > 0 && (
+            <div className="mt-2 space-y-1 text-center">
+              {leverOn(RATIO_FRAME_LEVER) && (
+                <p data-lever="ratio-frame" className="text-sm font-mono text-pink-200">{ratioFrame(currentChallenge)}</p>
+              )}
+              {leverOn(CHAIN_LEVER) && (() => {
+                const chain = undoChain(currentChallenge);
+                return (
+                  <div data-lever="undo-chain" className="text-sm font-mono text-pink-200 space-y-0.5">
+                    <p>{chain.forward}</p>
+                    <p className="text-pink-300/80">{chain.back}</p>
+                  </div>
+                );
+              })()}
+              {[FORMULA_LEVER, ...FIGURE_LEVERS].filter(leverOn).map((id) => (
+                <p key={id} data-lever={id.replace(/_/g, '-')} className="text-xs text-pink-200/90">
+                  {LEVER_CAPTIONS[id](currentChallenge)}
+                </p>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Answer panel */}
@@ -969,15 +1178,16 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
               <span className="text-cyan-300 font-mono font-bold">{answerLead}</span>
               <LuminaInput
                 type="text"
+                aria-label="Your answer"
                 value={answerInput}
-                onChange={(e) => setAnswerInput(e.target.value)}
-                disabled={needsUnrollFirst}
+                onChange={(e) => { if (!learnerBlocked()) setAnswerInput(e.target.value); }}
+                disabled={needsUnrollFirst || inputClosed}
                 className="w-28 text-center"
                 placeholder="?"
                 onKeyDown={(e) => e.key === 'Enter' && handleCheck()}
               />
               {answerSuffix && <span className="text-slate-400 text-sm font-mono">{answerSuffix}</span>}
-              <LuminaButton tone="primary" onClick={handleCheck} disabled={needsUnrollFirst}>
+              <LuminaButton tone="primary" onClick={handleCheck} disabled={needsUnrollFirst || inputClosed}>
                 Check
               </LuminaButton>
             </div>
@@ -1000,31 +1210,33 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
           <LuminaFeedbackCard status="insight">{feedback}</LuminaFeedbackCard>
         )}
 
-        {/* Hint */}
-        {showHint && (
+        {/* Hint (scripted path; with the tutor, help is the tutor's) */}
+        {!tutorOwned && showHint && (
           <LuminaPrompt accent="amber">
             <span className="font-mono uppercase text-amber-300 text-xs mr-2">Hint</span>
             {currentChallenge.hint}
           </LuminaPrompt>
         )}
 
-        {/* Controls */}
-        <div className="flex justify-center gap-2 flex-wrap">
-          {isCurrentComplete && !allChallengesComplete && (
-            <LuminaButton
-              tone="primary"
-              className="border-emerald-400/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
-              onClick={advanceChallenge}
-            >
-              Next Circle →
-            </LuminaButton>
-          )}
-          {!isCurrentComplete && !allChallengesComplete && (
-            <LuminaButton tone="subtle" size="sm" onClick={handleShowHint} disabled={showHint}>
-              {showHint ? 'Hint shown' : 'Show hint'}
-            </LuminaButton>
-          )}
-        </div>
+        {/* Controls. On the workspace path the shell's Try again / Next challenge replace Next. */}
+        {!tutorOwned && (
+          <div className="flex justify-center gap-2 flex-wrap">
+            {isCurrentComplete && !allChallengesComplete && (
+              <LuminaButton
+                tone="primary"
+                className="border-emerald-400/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
+                onClick={advanceChallenge}
+              >
+                Next Circle →
+              </LuminaButton>
+            )}
+            {!isCurrentComplete && !allChallengesComplete && (
+              <LuminaButton tone="subtle" size="sm" onClick={handleShowHint} disabled={showHint}>
+                {showHint ? 'Hint shown' : 'Show hint'}
+              </LuminaButton>
+            )}
+          </div>
+        )}
 
         {/* Phase summary */}
         {allChallengesComplete && phaseResults.length > 0 && (
@@ -1041,5 +1253,9 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const CircleExplorer = withWorkspaceController<CircleExplorerProps, ProgressOptions<CircleExplorerChallenge>, Progress>(
+  'circle-explorer', CircleExplorerSurface, useScriptedProgress, useWorkspaceProgressFor('circle-explorer'));
 
 export default CircleExplorer;

@@ -16,7 +16,11 @@
 export const evaluateRule = (rule: string, x: number): number | null => {
   if (!rule || !rule.trim()) return null;
   try {
-    const expression = rule.replace(/x/g, `(${x})`);
+    // A typed rule writes multiplication by position ("2x", "3(x + 1)") and may use the keypad's signs; written out
+    // here so "1 + 2x" runs instead of failing as JavaScript.
+    const written = rule.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-')
+      .replace(/(\d|\))\s*(?=[x(])/g, '$1*').replace(/x\s*(?=[x(\d])/g, 'x*');
+    const expression = written.replace(/x/g, `(${x})`);
     if (!/^[\d+\-*/().^\s]+$/.test(expression)) return null;
     const safeExpression = expression.replace(/\^/g, '**');
     const result = new Function('return ' + safeExpression)();

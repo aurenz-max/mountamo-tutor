@@ -7,9 +7,15 @@ import type { BaseTenMiss, SpokenBaseTenMiss } from '../../../primitives/visual-
 import type { CoinMiss } from '../../../primitives/visual-primitives/math/coinCounterWorkspace';
 import { REGROUP_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/regroupingWorkbenchWorkspace';
 import { PERCENT_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/percentBarWorkspace';
+import { TRANSFORM_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/transformationLabWorkspace';
+import { NET_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/netFolderWorkspace';
+import { FORMULA_MISSES_BY_MODE, type FormulaLabMiss } from '../../../primitives/visual-primitives/math/formulaLabWorkspace';
 import { RATIO_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/ratioTableWorkspace';
+import { CIRCLE_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/circleExplorerWorkspace';
 import { RATIO_LINE_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/doubleNumberLineWorkspace';
 import { FACTOR_TREE_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/factorTreeWorkspace';
+import { EQUATION_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/equationWorkspaceDomain';
+import { PRACTICE_MISSES, type PracticeMiss } from '../../../primitives/visual-primitives/math/practiceProblemWorkspace';
 import type { MeasureMiss } from '../../../primitives/visual-primitives/math/measureLabWorkspace';
 import type { MeasurementMiss } from '../../../primitives/visual-primitives/math/measurementToolsWorkspace';
 import type { AreaModelMiss } from '../../../primitives/visual-primitives/math/areaModelWorkspace';
@@ -27,6 +33,7 @@ import type { FractionMiss } from '../../../primitives/visual-primitives/math/fr
 import type { FractionBarMiss } from '../../../primitives/visual-primitives/math/fractionBarWorkspace';
 import type { TouchMiss } from '../../../primitives/visual-primitives/math/fractionCirclesWorkspace';
 import { EQUAL_BUILD_MISSES, type EqualBuildMiss } from '../../../primitives/visual-primitives/math/fractionEqualBuild';
+import type { FunctionMachineMiss } from '../../../primitives/visual-primitives/math/functionMachineWorkspace';
 import type { HundredsChartMiss } from '../../../primitives/visual-primitives/math/hundredsChartWorkspace';
 import { SKIP_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/skipCountingWorkspace';
 import type { MathFactMiss } from '../../../primitives/visual-primitives/math/mathFactFluencyWorkspace';
@@ -883,7 +890,26 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'practice-problem',
-    description: 'Standalone canvas-based math derivation surface. Student writes their multi-step solution by hand on a whiteboard; live transcription + step-aware coaching keep them oriented as they solve; pressing Done dispatches a judge that compares their derivation to the canonical solution and reveals a verdict (correct / partial / incorrect) with side-by-side analysis. Perfect for algebra, pre-calculus, and calculus problems where showing work matters more than the final answer. ESSENTIAL for grades 6-12 procedural fluency, multi-step problem solving, and strategy selection.',
+    teachingWorkspace: {
+      grades: ['Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
+      guidance: 'The activity checks the work itself, and you are not given the worked solution or the answer: the '
+        + 'learner writes the solution by hand on the whiteboard, one step per line, and presses Done; a checker reads '
+        + 'the lines and compares them with a worked solution. Never say the final answer, a step’s result, or what a '
+        + 'line should say, before the check or after a wrong one. Talk only about what the screen shows: when the step '
+        + 'slots have no titles, do not name a step, a method or the strategy; ask what the problem asks and what the '
+        + 'learner notices. When a start-here hint is shown, you may talk through that first move without doing it. '
+        + 'After a wrong check the screen says which line is wrong only when a line is marked "check this line"; never say '
+        + 'what is wrong in it or what it should be. Otherwise ask the learner to read their lines back and check each '
+        + 'move; a worked example on other numbers is teaching. If the checker read no line, ask for larger '
+        + 'writing, one step per line. You cannot write, erase or press Done.',
+      // Every mode publishes levers (`practiceProblemLevers.ts`): the tier's three scaffolds and, after a check that
+      // flagged a line, `mark_lines`. Nothing helps a checker that read no line.
+      levers: true,
+      // The judge's verdict, read by code (`practiceMiss`): the same five on every mode.
+      misses: sameMisses<PracticeMiss>(['derive_easy', 'derive_medium', 'derive_hard'], PRACTICE_MISSES),
+      unanswered: sameMisses<PracticeMiss>(['derive_easy', 'derive_medium', 'derive_hard'], ['nothing_read']),
+    },
+    description:'Standalone canvas-based math derivation surface. Student writes their multi-step solution by hand on a whiteboard; live transcription + step-aware coaching keep them oriented as they solve; pressing Done dispatches a judge that compares their derivation to the canonical solution and reveals a verdict (correct / partial / incorrect) with side-by-side analysis. Perfect for algebra, pre-calculus, and calculus problems where showing work matters more than the final answer. ESSENTIAL for grades 6-12 procedural fluency, multi-step problem solving, and strategy selection.',
     constraints: 'Requires a problem with a canonical multi-step solution (2+ steps). Best for derivation-style math problems (solve equations, simplify expressions, evaluate integrals, prove identities). Not suitable for one-shot computation, multiple choice, or visual-spatial problems where the answer is non-symbolic.',
     affordances: { representation: 'symbolic', answers: ['manipulate'], role: 'apply', minutes: 10 },
     evalModes: [
@@ -1728,6 +1754,29 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'function-machine',
+    teachingWorkspace: {
+      grades: ['Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
+      guidance: 'The activity checks every answer itself, and you are not told it. Observe and predict show the rule on the '
+        + 'machine: working an input through it step by step is teaching, but on predict stop before the result: never say '
+        + 'an output, or count up to it, before the learner predicts it right; the screen shows an output only after a '
+        + 'right prediction. Discover and create hide '
+        + 'the rule, because finding it is the task: never say the rule, its operation (add, take away, times, double, '
+        + 'half) or its number, and never say how an output relates to its input. Point the learner to two pairs, ask how '
+        + 'the output changed when the input grew by 1 and whether that change stays the same, and ask whether their rule '
+        + 'fits every pair, not just one. Make asks for two different machines that turn one input into one output: never '
+        + 'suggest an operation, a number, or how much to change a tile; talk about the machine the learner built and what '
+        + 'it gave, and ask what it needs to do instead. Running the '
+        + 'learner’s own rule on an input aloud is teaching. You cannot feed inputs, type, or tap tiles for the learner.',
+      // Every checked mode declares levers (`functionMachineLevers.ts`); observe has none, since nothing in it can miss.
+      levers: true,
+      // The activity's own checks (`predictMiss`, `guessMiss`, `judgeMakeRule`). Observe has no check that can fail.
+      misses: missLists<FunctionMachineMiss>({
+        predict: ['gave_input', 'added_not_multiplied', 'multiplied_not_added', 'one_step_only', 'wrong_order', 'too_high', 'too_low'],
+        discover_rule: ['not_a_rule', 'fits_some_pairs', 'added_not_multiplied', 'multiplied_not_added', 'one_step_only', 'wrong_order', 'wrong_rule'],
+        create_rule: ['not_a_rule', 'fits_some_pairs', 'added_not_multiplied', 'multiplied_not_added', 'one_step_only', 'wrong_order', 'wrong_rule'],
+        make_rule: ['not_a_rule', 'no_input', 'wrong_output', 'same_machine'],
+      }),
+    },
     description: 'Visual "machine" with input hopper, rule display, and output chute. Each session walks the student through 3-6 distinct function rules of the same challenge type (observe / predict / discover_rule / create_rule). Numbers enter, get transformed by the rule, and exit. Grade-banded: 3-4 (one-step rules like x+3, x*2), 5 (two-step rules like 2*x+1), advanced (expressions like x^2). ESSENTIAL for grades 3-4 patterns, grades 5-8 function introduction, and Algebra 1-2 function concepts.',
     constraints: 'The generator pre-selects the rules and input queues for each session — the manifest must NOT supply specific rules, inputs, or numeric values. The manifest may set instanceCount (default 3, max 6), ruleComplexity, gradeBand, outputDisplay, and the targetEvalMode.',
     affordances: { representation: 'symbolic', answers: ['tap', 'type'], role: ['visualize', 'apply'], minutes: 5 },
@@ -2142,6 +2191,24 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'circle-explorer',
+    teachingWorkspace: {
+      grades: ['Grade 6', 'Grade 7', 'Grade 8'],
+      guidance: 'The activity checks each answer itself, and you are not told it: the learner types a number in the answer '
+        + 'box and presses Check; on discover π they first press Unroll the circumference. Before a check and after a wrong '
+        + 'one, never say the ratio, the circumference, the area, the radius a reverse item asks for, a composite\'s result, '
+        + 'or the result of any calculation on the figure\'s numbers. Teaching is that π is the circumference divided by the '
+        + 'diameter, a little more than three, the same for every circle; the circumference is π times the diameter (or two '
+        + 'times π times the radius) and is a length; the area is π times the radius times the radius, in square units; a '
+        + 'reverse item undoes those steps in reverse order; a semicircle is half a circle, its perimeter is the curved half '
+        + 'plus the diameter, and a circle in a square leaves the square minus the circle. Ask whether the item wants the '
+        + 'distance around or the space inside, and whether the figure gives the radius or the diameter. When the figure '
+        + 'withholds its formula labels, do not name the formula; ask what the figure shows. Read the question aloud. You '
+        + 'cannot type, unroll, slice, or press Check.',
+      // Every mode declares levers (`circleExplorerLevers.ts`); every miss is answered by a help lever on every item.
+      levers: true,
+      // The activity's own check (`circleMiss`), every mode.
+      misses: { ...CIRCLE_MISSES_BY_MODE },
+    },
     description: 'Multi-circle grade-7 session (3-6 distinct circles of the same eval mode, surfaced sequentially) for discovering and applying the geometry of circles. Students first uncover π itself by measuring C ÷ d across several circles and recognizing the constant ≈ 3.14, then find circumference from a radius or diameter (C = 2πr = πd), find area from a radius (A = πr²), work backward to recover the radius given a circumference or an area, and finally tackle composite figures (semicircle area/perimeter, circle-in-square). Canvas-based with two signature interactions: an unroll-the-circumference animation that straightens the perimeter into a line of length πd, and a slice-into-wedges rearrangement that morphs the circle into a near-rectangle of base πr and height r to reveal A = πr². Five progressive difficulty tiers (discover π → circumference → area → reverse → composite). CCSS 7.G.B.4. Grade 7. Fork-A: the pool service pre-builds each circle (radius, given value, composite dimensions, answer) deterministically per challenge — the manifest must NOT specify radii, given values, dimensions, or answers.',
     constraints: 'The manifest must NOT supply per-circle radii, given values, composite dimensions, or answers — the pool service builds 3-6 distinct circles deterministically from the selected eval mode and gradeBand. The manifest may supply gradeBand and instanceCount only (default 4, max 6). Each eval mode maps to exactly one challengeType of the same name.',
     affordances: { representation: ['pictorial', 'symbolic'], answers: ['type'], role: ['visualize', 'apply'], minutes: 5 },
@@ -2330,6 +2397,26 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'transformation-lab',
+    teachingWorkspace: {
+      grades: ['Grade 7', 'Grade 8'],
+      guidance: 'The activity checks the answer itself, and you are not told it. On a translation, reflection, rotation or '
+        + 'dilation the learner drags each pink corner to a grid point and presses Check. No target is drawn, because the '
+        + 'image is the answer: never say where a corner lands or give an image coordinate. On identify the learner taps one '
+        + 'of the named transformations and presses Check: never name it, its line or its angle, and never call the motion a '
+        + 'flip, mirror or turn, even as a conclusion; ask what happened to one corner\'s coordinates from the cyan figure '
+        + 'to the amber one and let the learner name the motion. On compose the dashed target is drawn and the learner '
+        + 'presses move buttons, then Check: never say which moves or how many squares. Teaching is what the motion does and '
+        + 'what it keeps: a slide moves every corner the same way, a flip mirrors the figure over a line, a turn swings it '
+        + 'about the origin, a dilation pushes every corner away from the origin by the scale factor. Rigid motions keep size '
+        + 'and shape (congruent); a dilation keeps the shape only (similar). Working through one corner the learner picks is '
+        + 'teaching; placing the corners is not. Never state a coordinate rule such as (x, y) to (-y, x) unless a rule card is '
+        + 'on screen, whatever the tier; without one, ask what the motion does to one corner. When coordinate labels are hidden, '
+        + 'do not read them out. Read the task aloud. You cannot drag, tap or press Check.',
+      // Every mode declares levers (`transformationLabLevers.ts`); every miss is answered by a help lever on every item.
+      levers: true,
+      // The activity's own check (`transformMiss`), every mode.
+      misses: { ...TRANSFORM_MISSES_BY_MODE },
+    },
     description: 'Interactive coordinate-plane transformation lab where students slide, flip, turn, and scale a polygon and see what stays the same. Students drag image vertices to apply translations, reflections, and rotations; name transformations from a pre-image/image pair; compose sequences of motions to hit a target; and apply dilations to reason about similarity vs congruence. Perfect for rigid motions (translations, reflections, rotations), congruence via sequences of transformations, dilations, and similarity. ESSENTIAL for grade 8 geometry (CCSS 8.G.A.1, 8.G.A.2, 8.G.A.3, 8.G.A.4).',
     constraints: 'The manifest must NOT supply specific per-challenge vertices, coordinates, transformation parameters, or answers — the local pool service builds the challenges deterministically from the selected eval mode. The manifest supplies only session-level wrapper metadata (title, description, challengeType, gradeBand=\'8\').',
     affordances: { representation: 'pictorial', answers: ['manipulate', 'tap'], role: ['visualize', 'apply'], minutes: 8 },
@@ -6246,7 +6333,22 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'net-folder',
-    description: '3D shape net folding/unfolding visualization with CSS 3D transforms. Shows relationship between 3D solids and 2D nets. Students rotate solids, unfold into nets, match face correspondence, validate nets, and calculate surface area. Supports cube, rectangular prism, triangular prism, and pyramid. Perfect for teaching spatial reasoning, 3D geometry, and surface area at grades 3-5. ESSENTIAL for geometry standards.',
+    teachingWorkspace: {
+      grades: ['Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
+      guidance: 'The activity checks every answer itself, and you are not told it: the counts typed into Faces, Edges and '
+        + 'Vertices, the solid named from the options, the face the yellow square becomes, Valid net or Invalid net, the '
+        + 'surface area typed. Before a check and after a wrong one, never say a count, the solid\'s name, which face the '
+        + 'yellow square becomes, whether the net folds, the total, or which faces a wrong total left out. Teaching is the '
+        + 'parts and the fold: a face is a flat side, an edge is where two faces meet, a vertex is a corner, and the parts at '
+        + 'the back count too; a prism has two matching ends, a pyramid one base and a point. On a net, fold the squares one '
+        + 'at a time around the labelled ones; a cube\'s net has six squares, each landing on its own face. Read the question '
+        + 'aloud. You cannot type, tap, turn the solid, or press Check.',
+      // Every mode declares levers (`netFolderLevers.ts`); every miss is answered by a lever on every item.
+      levers: true,
+      // The activity's own check (`netFolderMiss`), every mode.
+      misses: { ...NET_MISSES_BY_MODE },
+    },
+    description: '3D shape net folding/unfolding visualization, the solid drawn in 3D. Shows relationship between 3D solids and 2D nets. Students rotate solids, unfold into nets, match face correspondence, validate nets, and calculate surface area. Supports cube, rectangular prism, triangular prism, and pyramid. Perfect for teaching spatial reasoning, 3D geometry, and surface area at grades 3-5. ESSENTIAL for geometry standards.',
     constraints: 'Requires grade 3-5. Solid types: cube, rectangular_prism, triangular_prism, square_pyramid, triangular_pyramid. Challenge types: identify_solid, match_faces, valid_net, surface_area, count_faces_edges_vertices.',
     affordances: { representation: 'pictorial', answers: ['manipulate', 'tap', 'type'], role: ['visualize', 'apply'], minutes: 8 },
     evalModes: [
@@ -6747,6 +6849,28 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
     ],
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
+      guidance: 'The activity checks every answer itself, and you are not told the answer. In free explore the learner drags '
+        + 'the slider to the target, and reaching it finishes the experiment. In the predict modes the learner places a '
+        + 'prediction on the track (left is less, right is more, distance from the centre is how strong) and presses Lock '
+        + 'prediction; the output stays hidden until a prediction is credited. In construct the learner taps tokens in order '
+        + 'and presses Check formula; the formula is hidden, and any order that gives the same relationship is credited. In '
+        + 'transfer the learner types the output for the new inputs and presses Check. Before a credited answer, never say '
+        + 'which way or how strongly the output changes, the hidden formula or any part of its order, or the output value. '
+        + 'Teaching is the role of the changed quantity with every other input held fixed (multiplied, divided, or raised to '
+        + 'a power), and the learner applies it to this item. So before a credit do not apply it for them: do not say the '
+        + 'output gets bigger or smaller, which side of the track to use, which quantity is squared, multiplied or divided, or '
+        + 'which token comes next, not even as an either-or question that leans one way. Ask where the changed quantity sits '
+        + 'in the formula and what that role does, and let the learner say it. In transfer the scene still shows the starting '
+        + 'values; the answer uses the new inputs on the card, and writing those inputs into the formula is help, not the '
+        + 'answer. You cannot move the slider, place the prediction, pick tokens, type, or press a button.',
+      // Every checked mode declares levers (`formulaLabLevers.ts`); every miss is answered by a help lever on every item.
+      // free-explore credits every finished move, names no miss and has no lever.
+      levers: true,
+      // The activity's own check (`formulaMiss`).
+      misses: missLists<FormulaLabMiss>(FORMULA_MISSES_BY_MODE),
+    },
   },
   {
     id: 'parameter-explorer',
@@ -6809,6 +6933,24 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'equation-workspace',
+    teachingWorkspace: {
+      grades: ['Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
+      guidance: 'The activity checks every operation itself, and you are not told the solution path. In guided-solve, '
+        + 'solve and multi-step the learner taps an operation from the menu: the next step of the solution is applied to '
+        + 'both sides and its new line appears; any other operation is a wrong answer and nothing is applied. The item is '
+        + 'finished when the variable is alone. Under identify-operation the learner chooses one operation and presses '
+        + 'Check; only the next step is right. Until the variable is alone, and after a wrong choice, never name, quote or '
+        + 'point to the operation to use next, never say which menu item is right or which are wrong, and never say the '
+        + 'solved value or a line the learner has not reached. When one operation is highlighted, you may tell the learner '
+        + 'to look at the highlight; do not read it. Teaching is that an operation done to both sides keeps the equation '
+        + 'equal; that the inverse undoes what is attached to the variable (adding and subtracting undo each other, so do '
+        + 'multiplying and dividing); and that layers come off in reverse order, the last thing done to the variable '
+        + 'first. Ask what is attached to the variable and what would undo it. You cannot tap an operation or press Check.',
+      // Every mode declares levers (`equationWorkspaceLevers.ts`); every miss is answered by a help lever on every item.
+      levers: true,
+      // The activity's own check (`equationMiss`), every mode.
+      misses: { ...EQUATION_MISSES_BY_MODE },
+    },
     description: 'Step-by-step algebraic manipulation workspace where students isolate a target variable by selecting operations (divide, multiply, take arcsin, square root, etc.) applied to both sides of an equation. Supports guided-solve with highlighted hints, identify-operation multiple choice, free-solve, and multi-step challenges requiring 4+ operations. Covers linear, quadratic, trigonometric, and calculus-level equations. Pedagogical moments: STEP_CORRECT (after each correct operation), ANSWER_CORRECT (equation solved), ANSWER_INCORRECT (wrong operation selected), NEXT_ITEM (advancing to next challenge), ALL_COMPLETE (all challenges done). ESSENTIAL for grades 9-12+ algebra through calculus.',
     constraints: 'Best for grades 9-12+. Requires equation string and target variable. Multi-step mode requires equations needing 4+ operations. Guided-solve highlights valid operations as hints.',
     affordances: { representation: 'symbolic', answers: ['tap'], role: 'apply', minutes: 8 },

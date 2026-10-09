@@ -1,0 +1,3116 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ],
+   "no_key_before_try": [
+    0,
+    25
+   ],
+   "no_fix_before_try": [
+    0,
+    25
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ],
+   "no_key_before_try": [
+    0,
+    25
+   ],
+   "no_fix_before_try": [
+    0,
+    25
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ],
+   "no_key_before_try": [
+    0,
+    25
+   ],
+   "no_fix_before_try": [
+    0,
+    25
+   ],
+   "no_change_before_receipt": [
+    0,
+    25
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ],
+   "no_key_before_try": [
+    0,
+    25
+   ],
+   "no_fix_before_try": [
+    0,
+    25
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "transformation-lab.apply_rotation",
+   "primitiveId": "transformation-lab",
+   "evalMode": "apply_rotation",
+   "keys": [
+    "(-3, 1)",
+    "(-3, 4)",
+    "(-5, 2)"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "tl-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "(-3, 1)",
+       "(-3, 4)",
+       "(-5, 2)"
+      ],
+      "ask": "A clock hand sweeps around. Rotate the figure 90\u00b0 counterclockwise about the origin. Drag each pink corner to its image.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL"
+      ],
+      "menu": [
+       "reset corners",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Rotate the figure 90\u00b0 counterclockwise about the origin. Drag each pink corner to its image.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A clock hand sweeps around. Rotate the figure 90\u00b0 counterclockwise about the origin, and drag each pink corner to its image.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Rotate the figure 90\u00b0 counterclockwise about the origin. Drag each pink corner to its image.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Rotate the figure 90\u00b0 counterclockwise about the origin. Drag each pink corner to its image.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Rotate the figure 90\u00b0 counterclockwise about the origin. Drag each pink corner to its image.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "tl-1",
+     "trigger": "The learner submitted \"the pink corners are at (3, -1), (3, -4), (5, -2)\". The board checked it: not right.",
+     "miss": "wrong_direction",
+     "scoredWith": {
+      "keys": [
+       "(-3, 1)",
+       "(-3, 4)",
+       "(-5, 2)"
+      ],
+      "ask": "A clock hand sweeps around. Rotate the figure 90\u00b0 counterclockwise about the origin. Drag each pink corner to its image.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL"
+      ],
+      "menu": [
+       "reset corners",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Notice how the green model point swings counterclockwise around the origin to its new spot. Give it another try with each pink corner.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_point",
+          "actionId": "test/15/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the green model point P and how it swings counterclockwise around the center to P\u2032. Give it another try following that same counterclockwise turn.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_point",
+          "actionId": "test/15/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the green model point to see which way a 90\u00b0 counterclockwise turn swings around the origin. Try turning your triangle in that same direction.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/15/0",
+          "lever": "model_point"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at green model point P and where the arrow swings it to P\u2032 under a 90\u00b0 counterclockwise turn. Give your pink corners another try going in that same direction around the origin!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/15/0",
+          "lever": "model_point"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A green model point and an arrow now show how a point swings under a 90\u00b0 counterclockwise turn. Notice the direction it turns around the origin, and try moving your pink corners again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/15/0",
+          "lever": "model_point"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "tl-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "(-3, 1)",
+       "(-3, 4)",
+       "(-5, 2)"
+      ],
+      "ask": "A clock hand sweeps around. Rotate the figure 90\u00b0 counterclockwise about the origin. Drag each pink corner to its image.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL"
+      ],
+      "menu": [
+       "reset corners",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A rule card is now on your screen showing how the coordinates change under this turn. Take a look at what happens to $(x, y)$, and try applying that to one corner at a time.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/15/0",
+          "lever": "rule_card"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A green model point P and its turn are now on the grid to show the rotation. See how it turns around the origin, and try following that same motion with your corners.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/15/0",
+          "lever": "model_point"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A rule card is now on your screen showing how coordinates change during this rotation. Take a look at what happens to the x and y values, and try applying that to one corner at a time.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/15/0",
+          "lever": "rule_card"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A green model point P and its image P\u2032 appeared to show how a 90\u00b0 counterclockwise turn swings around the origin. Try rotating one cyan corner that same direction around the center.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_point",
+          "actionId": "test/15/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I added a green model point, P, with an arrow showing how it rotates 90\u00b0 counterclockwise about the origin to P\u2032. See how the motion turns against the clock hands, and try following that same turn with one corner at a time.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_point",
+          "actionId": "test/15/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "tl-1",
+     "trigger": "The learner said they were stuck, so the host pulled model_point (help). It is on screen now: Draws a green model point P away from the figure and its image P\u2032 under this same transformation, joined by an arrow. P is not a corner of the figure; the learner does the corners. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or ",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "(-3, 1)",
+       "(-3, 4)",
+       "(-5, 2)"
+      ],
+      "ask": "A clock hand sweeps around. Rotate the figure 90\u00b0 counterclockwise about the origin. Drag each pink corner to its image.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL"
+      ],
+      "menu": [
+       "reset corners",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A green model point P and its image P\u2032 are now drawn on the grid with an arrow showing the turn. Look at how point P rotated counterclockwise around the center, and try moving your pink corners the same way.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the green point $P$ and its arrow swinging to $P'$ to see the direction of the turn. Use that example to help you place each pink corner.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A green model point P and its partner P\u2032 are now shown on the grid with an arrow showing the turn. See how point P swings around the origin, and try that same motion with your pink corners.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look over at the green model point P and the arrow showing how it rotates around the origin to P\u2032. See how that counterclockwise swing turns the point, and try that same turn with each pink corner.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A green point P and its new position P\u2032 are now shown on your grid with an arrow connecting them. Look at how that point turns counterclockwise around the origin, and try using that same turn on the corners of the shape.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "tl-1",
+     "trigger": "The learner submitted \"the pink corners are at (-3, 1), (-3, 4), (-5, 2)\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "(-3, 1)",
+       "(-3, 4)",
+       "(-5, 2)"
+      ],
+      "ask": "A clock hand sweeps around. Rotate the figure 90\u00b0 counterclockwise about the origin. Drag each pink corner to its image.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL"
+      ],
+      "menu": [
+       "reset corners",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You placed the corners at (-3, 1), (-3, 4), and (-5, 2) by following the counterclockwise rotation.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You placed every pink corner at (-3, 1), (-3, 4), and (-5, 2) by following the model point and rotating counterclockwise. Excellent work!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You rotated each corner counterclockwise around the origin to place them at (-3, 1), (-3, 4), and (-5, 2).",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You used the model point to see the counterclockwise turn and placed every corner at (-3, 1), (-3, 4), and (-5, 2).",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You rotated each corner counterclockwise to (-3, 1), (-3, 4), and (-5, 2).",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "transformation-lab.apply_translation_reflection",
+   "primitiveId": "transformation-lab",
+   "evalMode": "apply_translation_reflection",
+   "keys": [
+    "(-4, -2)",
+    "(-2, -2)",
+    "(-4, 1)"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "tl-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "(-4, -2)",
+       "(-2, -2)",
+       "(-4, 1)"
+      ],
+      "ask": "A sticker is peeled and re-placed. Translate the figure by (-3, 1). Drag each pink corner to its new position.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL"
+      ],
+      "menu": [
+       "reset corners",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Translate the figure by (-3, 1). Drag each pink corner to its new position.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Translate the figure by (-3, 1). Drag each pink corner to its new position.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Translate the figure by (-3, 1). Drag each pink corner to its new position.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A sticker is peeled and re-placed. Translate the figure by (-3, 1). Drag each pink corner to its new position.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A sticker is peeled and re-placed. Translate the figure by (-3, 1), and drag each pink corner to its new position.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "tl-1",
+     "trigger": "The learner submitted \"the pink corners are at (2, -4), (4, -4), (2, -1)\". The board checked it: not right.",
+     "miss": "opposite_shift",
+     "scoredWith": {
+      "keys": [
+       "(-4, -2)",
+       "(-2, -2)",
+       "(-4, 1)"
+      ],
+      "ask": "A sticker is peeled and re-placed. Translate the figure by (-3, 1). Drag each pink corner to its new position.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL"
+      ],
+      "menu": [
+       "reset corners",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A green model point P and an arrow to P\u2032 are now on the grid to show how (-3, 1) shifts a point. Look at the direction of that arrow and try sliding each pink corner the same way.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_point",
+          "actionId": "test/14/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the green model point P and the arrow showing how it moves to P\u2032. Try moving each corner of the figure the same way.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_point",
+          "actionId": "test/14/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the green model point P and where its arrow leads. Try moving your corners in that same direction.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/14/0",
+          "lever": "model_point"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the green point P and the arrow showing how it moves to P\u2032. Notice which way each coordinate shifts, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/14/0",
+          "lever": "model_point"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice how green point P slides along the arrow to P\u2032. Try moving each pink corner in that same direction.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_point",
+          "actionId": "test/14/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "tl-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "(-4, -2)",
+       "(-2, -2)",
+       "(-4, 1)"
+      ],
+      "ask": "A sticker is peeled and re-placed. Translate the figure by (-3, 1). Drag each pink corner to its new position.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL"
+      ],
+      "menu": [
+       "reset corners",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A green model point P and an arrow to P\u2032 are now on the grid to show how (-3, 1) shifts a point. Notice which way the arrow points, and slide each pink corner the exact same way.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/14/0",
+          "lever": "model_point"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Notice how point P moves along the green arrow: 3 units left and 1 unit up. Try sliding one of your cyan corners that exact same way.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_point",
+          "actionId": "test/14/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Notice how the green arrow moves from point P to P\u2032 by counting along the grid lines. What direction and how many steps does that arrow go?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_point",
+          "actionId": "test/14/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A green model point P and its shifted point P\u2032 appeared on the grid with an arrow showing the move. Notice how P slides left 3 units and up 1 unit, and give that same slide a try with each pink corner.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_point",
+          "actionId": "test/14/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Notice the green point P and how the arrow slides it to P\u2032. Which way does that arrow go along the grid lines?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/14/0",
+          "lever": "model_point"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "tl-1",
+     "trigger": "The learner said they were stuck, so the host pulled model_point (help). It is on screen now: Draws a green model point P away from the figure and its image P\u2032 under this same transformation, joined by an arrow. P is not a corner of the figure; the learner does the corners. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or ",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "(-4, -2)",
+       "(-2, -2)",
+       "(-4, 1)"
+      ],
+      "ask": "A sticker is peeled and re-placed. Translate the figure by (-3, 1). Drag each pink corner to its new position.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL"
+      ],
+      "menu": [
+       "reset corners",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the green point P and the arrow leading to P\u2032 at the top of the grid. It shows how the point shifts 3 units left and 1 unit up, so try moving each pink corner the same way.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A green point P and its shifted point P\u2032 are now drawn near the top right with an arrow between them. Take a look at how P moved, and try sliding your pink corners the same way.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the green point P and the arrow leading to P\u2032 on the grid. See how it shifts 3 units left and 1 unit up, and try moving each pink corner that same way.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is a green point P and an arrow pointing to P\u2032 shown on the grid. Notice how that arrow moves 3 units left and 1 unit up, and try moving each pink corner that same way.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look near the top right: there is a green model point P and an arrow showing its move to P\u2032. Follow that arrow's direction and distance to slide each pink corner of the triangle.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "tl-1",
+     "trigger": "The learner submitted \"the pink corners are at (-4, -2), (-2, -2), (-4, 1)\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "(-4, -2)",
+       "(-2, -2)",
+       "(-4, 1)"
+      ],
+      "ask": "A sticker is peeled and re-placed. Translate the figure by (-3, 1). Drag each pink corner to its new position.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL"
+      ],
+      "menu": [
+       "reset corners",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You shifted each corner 3 units left and 1 unit up to (-4, -2), (-2, -2), and (-4, 1), placing the whole figure accurately.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You shifted each corner 3 units left and 1 unit up to (-4, -2), (-2, -2), and (-4, 1), and placed every point accurately!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You followed the shift direction and placed every corner right at (-4, -2), (-2, -2), and (-4, 1).",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You shifted each corner 3 units left and 1 unit up to match the translation. Nicely done!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You followed the shift direction and translated each corner right to (-4, -2), (-2, -2), and (-4, 1).",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "transformation-lab.compose_sequence",
+   "primitiveId": "transformation-lab",
+   "evalMode": "compose_sequence",
+   "keys": [
+    "reflect over y-axis"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "tl-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "reflect over y-axis"
+      ],
+      "ask": "A puzzle piece needs several moves to fit. Use the transformation buttons to move the pink figure exactly onto the dashed target. It takes more than one move.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL"
+      ],
+      "menu": [
+       "reflect over x-axis",
+       "reflect over y-axis",
+       "rotate 90\u00b0 \u27f2",
+       "rotate 180\u00b0",
+       "rotate 270\u00b0 \u27f2",
+       "\u2190 left",
+       "right \u2192",
+       "\u2191 up",
+       "\u2193 down",
+       "reset",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A puzzle piece needs several moves to fit. Use the transformation buttons to move the pink figure exactly onto the dashed target.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A puzzle piece needs several moves to fit. Use the transformation buttons to move the pink figure exactly onto the dashed target.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A puzzle piece needs several moves to fit. Use the transformation buttons to move the pink figure exactly onto the dashed target.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Use the transformation buttons to move the pink figure exactly onto the dashed target. It takes more than one move.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A puzzle piece needs several moves to fit. Use the transformation buttons to move the pink figure exactly onto the dashed target.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "tl-1",
+     "trigger": "The learner submitted \"applied \u2190 Left, then \u2193 Down (2 moves); the pink figure's corners are at (0, 1), (3, 1), (1, 3)\". The board checked it: not right.",
+     "miss": "orientation_off",
+     "scoredWith": {
+      "keys": [
+       "reflect over y-axis"
+      ],
+      "ask": "A puzzle piece needs several moves to fit. Use the transformation buttons to move the pink figure exactly onto the dashed target. It takes more than one move.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL"
+      ],
+      "menu": [
+       "reflect over x-axis",
+       "reflect over y-axis",
+       "rotate 90\u00b0 \u27f2",
+       "rotate 180\u00b0",
+       "rotate 270\u00b0 \u27f2",
+       "\u2190 left",
+       "right \u2192",
+       "\u2191 up",
+       "\u2193 down",
+       "reset",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Notice the model flags beside each button showing how each flip and turn changes direction. Look at how the target faces compared to your figure, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "motion_models"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the model flags beside the buttons to see how each flip or turn changes which way a shape faces. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "motion_models"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the model flags beside the buttons to see how each turn and flip changes which way the shape faces. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "motion_models",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the guide flags beside the buttons showing how each flip and turn changes the way a shape faces. How does the target need to be turned or flipped to match?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "motion_models"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the model flags beside the buttons showing how each flip and turn changes direction. Look at how the dashed target is facing compared to your pink figure, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "motion_models"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "tl-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "reflect over y-axis"
+      ],
+      "ask": "A puzzle piece needs several moves to fit. Use the transformation buttons to move the pink figure exactly onto the dashed target. It takes more than one move.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL"
+      ],
+      "menu": [
+       "reflect over x-axis",
+       "reflect over y-axis",
+       "rotate 90\u00b0 \u27f2",
+       "rotate 180\u00b0",
+       "rotate 270\u00b0 \u27f2",
+       "\u2190 left",
+       "right \u2192",
+       "\u2191 up",
+       "\u2193 down",
+       "reset",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Small flag models are now shown beside each button so you can see how each move turns or flips a shape. Check which way the target is facing compared to your figure!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "motion_models"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I put model flags next to the buttons to show what each turn and flip does. Which move would turn or flip your shape so it faces the same way as the dashed outline?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "motion_models",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Small model flags are now displayed beside the buttons to show what each flip and turn does. Which move would help your figure face the same direction as the target?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "motion_models",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Take a look at the model flags that just appeared beside the move buttons to see what each turn or flip does. How does the target need to turn or flip so it points the same way?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "motion_models"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Take a look at the model flags that just appeared beside the move buttons to see what each turn or flip does. How does the target need to face to match up?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "motion_models"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "tl-1",
+     "trigger": "The learner said they were stuck, so the host pulled motion_models (help). It is on screen now: Shows, beside the grid, a small model flag (not the item's figure) moved by each flip and turn on the move buttons, one picture per button under its name. None is marked. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. ",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "reflect over y-axis"
+      ],
+      "ask": "A puzzle piece needs several moves to fit. Use the transformation buttons to move the pink figure exactly onto the dashed target. It takes more than one move.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL"
+      ],
+      "menu": [
+       "reflect over x-axis",
+       "reflect over y-axis",
+       "rotate 90\u00b0 \u27f2",
+       "rotate 180\u00b0",
+       "rotate 270\u00b0 \u27f2",
+       "\u2190 left",
+       "right \u2192",
+       "\u2191 up",
+       "\u2193 down",
+       "reset",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Beside the buttons, there are now little flags showing what each flip and turn does to a shape. Look at which flag matches the way the target is pointing, and try using that move first!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look beside the buttons\u2014there are now little flag pictures showing how each flip and turn changes a shape's direction. Use those pictures to see which move turns your figure to face the same way as the dashed target, and give it a try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside the grid, model flags now show how each flip and turn button moves a shape. Take a look at those to see which move faces the figure the right way, and try your next move!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside each button, you can now see a small flag showing what direction each flip and turn points. Try picking a move to match how the target is turned!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside the buttons, each move now shows a small picture of a flag turning or flipping. Take a look at those to see which move gets your shape pointing the right way, and give it a try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "tl-1",
+     "trigger": "The learner submitted \"applied Reflect over y-axis, then \u2190 Left, then \u2193 Down (3 moves); the pink figure's corners are at (-2, 1), (-5, 1), (-3, 3)\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "reflect over y-axis"
+      ],
+      "ask": "A puzzle piece needs several moves to fit. Use the transformation buttons to move the pink figure exactly onto the dashed target. It takes more than one move.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL"
+      ],
+      "menu": [
+       "reflect over x-axis",
+       "reflect over y-axis",
+       "rotate 90\u00b0 \u27f2",
+       "rotate 180\u00b0",
+       "rotate 270\u00b0 \u27f2",
+       "\u2190 left",
+       "right \u2192",
+       "\u2191 up",
+       "\u2193 down",
+       "reset",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You did it! You reflected over the y-axis to match the orientation, then slid left and down right onto the target.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You reflected over the y-axis to match the orientation, then shifted left and down right onto the target.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You reflected over the y-axis to match the orientation, then slid the figure left and down right onto the target.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You reflected over the y-axis to match the orientation, then slid left and down right onto the target.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You reflected over the y-axis to match the orientation, then slid it left and down right onto the target! Great work figuring out that sequence.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "transformation-lab.dilation_similarity",
+   "primitiveId": "transformation-lab",
+   "evalMode": "dilation_similarity",
+   "keys": [
+    "(3, 0)",
+    "(3, 6)"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "tl-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "(3, 0)",
+       "(3, 6)"
+      ],
+      "ask": "A photo is enlarged on screen. Dilate the figure by a scale factor of 3 about the origin. Drag each pink corner to its image.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL"
+      ],
+      "menu": [
+       "reset corners",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Dilate the figure by a scale factor of 3 about the origin. Drag each pink corner to its image.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Dilate the figure by a scale factor of 3 about the origin. Drag each pink corner to its image.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Dilate the figure by a scale factor of 3 about the origin. Drag each pink corner to its image.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A photo is enlarged on screen. Dilate the figure by a scale factor of 3 about the origin. Drag each pink corner to its image.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Dilate the figure by a scale factor of 3 about the origin. Drag each pink corner to its image.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "tl-1",
+     "trigger": "The learner submitted \"the pink corners are at (3, 3), (4, 3), (4, 5)\". The board checked it: not right.",
+     "miss": "added_factor",
+     "scoredWith": {
+      "keys": [
+       "(3, 0)",
+       "(3, 6)"
+      ],
+      "ask": "A photo is enlarged on screen. Dilate the figure by a scale factor of 3 about the origin. Drag each pink corner to its image.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL"
+      ],
+      "menu": [
+       "reset corners",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Dashed lines now extend from the origin through each original corner. A dilation pushes each corner along its line by multiplying its distance from the origin by 3. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/14/0",
+          "lever": "origin_rays"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Dashed rays now run from the origin through each cyan corner. Dilating pushes each point outward along its ray by multiplying its distance from the origin by 3.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "origin_rays",
+          "actionId": "test/14/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The rule card is on screen to show what dilating by a scale factor of 3 does to each coordinate. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/14/0",
+          "lever": "rule_card"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Dashed rays now run from the origin through each corner. Notice how a dilation pushes each point straight out along its ray from the origin, multiplying its coordinates by 3.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/14/0",
+          "lever": "origin_rays"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the dashed lines running from the origin through each corner. Dilating pushes each point along its line away from the origin by multiplying its distance. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/14/0",
+          "lever": "origin_rays"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "tl-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "(3, 0)",
+       "(3, 6)"
+      ],
+      "ask": "A photo is enlarged on screen. Dilate the figure by a scale factor of 3 about the origin. Drag each pink corner to its image.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL"
+      ],
+      "menu": [
+       "reset corners",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The rule card is now on screen showing $(x, y) \\to (3x, 3y)$. Try multiplying each corner's coordinates by 3.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "rule_card",
+          "actionId": "test/14/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A green model point P and its image P\u2032 have appeared with an arrow showing the move. Notice how each coordinate of P changes to reach P\u2032 under this dilation.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_point",
+          "actionId": "test/14/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Dashed rays now run from the origin through each corner. For a scale factor of 3, what do you get when you multiply each coordinate by 3?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "origin_rays",
+          "actionId": "test/14/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Dashed lines now run from the origin through each corner. Each new pink corner stays on its ray, multiplying both of its coordinates by 3.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "origin_rays",
+          "actionId": "test/14/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A model point P and its image P\u2032 appeared to show how a point scales by 3. What happens to a corner's coordinates when we multiply each by 3?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_point",
+          "actionId": "test/14/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "tl-1",
+     "trigger": "The learner said they were stuck, so the host pulled origin_rays (help). It is on screen now: Draws a dashed ray from the origin through each cyan corner, out to the edge of the grid. No point on a ray is marked. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "(3, 0)",
+       "(3, 6)"
+      ],
+      "ask": "A photo is enlarged on screen. Dilate the figure by a scale factor of 3 about the origin. Drag each pink corner to its image.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL"
+      ],
+      "menu": [
+       "reset corners",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Notice the dashed lines extending out from the origin through each cyan corner. Try sliding each pink corner along its dashed line to enlarge the shape.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Dashed rays are now drawn from the origin through each cyan corner out to the edges. Each pink corner stays on its ray, pushed out 3 times as far from the origin.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the dashed lines running from the center through each cyan corner. Each pink corner should stay on its line, pushed out 3 times as far from the origin. Take a look at the corner at (1, 0) and see where it would go along its line!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Dashed lines are now drawn from the origin through each cyan corner out to the edges. Each pink corner stays on its ray, moving three times as far from the center. Give placing the corners another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You can see dashed rays running from the origin through each cyan corner out to the edges. Each pink corner stays on its matching ray, pushed out 3 times as far from the center. Give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "tl-1",
+     "trigger": "The learner submitted \"the pink corners are at (0, 0), (3, 0), (3, 6)\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "(3, 0)",
+       "(3, 6)"
+      ],
+      "ask": "A photo is enlarged on screen. Dilate the figure by a scale factor of 3 about the origin. Drag each pink corner to its image.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL"
+      ],
+      "menu": [
+       "reset corners",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You placed all three corners right along those lines to dilate the figure by 3!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You followed the dashed lines from the origin and scaled each corner out to (0, 0), (3, 0), and (3, 6).",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You placed the corners at (0, 0), (3, 0), and (3, 6) by following the rays out from the origin to triple each distance. Excellent work!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You scaled the corners out along the rays to (0, 0), (3, 0), and (3, 6).",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You followed the dashed lines from the origin and multiplied each distance by 3 to place the corners at (0, 0), (3, 0), and (3, 6).",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "transformation-lab.identify_transformation",
+   "primitiveId": "transformation-lab",
+   "evalMode": "identify_transformation",
+   "keys": [
+    "reflection over the y-axis"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "tl-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "reflection over the y-axis"
+      ],
+      "ask": "A figure was moved on the grid. A single transformation maps the cyan pre-image onto the amber image. Which transformation is it?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL"
+      ],
+      "menu": [
+       "rotation 180\u00b0 about the origin",
+       "reflection over the y-axis",
+       "reflection over the line y = x",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A single transformation maps the cyan pre-image onto the amber image. Which transformation is it?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A single transformation maps the cyan pre-image onto the amber image. Which transformation is it?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A single transformation maps the cyan pre-image onto the amber image. Which transformation is it?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A single transformation maps the cyan pre-image onto the amber image. Which transformation is it?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A single transformation maps the cyan pre-image onto the amber image. Which transformation is it?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "tl-1",
+     "trigger": "The learner submitted \"chose \\\"Reflection over the line y = x\\\"\". The board checked it: not right.",
+     "miss": "wrong_axis",
+     "scoredWith": {
+      "keys": [
+       "reflection over the y-axis"
+      ],
+      "ask": "A figure was moved on the grid. A single transformation maps the cyan pre-image onto the amber image. Which transformation is it?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL"
+      ],
+      "menu": [
+       "rotation 180\u00b0 about the origin",
+       "reflection over the y-axis",
+       "reflection over the line y = x",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Model pictures have appeared beside the options to show how each motion behaves. Look at the coordinates of one corner from the cyan figure to the amber figure and try another choice.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "motion_models"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Small model flags have appeared beside each option to show how each motion behaves. Take a look at what happens to the coordinates from the cyan figure to the amber one, and try another choice.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "motion_models"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the model flags next to the choices showing how each movement looks. What happened to each corner's coordinates from the cyan figure to the amber one?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "motion_models",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the model flags beside each choice to compare how each one moves. What happens to the coordinates of one corner from the cyan figure to the amber one?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "motion_models"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Small model flags appeared next to each choice to show how each motion behaves. Take a look at what changed between the cyan coordinates and the amber coordinates, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "motion_models",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "tl-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "reflection over the y-axis"
+      ],
+      "ask": "A figure was moved on the grid. A single transformation maps the cyan pre-image onto the amber image. Which transformation is it?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL"
+      ],
+      "menu": [
+       "rotation 180\u00b0 about the origin",
+       "reflection over the y-axis",
+       "reflection over the line y = x",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Each matching corner is now labelled with letters. Look at how corner A changes from the cyan figure to A\u2032 on the amber figure.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "corner_letters"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Matching letter labels now appear on each corner of both shapes. Look at corner A at (2, 2) and matching corner A\u2032 at (-2, 2)\u2014what happened to those coordinates?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "corner_letters",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The matching corners are now lettered on both figures. What happened to corner A's coordinates as it mapped to A\u2032?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "corner_letters",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Matching corner letters now label both figures so you can track each point. What happened to corner A's coordinates when it moved to A'?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "corner_letters",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Model flags are shown beside each option so you can see how each motion moves a shape. What changes between the coordinates of corner (2, 2) and its matching corner (-2, 2)?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "motion_models",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "tl-1",
+     "trigger": "The learner said they were stuck, so the host pulled corner_letters (help). It is on screen now: Letters the cyan pre-image's corners A, B, C and the matching amber corners A\u2032, B\u2032, C\u2032. Nothing else changes; no option is marked. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question aga",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "reflection over the y-axis"
+      ],
+      "ask": "A figure was moved on the grid. A single transformation maps the cyan pre-image onto the amber image. Which transformation is it?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL"
+      ],
+      "menu": [
+       "rotation 180\u00b0 about the origin",
+       "reflection over the y-axis",
+       "reflection over the line y = x",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The corners of the cyan shape are now labeled A, B, and C, matching A\u2032, B\u2032, and C\u2032 on the amber shape. Look at what happened to the coordinates from corner A to corner A\u2032, and try choosing an option!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The corners on the cyan figure are now marked with letters A, B, and C, and the matching corners on the amber figure are marked A\u2032, B\u2032, and C\u2032. Take a look at which coordinates changed from A to A\u2032, and give the options another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The corners are now lettered A, B, C on the cyan figure and A\u2032, B\u2032, C\u2032 on the amber figure. Take a look at where corner A started and where A\u2032 landed, then try choosing an option again.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Each corner of the cyan shape is now labelled with letters like A, B, and C, and the amber shape shows where each one went with A\u2032, B\u2032, and C\u2032. Take a look at what changed between matching corners and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The corners of the cyan shape are now lettered A, B, C, and their matching corners on the amber shape are marked A\u2032, B\u2032, C\u2032. Compare where corner A starts and where A\u2032 lands, then choose your answer.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "tl-1",
+     "trigger": "The learner submitted \"chose \\\"Reflection over the y-axis\\\"\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "reflection over the y-axis"
+      ],
+      "ask": "A figure was moved on the grid. A single transformation maps the cyan pre-image onto the amber image. Which transformation is it?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL"
+      ],
+      "menu": [
+       "rotation 180\u00b0 about the origin",
+       "reflection over the y-axis",
+       "reflection over the line y = x",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You tracked the matching corners across the grid and correctly identified the reflection over the y-axis.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You noticed that the points matched up and correctly chose reflection over the y-axis.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right by checking the matching corners and choosing reflection over the y-axis!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right by checking the matching corners and choosing reflection over the y-axis!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! By checking how the matching corners lined up across the grid, you identified the reflection over the y-axis.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,266 @@
+{
+ "source": "qa/tutor-reports/equation-workspace-runtime-guided-solve-payload-2026-10-09.json",
+ "primitiveId": "equation-workspace",
+ "evalMode": "guided-solve",
+ "data": {
+  "title": "Equation Workspace: Solving two-step linear equations",
+  "context": "Solve equations by applying algebraic operations step by step.",
+  "challenges": [
+   {
+    "id": "eq-guided-solve-0",
+    "type": "guided-solve",
+    "instruction": "Isolate the target variable to determine the number of active sensor arrays operating on the rover.",
+    "equation": "4 \\cdot s + 7 = 31",
+    "targetVariable": "s",
+    "solutionSteps": [
+     {
+      "operation": "Subtract 7 from both sides",
+      "operationId": "algebraic_subtract_7",
+      "resultLatex": "4 \\cdot s = 24"
+     },
+     {
+      "operation": "Divide both sides by 4",
+      "operationId": "arithmetic_divide_4",
+      "resultLatex": "s = 6"
+     }
+    ],
+    "availableOperations": [
+     {
+      "id": "algebraic_simplify_identity",
+      "label": "Simplify the isolated variable",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_subtract_7",
+      "label": "Subtract 7 from both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "arithmetic_multiply_4",
+      "label": "Multiply both sides by 4",
+      "category": "arithmetic"
+     },
+     {
+      "id": "arithmetic_divide_4",
+      "label": "Divide both sides by 4",
+      "category": "arithmetic"
+     },
+     {
+      "id": "algebraic_add_7",
+      "label": "Add 7 to both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_subtract_4",
+      "label": "Subtract 4 from both sides",
+      "category": "algebraic"
+     }
+    ]
+   },
+   {
+    "id": "eq-guided-solve-1",
+    "type": "guided-solve",
+    "instruction": "Isolate the target variable d by applying inverse operations in the correct sequential order.",
+    "equation": "4 \\cdot d + 18 = 90",
+    "targetVariable": "d",
+    "solutionSteps": [
+     {
+      "operation": "Subtract 18 from both sides",
+      "operationId": "algebraic_subtract_18",
+      "resultLatex": "4 \\cdot d = 72"
+     },
+     {
+      "operation": "Divide both sides by 4",
+      "operationId": "arithmetic_divide_4",
+      "resultLatex": "d = 18"
+     }
+    ],
+    "availableOperations": [
+     {
+      "id": "algebraic_add_18",
+      "label": "Add 18 to both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "arithmetic_divide_18",
+      "label": "Divide both sides by 18",
+      "category": "arithmetic"
+     },
+     {
+      "id": "arithmetic_multiply_4",
+      "label": "Multiply both sides by 4",
+      "category": "arithmetic"
+     },
+     {
+      "id": "algebraic_subtract_18",
+      "label": "Subtract 18 from both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "arithmetic_simplify",
+      "label": "Simplify the solution",
+      "category": "arithmetic"
+     },
+     {
+      "id": "arithmetic_divide_4",
+      "label": "Divide both sides by 4",
+      "category": "arithmetic"
+     }
+    ]
+   },
+   {
+    "id": "eq-guided-solve-2",
+    "type": "guided-solve",
+    "instruction": "Isolate the time variable t to determine the duration of the ascent.",
+    "equation": "4 \\cdot t + 15 = 47",
+    "targetVariable": "t",
+    "solutionSteps": [
+     {
+      "operation": "Subtract 15 from both sides",
+      "operationId": "algebraic_subtract_15",
+      "resultLatex": "4 \\cdot t = 32"
+     },
+     {
+      "operation": "Divide both sides by 4",
+      "operationId": "arithmetic_divide_4",
+      "resultLatex": "t = 8"
+     }
+    ],
+    "availableOperations": [
+     {
+      "id": "algebraic_subtract_4",
+      "label": "Subtract 4 from both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "arithmetic_divide_4",
+      "label": "Divide both sides by 4",
+      "category": "arithmetic"
+     },
+     {
+      "id": "algebraic_simplify_identity",
+      "label": "Simplify the isolated expression",
+      "category": "algebraic"
+     },
+     {
+      "id": "arithmetic_multiply_4",
+      "label": "Multiply both sides by 4",
+      "category": "arithmetic"
+     },
+     {
+      "id": "algebraic_subtract_15",
+      "label": "Subtract 15 from both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_add_15",
+      "label": "Add 15 to both sides",
+      "category": "algebraic"
+     }
+    ]
+   },
+   {
+    "id": "eq-guided-solve-3",
+    "type": "guided-solve",
+    "instruction": "Isolate the variable d to determine the calibrated depth parameter of the sensor probe.",
+    "equation": "4 \\cdot d + 12 = 52",
+    "targetVariable": "d",
+    "solutionSteps": [
+     {
+      "operation": "Subtract 12 from both sides",
+      "operationId": "algebraic_subtract_12",
+      "resultLatex": "4 \\cdot d = 40"
+     },
+     {
+      "operation": "Divide both sides by 4",
+      "operationId": "algebraic_divide_4",
+      "resultLatex": "d = 10"
+     }
+    ],
+    "availableOperations": [
+     {
+      "id": "algebraic_subtract_12",
+      "label": "Subtract 12 from both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_add_12",
+      "label": "Add 12 to both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "arithmetic_simplify",
+      "label": "Simplify the equation",
+      "category": "arithmetic"
+     },
+     {
+      "id": "algebraic_divide_12",
+      "label": "Divide both sides by 12",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_divide_4",
+      "label": "Divide both sides by 4",
+      "category": "algebraic"
+     },
+     {
+      "id": "algebraic_multiply_4",
+      "label": "Multiply both sides by 4",
+      "category": "algebraic"
+     }
+    ]
+   },
+   {
+    "id": "eq-guided-solve-4",
+    "type": "guided-solve",
+    "instruction": "Isolate the target variable d by applying inverse operations step-by-step.",
+    "equation": "4d + 18 = 90",
+    "targetVariable": "d",
+    "solutionSteps": [
+     {
+      "operation": "Subtract 18 from both sides",
+      "operationId": "algebraic_subtract_18",
+      "resultLatex": "4d = 72"
+     },
+     {
+      "operation": "Divide both sides by 4",
+      "operationId": "arithmetic_divide_4",
+      "resultLatex": "d = 18"
+     }
+    ],
+    "availableOperations": [
+     {
+      "id": "algebraic_subtract_18",
+      "label": "Subtract 18 from both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "arithmetic_multiply_4",
+      "label": "Multiply both sides by 4",
+      "category": "arithmetic"
+     },
+     {
+      "id": "algebraic_identity",
+      "label": "Simplify the solution",
+      "category": "algebraic"
+     },
+     {
+      "id": "arithmetic_divide_18",
+      "label": "Divide both sides by 18",
+      "category": "arithmetic"
+     },
+     {
+      "id": "algebraic_add_18",
+      "label": "Add 18 to both sides",
+      "category": "algebraic"
+     },
+     {
+      "id": "arithmetic_divide_4",
+      "label": "Divide both sides by 4",
+      "category": "arithmetic"
+     }
+    ]
+   }
+  ]
+ }
+}

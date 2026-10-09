@@ -1,0 +1,74 @@
+{
+ "source": "qa/tutor-reports/circle-explorer-runtime-composite-payload-2026-10-09.json",
+ "primitiveId": "circle-explorer",
+ "evalMode": "composite",
+ "data": {
+  "title": "Complex Composite Figures Involving Circles and Semicircles",
+  "description": "Engage in critical analysis of advanced geometric spaces by calculating the area and perimeter of complex composite figures that combine squares, circles, and semicircles in real-world architectural contexts.",
+  "challengeType": "composite",
+  "gradeBand": "7",
+  "challenges": [
+   {
+    "type": "composite",
+    "narration": "A half-circle window is shaped like this semicircle.",
+    "instruction": "Find the area of this semicircle \u2014 half of a full circle.",
+    "hint": "A semicircle is half a circle: area = \u00bd \u00d7 \u03c0 \u00d7 r\u00b2.",
+    "unitLabel": "ft",
+    "radius": 2,
+    "given": "radius",
+    "usePiApprox": true,
+    "answerKind": "area",
+    "compositeShape": "semicircle_area",
+    "expectedAnswer": 6.28,
+    "tolerance": 0.5,
+    "id": "ce-1"
+   },
+   {
+    "type": "composite",
+    "narration": "A semicircular rug is shaped like this semicircle.",
+    "instruction": "Find the perimeter of this semicircle \u2014 the curved part plus the straight diameter.",
+    "hint": "Perimeter = half the circumference + the diameter = \u03c0 \u00d7 r + 2 \u00d7 r.",
+    "unitLabel": "m",
+    "radius": 2,
+    "given": "radius",
+    "usePiApprox": true,
+    "answerKind": "length",
+    "compositeShape": "semicircle_perimeter",
+    "expectedAnswer": 10.28,
+    "tolerance": 0.5,
+    "id": "ce-2"
+   },
+   {
+    "type": "composite",
+    "narration": "A circular pool in a square deck \u2014 a circle fits exactly inside the square.",
+    "instruction": "A circle is inscribed in the square. Find the shaded area left over.",
+    "hint": "Shaded = square area \u2212 circle area = s\u00b2 \u2212 \u03c0 \u00d7 (s \u00f7 2)\u00b2. The circle's radius is half the side.",
+    "unitLabel": "m",
+    "radius": 5,
+    "given": "radius",
+    "usePiApprox": true,
+    "answerKind": "area",
+    "compositeShape": "circle_in_square",
+    "squareSide": 10,
+    "expectedAnswer": 21.5,
+    "tolerance": 0.5,
+    "id": "ce-3"
+   },
+   {
+    "type": "composite",
+    "narration": "A half-moon garden bed is shaped like this semicircle.",
+    "instruction": "Find the area of this semicircle \u2014 half of a full circle.",
+    "hint": "A semicircle is half a circle: area = \u00bd \u00d7 \u03c0 \u00d7 r\u00b2.",
+    "unitLabel": "m",
+    "radius": 12,
+    "given": "radius",
+    "usePiApprox": true,
+    "answerKind": "area",
+    "compositeShape": "semicircle_area",
+    "expectedAnswer": 226.08,
+    "tolerance": 4.5216,
+    "id": "ce-4"
+   }
+  ]
+ }
+}

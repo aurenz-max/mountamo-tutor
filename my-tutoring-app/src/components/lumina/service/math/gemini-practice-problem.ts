@@ -33,6 +33,7 @@ import { Type, Schema } from '@google/genai';
 import { ai } from '../geminiClient';
 import { runAnnotatedExampleOrchestrator } from '../annotated-example/orchestrator';
 import { serializeInsetForPrompt } from '../annotated-example/inset-helpers';
+import { checkPracticeKey } from './practiceProblemKey';
 import type { Inset } from '../../types';
 import type { StepType } from '../../primitives/annotated-example/types';
 import type {
@@ -406,6 +407,9 @@ interface GeneratePracticeProblemConfig {
  * picks a non-null inset type. No solver, no planner, no per-type generators,
  * no challenger.
  */
+/** Worked-solution generations tried before a problem whose steps never agree is given up. */
+const KEY_CHECK_ATTEMPTS = 3;
+
 export async function generatePracticeProblem(
   topic: string,
   gradeLevel: string,
@@ -460,29 +464,46 @@ export async function generatePracticeProblem(
     tierSection,
   });
 
-  const response = await ai.models.generateContent({
-    model: 'gemini-flash-lite-latest',
-    contents: prompt,
-    config: {
-      responseMimeType: 'application/json',
-      responseSchema: CANONICAL_SOLUTION_SCHEMA,
-    },
-  });
+  // The judge grounds on the key, so the key is checked against the steps in code (`checkPracticeKey`, contract G1):
+  // a key that disagrees with consistent steps, or an unreduced key in a simplest-form problem, is replaced by the
+  // last step's result; steps that do not follow from each other are dropped and the solution regenerated.
+  let normalized: ReturnType<typeof normalizeCanonicalSolution> | null = null;
+  for (let attempt = 1; attempt <= KEY_CHECK_ATTEMPTS && !normalized; attempt++) {
+    const response = await ai.models.generateContent({
+      model: 'gemini-flash-lite-latest',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: CANONICAL_SOLUTION_SCHEMA,
+      },
+    });
 
-  const text = response.text;
-  if (!text) {
-    throw new Error(`[PracticeProblem] Stage 2 returned empty response for topic="${topic}"`);
+    const text = response.text;
+    if (!text) {
+      throw new Error(`[PracticeProblem] Stage 2 returned empty response for topic="${topic}"`);
+    }
+
+    let parsed: CanonicalSolutionRaw;
+    try {
+      parsed = JSON.parse(text) as CanonicalSolutionRaw;
+    } catch (error) {
+      console.error('[PracticeProblem] Stage 2 JSON parse failed:', error);
+      throw new Error(`[PracticeProblem] Stage 2 malformed response for topic="${topic}"`);
+    }
+
+    const candidate = normalizeCanonicalSolution(parsed, topic);
+    const check = checkPracticeKey({ problem: { statement: problemPlan.problemStatement }, steps: candidate.steps,
+      canonicalAnswer: candidate.canonicalAnswer });
+    if (check.status === 'inconsistent') {
+      console.warn(`[PracticeProblem] Worked solution ${attempt}/${KEY_CHECK_ATTEMPTS} dropped: ${check.reason}`);
+      continue;
+    }
+    if (check.status === 'corrected') console.warn(`[PracticeProblem] Key corrected to "${check.key}": ${check.reason}`);
+    normalized = { ...candidate, canonicalAnswer: check.key };
   }
-
-  let parsed: CanonicalSolutionRaw;
-  try {
-    parsed = JSON.parse(text) as CanonicalSolutionRaw;
-  } catch (error) {
-    console.error('[PracticeProblem] Stage 2 JSON parse failed:', error);
-    throw new Error(`[PracticeProblem] Stage 2 malformed response for topic="${topic}"`);
+  if (!normalized) {
+    throw new Error(`[PracticeProblem] No consistent worked solution in ${KEY_CHECK_ATTEMPTS} tries for topic="${topic}"`);
   }
-
-  const normalized = normalizeCanonicalSolution(parsed, topic);
 
   const result: PracticeProblemSolution = {
     title: normalized.title,

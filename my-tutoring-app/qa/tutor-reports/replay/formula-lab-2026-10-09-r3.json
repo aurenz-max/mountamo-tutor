@@ -1,0 +1,2768 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ],
+   "no_key_before_try": [
+    0,
+    25
+   ],
+   "no_fix_before_try": [
+    0,
+    25
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ],
+   "no_change_before_receipt": [
+    0,
+    20
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    2,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "formula-lab.construct-formula",
+   "primitiveId": "formula-lab",
+   "evalMode": "construct-formula",
+   "keys": [
+    "0.5 * m * v ^ 2"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "formula-lab-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "0.5 * m * v ^ 2"
+      ],
+      "ask": "Build the hidden right-hand side of E = ? from the tokens, then press Check formula.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "PREDICTION_LOCKED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "EASY support",
+       "MEDIUM support",
+       "HARD support"
+      ],
+      "menu": [
+       "m",
+       "^",
+       "*",
+       "2",
+       "v",
+       "0.5",
+       "undo token",
+       "check formula"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at the tokens available and arrange them to build the formula for kinetic energy, then press Check formula.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the tokens available and see how you can arrange them to build the formula for kinetic energy.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the tokens on the screen, and arrange them to build the formula for kinetic energy.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the tokens available to build the formula for kinetic energy. Tap them in order to construct the expression, then press Check formula.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the tokens available and arrange them to build the formula for kinetic energy, then press Check formula.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "formula-lab-1",
+     "trigger": "The learner submitted \"built E = 2 ^ v * m * 0.5\". The board checked it: not right.",
+     "miss": "operation_order",
+     "scoredWith": {
+      "keys": [
+       "0.5 * m * v ^ 2"
+      ],
+      "ask": "Build the hidden right-hand side of E = ? from the tokens, then press Check formula.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "PREDICTION_LOCKED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "EASY support",
+       "MEDIUM support",
+       "HARD support"
+      ],
+      "menu": [
+       "m",
+       "^",
+       "*",
+       "2",
+       "v",
+       "0.5",
+       "undo token",
+       "check formula"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A card is showing how operations and powers work. Look at what base is being raised to a power, undo your tokens, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/9/0",
+          "lever": "order_card"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "An order of operations card is on the screen to show how powers and operations connect. Take another look at which quantity gets the power and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "order_card",
+          "actionId": "test/9/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A card appeared showing how powers and operations fit together\u2014remember that a power applies to what is right before the symbol. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "order_card",
+          "actionId": "test/9/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I pulled up an order card to show how powers and operations connect. Take a look at which quantity gets the power and give it another try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/9/0",
+          "lever": "order_card"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A guide card is on screen showing how powers attach to the base right before the caret. Take a look at which quantity gets squared and try arranging the tokens again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/9/0",
+          "lever": "order_card"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "formula-lab-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "0.5 * m * v ^ 2"
+      ],
+      "ask": "Build the hidden right-hand side of E = ? from the tokens, then press Check formula.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "PREDICTION_LOCKED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "EASY support",
+       "MEDIUM support",
+       "HARD support"
+      ],
+      "menu": [
+       "m",
+       "^",
+       "*",
+       "2",
+       "v",
+       "0.5",
+       "undo token",
+       "check formula"
+      ]
+     },
+     "samples": [
+      {
+       "text": "An order-of-operations card has appeared showing that a power applies directly to whatever comes right before the caret. Which quantity in kinetic energy gets squared?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/9/0",
+          "lever": "order_card"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The order of operations card is now on your screen to show how powers connect. Think about which variable gets squared, and try rearranging the tokens!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "order_card",
+          "actionId": "test/9/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The reference card is up to show that a power belongs directly to whatever comes right before the exponent symbol `^`. Think about which quantity gets squared in kinetic energy!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "order_card",
+          "actionId": "test/9/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An order-of-operations card has appeared showing that a power attaches directly to what comes right before the `^` symbol. Think about which quantity is being squared in kinetic energy, and try arranging the tokens again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/9/0",
+          "lever": "order_card"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I've pulled up a card showing how powers attach to the base right before them. Think about which variable gets squared in kinetic energy, and try arranging your tokens again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/9/0",
+          "lever": "order_card"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "formula-lab-1",
+     "trigger": "The learner said they were stuck, so the host pulled value_check (help). It is on screen now: Shows, at the starting values, the value the learner's own build gives beside the value the living system gives, updating as they build. It shows no token and no order. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "0.5 * m * v ^ 2"
+      ],
+      "ask": "Build the hidden right-hand side of E = ? from the tokens, then press Check formula.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "PREDICTION_LOCKED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "EASY support",
+       "MEDIUM support",
+       "HARD support"
+      ],
+      "menu": [
+       "m",
+       "^",
+       "*",
+       "2",
+       "v",
+       "0.5",
+       "undo token",
+       "check formula"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A comparison panel is now showing side-by-side values on your screen, comparing what your build produces to what the actual system gives. Watch how those numbers change as you undo and rearrange your tokens, then try again.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A panel is now showing side-by-side values: what your current build calculates compared to the target value. Try rearranging your tokens so those two numbers match!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": false,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_protocol_leak": "current"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "A new panel is on the screen comparing the value from your formula to the actual system as you tap tokens. Undo your tokens and see how the numbers match up as you rebuild it.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new comparison panel has opened up on screen, showing what value your current build calculates alongside what the actual living system produces. You can watch those numbers update as you tap or undo tokens to see how close your formula gets.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": false,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_protocol_leak": "current"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "A new panel has appeared showing the value your build gives right next to the target value from the system, updating as you work. Use Undo token to clear your row, then try arranging the tokens again while watching that display.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "formula-lab-1",
+     "trigger": "The learner submitted \"built E = 0.5 * m * v ^ 2\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "0.5 * m * v ^ 2"
+      ],
+      "ask": "Build the hidden right-hand side of E = ? from the tokens, then press Check formula.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "PREDICTION_LOCKED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "EASY support",
+       "MEDIUM support",
+       "HARD support"
+      ],
+      "menu": [
+       "m",
+       "^",
+       "*",
+       "2",
+       "v",
+       "0.5",
+       "undo token",
+       "check formula"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You fixed the order and built 0.5 * m * v ^ 2, which matches how the living system works!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You built 0.5 * m * v ^ 2, correctly squaring velocity and multiplying by half the mass.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You rearranged the tokens to build 0.5 * m * v ^ 2, squaring the velocity just right.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right by rearranging the tokens into 0.5 * m * v ^ 2 so velocity is the quantity being squared.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You rearranged the tokens to build 0.5 * m * v ^ 2 and got the formula just right! Great job adjusting after checking the values.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "formula-lab.free-explore",
+   "primitiveId": "formula-lab",
+   "evalMode": "free-explore",
+   "keys": [
+    "8"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "formula-lab-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "8"
+      ],
+      "ask": "Move Mass from 35 kg to 16 kg while every other quantity stays fixed, and watch what happens to Kinetic Energy.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "PREDICTION_LOCKED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "EASY support",
+       "MEDIUM support",
+       "HARD support"
+      ],
+      "menu": []
+     },
+     "samples": [
+      {
+       "text": "Try dragging the Mass slider from 35 kg down to 16 kg to see what happens to the Kinetic Energy.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Try moving the Mass slider down toward 16 kg to see how the Kinetic Energy responds.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Try dragging the Mass slider from 35 kg down to 16 kg and notice what happens to Kinetic Energy.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Try dragging the Mass slider down to 16 kg to see what happens to the Kinetic Energy.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the formula lab! Try dragging the Mass slider down to 16 kg and see what happens to the Kinetic Energy.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "formula-lab-1",
+     "trigger": "The learner submitted \"Mass is set to 16 kg\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "8"
+      ],
+      "ask": "Move Mass from 35 kg to 16 kg while every other quantity stays fixed, and watch what happens to Kinetic Energy.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "PREDICTION_LOCKED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "EASY support",
+       "MEDIUM support",
+       "HARD support"
+      ],
+      "menu": []
+     },
+     "samples": [
+      {
+       "text": "You moved the mass right to 16 kg! Notice how reducing the mass caused the kinetic energy to decrease as well.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You moved the Mass right to 16 kg. Notice how changing the mass changed the kinetic energy output.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You moved the mass right to 16 kg. Notice how the kinetic energy changed alongside it.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You set the mass to 16 kg! Notice how changing the mass changed the kinetic energy.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You set Mass to 16 kg! Notice how reducing the mass caused the Kinetic Energy to decrease as well.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "formula-lab.predict-direction",
+   "primitiveId": "formula-lab",
+   "evalMode": "predict-direction",
+   "keys": [
+    "30"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "formula-lab-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "30"
+      ],
+      "ask": "When Mass changes from 7 kg to 10 kg, will Force increase, decrease, or stay about the same? Place your prediction on the track and press Lock prediction.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "PREDICTION_LOCKED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "EASY support",
+       "MEDIUM support",
+       "HARD support"
+      ],
+      "menu": [
+       "lock prediction"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at the formula and how Mass changes. Place your prediction on the track whenever you're ready!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the formula lab! Take a look at the formula and see what happens when the mass changes.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the formula and think about what happens to Force when Mass goes up. Place your prediction on the track and lock it in when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the formula and see what happens to Force when Mass changes from 7 kg to 10 kg. Place your prediction on the track and press Lock prediction when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the formula and see what happens to Force when Mass changes from 7 kg to 10 kg. Place your prediction on the track whenever you're ready!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "formula-lab-1",
+     "trigger": "The learner submitted \"predicts Force will decrease\". The board checked it: not right.",
+     "miss": "opposite_direction",
+     "scoredWith": {
+      "keys": [
+       "30"
+      ],
+      "ask": "When Mass changes from 7 kg to 10 kg, will Force increase, decrease, or stay about the same? Place your prediction on the track and press Lock prediction.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "PREDICTION_LOCKED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "EASY support",
+       "MEDIUM support",
+       "HARD support"
+      ],
+      "menu": [
+       "lock prediction"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Notice the ring around Mass in the formula. What happens to the result when the number being multiplied goes up?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "find_quantity"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the ring around Mass, $m$, in the formula. How does multiplying by a larger number affect the result?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "find_quantity"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice how Mass (m) is ringed in the formula. When that number goes up, what happens to the result of multiplying it?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "find_quantity"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The symbol for Mass is ringed in the formula. What operation is happening to it, and how does that affect Force?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "find_quantity",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice where mass, $m$, sits in the formula with acceleration held steady. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "find_quantity",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "formula-lab-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "30"
+      ],
+      "ask": "When Mass changes from 7 kg to 10 kg, will Force increase, decrease, or stay about the same? Place your prediction on the track and press Lock prediction.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "PREDICTION_LOCKED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "EASY support",
+       "MEDIUM support",
+       "HARD support"
+      ],
+      "menu": [
+       "lock prediction"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Two examples are shown on the side: one multiplies by a letter and one divides by it. Which of those two rules matches our formula?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_pair",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the two example rules that just appeared on the screen. Which of those two rules matches how Mass is used in our formula?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_pair",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the two example rules that just appeared on the screen. Which one works like our formula?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_pair",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "There's a comparison on the screen showing how multiplying versus dividing changes a result. Which of those two rules matches our formula?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "model_pair",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Take a look at the two rules shown on the screen. Which of those two rules matches how our formula works?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "model_pair"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "formula-lab-1",
+     "trigger": "The learner said they were stuck, so the host pulled find_quantity (help). It is on screen now: Rings the changed quantity's symbol wherever it appears in the formula. Nothing else is written. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "30"
+      ],
+      "ask": "When Mass changes from 7 kg to 10 kg, will Force increase, decrease, or stay about the same? Place your prediction on the track and press Lock prediction.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "PREDICTION_LOCKED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "EASY support",
+       "MEDIUM support",
+       "HARD support"
+      ],
+      "menu": [
+       "lock prediction"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The letter $m$ for Mass is now circled in the formula so you can see where it sits. What does multiplying by a larger mass do to the force?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the formula: Mass now has a ring around it. What role does Mass play in that formula when its number goes up?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The symbol for Mass is now ringed right inside the formula. Give your prediction another try on the track!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The symbol for Mass is now circled in the formula. Take a look at where it sits, and give your prediction another try on the track!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the formula: a ring has appeared around the symbol for Mass. Give it another try on the track!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "formula-lab-1",
+     "trigger": "The learner submitted \"predicts Force will increase\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "30"
+      ],
+      "ask": "When Mass changes from 7 kg to 10 kg, will Force increase, decrease, or stay about the same? Place your prediction on the track and press Lock prediction.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "PREDICTION_LOCKED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "EASY support",
+       "MEDIUM support",
+       "HARD support"
+      ],
+      "menu": [
+       "lock prediction"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Spot on! You saw that Mass is multiplied by Acceleration, so increasing the mass makes the force increase.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You predicted that Force will increase, and because Mass is being multiplied, increasing it makes the force greater.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! By spotting that Mass is being multiplied, you correctly predicted that Force increases.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nicely done! You noticed Mass was being multiplied, so increasing it makes the Force increase too.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You checked where Mass was in the formula and predicted that Force will increase.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "formula-lab.predict-magnitude",
+   "primitiveId": "formula-lab",
+   "evalMode": "predict-magnitude",
+   "keys": [
+    "190.125"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "formula-lab-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "190.125"
+      ],
+      "ask": "Predict how strongly Kinetic Energy will change, and which way, when Velocity moves from 10.5 m/s to 6.5 m/s. Place your prediction on the track and press Lock prediction.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "PREDICTION_LOCKED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "EASY support",
+       "MEDIUM support",
+       "HARD support"
+      ],
+      "menu": [
+       "lock prediction"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Take a look at the formula and how velocity changes, then place your prediction on the track when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the formula and see what happens to the energy when velocity changes. Place your prediction on the track whenever you're ready!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at how Velocity appears in the formula, and place your prediction on the track.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at where velocity sits in the formula, and place your prediction on the track when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the formula and see what happens to Velocity. When you have an idea, place your prediction on the track and lock it in.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "formula-lab-1",
+     "trigger": "The learner submitted \"predicts a large change in Kinetic Energy, up\". The board checked it: not right.",
+     "miss": "opposite_direction",
+     "scoredWith": {
+      "keys": [
+       "190.125"
+      ],
+      "ask": "Predict how strongly Kinetic Energy will change, and which way, when Velocity moves from 10.5 m/s to 6.5 m/s. Place your prediction on the track and press Lock prediction.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "PREDICTION_LOCKED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "EASY support",
+       "MEDIUM support",
+       "HARD support"
+      ],
+      "menu": [
+       "lock prediction"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Velocity is now ringed in the formula. When that value goes from 10.5 down to 6.5, how does that affect Kinetic Energy?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "find_quantity"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice that the symbol for velocity is ringed in the formula. How does changing that quantity affect the result?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "find_quantity",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I circled velocity's symbol in the formula so you can see where it sits. What does velocity do in this formula when its value goes down?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "find_quantity"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Velocity is now circled in the formula. How does its value change from 10.5 to 6.5, and what does that do to the result?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "find_quantity"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The velocity symbol is now ringed in the formula. When velocity goes from 10.5 down to 6.5, how does that affect the overall kinetic energy?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "find_quantity",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "formula-lab-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "190.125"
+      ],
+      "ask": "Predict how strongly Kinetic Energy will change, and which way, when Velocity moves from 10.5 m/s to 6.5 m/s. Place your prediction on the track and press Lock prediction.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "PREDICTION_LOCKED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "EASY support",
+       "MEDIUM support",
+       "HARD support"
+      ],
+      "menu": [
+       "lock prediction"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Notice the circle around the velocity symbol, $v$, in the formula. If that number gets smaller, what does that do to the result?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "simpler_problem"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "find_quantity"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I've circled the velocity symbol in the formula. When that value decreases, does multiplying by it make the output bigger or smaller?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "simpler_problem",
+          "actionId": "test/3/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "find_quantity",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Notice how velocity has a ring around it in the formula. If velocity gets smaller, what do you think happens to the kinetic energy?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "simpler_problem"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "find_quantity"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Velocity, $v$, is now circled in the formula where it multiplies. Notice that velocity decreases from 10.5 to 6.5, so see what that means for kinetic energy.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "find_quantity"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the ring around velocity: since velocity is being multiplied to calculate energy, notice what happens to the output when velocity gets smaller. Try placing your prediction again based on that.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "find_quantity"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "formula-lab-1",
+     "trigger": "The learner said they were stuck, so the host pulled find_quantity (help). It is on screen now: Rings the changed quantity's symbol wherever it appears in the formula. Nothing else is written. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "190.125"
+      ],
+      "ask": "Predict how strongly Kinetic Energy will change, and which way, when Velocity moves from 10.5 m/s to 6.5 m/s. Place your prediction on the track and press Lock prediction.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "PREDICTION_LOCKED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "EASY support",
+       "MEDIUM support",
+       "HARD support"
+      ],
+      "menu": [
+       "lock prediction"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The symbol $v$ for velocity is now circled right inside the formula. Take a look at what happens when that number goes down, and try placing your prediction on the track again.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The velocity symbol, $v$, is now circled in the formula on your screen. Take a look at what happens in the formula when that number decreases, and give your prediction another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A ring is now drawn around $v$ in the formula. Take a look at where it sits, and give the track another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A circle is now drawn around $v$ in the formula to highlight it. Look at how $v$ is used in that rule, and give your prediction another try on the track.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A circle has been drawn around velocity in the formula to highlight where it sits. Take a look at its place in the equation and try placing your prediction on the track again.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "formula-lab-1",
+     "trigger": "The learner submitted \"predicts a moderate change in Kinetic Energy, down\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "190.125"
+      ],
+      "ask": "Predict how strongly Kinetic Energy will change, and which way, when Velocity moves from 10.5 m/s to 6.5 m/s. Place your prediction on the track and press Lock prediction.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "PREDICTION_LOCKED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "EASY support",
+       "MEDIUM support",
+       "HARD support"
+      ],
+      "menu": [
+       "lock prediction"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Nicely done! You predicted that Kinetic Energy would go down, and your placement on the track was spot on.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You saw that velocity decreased and correctly predicted that kinetic energy would drop.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You spotted how velocity affects the formula and placed your prediction for a moderate change down\u2014nicely done adjusting your thinking!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You noticed that velocity went down, so you correctly predicted a moderate drop in Kinetic Energy.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right\u2014you predicted a moderate change down! Looking right at velocity in the formula helped you spot that decreasing it would lower the kinetic energy.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "formula-lab.transfer-apply",
+   "primitiveId": "formula-lab",
+   "evalMode": "transfer-apply",
+   "keys": [
+    "7225"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "formula-lab-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "7225"
+      ],
+      "ask": "An aerospace engineer evaluates the kinetic energy of a satellite debris fragment moving through the upper atmosphere given its mass and orbital velocity. Use the shown inputs to calculate Kinetic Energy, type it, and press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "PREDICTION_LOCKED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "EASY support",
+       "MEDIUM support",
+       "HARD support"
+      ],
+      "menu": [
+       "check transferred output"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Take a look at the formula and the new inputs on your card when you're ready to calculate the kinetic energy.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the formula and the new inputs for mass and velocity. When you have calculated the kinetic energy, type your answer and press Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the formula and the new inputs on your card when you're ready to calculate the kinetic energy.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the formula and the new inputs on your card when you're ready to calculate the kinetic energy.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the formula and the new inputs for mass and velocity. When you have calculated the kinetic energy, type your answer and press Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "formula-lab-1",
+     "trigger": "The learner submitted \"entered 5057.5 J\". The board checked it: not right.",
+     "miss": "used_starting_inputs",
+     "scoredWith": {
+      "keys": [
+       "7225"
+      ],
+      "ask": "An aerospace engineer evaluates the kinetic energy of a satellite debris fragment moving through the upper atmosphere given its mass and orbital velocity. Use the shown inputs to calculate Kinetic Energy, type it, and press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "PREDICTION_LOCKED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "EASY support",
+       "MEDIUM support",
+       "HARD support"
+      ],
+      "menu": [
+       "check transferred output"
+      ]
+     },
+     "samples": [
+      {
+       "text": "I updated the screen so the living system now matches the new inputs on your card. Try recalculating with those values and give it another check.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "new_inputs"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I have updated the screen to show the new inputs for mass and velocity. Give it another try with these values!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "new_inputs"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I updated the screen so the scene now matches the new mass on your card. Give the calculation another try with those values!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "new_inputs"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I've updated the scene so the values match the new inputs on your card: mass is 50 kg and velocity is 17 m/s. Give the calculation another try with those numbers!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "new_inputs",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I've updated the display to match the new values: a mass of 50 kg and a velocity of 17 m/s. Try running your calculation again using these updated inputs!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "new_inputs"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "formula-lab-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "7225"
+      ],
+      "ask": "An aerospace engineer evaluates the kinetic energy of a satellite debris fragment moving through the upper atmosphere given its mass and orbital velocity. Use the shown inputs to calculate Kinetic Energy, type it, and press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "PREDICTION_LOCKED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "EASY support",
+       "MEDIUM support",
+       "HARD support"
+      ],
+      "menu": [
+       "check transferred output"
+      ]
+     },
+     "samples": [
+      {
+       "text": "I've set up the formula on your screen with the numbers placed right into it. Work through multiplying those values together to find your answer.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "substitution"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I put the numbers from your card directly into the formula on your screen. Now you can multiply them out to find the kinetic energy.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "substitution"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The formula on the screen now shows the new numbers plugged right into place: 0.5 \u00d7 50 \u00d7 17 \u00d7 17. Work through those multiplications step by step and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "substitution"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I have written the new numbers directly into the formula on your screen so you can see where each input goes. Take your time multiplying them across, then enter your result and press Check.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "substitution",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The formula is now shown on screen with your new inputs substituted into place. Try working through that multiplication step by step.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "substitution"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "formula-lab-1",
+     "trigger": "The learner said they were stuck, so the host pulled substitution (help). It is on screen now: Shows the formula with the new inputs written in place of the letters. It does not work it out. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "7225"
+      ],
+      "ask": "An aerospace engineer evaluates the kinetic energy of a satellite debris fragment moving through the upper atmosphere given its mass and orbital velocity. Use the shown inputs to calculate Kinetic Energy, type it, and press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "PREDICTION_LOCKED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "EASY support",
+       "MEDIUM support",
+       "HARD support"
+      ],
+      "menu": [
+       "check transferred output"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You can now see the formula on your screen with the numbers plugged in for the letters. Take a look at that setup, calculate the total, and give it a try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the calculation line on your screen\u2014the numbers 50 and 17 are now written right into the formula for you. Try multiplying those values across to calculate the kinetic energy and press Check.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The formula on your screen now shows the values 50 and 17 written right in place of mass and velocity. Take a look at that setup, multiply those numbers across, and give it another check!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right below the formula: the new numbers, 50 and 17, are now filled in for mass and velocity. Multiply those parts out and type your result in the box.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The formula is now written out on your screen with the new numbers in place of the letters. Take a look at that setup, multiply those numbers through, and give Check another tap.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "formula-lab-1",
+     "trigger": "The learner submitted \"entered 7225 J\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "7225"
+      ],
+      "ask": "An aerospace engineer evaluates the kinetic energy of a satellite debris fragment moving through the upper atmosphere given its mass and orbital velocity. Use the shown inputs to calculate Kinetic Energy, type it, and press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "PREDICTION_LOCKED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "EASY support",
+       "MEDIUM support",
+       "HARD support"
+      ],
+      "menu": [
+       "check transferred output"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Nicely done! You substituted the new values into the formula and calculated 7225 J accurately.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You calculated 7225 J by multiplying the new mass and velocity into the formula, and that's exactly right. Great job fixing that!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You calculated 7225 J by multiplying 0.5 by 50 and by 17 squared.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it\u20147225 J is correct! Using the formula with the new values of 50 kg and 17 m/s gave you the exact kinetic energy.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You used the new inputs to calculate 7225 J, and your answer is correct.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

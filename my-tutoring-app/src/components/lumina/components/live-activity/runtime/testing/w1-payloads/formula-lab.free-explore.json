@@ -1,0 +1,123 @@
+{
+ "source": "qa/tutor-reports/formula-lab-runtime-free-explore-payload-2026-10-09.json",
+ "primitiveId": "formula-lab",
+ "evalMode": "free-explore",
+ "data": {
+  "title": "Kinetic Energy and Velocity",
+  "description": "Explore how varying the velocity of an object exponentially alters its kinetic energy in a dynamic physical system.",
+  "context": "The energy an object possesses due to its motion is fundamental to understanding mechanical systems, vehicle safety, and rollercoaster design.",
+  "transferContext": "Calculating the kinetic energy of a descending roller coaster car given its mass and speed.",
+  "formulaLatex": "E = \\frac{1}{2} \\cdot m \\cdot v^2",
+  "expression": "0.5 * m * v^2",
+  "outputSymbol": "E",
+  "outputName": "Kinetic Energy",
+  "outputUnit": "J",
+  "variables": [
+   {
+    "symbol": "m",
+    "name": "Mass",
+    "unit": "kg",
+    "min": 1,
+    "max": 50,
+    "step": 1,
+    "defaultValue": 10,
+    "accent": "blue"
+   },
+   {
+    "symbol": "v",
+    "name": "Velocity",
+    "unit": "m/s",
+    "min": 1,
+    "max": 20,
+    "step": 0.5,
+    "defaultValue": 5,
+    "accent": "emerald"
+   }
+  ],
+  "sceneKind": "motion",
+  "challengeType": "free-explore",
+  "gradeBand": "6-8",
+  "challenges": [
+   {
+    "id": "formula-lab-1",
+    "type": "free-explore",
+    "changedVariableSymbol": "m",
+    "baselineValues": [
+     35,
+     1
+    ],
+    "targetValues": [
+     16,
+     1
+    ],
+    "expectedBaselineOutput": 17.5,
+    "expectedTargetOutput": 8,
+    "correctDirection": "decrease"
+   },
+   {
+    "id": "formula-lab-2",
+    "type": "free-explore",
+    "changedVariableSymbol": "m",
+    "baselineValues": [
+     50,
+     1
+    ],
+    "targetValues": [
+     10,
+     1
+    ],
+    "expectedBaselineOutput": 25,
+    "expectedTargetOutput": 5,
+    "correctDirection": "decrease"
+   },
+   {
+    "id": "formula-lab-3",
+    "type": "free-explore",
+    "changedVariableSymbol": "v",
+    "baselineValues": [
+     10,
+     14.5
+    ],
+    "targetValues": [
+     10,
+     20
+    ],
+    "expectedBaselineOutput": 1051.25,
+    "expectedTargetOutput": 2000,
+    "correctDirection": "increase"
+   },
+   {
+    "id": "formula-lab-4",
+    "type": "free-explore",
+    "changedVariableSymbol": "v",
+    "baselineValues": [
+     35,
+     17
+    ],
+    "targetValues": [
+     35,
+     5
+    ],
+    "expectedBaselineOutput": 5057.5,
+    "expectedTargetOutput": 437.5,
+    "correctDirection": "decrease"
+   },
+   {
+    "id": "formula-lab-5",
+    "type": "free-explore",
+    "changedVariableSymbol": "m",
+    "baselineValues": [
+     1,
+     1
+    ],
+    "targetValues": [
+     35,
+     1
+    ],
+    "expectedBaselineOutput": 0.5,
+    "expectedTargetOutput": 17.5,
+    "correctDirection": "increase"
+   }
+  ]
+ }
+}

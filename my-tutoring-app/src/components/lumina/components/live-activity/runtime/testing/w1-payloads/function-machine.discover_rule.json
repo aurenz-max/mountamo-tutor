@@ -1,0 +1,63 @@
+{
+ "source": "qa/tutor-reports/function-machine-runtime-discover_rule-payload-2026-10-09.json",
+ "primitiveId": "function-machine",
+ "evalMode": "discover_rule",
+ "data": {
+  "title": "Secret Rule Detective",
+  "description": "Examine the input and output pairs to uncover the hidden rule for each machine. Test your ideas to see if you can figure out the pattern!",
+  "challengeType": "discover_rule",
+  "challenges": [
+   {
+    "id": "fm-1",
+    "rule": "x + 4",
+    "inputQueue": [
+     0,
+     1,
+     2,
+     3,
+     4
+    ],
+    "showRule": false
+   },
+   {
+    "id": "fm-2",
+    "rule": "x - 3",
+    "inputQueue": [
+     0,
+     1,
+     2,
+     3,
+     4
+    ],
+    "showRule": false
+   },
+   {
+    "id": "fm-3",
+    "rule": "3*x",
+    "inputQueue": [
+     0,
+     1,
+     2,
+     3,
+     4
+    ],
+    "showRule": false
+   },
+   {
+    "id": "fm-4",
+    "rule": "x + 5",
+    "inputQueue": [
+     0,
+     1,
+     2,
+     3,
+     4
+    ],
+    "showRule": false
+   }
+  ],
+  "ruleComplexity": "oneStep",
+  "gradeBand": "3-4",
+  "outputDisplay": "animated"
+ }
+}

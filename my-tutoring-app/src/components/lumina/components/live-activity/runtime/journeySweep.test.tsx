@@ -425,7 +425,10 @@ async function drive({ primitiveId, evalMode, data, file }: Payload & { file: st
       }
       // Item ids carry digits ("show_jump-2"); they are not the answer.
       // JSON booleans in a host message (`"correct":false`) are not a true/false answer either.
-      const clean = (text: string) => text.split(item).join(' ').replace(/":\s*(true|false)/g, '":');
+      // Nor is the shared gesture host message's verdict ("The board checked it: not right."): "right" is a key only
+      // where an answer is a direction (net-folder's faces, 10-09).
+      const clean = (text: string) => text.split(item).join(' ').replace(/":\s*(true|false)/g, '":')
+        .replace(/The board checked it: (not )?right\./g, 'The board checked it.');
       const reveal = (where: string, was: string, now: string) => keys.filter(k => occurrences(clean(now), k) > occurrences(clean(was), k))
         .forEach(k => find('J3-miss-reveals-nothing', `${item}: "${k}" newly appears in ${where}: …${around(clean(now), k)}…`));
       reveal('the host message', '', sentText(before.sends));

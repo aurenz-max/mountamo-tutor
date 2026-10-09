@@ -1,0 +1,197 @@
+{
+ "source": "qa/tutor-reports/transformation-lab-runtime-identify_transformation-payload-2026-10-09.json",
+ "primitiveId": "transformation-lab",
+ "evalMode": "identify_transformation",
+ "data": {
+  "title": "Analyzing Rigid Motions on the Coordinate Plane",
+  "description": "Practice identifying various rigid transformations such as reflections and rotations by carefully examining pre-image and image pairs on the coordinate plane.",
+  "challengeType": "identify_transformation",
+  "gradeBand": "8",
+  "challenges": [
+   {
+    "type": "identify_transformation",
+    "answerKind": "identify",
+    "narration": "A figure was moved on the grid.",
+    "instruction": "A single transformation maps the cyan pre-image onto the amber image. Which transformation is it?",
+    "hint": "Track one corner from the pre-image to the image. Did it flip across an axis (a reflection) or turn around the origin (a rotation)? Then check the exact axis or angle.",
+    "preImage": [
+     {
+      "x": 2,
+      "y": 2
+     },
+     {
+      "x": 4,
+      "y": 2
+     },
+     {
+      "x": 5,
+      "y": 4
+     },
+     {
+      "x": 2,
+      "y": 4
+     }
+    ],
+    "expectedImage": [
+     {
+      "x": -2,
+      "y": 2
+     },
+     {
+      "x": -4,
+      "y": 2
+     },
+     {
+      "x": -5,
+      "y": 4
+     },
+     {
+      "x": -2,
+      "y": 4
+     }
+    ],
+    "transformLabel": "Reflection over the y-axis",
+    "options": [
+     "Rotation 180\u00b0 about the origin",
+     "Reflection over the y-axis",
+     "Reflection over the line y = x",
+     "Rotation 90\u00b0 counterclockwise about the origin"
+    ],
+    "correctOption": 1,
+    "id": "tl-1"
+   },
+   {
+    "type": "identify_transformation",
+    "answerKind": "identify",
+    "narration": "A designer transformed this logo.",
+    "instruction": "A single transformation maps the cyan pre-image onto the amber image. Which transformation is it?",
+    "hint": "Track one corner from the pre-image to the image. Did it flip across an axis (a reflection) or turn around the origin (a rotation)? Then check the exact axis or angle.",
+    "preImage": [
+     {
+      "x": 1,
+      "y": 2
+     },
+     {
+      "x": 3,
+      "y": 3
+     },
+     {
+      "x": 2,
+      "y": 5
+     }
+    ],
+    "expectedImage": [
+     {
+      "x": 2,
+      "y": 1
+     },
+     {
+      "x": 3,
+      "y": 3
+     },
+     {
+      "x": 5,
+      "y": 2
+     }
+    ],
+    "transformLabel": "Reflection over the line y = x",
+    "options": [
+     "Rotation 270\u00b0 counterclockwise about the origin",
+     "Reflection over the x-axis",
+     "Rotation 180\u00b0 about the origin",
+     "Reflection over the line y = x"
+    ],
+    "correctOption": 3,
+    "id": "tl-2"
+   },
+   {
+    "type": "identify_transformation",
+    "answerKind": "identify",
+    "narration": "A figure was moved on the grid.",
+    "instruction": "A single transformation maps the cyan pre-image onto the amber image. Which transformation is it?",
+    "hint": "Track one corner from the pre-image to the image. Did it flip across an axis (a reflection) or turn around the origin (a rotation)? Then check the exact axis or angle.",
+    "preImage": [
+     {
+      "x": 3,
+      "y": 3
+     },
+     {
+      "x": 5,
+      "y": 4
+     },
+     {
+      "x": 4,
+      "y": 6
+     }
+    ],
+    "expectedImage": [
+     {
+      "x": 3,
+      "y": -3
+     },
+     {
+      "x": 5,
+      "y": -4
+     },
+     {
+      "x": 4,
+      "y": -6
+     }
+    ],
+    "transformLabel": "Reflection over the x-axis",
+    "options": [
+     "Rotation 180\u00b0 about the origin",
+     "Reflection over the x-axis",
+     "Rotation 90\u00b0 counterclockwise about the origin",
+     "Reflection over the line y = x"
+    ],
+    "correctOption": 1,
+    "id": "tl-3"
+   },
+   {
+    "type": "identify_transformation",
+    "answerKind": "identify",
+    "narration": "Two stickers \u2014 figure out how one became the other.",
+    "instruction": "A single transformation maps the cyan pre-image onto the amber image. Which transformation is it?",
+    "hint": "Track one corner from the pre-image to the image. Did it flip across an axis (a reflection) or turn around the origin (a rotation)? Then check the exact axis or angle.",
+    "preImage": [
+     {
+      "x": 1,
+      "y": 3
+     },
+     {
+      "x": 3,
+      "y": 4
+     },
+     {
+      "x": 2,
+      "y": 6
+     }
+    ],
+    "expectedImage": [
+     {
+      "x": -3,
+      "y": 1
+     },
+     {
+      "x": -4,
+      "y": 3
+     },
+     {
+      "x": -6,
+      "y": 2
+     }
+    ],
+    "transformLabel": "Rotation 90\u00b0 counterclockwise about the origin",
+    "options": [
+     "Rotation 270\u00b0 counterclockwise about the origin",
+     "Reflection over the line y = x",
+     "Reflection over the y-axis",
+     "Rotation 90\u00b0 counterclockwise about the origin"
+    ],
+    "correctOption": 3,
+    "id": "tl-4"
+   }
+  ]
+ }
+}
