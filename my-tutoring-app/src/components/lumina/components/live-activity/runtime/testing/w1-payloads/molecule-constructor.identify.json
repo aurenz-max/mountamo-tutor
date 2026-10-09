@@ -1,0 +1,224 @@
+{
+ "source": "gate5 batch-gate generation 2026-10-09: identify-targeted grade 7 session (the generator does not pin classic modes, so it holds every classic type); formula_write words re-scrubbed by the fixed generator rule",
+ "primitiveId": "molecule-constructor",
+ "evalMode": "identify",
+ "data": {
+  "title": "Covalent Molecular Architecture",
+  "description": "Master covalent bonding, valence rules, and Lewis structures by building complex chemical molecules.",
+  "targetMolecule": {
+   "name": "Ethanol",
+   "formula": "C2H5OH",
+   "atoms": [
+    {
+     "element": "C",
+     "count": 2
+    },
+    {
+     "element": "H",
+     "count": 6
+    },
+    {
+     "element": "O",
+     "count": 1
+    }
+   ],
+   "bonds": [
+    {
+     "atom1": 0,
+     "atom2": 1,
+     "type": "single"
+    },
+    {
+     "atom1": 0,
+     "atom2": 2,
+     "type": "single"
+    },
+    {
+     "atom1": 0,
+     "atom2": 3,
+     "type": "single"
+    },
+    {
+     "atom1": 0,
+     "atom2": 4,
+     "type": "single"
+    },
+    {
+     "atom1": 4,
+     "atom2": 5,
+     "type": "single"
+    },
+    {
+     "atom1": 1,
+     "atom2": 6,
+     "type": "single"
+    },
+    {
+     "atom1": 1,
+     "atom2": 7,
+     "type": "single"
+    },
+    {
+     "atom1": 1,
+     "atom2": 8,
+     "type": "single"
+    }
+   ],
+   "realWorldUse": "Ethanol is the active antimicrobial agent in hand sanitizers and is widely used as a renewable fuel source.",
+   "imagePrompt": "A clear bottle of hand sanitizer gel sitting on a laboratory desk with scientific diagrams of covalent bonds glowing in the background."
+  },
+  "palette": {
+   "availableElements": [
+    "H",
+    "C",
+    "N",
+    "O",
+    "F",
+    "S",
+    "P",
+    "Cl"
+   ],
+   "showValence": true,
+   "showElectronDots": true
+  },
+  "challenges": [
+   {
+    "id": "ch3",
+    "type": "identify",
+    "instruction": "Examine this built covalent molecule containing one carbon and four hydrogen atoms. What is its name?",
+    "targetFormula": "CH4",
+    "targetName": "Methane",
+    "targetAtoms": [
+     {
+      "element": "C",
+      "count": 1
+     },
+     {
+      "element": "H",
+      "count": 4
+     }
+    ],
+    "hint": "It is the primary component of natural gas.",
+    "narration": "Spot on! Methane (CH4) is a simple alkane with tetrahedral geometry."
+   },
+   {
+    "id": "ch4",
+    "type": "formula_write",
+    "instruction": "Write the formula for this molecule.",
+    "targetFormula": "H2SO4",
+    "targetName": "Sulfuric Acid",
+    "targetAtoms": [
+     {
+      "element": "H",
+      "count": 2
+     },
+     {
+      "element": "S",
+      "count": 1
+     },
+     {
+      "element": "O",
+      "count": 4
+     }
+    ],
+    "hint": "Count the atoms of each element in the drawing.",
+    "narration": "Excellent chemistry writing! H2SO4 is one of the most widely produced industrial chemicals in the world."
+   },
+   {
+    "id": "ch1",
+    "type": "predict_bonds",
+    "instruction": "How many covalent bonds does a nitrogen atom typically form to complete its octet?",
+    "targetFormula": null,
+    "targetName": null,
+    "targetAtoms": [],
+    "hint": "Nitrogen has 5 valence electrons and needs 3 more to reach 8.",
+    "narration": "Correct! Nitrogen forms three covalent bonds, often seen in ammonia (NH3) and nitrogen gas (N2)."
+   },
+   {
+    "id": "ch2",
+    "type": "build_target",
+    "instruction": "Build a molecule of Ammonia using one nitrogen and three hydrogen atoms.",
+    "targetFormula": "NH3",
+    "targetName": "Ammonia",
+    "targetAtoms": [
+     {
+      "element": "N",
+      "count": 1
+     },
+     {
+      "element": "H",
+      "count": 3
+     }
+    ],
+    "hint": "Connect each hydrogen atom with a single bond to the central nitrogen atom.",
+    "narration": "Brilliant! You built Ammonia (NH3), a vital compound used in fertilizers and household cleaners."
+   },
+   {
+    "id": "ch5",
+    "type": "shape_predict",
+    "instruction": "Predict the molecular geometry of carbon dioxide (CO2), which features double bonds between carbon and each oxygen atom.",
+    "targetFormula": "CO2",
+    "targetName": "Carbon Dioxide",
+    "targetAtoms": [
+     {
+      "element": "C",
+      "count": 1
+     },
+     {
+      "element": "O",
+      "count": 2
+     }
+    ],
+    "hint": "When double bonds push away from each other on opposite sides of a central atom, what shape do they form?",
+    "narration": "Fantastic! Carbon dioxide adopts a linear molecular geometry due to repulsion between its double bond electron domains."
+   }
+  ],
+  "moleculeGallery": [
+   {
+    "name": "Water",
+    "formula": "H2O",
+    "category": "essential",
+    "unlocked": false,
+    "imagePrompt": "Crystal clear water droplets resting on a green leaf surface."
+   },
+   {
+    "name": "Glucose",
+    "formula": "C6H12O6",
+    "category": "food",
+    "unlocked": false,
+    "imagePrompt": "A microscopic view of sweet glucose sugar crystals shining under light."
+   },
+   {
+    "name": "Carbon Dioxide",
+    "formula": "CO2",
+    "category": "atmosphere",
+    "unlocked": false,
+    "imagePrompt": "Bubbles rising sparkling in a glass of carbonated beverage."
+   },
+   {
+    "name": "Ethanol",
+    "formula": "C2H5OH",
+    "category": "energy",
+    "unlocked": false,
+    "imagePrompt": "Hand sanitizer pump bottle on a clean modern hospital counter."
+   },
+   {
+    "name": "Ammonia",
+    "formula": "NH3",
+    "category": "household",
+    "unlocked": false,
+    "imagePrompt": "A yellow cleaning spray bottle standing on a tiled kitchen floor."
+   }
+  ],
+  "showOptions": {
+   "showFormula": true,
+   "showName": true,
+   "showRealWorldImage": true,
+   "showValenceSatisfaction": true,
+   "show3DToggle": false,
+   "showElectronDots": true,
+   "showBondType": true
+  },
+  "gradeBand": "6-8"
+ }
+}

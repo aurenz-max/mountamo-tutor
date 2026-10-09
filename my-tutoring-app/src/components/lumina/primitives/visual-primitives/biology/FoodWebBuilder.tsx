@@ -40,7 +40,8 @@ import {
   type Arrow, type FoodChainMiss, type FoodWebView,
 } from './foodWebWorkspace';
 import {
-  ARROW_WORDS_LEVER, CHAIN_COUNT_LEVER, FOOD_TAG, FOOD_TAGS_LEVER, foodWebLevers, leverFacts, shorterChain,
+  ARROW_COUNTS_LEVER, ARROW_WORDS_LEVER, CHAIN_COUNT_LEVER, FOOD_TAG, FOOD_TAGS_LEVER, foodWebLevers, leverFacts, shorterChain,
+  smallerWeb, webArrowCounts, webPart,
 } from './foodWebLevers';
 import { FoodChainScene, freeSlot, type PlacedOrganism } from './FoodChainScene';
 
@@ -73,7 +74,7 @@ export type FoodWebChallengeType = 'complete_web' | 'build_chain';
 
 /** One item. `complete_web` is the whole web; `build_chain` is a chain target written by code. */
 export type FoodWebChallenge =
-  | { id: string; type: 'complete_web' }
+  | { id: string; type: 'complete_web'; /** A smaller web (simplify lever): only these living things and the relations among them. */ only?: string[] }
   | { id: string; type: 'build_chain'; length: number; endId: string; instruction: string };
 
 export interface FoodWebBuilderData {
@@ -181,14 +182,18 @@ const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned,
   /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
   const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
 
-  // build_chain levers (`foodWebLevers.ts`), keyed by the session item they were pulled on, and the easier ask a
-  // simplify lever put on screen in its place. The item starts bare: no lever comes from the tier.
+  // Levers (`foodWebLevers.ts`, both modes), keyed by the session item they were pulled on, and the easier item a
+  // simplify lever put on screen in its place (a shorter chain, a smaller web). The item starts bare: no lever comes
+  // from the tier.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<FoodWebChallenge | null>(null);
   const sessionChallenge = challenges[currentIndex] ?? null;
   const currentChallenge = practice ?? sessionChallenge;
   const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
   const leverOn = (id: string) => !practice && pulledLevers.includes(id);
+  /** complete_web: the living things and relations on screen (a smaller web shows part of them). */
+  const part = isBuild ? { organisms, connections: relations } : webPart(currentChallenge, organisms, relations);
+  const webOrganisms = part.organisms, webRelations = part.connections;
 
   // ── Per-item state ────────────────────────────────────────────
   const [placed, setPlaced] = useState<PlacedOrganism[]>([]);
@@ -246,16 +251,16 @@ const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned,
 
   const organismName = (id: string) => organisms.find(o => o.id === id)?.name ?? id;
   const view: FoodWebView = {
-    mode: isBuild ? 'build_chain' : 'complete_web', ecosystem, organisms,
-    placed: isBuild ? placed.map(p => p.id) : organisms.map(o => o.id), arrows,
+    mode: isBuild ? 'build_chain' : 'complete_web', ecosystem, organisms: webOrganisms,
+    placed: isBuild ? placed.map(p => p.id) : webOrganisms.map(o => o.id), arrows,
   };
 
   /** The whole web as the legacy check scored it. */
   const webScore = (drawn: readonly Arrow[]) => {
-    const right = drawn.filter(a => feeds(relations, a.fromId, a.toId));
-    const missing = relations.filter(c => !drawn.some(a => a.fromId === c.fromId && a.toId === c.toId));
+    const right = drawn.filter(a => feeds(webRelations, a.fromId, a.toId));
+    const missing = webRelations.filter(c => !drawn.some(a => a.fromId === c.fromId && a.toId === c.toId));
     const extra = drawn.length - right.length;
-    return { right, missing: missing.length, extra, accuracy: relations.length ? (right.length / relations.length) * 100 : 0,
+    return { right, missing: missing.length, extra, accuracy: webRelations.length ? (right.length / webRelations.length) * 100 : 0,
       complete: missing.length === 0 && extra === 0 };
   };
   const webMetrics = (drawn: readonly Arrow[]): FoodWebBuilderMetrics => {
@@ -370,19 +375,19 @@ const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned,
   /** complete_web Check: every feeding relation and no other arrow (the legacy check). */
   const checkWeb = () => {
     if (!buildOpen || !arrows.length) return;
-    const miss = foodWebMiss(relations, arrows);
+    const miss = foodWebMiss(webRelations, arrows);
     const s = webScore(arrows);
     const next = attempts + 1;
     setAttempts(next);
     setSelected(null);
     setChecked(true);
     progress.commitCheck(describeFoodWebWork(view), !miss, miss);
-    const parts = [`Correct connections: ${s.right.length} / ${relations.length}.`];
+    const parts = [`Correct connections: ${s.right.length} / ${webRelations.length}.`];
     if (s.missing) parts.push(`Missing ${s.missing} connection(s).`);
     if (s.extra) parts.push(`${s.extra} incorrect connection(s).`);
     setFeedback({ text: miss ? `Almost there! Check your food web. ${parts.join(' ')}` : "Perfect! You've built a complete food web!", correct: !miss });
     if (!miss) { SoundManager.playCorrect(); completeCurrent(next); } else SoundManager.playIncorrect();
-    if (!tutorOwned) {
+    if (!tutorOwned && !practice) {
       submitResult(!miss, s.accuracy, webMetrics(arrows), { studentWork: { connections: arrows } });
     }
   };
@@ -399,7 +404,6 @@ const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned,
   useLayoutEffect(() => {
     if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
     const scene = workspaceScene(currentChallenge, view);
-    if (!isBuild) { workspace.current = { ...scene }; return; }
     const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
     const levers = practice ? [] : foodWebLevers(sessionChallenge, organisms, relations, pulledLevers);
     workspace.current = {
@@ -412,7 +416,7 @@ const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned,
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = shorterChain(sessionChallenge, organisms, relations);
+          const easier = isBuild ? shorterChain(sessionChallenge, organisms, relations) : smallerWeb(sessionChallenge, organisms, relations);
           if (!easier) return 'This item has no easier ask; try a help lever.';
           setLeverState(pulled); resetItem(easier); setPractice(easier);
           return { practice: workspaceAssignment(easier, ecosystem) };
@@ -464,9 +468,13 @@ const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned,
   }
 
   const listed = [...organisms].sort((a, b) => a.name.localeCompare(b.name));
+  // complete_web levers: counted from the whole web's relations, never from the learner's arrows.
+  const arrowCounts = !isBuild && leverOn(ARROW_COUNTS_LEVER) ? webArrowCounts(webOrganisms, webRelations) : null;
+  const webWords = !isBuild && leverOn(ARROW_WORDS_LEVER);
+  const mid = (a: string, b: string) => `${(parseFloat(a) + parseFloat(b)) / 2}%`;
   const chain = chainShape(placed.map(p => p.id), arrows);
   const disruption = disruptionChallenges?.[0];
-  const webPassed = !isBuild && challengeDone;
+  const webPassed = !isBuild && challengeDone && !practice;
 
   return (
     <LuminaCard className={className}>
@@ -488,6 +496,13 @@ const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned,
             <p className="text-xs text-slate-500">
               Tap a living thing in the list to put it in. Tap one in your scene, then another, to draw an arrow. Tap an arrow to take it out.
             </p>
+          </div>
+        )}
+
+        {!isBuild && practice?.type === 'complete_web' && (
+          <div className="space-y-1 text-center" data-practice="smaller-web">
+            <p className="text-xs font-mono uppercase tracking-wider text-slate-400">Practice · a smaller web</p>
+            <h4 className="text-lg font-semibold text-emerald-300">{workspaceAssignment(practice, ecosystem).task}</h4>
           </div>
         )}
 
@@ -558,13 +573,19 @@ const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned,
                     const right = feeds(relations, a.fromId, a.toId);
                     const state = checked ? (right ? 'correct' : 'incorrect') : 'pending';
                     return (
-                      <line key={`${a.fromId}>${a.toId}`} x1={from.position.x} y1={from.position.y} x2={to.position.x} y2={to.position.y}
-                        stroke={state === 'correct' ? '#10b981' : state === 'incorrect' ? '#ef4444' : '#94a3b8'} strokeWidth="2"
-                        markerEnd={`url(#arrowhead-${state})`} />
+                      <g key={`${a.fromId}>${a.toId}`}>
+                        <line x1={from.position.x} y1={from.position.y} x2={to.position.x} y2={to.position.y}
+                          stroke={state === 'correct' ? '#10b981' : state === 'incorrect' ? '#ef4444' : '#94a3b8'} strokeWidth="2"
+                          markerEnd={`url(#arrowhead-${state})`} />
+                        {webWords && (
+                          <text data-lever="arrow-words" x={mid(from.position.x, to.position.x)} y={mid(from.position.y, to.position.y)}
+                            dy={-6} fontSize={13} fontWeight="bold" fill="#fdba74" textAnchor="middle">eaten by</text>
+                        )}
+                      </g>
                     );
                   })}
                 </svg>
-                {organisms.map(o => {
+                {webOrganisms.map(o => {
                   const disrupted = showDisruption && disruption?.removeOrganismId === o.id;
                   return (
                     <button key={o.id} type="button" onClick={() => tapOrganism(o.id)} disabled={!buildOpen || disrupted}
@@ -576,6 +597,12 @@ const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned,
                         <div className="text-center">
                           <div className="text-lg font-bold">{o.name}</div>
                           <div className="text-xs opacity-75">{TROPHIC_LABEL[o.trophicLevel]}</div>
+                          {leverOn(FOOD_TAGS_LEVER) && <div className="text-xs text-orange-300" data-lever="food-tag">{FOOD_TAG[o.trophicLevel]}</div>}
+                          {arrowCounts && (
+                            <div className="text-xs text-orange-300" data-lever="arrow-count">
+                              {arrowCounts[o.id]} {arrowCounts[o.id] === 1 ? 'arrow' : 'arrows'}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </button>
@@ -588,7 +615,9 @@ const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned,
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {arrows.map(a => (
                       <div key={`${a.fromId}>${a.toId}`} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-2">
-                        <span className="text-sm text-slate-300">{organismName(a.fromId)} → {organismName(a.toId)}</span>
+                        <span className="text-sm text-slate-300">
+                          {organismName(a.fromId)} {webWords ? <span className="text-orange-300">eaten by</span> : '→'} {organismName(a.toId)}
+                        </span>
                         {buildOpen && (
                           <LuminaButton tone="subtle" aria-label={`Remove ${organismName(a.fromId)} → ${organismName(a.toId)}`}
                             className="h-8 w-8 p-0" onClick={() => removeArrow(a)}>
@@ -648,7 +677,7 @@ const FoodWebBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned,
             <>
               <LuminaActionButton action="check" onClick={checkWeb} disabled={!buildOpen || !arrows.length} />
               {webLocked && <LuminaButton onClick={handleWebReset}>Try Again</LuminaButton>}
-              <div className="ml-auto text-sm text-slate-400 self-center">{arrows.length} / {relations.length} connections</div>
+              <div className="ml-auto text-sm text-slate-400 self-center">{arrows.length} / {webRelations.length} connections</div>
             </>
           )}
         </div>

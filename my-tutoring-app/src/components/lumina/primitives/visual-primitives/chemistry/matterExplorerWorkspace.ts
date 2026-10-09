@@ -19,6 +19,7 @@ import {
   modelLine,
   PROPERTY_OPTIONS,
   type MatterExplorerItem,
+  type ShapeBehaviour,
 } from './matterExplorerScript';
 
 /** The pack's own ask, without its "Your turn." hand-over. */
@@ -51,14 +52,14 @@ export function matterAssignment(item: MatterExplorerItem): TeachingAssignment {
 }
 
 /** What a wrong spoken answer shows (handoff 20 Part B). */
-export type SpokenMatterMiss = 'other_state' | 'said_object_back' | 'other_way' | 'said_change_back' | 'state_word';
+export type SpokenMatterMiss = 'other_state' | 'said_object_back' | 'other_shape' | 'other_way' | 'said_change_back' | 'state_word';
 
 const STATES = ['solid', 'liquid', 'gas'] as const;
 
 /**
  * An item's known wrong answers, in precedence order, for the `spoken_miss` observer: another state word or the
- * object's name back (name_state, mystery_state); the other way, the change said back, or a state word
- * (name_undo). name_property names none yet (no saved payload).
+ * object's name back (name_state, mystery_state); another of the offered cup behaviours, or a state word
+ * (name_property); the other way, the change said back, or a state word (name_undo).
  */
 export function matterSpokenMisses(item: MatterExplorerItem): KnownMiss[] {
   if (item.kind === 'name_state' || item.kind === 'mystery_state') {
@@ -67,6 +68,17 @@ export function matterSpokenMisses(item: MatterExplorerItem): KnownMiss[] {
     return [
       { id: 'other_state', pattern: `${thing} The learner's answer is ${others.map(s => `"${s}"`).join(' or ')}, another state.`, examples: [...others] },
       ...(item.kind === 'name_state' ? [{ id: 'said_object_back', pattern: `The learner says the object's name, "${item.objectName}", back and no state word.`, examples: [item.objectName] }] : []),
+    ];
+  }
+  if (item.kind === 'name_property') {
+    const offered = item.menu?.length ? item.menu : (Object.keys(PROPERTY_OPTIONS) as ShapeBehaviour[]);
+    const others = offered.filter(s => s !== item.answerShape).map(s => PROPERTY_OPTIONS[s]);
+    const fact = `The ${item.objectName} ${PROPERTY_OPTIONS[item.answerShape].phrase.replace(/^it /, '')}.`;
+    return [
+      { id: 'other_shape', pattern: `${fact} The learner's answer is another thing the question offered: ${others.map(o => `"${o.phrase}"`).join(' or ')}.`,
+        examples: others.map(o => o.distinguisher) },
+      { id: 'state_word', pattern: `${fact} The learner's answer is a state word ("solid", "liquid" or "gas"), not what it does in a cup.`,
+        examples: [item.answerState] },
     ];
   }
   if (item.kind === 'name_undo' && item.answerUndo && item.change) {

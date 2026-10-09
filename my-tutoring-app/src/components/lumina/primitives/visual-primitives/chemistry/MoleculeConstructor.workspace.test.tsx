@@ -216,7 +216,10 @@ it('lever text, misses and catalog wiring for the build', () => {
   for (const l of levers) expect(`${l.when} ${l.does}`).not.toMatch(/ethene|water|oxygen|carbon atom needs|type|check answer/i);
   expect(simplerMolecule(MAKE)).toMatchObject({ id: 'm~simpler', ask: { doubleBonds: 1, maxAtoms: 3 } });
   expect(simplerMolecule(simplerMolecule(MAKE)!)).toBeNull();
-  expect(moleculeLevers(WATER, [])).toEqual([]);
+  // build_target's and identify's own levers (`MoleculeConstructor.levers.workspace.test.tsx`); predict items have none.
+  expect(moleculeLevers(WATER, []).map(l => l.id)).toEqual(['atom_tally', 'bond_tally', 'fewer_atoms']);
+  expect(moleculeLevers(NAME, []).map(l => l.id)).toEqual(['show_formula', 'fewer_atoms']);
+  expect(moleculeLevers(ITEM.predict, [])).toEqual([]);
 
   const entry = getComponentById('molecule-constructor')!;
   expect(entry.evalModes!.find(m => m.evalMode === 'make_molecule')).toMatchObject({ beta: -0.4, challengeTypes: ['make_molecule'],

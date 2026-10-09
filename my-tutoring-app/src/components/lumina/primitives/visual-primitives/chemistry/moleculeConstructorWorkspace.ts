@@ -112,6 +112,9 @@ export function workspaceScene(c: MoleculeConstructorChallenge, view: MoleculeVi
   const facts: Record<string, string | number> = { kind: c.type, atomsPlaced: view.elements.length, bondsFormed: view.bondsFormed };
   // A build item's target is on screen in its instruction; an identify or formula item's key is not given to the tutor.
   if (c.type === 'build_target' && c.targetFormula) facts.asked = c.targetFormula;
+  if (c.type === 'identify' || c.type === 'formula_write') {
+    facts.board = `a molecule drawn on the canvas, its atoms joined; the learner reads it and types its ${c.type === 'identify' ? 'name' : 'formula'}`;
+  }
   return { objects: [], facts: { ...facts, learnerWork: describeWork(c, view), constraints: CONSTRAINTS } };
 }
 
@@ -169,7 +172,7 @@ export function specForAtoms(target: ReadonlyArray<{ element: string; count: num
  * The journey's inputs for one item. make_molecule clears a kept board, builds a molecule the menu proves passes (wrong:
  * the same molecule one hydrogen short, `open_valence`), then presses "I'm done!"; a second wrong on the kept board just
  * presses it again. build_target builds the target with every bond used (wrong: one atom short, `atoms_off`); identify
- * and formula_write type the key (wrong: another word); the free types join two hydrogens (wrong: an empty canvas).
+ * and formula_write type the key (wrong: another word); the free types join two hydrogens (wrong: two unjoined).
  */
 export function moleculeHarnessInputs(c: MoleculeConstructorChallenge, wrong: boolean, demand?: Record<string, unknown> | null): Input[] {
   const kept = Number(demand?.atomsPlaced ?? 0) > 0;
@@ -193,7 +196,8 @@ export function moleculeHarnessInputs(c: MoleculeConstructorChallenge, wrong: bo
     if (!s) throw new Error(`molecule-constructor build_target: no bonding found for ${c.targetFormula}`);
     return [...clear, ...inputsForSpec(wrong ? shortOneAtom(s) : s, classic), check];
   }
-  if (wrong) return [...clear, check];
+  // Wrong: two atoms placed and never joined (`no_bonds`, the documented "places atoms but does not form bonds").
+  if (wrong) return [...clear, { type: 'choose', label: 'Add H' }, { type: 'choose', label: 'Add H' }, check];
   return [...clear, ...inputsForSpec({ atoms: ['H', 'H'], bonds: [[0, 1, 1]] }, classic), check];
 }
 

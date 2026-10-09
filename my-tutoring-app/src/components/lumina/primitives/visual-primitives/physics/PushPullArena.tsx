@@ -60,6 +60,10 @@ import {
   type ArenaItem,
 } from './pushPullArenaScript';
 import { pushPullArenaAssignment, pushPullArenaScene } from './pushPullArenaWorkspace';
+import {
+  EASIER_LEVER, FORCE_MODEL, FORCE_MODEL_LEVER, GRIP_BUMPS, HAND_LEVER, SAME_PUSH_MODEL_LEVER, SETUP_LEVER,
+  arenaLevers, arenaLeversOnScreen, arenaPracticeItem, samePushModel,
+} from './pushPullArenaLevers';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
@@ -512,6 +516,10 @@ function PushPullArenaSurface({ data, className = '', runtimePlanItemId }: PushP
   const revealRanRef = useRef(false);
   /** observe: the learner pressed Go and watched the preset force. */
   const [observed, setObserved] = useState(false);
+  // In-item levers (`pushPullArenaLevers.ts`), keyed by the session item they were pulled on, and the easier
+  // practice item a simplify lever put in the arena in its place.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<{ challenge: PushPullChallenge; item: ArenaItem } | null>(null);
 
   const initPhysics = useCallback((challenge: PushPullChallenge) => {
     const objs: PhysicsObject[] = [];
@@ -550,6 +558,22 @@ function PushPullArenaSurface({ data, className = '', runtimePlanItemId }: PushP
     };
   }, []);
 
+  /** Put a challenge in the arena, nothing run yet: a new item, a practice item, or the full item back after one. */
+  const resetArena = (challenge: PushPullChallenge | undefined) => {
+    if (!challenge) return;
+    revealRanRef.current = false;
+    setObserved(false);
+    initPhysics(challenge);
+    setForceStrength(challenge.pushStrength ?? 5);
+    setForceDirection(challenge.pushDirection ?? 'push');
+    setSimRunning(false);
+    const ctx = canvasRef.current?.getContext('2d');
+    if (ctx) {
+      drawArena(ctx, physicsRef.current, window.devicePixelRatio || 1,
+        challenge.showForceArrows ?? true, challenge.showMotionReadout ?? true);
+    }
+  };
+
   // ── The runner ───────────────────────────────────────────────────
   const runner = useWorkspaceRunner<ArenaItem>({
     primitiveId: 'push-pull-arena',
@@ -561,24 +585,11 @@ function PushPullArenaSurface({ data, className = '', runtimePlanItemId }: PushP
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
     instanceId: resolvedInstanceId,
     onFinished: finish,
-    onItemOpened: (item) => {
-      const challenge = challengeById.get(item.id);
-      if (!challenge) return;
-      revealRanRef.current = false;
-      setObserved(false);
-      initPhysics(challenge);
-      setForceStrength(challenge.pushStrength ?? 5);
-      setForceDirection(challenge.pushDirection ?? 'push');
-      setSimRunning(false);
-      const canvas = canvasRef.current;
-      const ctx = canvas?.getContext('2d');
-      if (ctx) {
-        drawArena(ctx, physicsRef.current, window.devicePixelRatio || 1,
-          challenge.showForceArrows ?? true, challenge.showMotionReadout ?? true);
-      }
-    },
+    onItemOpened: (item) => resetArena(challengeById.get(item.id)),
     // Try again keeps the arena as it is: nothing moved before the answer, and observe's run stays seen.
     onCorrectionRetry: () => {},
+    // The full item back after its practice item: the practice objects leave the arena.
+    onPracticeClosed: (item) => resetArena(challengeById.get(item.id)),
     onAffirmed: (item) => {
       // predict/compare: the sim is the reveal, run once the answer is credited, so a
       // Try again never sees the physics before answering again.
@@ -590,10 +601,17 @@ function PushPullArenaSurface({ data, className = '', runtimePlanItemId }: PushP
   });
   const showSummary = hasSubmitted || !!runner.practiceSummary;
 
-  const currentChallenge = runner.currentItem
-    ? challengeById.get(runner.currentItem.id) ?? null
-    : null;
-  const currentKind = runner.currentItem?.kind;
+  const sessionItem = runner.currentItem;
+  const sessionChallenge = sessionItem ? challengeById.get(sessionItem.id) ?? null : null;
+  /** What is in the arena: the practice item while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice?.challenge ?? sessionChallenge;
+  const currentArenaItem = practice?.item ?? sessionItem;
+  const currentKind = currentArenaItem?.kind;
+  const pulledLevers = practice || leverState.item !== sessionItem?.id ? [] : leverState.pulled;
+  const showHand = pulledLevers.includes(HAND_LEVER);
+  const showForceModel = pulledLevers.includes(FORCE_MODEL_LEVER);
+  const showSetup = pulledLevers.includes(SETUP_LEVER);
+  const pushModel = pulledLevers.includes(SAME_PUSH_MODEL_LEVER) ? samePushModel(challenges) : null;
   // Pip: the arena is the question side and the experiment; every answer is
   // spoken, so Pip outlines the arena and watches it, and never runs it.
   const pip = useStimulusPipSurface({
@@ -626,10 +644,36 @@ function PushPullArenaSurface({ data, className = '', runtimePlanItemId }: PushP
   // What the tutor and the observer are shown, republished every render. W1 offers no
   // demonstration targets and no presentation; observe is ready once the learner pressed Go.
   useLayoutEffect(() => {
-    const item = runner.currentItem;
-    if (!item) return;
-    workspace.current = { ...pushPullArenaScene(item, { goal: currentChallenge?.goalDescription, observed }),
-      readyForResponse: item.kind !== 'observe' || observed };
+    const item = currentArenaItem;
+    if (!item || !sessionItem) return;
+    const levers = practice ? [] : arenaLevers(sessionChallenge, pulledLevers, challenges);
+    const scene = pushPullArenaScene(item, { goal: currentChallenge?.goalDescription, observed });
+    const onScreen = currentChallenge ? arenaLeversOnScreen(currentChallenge, pulledLevers, challenges) : null;
+    workspace.current = { ...scene,
+      facts: { ...scene.facts,
+        ...(onScreen ? { levers_on_screen: onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice item on other things, ungraded. The full item comes back after it.' } : {}) },
+      readyForResponse: item.kind !== 'observe' || observed,
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the arena changes before this returns.
+      pullLever: id => {
+        const lever = levers.find(l => l.id === id);
+        if (!lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        if (!sessionChallenge) return 'There is no item in the arena.';
+        if (id === EASIER_LEVER) {
+          const simpler = arenaPracticeItem(sessionChallenge, challenges);
+          if (!simpler) return 'There is no easier item here.';
+          setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+          setPractice(simpler);
+          resetArena(simpler.challenge);
+          return { practice: pushPullArenaAssignment(simpler.item) };
+        }
+        setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+        return true;
+      },
+      endPractice: () => setPractice(null),
+    };
   });
   const runPresetForceRef = useRef(runPresetForce);
   runPresetForceRef.current = runPresetForce;
@@ -731,13 +775,21 @@ function PushPullArenaSurface({ data, className = '', runtimePlanItemId }: PushP
 
             {/* Canvas arena — the stimulus and the experiment */}
             {pip.store && <div {...pip.dock} />}
-            <div {...pip.target('stimulus')} className="rounded-lg overflow-hidden border border-white/10">
+            <div {...pip.target('stimulus')} className="relative rounded-lg overflow-hidden border border-white/10">
               <canvas
                 ref={canvasRef}
                 className="w-full"
                 style={{ maxWidth: CANVAS_W, aspectRatio: `${CANVAS_W}/${CANVAS_H}` }}
               />
+              {/* mark_the_hand: where every force comes from, the same picture on a push and a pull item. */}
+              {showHand && (
+                <div data-lever="hand" aria-label="a hand" className="absolute left-1 bottom-[22%] text-4xl select-none pointer-events-none">✋</div>
+              )}
             </div>
+
+            {(showForceModel || showSetup || pushModel) && currentChallenge && (
+              <ArenaLeverStrip challenge={currentChallenge} forceModel={showForceModel} setup={showSetup} pushModel={pushModel} />
+            )}
 
             {/* Code-owned neutral instruction */}
             {currentChallenge?.instruction && (
@@ -816,6 +868,62 @@ function PushPullArenaSurface({ data, className = '', runtimePlanItemId }: PushP
         )}
       </LuminaCardContent>
     </LuminaCard>
+  );
+}
+
+// =============================================================================
+// Lever pictures (`pushPullArenaLevers.ts`): what is drawn, never which way it comes out
+// =============================================================================
+
+const WeightBlocks: React.FC<{ count: number }> = ({ count }) => (
+  <span data-lever="weight-blocks" data-count={count} aria-label={`${count} weight blocks`} className="inline-flex flex-wrap gap-0.5 max-w-[120px]">
+    {Array.from({ length: count }, (_, i) => <span key={i} data-block className="inline-block w-2.5 h-2.5 rounded-sm bg-amber-400/80" />)}
+  </span>
+);
+
+function ArenaLeverStrip({ challenge, forceModel, setup, pushModel }: {
+  challenge: PushPullChallenge; forceModel: boolean; setup: boolean;
+  pushModel: ReturnType<typeof samePushModel>;
+}) {
+  return (
+    <div className="flex flex-wrap justify-center gap-3">
+      {forceModel && (
+        <div data-lever="force-model" aria-label="Push and pull model" className="flex gap-3 rounded-lg bg-white/5 border border-white/10 p-2 text-slate-200">
+          <div className="flex flex-col items-center"><span className="text-2xl">✋ {FORCE_MODEL.push.emoji} ➡️</span><span className="text-xs">push</span></div>
+          <div className="flex flex-col items-center"><span className="text-2xl">✋ ⬅️ {FORCE_MODEL.pull.emoji}</span><span className="text-xs">pull</span></div>
+        </div>
+      )}
+      {setup && (
+        <div data-lever="setup" aria-label="The setup" className="flex flex-wrap items-center gap-3 rounded-lg bg-white/5 border border-white/10 p-2">
+          <span className="flex items-center gap-1"><span className="text-xl">{challenge.objectEmoji}</span><WeightBlocks count={challenge.objectWeight} /></span>
+          {challenge.type === 'compare' && challenge.object2Emoji && (
+            <span className="flex items-center gap-1"><span className="text-xl">{challenge.object2Emoji}</span><WeightBlocks count={challenge.object2Weight ?? 0} /></span>
+          )}
+          {challenge.type !== 'compare' && (
+            <span data-lever="grip" data-bumps={GRIP_BUMPS[challenge.surface]} aria-label={`${GRIP_BUMPS[challenge.surface]} bumps`}
+              className="flex items-end gap-0.5 h-4 min-w-[48px] border-b-2 border-slate-300">
+              {Array.from({ length: GRIP_BUMPS[challenge.surface] }, (_, i) => <span key={i} className="inline-block w-2 h-2 rounded-t-full bg-slate-300" />)}
+            </span>
+          )}
+          {challenge.type === 'predict' && (
+            <span data-lever="push-marks" data-count={challenge.pushStrength ?? 5} aria-label={`${challenge.pushStrength ?? 5} push marks`} className="flex items-center gap-0.5 text-sky-300">
+              {Array.from({ length: challenge.pushStrength ?? 5 }, (_, i) => <span key={i} className="inline-block w-1 h-3 bg-sky-300" />)}
+              <span className="ml-0.5">➤</span>
+            </span>
+          )}
+        </div>
+      )}
+      {pushModel && (
+        <div data-lever="same-push-model" aria-label="Same push model" className="flex flex-col gap-1 rounded-lg bg-white/5 border border-white/10 p-2">
+          {[{ thing: pushModel.light, track: 'w-28' }, { thing: pushModel.heavy, track: 'w-6' }].map(({ thing, track }) => (
+            <div key={thing.name} className="flex items-center gap-2">
+              <span className="text-xl">{thing.emoji}</span><WeightBlocks count={thing.weight} />
+              <span data-track className={`inline-block h-1 rounded bg-amber-300 ${track}`} />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 

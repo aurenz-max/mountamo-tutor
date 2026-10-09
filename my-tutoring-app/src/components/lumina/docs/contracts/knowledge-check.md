@@ -149,6 +149,9 @@ manifest.
   or a word start with a choice (words every choice shares are exempt), when there are more than three pictures, or when the
   key is a number. `drop_far_choice` greys out a wrong, unpicked choice and never the key; the greyed choice keeps its
   place so the positions the tutor named do not shift. The `levers_on_screen` fact names the greyed choice, never the key.
+  `spread_pictures` (2026-10-09) redraws the question's own runs of one repeated picture apart, one per touchable box,
+  only on a choice item with a number key (`spreadLeak`: at most 20 pictures, keycaps are not pictures); boxes carry no
+  number, the fact names the picture and layout but never how many, and the learner's marks are never published.
 - **Demanded by:** every subject's closing check (rule #1); handoff 25.
 - **Evidence:** `knowledgeCheckLevers.ts`; `knowledgeCheckLevers.test.ts` (cue table, 500 random menus, 15 saved payloads
   across math/science/literacy/social studies, K and G1-2).
@@ -318,3 +321,6 @@ problem needs a picture.
   code fails a problem on the calibrated cuts and redraws it once with the reviewer's notes, keeping the redraw unless it
   reviews worse. Without Jev the set ships as generated. Calibration 62/64 against hand labels
   (`qa/eval-reports/knowledge-check-jev-review/`). Production items are not reviewed. No requirement changed.
+- 2026-10-09 — `spread_pictures` help lever (J12 gap `knowledge-check.recall` p0-mct). R10 extended; R11 unchanged (the
+  drop guard is untouched, the new lever answers the count misses where the drop cannot be offered). R1-R9 untouched:
+  render-only addition behind a pull, no generator or checker change.

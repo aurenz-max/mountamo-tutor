@@ -32,7 +32,8 @@ export const CALENDAR_CATALOG: ComponentDefinition[] = [
         + 'answer. The replay button asks you to repeat the question only. You cannot tap, mark or change the calendar.',
       // The calendar's own check (`calendarMiss`), by answer kind. identify and pattern ask for a weekday or a date.
       // day_sequence is spoken and reuses the weekday kinds (`calendarSpokenMisses`, handoff 20 Part B); month_sequence
-      // names none yet.
+      // names the same four for months. Every mode has levers (`calendarExplorerLevers.ts`); no miss is unanswered.
+      levers: true,
       misses: missLists<CalendarMiss | SpokenCalendarMiss>({
         identify: ['day_before', 'day_after', 'other_day', 'same_column_date', 'next_to_date', 'other_date'],
         mark_events: ['same_column_date', 'next_to_date', 'other_date'],
@@ -41,6 +42,7 @@ export const CALENDAR_CATALOG: ComponentDefinition[] = [
         interval_count: ['one_less', 'one_more', 'other_count'],
         pattern: ['day_before', 'day_after', 'other_day', 'same_column_date', 'next_to_date', 'other_date'],
         day_sequence: ['start_day', 'day_after', 'day_before_start', 'other_day'],
+        month_sequence: ['start_month', 'month_after', 'month_before_start', 'other_month'],
       }),
     },
     affordances: { representation: 'symbolic', answers: ['tap', 'spoken'], role: 'apply', minutes: 5 },

@@ -3,8 +3,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../components/live-activity/runtime/observerLever';
 import type { KnowledgeCheckItem } from './knowledgeCheckScript';
-import { CUE_LEVER, DROP_LEVER, NO_LEVERS, cueLeak, farChoice, knowledgeCheckLevers, leversOnScreen,
-  type KnowledgeCheckLeverState } from './knowledgeCheckLevers';
+import { CUE_LEVER, DROP_LEVER, NO_LEVERS, SPREAD_LEVER, cueLeak, farChoice, knowledgeCheckLevers, leversOnScreen, pictureRuns,
+  spreadLeak, type KnowledgeCheckLeverState } from './knowledgeCheckLevers';
 
 const choice = (texts: string[], correct: number, extra: Partial<KnowledgeCheckItem> = {}, distances?: ('near' | 'far')[]) => ({
   id: 'p0-mc', kind: 'choice', problemIndex: 0, prompt: 'Which one?', correctOptionId: String.fromCharCode(65 + correct),
@@ -13,6 +13,7 @@ const choice = (texts: string[], correct: number, extra: Partial<KnowledgeCheckI
   ...extra }) as KnowledgeCheckItem;
 const honey = choice(['a bee', 'an ant', 'a cow'], 0, { cue: { picture: '🍯', shows: 'a jar of honey' } }, ['near', 'far']);
 const stars = choice(['4', '5', '6', '9'], 1);
+const counted = choice(['4', '5', '6'], 1, { kind: 'choice_tap', prompt: 'What is the number of stars: ⭐⭐⭐⭐⭐?' });
 const state = (s: Partial<KnowledgeCheckLeverState>) => ({ ...NO_LEVERS, ...s });
 
 describe('which lever answers a miss (nextLever over the declared levers)', () => {
@@ -23,6 +24,10 @@ describe('which lever answers a miss (nextLever over the declared levers)', () =
     ['number: one_more', stars, NO_LEVERS, 'one_more', DROP_LEVER],
     ['number: other_number', stars, NO_LEVERS, 'other_number', DROP_LEVER],
     ['number: both pulled', stars, state({ pulled: [DROP_LEVER], dropped: ['D'] }), 'one_less', null],
+    // Saved recall payload p0-mct: 3 choices, so after one wrong answer the drop is gone; the spread answers.
+    ['count, 3 choices, after a wrong: one_less', counted, state({ wrongs: 1, picked: ['A'] }), 'one_less', SPREAD_LEVER],
+    ['count, 3 choices, after a wrong: one_more', counted, state({ wrongs: 1, picked: ['C'] }), 'one_more', SPREAD_LEVER],
+    ['count, 3 choices, spread pulled', counted, state({ wrongs: 1, picked: ['A'], pulled: [SPREAD_LEVER] }), 'one_less', null],
   ] as const)('%s', (_n, item, s, miss, lever) => {
     expect(nextLever(knowledgeCheckLevers(item, s), miss)).toBe(lever);
   });
@@ -91,6 +96,42 @@ describe('cue_picture leak rule', () => {
   });
 });
 
+describe('spread_pictures', () => {
+  it('finds runs of one repeated picture; spaces do not break a run, words and keycaps are not pictures', () => {
+    expect(pictureRuns('What is the number of stars: ⭐⭐⭐⭐⭐?')).toEqual([{ picture: '⭐', count: 5 }]);
+    expect(pictureRuns('How many more 🍎 🍎 🍎 than 🍌🍌?')).toEqual([{ picture: '🍎', count: 3 }, { picture: '🍌', count: 2 }]);
+    expect(pictureRuns('🌱 What do plants need?')).toEqual([]);
+    expect(pictureRuns('Which is 5️⃣5️⃣?')).toEqual([]);
+  });
+
+  it.each([
+    ['a count of a printed run', counted, null],
+    ['the answer is a word', { ...counted, options: [{ id: 'A', text: 'few' }, { id: 'B', text: 'five' }], correctOptionId: 'B' }, 'the answer is not a number'],
+    ['no run in the question', { ...counted, prompt: 'What is 2 + 3?' }, 'no run of one repeated picture in the question'],
+    ['too many to spread', { ...counted, prompt: `How many: ${'⭐'.repeat(21)}?` }, 'more than 20 pictures'],
+    ['not a choice kind', { ...counted, kind: 'how_many' }, 'not a choice item'],
+  ] as const)('%s', (_n, item, reason) => {
+    expect(spreadLeak(item as KnowledgeCheckItem)).toBe(reason);
+    expect(knowledgeCheckLevers(item as KnowledgeCheckItem, NO_LEVERS).some(l => l.id === SPREAD_LEVER)).toBe(reason === null);
+  });
+
+  it('the fact names the picture and the layout, never how many', () => {
+    const fact = leversOnScreen(counted, state({ pulled: [SPREAD_LEVER] }))!;
+    expect(fact).toContain('⭐');
+    expect(fact).not.toMatch(/\d|five|four|six/i);
+  });
+
+  it("is offered on the saved recall payload's 3-choice count item after a wrong answer", () => {
+    const path = join(__dirname, '../components/live-activity/runtime/testing/w1-payloads/knowledge-check.recall.json');
+    const p = JSON.parse(readFileSync(path, 'utf8')).data.problems[0];
+    const item = { id: 'p0-mct', kind: 'choice_tap', problemIndex: 0, prompt: p.question, options: p.options,
+      correctOptionId: p.correctOptionId } as KnowledgeCheckItem;
+    const after = state({ wrongs: 1, picked: ['A'] });
+    expect(knowledgeCheckLevers(item, after).map(l => l.id)).toEqual([SPREAD_LEVER]);
+    expect(nextLever(knowledgeCheckLevers(item, after), 'one_less')).toBe(SPREAD_LEVER);
+  });
+});
+
 // Saved Flash payloads (handoff 25), one per mode per subject: the tags are present, the rules hold on real content.
 // The sweep drives the ones the judged build accepts (w1-payloads); the probe folder keeps the ones it drops.
 const DIRS = [join(__dirname, '../components/live-activity/runtime/testing/w1-payloads'),
@@ -120,7 +161,7 @@ describe.each(SAVED)('%s', (path) => {
       const key = item.options!.find(o => o.id === item.correctOptionId)!.text.toLowerCase();
       const drop = farChoice(item, NO_LEVERS);
       if (drop) expect(drop).not.toBe(item.correctOptionId);
-      const s = { ...NO_LEVERS, pulled: [CUE_LEVER, DROP_LEVER], dropped: drop ? [drop] : [] };
+      const s = { ...NO_LEVERS, pulled: [CUE_LEVER, DROP_LEVER, SPREAD_LEVER], dropped: drop ? [drop] : [] };
       const facts = (leversOnScreen(item, s) ?? '').toLowerCase();
       expect(facts).not.toContain(`"${key}"`);
       if (!cueLeak(item)) expect(item.cue!.shows.toLowerCase().split(/\W+/).filter(w => w.length > 3)

@@ -87,5 +87,7 @@ Say what the build must do, never how to build it: no block counts, no positions
     picked = [...picked, ...fill].map((p, i) => ({ ...p, id: `ob-${i + 1}` }));
   }
   console.log(`[open-builder] ${picked.map(p => p.sceneId).join(', ')}`);
-  return openBuilderData(picked.slice(0, SHIPPED), band);
+  // config.difficulty sets only where the levers start (`openBuilderLevers.ts`): easy shows the help from the start.
+  const tier = ctx.supportTier;
+  return openBuilderData(picked.slice(0, SHIPPED).map(p => (tier ? { ...p, supportTier: tier } : p)), band);
 };

@@ -690,6 +690,8 @@ const ChemistryPrimitivesTesterContent: React.FC<ChemistryPrimitivesTesterProps>
   const [selectedPrimitive, setSelectedPrimitive] = useState<PrimitiveType>('reaction-lab');
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel>('elementary');
   const [topic, setTopic] = useState('');
+  // Pin one catalog eval mode (e.g. atom-builder make_atom), or 'mixed' to let the generator choose.
+  const [evalMode, setEvalMode] = useState('mixed');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedData, setGeneratedData] = useState<unknown>(null);
   // One instance id per generated preview: evaluation, tutoring and Pip's surface
@@ -726,7 +728,7 @@ const ChemistryPrimitivesTesterContent: React.FC<ChemistryPrimitivesTesterProps>
             componentId: selectedPrimitive,
             topic: currentTopic,
             gradeLevel: selectedGrade,
-            config: {},
+            config: evalMode !== 'mixed' ? { targetEvalMode: evalMode } : {},
           },
         }),
       });
@@ -809,6 +811,7 @@ const ChemistryPrimitivesTesterContent: React.FC<ChemistryPrimitivesTesterProps>
                               key={option.value}
                               onClick={() => {
                                 setSelectedPrimitive(option.value);
+                                setEvalMode('mixed');
                                 setGeneratedData(null);
                                 setError(null);
                               }}
@@ -856,6 +859,26 @@ const ChemistryPrimitivesTesterContent: React.FC<ChemistryPrimitivesTesterProps>
                 ))}
               </select>
             </div>
+
+            {/* Eval mode pin, for primitives whose catalog entry lists modes */}
+            {(getComponentById(selectedPrimitive as ComponentId)?.evalModes?.length ?? 0) > 0 && (
+              <div>
+                <label htmlFor="chem-eval-mode" className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">
+                  Eval mode
+                </label>
+                <select
+                  id="chem-eval-mode"
+                  value={evalMode}
+                  onChange={(e) => setEvalMode(e.target.value)}
+                  className="w-full bg-slate-800 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="mixed">Mixed (generator chooses)</option>
+                  {getComponentById(selectedPrimitive as ComponentId)?.evalModes?.map((mode) => (
+                    <option key={mode.evalMode} value={mode.evalMode}>{mode.label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Topic Input */}
             <div>

@@ -188,6 +188,19 @@ export const PROPERTY_OPTIONS: Readonly<Record<ShapeBehaviour, PropertyOption>> 
 export const PROPERTY_MENU_CLAUSE =
   'does it keep its own shape, does it take the shape of the cup, or does it spread out and fill the whole room?';
 
+const PROPERTY_ASK_FORM: Readonly<Record<ShapeBehaviour, string>> = {
+  keeps_shape: 'does it keep its own shape',
+  takes_container: 'does it take the shape of the cup',
+  fills_space: 'does it spread out and fill the whole room',
+};
+
+/** The menu an item's ask speaks: all three options, or a practice item's two, in the fixed order. */
+export const propertyMenuClause = (item: { menu?: readonly ShapeBehaviour[] }): string => {
+  if (!item.menu?.length) return PROPERTY_MENU_CLAUSE;
+  const order = (Object.keys(PROPERTY_ASK_FORM) as ShapeBehaviour[]).filter((s) => item.menu!.includes(s));
+  return `${order.slice(0, -1).map((s) => PROPERTY_ASK_FORM[s]).join(', ')}, or ${PROPERTY_ASK_FORM[order[order.length - 1]]}?`;
+};
+
 /**
  * Ear-separability, run over the menu as it will actually be SPOKEN
  * (decodable-reader's `optionsEarSeparable`, this pack's shape). Every option
@@ -508,6 +521,9 @@ export interface MatterExplorerItem extends JudgedScriptItem {
   /** `name_undo` only: the answer, read from `CHANGE_CATALOG` and never from
    *  the payload — the LLM never says whether its change can be undone. */
   answerUndo?: Reversibility;
+  /** `name_property` practice item only (the `plain_object` simplify lever): the two options its ask names,
+   *  the answer and the far one. Absent on every generated item, which names all three. */
+  menu?: ShapeBehaviour[];
 }
 
 /** Structural challenge shape as the draw emits it. */
@@ -868,7 +884,7 @@ export const askFor = (item: MatterExplorerItem): string => {
     case 'name_property': {
       // The menu IS the ask. Spoken at every tier and leak-exempt by
       // construction; without it the answer set is open and unjudgeable.
-      return `Think about the ${item.objectName} going into a cup. Your turn. Tell me what it does — ${PROPERTY_MENU_CLAUSE}`;
+      return `Think about the ${item.objectName} going into a cup. Your turn. Tell me what it does — ${propertyMenuClause(item)}`;
     }
     case 'name_undo': {
       // The change is the PREMISE, not a leak: knowing that melting undoes and
@@ -895,7 +911,7 @@ const correctionFor = (item: MatterExplorerItem): string => {
     case 'name_state':
       return `My turn: ${STATE_RULE_CLAUSE} Your turn. Think about the ${item.objectName} again and say what state it is.`;
     case 'name_property':
-      return `My turn: some things hold their own shape however you move them, some things run into the corners of whatever holds them, and some things you cannot keep in a cup at all. Your turn. What does the ${item.objectName} do — ${PROPERTY_MENU_CLAUSE}`;
+      return `My turn: some things hold their own shape however you move them, some things run into the corners of whatever holds them, and some things you cannot keep in a cup at all. Your turn. What does the ${item.objectName} do — ${propertyMenuClause(item)}`;
     case 'name_undo':
       return `My turn: ${CHANGE_RULE_CLAUSE} Your turn. Think about the ${item.objectName} again — ${CHANGE_MENU_CLAUSE}`;
     case 'mystery_state':

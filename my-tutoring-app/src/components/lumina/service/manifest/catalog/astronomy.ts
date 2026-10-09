@@ -182,7 +182,10 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
         + 'two planets being compared. From Grade 2 a tap opens the card of facts for that planet; a Kindergarten or Grade 1 '
         + 'learner has no cards and does not read, so say the question aloud. The Sun is a star, not a planet answer. A '
         + 'colour or "that one" with no name does not answer. Before an attempt never say the answer or describe the '
-        + 'planets for them. You cannot move or mark a planet.',
+        + 'planets for them, and never point them to the ring or place in the sky where the answer is. You cannot move a planet '
+        + 'or mark one yourself; only a pulled lever changes the picture.',
+      // In-item levers (`solarSystemLevers.ts`): star mark, close-up, models beside the sky, size row, fact strip, easier items.
+      levers: true,
       // Every item is one spoken planet name: its known wrong answers (`solarSpokenMisses`, handoff 20 Part B).
       misses: missLists<SpokenSolarMiss>({ identify: ['said_sun', 'neighbour_planet', 'other_planet'],
         order_from_sun: ['said_sun', 'signature_planet', 'other_planet'], classify: ['said_sun', 'signature_planet', 'other_planet'],

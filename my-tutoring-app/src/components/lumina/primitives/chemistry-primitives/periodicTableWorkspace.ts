@@ -65,14 +65,29 @@ export function periodicAssignment(item: PeriodicTableItem): TeachingAssignment 
     : { id: item.id, task: ask(item), response: 'gesture' };
 }
 
-/** What a wrong spoken answer shows on Trends (handoff 20 Part B). */
-export type SpokenPeriodicMiss = 'other_of_pair' | 'group_number' | OffByMiss;
+/** What a wrong spoken answer shows on Trends (handoff 20 Part B) and on Name It (`/add-support-tiers`, 2026-10-09). */
+export type SpokenPeriodicMiss = 'other_of_pair' | 'group_number' | OffByMiss | 'said_symbol' | 'next_box';
+
+/** The names of the boxes touching an element's box on the drawn table (left, right, above, below). */
+export function touchingNames(element: { number: number }): string[] {
+  const at = cellOf.get(element.number);
+  if (!at) return [];
+  return ELEMENTS.filter(e => Math.abs(e.xpos - at.xpos) + Math.abs(e.ypos - at.ypos) === 1).map(e => e.name);
+}
 
 /**
- * A Trends item's known wrong answers, in precedence order, for the `spoken_miss` observer: the other element of
- * the pair (compare); the group number, then off-by counts of the outer electrons (valence). Name It names none yet.
+ * An item's known wrong answers, in precedence order, for the `spoken_miss` observer. Trends: the other element of
+ * the pair (compare); the group number, then off-by counts of the outer electrons (valence). Name It: the symbol's
+ * letters read back (`said_symbol`), then the name of a box touching the asked one (`next_box`).
  */
 export function periodicSpokenMisses(item: PeriodicTableItem): KnownMiss[] {
+  if (item.kind === 'name' && item.element) {
+    const e = item.element, near = touchingNames(e).filter(n => n.toLowerCase() !== e.name.toLowerCase());
+    return [{ id: 'said_symbol', pattern: `The learner says the letters of ${e.name}'s symbol, ${spellSymbol(e.symbol)}, instead of a name.`,
+      examples: [spellSymbol(e.symbol), e.symbol] },
+    ...(near.length ? [{ id: 'next_box', pattern: `The learner names ${near.join(' or ')}, an element in a box touching ${e.name}'s.`,
+      examples: near.slice(0, 4) }] : [])];
+  }
   if (item.kind === 'compare' && item.pair) {
     const other = item.answerName === item.pair[0].name ? item.pair[1].name : item.pair[0].name;
     const trait = item.axis === 'reactivity' ? 'more reactive' : 'the bigger atom';

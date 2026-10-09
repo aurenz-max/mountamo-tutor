@@ -1039,6 +1039,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "atom-builder": {
         "build":        PriorConfig(-1.0, "Build a named element from protons, neutrons, electrons"),
         "identify":     PriorConfig(0.5, "Identify element from particle counts and fill electron shells"),
+        "make_atom":    PriorConfig(1.0, "Open build: make any atom with an asked property (outer electrons, a full outer shell, a charge, two isotopes)"),
         "ion_isotope":  PriorConfig(2.0, "Create specific ions and isotopes"),
     },
     "molecule-constructor": {

@@ -61,6 +61,12 @@ import {
 import { HabitatBuildScene } from './HabitatBuildScene';
 import { useBuildWatcher } from '../../build-layer/buildLayer';
 import { ZONE_LABELS, describeHabitatMove, fewerNeedsItem, habitatAssignment, habitatMiss, habitatMoveMatches, habitatScene } from './habitatDioramaWorkspace';
+import {
+  BODY_CLUES_LEVER, CARD_PICTURES_LEVER, CHANGE_MARK_LEVER, DIRECTION_MODEL_LEVER, FOOD_LINES_KINDS, FOOD_LINES_LEVER,
+  ITS_PARTNERS_LEVER, MODEL_CAPTION, START_LINES_LEVER, ZONE_PICTURES, ZONE_PICTURES_LEVER, bodyClues, cardPictures,
+  changeMarks, directionModel, easierItemFor, habitatDioramaLeverFacts, habitatDioramaLevers, organismEmoji,
+  restorePartners, startPartners,
+} from './habitatDioramaLevers';
 
 export type HabitatChallengeType = 'observe' | 'connect' | 'predict' | 'restore' | 'defend' | 'build_habitat';
 export type HabitatZone = 'canopy' | 'open-land' | 'water' | 'shoreline' | 'ground' | 'underground';
@@ -181,21 +187,6 @@ const roleAccent = (role: Organism['role']): 'emerald' | 'amber' | 'orange' | 'r
   'tertiary-consumer': 'rose', decomposer: 'purple',
 } as const)[role];
 
-const organismEmoji = (organism: Organism): string => {
-  const name = `${organism.commonName} ${organism.imagePrompt}`.toLowerCase();
-  if (organism.role === 'producer' || /tree|plant|grass|flower|algae/.test(name)) return '🌿';
-  if (organism.role === 'decomposer' || /fung|mushroom|worm|bacter/.test(name)) return '🍄';
-  if (/fish|shark|salmon|trout/.test(name)) return '🐟';
-  if (/bird|owl|eagle|robin|raven/.test(name)) return '🦉';
-  if (/bee|insect|butterfly|ant/.test(name)) return '🐝';
-  if (/frog|toad/.test(name)) return '🐸';
-  if (/bear/.test(name)) return '🐻';
-  if (/wolf|fox|coyote/.test(name)) return '🦊';
-  if (/deer|elk|antelope/.test(name)) return '🦌';
-  if (/rabbit|hare/.test(name)) return '🐇';
-  return organism.role === 'tertiary-consumer' ? '🦁' : '🐾';
-};
-
 const featureEmoji = (feature: EnvironmentalFeature): string => {
   const name = feature.name.toLowerCase();
   if (/water|stream|river|pond|ocean/.test(name)) return '💧';
@@ -214,6 +205,10 @@ interface SceneProps {
   activeIds?: string[];
   rewardIds?: string[];
   showRelationships?: boolean;
+  /** connect's `start_lines` lever: plain lines, no arrowheads, from `fromId` to each partner. */
+  plainLines?: { fromId: string; partners: string[] };
+  /** predict's `change_mark` and restore's `its_partners` levers: a ring around each of these living things. */
+  ringIds?: string[];
   hideOrganismId?: string;
   onOrganismTap: (id: string) => void;
   onFeatureTap?: (id: string) => void;
@@ -221,15 +216,26 @@ interface SceneProps {
 
 const HabitatScene: React.FC<SceneProps> = ({
   data, isPreReader, selectedId, activeIds = [], rewardIds = [],
-  showRelationships = false, hideOrganismId, onOrganismTap, onFeatureTap,
+  showRelationships = false, plainLines, ringIds = [], hideOrganismId, onOrganismTap, onFeatureTap,
 }) => (
   <div className="relative min-h-[430px] overflow-hidden rounded-3xl border border-emerald-300/15 bg-gradient-to-b from-cyan-950/70 via-emerald-950/65 to-amber-950/50 shadow-inner" aria-label={`${data.habitat.name} living ecosystem`}>
     <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-cyan-300/10 to-transparent" />
     <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-emerald-950/90 to-transparent" />
     <div className="absolute left-8 top-8 h-20 w-20 rounded-full bg-amber-300/15 blur-xl" />
     <div className="absolute bottom-8 right-8 h-24 w-56 rounded-full bg-cyan-400/10 blur-2xl" />
+    {plainLines && (() => {
+      const from = data.organisms.find((organism) => organism.id === plainLines.fromId);
+      return from && (
+        <svg className="pointer-events-none absolute inset-0 z-10 h-full w-full" aria-hidden="true" data-lever="start-lines">
+          {plainLines.partners.map((id) => {
+            const to = data.organisms.find((organism) => organism.id === id);
+            return to && <line key={id} data-line={id} x1={pct(from.position.x)} y1={pct(from.position.y)} x2={pct(to.position.x)} y2={pct(to.position.y)} stroke="rgb(251 191 36 / .6)" strokeWidth="2" />;
+          })}
+        </svg>
+      );
+    })()}
     {showRelationships && (
-      <svg className="pointer-events-none absolute inset-0 z-10 h-full w-full" aria-hidden="true">
+      <svg className="pointer-events-none absolute inset-0 z-10 h-full w-full" aria-hidden="true" data-lever="food-lines">
         <defs><marker id="habitat-arrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="rgb(34 211 238 / .7)" /></marker></defs>
         {data.relationships.map((relationship) => {
           const from = data.organisms.find((organism) => organism.id === relationship.fromId);
@@ -248,8 +254,9 @@ const HabitatScene: React.FC<SceneProps> = ({
       const active = activeIds.includes(organism.id);
       const rewarded = rewardIds.includes(organism.id);
       const selected = selectedId === organism.id;
+      const ringed = ringIds.includes(organism.id);
       return (
-        <button key={organism.id} type="button" aria-label={organism.commonName} onClick={() => onOrganismTap(organism.id)} className={`group absolute z-20 -translate-x-1/2 -translate-y-1/2 rounded-2xl border p-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 ${rewarded ? `border-emerald-300 bg-emerald-400/25 scale-110 ${motion.pop}` : active ? 'border-cyan-300 bg-cyan-400/20 scale-105 shadow-[0_0_24px_rgba(34,211,238,.35)]' : selected ? 'border-amber-300 bg-amber-400/20 scale-105' : 'border-white/15 bg-slate-950/55 hover:bg-slate-900/75 hover:scale-105'}`} style={{ left: pct(organism.position.x), top: pct(organism.position.y) }}>
+        <button key={organism.id} type="button" aria-label={organism.commonName} data-ring={ringed ? 'true' : undefined} onClick={() => onOrganismTap(organism.id)} className={`group absolute z-20 -translate-x-1/2 -translate-y-1/2 rounded-2xl border p-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 ${ringed ? 'outline outline-4 outline-offset-4 outline-amber-300/80 ' : ''}${rewarded ? `border-emerald-300 bg-emerald-400/25 scale-110 ${motion.pop}` : active ? 'border-cyan-300 bg-cyan-400/20 scale-105 shadow-[0_0_24px_rgba(34,211,238,.35)]' : selected ? 'border-amber-300 bg-amber-400/20 scale-105' : 'border-white/15 bg-slate-950/55 hover:bg-slate-900/75 hover:scale-105'}`} style={{ left: pct(organism.position.x), top: pct(organism.position.y) }}>
           <span className="block text-3xl" aria-hidden="true">{organismEmoji(organism)}</span>
           <span className="mt-1 block max-w-24 truncate text-[10px] font-semibold text-slate-100">{organism.commonName}</span>
           {!isPreReader && selected && <span className="mt-1 block text-[9px] uppercase tracking-wide text-slate-400">{ROLE_LABELS[organism.role]}</span>}
@@ -349,6 +356,21 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, resolvedInstanceId
   const animal = current?.kind === 'build_habitat' ? animalById(current.animalId) ?? null : null;
   const pulled = leverState.item === sessionItem?.id ? leverState.pulled : [];
   const buildOpen = !!animal && runner.canAttempt && !showSummary;
+  const habitat = useMemo(() => ({ organisms: data.organisms, relationships: data.relationships ?? [] }), [data.organisms, data.relationships]);
+  const shownEmojis = useMemo(() => data.organisms.map(organismEmoji), [data.organisms]);
+  // The observe/connect help levers on screen (never on a practice item).
+  const foodLines = !practice && !!current && FOOD_LINES_KINDS.includes(current.kind) && pulled.includes(FOOD_LINES_LEVER);
+  // predict / restore / defend help levers on screen.
+  const ringIds = practice || !current ? []
+    : current.kind === 'predict' && pulled.includes(CHANGE_MARK_LEVER) ? changeMarks(current)
+      : current.kind === 'restore' && pulled.includes(ITS_PARTNERS_LEVER) ? restorePartners(current, habitat.relationships) : [];
+  const zonePictures = !practice && current?.kind === 'restore' && pulled.includes(ZONE_PICTURES_LEVER);
+  const clues = !practice && current?.kind === 'restore' && pulled.includes(BODY_CLUES_LEVER) ? bodyClues(current, habitat.organisms) : [];
+  const cardPics = !practice && current?.kind === 'defend' && pulled.includes(CARD_PICTURES_LEVER) ? cardPictures(current) : null;
+  const startLines = !practice && current?.kind === 'connect' && pulled.includes(START_LINES_LEVER) && current.fromId
+    ? { fromId: current.fromId, partners: startPartners(current, habitat.relationships) } : undefined;
+  const model = !practice && current?.kind === 'connect' && pulled.includes(DIRECTION_MODEL_LEVER)
+    ? directionModel(current.relationshipType, shownEmojis) : null;
   // The live line (shared build layer): what the habitat looks like so far. It never names a need or how the animal
   // would fare: that would do the task.
   const buildSeeing = useBuildWatcher({
@@ -364,6 +386,34 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, resolvedInstanceId
   useLayoutEffect(() => {
     if (!current) return;
     const scene = habitatScene(current, { habitatName: data.habitat.name, organismNames: data.organisms.map((organism) => organism.commonName), preReader: isPreReader, placed });
+    if (sessionItem && sessionItem.kind !== 'build_habitat') {
+      // observe, connect, predict, restore and defend levers (`habitatDioramaLevers.ts`): help draws on the habitat or
+      // beside it; simplify opens an ungraded easier item of the same kind, then the full item.
+      const levers = habitatDioramaLevers(sessionItem, habitat, shownEmojis, pulled, !!practice);
+      const onScreen = practice ? '' : habitatDioramaLeverFacts(sessionItem, pulled, shownEmojis, habitat);
+      workspace.current = {
+        ...scene,
+        facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
+          ...(practice ? { practice: 'An easier one, ungraded. The full item comes back after it.' } : {}) },
+        levers,
+        pullLever: (id) => {
+          const lever = levers.find((l) => l.id === id);
+          if (practice || !lever) return `No lever ${id} on this item.`;
+          if (lever.pulled) return `${id} is already pulled.`;
+          if (lever.kind === 'simplify') {
+            const easier = easierItemFor(sessionItem, habitat);
+            if (!easier) return 'There is no easier item for this one.';
+            setLeverState({ item: sessionItem.id, pulled: [...pulled, id] });
+            setPractice(easier); setSelectedId(null); setReward(null);
+            return { practice: habitatAssignment(easier) };
+          }
+          setLeverState({ item: sessionItem.id, pulled: [...pulled, id] });
+          return true;
+        },
+        endPractice: () => { setPractice(null); setSelectedId(null); setReward(null); },
+      };
+      return;
+    }
     if (current.kind !== 'build_habitat' || !sessionItem) { workspace.current = { ...scene }; return; }
     const levers = habitatBuildLevers(sessionItem.needs ?? null, pulled, !!practice);
     const onScreen = habitatBuildLeverFacts(practice ? [] : pulled);
@@ -476,10 +526,16 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, resolvedInstanceId
           )}
         </div>
       ) : (
-        <div {...pip.target('stimulus')}><HabitatScene data={data} isPreReader={isPreReader} selectedId={selectedId} activeIds={activeIds} rewardIds={rewardIds} hideOrganismId={current?.kind === 'restore' ? current.restorationEntityId : undefined} onOrganismTap={handleOrganismTap} /></div>
+        <div {...pip.target('stimulus')}><HabitatScene data={data} isPreReader={isPreReader} selectedId={selectedId} activeIds={activeIds} rewardIds={rewardIds} showRelationships={foodLines} plainLines={startLines} ringIds={ringIds} hideOrganismId={current?.kind === 'restore' ? current.restorationEntityId : undefined} onOrganismTap={handleOrganismTap} /></div>
       )}
-      {current?.kind === 'restore' && current.restorationEntityId && <LuminaPanel {...pip.target('zones')} accent="emerald"><div className="mb-3 flex items-center gap-3"><span className="text-3xl">{organismEmoji(data.organisms.find((organism) => organism.id === current.restorationEntityId)!)}</span><div><p className="text-xs uppercase tracking-wider text-emerald-300">Restoration candidate</p><p className="font-semibold text-slate-100">{current.organismNames[current.restorationEntityId]}</p></div></div><div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{(Object.keys(ZONE_LABELS) as HabitatZone[]).map((zone) => <button key={zone} type="button" disabled={!runner.canAttempt} onClick={() => { SoundManager.tap(); pip.look('zones'); commitMove(current, { zone }); onInteraction?.({ type: 'restoration_committed', timestamp: Date.now() }); }} className={`rounded-xl px-3 py-4 text-sm font-semibold transition-all ${dropZoneStateClasses.idle} ${runner.canAttempt ? 'hover:scale-[1.02]' : 'opacity-50'}`}>{ZONE_LABELS[zone]}</button>)}</div></LuminaPanel>}
-      {current?.kind === 'defend' && current.evidenceChoices && <div className="grid gap-2 md:grid-cols-3" aria-label="Evidence choices">{current.evidenceChoices.map((choice, index) => <div key={choice.id} className={`rounded-xl border p-4 ${answerStateClasses.idle}`}><p className="text-[10px] font-semibold uppercase tracking-wider text-cyan-300">Evidence {index + 1}</p><p className="mt-2 text-sm leading-relaxed text-slate-100">{choice.text}</p></div>)}</div>}
+      {model && current?.relationshipType && (
+        <LuminaPanel accent="cyan" data-lever="direction-model" className="mx-auto w-full max-w-sm text-center">
+          <p className="text-3xl" aria-label="model pair"><span>{model[0]}</span><span className="mx-3 text-cyan-300">→</span><span>{model[1]}</span></p>
+          {!isPreReader && <p className="mt-2 text-sm text-slate-200">{MODEL_CAPTION[current.relationshipType]}</p>}
+        </LuminaPanel>
+      )}
+      {current?.kind === 'restore' && current.restorationEntityId && <LuminaPanel {...pip.target('zones')} accent="emerald"><div className="mb-3 flex items-center gap-3"><span className="text-3xl">{organismEmoji(data.organisms.find((organism) => organism.id === current.restorationEntityId)!)}</span><div><p className="text-xs uppercase tracking-wider text-emerald-300">Restoration candidate</p><p className="font-semibold text-slate-100">{current.organismNames[current.restorationEntityId]}</p></div></div>{clues.length > 0 && <ul data-lever="body-clues" className="mb-3 space-y-1 text-sm text-slate-200">{clues.map((clue) => <li key={clue}>• {clue}</li>)}</ul>}<div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{(Object.keys(ZONE_LABELS) as HabitatZone[]).map((zone) => <button key={zone} type="button" aria-label={ZONE_LABELS[zone]} data-zone-picture={zonePictures ? 'true' : undefined} disabled={!runner.canAttempt} onClick={() => { SoundManager.tap(); pip.look('zones'); commitMove(current, { zone }); onInteraction?.({ type: 'restoration_committed', timestamp: Date.now() }); }} className={`rounded-xl px-3 py-4 text-sm font-semibold transition-all ${dropZoneStateClasses.idle} ${runner.canAttempt ? 'hover:scale-[1.02]' : 'opacity-50'}`}>{zonePictures && <span className="mr-2 text-xl" aria-hidden="true">{ZONE_PICTURES[zone]}</span>}{ZONE_LABELS[zone]}</button>)}</div></LuminaPanel>}
+      {current?.kind === 'defend' && current.evidenceChoices && <div className="grid gap-2 md:grid-cols-3" aria-label="Evidence choices">{current.evidenceChoices.map((choice, index) => <div key={choice.id} className={`rounded-xl border p-4 ${answerStateClasses.idle}`}><p className="text-[10px] font-semibold uppercase tracking-wider text-cyan-300">Evidence {index + 1}</p>{cardPics && (cardPics[index]?.length ?? 0) > 0 && <p data-lever="card-pictures" className="mt-1 text-2xl" aria-hidden="true">{cardPics[index].map((id) => { const o = habitat.organisms.find((x) => x.id === id); return o ? organismEmoji(o) : ''; }).join(' ')}</p>}<p className="mt-2 text-sm leading-relaxed text-slate-100">{choice.text}</p></div>)}</div>}
       {current?.answerKind === 'voice' && current.kind !== 'defend' && <div className="flex flex-wrap justify-center gap-2" aria-label="Answer choices">{current.optionTexts.map((option) => <LuminaBadge key={option} accent="cyan" className="px-3 py-2 text-sm">{option}</LuminaBadge>)}</div>}
       {reward && runner.revealHeld && <LuminaPanel accent="emerald" className={`${motion.reveal} text-center`}><Sprout className="mx-auto h-6 w-6 text-emerald-300" /><p className="mt-2 font-semibold text-emerald-100">{reward.text}</p></LuminaPanel>}
     </div>

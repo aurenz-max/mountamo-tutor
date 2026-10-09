@@ -35,6 +35,11 @@ import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { solarAssignment, solarScene } from './solarSystemWorkspace';
 import {
+  CLOSE_UP_LEVER, FACT_STRIP_LEVER, FIRST_RING_LEVER, KIND_MODEL_LEVER, NEAR_FAR_LEVER, SIZE_ROW_LEVER, STAR_LEVER,
+  TRIP_MODEL_LEVER, firstRingBodyId, simplerSolar, sizeRowBodies, solarLeverFacts, solarLevers,
+} from './solarSystemLevers';
+import { CloseUp, FactStrip, KindModel, NearFarModel, SizeRow, TripModel } from './SolarLeverViews';
+import {
   itemsFromChallenges,
   revealTextFor,
   isPairFacet,
@@ -162,6 +167,10 @@ interface SolarCanvasProps {
   spotlightBodyIds?: string[];
   /** Post-affirm only: emerald ring + forced label on the answer body/bodies. */
   revealBodyIds?: string[];
+  /** star_mark lever: a star outline on the Sun, the Sun dimmed. */
+  starMarked?: boolean;
+  /** first_ring lever: this body's orbit ring drawn bright (always the first planet's). */
+  brightRingBodyId?: string | null;
 }
 
 const SolarCanvas: React.FC<SolarCanvasProps> = ({
@@ -180,6 +189,8 @@ const SolarCanvas: React.FC<SolarCanvasProps> = ({
   suppressLabels = false,
   spotlightBodyIds = [],
   revealBodyIds = [],
+  starMarked = false,
+  brightRingBodyId = null,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -338,6 +349,11 @@ const SolarCanvas: React.FC<SolarCanvasProps> = ({
                 );
               })}
 
+            {brightRingBodyId && bodies.filter((b) => b.id === brightRingBodyId).map((b) => (
+              <circle key="first-ring" data-lever="first-ring" cx={0} cy={0} r={b.distanceAu * AU_TO_PIXELS}
+                fill="none" stroke="#facc15" strokeWidth={4 / transform.k} />
+            ))}
+
             {bodies.map((body) => {
               const pos = getInitialPosition(body);
               const r = getVisualRadius(body);
@@ -352,7 +368,7 @@ const SolarCanvas: React.FC<SolarCanvasProps> = ({
                   data-body-id={body.id}
                   ref={(el) => setBodyRef(body.id, el)}
                   transform={`translate(${pos.x}, ${pos.y})`}
-                  opacity={dimOthers && !isSpotlit && !isRevealed ? 0.35 : 1}
+                  opacity={(dimOthers && !isSpotlit && !isRevealed) || (starMarked && body.type === 'star') ? 0.35 : 1}
                   onClick={(e) => {
                     e.stopPropagation();
                     onBodyTap(body.id);
@@ -363,6 +379,15 @@ const SolarCanvas: React.FC<SolarCanvasProps> = ({
                 >
                   {/* Glow for Sun */}
                   {body.type === 'star' && <circle r={r * 3} fill="url(#sunGlow)" opacity={0.6} />}
+                  {/* star_mark lever: a five-point star outline on the Sun. */}
+                  {starMarked && body.type === 'star' && (
+                    <polygon data-lever="star-mark" fill="none" stroke="white" strokeWidth={2 / transform.k}
+                      points={Array.from({ length: 10 }, (_, i) => {
+                        const a = (Math.PI / 5) * i - Math.PI / 2;
+                        const rr = (i % 2 === 0 ? 2.4 : 1.1) * r;
+                        return `${rr * Math.cos(a)},${rr * Math.sin(a)}`;
+                      }).join(' ')} />
+                  )}
 
                   {/* Transparent hit target — the drawn planet can be a handful
                       of pixels at system zoom, and it is moving. Without this,
@@ -780,6 +805,10 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, isPreReader, resol
   const [reward, setReward] = useState<{ text: string; bodyIds: string[] } | null>(null);
   const exploredBodiesRef = useRef<Set<string>>(new Set());
   const workspace = useRef<TeachingWorkspace | null>(null);
+  // In-item levers (`solarSystemLevers.ts`), keyed by the session item they were pulled on, and the easier item a
+  // simplify lever put on screen in its place.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<SolarItem | null>(null);
 
   const evaluation = usePrimitiveEvaluation<SolarSystemExplorerMetrics>({
     primitiveType: 'solar-system-explorer',
@@ -832,6 +861,12 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, isPreReader, resol
     onItemOpened: () => {
       setSelectedBodyId(null);
       setReward(null);
+      setPractice(null);
+    },
+    // The full item back after its easier one: the full sky again, nothing selected.
+    onPracticeClosed: () => {
+      setSelectedBodyId(null);
+      setPractice(null);
     },
     // Try again keeps the sky as it is: the spotlight and any open card stay.
     onCorrectionRetry: () => {},
@@ -842,13 +877,42 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, isPreReader, resol
   });
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
-  const currentItem = runner.currentItem;
+  const sessionItem = runner.currentItem;
+  /** What is on screen: the easier item while a simplify lever holds it, else the session item. */
+  const currentItem = practice ?? sessionItem;
+  const pulledLevers = leverState.item === sessionItem?.id && !practice ? leverState.pulled : [];
+  const leverCtx = { bodies: data.bodies, rung: rungOf(data), session: items };
 
   // What the tutor and the observer are shown, republished every render. W1 offers no
   // demonstration targets and no presentation: the spotlight paints when the item opens.
   useLayoutEffect(() => {
     if (!currentItem) return;
-    workspace.current = { ...solarScene(currentItem, { preReader: isPreReader }) };
+    const scene = solarScene(currentItem, { preReader: isPreReader });
+    const onScreen = solarLeverFacts(currentItem, pulledLevers);
+    const levers = practice ? [] : solarLevers(sessionItem, pulledLevers, leverCtx);
+    workspace.current = {
+      ...scene,
+      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the sky changes before this returns.
+      pullLever: (id) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !sessionItem || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        const pulled = { item: sessionItem.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = simplerSolar(sessionItem, leverCtx);
+          if (!easier) return 'There is no easier one for this item.';
+          setLeverState(pulled);
+          setPractice(easier.item);
+          setSelectedBodyId(null);
+          return { practice: solarAssignment(easier.item) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { setPractice(null); setSelectedBodyId(null); },
+    };
   });
 
   // Pip: the sky is the question side. On identify items one body is spotlit and
@@ -941,8 +1005,24 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, isPreReader, resol
             suppressLabels={suppressLabels}
             spotlightBodyIds={spotlightBodyIds}
             revealBodyIds={revealBodyIds}
+            starMarked={pulledLevers.includes(STAR_LEVER)}
+            brightRingBodyId={pulledLevers.includes(FIRST_RING_LEVER) ? firstRingBodyId(currentItem, data.bodies) : null}
           />
           </div>
+
+          {currentItem && pulledLevers.includes(CLOSE_UP_LEVER) && (() => {
+            const target = data.bodies.find((b) => b.id === currentItem.targetBodyId);
+            return target ? <CloseUp body={target} /> : null;
+          })()}
+          {currentItem && pulledLevers.includes(NEAR_FAR_LEVER) && <NearFarModel glow={currentItem.facet === 'closest' ? 'near' : 'far'} />}
+          {currentItem && pulledLevers.includes(KIND_MODEL_LEVER) && <KindModel dwarf={currentItem.facet === 'dwarf'} />}
+          {currentItem && pulledLevers.includes(SIZE_ROW_LEVER) && (
+            <SizeRow bodies={sizeRowBodies(currentItem, data.bodies) as CelestialBody[]} />
+          )}
+          {currentItem && pulledLevers.includes(FACT_STRIP_LEVER) && (
+            <FactStrip bodies={sizeRowBodies(currentItem, data.bodies) as CelestialBody[]} facet={currentItem.facet} />
+          )}
+          {pulledLevers.includes(TRIP_MODEL_LEVER) && <TripModel />}
 
           {/* The reveal — the first moment an answer may appear. Gated on
               `revealHeld`, never on `currentSolved` (18b). */}

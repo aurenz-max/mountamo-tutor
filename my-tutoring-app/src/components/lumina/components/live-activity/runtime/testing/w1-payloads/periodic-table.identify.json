@@ -1,0 +1,48 @@
+{
+ "source": "qa/tutor-reports/periodic-table-runtime-identify-payload-2026-10-09.json",
+ "primitiveId": "periodic-table",
+ "evalMode": "identify",
+ "data": {
+  "title": "Periodic Table of Elements",
+  "description": "Explore the elements and their properties",
+  "highlightElements": [],
+  "challenges": [
+   {
+    "id": "pt-1-identify",
+    "challengeType": "identify",
+    "clueBy": "position",
+    "targetNumber": 5
+   },
+   {
+    "id": "pt-2-identify",
+    "challengeType": "identify",
+    "clueBy": "number",
+    "targetNumber": 9
+   },
+   {
+    "id": "pt-3-identify",
+    "challengeType": "identify",
+    "clueBy": "symbol",
+    "targetNumber": 16
+   },
+   {
+    "id": "pt-4-identify",
+    "challengeType": "identify",
+    "clueBy": "position",
+    "targetNumber": 12
+   },
+   {
+    "id": "pt-5-identify",
+    "challengeType": "identify",
+    "clueBy": "number",
+    "targetNumber": 2
+   },
+   {
+    "id": "pt-6-identify",
+    "challengeType": "identify",
+    "clueBy": "symbol",
+    "targetNumber": 53
+   }
+  ]
+ }
+}

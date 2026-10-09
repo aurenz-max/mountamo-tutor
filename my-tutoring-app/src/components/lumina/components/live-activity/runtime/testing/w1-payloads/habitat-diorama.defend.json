@@ -1,0 +1,280 @@
+{
+ "source": "gate5 batch-gate generation 2026-10-09",
+ "primitiveId": "habitat-diorama",
+ "evalMode": "defend",
+ "data": {
+  "primitiveType": "habitat-diorama",
+  "habitat": {
+   "name": "Yellowstone River Valley",
+   "biome": "Temperate Grassland and Riparian Forest",
+   "climate": "Semi-arid with cold winters and warm summers",
+   "description": "A vibrant river valley featuring winding waterways, grassy meadows, and stands of cottonwood trees supporting a complex web of wildlife."
+  },
+  "organisms": [
+   {
+    "id": "grass",
+    "commonName": "Blue Grama Grass",
+    "role": "producer",
+    "imagePrompt": "lush green bunchgrass growing in rich soil",
+    "position": {
+     "x": "15%",
+     "y": "70%"
+    },
+    "description": "A hardy perennial grass that captures sunlight to produce energy through photosynthesis.",
+    "adaptations": [
+     "Deep root systems to survive dry spells",
+     "Rapid regrowth after grazing"
+    ]
+   },
+   {
+    "id": "elk",
+    "commonName": "Rocky Mountain Elk",
+    "role": "primary-consumer",
+    "imagePrompt": "large brown elk grazing in a sunny meadow",
+    "position": {
+     "x": "40%",
+     "y": "65%"
+    },
+    "description": "A large herbivore that travels in herds and feeds extensively on grasses and shrubs.",
+    "adaptations": [
+     "Flat teeth specialized for grinding tough plant material",
+     "Herd behavior for protection against predators"
+    ]
+   },
+   {
+    "id": "beaver",
+    "commonName": "North American Beaver",
+    "role": "primary-consumer",
+    "imagePrompt": "beaver gnawing on a tree branch near water",
+    "position": {
+     "x": "25%",
+     "y": "85%"
+    },
+    "description": "A semi-aquatic rodent that feeds on inner tree bark and aquatic plants while engineering wetland habitats.",
+    "adaptations": [
+     "Strong front incisors to cut down trees",
+     "Webbed hind feet for efficient swimming"
+    ]
+   },
+   {
+    "id": "wolf",
+    "commonName": "Gray Wolf",
+    "role": "secondary-consumer",
+    "imagePrompt": "gray wolf standing alert in a grassy clearing",
+    "position": {
+     "x": "70%",
+     "y": "50%"
+    },
+    "description": "An apex predator that hunts in packs to regulate herbivore populations.",
+    "adaptations": [
+     "Strong jaws and sharp canine teeth",
+     "Endurance running for long-distance tracking"
+    ]
+   },
+   {
+    "id": "eagle",
+    "commonName": "Bald Eagle",
+    "role": "tertiary-consumer",
+    "imagePrompt": "majestic bald eagle perched high on a dead tree branch",
+    "position": {
+     "x": "85%",
+     "y": "25%"
+    },
+    "description": "A powerful bird of prey that feeds primarily on fish and small mammals.",
+    "adaptations": [
+     "Incredible eyesight to spot prey from great heights",
+     "Hooked beak and sharp talons for grasping"
+    ]
+   },
+   {
+    "id": "fungi",
+    "commonName": "Bracket Fungi",
+    "role": "decomposer",
+    "imagePrompt": "shelf fungi growing on the side of a decaying log",
+    "position": {
+     "x": "10%",
+     "y": "40%"
+    },
+    "description": "Wood-decaying organisms that break down dead organic matter and return nutrients to the soil.",
+    "adaptations": [
+     "Enzymes that dissolve tough plant lignin and cellulose",
+     "Spore dispersal mechanisms for wide distribution"
+    ]
+   }
+  ],
+  "relationships": [
+   {
+    "fromId": "grass",
+    "toId": "elk",
+    "type": "predation",
+    "description": "Elk consume the blue grama grass to obtain energy and nutrients."
+   },
+   {
+    "fromId": "grass",
+    "toId": "beaver",
+    "type": "predation",
+    "description": "Beavers eat wetland grasses and herbaceous plants alongside tree bark."
+   },
+   {
+    "fromId": "elk",
+    "toId": "wolf",
+    "type": "predation",
+    "description": "Gray wolves hunt and consume elk to sustain their pack."
+   },
+   {
+    "fromId": "beaver",
+    "toId": "wolf",
+    "type": "predation",
+    "description": "Wolves occasionally prey upon beavers when other food sources are scarce."
+   },
+   {
+    "fromId": "elk",
+    "toId": "beaver",
+    "type": "competition",
+    "description": "Elk and beavers compete for access to riparian woody plants and shoreline vegetation."
+   }
+  ],
+  "environmentalFeatures": [
+   {
+    "id": "river",
+    "name": "Winding River",
+    "description": "A cool flowing water channel that provides hydration and aquatic habitats.",
+    "position": {
+     "x": "30%",
+     "y": "90%"
+    }
+   },
+   {
+    "id": "meadow",
+    "name": "Sunlit Meadow",
+    "description": "An open expanse of nutrient-rich soil and abundant sunlight supporting plant growth.",
+    "position": {
+     "x": "50%",
+     "y": "70%"
+    }
+   }
+  ],
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "defend",
+    "prompt": "Identify the evidence demonstrating that wolves help maintain a healthy plant community.",
+    "explanation": "Gray wolves prey on herbivores like elk, preventing overgrazing and allowing riverside plants and grasses to recover and thrive.",
+    "correctEvidenceId": "ev2",
+    "evidenceChoices": [
+     {
+      "id": "ev1",
+      "text": "Wolves howl loudly during moonlit nights in the valley."
+     },
+     {
+      "id": "ev2",
+      "text": "When wolf packs are present, herbivore overgrazing drops and streamside vegetation flourishes."
+     },
+     {
+      "id": "ev3",
+      "text": "Wolves have thick fur coats that protect them from winter snowstorms."
+     }
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "defend",
+    "prompt": "Select the observation proving that bracket fungi function as decomposers in this habitat.",
+    "explanation": "Bracket fungi secrete specialized enzymes to break down tough dead wood, releasing essential nutrients back into the soil.",
+    "correctEvidenceId": "ev3",
+    "evidenceChoices": [
+     {
+      "id": "ev1",
+      "text": "Bracket fungi grow exclusively on the shaded sides of living trees."
+     },
+     {
+      "id": "ev2",
+      "text": "Brightly colored caps attract flying insects during summer months."
+     },
+     {
+      "id": "ev3",
+      "text": "Fallen logs disappear faster over time as fungal threads dissolve woody tissue into soil nutrients."
+     }
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "defend",
+    "prompt": "Choose the piece of data supporting the claim that grasses form the foundation of the local food web.",
+    "explanation": "Grasses perform photosynthesis to capture solar energy, providing the primary food source for all grazing herbivores in the ecosystem.",
+    "correctEvidenceId": "ev1",
+    "evidenceChoices": [
+     {
+      "id": "ev1",
+      "text": "Stomach contents of multiple herbivores consist primarily of digested grass fibers and blades."
+     },
+     {
+      "id": "ev2",
+      "text": "Grass roots hold loose soil particles tightly together during heavy rainstorms."
+     },
+     {
+      "id": "ev3",
+      "text": "Blue grama blades turn golden brown when exposed to freezing autumn temperatures."
+     }
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "defend",
+    "prompt": "Identify the observation showing a competitive relationship between herbivores in the valley.",
+    "explanation": "Elk and beavers overlap in their diet regarding riparian plants, leading to direct competition for limited food resources.",
+    "correctEvidenceId": "ev2",
+    "evidenceChoices": [
+     {
+      "id": "ev1",
+      "text": "Beavers build complex dams using mud and fallen tree branches."
+     },
+     {
+      "id": "ev2",
+      "text": "Elk and beavers feed on the exact same shoreline shrubs, resulting in reduced food availability for both."
+     },
+     {
+      "id": "ev3",
+      "text": "Bald eagles soar above the river looking for swimming fish."
+     }
+    ]
+   },
+   {
+    "id": "c5",
+    "type": "defend",
+    "prompt": "Select the evidence verifying that bald eagles occupy a high trophic level in the ecosystem.",
+    "explanation": "As tertiary consumers, bald eagles feed on secondary consumers and fish, accumulating energy from multiple lower trophic levels.",
+    "correctEvidenceId": "ev3",
+    "evidenceChoices": [
+     {
+      "id": "ev1",
+      "text": "Bald eagles build massive stick nests high in old-growth pine trees."
+     },
+     {
+      "id": "ev2",
+      "text": "Young eaglets practice flapping their wings before taking their first flight."
+     },
+     {
+      "id": "ev3",
+      "text": "Observations confirm that eagles capture fish and small mammals rather than feeding on plants."
+     }
+    ]
+   }
+  ],
+  "gradeBand": "3-5",
+  "disruptionScenario": {
+   "event": "A severe drought significantly reduces the growth of blue grama grass across the river valley.",
+   "cascadeEffects": [
+    "Primary consumers like elk and beavers experience food shortages and declining populations.",
+    "Secondary consumers such as wolves have less prey available, leading to reduced pack sizes."
+   ],
+   "question": "How does a shortage at the producer level ripple upward through the entire food chain?"
+  },
+  "targetEvalMode": "defend",
+  "intent": "Use evidence to support a claim about an ecosystem",
+  "challengeType": "defend",
+  "challengeTypes": [
+   "defend"
+  ]
+ }
+}

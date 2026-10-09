@@ -96,6 +96,11 @@ import {
   describeChain,
   hearBackgroundRequest,
 } from './causeEffectChainWorkspace';
+import {
+  ENDS_MODEL_LEVER, MODEL_CHAIN_LEVER, ROLE_MODEL_LEVER, ROLE_TAG, TWO_TESTS_LEVER,
+  causeEffectLevers, chainModelFor, leversOnScreen, orderedPractice, practiceItem, roleModelFor, startingLevers,
+  type ChainSession,
+} from './causeEffectChainLevers';
 import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
 
 // ============================================================================
@@ -318,6 +323,18 @@ const CauseEffectChainSurface: React.FC<CauseEffectChainProps> = ({ data, classN
    *  `runner.revealHeld`, deliberately NOT cleared in `onItemOpened`. */
   const [reveal, setReveal] = useState<RevealPayload | null>(null);
 
+  // In-item levers (`causeEffectChainLevers.ts`), keyed by the session item they were pulled on, and the easier
+  // practice item a simplify lever puts in place of the session item until the observer returns to it. A ref
+  // shadows the practice item so a retry on it rebuilds ITS board, not the session item's.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPracticeState] = useState<CauseEffectChainItem | null>(null);
+  const practiceRef = useRef<CauseEffectChainItem | null>(null);
+  const setPractice = useCallback((p: CauseEffectChainItem | null) => {
+    practiceRef.current = p;
+    setPracticeState(p);
+  }, []);
+  const session = useMemo<ChainSession>(() => ({ items, gradeLevel, tier: supportTier }), [items, gradeLevel, supportTier]);
+
   const evaluation = usePrimitiveEvaluation<CauseEffectChainMetrics>({
     primitiveType: 'cause-effect-chain',
     instanceId: resolvedInstanceId,
@@ -371,20 +388,56 @@ const CauseEffectChainSurface: React.FC<CauseEffectChainProps> = ({ data, classN
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
     instanceId: resolvedInstanceId,
     onFinished: finish,
-    onItemOpened: (item) => resetBoard(item),
+    onItemOpened: (item) => { setPractice(null); resetBoard(item); },
     // All-or-nothing: the whole board clears, because leaving the right cards
-    // in place would hand back which ones were already right.
-    onCorrectionRetry: (item) => resetBoard(item),
+    // in place would hand back which ones were already right. A retry on a
+    // practice item keeps the practice item and clears its board.
+    onCorrectionRetry: (item) => resetBoard(practiceRef.current ?? item),
+    // The full item back after its practice item: empty, the practice board is not work on it.
+    onPracticeClosed: (item) => { setPractice(null); resetBoard(item); },
     onAffirmed: (item) => setReveal({ item }),
   });
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
+  /** What is on screen: the practice item while a simplify lever holds it, else the session item. */
+  const sessionItem = runner.currentItem;
+  const shownItem = practice ?? sessionItem;
+  const starting = practice ? [] : startingLevers(supportTier, sessionItem);
+  const pulledLevers = practice || !sessionItem || leverState.item !== sessionItem.id ? [] : leverState.pulled;
+  const leverOn = (id: string) => !practice && (starting.includes(id) || pulledLevers.includes(id));
+  const roleModel = sessionItem && leverOn(ROLE_MODEL_LEVER) ? roleModelFor(sessionItem, session) : null;
+  const chainModel = sessionItem && (leverOn(MODEL_CHAIN_LEVER) || leverOn(ENDS_MODEL_LEVER))
+    ? chainModelFor(sessionItem, session) : null;
+
   // What the tutor and the observer are shown, republished every render. W1 offers no
   // demonstration targets and no presentation; every item is answerable once it opens.
   useLayoutEffect(() => {
-    const item = runner.currentItem;
-    if (!item) return;
-    workspace.current = { ...causeEffectScene(item, context, placedRef.current) };
+    if (!sessionItem || !shownItem) return;
+    const scene = causeEffectScene(shownItem, context, placedRef.current);
+    const levers = practice ? [] : causeEffectLevers(sessionItem, session, pulledLevers, starting);
+    const onScreen = practice ? null : leversOnScreen(sessionItem, [...starting, ...pulledLevers], session);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
+        ...(practice ? { practice: `An easier practice item, ungraded. The full item comes back after it.${orderedPractice(practice)
+          ? ' Its cards are drawn in order, earliest at the top, each leading to the next and the ending last.' : ''}` } : {}) },
+      levers,
+      pullLever: (id: string) => {
+        const lever = levers.find((l) => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already on screen.`;
+        const next = { item: sessionItem.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = practiceItem(sessionItem, session);
+          if (!easier) return 'This item is already the plainest of its kind.';
+          setLeverState(next); setPractice(easier); resetBoard(easier);
+          return { practice: causeEffectAssignment(easier) };
+        }
+        setLeverState(next);
+        return true as const;
+      },
+      endPractice: () => { setPractice(null); resetBoard(sessionItem); },
+    };
   });
 
   const showReveal = runner.revealHeld && reveal !== null;
@@ -397,7 +450,7 @@ const CauseEffectChainSurface: React.FC<CauseEffectChainProps> = ({ data, classN
   /** Called by the stillness window once the full chain has sat still. Reads the
    *  board through the ref, at fire time; the activity's own check is the verdict. */
   const commitChain = useCallback(() => {
-    const item = runner.currentItem;
+    const item = practiceRef.current ?? runner.currentItem;
     if (!item || item.kind !== 'build_chain') return;
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
     const order = placedRef.current;
@@ -409,7 +462,7 @@ const CauseEffectChainSurface: React.FC<CauseEffectChainProps> = ({ data, classN
   /** Tap a bank card → it drops into the earliest empty slot. Filling the last
    *  slot arms the stillness window; anything short of that cancels it. */
   const handlePlace = useCallback((cardId: string) => {
-    const item = runner.currentItem;
+    const item = practiceRef.current ?? runner.currentItem;
     if (!item || item.kind !== 'build_chain') return;
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
     const prev = placedRef.current;
@@ -433,7 +486,7 @@ const CauseEffectChainSurface: React.FC<CauseEffectChainProps> = ({ data, classN
 
   /** Tap a placed card → it returns to the bank. Starting over is thinking. */
   const handleRemove = useCallback((slotIndex: number) => {
-    const item = runner.currentItem;
+    const item = practiceRef.current ?? runner.currentItem;
     if (!item || item.kind !== 'build_chain') return;
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
     const prev = placedRef.current;
@@ -463,7 +516,7 @@ const CauseEffectChainSurface: React.FC<CauseEffectChainProps> = ({ data, classN
   }, [runner.practiceSummary, items]);
 
   /** WHICH item is on the bench right now: the reveal renders its OWN item while it is held. */
-  const staged = showReveal && reveal ? reveal.item : runner.currentItem;
+  const staged = showReveal && reveal ? reveal.item : shownItem;
   const modeMeta = MODE_META[staged?.kind ?? 'build_chain'];
   const levers = leversFor(staged?.challengeId ?? '');
 
@@ -531,9 +584,58 @@ const CauseEffectChainSurface: React.FC<CauseEffectChainProps> = ({ data, classN
               <p className={`mt-2 text-xs ${item.isCause ? 'text-emerald-200' : 'text-rose-200'}`}>{roleLine}</p>
             )}
           </div>
+          {/* The help lever `two_tests`: two EMPTY checks under the card. Nothing ever ticks them. */}
+          {leverOn(TWO_TESTS_LEVER) && !revealed && (
+            <div data-lever="two-tests" className="space-y-1 pl-2 text-xs text-slate-300">
+              <p>☐ Did it happen before the ending?</p>
+              <p>☐ Did the ending need it?</p>
+            </div>
+          )}
         </div>
       </div>
     );
+  };
+
+  /** The help levers' models: an everyday chain or ending BESIDE the item, never on a learner's card. */
+  const renderModels = () => {
+    if (roleModel) {
+      return (
+        <LuminaPanel accent="amber" className="py-3" data-lever="role-model">
+          <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-amber-200/70">
+            A model, from everyday life
+          </span>
+          <p className="text-xs text-slate-200">{roleModel.chain.icon} In the end: {roleModel.chain.outcome}</p>
+          <ul className="mt-2 space-y-1 text-xs text-slate-300">
+            {roleModel.cards.map((c) => (
+              <li key={c.text}>{c.text} <span className="text-amber-200/80">({ROLE_TAG[c.role]})</span></li>
+            ))}
+          </ul>
+        </LuminaPanel>
+      );
+    }
+    if (chainModel) {
+      const tagged = leverOn(ENDS_MODEL_LEVER);
+      const last = chainModel.causes.length - 1;
+      return (
+        <LuminaPanel accent="amber" className="py-3" data-lever={tagged ? 'ends-model' : 'model-chain'}>
+          <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-amber-200/70">
+            A model chain, from everyday life
+          </span>
+          <ol className="space-y-0.5 text-xs text-slate-300">
+            {chainModel.causes.map((t, i) => (
+              <li key={t}>
+                {chainModel.chain.icon} {t}
+                {tagged && i === 0 && <span className="ml-1 text-amber-200/80">(root)</span>}
+                {tagged && i === last && <span className="ml-1 text-amber-200/80">(right before the ending)</span>}
+                <span className="block pl-4 text-slate-500" aria-hidden>↓</span>
+              </li>
+            ))}
+            <li className="font-medium text-slate-100">🏁 {chainModel.chain.outcome}</li>
+          </ol>
+        </LuminaPanel>
+      );
+    }
+    return null;
   };
 
   // ── Render: build_chain — the board ───────────────────────────────────────
@@ -619,11 +721,13 @@ const CauseEffectChainSurface: React.FC<CauseEffectChainProps> = ({ data, classN
   const renderRoot = (item: Extract<CauseEffectChainItem, { kind: 'root_vs_proximate' }>) => {
     const revealed = showReveal && reveal?.item.id === item.id;
     const answerId = correctChoiceOf(item).card.id;
+    // The simplify lever `ordered_chain`: a practice chain drawn in causal order, the ending last.
+    const ordered = orderedPractice(item);
     return (
       <div className="space-y-4">
-        {renderOutcome(item)}
-        <div className="space-y-2">
-          <LuminaSectionLabel accent="amber" size="sm">The events</LuminaSectionLabel>
+        {!ordered && renderOutcome(item)}
+        <div className="space-y-2" data-lever={ordered ? 'ordered-chain' : undefined}>
+          <LuminaSectionLabel accent="amber" size="sm">{ordered ? 'The chain, in order' : 'The events'}</LuminaSectionLabel>
           {/* Numbered in on-screen order — the generator's shuffle, provably
               not the answer order — so "the second one" is a fair answer. */}
           <div className="space-y-2">
@@ -640,11 +744,13 @@ const CauseEffectChainSurface: React.FC<CauseEffectChainProps> = ({ data, classN
                     {i + 1}
                   </span>
                   <div className="min-w-0 flex-1">{renderCardBody(card)}</div>
+                  {ordered && <span className="self-end text-[11px] text-slate-500" aria-hidden>↓ which led to</span>}
                 </div>
               );
             })}
           </div>
         </div>
+        {ordered && renderOutcome(item)}
       </div>
     );
   };
@@ -738,7 +844,11 @@ const CauseEffectChainSurface: React.FC<CauseEffectChainProps> = ({ data, classN
               )}
 
               {pip.store && <div {...pip.dock} />}
+              {practice && !showReveal && (
+                <div className="text-center text-xs text-amber-300" data-practice>Practice — an easier one first</div>
+              )}
               {staged && <div {...pip.target('stimulus')}>{renderStage(staged)}</div>}
+              {!showReveal && renderModels()}
 
               {/* Reveal-on-affirm: the teaching note, for exactly as long as the
                   tutor's affirmation is being spoken (runner.revealHeld). Not on

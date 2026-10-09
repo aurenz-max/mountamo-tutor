@@ -77,6 +77,10 @@ import {
   type EraTier,
 } from './eraExplorerScript';
 import { eraAssignment, eraItems, eraScene, hearCardRequest } from './eraExplorerWorkspace';
+import {
+  MODEL_CHANGE_LEVER, MODEL_TAGS, SIDE_BY_SIDE_LEVER, TWO_CHECKS_LEVER,
+  changeModelFor, eraLeverSession, eraLevers, leversOnScreen, practiceItem, startingLevers, twoChecksFor,
+} from './eraExplorerLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -248,9 +252,11 @@ const EraSourceCard: React.FC<{
   onReadLens: (lens: EraLens) => void;
   isPreReader: boolean;
   speaking: boolean;
+  /** The lens_id help lever `side_by_side`: every card open at once, each under its lens name, nothing marked. */
+  sideBySide?: boolean;
 }> = ({
   lenses, eraName, eraPeriod, priorEra, showPriorEra,
-  activeLens, visitedLenses, onSelectLens, onReadLens, isPreReader, speaking,
+  activeLens, visitedLenses, onSelectLens, onReadLens, isPreReader, speaking, sideBySide,
 }) => (
   <div className="space-y-3">
     <div className="flex items-baseline justify-between gap-2">
@@ -258,6 +264,18 @@ const EraSourceCard: React.FC<{
       <span className="text-[11px] text-slate-500">{eraPeriod}</span>
     </div>
 
+    {sideBySide ? (
+      <div data-lever="side-by-side" className="grid gap-2 sm:grid-cols-3">
+        {lenses.map((lens) => (
+          <LuminaPanel key={lens.title} accent="amber" className="py-3 space-y-2">
+            <p className="text-xs font-semibold text-amber-200"><span className="mr-1">{lens.icon}</span>{lens.title}</p>
+            <p className="text-slate-200 text-sm leading-relaxed">{lens.body}</p>
+            <LuminaReadAloud size={isPreReader ? 'lg' : 'sm'} speaking={speaking} label="Read this to me"
+              onClick={() => onReadLens(lens)} />
+          </LuminaPanel>
+        ))}
+      </div>
+    ) : (<>
     <div className="flex gap-1 overflow-x-auto pb-1">
       {lenses.map((lens, i) => (
         <LuminaButton
@@ -298,6 +316,7 @@ const EraSourceCard: React.FC<{
         </div>
       </LuminaPanel>
     )}
+    </>)}
 
     {showPriorEra && priorEra && (
       <div className="space-y-2">
@@ -359,7 +378,12 @@ const EraExplorerSurface: React.FC<EraExplorerProps> = ({ data, className, runti
    * the session to the open-source tier.
    */
   const [sourceRevealed, setSourceRevealed] = useState(false);
-  const sourceVisible = lensAccess === 'open' || sourceRevealed;
+
+  // In-item levers (`eraExplorerLevers.ts`), keyed by the session item they were pulled on, and the easier practice
+  // item a simplify lever puts in place of the session item until the observer returns to it.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<EraExplorerItem | null>(null);
+  const session = useMemo(() => eraLeverSession(items, { eraName, priorEra, lenses }), [items, eraName, priorEra, lenses]);
 
   /** The reveal payload (18b): set in `onAffirmed`, rendered behind
    *  `runner.revealHeld`, deliberately NOT cleared in `onItemOpened` — the
@@ -424,8 +448,12 @@ const EraExplorerSurface: React.FC<EraExplorerProps> = ({ data, className, runti
     onItemOpened: () => {
       // The page lever, re-applied per item: at the hard tier the source folds
       // away again, so one tap cannot downgrade the rest of the session.
+      setPractice(null);
       setSourceRevealed(false);
     },
+    // A retry keeps a practice item on screen; only the return to the full item removes it.
+    onCorrectionRetry: () => setSourceRevealed(false),
+    onPracticeClosed: () => { setPractice(null); setSourceRevealed(false); },
     onAffirmed: (item) => {
       const c = correctChoiceOf(item);
       setReveal({ item, line: c.label, note: item.explanation });
@@ -433,12 +461,46 @@ const EraExplorerSurface: React.FC<EraExplorerProps> = ({ data, className, runti
   });
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
+  /** What is on screen: the practice item while a simplify lever holds it, else the session item. */
+  const sessionItem = runner.currentItem;
+  const shownItem = practice ?? sessionItem;
+  const starting = practice ? [] : startingLevers(supportTier, sessionItem);
+  const pulledLevers = practice || !sessionItem || leverState.item !== sessionItem.id ? [] : leverState.pulled;
+  const leverOn = (id: string) => !practice && (starting.includes(id) || pulledLevers.includes(id));
+  const sideBySide = leverOn(SIDE_BY_SIDE_LEVER);
+  const sourceVisible = lensAccess === 'open' || sourceRevealed || sideBySide;
+  const checks = sessionItem && leverOn(TWO_CHECKS_LEVER) ? twoChecksFor(sessionItem, session) : null;
+  const changeModel = sessionItem && leverOn(MODEL_CHANGE_LEVER) ? changeModelFor(sessionItem, session) : null;
+
   // What the tutor and the observer are shown, republished every render. W1 offers no
   // demonstration targets and no presentation; every item is answerable once it opens.
   useLayoutEffect(() => {
-    const item = runner.currentItem;
-    if (!item) return;
-    workspace.current = { ...eraScene(item, data, sourceVisible, isPreReader) };
+    if (!sessionItem || !shownItem) return;
+    const scene = eraScene(shownItem, data, sourceVisible, isPreReader);
+    const levers = practice ? [] : eraLevers(sessionItem, session, pulledLevers, starting);
+    const onScreen = practice ? null : leversOnScreen(sessionItem, [...starting, ...pulledLevers], session);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice item, ungraded: its detail is copied word for word from one era card. '
+          + 'The full item comes back after it.' } : {}) },
+      levers,
+      pullLever: (id: string) => {
+        const lever = levers.find((l) => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already on screen.`;
+        const next = { item: sessionItem.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = practiceItem(sessionItem, session);
+          if (!easier) return 'This item is already the plainest of its kind.';
+          setLeverState(next); setPractice(easier);
+          return { practice: eraAssignment(easier) };
+        }
+        setLeverState(next);
+        return true as const;
+      },
+      endPractice: () => setPractice(null),
+    };
   });
 
   const showReveal = runner.revealHeld && reveal !== null;
@@ -462,7 +524,7 @@ const EraExplorerSurface: React.FC<EraExplorerProps> = ({ data, className, runti
   }, [runner.practiceSummary, items]);
 
   /** WHICH item is on the bench right now: the reveal renders its OWN item while it is held. */
-  const staged = showReveal && reveal ? reveal.item : runner.currentItem;
+  const staged = showReveal && reveal ? reveal.item : shownItem;
   const modeMeta = MODE_META[staged?.kind ?? 'era_sort'];
 
   const sourceCardEl = lenses.length > 0 ? (
@@ -478,6 +540,7 @@ const EraExplorerSurface: React.FC<EraExplorerProps> = ({ data, className, runti
       onReadLens={readLens}
       isPreReader={isPreReader}
       speaking={runner.tutorSpeaking}
+      sideBySide={sideBySide}
     />
   ) : null;
 
@@ -524,10 +587,31 @@ const EraExplorerSurface: React.FC<EraExplorerProps> = ({ data, className, runti
                 aloud for everyone — no bins under it, no captions, no hint, no
                 explanation until the answer is credited. */}
             {pip.store && <div {...pip.dock} />}
+            {practice && !showReveal && (
+              <div className="text-center text-xs text-amber-300" data-practice>Practice — an easier one first</div>
+            )}
             {staged && (
               <LuminaPrompt {...pip.target('stimulus')} accent="amber" center>
                 {staged.statement}
               </LuminaPrompt>
+            )}
+
+            {/* The help lever `two_checks`: two EMPTY checks under the detail. Nothing ever ticks them. */}
+            {checks && !showReveal && (
+              <div data-lever="two-checks" className="flex flex-col items-center gap-1 text-sm text-slate-300">
+                <span>{'☐'} {checks[0]}</span>
+                <span>{'☐'} {checks[1]}</span>
+              </div>
+            )}
+
+            {/* The help lever `model_change`: a change from everyday life beside the item, never the item. */}
+            {changeModel && !showReveal && (
+              <LuminaPanel accent="emerald" className="py-3 space-y-1 text-sm" data-lever="model-change">
+                <p className="text-xs text-slate-400">{changeModel.icon} A change from everyday life (not this one)</p>
+                <p className="text-slate-200">{changeModel.change} <span className="text-slate-400">({MODEL_TAGS.change})</span></p>
+                <p className="text-slate-200">{changeModel.cause} <span className="text-emerald-300">({MODEL_TAGS.cause})</span></p>
+                <p className="text-slate-200">{changeModel.notWhy} <span className="text-slate-400">({MODEL_TAGS.notWhy})</span></p>
+              </LuminaPanel>
             )}
 
             {/* Reveal-on-credit: the answer, in words, while the credit is held

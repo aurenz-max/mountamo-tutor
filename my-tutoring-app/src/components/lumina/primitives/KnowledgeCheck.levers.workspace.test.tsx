@@ -23,6 +23,9 @@ const HONEY = { ...base, type: 'multiple_choice', id: 'mc1', question: 'Which an
   options: [{ id: 'A', text: 'a bee', distance: 'key' }, { id: 'B', text: 'an ant', distance: 'near' }, { id: 'C', text: 'a cow', distance: 'far' }] };
 const SUMS = { ...base, type: 'multiple_choice', id: 'mc2', question: 'What is seven plus three?', optionFormat: 'katex', correctOptionId: 'B',
   options: [{ id: 'A', text: '9' }, { id: 'B', text: '10' }, { id: 'C', text: '11' }, { id: 'D', text: '3' }] };
+// The saved recall payload's p0-mct: a K count of a printed run, three numeral choices, touched.
+const STARS = { ...base, gradeLevel: 'kindergarten', type: 'multiple_choice', id: 'mc_1_0', question: 'What is the number of stars: ⭐⭐⭐⭐⭐?',
+  correctOptionId: 'B', options: [{ id: 'A', text: '4', emoji: '4️⃣' }, { id: 'B', text: '5', emoji: '5️⃣' }, { id: 'C', text: '6', emoji: '6️⃣' }] };
 const mount = (problems: unknown[]) =>
   mountWorkspace({ primitiveId: 'knowledge-check', evalMode: 'recall', data: { problems, instanceId: 'check' }, instanceId: 'check' });
 const levers = (h: WorkspaceHarness) => h.state().task!.workspace!.levers?.map(l => [l.id, l.pulled]);
@@ -73,5 +76,42 @@ it('touched choice: the farthest untried choice greys out, cannot be touched, an
   expect(h.state().task!.workspace!.attempts.length).toBe(before);
   fireEvent.click(h.view.container.querySelector('[data-pip-object="option-B"]')!);
   expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true, levers: ['drop_far_choice'] });
+  h.close();
+});
+
+it('count on a 3-choice menu: after a wrong touch the spread answers one_less; a refused drop changes nothing', () => {
+  const h = mount([STARS]);
+  expect(levers(h)).toEqual([['spread_pictures', false], ['drop_far_choice', false]]);
+  fireEvent.click(h.view.container.querySelector('[data-pip-object="option-A"]')!);
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: false, miss: 'one_less' });
+  expect(levers(h)).toEqual([['spread_pictures', false]]);
+
+  // Refused: the drop would leave one untried choice. Screen, levers and attempts unchanged (revision may bump).
+  const screen = h.view.container.innerHTML, attempts = h.state().task!.workspace!.attempts.length;
+  const refused = h.dispatch('pull_lever', { lever: 'drop_far_choice' });
+  expect(refused.status).not.toBe('committed');
+  expect(h.view.container.innerHTML).toBe(screen);
+  expect(levers(h)).toEqual([['spread_pictures', false]]);
+  expect(h.state().task!.workspace!.attempts.length).toBe(attempts);
+
+  const receipt = h.dispatch('pull_lever', { lever: 'spread_pictures' });
+  expect(receipt.status).toBe('committed');
+  const boxes = h.view.container.querySelectorAll('[data-lever="spread-pictures"] [data-spread-box]');
+  expect(boxes).toHaveLength(5);
+  expect(h.view.container.querySelector('[data-lever="spread-pictures"]')!.textContent).not.toMatch(/\d/);
+  const fact = String(receipt.state.task!.demand.levers_on_screen);
+  expect(fact).toContain('⭐');
+  expect(fact).not.toMatch(/\d/);
+  expect(levers(h)).toEqual([['spread_pictures', true]]);
+
+  // Touching a box marks it; the mark is the learner's own count and never reaches the scene.
+  fireEvent.click(boxes[0]);
+  expect(h.view.container.querySelectorAll('[data-spread-box][data-marked]')).toHaveLength(1);
+  expect(String(h.state().task!.demand.levers_on_screen)).toBe(fact);
+
+  h.dispatch('retry'); h.confirmVisible();
+  expect(h.view.container.querySelectorAll('[data-lever="spread-pictures"] [data-spread-box]')).toHaveLength(5);
+  fireEvent.click(h.view.container.querySelector('[data-pip-object="option-B"]')!);
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true, levers: ['spread_pictures'] });
   h.close();
 });

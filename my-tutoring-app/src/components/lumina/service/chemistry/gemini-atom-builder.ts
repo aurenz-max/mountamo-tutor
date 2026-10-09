@@ -7,6 +7,8 @@ import {
   AtomBuilderShowOptions,
   AtomBuilderConstraints,
 } from "../../primitives/visual-primitives/chemistry/AtomBuilder";
+import { atomAskInstruction, buildAtomAsks } from "../../primitives/visual-primitives/chemistry/atomBuild";
+import { resolveEvalModeConstraint, logEvalModeResolution, type ChallengeTypeDoc } from "../evalMode";
 
 // Re-export types for convenience (no redefinition — sourced from the component)
 export type {
@@ -258,6 +260,59 @@ const resolveGradeBand = (gradeLevel: string): "3-5" | "6-8" => {
 };
 
 /**
+ * Challenge types the catalog's eval modes route to. Only make_atom is code-built; the classic modes still let the
+ * model choose its own mix (their catalog challengeTypes predate this generator's type names).
+ */
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  make_atom: {
+    promptDoc: '"make_atom": Open build. The student makes any atom with a code-stated property (N outer electrons, a full '
+      + 'outer shell, a charge, two isotopes of one element) on an empty board. Code writes the ask and judges the build.',
+    schemaDescription: "'make_atom' (make any atom with the asked property)",
+  },
+};
+
+/**
+ * make_atom is an open build: code owns every ask (distinct per session, within the grade band) and the order, so
+ * there is no model call. Grades 3-5 make neutral atoms only, as the classic modes keep ions and isotopes for 6-8.
+ */
+export function buildMakeAtomData(gradeBand: "3-5" | "6-8", rand: () => number = Math.random): AtomBuilderData {
+  const asks = buildAtomAsks(gradeBand, rand);
+  return {
+    title: "Make Your Own Atom",
+    description: "Build atoms of your own that fit each ask, then press I'm done!",
+    targetElement: { atomicNumber: null, massNumber: null, charge: 0, name: null },
+    challenges: asks.map((ask, i) => ({
+      id: `ma${i + 1}`,
+      type: "make_atom" as const,
+      instruction: atomAskInstruction(ask),
+      ask,
+      targetProtons: null,
+      targetNeutrons: null,
+      targetElectrons: null,
+      hint: "",
+      narration: "",
+    })),
+    showOptions: {
+      showMiniPeriodicTable: true,
+      showIdentityCard: true,
+      showShellCapacity: false,
+      showCharge: false,
+      showMassNumber: false,
+      showElectronConfiguration: false,
+      showNucleusDetail: true,
+    },
+    constraints: {
+      maxProtons: gradeBand === "3-5" ? 20 : 36,
+      maxShells: 4,
+      allowIons: gradeBand === "6-8",
+      allowIsotopes: gradeBand === "6-8",
+    },
+    imagePrompt: null,
+    gradeBand,
+  };
+}
+
+/**
  * Generate Atom Builder data using Gemini
  *
  * Creates an interactive atom construction activity where students drag
@@ -279,6 +334,14 @@ export const generateAtomBuilder = async (ctx: GenerationContext): Promise<AtomB
   const intent = ctx.intent || "";
   // Canonical objective grade wins; the prose parser is only the fallback (14m).
   const gradeBand = atomBuilderGradeBandFromGrade(ctx.grade) ?? resolveGradeBand(gradeLevel);
+
+  // Pinned make_atom: the open build, code-written (see buildMakeAtomData). Other modes are unchanged.
+  const targetEvalMode = ctx.targetEvalMode ?? (ctx.raw as { targetEvalMode?: string } | undefined)?.targetEvalMode;
+  const evalConstraint = resolveEvalModeConstraint("atom-builder", targetEvalMode, CHALLENGE_TYPE_DOCS);
+  logEvalModeResolution("AtomBuilder", targetEvalMode, evalConstraint);
+  if (evalConstraint?.allowedTypes.length === 1 && evalConstraint.allowedTypes[0] === "make_atom") {
+    return buildMakeAtomData(gradeBand);
+  }
 
   const gradeBandDescriptions: Record<string, string> = {
     "3-5":

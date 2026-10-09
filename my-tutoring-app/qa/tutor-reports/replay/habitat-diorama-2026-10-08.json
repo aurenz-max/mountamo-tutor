@@ -1,0 +1,1706 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    5,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ],
+   "no_change_before_receipt": [
+    0,
+    10
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    1,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "habitat-diorama.build_habitat",
+   "primitiveId": "habitat-diorama",
+   "evalMode": "build_habitat",
+   "keys": [
+    "put in rain"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "build-1-rabbit",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "put in rain"
+      ],
+      "ask": "Build a habitat where a rabbit can live. Give it everything it needs.",
+      "leakTokens": [
+       "HABITAT_ITEM",
+       "HABITAT_GESTURE",
+       "HABITAT_MOVE",
+       "HABITAT_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Let's build a habitat where a rabbit can live! Tap the pieces to give the rabbit everything it needs to stay alive, then tap \"I'm done!\"",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's build a habitat where a rabbit can live! Tap the pieces to give it everything it needs, then press \"I'm done!\"",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's build a habitat where a rabbit can live! Tap the pieces below to give the rabbit everything it needs to stay safe and healthy.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's build a habitat where a rabbit can live! Tap the pieces to give the rabbit everything it needs to stay alive, then press \"I'm done!\"",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's build a habitat where a rabbit can live! Tap the pieces below to give the rabbit everything it needs to stay alive and healthy.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "build-1-rabbit",
+     "trigger": "The learner submitted \"Put in: Tall grass, Stream, Tall grass\". The board checked it: not right.",
+     "miss": "one_need_unmet",
+     "scoredWith": {
+      "keys": [
+       "put in rain"
+      ],
+      "ask": "Build a habitat where a rabbit can live. Give it everything it needs.",
+      "leakTokens": [
+       "HABITAT_ITEM",
+       "HABITAT_GESTURE",
+       "HABITAT_MOVE",
+       "HABITAT_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You gave the rabbit food and water! Think about where a rabbit might sleep or hide to stay safe, and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You're off to a great start! Think about what else a rabbit needs to rest and stay safe, and try adding another piece.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You're off to a great start! Think about what else a rabbit needs every day to stay safe and well, and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You've got a great start! Think about what else a rabbit needs to stay safe every day, and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! Think about what else a rabbit needs every single day to stay safe and alive, and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "build-1-rabbit",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "put in rain"
+      ],
+      "ask": "Build a habitat where a rabbit can live. Give it everything it needs.",
+      "leakTokens": [
+       "HABITAT_ITEM",
+       "HABITAT_GESTURE",
+       "HABITAT_MOVE",
+       "HABITAT_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the list next to the habitat showing what every animal needs to live. Check if your rabbit has each of those things!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0",
+          "lever": "needs_list"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A list just appeared showing the kinds of things animals need every day to stay alive. Check the pieces you have and see what else from the list might be missing!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "needs_list",
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look, a list popped up showing what every animal needs to stay alive! Check the list to see what else our rabbit needs.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "needs_list",
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A list of what every animal needs just popped up beside the habitat. Take a look at what the rabbit still needs to stay safe and well, and try adding a piece!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "needs_list",
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now there is a list beside the habitat showing the things every animal needs to live. Look over what the rabbit still needs to stay safe and well, and try adding to its home!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0",
+          "lever": "needs_list"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "build-1-rabbit",
+     "trigger": "The learner said they were stuck, so the host pulled needs_list (help). It is on screen now: Shows beside the habitat the kinds of thing every animal needs to live. Nothing on it is ticked or crossed off. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it thro",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "put in rain"
+      ],
+      "ask": "Build a habitat where a rabbit can live. Give it everything it needs.",
+      "leakTokens": [
+       "HABITAT_ITEM",
+       "HABITAT_GESTURE",
+       "HABITAT_MOVE",
+       "HABITAT_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A list just appeared right next to the habitat showing the things every animal needs to stay alive. Take a look at what's on the list, and try adding what your rabbit still needs!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new list popped up right beside the habitat showing what every animal needs to live. Take a look at those needs, and see which one your rabbit still needs!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new list popped up beside the habitat showing what every animal needs to live. Take a look at the list, then add what your rabbit is still missing!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new list popped up beside the habitat showing the things animals need every day to stay alive. Take a look at it and see what else your rabbit might need!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new list popped up beside the habitat showing what animals need to stay alive. See what piece you can add to give the rabbit everything on that list!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "build-1-rabbit",
+     "trigger": "The learner submitted \"Put in: Tall grass, Stream, Tall grass, Rain\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "put in rain"
+      ],
+      "ask": "Build a habitat where a rabbit can live. Give it everything it needs.",
+      "leakTokens": [
+       "HABITAT_ITEM",
+       "HABITAT_GESTURE",
+       "HABITAT_MOVE",
+       "HABITAT_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You added tall grass, a stream, and rain to give the rabbit everything it needs to live. Great job building a safe home for the rabbit!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You added tall grass, a stream, and rain so the rabbit has food and plenty of fresh water to live!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! By adding tall grass, a stream, and rain, you made sure the rabbit has food and water to live.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You gave the rabbit tall grass, a stream, and rain, and now every need is met! That rabbit has everything it needs to live.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You added tall grass, a stream, and rain, giving your rabbit food, water, and shelter to stay healthy!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "habitat-diorama.connect",
+   "primitiveId": "habitat-diorama",
+   "evalMode": "connect",
+   "keys": [
+    "mallard duck"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "chal-3",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "mallard duck"
+      ],
+      "ask": "Find Broadleaf Cattail. Connect it to the living thing that eats it.",
+      "leakTokens": [
+       "HABITAT_ITEM",
+       "HABITAT_GESTURE",
+       "HABITAT_MOVE",
+       "HABITAT_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The Broadleaf Cattail is lit up. Tap the living thing in the pond that eats it!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Find Broadleaf Cattail, lit up in the pond. Tap the living thing that eats it!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Broadleaf Cattail is lit up. Tap the living thing that eats it!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Broadleaf Cattail is lit up. Tap the living thing in the pond that eats it!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Broadleaf Cattail is lit up. Tap the living thing in the pond that eats it!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "chal-3",
+     "trigger": "The learner submitted \"Connected Broadleaf Cattail to Green Algae.\". The board checked it: not right.",
+     "miss": "unconnected",
+     "scoredWith": {
+      "keys": [
+       "mallard duck"
+      ],
+      "ask": "Find Broadleaf Cattail. Connect it to the living thing that eats it.",
+      "leakTokens": [
+       "HABITAT_ITEM",
+       "HABITAT_GESTURE",
+       "HABITAT_MOVE",
+       "HABITAT_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Good try! Green Algae is a plant, so let's look for an animal that munches on the Cattail.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite, Green Algae doesn't eat the cattail. Think about which animal in the pond nibbles on plants!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite, Green Algae is a plant too! Which animal in the pond nibbles on the Broadleaf Cattail?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That was a good try, but Green Algae doesn't eat the cattail. Think about which animal in the pond nibbles on plants, and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That didn't connect. Which animal in the pond nibbles on plants like the cattail? Give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "chal-3",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "mallard duck"
+      ],
+      "ask": "Find Broadleaf Cattail. Connect it to the living thing that eats it.",
+      "leakTokens": [
+       "HABITAT_ITEM",
+       "HABITAT_GESTURE",
+       "HABITAT_MOVE",
+       "HABITAT_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Think about who swims near the water plants looking for seeds or leaves to eat, like a duck or snail. Which animal would you like to try tapping?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Think about which animal in the pond likes to nibble on water plants like the Cattail.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Look around the pond for an animal that loves to eat plants like cattails, like a duck or a snail. Give one a tap to see if it eats it!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Which pond animal might like to eat plant leaves like the cattail? Look for a swimming bird or a creature with a shell.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Think about which pond animal eats green water plants like cattails for its food. Can you find one swimming or crawling near them?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "chal-3",
+     "trigger": "The learner said they were stuck, so the host pulled direction_model (help). It is on screen now: Shows beside the habitat a model pair of two other pictures with an arrow the way this kind of relationship goes. It is not these living things. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the sa",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "mallard duck"
+      ],
+      "ask": "Find Broadleaf Cattail. Connect it to the living thing that eats it.",
+      "leakTokens": [
+       "HABITAT_ITEM",
+       "HABITAT_GESTURE",
+       "HABITAT_MOVE",
+       "HABITAT_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look beside the pond\u2014there is a new picture showing an arrow pointing from the plant to the animal that eats it! Now try tapping the pond animal that eats the Cattail.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look beside the pond\u2014there is a new picture showing an arrow going from grass right to a cow that eats it. See if you can tap the animal in our pond that eats the cattail!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look beside the pond\u2014there is a new picture showing grass with an arrow pointing to a cow, because the cow eats the grass! Now try tapping the living thing in the pond that eats the cattail.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look beside the pond: there is a little picture showing grass with an arrow pointing to a cow, because the grass goes to the animal that eats it! Now try tapping the pond animal that eats the Cattail.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look beside the pond\u2014there is a new picture showing grass with an arrow pointing to a cow, because the cow eats the grass! Now try tapping the pond animal that eats the Cattail plant.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "chal-3",
+     "trigger": "The learner submitted \"Connected Broadleaf Cattail to Mallard Duck.\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "mallard duck"
+      ],
+      "ask": "Find Broadleaf Cattail. Connect it to the living thing that eats it.",
+      "leakTokens": [
+       "HABITAT_ITEM",
+       "HABITAT_GESTURE",
+       "HABITAT_MOVE",
+       "HABITAT_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You did it! You connected the Broadleaf Cattail right to the Mallard Duck, showing where the duck gets its food.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You connected the Broadleaf Cattail to the Mallard Duck that eats it.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You connected the Broadleaf Cattail to the Mallard Duck! The duck gets its food by eating the cattail plants in the pond.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You connected the Broadleaf Cattail right to the Mallard Duck that eats it.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You connected the Broadleaf Cattail to the Mallard Duck! The duck eats parts of the cattail for food.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "habitat-diorama.observe",
+   "primitiveId": "habitat-diorama",
+   "evalMode": "observe",
+   "keys": [
+    "green algae. the distinguishing short form \"green\" or \"algae\" also counts. \"pond snail\", another choice on screen, is not it.",
+    "green algae"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "chal-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "green algae. the distinguishing short form \"green\" or \"algae\" also counts. \"pond snail\", another choice on screen, is not it.",
+       "green algae"
+      ],
+      "ask": "Look across the habitat. Which microscopic organism forms floating green mats and uses sunlight to produce food? Which living thing fits that evidence? Say its name.",
+      "leakTokens": [
+       "HABITAT_ITEM",
+       "HABITAT_GESTURE",
+       "HABITAT_MOVE",
+       "HABITAT_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look across the pond! Which living thing forms floating green mats and uses sunlight to make food: Green Algae, Pond Snail, Leopard Frog, Great Blue Heron, or Cattail?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "green algae"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the pond! Which living thing forms floating green mats and uses sunlight to make food: Green Algae, Pond Snail, Leopard Frog, Great Blue Heron, or Cattail?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "green algae"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Look across our pond! Which living thing forms floating green mats and uses sunlight to make food: Green Algae, Pond Snail, Leopard Frog, Great Blue Heron, or Cattail?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "green algae"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Look across the pond! Which living thing forms floating green mats and uses sunlight to make food: Green Algae, Pond Snail, Leopard Frog, Great Blue Heron, or Cattail? Say its name out loud.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "green algae"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Look across our pond habitat! Which living thing forms floating green mats and uses sunlight to make food: Green Algae, Pond Snail, Leopard Frog, Great Blue Heron, or Cattail?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "green algae"
+       },
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "chal-1",
+     "trigger": "Pond Snail",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "green algae. the distinguishing short form \"green\" or \"algae\" also counts. \"pond snail\", another choice on screen, is not it.",
+       "green algae"
+      ],
+      "ask": "Look across the habitat. Which microscopic organism forms floating green mats and uses sunlight to produce food? Which living thing fits that evidence? Say its name.",
+      "leakTokens": [
+       "HABITAT_ITEM",
+       "HABITAT_GESTURE",
+       "HABITAT_MOVE",
+       "HABITAT_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Arrows just appeared showing who eats or gets help from whom. Which living thing forms floating green mats and uses sunlight to make food?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "food_lines"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The pond snail eats plants, but look at the arrows that popped up showing who helps who! Which floating green living thing uses sunlight to make food?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "food_lines"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite! Arrows popped up on the pond to show who eats or helps whom. Which choice forms floating green mats and uses sunlight to make food?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "food_lines"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite, a snail is an animal that eats food rather than making it from sunlight. Look at the arrows showing what everything eats, and try naming the one that forms floating green mats!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0",
+          "lever": "food_lines"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Arrows popped up on screen to show who eats or helps whom. Which living thing forms floating green mats and uses sunlight to make food?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "food_lines",
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "chal-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "green algae. the distinguishing short form \"green\" or \"algae\" also counts. \"pond snail\", another choice on screen, is not it.",
+       "green algae"
+      ],
+      "ask": "Look across the habitat. Which microscopic organism forms floating green mats and uses sunlight to produce food? Which living thing fits that evidence? Say its name.",
+      "leakTokens": [
+       "HABITAT_ITEM",
+       "HABITAT_GESTURE",
+       "HABITAT_MOVE",
+       "HABITAT_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Lines with arrows just appeared to show how the pond creatures are connected. Look at the water's surface for what makes floating green mats using sunlight.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "food_lines",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the arrows connecting the plants and animals across the pond. Which living thing forms green mats on the water and uses sunlight to make food?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "easier_clue",
+          "actionId": "test/2/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "food_lines"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "We brought up an easier clue on the screen to help practice. Take a look at the pond and see which living thing fits best!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "easier_clue",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I opened up an easier practice clue for us first! Which living thing makes floating green mats and uses sunlight to produce food?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "easier_clue"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Arrows just appeared showing who eats or gets help from whom. Which living thing forms floating green mats and uses sunlight to make food?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "easier_clue",
+          "actionId": "test/2/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "food_lines",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "chal-1",
+     "trigger": "The learner said they were stuck, so the host pulled food_lines (help). It is on screen now: Draws an arrow for every relationship in the habitat, from the one eaten or helped to the one that eats or gets help. No living thing is marked. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same qu",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "green algae. the distinguishing short form \"green\" or \"algae\" also counts. \"pond snail\", another choice on screen, is not it.",
+       "green algae"
+      ],
+      "ask": "Look across the habitat. Which microscopic organism forms floating green mats and uses sunlight to produce food? Which living thing fits that evidence? Say its name.",
+      "leakTokens": [
+       "HABITAT_ITEM",
+       "HABITAT_GESTURE",
+       "HABITAT_MOVE",
+       "HABITAT_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the pond now\u2014arrows are drawn showing who gets eaten or helped! Which living thing makes floating green mats from sunlight?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Arrows are now drawn across the pond showing who eats or helps each other. Look near the water to see which one makes floating green mats using sunlight.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the pond now\u2014arrows are drawn showing who gets eaten or helped! Which living thing makes green mats using sunlight: Green Algae, Cattail, Leopard Frog, or Great Blue Heron?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "green algae"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Arrows are now drawn across the pond showing who eats or helps each other. Look across the water and say which one forms floating green mats and uses sunlight to make food.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You can see arrows across the pond now, showing who gets food or help from whom! Look where the arrows start near the floating green water, and tell me: which living thing fits our clue?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "chal-1",
+     "trigger": "Green Algae",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "green algae. the distinguishing short form \"green\" or \"algae\" also counts. \"pond snail\", another choice on screen, is not it.",
+       "green algae"
+      ],
+      "ask": "Look across the habitat. Which microscopic organism forms floating green mats and uses sunlight to produce food? Which living thing fits that evidence? Say its name.",
+      "leakTokens": [
+       "HABITAT_ITEM",
+       "HABITAT_GESTURE",
+       "HABITAT_MOVE",
+       "HABITAT_COMPLETE"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! Green Algae uses sunlight to make its own food right on the water's surface.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it\u2014Green Algae! You found the tiny organism that forms green mats and uses sunlight to make its food.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! Green Algae is the one that forms floating green mats and uses sunlight to make food.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it! Green Algae is the one that forms floating green mats and uses sunlight to make food.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it, Green Algae! You found the green mats floating on the water that make food using sunlight.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

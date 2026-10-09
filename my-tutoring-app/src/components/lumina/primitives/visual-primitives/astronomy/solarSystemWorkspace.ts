@@ -58,7 +58,7 @@ export function solarScene(item: SolarItem, view: { preReader: boolean }): Works
   };
   facts.constraints = 'The learner says a planet name out loud. Tapping a planet is looking, never an answer'
     + (view.preReader || item.kind === 'identify' ? '; no body card opens on this item' : '; it opens that body\'s card')
-    + '. You cannot move or mark the planets.';
+    + '. You cannot move a planet or mark one yourself; only a pulled lever changes the picture.';
   return { objects: [], facts };
 }
 

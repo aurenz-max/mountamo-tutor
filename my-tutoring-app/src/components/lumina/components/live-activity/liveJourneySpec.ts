@@ -116,17 +116,22 @@ import { threeDShapeJourneyAnswers } from '../../primitives/visual-primitives/ma
 import type { CalendarExplorerChallenge } from '../../primitives/visual-primitives/calendar/CalendarExplorer';
 import { calendarSequenceItemsFromChallenges, calendarSequenceJourneyAnswers, isGridDateAnswer }
   from '../../primitives/visual-primitives/calendar/calendarExplorerWorkspace';
+import { calendarPracticeItem, calendarPracticeParent } from '../../primitives/visual-primitives/calendar/calendarExplorerLevers';
 import { itemsFromChallenges as arenaItems } from '../../primitives/visual-primitives/physics/pushPullArenaScript';
 import { pushPullArenaJourneyAnswers } from '../../primitives/visual-primitives/physics/pushPullArenaWorkspace';
+import { ARENA_SIMPLER, arenaPracticeItem } from '../../primitives/visual-primitives/physics/pushPullArenaLevers';
 import { itemsFromChallenges as habitatItems } from '../../primitives/visual-primitives/biology/habitatDioramaScript';
 import { fewerNeedsItem as habitatFewerNeedsItem, habitatJourneyAnswers } from '../../primitives/visual-primitives/biology/habitatDioramaWorkspace';
+import { SIMPLER_SUFFIX as HABITAT_SIMPLER, easierItemFor as habitatEasierItem }
+  from '../../primitives/visual-primitives/biology/habitatDioramaLevers';
 import { FEWER_SUFFIX as HABITAT_FEWER, animalById as habitatAnimalById, pieceById as habitatPieceById }
   from '../../primitives/visual-primitives/biology/habitatBuild';
 import { feedingRelations as foodWebRelations, foodWebHarnessInputs } from '../../primitives/visual-primitives/biology/foodWebWorkspace';
-import { shorterChain } from '../../primitives/visual-primitives/biology/foodWebLevers';
+import { shorterChain, smallerWeb } from '../../primitives/visual-primitives/biology/foodWebLevers';
 import type { FoodWebChallenge } from '../../primitives/visual-primitives/biology/FoodWebBuilder';
 import { matterItems } from './adapters/matterExplorerLive';
 import { matterJourneyAnswers } from '../../primitives/visual-primitives/chemistry/matterExplorerWorkspace';
+import { matterLeverSession, practiceItem as matterPracticeItem, practiceParent as matterPracticeParent } from '../../primitives/visual-primitives/chemistry/matterExplorerLevers';
 import { moleculeHarnessInputs } from '../../primitives/visual-primitives/chemistry/moleculeConstructorWorkspace';
 import { simplerMolecule } from '../../primitives/visual-primitives/chemistry/moleculeConstructorLevers';
 import type { MoleculeConstructorChallenge } from '../../primitives/visual-primitives/chemistry/MoleculeConstructor';
@@ -140,12 +145,18 @@ import { readAloudJourneyAnswers } from '../../primitives/visual-primitives/lite
 import { itemsFromChallenges as oralSentenceItems } from '../../primitives/visual-primitives/literacy/oralSentenceStudioScript';
 import { oralSentenceJourneyAnswers } from '../../primitives/visual-primitives/literacy/oralSentenceStudioWorkspace';
 import { causeEffectItems, causeEffectJourneyAnswers } from '../../primitives/visual-primitives/history/causeEffectChainWorkspace';
+import { practiceItem as causeEffectPracticeItem, practiceParent as causeEffectPracticeParent }
+  from '../../primitives/visual-primitives/history/causeEffectChainLevers';
 import { eraItems, eraJourneyAnswers } from '../../primitives/visual-primitives/history/eraExplorerWorkspace';
+import { eraLeverSession, practiceItem as eraPracticeItem, practiceParent as eraPracticeParent }
+  from '../../primitives/visual-primitives/history/eraExplorerLevers';
 import { periodicItems, periodicJourneyAnswers } from '../../primitives/chemistry-primitives/periodicTableWorkspace';
+import { periodicPracticeItem, periodicPracticeParent } from '../../primitives/chemistry-primitives/periodicTableLevers';
 import { knowledgeCheckItems, knowledgeCheckJourneyAnswers } from '../../primitives/knowledgeCheckWorkspace';
 import { statesItems } from './adapters/statesOfMatterLive';
 import { statesJourneyAnswers } from '../../primitives/visual-primitives/chemistry/statesOfMatterWorkspace';
-import { solarItems } from './adapters/solarSystemExplorerLive';
+import { practiceItem as statesPracticeItem, practiceParent as statesPracticeParent, statesLeverSession } from '../../primitives/visual-primitives/chemistry/statesOfMatterLevers';
+import { solarJourneyItem } from './adapters/solarSystemExplorerLive';
 import { solarJourneyAnswers } from '../../primitives/visual-primitives/astronomy/solarSystemWorkspace';
 import { easierComparisonChoice, rampConclusion } from '../../primitives/visual-primitives/engineering/rampLabWorkspace';
 import { diShapesHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diShapesWorkspace';
@@ -1839,7 +1850,11 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
         const answers = calendarSequenceJourneyAnswers(turn);
         return [{ type: 'answer', text: wrong ? answers.plainWrong : answers.correct }];
       }
-      const c = (ctx.data.challenges ?? []).find((ch: CalendarExplorerChallenge) => ch.id === ctx.itemId) as CalendarExplorerChallenge | undefined;
+      // A simpler question (`<item>~simpler`) is not a generated challenge: rebuild it from its parent with the same builder.
+      const all = (ctx.data.challenges ?? []) as CalendarExplorerChallenge[];
+      const parent = calendarPracticeParent(ctx.itemId, all);
+      const c = parent ? calendarPracticeItem(parent, { challenges: all, supportTier: ctx.data.supportTier as never }) ?? undefined
+        : all.find(ch => ch.id === ctx.itemId);
       if (!c) throw new Error('No current calendar-explorer question');
       const check: DriverInput = { type: 'choose', label: 'Check Answer' };
       if (isGridDateAnswer(c)) {
@@ -1863,7 +1878,11 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // Every item is one spoken word; observe first presses Go to watch the preset force.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const item = arenaItems(ctx.data.challenges ?? []).find(i => i.id === ctx.itemId);
+      // The easier item (`~simpler`, simplify lever) is rebuilt from its parent with the same builder.
+      const parent = ctx.itemId?.endsWith(ARENA_SIMPLER)
+        ? (ctx.data.challenges ?? []).find((c: { id: string }) => `${c.id}${ARENA_SIMPLER}` === ctx.itemId) : undefined;
+      const item = parent ? arenaPracticeItem(parent, ctx.data.challenges ?? [])?.item
+        : arenaItems(ctx.data.challenges ?? []).find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current push-pull-arena item');
       const answers = pushPullArenaJourneyAnswers(item);
       const say: DriverInput = { type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct };
@@ -1885,7 +1904,12 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       if (intent === 'warmup') return [];
       const all = habitatItems(ctx.data.challenges ?? [], ctx.data as never).items;
       const parent = ctx.itemId?.endsWith(HABITAT_FEWER) ? all.find(i => `${i.id}${HABITAT_FEWER}` === ctx.itemId) : undefined;
-      const item = parent ? habitatFewerNeedsItem(parent) : all.find(i => i.id === ctx.itemId);
+      // observe/connect/predict/defend's easier item (`~simpler`) is rebuilt from its parent with the same builder.
+      const simplerOf = ctx.itemId?.endsWith(HABITAT_SIMPLER) ? all.find(i => `${i.id}${HABITAT_SIMPLER}` === ctx.itemId) : undefined;
+      const habitat = { organisms: ctx.data.organisms ?? [], relationships: ctx.data.relationships ?? [] };
+      const item = parent ? habitatFewerNeedsItem(parent)
+        : simplerOf ? habitatEasierItem(simplerOf, habitat)
+          : all.find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current habitat-diorama item');
       if (item.kind === 'build_habitat') {
         const animal = habitatAnimalById(item.animalId);
@@ -1916,7 +1940,11 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
       if (ctx.data.challengeType !== 'build_chain') {
-        return foodWebHarnessInputs(ctx.data as never, { id: 'web', type: 'complete_web' }, intent === 'wrong', ctx.demand);
+        // The smaller practice web is rebuilt from the whole web with the same builder.
+        const whole: FoodWebChallenge = { id: 'web', type: 'complete_web' };
+        const web = ctx.itemId?.endsWith('~smaller') ? smallerWeb(whole, ctx.data.organisms ?? [], ctx.data.correctConnections ?? []) : whole;
+        if (!web) throw new Error('No smaller food web to rebuild');
+        return foodWebHarnessInputs(ctx.data as never, web, intent === 'wrong', ctx.demand);
       }
       const all: FoodWebChallenge[] = ctx.data.challenges ?? [];
       const parent = ctx.itemId?.endsWith('~shorter') ? all.find(x => `${x.id}~shorter` === ctx.itemId) : undefined;
@@ -1934,10 +1962,13 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     defaults: { grade: 'Kindergarten', mode: 'sort', di: false, topic: 'Solids, liquids and gases around us' },
     leakTokens: ['MEX_ITEM', 'MEX_MOVE', 'MEX_COMPLETE'],
     prompts: WORKSPACE_PROMPTS,
-    // Every item is one spoken answer computed from the object.
+    // Every item is one spoken answer computed from the object. A practice item (`~simpler`) is rebuilt from its parent
+    // with the same builder.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const item = matterItems(ctx.data as never).find(i => i.id === ctx.itemId);
+      const all = matterItems(ctx.data as never);
+      const parent = ctx.itemId ? matterPracticeParent(ctx.itemId, all) : null;
+      const item = parent ? matterPracticeItem(parent, matterLeverSession(ctx.data as never)) : all.find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current matter-explorer item');
       const answers = matterJourneyAnswers(item);
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
@@ -1953,13 +1984,13 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     prompts: WORKSPACE_PROMPTS,
     // Every challenge type through its real controls (`moleculeHarnessInputs`): make_molecule adds a molecule the
     // ask's menu proves passes and presses "I'm done!" (wrong: the same molecule one hydrogen short, `open_valence`);
-    // build_target adds the target's atoms and joins them; identify and formula_write type. The easier practice ask
-    // is rebuilt from its parent.
+    // build_target adds the target's atoms and joins them; identify and formula_write type. The easier practice item
+    // (make_molecule's smaller ask, build_target's smaller target) is rebuilt from its parent with the session's data.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
       const all: MoleculeConstructorChallenge[] = ctx.data.challenges ?? [];
       const parent = ctx.itemId?.endsWith('~simpler') ? all.find(x => `${x.id}~simpler` === ctx.itemId) : undefined;
-      const c = parent ? simplerMolecule(parent) : all.find(x => x.id === ctx.itemId);
+      const c = parent ? simplerMolecule(parent, { challenges: all, palette: ctx.data.palette }) : all.find(x => x.id === ctx.itemId);
       if (!c) throw new Error('No current molecule-constructor challenge');
       return moleculeHarnessInputs(c, intent === 'wrong', ctx.demand);
     },
@@ -1975,7 +2006,11 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // Every item is one spoken answer computed from the substance table.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const item = statesItems(ctx.data as never).find(i => i.id === ctx.itemId);
+      // A practice item (`~simpler`) is rebuilt from its parent with the same builder.
+      const all = statesItems(ctx.data as never);
+      const parent = ctx.itemId ? statesPracticeParent(ctx.itemId, all) : null;
+      const item = parent ? statesPracticeItem(parent, statesLeverSession(all, (ctx.data as { gradeBand?: 'K-2' | '3-5' }).gradeBand ?? '3-5'))
+        : all.find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current states-of-matter item');
       const answers = statesJourneyAnswers(item);
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
@@ -1992,7 +2027,8 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // Every item is one spoken planet name computed from the bodies on screen.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const item = solarItems(ctx.data as never).find(i => i.id === ctx.itemId);
+      // An easier item a simplify lever opened is not a generated challenge: rebuilt from its parent.
+      const item = solarJourneyItem(ctx.data as never, ctx.itemId);
       if (!item) throw new Error('No current solar-system-explorer item');
       const answers = solarJourneyAnswers(item);
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
@@ -2094,10 +2130,15 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     leakTokens: ['CEC_ITEM', 'CEC_MOVE', 'CEC_COMPLETE', 'CEC_HEAR', 'CEC_CHAIN', 'CEC_CONTEXT'],
     prompts: WORKSPACE_PROMPTS,
     // identify_cause and root_vs_proximate are spoken; build_chain taps every card into the chain, in causal
-    // order or reversed, and the board commits once it sits still.
+    // order or reversed, and the board commits once it sits still. A practice item (`~simpler`) is rebuilt from its
+    // parent with the same builder.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const item = causeEffectItems(ctx.data as never).find(i => i.id === ctx.itemId);
+      const d = ctx.data as { gradeLevel?: string; supportTier?: 'easy' | 'medium' | 'hard' };
+      const all = causeEffectItems(d as never);
+      const parent = ctx.itemId ? causeEffectPracticeParent(ctx.itemId, all) : null;
+      const item = parent ? causeEffectPracticeItem(parent, { items: all, gradeLevel: d.gradeLevel, tier: d.supportTier })
+        : all.find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current cause-effect-chain item');
       const answers = causeEffectJourneyAnswers(item);
       if (answers.order) {
@@ -2116,10 +2157,13 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     defaults: { grade: 'Grade 2', mode: 'era_sort', di: false, topic: 'Life in pioneer times' },
     leakTokens: ['ERA_ITEM', 'ERA_MOVE', 'ERA_COMPLETE', 'ERA_HEAR', 'ERA_SOURCE', 'ERA_EXPLORE'],
     prompts: WORKSPACE_PROMPTS,
-    // Every item is one spoken pick from the three-part menu the ask states.
+    // Every item is one spoken pick from the three-part menu the ask states. A practice item (`~simpler`) is rebuilt
+    // from its parent with the same builder.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const item = eraItems(ctx.data as never).find(i => i.id === ctx.itemId);
+      const all = eraItems(ctx.data as never);
+      const parent = ctx.itemId ? eraPracticeParent(ctx.itemId, all) : null;
+      const item = parent ? eraPracticeItem(parent, eraLeverSession(all, ctx.data as never)) : all.find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current era-explorer item');
       const answers = eraJourneyAnswers(item);
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
@@ -2136,7 +2180,10 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // Element Hunt taps a box by element name (a wrong tap is a neighbouring box); the other asks are spoken.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const item = periodicItems(ctx.data as never).find(i => i.id === ctx.itemId);
+      // The easier practice item (a simplify lever) is not a generated challenge: rebuild it from its parent.
+      const all = periodicItems(ctx.data as never);
+      const parent = periodicPracticeParent(ctx.itemId, all);
+      const item = parent ? periodicPracticeItem(parent, all) : all.find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current periodic-table item');
       const answers = periodicJourneyAnswers(item);
       if (answers.tap) {

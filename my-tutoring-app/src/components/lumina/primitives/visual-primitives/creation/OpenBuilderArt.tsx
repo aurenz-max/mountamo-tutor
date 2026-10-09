@@ -5,6 +5,7 @@ import {
   BLOCKS, BLOCK_COLORS, COLS, ROWS, groundAt,
   type BlockColor, type BlockKind, type BuilderScene, type Placed,
 } from './openBuilderModel';
+import { ringOf, type BoardMark } from './openBuilderLevers';
 
 /**
  * The board as ONE svg: sky, terrain, water, scenery and the child's blocks. The judge gets a PNG of this
@@ -58,7 +59,9 @@ export const BuilderBoard = React.forwardRef<SVGSVGElement, {
   placed: Placed[];
   /** The drop preview: where the selected block would land. Never part of the picture. */
   ghost?: { kind: BlockKind; color: BlockColor; col: number; row: number | null } | null;
-}>(({ scene, placed, ghost }, ref) => {
+  /** The help lever `job_marks`: marks on the scenery the goal is about. An aid, never part of the picture. */
+  marks?: readonly BoardMark[] | null;
+}>(({ scene, placed, ghost, marks }, ref) => {
   const night = scene.sky === 'night';
   const terrainCols = Array.from({ length: COLS }, (_, c) => groundAt(scene, c));
   return (
@@ -113,6 +116,27 @@ export const BuilderBoard = React.forwardRef<SVGSVGElement, {
           <BlockShape kind={p.kind} color={p.color} x={p.col * CELL} yBottom={yOf(p.row)} />
         </g>
       ))}
+
+      {marks && marks.length > 0 && (
+        <g data-aid="job-marks" data-lever="job-marks" pointerEvents="none">
+          {marks.map((m, i) => {
+            if (m.kind === 'flag') {
+              const x = m.col * CELL + CELL / 2, y = yOf(m.row);
+              return <g key={i} data-mark="flag">
+                <line x1={x} y1={y} x2={x} y2={y - CELL * 1.1} stroke="#5b4a3a" strokeWidth={4} strokeLinecap="round" />
+                <polygon points={`${x},${y - CELL * 1.1} ${x + CELL * 0.6},${y - CELL * 0.92} ${x},${y - CELL * 0.74}`} fill="#f2b33d" stroke="#c98d1f" strokeWidth={2} />
+              </g>;
+            }
+            if (m.kind === 'ring') {
+              const r = ringOf(scene.id, m.prop);
+              return <circle key={i} data-mark="ring" cx={r.cx * CELL} cy={yOf(r.cy)} r={r.r * CELL} fill="none"
+                stroke="#f2b33d" strokeWidth={4} strokeDasharray="10 7" />;
+            }
+            return <line key={i} data-mark="line" x1={m.fromCol * CELL} x2={m.toCol * CELL} y1={yOf(m.row)} y2={yOf(m.row)}
+              stroke="#f2b33d" strokeWidth={4} strokeDasharray="14 9" />;
+          })}
+        </g>
+      )}
 
       {ghost && ghost.row !== null && (
         <g data-aid="ghost" pointerEvents="none">

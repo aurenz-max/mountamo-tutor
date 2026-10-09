@@ -66,6 +66,23 @@ import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { statesAssignment, statesScene } from './statesOfMatterWorkspace';
 import {
+  leversOnScreen,
+  MODEL_COLOR,
+  MODEL_PAIR_LEVER,
+  modelPairFor,
+  modelPairTag,
+  modelTag,
+  PARTICLE_MODELS,
+  PARTICLE_MODELS_LEVER,
+  practiceItem,
+  statesLevers,
+  statesLeverSession,
+  stripFor,
+  TEMPERATURE_STRIP_LEVER,
+  type ModelPair,
+  type TemperatureStrip,
+} from './statesOfMatterLevers';
+import {
   SUBSTANCES,
   carriesAnswerVocabulary,
   itemsFromChallenges,
@@ -568,6 +585,78 @@ const MatterLab: React.FC<{
   );
 };
 
+/**
+ * The help lever `particle_models`: three model particle boxes in a colour no substance uses, one per state, each
+ * tagged with how its particles move. Nothing marks which one the beaker's particles move like; that match is the learner's.
+ */
+const ParticleModels: React.FC<{ particles: ParticleConfig }> = ({ particles }) => (
+  <div data-lever="particle-models" className="grid grid-cols-3 gap-2">
+    {PARTICLE_MODELS.map((m) => (
+      <div key={m.state} className="flex flex-col items-center gap-1 rounded-2xl border border-white/10 bg-slate-900/40 px-2 py-2 text-center">
+        <ParticleSimulation
+          state={m.state}
+          config={{ ...particles, count: 16 }}
+          color={MODEL_COLOR}
+          temperature={m.state === 'solid' ? -10 : m.state === 'liquid' ? 50 : 120}
+          meltingPoint={0}
+          boilingPoint={100}
+          width={110}
+          height={80}
+        />
+        <span className="text-slate-400 text-xs">{modelTag(m)}</span>
+      </div>
+    ))}
+  </div>
+);
+
+/**
+ * The help lever `temperature_strip`: the substance's points marked on one strip, the zones (or crossings) labelled and a
+ * "now" pointer at the start temperature. The temperature the tutor is going to is not on it.
+ */
+const TemperatureStripPanel: React.FC<{ strip: TemperatureStrip }> = ({ strip }) => {
+  const temps = [...strip.marks.map((m) => m.temp), strip.now];
+  const lo = Math.min(...temps), hi = Math.max(...temps);
+  const pad = Math.max(20, (hi - lo) * 0.25);
+  const at = (t: number) => `${((t - (lo - pad)) / (hi - lo + 2 * pad)) * 100}%`;
+  return (
+    <div data-lever="temperature-strip" className="rounded-2xl border border-white/10 bg-slate-900/40 px-4 py-3 space-y-2">
+      <div className="relative h-10">
+        <div className="absolute left-0 right-0 top-4 h-2 rounded-full bg-gradient-to-r from-blue-500/40 via-cyan-400/40 to-orange-400/40" />
+        {strip.marks.map((m) => (
+          <div key={m.temp} className="absolute top-0 -translate-x-1/2 flex flex-col items-center" style={{ left: at(m.temp) }}>
+            <span className="text-[10px] text-slate-300 whitespace-nowrap">{m.temp}°C</span>
+            <div className="w-0.5 h-5 bg-white/70" />
+          </div>
+        ))}
+        <div data-strip-now className="absolute top-6 -translate-x-1/2 flex flex-col items-center" style={{ left: at(strip.now) }}>
+          <span className="text-emerald-300 text-xs leading-none">▲</span>
+          <span className="text-[10px] text-emerald-300 whitespace-nowrap">now {strip.now}°C</span>
+        </div>
+      </div>
+      <ul className="pt-3 text-xs text-slate-400 space-y-0.5">
+        {strip.marks.map((m) => <li key={`l-${m.temp}`}>{m.temp}°C: {m.label}</li>)}
+        {strip.labels.map((l) => <li key={l}>{l}</li>)}
+      </ul>
+    </div>
+  );
+};
+
+/** The help lever `model_pair`: two other substances heated to one temperature, each tagged with its melting point and what it did. */
+const ModelPairPanel: React.FC<{ model: ModelPair }> = ({ model }) => (
+  <div data-lever="model-pair" className="rounded-2xl border border-white/10 bg-slate-900/40 px-3 py-3 space-y-2">
+    <p className="text-center text-xs text-slate-400">A model: both heated to {model.temp}°C</p>
+    <div className="flex flex-col sm:flex-row gap-3">
+      {model.pair.map((x) => (
+        <div key={x.key} className="flex-1 min-w-0 flex flex-col items-center gap-1">
+          <span className="text-slate-300 text-sm">{x.name}</span>
+          <SubstanceBeaker state={stateAt(x, model.temp)} color={x.color[stateAt(x, model.temp)]} caption="" />
+          <span className="text-slate-400 text-xs text-center">{modelPairTag(x, model.temp)}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 type SurfaceProps = StatesOfMatterProps & { items: StatesOfMatterItem[] };
 
 const StatesOfMatterSurface: React.FC<SurfaceProps> = ({ data, items, className, runtimePlanItemId }) => {
@@ -600,6 +689,12 @@ const StatesOfMatterSurface: React.FC<SurfaceProps> = ({ data, items, className,
   /** The reveal payload (18b): set in `onAffirmed`, rendered behind `runner.revealHeld`. */
   const [reveal, setReveal] = useState<RevealPayload | null>(null);
   const [rampTemp, setRampTemp] = useState<number | null>(null);
+
+  // In-item levers (`statesOfMatterLevers.ts`), keyed by the session item they were pulled on, and the practice item a
+  // simplify lever puts in place of the session item until the observer returns to it.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<StatesOfMatterItem | null>(null);
+  const leverSession = useMemo(() => statesLeverSession(items, data.gradeBand ?? '3-5'), [items, data.gradeBand]);
 
   const evaluation = usePrimitiveEvaluation<StatesOfMatterMetrics>({
     primitiveType: 'states-of-matter',
@@ -655,7 +750,10 @@ const StatesOfMatterSurface: React.FC<SurfaceProps> = ({ data, items, className,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
     instanceId: resolvedInstanceId,
     onFinished: finish,
-    onItemOpened: () => setReveal(null),
+    onItemOpened: () => { setReveal(null); setPractice(null); },
+    // A retry keeps a practice item on screen; only the return to the full item removes it.
+    onCorrectionRetry: () => setReveal(null),
+    onPracticeClosed: () => { setReveal(null); setPractice(null); },
     onAffirmed: (item) => {
       const from = item.startTemp ?? 0;
       const to = revealTempFor(item);
@@ -676,10 +774,40 @@ const StatesOfMatterSurface: React.FC<SurfaceProps> = ({ data, items, className,
 
   // What the tutor and the observer are shown, republished every render. W1 offers no
   // demonstration targets and no presentation; every item is answerable once it opens.
+  /** What is on screen: the practice item while a simplify lever holds it, else the session item. */
+  const sessionItem = runner.currentItem;
+  const shownItem = practice ?? sessionItem;
+  const pulledLevers = practice || !sessionItem || leverState.item !== sessionItem.id ? [] : leverState.pulled;
+  const particleModels = !!sessionItem && sessionItem.kind === 'name_state' && pulledLevers.includes(PARTICLE_MODELS_LEVER);
+  const strip = sessionItem && pulledLevers.includes(TEMPERATURE_STRIP_LEVER) ? stripFor(sessionItem) : null;
+  const modelPair = sessionItem && pulledLevers.includes(MODEL_PAIR_LEVER) ? modelPairFor(sessionItem, leverSession) : null;
+
   useLayoutEffect(() => {
-    const item = runner.currentItem;
-    if (!item) return;
-    workspace.current = { ...statesScene(item) };
+    if (!sessionItem || !shownItem) return;
+    const scene = statesScene(shownItem);
+    const levers = practice ? [] : statesLevers(sessionItem, leverSession, pulledLevers);
+    const onScreen = practice ? null : leversOnScreen(sessionItem, pulledLevers, leverSession);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice item, ungraded, on another substance. The full item comes back after it.' } : {}) },
+      levers,
+      pullLever: (id: string) => {
+        const lever = levers.find((l) => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already on screen.`;
+        const next = { item: sessionItem.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = practiceItem(sessionItem, leverSession);
+          if (!easier) return 'This item is already the plainest of its kind.';
+          setLeverState(next); setPractice(easier);
+          return { practice: statesAssignment(easier) };
+        }
+        setLeverState(next);
+        return true as const;
+      },
+      endPractice: () => setPractice(null),
+    };
   });
 
   /**
@@ -723,7 +851,7 @@ const StatesOfMatterSurface: React.FC<SurfaceProps> = ({ data, items, className,
     });
   }, [runner.practiceSummary, items]);
 
-  const staged = showReveal && reveal ? reveal.item : runner.currentItem;
+  const staged = showReveal && reveal ? reveal.item : shownItem;
   // Pip: the substances on the bench are the question side; on a pair item both
   // are possible answers, so Pip outlines them together and never one.
   const pip = useStimulusPipSurface({
@@ -764,6 +892,9 @@ const StatesOfMatterSurface: React.FC<SurfaceProps> = ({ data, items, className,
                 answers the ask or lets the child run the experiment the tutor
                 is asking them to predict. */}
             {pip.store && <div {...pip.dock} />}
+            {practice && !showReveal && (
+              <div className="text-center text-xs text-amber-300" data-practice>Practice — an easier one first</div>
+            )}
             <div {...pip.target('stimulus')} className="flex flex-col sm:flex-row gap-4 items-start justify-center">
               {staged?.pair
                 ? staged.pair.map((s) => (
@@ -785,6 +916,10 @@ const StatesOfMatterSurface: React.FC<SurfaceProps> = ({ data, items, className,
                     />
                   )}
             </div>
+
+            {!showReveal && particleModels && <ParticleModels particles={particles} />}
+            {!showReveal && strip && <TemperatureStripPanel strip={strip} />}
+            {!showReveal && modelPair && <ModelPairPanel model={modelPair} />}
 
             {/* Reveal-on-credit: the state, in words, while the solved item is on screen. */}
             {showReveal && reveal && (

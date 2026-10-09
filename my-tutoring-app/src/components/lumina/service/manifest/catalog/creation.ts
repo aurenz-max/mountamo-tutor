@@ -32,6 +32,7 @@ export const CREATION_CATALOG: ComponentDefinition[] = [
         + 'Many different builds meet a goal, so never describe one particular build, never say where blocks go, and '
         + 'never place or name blocks for the learner. The tutor may ask what the goal needs the build to do, talk about '
         + 'what the learner already built, and help them use what the buddy asked.',
+      levers: true,
       // The buddy's verdict names the miss (`openBuilderModel.ts`).
       misses: missLists<OpenBuilderMiss>({
         build_to_goal: [...OPEN_BUILDER_MISSES],

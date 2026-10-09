@@ -26,6 +26,7 @@ import {
   designPushSize,
   headNoun,
   predictMoves,
+  SURFACE_SPOKEN,
 } from '../../primitives/visual-primitives/physics/pushPullArenaScript';
 
 // ============================================================================
@@ -62,6 +63,9 @@ function applyJudgedAnswer(ch: PushPullChallenge): void {
         ? ['a big push', 'strong', 'a strong push', 'hard']
         : ['a little push', 'small', 'gentle', 'soft'];
       ch.instruction = `What kind of push does the ${ch.objectName} need? Try it!`;
+      // Code-owned too: the design branch replaces the LLM's object and surface, so its goal named another object
+      // ("Move the Backpack" on a Barrel item) and carried answer adjectives ("the heavy Refrigerator").
+      ch.goalDescription = `Move the ${ch.objectName} all the way across ${SURFACE_SPOKEN[ch.surface]}.`;
       return;
     }
     default: {

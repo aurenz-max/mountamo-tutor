@@ -65,6 +65,10 @@ import {
   type PeriodicTableItem,
 } from './chemistry-primitives/periodicTableScript';
 import { cellMatches, periodicAssignment, periodicItems, periodicMiss, periodicScene } from './chemistry-primitives/periodicTableWorkspace';
+import {
+  AXIS_LEVER, COLUMN_LEVER, KEY_LEVER, LETTER_LEVER, PAIR_LEVER, PRACTICE_NOTE, RANGES_LEVER, ROW_RANGES, TALL_LEVER,
+  boxKey, columnModel, letterLit, leverFacts, periodicLevers, periodicPracticeItem,
+} from './chemistry-primitives/periodicTableLevers';
 
 interface PeriodicTableProps {
   data: PeriodicTableData;
@@ -115,6 +119,13 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className, ru
   /** The reveal payload (18b): set in onAffirmed, rendered behind
    *  `runner.revealHeld`, deliberately NOT cleared in onItemOpened. */
   const [reveal, setReveal] = useState<{ facts: ElementFacts; line: string | null } | null>(null);
+  // In-item levers (`periodicTableLevers.ts`), keyed by the session item they were pulled on, and the easier
+  // practice item a simplify lever puts in place of the session item until the observer returns to it.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPracticeState] = useState<PeriodicTableItem | null>(null);
+  const practiceRef = useRef<PeriodicTableItem | null>(null);
+  const [practiceSolved, setPracticeSolved] = useState(false);
+  const setPractice = (next: PeriodicTableItem | null) => { practiceRef.current = next; setPracticeState(next); setPracticeSolved(false); };
 
   const evaluation = usePrimitiveEvaluation<PeriodicTableMetrics>({
     primitiveType: 'periodic-table',
@@ -168,7 +179,7 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className, ru
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
     instanceId: resolvedInstanceId,
     onFinished: finish,
-    onItemOpened: clearTap,
+    onItemOpened: () => { clearTap(); setPractice(null); },
     onCorrectionRetry: clearTap,
     onAffirmed: (item) => {
       const facts = item.kind === 'compare'
@@ -187,15 +198,51 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className, ru
   });
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
+  const sessionItem = runner.currentItem;
+  /** What is on screen: the practice item while a simplify lever holds it, else the session item. */
+  const currentItem = practice ?? sessionItem;
+  const pulledLevers = sessionItem && leverState.item === sessionItem.id ? leverState.pulled : [];
+  // The session item's levers; a help lever is drawn only on the session item, while pulled (or shown from the
+  // start on easy), never on a practice item.
+  const itemLevers = periodicLevers(sessionItem, items, pulledLevers);
+  const helpOn = (id: string) => !practice && itemLevers.some(l => l.id === id && l.pulled);
+  const lit = sessionItem && helpOn(LETTER_LEVER) ? letterLit(sessionItem) : null;
+  const axisOn = helpOn(AXIS_LEVER) && !!sessionItem?.element;
+  const shownKey = sessionItem && helpOn(KEY_LEVER) ? boxKey(sessionItem, items) : null;
+  const shownColumn = sessionItem && helpOn(COLUMN_LEVER) ? columnModel(sessionItem, items) : null;
+  const ringed = helpOn(PAIR_LEVER) && sessionItem?.pair ? sessionItem.pair.map(e => e.number) : undefined;
+
   // What the tutor and the observer are shown, republished every render. W1 offers no
   // demonstration targets and no presentation; every item is answerable once it opens.
   useLayoutEffect(() => {
-    const item = runner.currentItem;
-    if (!item) return;
-    workspace.current = { ...periodicScene(item, tappedName) };
+    if (!currentItem || !sessionItem) return;
+    const scene = periodicScene(currentItem, tappedName);
+    const levers = practice ? [] : itemLevers;
+    const onScreen = practice ? '' : leverFacts(sessionItem, items, helpOn);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: (id: string) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already on screen.`;
+        const next = { item: sessionItem.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = periodicPracticeItem(sessionItem, items);
+          if (!easier) return 'This item is already the plainest of its kind.';
+          setLeverState(next); setPractice(easier); clearTap();
+          return { practice: periodicAssignment(easier) };
+        }
+        setLeverState(next);
+        return true as const;
+      },
+      // Back to the full item, blank: the practice item is not the learner's work on it.
+      endPractice: () => { setPractice(null); clearTap(); },
+    };
   });
 
-  const currentItem = runner.currentItem;
   // Pip: the table is the question side and every cell is a possible answer, so
   // Pip outlines the table as a region and watches it after a find tap; it never
   // rings a cell.
@@ -206,7 +253,7 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className, ru
 
   // ── The tap IS the commit (find items only; one tap = one checked attempt) ──
   const handleCellTap = (element: ChemicalElement) => {
-    const item = runner.currentItem;
+    const item = practiceRef.current ?? runner.currentItem;
     if (!item || item.kind !== 'find' || !item.element) return;
     if (!runner.canAttempt || showSummary) return;
     if (runner.isAwaitingGesture()) return;
@@ -215,6 +262,7 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className, ru
     setTappedName(element.name);
     const correct = cellMatches(item, element.number);
     if (!correct) setWrongTapNumber(element.number);
+    else if (practiceRef.current) setPracticeSolved(true);
     commitGesture(runner, { response: `Tapped ${element.name}'s box.`, correct, cue: () => '',
       miss: correct ? undefined : periodicMiss(item, element.number) });
   };
@@ -229,8 +277,9 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className, ru
   }, [runner.practiceSummary, items]);
 
   const revealNumbers = useMemo(
-    () => (runner.revealHeld && reveal ? [reveal.facts.number] : []),
-    [runner.revealHeld, reveal],
+    () => (runner.revealHeld && reveal ? [reveal.facts.number]
+      : practiceSolved && practice?.element ? [practice.element.number] : []),
+    [runner.revealHeld, reveal, practiceSolved, practice],
   );
 
   const modeMeta = MODE_META[currentItem?.kind ?? 'find'];
@@ -282,8 +331,50 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className, ru
                 revealNumbers={revealNumbers}
                 incorrectNumber={wrongTapNumber}
                 tapTargets
+                litNumbers={lit}
+                ringNumbers={ringed}
+                markGroup={axisOn ? sessionItem?.element?.group ?? null : null}
+                markPeriod={axisOn ? sessionItem?.element?.period ?? null : null}
+                rowRanges={helpOn(RANGES_LEVER) ? ROW_RANGES : null}
+                dimMiddle={helpOn(TALL_LEVER)}
               />
             </div>
+
+            {practice && <div className="text-center text-xs text-amber-300" data-practice>Practice item</div>}
+
+            {/* Help lever `box_key`: another element's box, its three parts labelled. Never this item's box. */}
+            {shownKey && (
+              <div className="flex justify-center" data-lever="box-key">
+                <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-slate-900/40 px-4 py-2 text-slate-100">
+                  <div className="flex flex-col items-center rounded border border-white/20 px-3 py-1">
+                    <span className="self-start text-xs font-mono opacity-70">{shownKey.number}</span>
+                    <span className="text-xl font-bold">{shownKey.symbol}</span>
+                    <span className="text-[10px] opacity-80">{shownKey.name}</span>
+                  </div>
+                  <div className="text-xs text-slate-400 space-y-1">
+                    <div>top: atomic number</div>
+                    <div>big letters: symbol</div>
+                    <div>bottom: name</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Help lever `column_model`: another group's column, each atom a circle of its size. */}
+            {shownColumn && (
+              <div className="flex justify-center" data-lever="column-model">
+                <div className="flex flex-col items-center gap-1 rounded-xl border border-white/10 bg-slate-900/40 px-4 py-2">
+                  <div className="text-[10px] text-slate-400">Group {shownColumn.group}</div>
+                  {shownColumn.members.map((m) => (
+                    <div key={m.name} className="flex items-center gap-2" data-model-atom={m.name}>
+                      <span className="w-20 text-right text-xs text-slate-300">{m.name}</span>
+                      <span className="rounded-full border border-sky-300/70 bg-sky-400/10"
+                        style={{ width: 6 + m.shells * 6, height: 6 + m.shells * 6 }} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Reveal-on-credit: the element card, while the credit is held
                 (runner.revealHeld). */}

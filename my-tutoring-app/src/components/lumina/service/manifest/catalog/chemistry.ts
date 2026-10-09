@@ -134,10 +134,13 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
         + 'is there. Name It: the learner reads the table and says the element\'s name; letters of the symbol read back '
         + 'are not a name. Trends: the learner says which of two named elements is bigger or more reactive, or how many '
         + 'electrons are in an element\'s outer shell; the group number is not the outer-electron count. Before an '
-        + 'attempt never say the answer or the rule that decides it for this pair. You cannot point at or highlight boxes.',
-      // The table's own check of an Element Hunt tap (`periodicMiss`), and trend's spoken answers (`periodicSpokenMisses`,
-      // handoff 20 Part B). identify is spoken and names none yet.
+        + 'attempt never say the answer or the rule that decides it for this pair. You cannot point at boxes; a lever is '
+        + 'the only mark you can put on the table.',
+      // The table's own check of an Element Hunt tap (`periodicMiss`), and the spoken answers of Trends and Name It
+      // (`periodicSpokenMisses`). Every mode has levers (`periodicTableLevers.ts`); no miss is unanswered.
+      levers: true,
       misses: missLists<PeriodicMiss | SpokenPeriodicMiss>({ explore: ['same_first_letter', 'next_box', 'same_row', 'same_column', 'other_box'],
+        identify: ['said_symbol', 'next_box'],
         trend: ['other_of_pair', 'group_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'] }),
     },
   },
@@ -234,14 +237,16 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
       grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
       guidance: 'One everyday object at a time; every answer is said out loud and computed from the object. Sort and mystery: '
         + 'solid, liquid or gas (mystery hides the object and gives clues; never name the secret thing before credit). '
-        + 'Property: what it does in a cup, one of the three things the question offers. Change: whether what happened can go '
+        + 'Property: what it does in a cup, one of the things the question offers. Change: whether what happened can go '
         + 'back the way it was or is changed for ever. The learner does not read: say the question, the change and the clues '
         + 'aloud. Naming the object back, or a state word on a property or change question, is not an answer. When the scene '
         + 'has a rule you may say it before the ask; without one, add no choices beyond those in the question. Before an attempt '
         + 'never say the answer. You cannot move or show the object.',
-      // Every item is spoken: its known wrong answers by kind (`matterSpokenMisses`, handoff 20 Part B). property names none yet.
+      levers: true,
+      // Every item is spoken: its known wrong answers by kind (`matterSpokenMisses`, handoff 20 Part B). Every miss has a
+      // help lever on every saved item (`matterExplorerLevers.ts`), so nothing is unanswered.
       misses: missLists<SpokenMatterMiss>({ sort: ['other_state', 'said_object_back'], mystery: ['other_state'],
-        change: ['other_way', 'said_change_back', 'state_word'] }),
+        property: ['other_shape', 'state_word'], change: ['other_way', 'said_change_back', 'state_word'] }),
     },
   },
   {
@@ -422,7 +427,9 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
         + 'substance named back, the state it is in now on a predict question, or the end state on a change question is not '
         + 'the answer. When the scene has a rule you may say it before the ask; without one add no choices beyond those in '
         + 'the question. Before an attempt never say the answer. You cannot change the temperature.',
-      // Every item is spoken: its known wrong answers by kind (`statesSpokenMisses`, handoff 20 Part B).
+      levers: true,
+      // Every item is spoken: its known wrong answers by kind (`statesSpokenMisses`, handoff 20 Part B). Every miss has a
+      // help lever on every saved item (`statesOfMatterLevers.ts`), so nothing is unanswered.
       misses: missLists<SpokenStatesMiss>({ observe: ['other_state', 'said_substance_back'],
         predict: ['said_start_state', 'other_state', 'said_end_state', 'opposite_change'], compare: ['other_of_pair'] }),
     },
@@ -478,6 +485,7 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
     evalModes: [
       { evalMode: 'build', affordances: { answers: ['build'] }, label: 'Build (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['build'], description: 'Build a named element from protons, neutrons, electrons' },
       { evalMode: 'identify', affordances: { answers: ['type', 'manipulate'] }, label: 'Identify (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['identify', 'fill-shells'], description: 'Identify element from particle counts and fill electron shells' },
+      { evalMode: 'make_atom', affordances: { answers: ['build'] }, label: 'Make Your Own Atom (Open)', beta: 1.0, scaffoldingMode: 3, challengeTypes: ['make_atom'], description: 'Make any atom with the asked property on an empty board: a number of outer electrons or a full outer shell (3-8), a charge or two isotopes of one element (6-8). Many atoms pass; code checks the build' },
       { evalMode: 'ion_isotope', affordances: { answers: ['build'] }, label: 'Ion & Isotope (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['make-ion', 'make-isotope'], description: 'Create specific ions and isotopes' },
     ],
     supportsEvaluation: true,
@@ -505,7 +513,7 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
     },
     teachingWorkspace: {
       grades: ['Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
-      // Only the open build (make_molecule) publishes levers (`moleculeConstructorLevers.ts`).
+      // make_molecule, build_target, free_build, identify and formula_write publish levers (`moleculeConstructorLevers.ts`).
       levers: true,
       guidance: 'The activity checks every answer itself, and you are not told the key: the learner adds atoms and joins '
         + 'them on the canvas, or types a name or a formula, then presses Check Answer. On make_molecule many molecules '
@@ -524,7 +532,14 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
           'no_double_bond', 'carbon_count_off', 'element_missing', 'too_many_atoms'],
       }),
       // The board refuses a bond past an atom's valence, so `too_many_bonds` cannot be built: no lever answers it.
-      unanswered: missLists<MoleculeMiss>({ make_molecule: ['too_many_bonds'] }),
+      // build: `name_off` and `formula_off` come only from identify/formula_write items, which an unpinned build
+      // session can hold. Those items now have levers (show_formula, formula_model, fewer_atoms), but the saved build
+      // payload holds none, so the sweep cannot see them answered there.
+      // predict: predict_bonds and shape_predict pass any build with one bond and check no prediction (EVAL_TRACKER
+      // MC-2), so their `no_bonds` has no lever on those items. An identify session holds them too (the generator does
+      // not pin classic modes), so identify lists `no_bonds` as well.
+      unanswered: missLists<MoleculeMiss>({ make_molecule: ['too_many_bonds'], build: ['name_off', 'formula_off'],
+        identify: ['no_bonds'], predict: ['no_bonds'] }),
     },
     evalModes: [
       { evalMode: 'build', affordances: { answers: ['build'] }, label: 'Build (Easy)', beta: -0.5, scaffoldingMode: 2, challengeTypes: ['build'], description: 'Build simple molecules from a name or formula' },

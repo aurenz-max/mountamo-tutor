@@ -276,7 +276,8 @@ it('the checks name every miss; targets, levers and catalog wiring', () => {
   // No chain of 2 ends at the Snake: a 3-chain to it has no easier ask, and no simplify lever.
   expect(shorterChain(SNAKE3, ORGANISMS, RELATIONS)).toBeNull();
   expect(foodWebLevers(SNAKE3, ORGANISMS, RELATIONS, []).map(l => l.id)).not.toContain('shorter_chain');
-  expect(foodWebLevers({ id: 'web', type: 'complete_web' }, ORGANISMS, RELATIONS, [])).toEqual([]);
+  // The whole web's levers are its own (FoodWebBuilder.levers.workspace.test.tsx).
+  expect(foodWebLevers({ id: 'web', type: 'complete_web' }, ORGANISMS, RELATIONS, []).map(l => l.id)).not.toContain('shorter_chain');
 
   const entry = getComponentById('food-web-builder')!;
   expect(entry.evalModes!.find(m => m.evalMode === 'build_chain')).toMatchObject({ beta: 3.6, challengeTypes: ['build_chain'],

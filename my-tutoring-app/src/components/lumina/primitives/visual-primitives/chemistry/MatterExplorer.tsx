@@ -85,6 +85,21 @@ import {
   type MatterTier,
 } from './matterExplorerScript';
 import { matterAssignment, matterScene } from './matterExplorerWorkspace';
+import {
+  changeLine,
+  changesFor,
+  changeTag,
+  leversOnScreen,
+  matterLevers,
+  matterLeverSession,
+  modelsFor,
+  modelTag,
+  practiceItem,
+  THREE_MODELS_LEVER,
+  TWO_CHANGES_LEVER,
+  type ChangeModel,
+  type MatterModel,
+} from './matterExplorerLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -263,6 +278,36 @@ const ObjectStage: React.FC<{
   );
 };
 
+/**
+ * The help lever `three_models`: three everyday things that are not in this lesson, one per state, each drawn in a cup
+ * and tagged. Nothing marks which one the item is like; that match is the learner's.
+ */
+const ModelCups: React.FC<{ item: MatterExplorerItem; models: MatterModel[] }> = ({ item, models }) => (
+  <div data-lever="three-models" className="grid grid-cols-3 gap-2">
+    {models.map((m) => (
+      <div key={m.name} className="flex flex-col items-center gap-1 rounded-2xl border border-white/10 bg-slate-900/40 px-2 py-3 text-center">
+        <span className="text-3xl leading-none" aria-hidden>{m.icon}</span>
+        <span className="text-slate-200 text-sm">{m.name}</span>
+        <span className="text-xl leading-none" aria-hidden>🥤</span>
+        <span className="text-slate-400 text-xs">{modelTag(item, m)}</span>
+      </div>
+    ))}
+  </div>
+);
+
+/** The help lever `two_changes`: one model change that can go back and one that cannot, never this item's change. */
+const ModelChanges: React.FC<{ pair: ChangeModel[] }> = ({ pair }) => (
+  <div data-lever="two-changes" className="grid gap-2 sm:grid-cols-2">
+    {pair.map((m) => (
+      <div key={m.name} className="flex flex-col items-center gap-1 rounded-2xl border border-white/10 bg-slate-900/40 px-3 py-3 text-center">
+        <span className="text-3xl leading-none" aria-hidden>{m.icon}</span>
+        <span className="text-slate-300 text-sm">{changeLine(m)}</span>
+        <span className="text-slate-400 text-xs">{changeTag(m)}</span>
+      </div>
+    ))}
+  </div>
+);
+
 // ============================================================================
 // Exploration fallback — no askable challenges arrived
 // ============================================================================
@@ -366,6 +411,12 @@ const MatterExplorerSurface: React.FC<SurfaceProps> = ({ data, items, className,
   /** The reveal payload (18b): set in `onAffirmed`, rendered behind `runner.revealHeld`. */
   const [reveal, setReveal] = useState<RevealPayload | null>(null);
 
+  // In-item levers (`matterExplorerLevers.ts`), keyed by the session item they were pulled on, and the practice item a
+  // simplify lever puts in place of the session item until the observer returns to it.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<MatterExplorerItem | null>(null);
+  const leverSession = useMemo(() => matterLeverSession(data), [data]);
+
   const evaluation = usePrimitiveEvaluation<MatterExplorerMetrics>({
     primitiveType: 'matter-explorer',
     instanceId: resolvedInstanceId,
@@ -423,7 +474,10 @@ const MatterExplorerSurface: React.FC<SurfaceProps> = ({ data, items, className,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
     instanceId: resolvedInstanceId,
     onFinished: finish,
-    onItemOpened: () => setReveal(null),
+    onItemOpened: () => { setReveal(null); setPractice(null); },
+    // A retry keeps a practice item on screen; only the return to the full item removes it.
+    onCorrectionRetry: () => setReveal(null),
+    onPracticeClosed: () => { setReveal(null); setPractice(null); },
     onAffirmed: (item) => {
       const line = item.kind === 'name_property'
         ? `${item.objectName} — ${PROPERTY_OPTIONS[item.answerShape].phrase}`
@@ -438,12 +492,41 @@ const MatterExplorerSurface: React.FC<SurfaceProps> = ({ data, items, className,
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
   const showReveal = runner.revealHeld && reveal !== null;
 
+  /** What is on screen: the practice item while a simplify lever holds it, else the session item. */
+  const sessionItem = runner.currentItem;
+  const shownItem = practice ?? sessionItem;
+  const pulledLevers = practice || !sessionItem || leverState.item !== sessionItem.id ? [] : leverState.pulled;
+  const models = sessionItem && pulledLevers.includes(THREE_MODELS_LEVER) ? modelsFor(sessionItem, leverSession) : null;
+  const changePair = sessionItem && pulledLevers.includes(TWO_CHANGES_LEVER) ? changesFor(sessionItem, leverSession) : null;
+
   // What the tutor and the observer are shown, republished every render. W1 offers no
   // demonstration targets and no presentation; every item is answerable once it opens.
   useLayoutEffect(() => {
-    const item = runner.currentItem;
-    if (!item) return;
-    workspace.current = { ...matterScene(item) };
+    if (!sessionItem || !shownItem) return;
+    const scene = matterScene(shownItem);
+    const levers = practice ? [] : matterLevers(sessionItem, leverSession, pulledLevers);
+    const onScreen = practice ? null : leversOnScreen(sessionItem, pulledLevers, leverSession);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice item, ungraded, on a plain everyday thing. The full item comes back after it.' } : {}) },
+      levers,
+      pullLever: (id: string) => {
+        const lever = levers.find((l) => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already on screen.`;
+        const next = { item: sessionItem.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = practiceItem(sessionItem, leverSession);
+          if (!easier) return 'This item is already the plainest of its kind.';
+          setLeverState(next); setPractice(easier);
+          return { practice: matterAssignment(easier) };
+        }
+        setLeverState(next);
+        return true as const;
+      },
+      endPractice: () => setPractice(null),
+    };
   });
 
   // ── Phase summary ─────────────────────────────────────────────────────────
@@ -455,7 +538,7 @@ const MatterExplorerSurface: React.FC<SurfaceProps> = ({ data, items, className,
     });
   }, [runner.practiceSummary, items]);
 
-  const staged = showReveal && reveal ? reveal.item : runner.currentItem;
+  const staged = showReveal && reveal ? reveal.item : shownItem;
   // Pip: the object on the bench is the question side; Pip outlines it during the
   // ask and watches it while the child answers aloud.
   const pip = useStimulusPipSurface({
@@ -491,9 +574,14 @@ const MatterExplorerSurface: React.FC<SurfaceProps> = ({ data, items, className,
                 every one of them either prints the answer or lets the child
                 pick it from a menu the tutor never offered. */}
             {pip.store && <div {...pip.dock} />}
+            {practice && !showReveal && (
+              <div className="text-center text-xs text-amber-300" data-practice>Practice — an easier one first</div>
+            )}
             <div {...pip.target('stimulus')} className="flex justify-center">
               {staged && <ObjectStage item={staged} revealed={showReveal} />}
             </div>
+            {!showReveal && sessionItem && models && <ModelCups item={sessionItem} models={models} />}
+            {!showReveal && changePair && <ModelChanges pair={changePair} />}
 
             {/* Reveal-on-credit: the answer, in words, while the solved item is on screen. */}
             {showReveal && reveal && (

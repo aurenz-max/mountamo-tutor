@@ -21,6 +21,9 @@ import {
 } from './openBuilderModel';
 import { describeBuildWork, openBuilderAssignment, openBuilderScene } from './openBuilderWorkspace';
 import { BlockThumb, BuilderBoard } from './OpenBuilderArt';
+import {
+  MARKS_LEVER, PARTS_LEVER, PRACTICE_NOTE, goalParts, jobMarks, openBuilderLevers, partsFact, practiceItem,
+} from './openBuilderLevers';
 import { svgPicture, useBuildWatcher } from '../../build-layer/buildLayer';
 
 export type { OpenBuilderChallenge } from './openBuilderModel';
@@ -95,6 +98,15 @@ const OpenBuilderSurface: React.FC<OpenBuilderProps> = ({ data, className, runti
   const [notice, setNotice] = useState('');
   /** Bumped on every item open, so a judge reply for an earlier build is dropped. */
   const openCount = useRef(0);
+  // In-item levers (`openBuilderLevers.ts`), keyed by the session item they were pulled on, and the smaller practice
+  // project a simplify lever puts in place of the session item until the observer returns to it.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<OpenBuilderChallenge | null>(null);
+  /** An empty board with nothing said about it: a fresh project, a practice project, or the full one back after it. */
+  const clearBoard = () => {
+    openCount.current += 1;
+    setPhase('building'); setNotice(''); setGhostCol(null); setPlaced([]); setVerdict(null); setPicture(null);
+  };
 
   const progress = useOpenBuilderProgress<OpenBuilderChallenge>({
     challenges, getChallengeId: (ch) => ch.id,
@@ -103,17 +115,22 @@ const OpenBuilderSurface: React.FC<OpenBuilderProps> = ({ data, className, runti
     // A fresh project starts on an empty board. Try again keeps the build AND the buddy's words on screen,
     // so the learner changes what the buddy pointed at instead of starting over.
     onItemOpened: (_index, retry) => {
-      openCount.current += 1;
-      setPhase('building'); setNotice(''); setGhostCol(null);
-      if (retry) return;
-      setPlaced([]); setVerdict(null); setPicture(null);
+      if (retry) { openCount.current += 1; setPhase('building'); setNotice(''); setGhostCol(null); return; }
+      setPractice(null); clearBoard();
     },
   });
   const { currentIndex, results: challengeResults, isComplete } = progress;
   const allChallengesComplete = isComplete || !!progress.practiceSummary;
   const blocked = progress.canAttempt === false || phase === 'checking';
-  const current = challenges[currentIndex] ?? null;
+  const sessionChallenge = challenges[currentIndex] ?? null;
+  const current = practice ?? sessionChallenge;
   const scene = current ? SCENES[current.sceneId] : null;
+  const pulledLevers = sessionChallenge && leverState.item === sessionChallenge.id ? leverState.pulled : [];
+  // The session item's levers; a help picture shows on the session item only while pulled (or from the start on easy).
+  const itemLevers = sessionChallenge ? openBuilderLevers(sessionChallenge, challenges, pulledLevers) : [];
+  const helpOn = (id: string) => !practice && itemLevers.some(l => l.id === id && l.pulled);
+  const shownMarks = sessionChallenge && helpOn(MARKS_LEVER) ? jobMarks(sessionChallenge) : null;
+  const shownParts = sessionChallenge && helpOn(PARTS_LEVER) ? goalParts(sessionChallenge) : null;
 
   const phaseResults = usePhaseResults({
     challenges, results: challengeResults, isComplete: allChallengesComplete,
@@ -173,11 +190,12 @@ const OpenBuilderSurface: React.FC<OpenBuilderProps> = ({ data, className, runti
     setVerdict(reading); setPhase('checked');
     if (reading.met) SoundManager.playCorrect(); else SoundManager.playIncorrect();
     progress.commitCheck(describeBuildWork(challenge, build), reading.met, reading.met ? undefined : reading.miss);
-    if (reading.met) {
+    // A practice project is ungraded: its success records nothing for the session.
+    if (reading.met && !practice) {
       const attempts = progress.currentAttempts + 1;
       progress.mergeResult({ challengeId: challenge.id, correct: true, attempts, score: Math.max(20, 100 - 20 * (attempts - 1)) });
     }
-  }, [current, blocked, placed, progress]);
+  }, [current, blocked, placed, progress, practice]);
 
   // ── The watcher: one live line once the learner pauses (shared build layer) ──
   const seeing = useBuildWatcher({
@@ -216,8 +234,31 @@ const OpenBuilderSurface: React.FC<OpenBuilderProps> = ({ data, className, runti
 
   // What the tutor and the observer see, republished every render.
   useLayoutEffect(() => {
-    if (!current) return;
-    workspace.current = { ...openBuilderScene(current, { placed, phase, verdict: phase === 'checking' ? null : verdict, seeing: phase === 'building' ? seeing : '' }) };
+    if (!current || !sessionChallenge) return;
+    const base = openBuilderScene(current, { placed, phase, verdict: phase === 'checking' ? null : verdict, seeing: phase === 'building' ? seeing : '' });
+    const onScreen = [shownMarks?.fact, shownParts && partsFact(shownParts)].filter(Boolean).join('; ');
+    const levers = practice ? [] : itemLevers;
+    workspace.current = {
+      ...base,
+      facts: { ...base.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      levers,
+      pullLever: (id: string) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this project.`;
+        if (lever.pulled) return `${id} is already on screen.`;
+        const next = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const smaller = practiceItem(sessionChallenge, challenges);
+          if (!smaller) return 'This project is already the smallest job of its kind.';
+          setLeverState(next); setPractice(smaller); clearBoard();
+          return { practice: openBuilderAssignment(smaller) };
+        }
+        setLeverState(next);
+        return true as const;
+      },
+      // Back to the full project on an empty board: the practice build is not the learner's work on it.
+      endPractice: () => { setPractice(null); clearBoard(); },
+    };
   });
 
   // ── Keyboard on the board: arrows move the drop column, Enter drops, U undoes ──
@@ -273,13 +314,25 @@ const OpenBuilderSurface: React.FC<OpenBuilderProps> = ({ data, className, runti
               </div>
             </LuminaPrompt>
 
+            {practice && <div className="text-center text-xs text-amber-300" data-practice>Practice project</div>}
+            {shownParts && (
+              // The help lever `goal_parts`: a card for each part the goal names, never a block, a count or a place.
+              <div className="flex flex-wrap items-stretch justify-center gap-2" data-lever="goal-parts" aria-label="What the goal asks for">
+                {shownParts.map((p, i) => (
+                  <div key={i} data-part className="flex min-w-16 flex-col items-center gap-0.5 rounded-xl border border-amber-300/40 bg-amber-300/10 px-2 py-1.5">
+                    <span className="text-2xl" aria-hidden>{p.glyph}</span>
+                    <span className="text-xs text-slate-100">{p.word}</span>
+                  </div>
+                ))}
+              </div>
+            )}
             {pip.store && <div {...pip.dock} />}
             <div {...pip.workspace} className="space-y-3">
               <div className="space-y-3">
                   <div role="group" aria-label={`Building board: ${scene.title}`} tabIndex={0} onKeyDown={onBoardKey}
                     className="relative w-full overflow-hidden rounded-2xl border border-white/10 shadow-lg outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
                     onMouseLeave={() => setGhostCol(null)}>
-                    <BuilderBoard ref={boardRef} scene={scene} placed={placed} ghost={ghost} />
+                    <BuilderBoard ref={boardRef} scene={scene} placed={placed} ghost={ghost} marks={shownMarks?.marks} />
                     {!blocked && (
                       <div className="absolute inset-0 flex">
                         {Array.from({ length: COLS }, (_, col) => (

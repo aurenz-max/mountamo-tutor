@@ -56,7 +56,10 @@ export interface SceneProp {
   flip?: boolean;
 }
 
-export type SceneId = 'bridge' | 'giraffe' | 'puppy-house' | 'cliff-steps' | 'castle' | 'rocket' | 'robot' | 'truck' | 'sheep-wall';
+export type MenuSceneId = 'bridge' | 'giraffe' | 'puppy-house' | 'cliff-steps' | 'castle' | 'rocket' | 'robot' | 'truck' | 'sheep-wall';
+/** Smaller jobs a simplify lever opens as an ungraded practice project (`openBuilderLevers.ts`); never on the menu. */
+export type PracticeSceneId = 'stream' | 'pony' | 'ledge' | 'kitten-shade' | 'queen-tower' | 'little-rocket' | 'little-robot' | 'duck-wall';
+export type SceneId = MenuSceneId | PracticeSceneId;
 
 export interface BuilderScene {
   id: SceneId;
@@ -77,7 +80,7 @@ export interface BuilderScene {
 const banks = (gapFrom: number, gapTo: number, h: number) =>
   Array.from({ length: COLS }, (_, c) => (c < gapFrom || c > gapTo ? h : 0));
 
-export const SCENES: Record<SceneId, BuilderScene> = {
+const MENU_SCENES: Record<MenuSceneId, BuilderScene> = {
   bridge: {
     id: 'bridge', title: 'Over the River',
     goal: 'The car needs to get across the river. Build a bridge from one side to the other!',
@@ -143,7 +146,69 @@ export const SCENES: Record<SceneId, BuilderScene> = {
       { emoji: '🌼', col: 11, row: 0, size: 1, label: 'a daisy' }],
   },
 };
-export const SCENE_IDS = Object.keys(SCENES) as SceneId[];
+
+/** Each a smaller job than one menu scene (`SIMPLER_SCENE` in `openBuilderLevers.ts`), with its own scenery. */
+const PRACTICE_SCENES: Record<PracticeSceneId, BuilderScene> = {
+  stream: {
+    id: 'stream', title: 'Over the Stream',
+    goal: 'The bike needs to get over the little stream. Build a bridge from one side to the other!',
+    sceneNote: 'Two low grassy banks with a narrow stream between them. A bike waits on the left bank.',
+    terrain: banks(5, 6, 1), water: [5, 6],
+    props: [{ emoji: '🚲', col: 0, row: 1, size: 2, label: 'a bike', flip: true }],
+  },
+  pony: {
+    id: 'pony', title: 'As Tall as the Pony',
+    goal: 'Build a tower as tall as the pony!',
+    sceneNote: 'A small pony stands on the right. Its head is about 3 rows up.',
+    props: [{ emoji: '🐴', col: 8, row: 0, size: 3, label: 'a pony' }],
+  },
+  ledge: {
+    id: 'ledge', title: 'Up to the Chick',
+    goal: 'The chick is up on a low ledge! Build steps so the bunny can hop up to it.',
+    sceneNote: 'A low ledge on the right, 2 rows high, with a chick on top. A bunny sits on the ground at the left.',
+    terrain: Array.from({ length: COLS }, (_, c) => (c >= 9 ? 2 : 0)),
+    props: [{ emoji: '🐥', col: 10, row: 2, size: 1, label: 'a chick' },
+      { emoji: '🐰', col: 0, row: 0, size: 2, label: 'a bunny', flip: true }],
+  },
+  'kitten-shade': {
+    id: 'kitten-shade', title: 'Shade for Kitten',
+    goal: 'The kitten is too hot in the sun. Build a roof over the kitten to make some shade!',
+    sceneNote: 'A small kitten sits on the ground in the middle, with room to build on both sides of it. A hot sun is in the sky.',
+    props: [{ emoji: '🐱', col: 5, row: 0, size: 1, label: 'a kitten' },
+      { emoji: '☀️', col: 9, row: 7, size: 2, label: 'the sun' }],
+  },
+  'queen-tower': {
+    id: 'queen-tower', title: 'A Tower for the Queen',
+    goal: 'Build one tall tower for the queen!',
+    sceneNote: 'A queen stands on the ground at the right edge, next to the building space.',
+    props: [{ emoji: '👸', col: 10, row: 0, size: 2, label: 'a queen' }],
+  },
+  'little-rocket': {
+    id: 'little-rocket', title: 'A Little Rocket',
+    goal: 'Build a little rocket with a pointy top!',
+    sceneNote: 'Night sky with stars and a ringed planet in the top right corner.',
+    sky: 'night',
+    props: [{ emoji: '🪐', col: 9, row: 7, size: 2, label: 'a planet' }],
+  },
+  'little-robot': {
+    id: 'little-robot', title: 'A Little Robot',
+    goal: 'Build a little robot with a head and a body.',
+    sceneNote: 'An empty building space with a wrench on the ground at the right.',
+    props: [{ emoji: '🔧', col: 11, row: 0, size: 1, label: 'a wrench' }],
+  },
+  'duck-wall': {
+    id: 'duck-wall', title: 'Save the Bread',
+    goal: 'The duck wants to eat the bread! Build a wall so the duck cannot get to it.',
+    sceneNote: 'A small duck stands on the left side. A loaf of bread sits on the right side.',
+    props: [{ emoji: '🦆', col: 0, row: 0, size: 1, label: 'a duck', flip: true },
+      { emoji: '🍞', col: 10, row: 0, size: 1, label: 'some bread' }],
+  },
+};
+
+export const SCENES: Record<SceneId, BuilderScene> = { ...MENU_SCENES, ...PRACTICE_SCENES };
+/** The scenes a generator, the tester and the presets choose from. Practice scenes are opened only by a lever. */
+export const SCENE_IDS = Object.keys(MENU_SCENES) as MenuSceneId[];
+export const isPracticeScene = (id: SceneId): id is PracticeSceneId => Object.prototype.hasOwnProperty.call(PRACTICE_SCENES, id);
 
 export const groundAt = (scene: BuilderScene, col: number) => scene.terrain?.[col] ?? 0;
 
@@ -158,6 +223,8 @@ export interface OpenBuilderChallenge {
   title: string;
   /** What the child sees and hears. */
   goal: string;
+  /** config.difficulty: easy starts with the item's help levers shown (`openBuilderLevers.ts`). Never changes the goal. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 }
 
 /** Projects straight from the scenes' own goals: the tester's presets, and the generator's fallback. */

@@ -64,7 +64,7 @@ export const describeCalendarPick = (c: CalendarExplorerChallenge, picked: strin
  *   - a date (identify, mark_events, pattern): `same_column_date` (a whole number of weeks off: the same
  *     weekday), `next_to_date` (one day off), `other_date`;
  *   - a count (count, interval_count): `one_less`, `one_more`, `other_count`.
- * day_sequence names its spoken misses in `calendarSpokenMisses` (Part B); month_sequence names none yet.
+ * day_sequence and month_sequence name their spoken misses in `calendarSpokenMisses` (Part B).
  */
 export type CalendarMiss = 'start_day' | 'day_before' | 'day_after' | 'other_day' | 'same_column_date' | 'next_to_date'
   | 'other_date' | 'one_less' | 'one_more' | 'other_count';
@@ -104,16 +104,18 @@ export function calendarSequenceAssignment(item: CalendarSequenceItem): Teaching
       + `${expected} is not it.`, ...(misses.length ? { misses } : {}) };
 }
 
-/** What a wrong spoken weekday shows (handoff 20 Part B): the tap's weekday kinds. */
-export type SpokenCalendarMiss = Extract<CalendarMiss, 'start_day' | 'day_after' | 'other_day'> | 'day_before_start';
+/** What a wrong spoken weekday shows (handoff 20 Part B): the tap's weekday kinds; a month chain's are the same four. */
+export type SpokenCalendarMiss = Extract<CalendarMiss, 'start_day' | 'day_after' | 'other_day'> | 'day_before_start'
+  | 'start_month' | 'month_after' | 'month_before_start' | 'other_month';
 
 /**
- * day_sequence's known wrong answers, in precedence order, for the `spoken_miss` observer: the given day said back
+ * The chain's known wrong answers, in precedence order, for the `spoken_miss` observer: the given day said back
  * (`start_day`, the tap's id), the day after the answer (one skipped), the day before the given one (counted
- * backwards), any other day. month_sequence names none yet (no saved payload).
+ * backwards), any other day. A month chain names the same four (`start_month`, `month_after`, `month_before_start`,
+ * `other_month`).
  */
 export function calendarSpokenMisses(item: CalendarSequenceItem): KnownMiss[] {
-  if (item.type !== 'day_sequence') return [];
+  if (item.type === 'month_sequence') return monthSpokenMisses(item.currentMonth, item.expectedMonth);
   const at = weekday(item.currentDay), want = weekday(item.expectedDay);
   if (at < 0 || want < 0) return [];
   const day = (i: number) => { const d = WEEKDAYS[(i + 7) % 7]; return d[0].toUpperCase() + d.slice(1); };
@@ -124,6 +126,22 @@ export function calendarSpokenMisses(item: CalendarSequenceItem): KnownMiss[] {
     { id: 'day_before_start', pattern: `${fact} The learner's answer is ${day(at - 1)}, the day before ${day(at)}: counting backwards.`, examples: [day(at - 1)] },
     { id: 'other_day', pattern: `${fact} The learner's answer is another day of the week, not ${day(at)}, ${day(want)}, ${day(want + 1)} or ${day(at - 1)}.`,
       examples: [day(want + 3)] },
+  ];
+}
+
+function monthSpokenMisses(currentMonth: string, expectedMonth: string): KnownMiss[] {
+  const at = MONTH_NAMES.findIndex(m => m.toLowerCase() === currentMonth.trim().toLowerCase());
+  const want = MONTH_NAMES.findIndex(m => m.toLowerCase() === expectedMonth.trim().toLowerCase());
+  if (at < 0 || want < 0) return [];
+  const month = (i: number) => MONTH_NAMES[(i + 12) % 12];
+  const fact = `The month after ${month(at)} is ${month(want)}.`;
+  return [
+    { id: 'start_month', pattern: `${fact} The learner's answer is ${month(at)}, the month they were given, said back.`, examples: [month(at)] },
+    { id: 'month_after', pattern: `${fact} The learner's answer is ${month(want + 1)}, one month past ${month(want)}.`, examples: [month(want + 1)] },
+    { id: 'month_before_start', pattern: `${fact} The learner's answer is ${month(at - 1)}, the month before ${month(at)}: counting backwards.`,
+      examples: [month(at - 1)] },
+    { id: 'other_month', pattern: `${fact} The learner's answer is another month, not ${month(at)}, ${month(want)}, ${month(want + 1)} or ${month(at - 1)}.`,
+      examples: [month(want + 4)] },
   ];
 }
 

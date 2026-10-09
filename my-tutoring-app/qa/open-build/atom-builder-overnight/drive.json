@@ -1,0 +1,195 @@
+{
+  "asks": [
+    {
+      "kind": "valence",
+      "outer": 2
+    },
+    {
+      "kind": "full_shell"
+    },
+    {
+      "kind": "charge",
+      "charge": 2
+    },
+    {
+      "kind": "isotopes"
+    }
+  ],
+  "checks": [
+    {
+      "name": "routed: four make_atom items with code asks",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "asks in order: valence, full shell, charge, isotopes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "item 1 opens empty",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "no charge, mass, valence or configuration readout",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "one element past -> valence_off",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "one element past: build kept after the miss",
+      "pass": true,
+      "detail": "5 protons drawn, 5 placed"
+    },
+    {
+      "name": "valence fixed passes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "valence fixed: next item opens empty",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "fluorine -> shell_not_full",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "fluorine: build kept after the miss",
+      "pass": true,
+      "detail": "9 protons drawn, 9 placed"
+    },
+    {
+      "name": "neon passes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "neon: next item opens empty",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "neutral chlorine -> still_neutral",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "neutral chlorine: build kept after the miss",
+      "pass": true,
+      "detail": "17 protons drawn, 17 placed"
+    },
+    {
+      "name": "wrong sign -> charge_sign",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "wrong sign: build kept after the miss",
+      "pass": true,
+      "detail": "17 protons drawn, 17 placed"
+    },
+    {
+      "name": "charge 2 passes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "charge 2: next item opens empty",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "one atom -> need_two",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "one atom: build kept after the miss",
+      "pass": true,
+      "detail": "6 protons drawn, 6 placed"
+    },
+    {
+      "name": "the kept atom is drawn in the corner",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "same nucleus twice -> same_neutrons",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "same nucleus twice: build kept after the miss",
+      "pass": true,
+      "detail": "6 protons drawn, 6 placed"
+    },
+    {
+      "name": "carbon-12 and carbon-13 passes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "session completes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "watcher produced lines",
+      "pass": true,
+      "detail": "4 of 4 looks"
+    },
+    {
+      "name": "watcher lines pass the leak rules",
+      "pass": true,
+      "detail": "[{\"build\":\"valence: one past\",\"line\":\"Ooh, red and grey dots cluster tightly inside blue rings!\",\"leaks\":[]},{\"build\":\"fluorine\",\"line\":\"Ooh, red and grey dots cluster together with blue rings spinning around them!\",\"leaks\":[]},{\"build\":\"wrong sign\",\"line\":\"Ooh, red and grey dots are clustering in the middle!\",\"leaks\":[]},{\"build\":\"carbon pair\",\"line\":\"Ooh, red protons and grey neutrons are clumping together nicely!\",\"leaks\":[]}]"
+    },
+    {
+      "name": "card fits 360 px with no sideways scroll",
+      "pass": true,
+      "detail": "{\"scroll\":0}"
+    },
+    {
+      "name": "no page errors",
+      "pass": false,
+      "detail": "Error: <ellipse> attribute rx: Expected length, \"undefined\". | Error: <circle> attribute r: Expected length, \"undefined\". | Error: <ellipse> attribute rx: Expected length, \"undefined\"."
+    }
+  ],
+  "watcherLines": [
+    {
+      "build": "valence: one past",
+      "line": "Ooh, red and grey dots cluster tightly inside blue rings!",
+      "leaks": []
+    },
+    {
+      "build": "fluorine",
+      "line": "Ooh, red and grey dots cluster together with blue rings spinning around them!",
+      "leaks": []
+    },
+    {
+      "build": "wrong sign",
+      "line": "Ooh, red and grey dots are clustering in the middle!",
+      "leaks": []
+    },
+    {
+      "build": "carbon pair",
+      "line": "Ooh, red protons and grey neutrons are clumping together nicely!",
+      "leaks": []
+    }
+  ],
+  "errors": [
+    "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+    "Error: <circle> attribute r: Expected length, \"undefined\".",
+    "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+    "Error: <ellipse> attribute ry: Expected length, \"undefined\".",
+    "[evaluationApi] Failed to submit evaluation: Error: User not authenticated\n    at AuthenticatedApiClient.getAuthHeaders (webpack-internal:///(app-pages-browser)/./src/lib/authApiClient.ts:13:19)\n    at AuthenticatedApiClient.request (webpack-internal:///(app-pages-browser)/./src/lib/authApiClient.ts",
+    "[EvaluationContext] Submission failed: Error: User not authenticated\n    at AuthenticatedApiClient.getAuthHeaders (webpack-internal:///(app-pages-browser)/./src/lib/authApiClient.ts:13:19)\n    at AuthenticatedApiClient.request (webpack-internal:///(app-pages-browser)/./src/lib/authApiClient.ts:71:44"
+  ]
+}

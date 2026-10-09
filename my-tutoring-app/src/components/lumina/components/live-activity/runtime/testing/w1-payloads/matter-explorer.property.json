@@ -1,0 +1,144 @@
+{
+ "source": "qa/tutor-reports/matter-explorer-runtime-property-payload-2026-10-09.json",
+ "primitiveId": "matter-explorer",
+ "evalMode": "property",
+ "data": {
+  "title": "Kitchen and Playground Matter Hunt",
+  "description": "Let us discover how everyday objects act like solids, liquids, and gases when we look closely at them!",
+  "objects": [
+   {
+    "id": "obj-rock",
+    "name": "garden rock",
+    "state": "solid",
+    "properties": {
+     "color": "gray",
+     "texture": "rough",
+     "transparency": "opaque",
+     "flexibility": "rigid",
+     "shape": "keeps_shape",
+     "weight": "heavy"
+    },
+    "canChangeState": false,
+    "imagePrompt": "A smooth gray rock sitting on green grass in a sunny garden",
+    "stateChangeTemp": null
+   },
+   {
+    "id": "obj-water",
+    "name": "drinking water",
+    "state": "liquid",
+    "properties": {
+     "color": "clear",
+     "texture": "smooth",
+     "transparency": "transparent",
+     "flexibility": "flows",
+     "shape": "takes_container",
+     "weight": "medium"
+    },
+    "canChangeState": true,
+    "imagePrompt": "A clear glass filled with refreshing cold water and condensation drops",
+    "stateChangeTemp": 0
+   },
+   {
+    "id": "obj-air",
+    "name": "air",
+    "state": "gas",
+    "properties": {
+     "color": "invisible",
+     "texture": "smooth",
+     "transparency": "transparent",
+     "flexibility": "flows",
+     "shape": "fills_space",
+     "weight": "light"
+    },
+    "canChangeState": false,
+    "imagePrompt": "Green open outdoor park with gentle wind blowing colorful leaves",
+    "stateChangeTemp": null
+   },
+   {
+    "id": "obj-honey",
+    "name": "sweet honey",
+    "state": "liquid",
+    "properties": {
+     "color": "golden",
+     "texture": "smooth",
+     "transparency": "translucent",
+     "flexibility": "flows",
+     "shape": "takes_container",
+     "weight": "heavy"
+    },
+    "canChangeState": false,
+    "imagePrompt": "A honey dipper dripping thick golden honey into a small bowl",
+    "stateChangeTemp": null
+   },
+   {
+    "id": "obj-steam",
+    "name": "steam",
+    "state": "gas",
+    "properties": {
+     "color": "white",
+     "texture": "smooth",
+     "transparency": "translucent",
+     "flexibility": "flows",
+     "shape": "fills_space",
+     "weight": "light"
+    },
+    "canChangeState": false,
+    "imagePrompt": "A hot cup of tea with white steam rising up into the air",
+    "stateChangeTemp": null
+   },
+   {
+    "id": "obj-sand",
+    "name": "sandbox sand",
+    "state": "solid",
+    "properties": {
+     "color": "tan",
+     "texture": "rough",
+     "transparency": "opaque",
+     "flexibility": "rigid",
+     "shape": "keeps_shape",
+     "weight": "medium"
+    },
+    "canChangeState": false,
+    "imagePrompt": "A pile of golden brown playground sand under bright sunshine",
+    "stateChangeTemp": null
+   }
+  ],
+  "challenges": [
+   {
+    "id": "chal-rock",
+    "type": "property",
+    "objectId": "obj-rock",
+    "instruction": "What does the garden rock do when you put it into a cup?",
+    "narration": "I wonder if this sturdy garden rock will change its shape when it goes inside a cup?"
+   },
+   {
+    "id": "chal-water",
+    "type": "property",
+    "objectId": "obj-water",
+    "instruction": "What does drinking water do when you pour it into a cup?",
+    "narration": "Look how drinking water splashes and moves around! Let us see how it fits inside its new container."
+   },
+   {
+    "id": "chal-air",
+    "type": "property",
+    "objectId": "obj-air",
+    "instruction": "What does air do when it is inside an empty space or a room?",
+    "narration": "We cannot always see air, but it is all around us. Let us figure out how it behaves in the room!"
+   },
+   {
+    "id": "chal-honey",
+    "type": "property",
+    "objectId": "obj-honey",
+    "instruction": "What does sweet honey do when you pour it into a cup?",
+    "narration": "Sweet honey is so thick and slow, but watch closely to see how it settles in the cup!"
+   }
+  ],
+  "showOptions": {
+   "showPropertyPanel": true,
+   "showTemperatureSlider": true,
+   "showParticleView": false,
+   "showVennDiagram": false
+  },
+  "gradeBand": "K-1"
+ }
+}

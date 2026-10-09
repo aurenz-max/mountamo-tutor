@@ -13,6 +13,17 @@ interface PeriodicTableGridProps {
   incorrectNumber?: number | null;
   /** Mark each box `data-pip-object="element-<name>"` so a journey driver can tap it by name. */
   tapTargets?: boolean;
+  /** Help lever `letter_lit`: these boxes lit, every other box dimmed. */
+  litNumbers?: number[] | null;
+  /** Help lever `pair_marks`: amber-ring these boxes, alike. */
+  ringNumbers?: number[];
+  /** Help lever `axis_marks`: ring this group number on the top axis and this period number on the side. */
+  markGroup?: number | null;
+  markPeriod?: number | null;
+  /** Help lever `row_ranges`: each period label also shows its row's first and last atomic number. */
+  rowRanges?: ReadonlyArray<{ period: number; first: number; last: number }> | null;
+  /** Help lever `tall_columns`: dim the short middle block (groups 3 to 12) and the detached rows. */
+  dimMiddle?: boolean;
 }
 
 /**
@@ -30,7 +41,14 @@ export const PeriodicTableGrid: React.FC<PeriodicTableGridProps> = ({
   revealNumbers = [],
   incorrectNumber = null,
   tapTargets = false,
+  litNumbers = null,
+  ringNumbers = [],
+  markGroup = null,
+  markPeriod = null,
+  rowRanges = null,
+  dimMiddle = false,
 }) => {
+  const axisRing = 'rounded ring-2 ring-amber-300 text-amber-200';
   return (
     <div
       className="grid gap-1 p-2 md:p-4 min-w-[1040px] overflow-x-auto select-none"
@@ -40,35 +58,47 @@ export const PeriodicTableGrid: React.FC<PeriodicTableGridProps> = ({
       {Array.from({ length: 18 }, (_, i) => (
         <div
           key={`group-${i + 1}`}
-          className="text-slate-500 text-[9px] md:text-[10px] font-mono flex items-end justify-center pb-0.5"
+          className={`text-slate-500 text-[9px] md:text-[10px] font-mono flex items-end justify-center pb-0.5 ${markGroup === i + 1 ? axisRing : ''}`}
           style={{ gridColumn: i + 2, gridRow: 1 }}
+          data-axis-mark={markGroup === i + 1 ? 'group' : undefined}
         >
           {i + 1}
         </div>
       ))}
 
       {/* Period axis (rows 1-7) */}
-      {Array.from({ length: 7 }, (_, i) => (
-        <div
-          key={`period-${i + 1}`}
-          className="text-slate-500 text-[9px] md:text-[10px] font-mono flex items-center justify-end pr-1"
-          style={{ gridColumn: 1, gridRow: i + 2 }}
-        >
-          {i + 1}
-        </div>
-      ))}
+      {Array.from({ length: 7 }, (_, i) => {
+        const range = rowRanges?.find(r => r.period === i + 1);
+        return (
+          <div
+            key={`period-${i + 1}`}
+            className={`text-slate-500 text-[9px] md:text-[10px] font-mono flex flex-col items-end justify-center pr-1 ${markPeriod === i + 1 ? axisRing : ''}`}
+            style={{ gridColumn: 1, gridRow: i + 2 }}
+            data-axis-mark={markPeriod === i + 1 ? 'period' : undefined}
+          >
+            <span>{i + 1}</span>
+            {range && <span data-row-range className="text-[8px] text-sky-300 leading-none">{range.first}–{range.last}</span>}
+          </div>
+        );
+      })}
 
       {elements.map((element) => {
         const isDimmed = hoveredCategory && hoveredCategory !== element.category;
         const categoryStyle = getCategoryStyle(element.category);
         const isRevealed = revealNumbers.includes(element.number);
         const isIncorrect = incorrectNumber === element.number;
+        const isLit = !!litNumbers?.includes(element.number);
+        const leverDim = (litNumbers && !isLit) || (dimMiddle && (element.ypos > 7 || (element.xpos >= 3 && element.xpos <= 12)));
+        const isRinged = ringNumbers.includes(element.number);
 
         return (
           <div
             key={element.number}
             onClick={() => onSelectElement(element)}
             data-pip-object={tapTargets ? `element-${element.name.toLowerCase()}` : undefined}
+            data-lit={isLit ? '' : undefined}
+            data-dimmed={leverDim ? '' : undefined}
+            data-ringed={isRinged ? '' : undefined}
             onMouseEnter={() => setHoveredCategory(element.category)}
             onMouseLeave={() => setHoveredCategory(null)}
             className={`
@@ -78,6 +108,9 @@ export const PeriodicTableGrid: React.FC<PeriodicTableGridProps> = ({
               ${isDimmed ? 'opacity-20 grayscale scale-95 blur-[1px]' : 'opacity-100'}
               ${isRevealed ? 'ring-2 ring-emerald-400 scale-110 z-10 shadow-lg shadow-emerald-500/30 rounded-md' : ''}
               ${isIncorrect ? 'ring-2 ring-red-400 z-10' : ''}
+              ${leverDim ? 'opacity-25' : ''}
+              ${isLit ? 'ring-1 ring-sky-300' : ''}
+              ${isRinged ? 'ring-2 ring-amber-300 z-10' : ''}
             `}
             style={{
               gridColumn: element.xpos + 1,

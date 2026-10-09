@@ -11,6 +11,10 @@
  *   09-27: removing a choice is allowed and is assisted work, never unaided credit (the pull records the lever on the
  *   next attempt). Guard: after the drop at least two choices remain that the learner has not already tried. A spoken
  *   wrong answer does not say which choice it was, so every wrong attempt counts as one tried choice.
+ * - `spread_pictures` (help, shown): a number question that prints a run of one repeated picture ("the number of stars:
+ *   ⭐⭐⭐⭐⭐") gets the same pictures drawn again apart, one per box, each box touchable to mark it counted. It answers
+ *   the count misses (one less, one more, another number) on a 3-choice menu, where the drop is gone after one wrong
+ *   answer. Withheld by `spreadLeak`; the boxes carry no number and the scene fact never says how many.
  *
  * Every other kind (true/false, match, sort, blank, the production kinds) declares no lever; its misses are listed as
  * unanswered in the catalog with the reason.
@@ -21,6 +25,7 @@ import type { KnowledgeCheckMiss } from './knowledgeCheckWorkspace';
 
 export const CUE_LEVER = 'cue_picture';
 export const DROP_LEVER = 'drop_far_choice';
+export const SPREAD_LEVER = 'spread_pictures';
 
 /** Per item: the levers pulled, the choices greyed out, the choices the learner touched wrong, and wrong attempts. */
 export interface KnowledgeCheckLeverState {
@@ -64,6 +69,38 @@ export function cueLeak(item: KnowledgeCheckItem): string | null {
   return null;
 }
 
+/** A run of one picture repeated in the question, in the order printed. */
+export interface PictureRun { picture: string; count: number }
+const MAX_SPREAD = 20;
+/** An emoji or pictograph (symbols, dingbats, the emoji planes); a keycap ("5️⃣") is a numeral, not a picture. */
+const isPicture = (g: string) => {
+  const c = g.codePointAt(0) ?? 0;
+  return ((c >= 0x2190 && c <= 0x2bff) || (c >= 0x1f000 && c <= 0x1faff)) && !/[0-9#*]/.test(g);
+};
+
+/** The runs of two or more of one picture in the question; spaces between the copies do not break a run. */
+export function pictureRuns(prompt: string): PictureRun[] {
+  const runs: PictureRun[] = [];
+  let cur: PictureRun | null = null;
+  for (const g of pictures(prompt)) {
+    if (cur && g === cur.picture) { cur.count++; continue; }
+    if (cur && cur.count >= 2) runs.push(cur);
+    cur = isPicture(g) ? { picture: g, count: 1 } : null;
+  }
+  if (cur && cur.count >= 2) runs.push(cur);
+  return runs;
+}
+
+/** Why the question's pictures may not be spread out, or null when they may. */
+export function spreadLeak(item: KnowledgeCheckItem): string | null {
+  if (!isChoice(item)) return 'not a choice item';
+  if (Number.isNaN(asNumber(keyText(item)))) return 'the answer is not a number';
+  const runs = pictureRuns(item.prompt ?? '');
+  if (!runs.length) return 'no run of one repeated picture in the question';
+  if (runs.reduce((n, r) => n + r.count, 0) > MAX_SPREAD) return `more than ${MAX_SPREAD} pictures`;
+  return null;
+}
+
 const cueFor = (item: KnowledgeCheckItem) => (item.cue && !cueLeak(item) ? item.cue : null);
 
 /**
@@ -87,6 +124,7 @@ export function farChoice(item: KnowledgeCheckItem, s: KnowledgeCheckLeverState)
 /** The misses each lever answers (J9): the tapped ids are the spoken choice's ids too. */
 const CUE_ANSWERS = ['other_choice'] satisfies KnowledgeCheckMiss[];
 const DROP_ANSWERS = ['one_less', 'one_more', 'other_number', 'other_choice'] satisfies KnowledgeCheckMiss[];
+const SPREAD_ANSWERS = ['one_less', 'one_more', 'other_number'] satisfies KnowledgeCheckMiss[];
 
 /** The levers this item declares, with their state. A lever that cannot be pulled now and was not pulled is left out. */
 export function knowledgeCheckLevers(item: KnowledgeCheckItem | null | undefined, s: KnowledgeCheckLeverState): WorkspaceLever[] {
@@ -95,6 +133,11 @@ export function knowledgeCheckLevers(item: KnowledgeCheckItem | null | undefined
   if (cueFor(item)) levers.push({ id: CUE_LEVER, kind: 'help', carrier: 'both', pulled: s.pulled.includes(CUE_LEVER), answers: CUE_ANSWERS,
     when: 'The learner picks a wrong choice, or is stuck, on a question about a thing they may not picture.',
     does: 'Shows a picture of what the question is about beside it. Say what it shows. It never pictures the answer or a choice.' });
+  if (!spreadLeak(item)) levers.push({ id: SPREAD_LEVER, kind: 'help', carrier: 'shown', pulled: s.pulled.includes(SPREAD_LEVER),
+    answers: SPREAD_ANSWERS,
+    when: 'The learner picks a number one off, or another number, when counting the pictures in the question.',
+    does: 'Draws the pictures from the question again, spread apart, one per box; touching a box marks it counted. '
+      + 'The boxes carry no numbers. Never say how many there are; the learner counts.' });
   const dropPulled = s.pulled.includes(DROP_LEVER);
   if (dropPulled || farChoice(item, s)) levers.push({ id: DROP_LEVER, kind: 'simplify', carrier: 'shown', pulled: dropPulled,
     answers: DROP_ANSWERS,
@@ -108,6 +151,10 @@ export function leversOnScreen(item: KnowledgeCheckItem, s: KnowledgeCheckLeverS
   const parts: string[] = [];
   const cue = s.pulled.includes(CUE_LEVER) ? cueFor(item) : null;
   if (cue) parts.push(`a picture beside the question: ${cue.picture} (${cue.shows}). Say what it shows; it is not a choice`);
+  if (s.pulled.includes(SPREAD_LEVER) && !spreadLeak(item)) {
+    parts.push(`under the question, the ${pictureRuns(item.prompt).map(r => r.picture).join(' and the ')} from the question `
+      + 'are drawn again spread apart, one per box, with no numbers; the learner can touch a box to mark it counted');
+  }
   const options = item.options ?? [];
   for (const id of s.dropped) {
     const i = options.findIndex(o => o.id === id);

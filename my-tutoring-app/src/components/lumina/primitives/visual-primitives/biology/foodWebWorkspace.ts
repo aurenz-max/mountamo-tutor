@@ -196,8 +196,13 @@ export interface FoodWebView {
 /** The legacy whole-web task. */
 export const webAsk = (ecosystem: string) => `Draw an arrow for every feeding relationship to build the whole ${ecosystem} food web.`;
 
+/** The smaller web a simplify lever opens: the same task on the living things shown. */
+export const smallerWebAsk = (count: number) => `Draw an arrow for every feeding relationship among these ${count} living things.`;
+
 export function workspaceAssignment(challenge: FoodWebChallenge, ecosystem: string): TeachingAssignment {
-  return { id: challenge.id, task: challenge.type === 'build_chain' ? challenge.instruction : webAsk(ecosystem), response: 'gesture' };
+  const task = challenge.type === 'build_chain' ? challenge.instruction
+    : challenge.only ? smallerWebAsk(challenge.only.length) : webAsk(ecosystem);
+  return { id: challenge.id, task, response: 'gesture' };
 }
 
 const nameOf = (view: FoodWebView, id: string) => view.organisms.find(o => o.id === id)?.name ?? id;
@@ -265,7 +270,10 @@ export function foodWebHarnessInputs(data: { organisms: Organism[]; correctConne
   challenge: FoodWebChallenge, wrong: boolean, demand?: Record<string, unknown> | null): FoodWebHarnessInput[] {
   const touch = (target: string): FoodWebHarnessInput => ({ type: 'touch', target });
   if (challenge.type === 'complete_web') {
-    return [...data.correctConnections.flatMap((c, i) => (wrong && i === 0 ? [touch(`web-${c.toId}`), touch(`web-${c.fromId}`)]
+    // A smaller web (simplify practice) asks only the relations among its living things.
+    const only = challenge.only;
+    const web = only ? data.correctConnections.filter(c => only.includes(c.fromId) && only.includes(c.toId)) : data.correctConnections;
+    return [...web.flatMap((c, i) => (wrong && i === 0 ? [touch(`web-${c.toId}`), touch(`web-${c.fromId}`)]
       : [touch(`web-${c.fromId}`), touch(`web-${c.toId}`)])), { type: 'check' }];
   }
   const relations = feedingRelations(data.organisms, data.correctConnections);

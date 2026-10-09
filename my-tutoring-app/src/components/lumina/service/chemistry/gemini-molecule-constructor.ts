@@ -652,16 +652,24 @@ GENERAL REQUIREMENTS:
           targetAtoms = parseFormulaToAtoms(resolvedFormula);
         }
 
+        // identify and formula_write show a drawn molecule and take its name or formula: words that state the key
+        // (in the instruction or the hint shown after a wrong answer) are replaced.
+        const squash = (s: string) => s.toLowerCase().replace(/[\s₀-₉]/g, (c) => /\s/.test(c) ? "" : String(c.charCodeAt(0) - 0x2080));
+        const key = ch.type === "identify" ? resolvedName : ch.type === "formula_write" ? resolvedFormula : null;
+        // A formula is its atom counts, so on formula_write any model words may spell it out ("two hydrogens, one
+        // sulfur, four oxygens"): code owns that item's instruction and hint.
+        const states = (s?: string) => ch.type === "formula_write" || (!!key && !!s && squash(s).includes(squash(key)));
+        const typedInstruction = ch.type === "identify" ? "Name this molecule." : "Write the formula for this molecule.";
         return {
           ...ch,
           id: ch.id || `ch${idx + 1}`,
           type: ch.type || "build_target",
-          instruction:
-            ch.instruction || "Build the molecule by snapping atoms together!",
+          instruction: states(ch.instruction) ? typedInstruction
+            : ch.instruction || "Build the molecule by snapping atoms together!",
           targetFormula: resolvedFormula,
           targetName: resolvedName,
           targetAtoms,
-          hint: ch.hint || "Look at the formula and count the atoms!",
+          hint: states(ch.hint) ? "Count the atoms of each element in the drawing." : ch.hint || "Look at the formula and count the atoms!",
           narration:
             ch.narration || ch.instruction || "Great work building that molecule!",
         };

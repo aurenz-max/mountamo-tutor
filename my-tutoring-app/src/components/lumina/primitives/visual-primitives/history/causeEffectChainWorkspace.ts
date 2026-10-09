@@ -64,14 +64,15 @@ export function causeEffectAssignment(item: CauseEffectChainItem): TeachingAssig
 }
 
 /** What a wrong spoken verdict shows (handoff 20 Part B), by the event's role. */
-export type SpokenChainMiss = 'cause_denied' | 'consequence_as_cause' | 'background_as_cause';
+export type SpokenChainMiss = 'cause_denied' | 'consequence_as_cause' | 'background_as_cause' | 'other_end' | 'middle_event';
 
 /**
  * identify_cause's known wrong answer, stated from the event's role: a real cause said not to help, an event that
- * came after the ending said to cause it, or a background fact said to cause it. root_vs_proximate names none yet
- * (no saved payload).
+ * came after the ending said to cause it, or a background fact said to cause it. root_vs_proximate: the event at the
+ * other end of the chain (`other_end`, the signature miss), or one from its middle (`middle_event`).
  */
 export function causeEffectSpokenMisses(item: CauseEffectChainItem): KnownMiss[] {
+  if (item.kind === 'root_vs_proximate') return endMisses(item);
   if (item.kind !== 'identify_cause') return [];
   const event = item.card.text.replace(/[.!?]+$/, ''), ending = item.outcome.text.replace(/[.!?]+$/, '');
   if (item.isCause) return [{ id: 'cause_denied', pattern: `The right answer is "yes": "${event}" came before "${ending}" and helped cause it. The learner gives the opposite answer, "no" (or "nope", "it did not").`,
@@ -79,6 +80,23 @@ export function causeEffectSpokenMisses(item: CauseEffectChainItem): KnownMiss[]
   return [item.role === 'consequence'
     ? { id: 'consequence_as_cause', pattern: `The right answer is "no": "${event}" could only happen after "${ending}" had already happened. The learner gives the opposite answer, "yes" (or "yeah", "it helped").`, examples: ['yes', 'it helped'] }
     : { id: 'background_as_cause', pattern: `The right answer is "no": "${event}" was only true at the time and pushed nothing along toward "${ending}". The learner gives the opposite answer, "yes" (or "yeah", "it helped").`, examples: ['yes', 'it helped'] }];
+}
+
+/** root_vs_proximate's known wrong answers, by where the named card sits in the chain. */
+function endMisses(item: Extract<CauseEffectChainItem, { kind: 'root_vs_proximate' }>): KnownMiss[] {
+  const right = correctChoiceOf(item);
+  const otherId = item.ask === 'proximate' ? item.correctOrder[0] : item.correctOrder[item.correctOrder.length - 1];
+  const other = item.choices.find(c => c.card.id === otherId);
+  const middle = item.choices.filter(c => c !== right && c !== other);
+  const asked = item.ask === 'proximate' ? 'the event right before the ending' : 'the root';
+  const plain = (t: string) => t.replace(/[.!?]+$/, '');
+  const misses: KnownMiss[] = [];
+  if (other) misses.push({ id: 'other_end', pattern: `The right answer is "${plain(right.card.text)}", ${asked}. The learner names `
+    + `"${plain(other.card.text)}" instead, the event at the other end of the chain.`, examples: [other.distinguisher] });
+  if (middle.length) misses.push({ id: 'middle_event', pattern: `The right answer is "${plain(right.card.text)}", ${asked}. The learner `
+    + `names an event from the middle of the chain: ${middle.map(c => `"${plain(c.card.text)}"`).join(' or ')}.`,
+    examples: middle.map(c => c.distinguisher).slice(0, 6) });
+  return misses;
 }
 
 /** The cards in on-screen order, numbered: the page's own shuffle, never the causal order. */

@@ -1,0 +1,235 @@
+{
+ "source": "gate5 batch-gate generation 2026-10-09",
+ "primitiveId": "habitat-diorama",
+ "evalMode": "restore",
+ "data": {
+  "primitiveType": "habitat-diorama",
+  "habitat": {
+   "name": "Whispering Pines Forest",
+   "biome": "Temperate Deciduous and Coniferous Forest",
+   "climate": "Mild summers and cold, snowy winters with moderate annual rainfall.",
+   "description": "A dense woodland ecosystem featuring towering evergreens, rich leaf-litter soil, and a fresh meandering stream that supports a diverse web of forest life."
+  },
+  "organisms": [
+   {
+    "id": "pine_tree",
+    "commonName": "Ponderosa Pine",
+    "role": "producer",
+    "imagePrompt": "A tall pine tree with thick bark and needle clusters",
+    "position": {
+     "x": "15%",
+     "y": "25%"
+    },
+    "description": "A primary producer that captures sunlight to create energy through photosynthesis, providing needles, bark, and seeds for herbivores.",
+    "adaptations": [
+     "thick bark to resist fires",
+     "needle leaves to conserve water",
+     "deep taproots for stability"
+    ]
+   },
+   {
+    "id": "fern",
+    "commonName": "Bracken Fern",
+    "role": "producer",
+    "imagePrompt": "Lush green fern fronds growing on the damp forest floor",
+    "position": {
+     "x": "40%",
+     "y": "70%"
+    },
+    "description": "A low-growing forest floor producer thriving in shady, moist areas.",
+    "adaptations": [
+     "broad fronds to catch filtered sunlight",
+     "underground rhizomes to survive winter"
+    ]
+   },
+   {
+    "id": "squirrel",
+    "commonName": "Red Squirrel",
+    "role": "primary-consumer",
+    "imagePrompt": "A small bushy-tailed squirrel holding a pine cone on a log",
+    "position": {
+     "x": "30%",
+     "y": "45%"
+    },
+    "description": "An active rodent that feeds on conifer seeds and nuts, serving as a primary consumer.",
+    "adaptations": [
+     "strong teeth for cracking hard cones",
+     "agile climbing claws",
+     "storing food caches for winter"
+    ]
+   },
+   {
+    "id": "beetle",
+    "commonName": "Forest Ground Beetle",
+    "role": "decomposer",
+    "imagePrompt": "A shiny dark beetle crawling across decaying wood",
+    "position": {
+     "x": "60%",
+     "y": "85%"
+    },
+    "description": "A scavenger and decomposer that breaks down dead organic material on the forest floor.",
+    "adaptations": [
+     "strong mouthparts for chewing detritus",
+     "dark exoskeleton for camouflage under bark"
+    ]
+   },
+   {
+    "id": "owl",
+    "commonName": "Barred Owl",
+    "role": "tertiary-consumer",
+    "imagePrompt": "A mottled brown owl perched quietly on a high branch",
+    "position": {
+     "x": "75%",
+     "y": "20%"
+    },
+    "description": "A nocturnal raptor that hunts small mammals and birds from high vantage points.",
+    "adaptations": [
+     "silent flight feathers",
+     "acute binocular vision",
+     "exceptional hearing"
+    ]
+   },
+   {
+    "id": "mushroom",
+    "commonName": "Shelf Fungus",
+    "role": "decomposer",
+    "imagePrompt": "Bracket mushrooms growing sideways out of a rotting tree trunk",
+    "position": {
+     "x": "85%",
+     "y": "60%"
+    },
+    "description": "A fungus that breaks down tough wood fibers, recycling nutrients back into the soil.",
+    "adaptations": [
+     "enzymes that digest lignin and cellulose",
+     "spore release structures on underside"
+    ]
+   },
+   {
+    "id": "fox",
+    "commonName": "Red Fox",
+    "role": "secondary-consumer",
+    "imagePrompt": "A slender reddish-orange fox standing alert in a clearing",
+    "position": {
+     "x": "55%",
+     "y": "50%"
+    },
+    "description": "A versatile carnivore that preys on small rodents and insects to regulate their populations.",
+    "adaptations": [
+     "keen hearing to detect rustling underground",
+     "camouflaged coat",
+     "bushy tail for balance"
+    ]
+   }
+  ],
+  "relationships": [
+   {
+    "fromId": "pine_tree",
+    "toId": "squirrel",
+    "type": "predation",
+    "description": "Squirrels consume pine seeds from the tree to gain energy."
+   },
+   {
+    "fromId": "squirrel",
+    "toId": "fox",
+    "type": "predation",
+    "description": "Red foxes hunt and eat squirrels for sustenance."
+   },
+   {
+    "fromId": "fox",
+    "toId": "owl",
+    "type": "competition",
+    "description": "Foxes and owls compete for the same small mammal food sources."
+   },
+   {
+    "fromId": "beetle",
+    "toId": "mushroom",
+    "type": "symbiosis-mutualism",
+    "description": "Fungi break down wood creating habitat, while beetles help spread fungal spores."
+   },
+   {
+    "fromId": "fern",
+    "toId": "pine_tree",
+    "type": "symbiosis-commensalism",
+    "description": "Ferns grow in the shaded canopy drip zone of tall pines, receiving protection without harming the tree."
+   }
+  ],
+  "environmentalFeatures": [
+   {
+    "id": "stream",
+    "name": "Clearwater Stream",
+    "description": "A flowing freshwater source providing hydration for all forest wildlife.",
+    "position": {
+     "x": "15%",
+     "y": "80%"
+    }
+   },
+   {
+    "id": "canopy",
+    "name": "Upper Canopy",
+    "description": "The topmost layer of branches and leaves catching direct sunlight.",
+    "position": {
+     "x": "50%",
+     "y": "10%"
+    }
+   }
+  ],
+  "challenges": [
+   {
+    "id": "res_1",
+    "type": "restore",
+    "prompt": "Place this primary consumer back into its active foraging zone in the woodland.",
+    "explanation": "Red squirrels belong in the canopy and tree areas where they can readily access pine seeds and escape ground predators.",
+    "restorationEntityId": "squirrel",
+    "restorationZone": "canopy"
+   },
+   {
+    "id": "res_2",
+    "type": "restore",
+    "prompt": "Position this primary producer where it can gather filtered sunlight beneath the tall evergreens.",
+    "explanation": "Bracken ferns thrive on the shaded forest floor where soil moisture is retained.",
+    "restorationEntityId": "fern",
+    "restorationZone": "ground"
+   },
+   {
+    "id": "res_3",
+    "type": "restore",
+    "prompt": "Place this apex raptor in a high vantage point to survey the habitat for prey.",
+    "explanation": "Barred owls require high perches in mature trees to spot small mammals moving below.",
+    "restorationEntityId": "owl",
+    "restorationZone": "canopy"
+   },
+   {
+    "id": "res_4",
+    "type": "restore",
+    "prompt": "Return this detritivore to where dead wood and leaf litter accumulate.",
+    "explanation": "Forest ground beetles fulfill their recycling role best in the ground litter layer.",
+    "restorationEntityId": "beetle",
+    "restorationZone": "ground"
+   },
+   {
+    "id": "res_5",
+    "type": "restore",
+    "prompt": "Place this wood-decaying organism where fallen logs provide nutrient-rich timber.",
+    "explanation": "Shelf fungi grow directly on fallen logs and dead tree trunks to break down tough plant fibers.",
+    "restorationEntityId": "mushroom",
+    "restorationZone": "underground"
+   }
+  ],
+  "gradeBand": "3-5",
+  "disruptionScenario": {
+   "event": "A sudden disease reduces the population of Ponderosa Pine trees.",
+   "cascadeEffects": [
+    "Squirrels lose their primary source of pine seed food, leading to a population decline.",
+    "Foxes experience food scarcity as squirrel numbers drop, forcing them to hunt elsewhere.",
+    "Fewer seeds are buried by squirrels, slowing future pine tree regeneration."
+   ],
+   "question": "How does a reduction in Ponderosa Pine trees directly affect the red squirrel population?"
+  },
+  "targetEvalMode": "restore",
+  "intent": "Restore a missing living thing to its place in the habitat",
+  "challengeType": "restore",
+  "challengeTypes": [
+   "restore"
+  ]
+ }
+}

@@ -149,6 +149,7 @@ export const HISTORY_CATALOG: ComponentDefinition[] = [
     },
     supportsEvaluation: true,
     teachingWorkspace: {
+      levers: true,
       grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
       guidance: 'An ending is printed with event cards in shuffled order; the cards never show their causal order. Find the '
         + 'causes: one event at a time, the learner says yes if it helped cause the ending or no if it did not; an event '
@@ -160,9 +161,11 @@ export const HISTORY_CATALOG: ComponentDefinition[] = [
         + 'and do not single out one card as a hint. When the ask carries the events (grades 1-2), read them in the order '
         + 'given. You cannot move or highlight cards.',
       // The board's own check (`chainMiss`), and identify_cause's spoken verdict by the event's role
-      // (`causeEffectSpokenMisses`, handoff 20 Part B). root_vs_proximate names none yet.
+      // (`causeEffectSpokenMisses`, handoff 20 Part B); root_vs_proximate's named card by where it sits in the chain.
+      // Every miss has a lever on every item (`causeEffectChainLevers.ts`), so nothing is unanswered.
       misses: missLists<ChainMiss | SpokenChainMiss>({ build_chain: ['reversed', 'two_swapped', 'other_order'],
-        identify_cause: ['cause_denied', 'consequence_as_cause', 'background_as_cause'] }),
+        identify_cause: ['cause_denied', 'consequence_as_cause', 'background_as_cause'],
+        root_vs_proximate: ['other_end', 'middle_event'] }),
     },
   },
   {
@@ -299,9 +302,13 @@ export const HISTORY_CATALOG: ComponentDefinition[] = [
         + 'cards are open-book evidence: point the learner back to them, but never say which card or choice holds the '
         + 'answer before an attempt. "Today" is not a choice when two past eras are compared, and saying what changed is '
         + 'not a cause. For kindergarten and grade 1, read the detail aloud, and a card when the learner asks. No choice '
-        + 'is printed until credit. You cannot point at or open cards.',
-      // The spoken pick's known wrong answers (`eraSpokenMisses`, handoff 20 Part B). lens_id and era_compare name none yet.
-      misses: missLists<SpokenEraMiss>({ era_sort: ['said_back_then', 'said_today', 'said_both'],
+        + 'is printed until credit. You cannot point at a card.',
+      levers: true,
+      // The spoken pick's known wrong answers (`eraSpokenMisses`, handoff 20 Part B). Every miss has a help lever on
+      // every item (`eraExplorerLevers.ts`), so nothing is unanswered.
+      misses: missLists<SpokenEraMiss>({ lens_id: ['other_lens', 'named_a_thing'],
+        era_sort: ['said_back_then', 'said_today', 'said_both'],
+        era_compare: ['said_earlier', 'said_later', 'said_both', 'said_today'],
         cause_of_change: ['other_cause', 'said_what_changed'] }),
     },
   },

@@ -1,0 +1,88 @@
+{
+ "source": "qa/tutor-reports/push-pull-arena-runtime-design-payload-2026-10-09.json",
+ "primitiveId": "push-pull-arena",
+ "evalMode": "design",
+ "data": {
+  "title": "Super Playground Force Fun",
+  "description": "Experiment with pushes and pulls to see how different objects move across surfaces!",
+  "theme": "playground",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "design",
+    "instruction": "What kind of push does the Toy Car need? Try it!",
+    "objectName": "Toy Car",
+    "objectWeight": 2,
+    "objectEmoji": "\ud83d\ude97",
+    "surface": "wood",
+    "goalDescription": "Move the Toy Car all the way across the wood floor.",
+    "pushStrength": 5,
+    "pushDirection": "push",
+    "spokenAnswer": "little",
+    "spokenAlternates": [
+     "a little push",
+     "small",
+     "gentle",
+     "soft"
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "design",
+    "instruction": "What kind of push does the Barrel need? Try it!",
+    "objectName": "Barrel",
+    "objectWeight": 8,
+    "objectEmoji": "\ud83d\udee2\ufe0f",
+    "surface": "carpet",
+    "goalDescription": "Move the Barrel all the way across the carpet.",
+    "pushStrength": 5,
+    "pushDirection": "push",
+    "spokenAnswer": "big",
+    "spokenAlternates": [
+     "a big push",
+     "strong",
+     "a strong push",
+     "hard"
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "design",
+    "instruction": "What kind of push does the Tennis Ball need? Try it!",
+    "objectName": "Tennis Ball",
+    "objectWeight": 1,
+    "objectEmoji": "\ud83c\udfbe",
+    "surface": "ice",
+    "goalDescription": "Move the Tennis Ball all the way across the ice.",
+    "pushStrength": 5,
+    "pushDirection": "push",
+    "spokenAnswer": "little",
+    "spokenAlternates": [
+     "a little push",
+     "small",
+     "gentle",
+     "soft"
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "design",
+    "instruction": "What kind of push does the Rock need? Try it!",
+    "objectName": "Rock",
+    "objectWeight": 9,
+    "objectEmoji": "\ud83e\udea8",
+    "surface": "grass",
+    "goalDescription": "Move the Rock all the way across the grass.",
+    "pushStrength": 5,
+    "pushDirection": "push",
+    "spokenAnswer": "big",
+    "spokenAlternates": [
+     "a big push",
+     "strong",
+     "a strong push",
+     "hard"
+    ]
+   }
+  ]
+ }
+}

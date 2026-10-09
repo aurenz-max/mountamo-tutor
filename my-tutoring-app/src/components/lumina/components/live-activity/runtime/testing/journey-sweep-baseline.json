@@ -60,11 +60,20 @@
   "push-pull-arena.predict": {
     "J11-recovery-record": "handoff 19 slice 9a (user ruling)"
   },
+  "push-pull-arena.compare": {
+    "J11-recovery-record": "handoff 19 slice 9a (user ruling)"
+  },
+  "push-pull-arena.design": {
+    "J11-recovery-record": "handoff 19 slice 9a (user ruling)"
+  },
   "rhyme-studio.production": {
     "J1-drivable": "handoff 24 SW-L1"
   },
   "rhyme-studio.collection": {
     "J1-drivable": "handoff 24 SW-L1"
+  },
+  "habitat-diorama.connect": {
+    "J12-item-miss-answered": "qa/support-levers/QUEUE-item-gaps-2026-10-09.md"
   },
   "number-line.between": {
     "J5-credit-moves-on": "handoff 21 SW-1"

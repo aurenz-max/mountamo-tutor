@@ -1,0 +1,88 @@
+{
+ "source": "qa/tutor-reports/era-explorer-runtime-era_compare-payload-2026-10-09.json",
+ "primitiveId": "era-explorer",
+ "evalMode": "era_compare",
+ "data": {
+  "title": "Explore Life in Pioneer Times",
+  "description": "Discover what daily life, homes, and chores were like for children living on the American frontier.",
+  "eraName": "Pioneer Times",
+  "eraPeriod": "about 150 years ago",
+  "priorEra": {
+   "name": "Early Colonial Days",
+   "body": "Long before the pioneers moved west, families lived in smaller settlements closer to the ocean. They did not travel in covered wagons because they lived in established wooden houses, and their towns had busy markets with goods shipped across the sea."
+  },
+  "lenses": [
+   {
+    "title": "Daily Life",
+    "body": "Pioneer families lived in small log cabins with dirt or rough wooden floors. They made their own soap and candles from animal fat to use in the dark evenings. Everyone wore clothes sewn from homespun cloth rather than bought at a store.",
+    "icon": "\ud83e\udeb5"
+   },
+   {
+    "title": "Technology",
+    "body": "Pioneers had no electricity, running water, or gas stoves. They cooked meals over an open fireplace and pumped all their water by hand from a deep well outside. Traveling meant riding slowly in horse-drawn wagons over bumpy dirt roads.",
+    "icon": "\ud83d\udc0e"
+   },
+   {
+    "title": "School & Work",
+    "body": "Children helped their parents chop wood, weed the large family garden, and feed the farm animals every morning. When they went to school, all the students of different ages sat together in one small room with a single teacher.",
+    "icon": "\ud83c\udfeb"
+   }
+  ],
+  "challenges": [
+   {
+    "id": "era-era_compare-1",
+    "type": "era_compare",
+    "statement": "Families travel across the plains in covered wagons to find new land.",
+    "options": [
+     "Early Colonial Days",
+     "Pioneer Times",
+     "Both eras"
+    ],
+    "correctIndex": 1,
+    "explanation": "Pioneers packed all their belongings into covered wagons to travel west, which was not how people in earlier coastal settlements moved.",
+    "lensHint": "Technology"
+   },
+   {
+    "id": "era-era_compare-2",
+    "type": "era_compare",
+    "statement": "Children help their parents with daily farm chores like weeding the garden.",
+    "options": [
+     "Early Colonial Days",
+     "Pioneer Times",
+     "Both eras"
+    ],
+    "correctIndex": 2,
+    "explanation": "Children in both eras had to work hard every day to help their families survive by tending gardens and doing chores.",
+    "lensHint": "School & Work"
+   },
+   {
+    "id": "era-era_compare-3",
+    "type": "era_compare",
+    "statement": "People live in established wooden houses close to busy ocean markets.",
+    "options": [
+     "Early Colonial Days",
+     "Pioneer Times",
+     "Both eras"
+    ],
+    "correctIndex": 0,
+    "explanation": "Living in towns near the sea with established markets describes life in early colonial days before pioneers moved west.",
+    "lensHint": "Daily Life"
+   },
+   {
+    "id": "era-era_compare-4",
+    "type": "era_compare",
+    "statement": "Students of all ages learn together inside a single schoolroom.",
+    "options": [
+     "Early Colonial Days",
+     "Pioneer Times",
+     "Both eras"
+    ],
+    "correctIndex": 1,
+    "explanation": "Pioneer children attended one-room schoolhouses where the teacher taught everyone from the youngest to the oldest.",
+    "lensHint": "School & Work"
+   }
+  ],
+  "challengeType": "era_compare",
+  "gradeLevel": "2"
+ }
+}

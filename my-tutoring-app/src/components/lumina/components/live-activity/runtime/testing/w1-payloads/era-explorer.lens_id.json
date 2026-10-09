@@ -1,0 +1,96 @@
+{
+ "source": "qa/tutor-reports/era-explorer-runtime-lens_id-payload-2026-10-09.json",
+ "primitiveId": "era-explorer",
+ "evalMode": "lens_id",
+ "data": {
+  "title": "Exploring Life in Pioneer Times",
+  "description": "Students will explore what everyday life was like for pioneer families long ago and match details to different parts of daily life.",
+  "eraName": "Pioneer Times",
+  "eraPeriod": "about 150 years ago",
+  "priorEra": {
+   "name": "Earlier Days",
+   "body": "Before the pioneer times, most families lived closer to established towns with busy markets. They did not have to travel as far in covered wagons to find open land for farming."
+  },
+  "lenses": [
+   {
+    "title": "Daily Life",
+    "body": "Pioneer families lived in small log cabins with dirt floors and warm fireplaces. They made their own soap, candles, and warm clothes from wool and animal skins.",
+    "icon": "\ud83c\udfe0"
+   },
+   {
+    "title": "Technology",
+    "body": "There were no electric lights or kitchen stoves in pioneer times. People used heavy iron pots over an open fire to cook stews and bake bread.",
+    "icon": "\ud83d\udd6f\ufe0f"
+   },
+   {
+    "title": "School & Work",
+    "body": "Children helped their parents milk cows, gather firewood, and tend the garden every single day. When they went to school, all the students of different ages learned together in one small room.",
+    "icon": "\ud83c\udfeb"
+   }
+  ],
+  "challenges": [
+   {
+    "id": "era-lens_id-1",
+    "type": "lens_id",
+    "statement": "Children had to wake up early to help milk the farm animals.",
+    "options": [
+     "Daily Life",
+     "Technology",
+     "School & Work"
+    ],
+    "correctIndex": 2,
+    "explanation": "Chores like milking cows and gathering firewood were important jobs for children."
+   },
+   {
+    "id": "era-lens_id-2",
+    "type": "lens_id",
+    "statement": "Families cooked their meals over an open fireplace using heavy iron pots.",
+    "options": [
+     "Daily Life",
+     "Technology",
+     "School & Work"
+    ],
+    "correctIndex": 1,
+    "explanation": "Without modern stoves or electricity, pioneers relied on fire for cooking and warmth."
+   },
+   {
+    "id": "era-lens_id-3",
+    "type": "lens_id",
+    "statement": "Log cabins provided cozy shelter with warm fireplaces inside.",
+    "options": [
+     "Daily Life",
+     "Technology",
+     "School & Work"
+    ],
+    "correctIndex": 0,
+    "explanation": "Building simple log homes was a big part of how pioneers created their new daily life."
+   },
+   {
+    "id": "era-lens_id-4",
+    "type": "lens_id",
+    "statement": "Students of all different ages sat together in a single classroom.",
+    "options": [
+     "Daily Life",
+     "Technology",
+     "School & Work"
+    ],
+    "correctIndex": 2,
+    "explanation": "One-room schoolhouses were common because pioneer towns were small."
+   },
+   {
+    "id": "era-lens_id-5",
+    "type": "lens_id",
+    "statement": "People crafted their own candles and soap right at home.",
+    "options": [
+     "Daily Life",
+     "Technology",
+     "School & Work"
+    ],
+    "correctIndex": 0,
+    "explanation": "Pioneers had to make many of their own household items by hand."
+   }
+  ],
+  "challengeType": "lens_id",
+  "gradeLevel": "2"
+ }
+}

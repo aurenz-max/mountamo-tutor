@@ -27,7 +27,9 @@ import {
   askOf, describeWork, moleculeConstructorMiss, workspaceAssignment, workspaceScene, type MoleculeView,
 } from './moleculeConstructorWorkspace';
 import {
-  BOND_TALLY_LEVER, OPEN_BONDS_LEVER, PIECE_COLORS_LEVER, leverFacts, moleculeLevers, simplerMolecule,
+  ATOM_TALLY_LEVER, BOND_TALLY_LEVER, FORMULA_MODEL_LEVER, JOIN_RINGS_LEVER, OPEN_BONDS_LEVER, PIECE_COLORS_LEVER,
+  SHOW_FORMULA_LEVER, atomTally, classicRefusal, drawnMolecule, formulaModel, isTypedItem, leverFacts, moleculeLevers,
+  simplerMolecule, type DrawnMolecule,
 } from './moleculeConstructorLevers';
 import { MoleculeBuildScene } from './MoleculeBuildScene';
 
@@ -289,8 +291,8 @@ const MoleculeConstructorSurface = ({ data, className, runtimePlanItemId, tutorO
   /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
   const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
 
-  // make_molecule levers (`moleculeConstructorLevers.ts`), keyed by the session item they were pulled on, and the
-  // easier ask a simplify lever put on screen in its place. The item starts bare: no lever comes from the tier.
+  // Levers (`moleculeConstructorLevers.ts`: make_molecule, build_target, free_build, identify, formula_write), keyed by the session item they
+  // were pulled on, and the easier item a simplify lever put on screen in its place. No lever comes from the tier.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<MoleculeConstructorChallenge | null>(null);
   const sessionChallenge = challenges[challengeIndex] ?? null;
@@ -334,6 +336,12 @@ const MoleculeConstructorSurface = ({ data, className, runtimePlanItemId, tutorO
 
   // ---- Derived state ----
   const formula = useMemo(() => computeFormula(placedAtoms), [placedAtoms]);
+  // identify and formula_write: code draws the molecule to name or write (the learner places nothing), and nothing on
+  // screen names it: no Target panel, formula, atom counts, gallery or example answer while one is open.
+  const typedItem = isTypedItem(currentChallenge);
+  const drawn = useMemo(() => drawnMolecule(currentChallenge), [currentChallenge]);
+  const canvasAtoms: PlacedAtom[] = typedItem ? drawn?.atoms ?? [] : placedAtoms;
+  const canvasBonds: Bond[] = typedItem ? drawn?.bonds ?? [] : bonds;
   const allSatisfied = useMemo(
     () => allValenceSatisfied(placedAtoms, bonds),
     [placedAtoms, bonds]
@@ -609,6 +617,8 @@ const MoleculeConstructorSurface = ({ data, className, runtimePlanItemId, tutorO
     const moleculeName = (currentChallenge?.targetName ?? targetMolecule.name) || formula;
     setFeedback(`Correct! ${moleculeName ? `You built ${moleculeName}!` : 'Great work!'}`);
     setFeedbackType('success');
+    // A practice item is ungraded: no count, no unlock, no completed mark.
+    if (practice) return;
     setMoleculesBuiltCorrectly(prev => prev + 1);
     if (allSatisfied) setBondsFormedCorrectly(prev => prev + bonds.length);
 
@@ -789,13 +799,15 @@ const MoleculeConstructorSurface = ({ data, className, runtimePlanItemId, tutorO
   };
 
   // ── Workspace path: what the tutor and the observer are shown, republished every render ──
-  // W1 offers no demonstration targets and no presentation. Only make_molecule declares levers.
+  // W1 offers no demonstration targets and no presentation. Every type but predict_bonds and shape_predict declares levers.
   useLayoutEffect(() => {
     if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
     const scene = workspaceScene(currentChallenge, view);
-    if (sessionChallenge.type !== 'make_molecule') { workspace.current = { ...scene }; return; }
+    const leverCtx = { showName: showOptions.showName, challenges, palette };
+    const declared = moleculeLevers(sessionChallenge, pulledLevers, leverCtx);
+    if (!declared.length && !practice) { workspace.current = { ...scene }; return; }
     const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
-    const levers = practice ? [] : moleculeLevers(sessionChallenge, pulledLevers);
+    const levers = practice ? [] : declared;
     workspace.current = {
       ...scene,
       ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
@@ -804,9 +816,13 @@ const MoleculeConstructorSurface = ({ data, className, runtimePlanItemId, tutorO
         const lever = levers.find((l) => l.id === id);
         if (practice || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        if (sessionChallenge.type !== 'make_molecule') {
+          const refused = classicRefusal(id, placedAtoms.length, placedAtoms.filter(a => getAvailableBonds(a.id, a.element, bonds) > 0).length);
+          if (refused) return refused;
+        }
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = simplerMolecule(sessionChallenge);
+          const easier = simplerMolecule(sessionChallenge, leverCtx);
           if (!easier) return 'This item has no easier ask; try a help lever.';
           setLeverState(pulled); resetItem(easier); setPractice(easier);
           return { practice: workspaceAssignment(easier) };
@@ -859,8 +875,8 @@ const MoleculeConstructorSurface = ({ data, className, runtimePlanItemId, tutorO
   // ---- Render Helpers ----
 
   const renderBondLine = useCallback((bond: Bond) => {
-    const a1 = placedAtoms.find(a => a.id === bond.atom1Id);
-    const a2 = placedAtoms.find(a => a.id === bond.atom2Id);
+    const a1 = canvasAtoms.find(a => a.id === bond.atom1Id);
+    const a2 = canvasAtoms.find(a => a.id === bond.atom2Id);
     if (!a1 || !a2) return null;
 
     const dx = a2.x - a1.x;
@@ -902,12 +918,12 @@ const MoleculeConstructorSurface = ({ data, className, runtimePlanItemId, tutorO
           stroke="rgba(148,163,184,0.8)" strokeWidth="2" strokeLinecap="round" />
       </g>
     );
-  }, [placedAtoms]);
+  }, [canvasAtoms]);
 
   const renderValenceDots = useCallback((atom: PlacedAtom) => {
     if (!palette.showValence) return null;
     const valence = getValence(atom.element);
-    const used = getUsedBonds(atom.id, bonds);
+    const used = getUsedBonds(atom.id, canvasBonds);
 
     return Array.from({ length: valence }).map((_, i) => {
       const a = (i / valence) * Math.PI * 2 - Math.PI / 2;
@@ -923,7 +939,7 @@ const MoleculeConstructorSurface = ({ data, className, runtimePlanItemId, tutorO
         />
       );
     });
-  }, [bonds, palette.showValence]);
+  }, [canvasBonds, palette.showValence]);
 
   // ---- Render ----
 
@@ -1032,20 +1048,20 @@ const MoleculeConstructorSurface = ({ data, className, runtimePlanItemId, tutorO
               ))}
 
               {/* Bond lines */}
-              {bonds.map(renderBondLine)}
+              {canvasBonds.map(renderBondLine)}
 
               {/* Atoms */}
-              {placedAtoms.map(atom => {
+              {canvasAtoms.map(atom => {
                 const elData = ELEMENTS[atom.element];
                 if (!elData) return null;
                 const isSelected = selectedAtomId === atom.id;
                 const canBond = selectedAtomId !== null && selectedAtomId !== atom.id &&
-                  getAvailableBonds(atom.id, atom.element, bonds) > 0;
-                const available = getAvailableBonds(atom.id, atom.element, bonds);
+                  getAvailableBonds(atom.id, atom.element, canvasBonds) > 0;
+                const available = getAvailableBonds(atom.id, atom.element, canvasBonds);
 
                 return (
                   <g key={atom.id} data-pip-object={atom.id}
-                    onClick={(e) => { e.stopPropagation(); handleAtomClick(atom.id); }}
+                    onClick={(e) => { e.stopPropagation(); if (!typedItem) handleAtomClick(atom.id); }}
                     className="cursor-pointer"
                   >
                     {/* Hit area: a <g> paints nothing of its own */}
@@ -1063,6 +1079,19 @@ const MoleculeConstructorSurface = ({ data, className, runtimePlanItemId, tutorO
 
                     {/* Valence dots */}
                     {renderValenceDots(atom)}
+
+                    {/* join_rings lever: every atom that can still make a bond */}
+                    {leverOn(JOIN_RINGS_LEVER) && available > 0 && (
+                      <circle data-lever="join-rings" cx={atom.x} cy={atom.y} r={ATOM_RADIUS + 12}
+                        fill="none" stroke="#4ade80" strokeWidth="2.5" opacity="0.9" />
+                    )}
+                    {/* bond_tally lever: bonds made of bonds it makes, a double counting two */}
+                    {leverOn(BOND_TALLY_LEVER) && (
+                      <text data-lever="bond-tally" x={atom.x} y={atom.y + ATOM_RADIUS + 18} textAnchor="middle"
+                        fill="#fde68a" fontSize="11" fontWeight="bold" className="pointer-events-none select-none">
+                        {`${getUsedBonds(atom.id, bonds)} of ${elData.valence}`}
+                      </text>
+                    )}
 
                     {/* Atom circle */}
                     <circle cx={atom.x} cy={atom.y} r={ATOM_RADIUS}
@@ -1105,7 +1134,7 @@ const MoleculeConstructorSurface = ({ data, className, runtimePlanItemId, tutorO
               })}
 
               {/* Empty state */}
-              {placedAtoms.length === 0 && (
+              {canvasAtoms.length === 0 && !typedItem && (
                 <text x={250} y={175} textAnchor="middle" fill="rgba(148,163,184,0.4)" fontSize="14">
                   Click an element below to start building
                 </text>
@@ -1115,8 +1144,52 @@ const MoleculeConstructorSurface = ({ data, className, runtimePlanItemId, tutorO
 
           {/* Info Panel */}
           <div className="space-y-3">
+            {/* atom_tally lever: one circle per atom the asked formula names, filled by the learner's placed atoms */}
+            {currentChallenge?.type === 'build_target' && leverOn(ATOM_TALLY_LEVER) && (() => {
+              const tally = atomTally(currentChallenge, placedAtoms.map(a => a.element));
+              const dot = (key: string, el: string, kind: 'filled' | 'empty' | 'over') => (
+                <span key={key} data-tally-slot={kind} className="inline-block h-4 w-4 rounded-full border-2"
+                  style={{ backgroundColor: kind === 'filled' ? ELEMENTS[el]?.color ?? '#94a3b8' : 'transparent',
+                    borderColor: kind === 'over' ? '#ef4444' : ELEMENTS[el]?.color ?? '#94a3b8' }} />
+              );
+              return (
+                <div data-lever="atom-tally" className="bg-black/20 rounded-xl border border-white/5 p-3 space-y-1.5">
+                  {tally.rows.map(r => (
+                    <div key={r.element} className="flex items-center gap-1.5">
+                      <span className="w-6 font-mono text-sm font-bold text-slate-200">{r.element}</span>
+                      {Array.from({ length: r.need }, (_, i) => dot(`${r.element}-${i}`, r.element, i < r.have ? 'filled' : 'empty'))}
+                      {Array.from({ length: Math.max(0, r.have - r.need) }, (_, i) => dot(`${r.element}-over-${i}`, r.element, 'over'))}
+                    </div>
+                  ))}
+                  {Object.entries(tally.extra).map(([el, n]) => (
+                    <div key={el} className="flex items-center gap-1.5">
+                      <span className="w-6 font-mono text-sm font-bold text-red-300">{el}</span>
+                      {Array.from({ length: n }, (_, i) => dot(`${el}-extra-${i}`, el, 'over'))}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+            {/* show_formula lever (identify): the drawn molecule's formula, never its name */}
+            {currentChallenge?.type === 'identify' && leverOn(SHOW_FORMULA_LEVER) && currentChallenge.targetFormula && (
+              <div data-lever="show-formula" className="bg-black/20 rounded-xl border border-white/5 p-3">
+                <p className="text-[10px] text-slate-500 font-mono uppercase mb-1">Its formula</p>
+                <p className="text-xl font-mono font-bold text-slate-100">{currentChallenge.targetFormula}</p>
+              </div>
+            )}
+            {/* formula_model lever (formula_write): a different molecule, drawn, with its formula under it */}
+            {currentChallenge?.type === 'formula_write' && leverOn(FORMULA_MODEL_LEVER) && (() => {
+              const model = formulaModel(currentChallenge, { challenges });
+              return model && (
+                <div data-lever="formula-model" className="bg-black/20 rounded-xl border border-white/5 p-3">
+                  <p className="text-[10px] text-slate-500 font-mono uppercase mb-1">A different molecule</p>
+                  <MoleculePicture molecule={model.drawn} />
+                  <p className="text-center text-lg font-mono font-bold text-slate-100">{model.formula}</p>
+                </div>
+              );
+            })()}
             {/* Formula display */}
-            {showOptions.showFormula && (
+            {showOptions.showFormula && !typedItem && (
               <div className="bg-black/20 rounded-xl border border-white/5 p-3">
                 <p className="text-[10px] text-slate-500 font-mono uppercase mb-1">Molecular Formula</p>
                 <p className="text-xl font-mono font-bold text-slate-100">{formula || '—'}</p>
@@ -1124,7 +1197,7 @@ const MoleculeConstructorSurface = ({ data, className, runtimePlanItemId, tutorO
             )}
 
             {/* Target molecule info — uses current challenge's target when available */}
-            {showOptions.showName && (currentChallenge?.targetName || currentChallenge?.targetFormula || targetMolecule.name) && (
+            {showOptions.showName && !typedItem && (currentChallenge?.targetName || currentChallenge?.targetFormula || targetMolecule.name) && (
               <div className="bg-black/20 rounded-xl border border-white/5 p-3">
                 <p className="text-[10px] text-slate-500 font-mono uppercase mb-1">Target Molecule</p>
                 <p className="text-lg text-slate-200 font-semibold">
@@ -1160,7 +1233,7 @@ const MoleculeConstructorSurface = ({ data, className, runtimePlanItemId, tutorO
             )}
 
             {/* Atom counts */}
-            <div className="bg-black/20 rounded-xl border border-white/5 p-3">
+            {!typedItem && <div className="bg-black/20 rounded-xl border border-white/5 p-3">
               <p className="text-[10px] text-slate-500 font-mono uppercase mb-1">Atoms Placed</p>
               <div className="flex gap-2 flex-wrap">
                 {Object.entries(
@@ -1183,7 +1256,7 @@ const MoleculeConstructorSurface = ({ data, className, runtimePlanItemId, tutorO
                   <span className="text-xs text-slate-500">None yet</span>
                 )}
               </div>
-            </div>
+            </div>}
 
             {/* Identify challenge input */}
             {currentChallenge?.type === 'identify' && !hasSubmitted && (
@@ -1191,7 +1264,7 @@ const MoleculeConstructorSurface = ({ data, className, runtimePlanItemId, tutorO
                 <p className="text-[10px] text-slate-500 font-mono uppercase mb-1">Name This Molecule</p>
                 <input type="text" value={identifyInput} aria-label="Name this molecule"
                   onChange={e => { if (!learnerBlocked()) setIdentifyInput(e.target.value); }}
-                  placeholder="e.g., Water"
+                  placeholder="Type its name"
                   className="w-full bg-slate-800/60 border border-white/10 rounded px-2 py-1.5 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/50"
                 />
               </div>
@@ -1203,7 +1276,7 @@ const MoleculeConstructorSurface = ({ data, className, runtimePlanItemId, tutorO
                 <p className="text-[10px] text-slate-500 font-mono uppercase mb-1">Write the Formula</p>
                 <input type="text" value={formulaInput} aria-label="Write the formula"
                   onChange={e => { if (!learnerBlocked()) setFormulaInput(e.target.value); }}
-                  placeholder="e.g., H2O"
+                  placeholder="Type its formula"
                   className="w-full bg-slate-800/60 border border-white/10 rounded px-2 py-1.5 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/50"
                 />
               </div>
@@ -1211,8 +1284,8 @@ const MoleculeConstructorSurface = ({ data, className, runtimePlanItemId, tutorO
           </div>
         </div>
 
-        {/* Atom Palette */}
-        <div className="bg-black/20 rounded-xl border border-white/5 p-3">
+        {/* Atom Palette (not on a typed item: the molecule is drawn) */}
+        {!typedItem && <div className="bg-black/20 rounded-xl border border-white/5 p-3">
           <p className="text-[10px] text-slate-500 font-mono uppercase mb-2 text-center">Element Palette</p>
           <div className="flex gap-2 justify-center flex-wrap">
             {palette.availableElements.map(el => {
@@ -1237,14 +1310,14 @@ const MoleculeConstructorSurface = ({ data, className, runtimePlanItemId, tutorO
               );
             })}
           </div>
-        </div>
+        </div>}
         </>
         )}
 
         </div>
 
         {/* Molecule Gallery */}
-        {!isMake && moleculeGallery.length > 0 && (
+        {!isMake && !typedItem && moleculeGallery.length > 0 && (
           <div className="bg-black/20 rounded-xl border border-white/5 p-3">
             <p className="text-[10px] text-slate-500 font-mono uppercase mb-2">Molecule Gallery</p>
             <div className="flex gap-2 flex-wrap">
@@ -1298,19 +1371,45 @@ const MoleculeConstructorSurface = ({ data, className, runtimePlanItemId, tutorO
                 Check Answer
               </Button>
             )}
-            <Button variant="ghost"
+            {(hasSubmitted || !typedItem) && <Button variant="ghost"
               className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300"
               onClick={hasSubmitted ? handleReset : () => { if (!learnerBlocked()) clearWorkspace(); }}
               disabled={!hasSubmitted && learnerBlocked()}
             >
               {hasSubmitted ? 'Try Again' : 'Clear All'}
-            </Button>
+            </Button>}
           </div>
         )}
       </CardContent>
     </Card>
   );
 };
+
+/** A small drawing of a molecule (the formula model): atoms as element circles, bonds as one, two or three lines. */
+function MoleculePicture({ molecule }: { molecule: DrawnMolecule }) {
+  const at = (id: string) => molecule.atoms.find(a => a.id === id)!;
+  return (
+    <svg viewBox="0 0 500 350" width="100%" height="110" aria-hidden="true">
+      {molecule.bonds.map(b => {
+        const a1 = at(b.atom1Id), a2 = at(b.atom2Id);
+        const n = b.type === 'single' ? 1 : b.type === 'double' ? 2 : 3;
+        const len = Math.hypot(a2.x - a1.x, a2.y - a1.y) || 1, nx = -(a2.y - a1.y) / len, ny = (a2.x - a1.x) / len;
+        return Array.from({ length: n }, (_, k) => {
+          const off = (k - (n - 1) / 2) * 10;
+          return <line key={`${b.id}-${k}`} x1={a1.x + nx * off} y1={a1.y + ny * off} x2={a2.x + nx * off} y2={a2.y + ny * off}
+            stroke="rgba(148,163,184,0.8)" strokeWidth="5" />;
+        });
+      })}
+      {molecule.atoms.map(a => (
+        <g key={a.id}>
+          <circle cx={a.x} cy={a.y} r={ATOM_RADIUS + 6} fill={ELEMENTS[a.element]?.color ?? '#64748b'} />
+          <text x={a.x} y={a.y + 1} textAnchor="middle" dominantBaseline="central" fill="white" fontSize="24" fontWeight="bold"
+            fontFamily="monospace">{ELEMENTS[a.element]?.symbol ?? a.element}</text>
+        </g>
+      ))}
+    </svg>
+  );
+}
 
 // The workspace path never mounts the scripted progress, whose auto-advance would compete with the observer.
 const MoleculeConstructor = withWorkspaceController<MoleculeConstructorProps, ProgressOptions<MoleculeConstructorChallenge>, Progress>(

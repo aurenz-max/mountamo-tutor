@@ -1,0 +1,256 @@
+{
+ "source": "gate5 batch-gate generation 2026-10-09",
+ "primitiveId": "habitat-diorama",
+ "evalMode": "predict",
+ "data": {
+  "primitiveType": "habitat-diorama",
+  "habitat": {
+   "name": "Emerald Canopy Woodland",
+   "biome": "Temperate Deciduous Forest",
+   "climate": "Moderate rainfall with four distinct seasons, warm summers and cool winters.",
+   "description": "A lush temperate forest featuring tall oak trees, thick underbrush, a winding stream, and rich soil teeming with decomposers."
+  },
+  "organisms": [
+   {
+    "id": "org_oak",
+    "commonName": "White Oak Tree",
+    "role": "producer",
+    "imagePrompt": "A large majestic white oak tree with vibrant green leaves and acorns.",
+    "position": {
+     "x": "15%",
+     "y": "20%"
+    },
+    "description": "A primary producer that captures sunlight to create energy through photosynthesis, providing leaves and acorns for herbivores.",
+    "adaptations": [
+     "Broad leaves to capture maximum sunlight",
+     "Deep taproots to absorb water during dry periods"
+    ]
+   },
+   {
+    "id": "org_beetle",
+    "commonName": "Acorn Weevil",
+    "role": "primary-consumer",
+    "imagePrompt": "A small brown beetle with a long snout resting on an acorn.",
+    "position": {
+     "x": "32%",
+     "y": "35%"
+    },
+    "description": "A primary consumer that feeds directly on oak acorns, serving as a vital food source for smaller woodland animals.",
+    "adaptations": [
+     "Long snout designed for drilling into hard acorn shells",
+     "Camouflage coloration matching tree bark"
+    ]
+   },
+   {
+    "id": "org_mouse",
+    "commonName": "White-footed Mouse",
+    "role": "primary-consumer",
+    "imagePrompt": "A small brown mouse with large ears and a white belly scurrying near a log.",
+    "position": {
+     "x": "50%",
+     "y": "60%"
+    },
+    "description": "A nimble rodent that eats seeds, nuts, and insects while avoiding various predators in the underbrush.",
+    "adaptations": [
+     "Large ears and eyes for detecting nocturnal predators",
+     "Agile climbers that escape ground threats quickly"
+    ]
+   },
+   {
+    "id": "org_snake",
+    "commonName": "Black Rat Snake",
+    "role": "secondary-consumer",
+    "imagePrompt": "A long black snake slithering over mossy rocks near a tree trunk.",
+    "position": {
+     "x": "68%",
+     "y": "45%"
+    },
+    "description": "A carnivorous secondary consumer that preys on rodents and small birds to help keep prey populations balanced.",
+    "adaptations": [
+     "Flexible bodies specialized for climbing and squeezing into burrows",
+     "Dark scales for camouflage in shaded forest areas"
+    ]
+   },
+   {
+    "id": "org_hawk",
+    "commonName": "Red-tailed Hawk",
+    "role": "tertiary-consumer",
+    "imagePrompt": "A magnificent hawk soaring high with broad wings and a reddish-brown tail.",
+    "position": {
+     "x": "85%",
+     "y": "15%"
+    },
+    "description": "An apex predator at the top of the forest food chain, hunting snakes and small mammals from the sky.",
+    "adaptations": [
+     "Incredible eyesight capable of spotting small prey from great heights",
+     "Sharp talons specialized for catching and holding fast-moving prey"
+    ]
+   },
+   {
+    "id": "org_fungi",
+    "commonName": "Forest Shelf Fungi",
+    "role": "decomposer",
+    "imagePrompt": "Shelf-like bracket fungi growing from the side of a decaying log.",
+    "position": {
+     "x": "25%",
+     "y": "80%"
+    },
+    "description": "A vital decomposer that breaks down dead wood and organic matter, returning essential nutrients to the soil.",
+    "adaptations": [
+     "Enzymes that digest tough woody plant fibers",
+     "Spore-producing structures spread easily by wind"
+    ]
+   }
+  ],
+  "relationships": [
+   {
+    "fromId": "org_oak",
+    "toId": "org_beetle",
+    "type": "predation",
+    "description": "The acorn weevil consumes parts of the white oak tree and its acorns for nourishment."
+   },
+   {
+    "fromId": "org_oak",
+    "toId": "org_mouse",
+    "type": "predation",
+    "description": "The white-footed mouse eats seeds and acorns produced by the white oak tree."
+   },
+   {
+    "fromId": "org_mouse",
+    "toId": "org_snake",
+    "type": "predation",
+    "description": "The black rat snake preys upon the white-footed mouse."
+   },
+   {
+    "fromId": "org_snake",
+    "toId": "org_hawk",
+    "type": "predation",
+    "description": "The red-tailed hawk hunts and consumes the black rat snake."
+   },
+   {
+    "fromId": "org_beetle",
+    "toId": "org_mouse",
+    "type": "competition",
+    "description": "Both the acorn weevil and the white-footed mouse compete for food resources provided by the white oak tree."
+   }
+  ],
+  "environmentalFeatures": [
+   {
+    "id": "feat_stream",
+    "name": "Winding Forest Stream",
+    "description": "A freshwater stream providing hydration for all forest wildlife.",
+    "position": {
+     "x": "45%",
+     "y": "90%"
+    }
+   },
+   {
+    "id": "feat_log",
+    "name": "Decaying Fallen Log",
+    "description": "A rotting log that serves as a microhabitat for decomposers and shelter for mice.",
+    "position": {
+     "x": "20%",
+     "y": "65%"
+    }
+   }
+  ],
+  "challenges": [
+   {
+    "id": "chal_1",
+    "type": "predict",
+    "prompt": "An unexpected disease significantly reduces the number of white-footed mice in the woodland. What happens to the population of black rat snakes?",
+    "explanation": "Because black rat snakes rely directly on white-footed mice for food, a decrease in the mouse population leaves fewer meals available, causing the snake population to decrease.",
+    "affectedOrganismId": "org_snake",
+    "disruptionEvent": "A sudden disease drastically drops the local rodent population.",
+    "expectedTrend": "decrease",
+    "focusOrganismId": "org_snake",
+    "optionOrganismIds": [
+     "org_snake",
+     "org_oak",
+     "org_beetle",
+     "org_hawk"
+    ]
+   },
+   {
+    "id": "chal_2",
+    "type": "predict",
+    "prompt": "A protective conservation law is passed, and the population of red-tailed hawks increases greatly across the forest. What happens to the black rat snake population?",
+    "explanation": "Red-tailed hawks are predators of black rat snakes. When the hawk population increases, more snakes are hunted and eaten, which causes the snake population to decrease.",
+    "affectedOrganismId": "org_snake",
+    "disruptionEvent": "Conservation efforts successfully double the number of apex birds of prey in the area.",
+    "expectedTrend": "decrease",
+    "focusOrganismId": "org_snake",
+    "optionOrganismIds": [
+     "org_snake",
+     "org_mouse",
+     "org_beetle",
+     "org_fungi"
+    ]
+   },
+   {
+    "id": "chal_3",
+    "type": "predict",
+    "prompt": "An unusually warm spring causes a massive boom in the white oak acorn crop, providing extra food for primary consumers. What happens to the white-footed mouse population?",
+    "explanation": "With an abundant supply of food from the white oak tree, white-footed mice have more nourishment to survive and reproduce, leading to an increase in their population.",
+    "affectedOrganismId": "org_mouse",
+    "disruptionEvent": "Unusual weather triggers a massive surge in acorn production.",
+    "expectedTrend": "increase",
+    "focusOrganismId": "org_mouse",
+    "optionOrganismIds": [
+     "org_mouse",
+     "org_snake",
+     "org_hawk",
+     "org_beetle"
+    ]
+   },
+   {
+    "id": "chal_4",
+    "type": "predict",
+    "prompt": "A severe drought damages the white oak trees, reducing the amount of vegetation and acorns available in the habitat. What happens to the acorn weevil population?",
+    "explanation": "Acorn weevils depend directly on the white oak and its acorns for food and egg-laying sites. When the oak food source declines, the weevil population decreases due to a lack of resources.",
+    "affectedOrganismId": "org_beetle",
+    "disruptionEvent": "A prolonged dry spell stunts the growth of canopy producers.",
+    "expectedTrend": "decrease",
+    "focusOrganismId": "org_beetle",
+    "optionOrganismIds": [
+     "org_beetle",
+     "org_hawk",
+     "org_snake",
+     "org_fungi"
+    ]
+   },
+   {
+    "id": "chal_5",
+    "type": "predict",
+    "prompt": "Logging removes many of the black rat snakes from a specific woodland sector. What happens to the red-tailed hawk population in that immediate area?",
+    "explanation": "Black rat snakes are an important food source for red-tailed hawks. When their prey disappears from the area, the hawks must travel farther or face food shortages, causing their local population to stay similar or decrease.",
+    "affectedOrganismId": "org_hawk",
+    "disruptionEvent": "Human activity removes many mid-level reptiles from the sector.",
+    "expectedTrend": "decrease",
+    "focusOrganismId": "org_hawk",
+    "optionOrganismIds": [
+     "org_hawk",
+     "org_beetle",
+     "org_mouse",
+     "org_fungi"
+    ]
+   }
+  ],
+  "gradeBand": "3-5",
+  "disruptionScenario": {
+   "event": "A sudden removal of white-footed mice from the forest ecosystem.",
+   "cascadeEffects": [
+    "Black rat snakes lose their primary food source and their population declines.",
+    "Red-tailed hawks experience food stress due to fewer snakes to hunt.",
+    "Acorn weevils face increased competition for remaining food resources."
+   ],
+   "question": "How does the removal of a single consumer ripple upward and downward through the forest food chain?"
+  },
+  "targetEvalMode": "predict",
+  "intent": "What happens when an animal disappears",
+  "challengeType": "predict",
+  "challengeTypes": [
+   "predict"
+  ]
+ }
+}

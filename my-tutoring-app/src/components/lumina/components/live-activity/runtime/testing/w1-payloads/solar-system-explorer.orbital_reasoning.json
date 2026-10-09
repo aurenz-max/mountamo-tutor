@@ -1,0 +1,214 @@
+{
+ "source": "qa/tutor-reports/solar-system-explorer-runtime-orbital_reasoning-payload-2026-10-09.json",
+ "primitiveId": "solar-system-explorer",
+ "evalMode": "orbital_reasoning",
+ "data": {
+  "title": "Journey Through Space",
+  "description": "Explore the planets in our solar system and discover how they move and travel around the Sun.",
+  "bodies": [
+   {
+    "id": "sun",
+    "name": "Sun",
+    "type": "star",
+    "color": "#FDB813",
+    "radiusKm": 696000,
+    "distanceAu": 0,
+    "orbitalPeriodDays": 0,
+    "rotationPeriodHours": 609.12,
+    "moons": 0,
+    "description": "The Sun is our star! It's a giant ball of hot gas that gives us light and warmth.",
+    "textureGradient": "radial-gradient(circle, #FDB813 0%, #FD8813 50%, #FD6013 100%)",
+    "temperatureC": 5500,
+    "funFact": "The Sun is so big that over 1 million Earths could fit inside it!"
+   },
+   {
+    "id": "mercury",
+    "name": "Mercury",
+    "type": "planet",
+    "color": "#8C7853",
+    "radiusKm": 2440,
+    "distanceAu": 0.39,
+    "orbitalPeriodDays": 88,
+    "rotationPeriodHours": 1407.6,
+    "moons": 0,
+    "description": "Mercury is a rocky planet with lots of craters.",
+    "textureGradient": "radial-gradient(circle, #8C7853 0%, #605030 100%)",
+    "temperatureC": 167,
+    "funFact": "Mercury zips around the Sun in just 88 days."
+   },
+   {
+    "id": "venus",
+    "name": "Venus",
+    "type": "planet",
+    "color": "#FFC649",
+    "radiusKm": 6052,
+    "distanceAu": 0.72,
+    "orbitalPeriodDays": 225,
+    "rotationPeriodHours": 5832.5,
+    "moons": 0,
+    "description": "Venus is covered in thick, cloudy layers.",
+    "textureGradient": "radial-gradient(circle, #FFC649 0%, #C09030 100%)",
+    "temperatureC": 464,
+    "funFact": "A day on Venus is longer than its year!"
+   },
+   {
+    "id": "earth",
+    "name": "Earth",
+    "type": "planet",
+    "color": "#4A90E2",
+    "radiusKm": 6371,
+    "distanceAu": 1,
+    "orbitalPeriodDays": 365.25,
+    "rotationPeriodHours": 24,
+    "moons": 1,
+    "description": "Earth is our home planet with liquid water and life.",
+    "textureGradient": "radial-gradient(circle, #4A90E2 0%, #2E5C8A 50%, #1E3A5A 100%)",
+    "temperatureC": 15,
+    "funFact": "Earth is the only planet not named after a god or goddess!"
+   },
+   {
+    "id": "mars",
+    "name": "Mars",
+    "type": "planet",
+    "color": "#CD5C5C",
+    "radiusKm": 3390,
+    "distanceAu": 1.52,
+    "orbitalPeriodDays": 687,
+    "rotationPeriodHours": 24.6,
+    "moons": 2,
+    "description": "Mars is a rocky world with a reddish appearance.",
+    "textureGradient": "radial-gradient(circle, #CD5C5C 0%, #A04040 50%, #803030 100%)",
+    "temperatureC": -65,
+    "funFact": "Mars looks red because its soil contains rusty iron!"
+   },
+   {
+    "id": "jupiter",
+    "name": "Jupiter",
+    "type": "planet",
+    "color": "#C88B3A",
+    "radiusKm": 69911,
+    "distanceAu": 5.2,
+    "orbitalPeriodDays": 4333,
+    "rotationPeriodHours": 9.9,
+    "moons": 95,
+    "description": "Jupiter is a massive gas giant with swirling cloud patterns.",
+    "textureGradient": "radial-gradient(circle, #E5B88A 0%, #C88B3A 50%, #A06020 100%)",
+    "temperatureC": -110,
+    "funFact": "Jupiter has a giant storm called the Great Red Spot."
+   },
+   {
+    "id": "saturn",
+    "name": "Saturn",
+    "type": "planet",
+    "color": "#FAD5A5",
+    "radiusKm": 58232,
+    "distanceAu": 9.54,
+    "orbitalPeriodDays": 10759,
+    "rotationPeriodHours": 10.7,
+    "moons": 146,
+    "description": "Saturn is a gas giant surrounded by prominent rings.",
+    "textureGradient": "radial-gradient(circle, #FAD5A5 0%, #E5B88A 50%, #D0A070 100%)",
+    "temperatureC": -140,
+    "funFact": "Saturn's rings are made of ice and rock particles."
+   },
+   {
+    "id": "uranus",
+    "name": "Uranus",
+    "type": "planet",
+    "color": "#4FD0E0",
+    "radiusKm": 25362,
+    "distanceAu": 19.19,
+    "orbitalPeriodDays": 30687,
+    "rotationPeriodHours": 17.2,
+    "moons": 28,
+    "description": "Uranus is an ice giant that rotates on its side.",
+    "textureGradient": "radial-gradient(circle, #4FD0E0 0%, #2090A0 100%)",
+    "temperatureC": -195,
+    "funFact": "Uranus rolls around the Sun like a ball."
+   },
+   {
+    "id": "neptune",
+    "name": "Neptune",
+    "type": "planet",
+    "color": "#4169E1",
+    "radiusKm": 24622,
+    "distanceAu": 30.07,
+    "orbitalPeriodDays": 60190,
+    "rotationPeriodHours": 16.1,
+    "moons": 16,
+    "description": "Neptune is an icy blue world with active weather.",
+    "textureGradient": "radial-gradient(circle, #4169E1 0%, #2040A0 100%)",
+    "temperatureC": -200,
+    "funFact": "Neptune features some of the strongest winds in the solar system."
+   }
+  ],
+  "initialZoom": "system",
+  "timeScale": 5000,
+  "showOrbits": true,
+  "showLabels": true,
+  "scaleMode": "hybrid",
+  "showHabitableZone": true,
+  "showDistances": true,
+  "compareMode": true,
+  "gradeLevel": "2",
+  "challenges": [
+   {
+    "id": "ssc-1",
+    "type": "orbital_reasoning",
+    "facet": "longest_year",
+    "answerBodyIds": [
+     "neptune"
+    ],
+    "prompt": "Watch them travel. Which planet takes the longest to go all the way around the Sun? Say its name."
+   },
+   {
+    "id": "ssc-2",
+    "type": "orbital_reasoning",
+    "facet": "shortest_year",
+    "answerBodyIds": [
+     "mercury"
+    ],
+    "prompt": "Watch them travel. Which planet goes around the Sun the quickest? Say its name."
+   },
+   {
+    "id": "ssc-3",
+    "type": "orbital_reasoning",
+    "facet": "pair_faster",
+    "optionBodyIds": [
+     "venus",
+     "uranus"
+    ],
+    "answerBodyIds": [
+     "venus"
+    ],
+    "prompt": "Watch Venus and Uranus go around the Sun. Which one is faster? Say its name."
+   },
+   {
+    "id": "ssc-4",
+    "type": "orbital_reasoning",
+    "facet": "pair_faster",
+    "optionBodyIds": [
+     "earth",
+     "jupiter"
+    ],
+    "answerBodyIds": [
+     "earth"
+    ],
+    "prompt": "Watch Earth and Jupiter go around the Sun. Which one is faster? Say its name."
+   },
+   {
+    "id": "ssc-5",
+    "type": "orbital_reasoning",
+    "facet": "pair_faster",
+    "optionBodyIds": [
+     "jupiter",
+     "uranus"
+    ],
+    "answerBodyIds": [
+     "jupiter"
+    ],
+    "prompt": "Watch Jupiter and Uranus go around the Sun. Which one is faster? Say its name."
+   }
+  ]
+ }
+}

@@ -12,6 +12,10 @@ import type { AtomBuilderMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { useBuildWatcher } from '../../build-layer/buildLayer';
+import {
+  atomShells, judgeAtomBuild, ATOM_BUILD_MISS_WORDS, type AtomAsk, type BuiltAtom,
+} from './atomBuild';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -19,8 +23,10 @@ import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 
 export interface AtomBuilderChallenge {
   id: string;
-  type: 'build_element' | 'identify' | 'fill_shells' | 'make_ion' | 'make_isotope' | 'find_on_table';
+  type: 'build_element' | 'identify' | 'fill_shells' | 'make_ion' | 'make_isotope' | 'find_on_table' | 'make_atom';
   instruction: string;
+  /** make_atom (open build) only: the property the learner's atom must have. Code-written; the targets stay null. */
+  ask?: AtomAsk;
   targetProtons: number | null;
   targetNeutrons: number | null;
   targetElectrons: number | null;
@@ -246,6 +252,79 @@ const BohrModel: React.FC<BohrModelProps> = ({
 };
 
 // ============================================================================
+// Open-build scene (make_atom): one svg that holds only the learner's atom
+// ============================================================================
+
+/** Nucleus particles in a sunflower spiral, protons spread evenly among the neutrons. */
+function nucleusParticles(protons: number, neutrons: number, cx: number, cy: number, scale: number) {
+  const total = protons + neutrons;
+  return Array.from({ length: total }, (_, i) => {
+    const r = 4.2 * Math.sqrt(i + 0.5) * scale;
+    const a = i * 2.39996;
+    const isProton = Math.floor(((i + 1) * protons) / total) > Math.floor((i * protons) / total);
+    return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a), isProton };
+  });
+}
+
+function AtomDrawing({ atom, cx, cy, scale, prefix }: { atom: BuiltAtom; cx: number; cy: number; scale: number; prefix: string }) {
+  const shells = atomShells(atom.electrons);
+  const nucleusR = (4.2 * Math.sqrt(Math.max(atom.protons + atom.neutrons, 1)) + 6) * scale;
+  const ringR = (i: number) => nucleusR + (20 + i * 21) * scale;
+  return (
+    <g data-atom={prefix}>
+      {shells.map((_, i) => (
+        <circle key={`${prefix}-ring-${i}`} cx={cx} cy={cy} r={ringR(i)} fill="none" stroke="rgba(148,163,184,0.35)"
+          strokeWidth={1} strokeDasharray="4 3" />
+      ))}
+      {atom.protons + atom.neutrons > 0 && <circle cx={cx} cy={cy} r={nucleusR} fill="rgba(71,85,105,0.55)" />}
+      {nucleusParticles(atom.protons, atom.neutrons, cx, cy, scale).map((pt, i) => (
+        <circle key={`${prefix}-nuc-${i}`} data-particle={pt.isProton ? 'proton' : 'neutron'} cx={pt.x} cy={pt.y}
+          r={3.4 * scale} fill={pt.isProton ? '#ef4444' : '#94a3b8'} stroke={pt.isProton ? '#fca5a5' : '#cbd5e1'} strokeWidth={0.5} />
+      ))}
+      {shells.map((count, si) => Array.from({ length: count }).map((_, ei) => {
+        const a = (ei / count) * Math.PI * 2 - Math.PI / 2;
+        return (
+          <circle key={`${prefix}-e-${si}-${ei}`} data-particle="electron" cx={cx + Math.cos(a) * ringR(si)}
+            cy={cy + Math.sin(a) * ringR(si)} r={4 * scale} fill="#60a5fa" stroke="#93c5fd" strokeWidth={1} />
+        );
+      }))}
+    </g>
+  );
+}
+
+/**
+ * The make_atom board. Everything drawn is the learner's own work (the atom, and the kept first atom of an isotope
+ * pair), so the watcher's picture is exactly what they made. No capacity labels, no category colour, no counts:
+ * those would read the property off for them.
+ */
+const AtomBuildScene = React.forwardRef<SVGSVGElement, { atom: BuiltAtom; kept: BuiltAtom | null }>(
+  function AtomBuildScene({ atom, kept }, ref) {
+    const empty = atom.protons + atom.neutrons + atom.electrons === 0;
+    return (
+      <svg ref={ref} data-build-scene="atom" viewBox="0 0 360 360" className="mx-auto h-auto w-full max-w-[340px]"
+        role="img" aria-label="Your atom">
+        <rect x={0} y={0} width={360} height={360} rx={16} fill="#0b1220" />
+        {kept && (
+          <g data-kept-atom>
+            <rect x={6} y={6} width={92} height={100} rx={10} fill="rgba(30,41,59,0.8)" stroke="rgba(148,163,184,0.3)" />
+            <text x={52} y={21} textAnchor="middle" fill="#cbd5e1" fontSize={10}>Kept atom</text>
+            <AtomDrawing atom={kept} cx={52} cy={62} scale={0.3} prefix="kept" />
+          </g>
+        )}
+        {empty ? (
+          <g data-aid>
+            <circle cx={180} cy={180} r={40} fill="none" stroke="rgba(148,163,184,0.35)" strokeDasharray="5 4" />
+            <text x={180} y={250} textAnchor="middle" fill="#64748b" fontSize={13}>Add particles below</text>
+          </g>
+        ) : (
+          <AtomDrawing atom={atom} cx={kept ? 205 : 180} cy={kept ? 200 : 180} scale={1} prefix="now" />
+        )}
+      </svg>
+    );
+  },
+);
+
+// ============================================================================
 // Mini Periodic Table Component
 // ============================================================================
 
@@ -403,6 +482,15 @@ const AtomBuilder: React.FC<AtomBuilderProps> = ({ data, className }) => {
   const valenceElectrons = shells.length > 0 ? shells[shells.length - 1] : 0;
   const currentChallenge = challenges[challengeIndex] ?? null;
 
+  // make_atom (open build): the learner makes any atom with the asked property; code judges it at "I'm done!".
+  // A make_atom item with no `ask` (an older or malformed payload) keeps the classic target check.
+  const openAsk: AtomAsk | null = currentChallenge?.type === 'make_atom' ? currentChallenge.ask ?? null : null;
+  const isOpenBuild = !!openAsk;
+  const [keptAtom, setKeptAtom] = useState<BuiltAtom | null>(null);
+  const [solvedId, setSolvedId] = useState<string | null>(null);
+  const sceneRef = useRef<SVGSVGElement>(null);
+  const openSolved = isOpenBuild && solvedId === currentChallenge?.id;
+
   // Check if shells are correctly filled (no gaps)
   const shellsCorrect = useMemo(() => {
     for (let i = 0; i < shells.length - 1; i++) {
@@ -454,23 +542,31 @@ const AtomBuilder: React.FC<AtomBuilderProps> = ({ data, className }) => {
     if (type === 'proton') setProtons(p => Math.min(p + 1, constraints.maxProtons));
     else if (type === 'neutron') setNeutrons(n => Math.min(n + 1, constraints.maxProtons + 10));
     else setElectrons(e => Math.min(e + 1, constraints.maxProtons + 4));
-    setFeedback(null);
-  }, [constraints.maxProtons]);
+    // On the open build the verdict's words stay until the next check, while the learner fixes the atom.
+    if (!isOpenBuild) setFeedback(null);
+  }, [constraints.maxProtons, isOpenBuild]);
 
   const removeParticle = useCallback((type: 'proton' | 'neutron' | 'electron') => {
     SoundManager.tick();
     if (type === 'proton') setProtons(p => Math.max(p - 1, 0));
     else if (type === 'neutron') setNeutrons(n => Math.max(n - 1, 0));
     else setElectrons(e => Math.max(e - 1, 0));
-    setFeedback(null);
-  }, []);
+    if (!isOpenBuild) setFeedback(null);
+  }, [isOpenBuild]);
 
   const resetAtom = useCallback(() => {
     setProtons(0);
     setNeutrons(0);
     setElectrons(0);
+    setKeptAtom(null);
     setFeedback(null);
   }, []);
+
+  /** Isotope pairs: the first atom is kept beside the board and the current build stays, ready to change. */
+  const keepAtom = useCallback(() => {
+    SoundManager.tick();
+    setKeptAtom({ protons, neutrons, electrons });
+  }, [protons, neutrons, electrons]);
 
   const checkChallenge = useCallback(() => {
     if (!currentChallenge) return;
@@ -481,17 +577,24 @@ const AtomBuilder: React.FC<AtomBuilderProps> = ({ data, className }) => {
     let correct = true;
     const reasons: string[] = [];
 
-    if (currentChallenge.targetProtons !== null && protons !== currentChallenge.targetProtons) {
-      correct = false;
-      reasons.push(`Need ${currentChallenge.targetProtons} protons (you have ${protons})`);
-    }
-    if (currentChallenge.targetNeutrons !== null && neutrons !== currentChallenge.targetNeutrons) {
-      correct = false;
-      reasons.push(`Need ${currentChallenge.targetNeutrons} neutrons (you have ${neutrons})`);
-    }
-    if (currentChallenge.targetElectrons !== null && electrons !== currentChallenge.targetElectrons) {
-      correct = false;
-      reasons.push(`Need ${currentChallenge.targetElectrons} electrons (you have ${electrons})`);
+    if (openAsk) {
+      // The open build's own judgment; the classic targets are null on these items.
+      const verdict = judgeAtomBuild(openAsk, { protons, neutrons, electrons }, keptAtom);
+      correct = verdict.pass;
+      if (verdict.miss) reasons.push(ATOM_BUILD_MISS_WORDS[verdict.miss]);
+    } else {
+      if (currentChallenge.targetProtons !== null && protons !== currentChallenge.targetProtons) {
+        correct = false;
+        reasons.push(`Need ${currentChallenge.targetProtons} protons (you have ${protons})`);
+      }
+      if (currentChallenge.targetNeutrons !== null && neutrons !== currentChallenge.targetNeutrons) {
+        correct = false;
+        reasons.push(`Need ${currentChallenge.targetNeutrons} neutrons (you have ${neutrons})`);
+      }
+      if (currentChallenge.targetElectrons !== null && electrons !== currentChallenge.targetElectrons) {
+        correct = false;
+        reasons.push(`Need ${currentChallenge.targetElectrons} electrons (you have ${electrons})`);
+      }
     }
 
     // For shell-filling challenges, also check shells are filled correctly
@@ -502,8 +605,11 @@ const AtomBuilder: React.FC<AtomBuilderProps> = ({ data, className }) => {
 
     if (correct) {
       SoundManager.playCorrect();
-      setFeedback(`Correct! ${element?.name ? `You built ${element.name}!` : ''}`);
+      setFeedback(openAsk
+        ? `Yes! ${openAsk.kind === 'isotopes' ? `Two isotopes of ${element?.name ?? 'one element'}.` : `Your ${element?.name ?? 'atom'} fits the ask.`}`
+        : `Correct! ${element?.name ? `You built ${element.name}!` : ''}`);
       setFeedbackType('success');
+      if (openAsk) setSolvedId(currentChallenge.id);
       setCompletedChallenges(prev => { const next = new Set(prev); next.add(currentChallenge.id); return next; });
       setShellsFilled(prev => prev && shellsCorrect);
 
@@ -532,7 +638,8 @@ const AtomBuilder: React.FC<AtomBuilderProps> = ({ data, className }) => {
       }, 2000);
     } else {
       SoundManager.playIncorrect();
-      setFeedback(reasons.join('. ') + `. Hint: ${currentChallenge.hint}`);
+      // Open build: the miss's own words, and the build stays on the board to fix (Try again keeps it).
+      setFeedback(openAsk ? reasons.join(' ') : reasons.join('. ') + `. Hint: ${currentChallenge.hint}`);
       setFeedbackType('error');
 
       sendText(
@@ -542,7 +649,7 @@ const AtomBuilder: React.FC<AtomBuilderProps> = ({ data, className }) => {
         { silent: true }
       );
     }
-  }, [currentChallenge, protons, neutrons, electrons, shellsCorrect, element, charge, valenceElectrons, shells, challengeIndex, challenges.length, sendText, resetAtom]);
+  }, [currentChallenge, openAsk, keptAtom, protons, neutrons, electrons, shellsCorrect, element, charge, valenceElectrons, shells, challengeIndex, challenges.length, sendText, resetAtom]);
 
   const handleFinalSubmit = useCallback(() => {
     if (hasSubmitted) return;
@@ -598,6 +705,7 @@ const AtomBuilder: React.FC<AtomBuilderProps> = ({ data, className }) => {
     setPeriodicTableUsed(false);
     setValenceIdentified(false);
     setShellsFilled(true);
+    setSolvedId(null);
     attemptRef.current = 0;
     resetAttempt();
   }, [resetAtom, resetAttempt]);
@@ -609,6 +717,26 @@ const AtomBuilder: React.FC<AtomBuilderProps> = ({ data, className }) => {
   // A projection of this item's check state, the tutor's speech on it, and
   // the child's touches; Pip points only at the workspace as a whole and never
   // chooses, checks, or advances.
+  // The live line on the open build (shared build layer): what the atom looks like, never a verdict or a number.
+  // The task is given without the property: the line may never say whether the atom has it.
+  const particleTotal = protons + neutrons + electrons;
+  const buildSeeing = useBuildWatcher({
+    buildKey: `${currentChallenge?.id}:${protons},${neutrons},${electrons}:${keptAtom ? `${keptAtom.protons},${keptAtom.neutrons},${keptAtom.electrons}` : '-'}`,
+    enabled: isOpenBuild && particleTotal > 0 && !openSolved && !hasSubmitted,
+    svg: sceneRef,
+    request: {
+      task: 'Building an atom of their own from protons, neutrons and electrons',
+      numbers: 'never',
+      neverSay: ['full', 'ion', 'charge', 'charged', 'neutral', 'isotope', 'noble', 'negative', 'positive', 'stable',
+        'valence', 'outer', 'balanced', 'extra', 'correct', 'right', 'wrong'],
+      sceneNote: 'A dark board. Red dots are protons and grey dots are neutrons in the middle; blue dots are electrons on '
+        + 'dashed rings around it. A small kept atom may sit in the top-left corner.',
+      // The element is read off the protons, the way the board names it; naming the learner's own atom leaks nothing.
+      made: `red protons and grey neutrons in the middle, blue electrons on ${element ? `rings: a ${element.name.toLowerCase()} atom` : 'rings'}`
+        + (keptAtom ? '; a kept atom in the corner' : ''),
+    },
+  });
+
   const pip = useWorkspacePipSurface({
     instanceId: (instanceId || 'atom-builder'),
     scopeId: hasSubmitted ? null : currentChallenge?.id ?? null,
@@ -667,7 +795,16 @@ const AtomBuilder: React.FC<AtomBuilderProps> = ({ data, className }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Bohr Model Visualization */}
           <div className="bg-black/20 rounded-xl border border-white/5 p-3 flex flex-col items-center justify-center">
-            {protons === 0 && neutrons === 0 && electrons === 0 ? (
+            {isOpenBuild ? (
+              <>
+                <AtomBuildScene ref={sceneRef} atom={{ protons, neutrons, electrons }} kept={keptAtom} />
+                {buildSeeing && !openSolved && (
+                  <div data-testid="build-watcher" className="mt-2 text-center">
+                    <span className="rounded-full bg-white/10 px-4 py-1.5 text-sm text-amber-100">👀 {buildSeeing}</span>
+                  </div>
+                )}
+              </>
+            ) : protons === 0 && neutrons === 0 && electrons === 0 ? (
               <div className="text-slate-500 text-sm text-center py-8">
                 Add particles below to start building your atom
               </div>
@@ -693,15 +830,17 @@ const AtomBuilder: React.FC<AtomBuilderProps> = ({ data, className }) => {
                     <div className="flex items-center gap-2">
                       <span
                         className="text-2xl font-bold"
-                        style={{ color: element.categoryColor }}
+                        style={{ color: isOpenBuild ? '#e2e8f0' : element.categoryColor }}
                       >
                         {element.symbol}
                       </span>
                       <span className="text-slate-200 text-lg">{element.name}</span>
                     </div>
-                    <Badge className="text-[10px]" style={{ backgroundColor: element.categoryColor + '33', color: element.categoryColor, borderColor: element.categoryColor + '55' }}>
-                      {element.category}
-                    </Badge>
+                    {!isOpenBuild && (
+                      <Badge className="text-[10px]" style={{ backgroundColor: element.categoryColor + '33', color: element.categoryColor, borderColor: element.categoryColor + '55' }}>
+                        {element.category}
+                      </Badge>
+                    )}
                   </div>
                 ) : (
                   <p className="text-slate-500 text-sm">Add protons to identify the element</p>
@@ -728,8 +867,8 @@ const AtomBuilder: React.FC<AtomBuilderProps> = ({ data, className }) => {
               </div>
             </div>
 
-            {/* Charge + Mass Number */}
-            <div className="flex gap-2">
+            {/* Charge + Mass Number (not on the open build: each reads an asked property off for the learner) */}
+            {!isOpenBuild && <div className="flex gap-2">
               {showOptions.showCharge && (
                 <div className="flex-1 bg-black/20 rounded-lg border border-white/5 p-2 text-center">
                   <p className="text-[9px] text-slate-500 font-mono uppercase">Charge</p>
@@ -755,10 +894,10 @@ const AtomBuilder: React.FC<AtomBuilderProps> = ({ data, className }) => {
                   <p className="text-lg font-mono font-bold text-blue-300">{shells.length > 0 ? valenceElectrons : '-'}</p>
                 </div>
               )}
-            </div>
+            </div>}
 
             {/* Electron config for older grades */}
-            {showOptions.showElectronConfiguration && electrons > 0 && (
+            {showOptions.showElectronConfiguration && electrons > 0 && !isOpenBuild && (
               <div className="bg-black/20 rounded-lg border border-white/5 p-2">
                 <p className="text-[9px] text-slate-500 font-mono uppercase">Electron Configuration</p>
                 <p className="text-xs text-slate-300 font-mono mt-1">{getElectronConfig(shells)}</p>
@@ -783,7 +922,7 @@ const AtomBuilder: React.FC<AtomBuilderProps> = ({ data, className }) => {
             protons={protons}
             neutrons={neutrons}
             electrons={electrons}
-            disabled={hasSubmitted}
+            disabled={hasSubmitted || openSolved}
             maxProtons={constraints.maxProtons}
           />
         </div>
@@ -804,7 +943,37 @@ const AtomBuilder: React.FC<AtomBuilderProps> = ({ data, className }) => {
         )}
 
         {/* Action buttons */}
-        <div className="flex gap-2 justify-center">
+        <div className="flex flex-wrap gap-2 justify-center">
+          {isOpenBuild && !hasSubmitted ? (
+            <>
+              {openAsk?.kind === 'isotopes' && !keptAtom && (
+                <Button
+                  variant="ghost"
+                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
+                  disabled={protons === 0 || openSolved}
+                  onClick={keepAtom}
+                >
+                  Keep this atom
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300"
+                disabled={(particleTotal === 0 && !keptAtom) || openSolved}
+                onClick={resetAtom}
+              >
+                Start over
+              </Button>
+              <Button
+                variant="ghost"
+                className="bg-cyan-500/10 border border-cyan-500/30 hover:bg-cyan-500/20 text-cyan-300"
+                disabled={particleTotal === 0 || openSolved}
+                onClick={checkChallenge}
+              >
+                I&apos;m done!
+              </Button>
+            </>
+          ) : (<>
           {!hasSubmitted && currentChallenge && (
             <Button
               variant="ghost"
@@ -821,6 +990,7 @@ const AtomBuilder: React.FC<AtomBuilderProps> = ({ data, className }) => {
           >
             {hasSubmitted ? 'Try Again' : 'Clear Atom'}
           </Button>
+          </>)}
         </div>
       </CardContent>
     </Card>

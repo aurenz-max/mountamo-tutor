@@ -1,0 +1,66 @@
+{
+ "source": "qa/tutor-reports/states-of-matter-runtime-compare-payload-2026-10-09.json",
+ "primitiveId": "states-of-matter",
+ "evalMode": "compare",
+ "data": {
+  "title": "What Heat Does",
+  "description": "Watch tiny bits dance and move around as things get warmer!",
+  "substance": {
+   "name": "Water",
+   "formula": null,
+   "meltingPoint": 0,
+   "boilingPoint": 100,
+   "currentTemp": 25,
+   "color": {
+    "solid": "#93c5fd",
+    "liquid": "#3b82f6",
+    "gas": "#e2e8f0"
+   }
+  },
+  "particleConfig": {
+   "count": 25,
+   "size": "large",
+   "showTrails": false,
+   "showBonds": true
+  },
+  "showOptions": {
+   "showParticleView": true,
+   "showTemperatureSlider": true,
+   "showStateLabels": true,
+   "showEnergyGraph": false,
+   "showPhaseMarkers": true,
+   "showParticleSpeed": false
+  },
+  "substances": [
+   "water",
+   "wax",
+   "chocolate",
+   "butter",
+   "coconutOil"
+  ],
+  "gradeBand": "K-2",
+  "imagePrompt": "Ice cubes melting in a bright sunny glass of lemonade on a picnic table",
+  "challenges": [
+   {
+    "id": "som-1-compare",
+    "challengeType": "compare",
+    "kind": "melt_first",
+    "pairKeys": [
+     "chocolate",
+     "wax"
+    ],
+    "startTemp": 14
+   },
+   {
+    "id": "som-2-compare",
+    "challengeType": "compare",
+    "kind": "melt_first",
+    "pairKeys": [
+     "butter",
+     "coconutOil"
+    ],
+    "startTemp": 4
+   }
+  ]
+ }
+}

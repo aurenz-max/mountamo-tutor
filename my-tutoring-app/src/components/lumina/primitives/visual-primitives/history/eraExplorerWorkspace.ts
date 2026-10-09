@@ -16,6 +16,8 @@ import {
   askFor,
   correctChoiceOf,
   eraExplorerHarnessAnswers,
+  eraTokens,
+  toWords,
   itemsFromChallenges,
   type EraChallengeLike,
   type EraExplorerItem,
@@ -23,6 +25,8 @@ import {
 } from './eraExplorerScript';
 
 const ORDINALS = ['first', 'second', 'third'];
+/** Words too plain to stand for "a thing from the sentence". */
+const THING_STOP = new Set(['their', 'there', 'they', 'with', 'from', 'that', 'this', 'had', 'have', 'were', 'used', 'every', 'single', 'right', 'together', 'different', 'own', 'help']);
 
 export interface EraPayloadLike {
   eraName?: string;
@@ -67,22 +71,41 @@ export function eraAssignment(item: EraExplorerItem): TeachingAssignment {
 }
 
 /** What a wrong spoken pick shows (handoff 20 Part B), by the choice picked. */
-export type SpokenEraMiss = 'said_back_then' | 'said_today' | 'said_both' | 'other_cause' | 'said_what_changed';
+export type SpokenEraMiss = 'said_back_then' | 'said_today' | 'said_both' | 'other_cause' | 'said_what_changed'
+  | 'other_lens' | 'named_a_thing' | 'said_earlier' | 'said_later';
 
 /** era_sort's menu, in the ask's order: only then, only today, both. */
 const SORT_IDS = ['said_back_then', 'said_today', 'said_both'] as const;
+/** era_compare's menu, in the ask's order: only the earlier era, only the later one, both. */
+const COMPARE_IDS = ['said_earlier', 'said_later', 'said_both'] as const;
 
 /**
  * An item's known wrong answers, in precedence order, for the `spoken_miss` observer: on era_sort, each other time
- * named for what it is; on cause_of_change, another offered cause, then what changed said instead of why.
- * lens_id and era_compare name none yet (no saved payload).
+ * named for what it is; on era_compare, each other choice, then "today" (not a choice there); on lens_id, another lens,
+ * then a thing from the sentence named instead of a lens; on cause_of_change, another offered cause, then what changed
+ * said instead of why.
  */
 export function eraSpokenMisses(item: EraExplorerItem): KnownMiss[] {
   const right = correctChoiceOf(item);
-  if (item.kind === 'era_sort' && item.choices.length === 3) {
-    return item.choices.flatMap((c, i) => i === item.correctIndex ? [] : [{ id: SORT_IDS[i],
+  if ((item.kind === 'era_sort' || item.kind === 'era_compare') && item.choices.length === 3) {
+    const ids = item.kind === 'era_sort' ? SORT_IDS : COMPARE_IDS;
+    const picks: KnownMiss[] = item.choices.flatMap((c, i) => i === item.correctIndex ? [] : [{ id: ids[i],
       pattern: `The right choice is "${right.phrase}". The learner picks "${c.phrase}" instead, for example ${[c.distinguisher, ...c.alsoCounts].slice(0, 2).map(w => `"${w}"`).join(' or ')}.`,
       examples: [c.distinguisher] }]);
+    return item.kind === 'era_sort' ? picks : [...picks, { id: 'said_today',
+      pattern: 'The learner says "today", "now" or "our time", which is not one of the three choices: both times offered are in the past.',
+      examples: ['today', 'now'] }];
+  }
+  if (item.kind === 'lens_id' && item.choices.length === 3) {
+    const others = item.choices.filter((_, i) => i !== item.correctIndex);
+    const menu = new Set(item.choices.flatMap(c => eraTokens(`${c.phrase} ${c.distinguisher} ${c.alsoCounts.join(' ')}`)));
+    const thing = toWords(item.statement).find(w => w.length >= 4 && !menu.has(eraTokens(w)[0] ?? w) && !THING_STOP.has(w));
+    return [
+      { id: 'other_lens', pattern: `The right choice is "${right.phrase}". The learner names another lens instead: ${others.map(o => `"${o.phrase}"`).join(' or ')}.`,
+        examples: others.map(o => o.distinguisher) },
+      ...(thing ? [{ id: 'named_a_thing', pattern: `The learner names something from the sentence, for example "${thing}", instead of naming a lens.`,
+        examples: [thing] }] : []),
+    ];
   }
   if (item.kind === 'cause_of_change') {
     const others = item.choices.filter((_, i) => i !== item.correctIndex);

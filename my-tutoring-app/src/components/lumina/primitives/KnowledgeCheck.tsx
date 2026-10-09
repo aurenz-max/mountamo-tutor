@@ -75,7 +75,7 @@ import {
   type KnowledgeCheckItem,
 } from './knowledgeCheckScript';
 import { knowledgeCheckAssignment, knowledgeCheckItems, knowledgeCheckMiss, knowledgeCheckScene } from './knowledgeCheckWorkspace';
-import { CUE_LEVER, DROP_LEVER, NO_LEVERS, farChoice, knowledgeCheckLevers, leversOnScreen,
+import { CUE_LEVER, DROP_LEVER, NO_LEVERS, SPREAD_LEVER, farChoice, knowledgeCheckLevers, leversOnScreen, pictureRuns,
   type KnowledgeCheckLeverState } from './knowledgeCheckLevers';
 
 interface KnowledgeCheckProps {
@@ -251,6 +251,12 @@ const KnowledgeCheckJudged: React.FC<JudgedProps> = ({
    *  wrong answer; `picked` the choices touched wrong. A new item starts from NO_LEVERS. */
   const [leverState, setLeverState] = useState<{ item: string } & KnowledgeCheckLeverState>({ item: '', ...NO_LEVERS });
   const leversFor = (id: string | undefined): KnowledgeCheckLeverState => (id && leverState.item === id ? leverState : NO_LEVERS);
+  /** spread_pictures: the boxes the learner touched to mark counted, keyed by item. Never published: it is their count. */
+  const [marked, setMarked] = useState<{ item: string; boxes: readonly string[] }>({ item: '', boxes: [] });
+  const toggleMark = (itemId: string, box: string) => setMarked((prev) => {
+    const boxes = prev.item === itemId ? prev.boxes : [];
+    return { item: itemId, boxes: boxes.includes(box) ? boxes.filter((b) => b !== box) : [...boxes, box] };
+  });
   const updateLevers = (id: string, change: (s: KnowledgeCheckLeverState) => Partial<KnowledgeCheckLeverState>) =>
     setLeverState((prev) => {
       const base = prev.item === id ? prev : { item: id, ...NO_LEVERS };
@@ -494,6 +500,29 @@ const KnowledgeCheckJudged: React.FC<JudgedProps> = ({
           {currentLevers.pulled.includes(CUE_LEVER) && item.cue && (
             <div className={`mt-4 text-center ${motion.pop}`} key={`${item.id}-cue`} data-lever-cue data-lever="cue-picture">
               <span className="text-5xl leading-none" role="img" aria-label={item.cue.shows}>{item.cue.picture}</span>
+            </div>
+          )}
+          {/* spread_pictures: the question's own pictures again, apart, one per box; no numbers (spreadLeak). */}
+          {currentLevers.pulled.includes(SPREAD_LEVER) && (
+            <div className={`mt-4 space-y-2 ${motion.pop}`} key={`${item.id}-spread`} data-lever="spread-pictures">
+              {pictureRuns(item.prompt).map((run, r) => (
+                <div key={r} className="flex flex-wrap justify-center gap-3">
+                  {Array.from({ length: run.count }, (_, i) => {
+                    const box = `${r}-${i}`;
+                    const on = marked.item === item.id && marked.boxes.includes(box);
+                    return (
+                      <button key={box} type="button" data-spread-box={box} data-marked={on || undefined}
+                        aria-pressed={on} aria-label={on ? 'counted' : 'not counted yet'}
+                        onClick={() => toggleMark(item.id, box)}
+                        className={`flex h-14 w-14 items-center justify-center rounded-xl border-2 text-3xl transition-all duration-150
+                          ${on ? 'border-amber-300/70 bg-amber-400/20 ring-2 ring-amber-300/40' : 'border-white/15 bg-slate-800/50 hover:border-white/30'}`}
+                      >
+                        <span aria-hidden>{run.picture}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
           )}
           {/* Production kinds (KC redesign P2): the STIMULUS the child names,

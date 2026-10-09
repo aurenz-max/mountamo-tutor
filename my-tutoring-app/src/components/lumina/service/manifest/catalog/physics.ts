@@ -188,6 +188,8 @@ export const PHYSICS_CATALOG: ComponentDefinition[] = [
       // Every item is one spoken word: its known wrong answers by kind (`pushPullSpokenMisses`, handoff 20 Part B).
       misses: missLists<SpokenPushPullMiss>({ observe: ['opposite_force', 'described_motion'], predict: ['opposite_outcome'],
         compare: ['other_object'], design: ['opposite_size'] }),
+      // In-item levers (`pushPullArenaLevers.ts`): help in every mode, an easier item in predict, compare and design.
+      levers: true,
     },
   },
   {

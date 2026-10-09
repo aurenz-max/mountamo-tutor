@@ -395,7 +395,8 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
         + 'and presses I’m done!; the activity checks that every need is met and nothing would hurt it. Many habitats pass. '
         + 'Knowing what the animal needs IS the task: never say which need is missing, which piece to add or take out, or '
         + 'what a piece gives the animal; if they stop, invite them to think about what the animal needs every day.',
-      // build_habitat publishes levers (`habitatBuildLevers`); the other modes have none yet.
+      // build_habitat (`habitatBuildLevers`) and every other mode (`habitatDioramaLevers`) publish levers; restore has
+      // help levers only (no other living thing carries a zone to build a simpler item from).
       levers: true,
       // The activity's own checks (`habitatMiss`, `readHabitatBuild`), and the spoken choices' known wrong answer
       // (`habitatSpokenMisses`, handoff 20 Part B).
@@ -405,8 +406,8 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
         observe: ['other_choice'], predict: ['other_choice'], defend: ['other_choice'],
         build_habitat: ['harmful_piece', 'several_needs_unmet', 'other_animals_piece', 'one_need_unmet'],
       }),
-      // Every build miss is answered by a lever (`habitatBuildLevers`).
-      unanswered: { build_habitat: [] },
+      // Every miss of every mode is answered by a lever (`habitatBuildLevers`, `habitatDioramaLevers`).
+      unanswered: { build_habitat: [], observe: [], connect: [], predict: [], restore: [], defend: [] },
     },
   },
   {
@@ -519,7 +520,7 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
         + 'needs, never say which way an arrow should point or which arrow is wrong, and never say how many living things are '
         + 'in the chain. Asking the learner to read one of their own arrows aloud as a sentence is teaching; saying what it '
         + 'should say is not. You cannot tap, place or draw for the learner.',
-      // build_chain publishes levers (`foodWebLevers.ts`); the whole web has none yet.
+      // Both modes publish levers (`foodWebLevers.ts`): every complete_web miss has one.
       levers: true,
       // The activity's own checks (`foodWebMiss`, `foodChainMiss`).
       misses: missLists<FoodWebMiss | FoodChainMiss>({

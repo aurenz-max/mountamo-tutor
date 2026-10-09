@@ -14,6 +14,10 @@ const states = (extra: Partial<StatesOfMatterItem>) => ({ id: 's', substance: wa
 it.each([
   ['name_state', matterSpokenMisses(matter({ kind: 'name_state' })), ['other_state', 'said_object_back'], ['solid', 'a solid']],
   ['mystery', matterSpokenMisses(matter({ kind: 'mystery_state' })), ['other_state'], ['solid']],
+  ['property', matterSpokenMisses(matter({ kind: 'name_property', answerShape: 'keeps_shape' })), ['other_shape', 'state_word'],
+    ['own shape', 'keeps', 'keeps its shape', 'stays the same']],
+  ['property, two options', matterSpokenMisses(matter({ kind: 'name_property', answerShape: 'keeps_shape', menu: ['keeps_shape', 'fills_space'] })),
+    ['other_shape', 'state_word'], ['own shape', 'keeps', 'keeps its shape', 'stays the same', 'the cup']],
   ['melt', matterSpokenMisses(matter({ kind: 'name_undo', change: 'melt', answerUndo: 'can_go_back' })),
     ['other_way', 'said_change_back', 'state_word'], ['go back', 'back', 'we can get it back', 'yes']],
   ['burn', matterSpokenMisses(matter({ kind: 'name_undo', objectName: 'paper', change: 'burn', answerUndo: 'changed_for_ever' })),

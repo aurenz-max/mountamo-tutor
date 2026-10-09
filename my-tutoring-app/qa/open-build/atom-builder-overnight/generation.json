@@ -1,0 +1,742 @@
+{
+  "when": "2026-10-09T03:55:54.247Z",
+  "runs": [
+    {
+      "grade": "3",
+      "rep": 0,
+      "issues": [],
+      "asks": [
+        "Make any neutral atom with five electrons in its outer shell.",
+        "Make any neutral atom whose outer shell is full.",
+        "Make any neutral atom with four electrons in its outer shell."
+      ],
+      "passable": [
+        {
+          "ask": {
+            "kind": "valence",
+            "outer": 5
+          },
+          "passingBuilds": 18,
+          "elements": 2
+        },
+        {
+          "ask": {
+            "kind": "full_shell"
+          },
+          "passingBuilds": 27,
+          "elements": 3
+        },
+        {
+          "ask": {
+            "kind": "valence",
+            "outer": 4
+          },
+          "passingBuilds": 18,
+          "elements": 2
+        }
+      ]
+    },
+    {
+      "grade": "3",
+      "rep": 1,
+      "issues": [],
+      "asks": [
+        "Make any neutral atom with seven electrons in its outer shell.",
+        "Make any neutral atom whose outer shell is full.",
+        "Make any neutral atom with two electrons in its outer shell."
+      ],
+      "passable": [
+        {
+          "ask": {
+            "kind": "valence",
+            "outer": 7
+          },
+          "passingBuilds": 20,
+          "elements": 2
+        },
+        {
+          "ask": {
+            "kind": "full_shell"
+          },
+          "passingBuilds": 27,
+          "elements": 3
+        },
+        {
+          "ask": {
+            "kind": "valence",
+            "outer": 2
+          },
+          "passingBuilds": 33,
+          "elements": 4
+        }
+      ]
+    },
+    {
+      "grade": "3",
+      "rep": 2,
+      "issues": [],
+      "asks": [
+        "Make any neutral atom with one electron in its outer shell.",
+        "Make any neutral atom whose outer shell is full.",
+        "Make any neutral atom with five electrons in its outer shell."
+      ],
+      "passable": [
+        {
+          "ask": {
+            "kind": "valence",
+            "outer": 1
+          },
+          "passingBuilds": 30,
+          "elements": 4
+        },
+        {
+          "ask": {
+            "kind": "full_shell"
+          },
+          "passingBuilds": 27,
+          "elements": 3
+        },
+        {
+          "ask": {
+            "kind": "valence",
+            "outer": 5
+          },
+          "passingBuilds": 18,
+          "elements": 2
+        }
+      ]
+    },
+    {
+      "grade": "4",
+      "rep": 0,
+      "issues": [],
+      "asks": [
+        "Make any neutral atom with four electrons in its outer shell.",
+        "Make any neutral atom whose outer shell is full.",
+        "Make any neutral atom with two electrons in its outer shell."
+      ],
+      "passable": [
+        {
+          "ask": {
+            "kind": "valence",
+            "outer": 4
+          },
+          "passingBuilds": 18,
+          "elements": 2
+        },
+        {
+          "ask": {
+            "kind": "full_shell"
+          },
+          "passingBuilds": 27,
+          "elements": 3
+        },
+        {
+          "ask": {
+            "kind": "valence",
+            "outer": 2
+          },
+          "passingBuilds": 33,
+          "elements": 4
+        }
+      ]
+    },
+    {
+      "grade": "4",
+      "rep": 1,
+      "issues": [],
+      "asks": [
+        "Make any neutral atom with two electrons in its outer shell.",
+        "Make any neutral atom whose outer shell is full.",
+        "Make any neutral atom with seven electrons in its outer shell."
+      ],
+      "passable": [
+        {
+          "ask": {
+            "kind": "valence",
+            "outer": 2
+          },
+          "passingBuilds": 33,
+          "elements": 4
+        },
+        {
+          "ask": {
+            "kind": "full_shell"
+          },
+          "passingBuilds": 27,
+          "elements": 3
+        },
+        {
+          "ask": {
+            "kind": "valence",
+            "outer": 7
+          },
+          "passingBuilds": 20,
+          "elements": 2
+        }
+      ]
+    },
+    {
+      "grade": "4",
+      "rep": 2,
+      "issues": [],
+      "asks": [
+        "Make any neutral atom with two electrons in its outer shell.",
+        "Make any neutral atom whose outer shell is full.",
+        "Make any neutral atom with seven electrons in its outer shell."
+      ],
+      "passable": [
+        {
+          "ask": {
+            "kind": "valence",
+            "outer": 2
+          },
+          "passingBuilds": 33,
+          "elements": 4
+        },
+        {
+          "ask": {
+            "kind": "full_shell"
+          },
+          "passingBuilds": 27,
+          "elements": 3
+        },
+        {
+          "ask": {
+            "kind": "valence",
+            "outer": 7
+          },
+          "passingBuilds": 20,
+          "elements": 2
+        }
+      ]
+    },
+    {
+      "grade": "5",
+      "rep": 0,
+      "issues": [],
+      "asks": [
+        "Make any neutral atom with six electrons in its outer shell.",
+        "Make any neutral atom whose outer shell is full.",
+        "Make any neutral atom with three electrons in its outer shell."
+      ],
+      "passable": [
+        {
+          "ask": {
+            "kind": "valence",
+            "outer": 6
+          },
+          "passingBuilds": 20,
+          "elements": 2
+        },
+        {
+          "ask": {
+            "kind": "full_shell"
+          },
+          "passingBuilds": 27,
+          "elements": 3
+        },
+        {
+          "ask": {
+            "kind": "valence",
+            "outer": 3
+          },
+          "passingBuilds": 16,
+          "elements": 2
+        }
+      ]
+    },
+    {
+      "grade": "5",
+      "rep": 1,
+      "issues": [],
+      "asks": [
+        "Make any neutral atom with seven electrons in its outer shell.",
+        "Make any neutral atom whose outer shell is full.",
+        "Make any neutral atom with four electrons in its outer shell."
+      ],
+      "passable": [
+        {
+          "ask": {
+            "kind": "valence",
+            "outer": 7
+          },
+          "passingBuilds": 20,
+          "elements": 2
+        },
+        {
+          "ask": {
+            "kind": "full_shell"
+          },
+          "passingBuilds": 27,
+          "elements": 3
+        },
+        {
+          "ask": {
+            "kind": "valence",
+            "outer": 4
+          },
+          "passingBuilds": 18,
+          "elements": 2
+        }
+      ]
+    },
+    {
+      "grade": "5",
+      "rep": 2,
+      "issues": [],
+      "asks": [
+        "Make any neutral atom with three electrons in its outer shell.",
+        "Make any neutral atom whose outer shell is full.",
+        "Make any neutral atom with two electrons in its outer shell."
+      ],
+      "passable": [
+        {
+          "ask": {
+            "kind": "valence",
+            "outer": 3
+          },
+          "passingBuilds": 16,
+          "elements": 2
+        },
+        {
+          "ask": {
+            "kind": "full_shell"
+          },
+          "passingBuilds": 27,
+          "elements": 3
+        },
+        {
+          "ask": {
+            "kind": "valence",
+            "outer": 2
+          },
+          "passingBuilds": 33,
+          "elements": 4
+        }
+      ]
+    },
+    {
+      "grade": "6",
+      "rep": 0,
+      "issues": [],
+      "asks": [
+        "Make any neutral atom with one electron in its outer shell.",
+        "Make any neutral atom whose outer shell is full.",
+        "Make any ion with a charge of -1.",
+        "Make two different isotopes of the same element. Build one atom and press Keep, then build the other."
+      ],
+      "passable": [
+        {
+          "ask": {
+            "kind": "valence",
+            "outer": 1
+          },
+          "passingBuilds": 64,
+          "elements": 6
+        },
+        {
+          "ask": {
+            "kind": "full_shell"
+          },
+          "passingBuilds": 39,
+          "elements": 4
+        },
+        {
+          "ask": {
+            "kind": "charge",
+            "charge": -1
+          },
+          "passingBuilds": 430,
+          "elements": 36
+        },
+        {
+          "ask": {
+            "kind": "isotopes"
+          },
+          "passingBuilds": 5340,
+          "elements": 36
+        }
+      ]
+    },
+    {
+      "grade": "6",
+      "rep": 1,
+      "issues": [],
+      "asks": [
+        "Make any neutral atom with five electrons in its outer shell.",
+        "Make any neutral atom whose outer shell is full.",
+        "Make any ion with a charge of +2.",
+        "Make two different isotopes of the same element. Build one atom and press Keep, then build the other."
+      ],
+      "passable": [
+        {
+          "ask": {
+            "kind": "valence",
+            "outer": 5
+          },
+          "passingBuilds": 33,
+          "elements": 3
+        },
+        {
+          "ask": {
+            "kind": "full_shell"
+          },
+          "passingBuilds": 39,
+          "elements": 4
+        },
+        {
+          "ask": {
+            "kind": "charge",
+            "charge": 2
+          },
+          "passingBuilds": 427,
+          "elements": 35
+        },
+        {
+          "ask": {
+            "kind": "isotopes"
+          },
+          "passingBuilds": 5340,
+          "elements": 36
+        }
+      ]
+    },
+    {
+      "grade": "6",
+      "rep": 2,
+      "issues": [],
+      "asks": [
+        "Make any neutral atom with four electrons in its outer shell.",
+        "Make any neutral atom whose outer shell is full.",
+        "Make any ion with a charge of +1.",
+        "Make two different isotopes of the same element. Build one atom and press Keep, then build the other."
+      ],
+      "passable": [
+        {
+          "ask": {
+            "kind": "valence",
+            "outer": 4
+          },
+          "passingBuilds": 34,
+          "elements": 3
+        },
+        {
+          "ask": {
+            "kind": "full_shell"
+          },
+          "passingBuilds": 39,
+          "elements": 4
+        },
+        {
+          "ask": {
+            "kind": "charge",
+            "charge": 1
+          },
+          "passingBuilds": 430,
+          "elements": 36
+        },
+        {
+          "ask": {
+            "kind": "isotopes"
+          },
+          "passingBuilds": 5340,
+          "elements": 36
+        }
+      ]
+    },
+    {
+      "grade": "7",
+      "rep": 0,
+      "issues": [],
+      "asks": [
+        "Make any neutral atom with three electrons in its outer shell.",
+        "Make any neutral atom whose outer shell is full.",
+        "Make any ion with a charge of -2.",
+        "Make two different isotopes of the same element. Build one atom and press Keep, then build the other."
+      ],
+      "passable": [
+        {
+          "ask": {
+            "kind": "valence",
+            "outer": 3
+          },
+          "passingBuilds": 33,
+          "elements": 3
+        },
+        {
+          "ask": {
+            "kind": "full_shell"
+          },
+          "passingBuilds": 39,
+          "elements": 4
+        },
+        {
+          "ask": {
+            "kind": "charge",
+            "charge": -2
+          },
+          "passingBuilds": 430,
+          "elements": 36
+        },
+        {
+          "ask": {
+            "kind": "isotopes"
+          },
+          "passingBuilds": 5340,
+          "elements": 36
+        }
+      ]
+    },
+    {
+      "grade": "7",
+      "rep": 1,
+      "issues": [],
+      "asks": [
+        "Make any neutral atom with seven electrons in its outer shell.",
+        "Make any neutral atom whose outer shell is full.",
+        "Make any ion with a charge of -1.",
+        "Make two different isotopes of the same element. Build one atom and press Keep, then build the other."
+      ],
+      "passable": [
+        {
+          "ask": {
+            "kind": "valence",
+            "outer": 7
+          },
+          "passingBuilds": 33,
+          "elements": 3
+        },
+        {
+          "ask": {
+            "kind": "full_shell"
+          },
+          "passingBuilds": 39,
+          "elements": 4
+        },
+        {
+          "ask": {
+            "kind": "charge",
+            "charge": -1
+          },
+          "passingBuilds": 430,
+          "elements": 36
+        },
+        {
+          "ask": {
+            "kind": "isotopes"
+          },
+          "passingBuilds": 5340,
+          "elements": 36
+        }
+      ]
+    },
+    {
+      "grade": "7",
+      "rep": 2,
+      "issues": [],
+      "asks": [
+        "Make any neutral atom with four electrons in its outer shell.",
+        "Make any neutral atom whose outer shell is full.",
+        "Make any ion with a charge of -1.",
+        "Make two different isotopes of the same element. Build one atom and press Keep, then build the other."
+      ],
+      "passable": [
+        {
+          "ask": {
+            "kind": "valence",
+            "outer": 4
+          },
+          "passingBuilds": 34,
+          "elements": 3
+        },
+        {
+          "ask": {
+            "kind": "full_shell"
+          },
+          "passingBuilds": 39,
+          "elements": 4
+        },
+        {
+          "ask": {
+            "kind": "charge",
+            "charge": -1
+          },
+          "passingBuilds": 430,
+          "elements": 36
+        },
+        {
+          "ask": {
+            "kind": "isotopes"
+          },
+          "passingBuilds": 5340,
+          "elements": 36
+        }
+      ]
+    },
+    {
+      "grade": "8",
+      "rep": 0,
+      "issues": [],
+      "asks": [
+        "Make any neutral atom with four electrons in its outer shell.",
+        "Make any neutral atom whose outer shell is full.",
+        "Make any ion with a charge of -2.",
+        "Make two different isotopes of the same element. Build one atom and press Keep, then build the other."
+      ],
+      "passable": [
+        {
+          "ask": {
+            "kind": "valence",
+            "outer": 4
+          },
+          "passingBuilds": 34,
+          "elements": 3
+        },
+        {
+          "ask": {
+            "kind": "full_shell"
+          },
+          "passingBuilds": 39,
+          "elements": 4
+        },
+        {
+          "ask": {
+            "kind": "charge",
+            "charge": -2
+          },
+          "passingBuilds": 430,
+          "elements": 36
+        },
+        {
+          "ask": {
+            "kind": "isotopes"
+          },
+          "passingBuilds": 5340,
+          "elements": 36
+        }
+      ]
+    },
+    {
+      "grade": "8",
+      "rep": 1,
+      "issues": [],
+      "asks": [
+        "Make any neutral atom with four electrons in its outer shell.",
+        "Make any neutral atom whose outer shell is full.",
+        "Make any ion with a charge of +1.",
+        "Make two different isotopes of the same element. Build one atom and press Keep, then build the other."
+      ],
+      "passable": [
+        {
+          "ask": {
+            "kind": "valence",
+            "outer": 4
+          },
+          "passingBuilds": 34,
+          "elements": 3
+        },
+        {
+          "ask": {
+            "kind": "full_shell"
+          },
+          "passingBuilds": 39,
+          "elements": 4
+        },
+        {
+          "ask": {
+            "kind": "charge",
+            "charge": 1
+          },
+          "passingBuilds": 430,
+          "elements": 36
+        },
+        {
+          "ask": {
+            "kind": "isotopes"
+          },
+          "passingBuilds": 5340,
+          "elements": 36
+        }
+      ]
+    },
+    {
+      "grade": "8",
+      "rep": 2,
+      "issues": [],
+      "asks": [
+        "Make any neutral atom with two electrons in its outer shell.",
+        "Make any neutral atom whose outer shell is full.",
+        "Make any ion with a charge of +2.",
+        "Make two different isotopes of the same element. Build one atom and press Keep, then build the other."
+      ],
+      "passable": [
+        {
+          "ask": {
+            "kind": "valence",
+            "outer": 2
+          },
+          "passingBuilds": 165,
+          "elements": 12
+        },
+        {
+          "ask": {
+            "kind": "full_shell"
+          },
+          "passingBuilds": 39,
+          "elements": 4
+        },
+        {
+          "ask": {
+            "kind": "charge",
+            "charge": 2
+          },
+          "passingBuilds": 427,
+          "elements": 35
+        },
+        {
+          "ask": {
+            "kind": "isotopes"
+          },
+          "passingBuilds": 5340,
+          "elements": 36
+        }
+      ]
+    },
+    {
+      "grade": "7",
+      "rep": "unpinned",
+      "issues": [],
+      "types": [
+        "build_element",
+        "identify",
+        "fill_shells",
+        "make_ion",
+        "make_isotope"
+      ]
+    }
+  ],
+  "logs": [
+    "\u001b[2m11:55:49 PM\u001b[22m \u001b[36m\u001b[1m[vite]\u001b[22m\u001b[39m \u001b[90m\u001b[2m(client)\u001b[22m\u001b[39m Re-optimizing dependencies because vite config has changed",
+    "[AtomBuilder] evalMode: \"make_atom\" → schema enum: [make_atom] (β=1)",
+    "[AtomBuilder] evalMode: \"make_atom\" → schema enum: [make_atom] (β=1)",
+    "[AtomBuilder] evalMode: \"make_atom\" → schema enum: [make_atom] (β=1)",
+    "[AtomBuilder] evalMode: \"make_atom\" → schema enum: [make_atom] (β=1)",
+    "[AtomBuilder] evalMode: \"make_atom\" → schema enum: [make_atom] (β=1)",
+    "[AtomBuilder] evalMode: \"make_atom\" → schema enum: [make_atom] (β=1)",
+    "[AtomBuilder] evalMode: \"make_atom\" → schema enum: [make_atom] (β=1)",
+    "[AtomBuilder] evalMode: \"make_atom\" → schema enum: [make_atom] (β=1)",
+    "[AtomBuilder] evalMode: \"make_atom\" → schema enum: [make_atom] (β=1)",
+    "[AtomBuilder] evalMode: \"make_atom\" → schema enum: [make_atom] (β=1)",
+    "[AtomBuilder] evalMode: \"make_atom\" → schema enum: [make_atom] (β=1)",
+    "[AtomBuilder] evalMode: \"make_atom\" → schema enum: [make_atom] (β=1)",
+    "[AtomBuilder] evalMode: \"make_atom\" → schema enum: [make_atom] (β=1)",
+    "[AtomBuilder] evalMode: \"make_atom\" → schema enum: [make_atom] (β=1)",
+    "[AtomBuilder] evalMode: \"make_atom\" → schema enum: [make_atom] (β=1)",
+    "[AtomBuilder] evalMode: \"make_atom\" → schema enum: [make_atom] (β=1)",
+    "[AtomBuilder] evalMode: \"make_atom\" → schema enum: [make_atom] (β=1)",
+    "[AtomBuilder] evalMode: \"make_atom\" → schema enum: [make_atom] (β=1)",
+    "[AtomBuilder] No targetEvalMode — full schema, mixed difficulty",
+    "⚛️ Atom Builder Generated: {\n  title: 'Mastering Atomic Structure',\n  gradeBand: '6-8',\n  targetElement: 'Carbon',\n  challengeCount: 5,\n  maxProtons: 36,\n  allowIons: true,\n  allowIsotopes: true\n}"
+  ]
+}

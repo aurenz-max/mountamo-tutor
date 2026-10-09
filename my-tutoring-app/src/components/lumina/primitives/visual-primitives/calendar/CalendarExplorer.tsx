@@ -40,6 +40,11 @@ import {
   hearSequenceRequest,
   isSpokenCalendarSession,
 } from './calendarExplorerWorkspace';
+import {
+  ARROW_LEVER, HEADERS_LEVER, MODEL_PAIR_LEVER, PRACTICE_NOTE, RING_LEVER, ROWS_LEVER, STRIP_LEVER, TICKS_LEVER, TINT_LEVER,
+  calendarGridLevers, calendarLeverFacts, calendarPracticeItem, calendarSequenceLevers, modelPair, modelPairFact, ringDates,
+  rowRanges, tintWeekday, weekStrip,
+} from './calendarExplorerLevers';
 
 export { calendarSequenceItemsFromChallenges, daySequenceItemsFromChallenges, isSpokenCalendarSession }
   from './calendarExplorerWorkspace';
@@ -289,9 +294,11 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
     workspace, assignment: calendarGridAssignment,
     // A fresh challenge and Try again both start from a clean calendar. The setters are declared
-    // below; this runs only after render.
-    onItemOpened: () => {
+    // below; this runs only after render. Try again keeps a practice question (a simplify lever) and the
+    // learner's ticks; a fresh item, or the full item back after practice, drops both.
+    onItemOpened: (_index, retry) => {
       setSelectedAnswer(null); setFeedback(null); setHighlightedDates(new Set()); setClickedDate(null); setShowHint(false);
+      if (!retry) { setPractice(null); setTicks({ item: '', dates: [] }); }
       challengeStartRef.current = Date.now();
     },
   });
@@ -312,8 +319,6 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
     phaseConfig: PHASE_TYPE_CONFIG,
   });
 
-  const currentChallenge = challenges[currentIndex];
-
   const { isAudioPlaying, activePrimitiveId } = ctx;
 
   // ── Local State ─────────────────────────────────────────────────
@@ -325,14 +330,42 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
   const [submittedResult, setSubmittedResult] = useState<{ score: number } | null>(null);
   const startTimeRef = useRef(Date.now());
   const challengeStartRef = useRef(Date.now());
+  // In-item levers (`calendarExplorerLevers.ts`), keyed by the session item they were pulled on; the easier practice
+  // question a simplify lever puts in place of the session item until the observer returns to it; the learner's own
+  // ticks (the `tick_taps` lever), keyed by the question they were made on.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<CalendarExplorerChallenge | null>(null);
+  const [ticks, setTicks] = useState<{ item: string; dates: number[] }>({ item: '', dates: [] });
+
+  const sessionChallenge = challenges[currentIndex];
+  const currentChallenge = practice ?? sessionChallenge;
+  const session = useMemo(() => ({ challenges, supportTier }), [challenges, supportTier]);
 
   // ── Support-tier scaffold reads ─────────────────────────────────
   // `!== false` ⇒ an untiered payload renders exactly as before. The K band floor
   // is re-asserted here as well: nothing a pre-reader needs is ever withdrawn.
   const preReaderBand = gradeBand === 'K';
-  const showDayHeaders = preReaderBand || currentChallenge?.showDayHeaders !== false;
+  const baseHeaders = (c?: CalendarExplorerChallenge) => preReaderBand || c?.showDayHeaders !== false;
+  const baseTint = (c?: CalendarExplorerChallenge) => preReaderBand || c?.showTargetDayColumn !== false;
+  const pulledLevers = !practice && sessionChallenge && leverState.item === sessionChallenge.id ? leverState.pulled : [];
+  const itemLevers = sessionChallenge ? calendarGridLevers(sessionChallenge, session,
+    { headers: !baseHeaders(sessionChallenge), tint: sessionChallenge.type === 'count' && !baseTint(sessionChallenge) }, pulledLevers) : [];
+  /** A help lever is drawn on the session item while pulled (or shown from the start on easy), never on practice. */
+  const helpOn = (id: string) => !practice && itemLevers.some(l => l.id === id && l.kind === 'help' && l.pulled);
+  const showDayHeaders = baseHeaders(currentChallenge) || helpOn(HEADERS_LEVER);
   const showMonthLabel = preReaderBand || currentChallenge?.showMonthLabel !== false;
-  const showTargetDayColumn = preReaderBand || currentChallenge?.showTargetDayColumn !== false;
+  const showTargetDayColumn = baseTint(currentChallenge) || helpOn(TINT_LEVER);
+  const ringed = new Set(helpOn(RING_LEVER) && sessionChallenge ? ringDates(sessionChallenge) ?? [] : []);
+  /** The weekday whose cells are tinted: count's target (the tier's tint), or the asked weekday (the tint lever). */
+  const tintDay = !currentChallenge ? null
+    : currentChallenge.type === 'count' ? (showTargetDayColumn ? currentChallenge.targetDayOfWeek ?? null : null)
+      : helpOn(TINT_LEVER) ? tintWeekday(currentChallenge) : null;
+  const ticksOn = helpOn(TICKS_LEVER);
+  const ticked = new Set(currentChallenge && ticks.item === currentChallenge.id ? ticks.dates : []);
+  const rowsOn = helpOn(ROWS_LEVER);
+  const ranges = rowsOn && currentChallenge ? rowRanges(currentChallenge) : [];
+  const arrowOn = helpOn(ARROW_LEVER);
+  const strip = helpOn(STRIP_LEVER) && currentChallenge ? weekStrip(currentChallenge) : null;
 
   // ── Answer surface ──────────────────────────────────────────────
   const answerFromGrid = currentChallenge ? isGridAnswerChallenge(currentChallenge) : false;
@@ -360,12 +393,20 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
     if (allChallengesComplete || !currentChallenge || learnerBlocked()) return;
     SoundManager.tap();        // ← tactile date press
     setClickedDate(day);
+    // The `tick_taps` lever: on a counting question each tap puts a tick on the date or takes it off.
+    if (ticksOn && (currentChallenge.type === 'count' || currentChallenge.type === 'interval_count')) {
+      const id = currentChallenge.id;
+      setTicks(prev => {
+        const dates = prev.item === id ? prev.dates : [];
+        return { item: id, dates: dates.includes(day) ? dates.filter(d => d !== day) : [...dates, day] };
+      });
+    }
     // Only a DATE-answer identify challenge is answered by clicking the grid.
     if (isGridAnswerChallenge(currentChallenge)) {
       setSelectedAnswer(String(day));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allChallengesComplete, currentChallenge]);
+  }, [allChallengesComplete, currentChallenge, ticksOn]);
 
   const handleOptionSelect = useCallback((option: string) => {
     if (allChallengesComplete || feedback || learnerBlocked()) return;
@@ -378,7 +419,8 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
     if (!currentChallenge || selectedAnswer === null || learnerBlocked()) return;
 
     const isCorrect = selectedAnswer.toLowerCase().trim() === currentChallenge.correctAnswer.toLowerCase().trim();
-    recordResult({
+    // An easier practice question is ungraded: it records nothing for the session.
+    if (!practice) recordResult({
       challengeId: currentChallenge.id,
       correct: isCorrect,
       attempts: currentAttempts + 1,
@@ -396,7 +438,7 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
     progress.commitCheck(describeCalendarPick(currentChallenge, selectedAnswer), isCorrect,
       isCorrect ? undefined : calendarMiss(currentChallenge, selectedAnswer));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentChallenge, selectedAnswer, currentAttempts, recordResult]);
+  }, [currentChallenge, selectedAnswer, currentAttempts, recordResult, practice]);
 
   // ── Session complete: submit once, and only under a lesson's evaluation provider ──
   const submittedOnce = useRef(false);
@@ -422,12 +464,45 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
   const hasAnsweredCurrent = challengeResults.some(r => r.challengeId === currentChallenge?.id && r.correct);
   const canCheckAnswer = selectedAnswer !== null && !feedback && progress.canAttempt !== false;
 
-  // What the tutor and the observer are shown, republished every render.
+  /** The learner's work back to empty: a practice question and the full item it stands in for share none. */
+  const clearWork = () => {
+    setSelectedAnswer(null); setFeedback(null); setHighlightedDates(new Set()); setClickedDate(null); setShowHint(false);
+    setTicks({ item: '', dates: [] });
+  };
+
+  // What the tutor and the observer are shown, republished every render, with the session item's levers.
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
-    if (!currentChallenge) return;
-    workspace.current = { ...calendarGridScene(currentChallenge, { showDayHeaders, showMonthLabel, showTargetDayColumn,
-      revealPolicy: tutorRevealPolicy(supportTier) }) };
+    if (!currentChallenge || !sessionChallenge) return;
+    const scene = calendarGridScene(currentChallenge, { showDayHeaders, showMonthLabel, showTargetDayColumn,
+      revealPolicy: tutorRevealPolicy(supportTier) });
+    const levers = practice ? [] : itemLevers;
+    const onScreen = practice ? undefined
+      : calendarLeverFacts(sessionChallenge, levers.filter(l => l.kind === 'help' && l.pulled).map(l => l.id));
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
+        // The tier withdrew the header row; the lever put it back, so pointing at it is allowed again.
+        ...(helpOn(HEADERS_LEVER) ? { coaching: 'The header row is back on screen: you may point to it. Never name the answer column.' } : {}),
+        ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      levers,
+      pullLever: (id: string) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this question.`;
+        if (lever.pulled) return `${id} is already on screen.`;
+        const next = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = calendarPracticeItem(sessionChallenge, session);
+          if (!easier) return 'This question is already the plainest of its kind.';
+          setLeverState(next); setPractice(easier); clearWork();
+          return { practice: calendarGridAssignment(easier) };
+        }
+        setLeverState(next);
+        return true as const;
+      },
+      // Back to the full item, blank: the practice question is not the learner's work on it.
+      endPractice: () => { setPractice(null); clearWork(); },
+    };
   });
 
   // ── Pip shared surface ──────────────────────────────────────────
@@ -501,6 +576,9 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
           <CardContent className="p-6">
             {/* Question */}
             <div className="mb-6">
+              {practice && (
+                <p className="text-xs text-amber-300 mb-1" data-practice>Practice question</p>
+              )}
               <p className="text-lg text-slate-100 font-medium mb-2">
                 {currentChallenge.question}
               </p>
@@ -536,14 +614,37 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
                 <p className="text-sm text-slate-300">
                   Count forward {currentChallenge.offsetDays} {currentChallenge.offsetDays === 1 ? 'day' : 'days'}.
                 </p>
+                {/* The help lever `week_strip`: the week in order from the start day, only the start marked. */}
+                {strip && (
+                  <div data-lever="week-strip" aria-label="The week from the start day"
+                    className="mt-4 flex flex-wrap items-center justify-center gap-1.5">
+                    {strip.map((day, i) => (
+                      <span key={day} data-strip-start={i === 0 ? 'true' : undefined}
+                        className={`rounded-lg border px-2 py-1 text-xs ${i === 0
+                          ? 'border-cyan-300/70 bg-cyan-400/20 text-cyan-100' : 'border-white/15 bg-white/5 text-slate-300'}`}>
+                        {day}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
             {/* Calendar Grid */}
             {currentChallenge.type !== 'day_offset' && (
             <div className="mb-6" data-testid="calendar-grid">
-              <div ref={pip.ref('grid')} data-pip-object="grid" className="grid grid-cols-7 gap-1 max-w-md mx-auto">
+              {/* The help lever `time_arrow`: which way the days go, drawn over the grid and on no date. */}
+              {arrowOn && (
+                <div data-lever="time-arrow" className="mx-auto mb-2 flex max-w-md items-center justify-center gap-2 text-sm text-cyan-200">
+                  <span aria-hidden="true">→ → →</span>
+                  <span>days go this way, then on to the next row</span>
+                  <span aria-hidden="true">↵</span>
+                </div>
+              )}
+              <div ref={pip.ref('grid')} data-pip-object="grid"
+                className={`grid ${rowsOn ? 'grid-cols-[3.5rem_repeat(7,minmax(0,1fr))]' : 'grid-cols-7'} gap-1 max-w-md mx-auto`}>
                 {/* Day headers — orientation scaffold, withdrawn at hard */}
+                {showDayHeaders && rowsOn && <div aria-hidden="true" />}
                 {showDayHeaders && DAY_HEADERS.map((day) => (
                   <div
                     key={day}
@@ -554,25 +655,34 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
                   </div>
                 ))}
 
-                {/* Calendar cells */}
+                {/* Calendar cells; with the `row_ranges` lever each week row starts with its first and last date. */}
                 {calendarGrid.map((day, idx) => {
+                  const range = rowsOn && idx % 7 === 0 ? ranges.find(([first]) => {
+                    const row = calendarGrid.slice(idx, idx + 7).filter((d): d is number => d !== null);
+                    return row.includes(first);
+                  }) : undefined;
+                  const label = rowsOn && idx % 7 === 0 ? (
+                    <div key={`row-${idx}`} data-lever={range ? 'row-range' : undefined}
+                      className="flex h-10 items-center justify-end pr-1 text-[10px] font-mono text-cyan-300/80">
+                      {range ? `${range[0]}–${range[1]}` : ''}
+                    </div>
+                  ) : null;
                   if (day === null) {
-                    return <div key={`blank-${idx}`} className="h-10" />;
+                    return <React.Fragment key={`blank-${idx}`}>{label}<div className="h-10" /></React.Fragment>;
                   }
 
                   const isHighlighted = highlightedDates.has(day);
                   const isClicked = clickedDate === day;
                   const isSelected = answerFromGrid && selectedAnswer === String(day);
                   const isMarked = currentChallenge.markedDates?.includes(day) ?? false;
+                  const isRinged = ringed.has(day);
+                  const isTicked = ticksOn && ticked.has(day);
 
-                  // Determine day-of-week for count-type highlighting. The purple
-                  // pre-marking does the counting task for the student, so it is
-                  // withdrawn at hard (showTargetDayColumn === false).
+                  // Day-of-week tinting: count's target day (the purple pre-marking does the
+                  // finding for the student, so it is withdrawn at hard and put back by the
+                  // `weekday_tint` lever), or the asked weekday on a date question (that lever).
                   const dayOfWeek = getDayOfWeek(day, currentChallenge.month, currentChallenge.year);
-                  const isTargetDay = showTargetDayColumn &&
-                    currentChallenge.type === 'count' &&
-                    !!currentChallenge.targetDayOfWeek &&
-                    dayOfWeek === currentChallenge.targetDayOfWeek;
+                  const isTargetDay = !!tintDay && dayOfWeek === tintDay;
 
                   const isWeekend = new Date(currentChallenge.year, currentChallenge.month - 1, day).getDay() % 6 === 0;
 
@@ -583,8 +693,9 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
                   const pipId = isToday ? 'today' : `date-${day}`;
 
                   return (
+                    <React.Fragment key={day}>
+                    {label}
                     <button
-                      key={day}
                       ref={pip.ref(pipId)}
                       data-pip-object={pipId}
                       onClick={() => { pip.look(pipId); handleDateClick(day); }}
@@ -592,9 +703,11 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
                       data-target-day={isTargetDay ? 'true' : undefined}
                       data-today={isToday ? 'true' : undefined}
                       data-marked={isMarked ? 'true' : undefined}
+                      data-lever={isRinged ? 'ring' : undefined}
                       className={`
                         relative h-10 rounded-lg text-sm font-mono transition-all duration-150
                         ${isToday ? 'ring-2 ring-amber-400/80 font-bold' : ''}
+                        ${isRinged ? 'ring-2 ring-cyan-300/80' : ''}
                         ${isHighlighted
                           ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/50'
                           : isSelected
@@ -637,7 +750,15 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
                           📍
                         </span>
                       )}
+                      {/* The `tick_taps` lever: the learner's own tick, never one placed by the activity. */}
+                      {isTicked && (
+                        <span data-lever="tick" aria-label="ticked"
+                          className="absolute -bottom-1 -left-1 text-[10px] leading-none text-emerald-300">
+                          ✓
+                        </span>
+                      )}
                     </button>
+                    </React.Fragment>
                   );
                 })}
               </div>
@@ -804,11 +925,30 @@ const CalendarSequenceSurface = ({ data, runtimePlanItemId }: CalendarExplorerPr
   });
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
 
-  // What the tutor and the observer are shown, republished every render.
+  // The `model_pair` lever (`calendarExplorerLevers.ts`), keyed by the turn it was pulled on.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const turn = runner.currentItem;
+  const pulledLevers = turn && leverState.item === turn.id ? leverState.pulled : [];
+  const pair = turn && pulledLevers.includes(MODEL_PAIR_LEVER) ? modelPair(turn, items) : null;
+
+  // What the tutor and the observer are shown, republished every render, with the turn's lever.
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
-    if (!runner.currentItem) return;
-    workspace.current = { ...calendarSequenceScene(runner.currentItem) };
+    if (!turn) return;
+    const scene = calendarSequenceScene(turn);
+    const levers = calendarSequenceLevers(turn, items, pulledLevers);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(pair ? { onScreen: modelPairFact(turn, pair) } : {}) },
+      levers,
+      pullLever: (id: string) => {
+        const lever = levers.find(l => l.id === id);
+        if (!lever) return `No lever ${id} on this turn.`;
+        if (lever.pulled) return `${id} is already on screen.`;
+        setLeverState({ item: turn.id, pulled: [...pulledLevers, id] });
+        return true as const;
+      },
+    };
   });
 
   /** Asks the tutor for the question again: a silent host request, never the answer. */
@@ -891,6 +1031,16 @@ const CalendarSequenceSurface = ({ data, runtimePlanItemId }: CalendarExplorerPr
                   listen · think · say
                 </p>
               </div>
+
+              {/* The help lever `model_pair`: two OTHER names in order, never this turn's or a turn still ahead. */}
+              {pair && (
+                <div data-lever="model-pair" aria-label="Model pair"
+                  className="mx-auto flex w-fit items-center gap-3 rounded-2xl border border-cyan-300/30 bg-cyan-950/20 px-4 py-3 text-lg text-cyan-100">
+                  <span><span aria-hidden="true">📅 </span>{pair[0]}</span>
+                  <span aria-hidden="true" className="text-cyan-300">→</span>
+                  <span><span aria-hidden="true">📅 </span>{pair[1]}</span>
+                </div>
+              )}
 
               {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
                 className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}

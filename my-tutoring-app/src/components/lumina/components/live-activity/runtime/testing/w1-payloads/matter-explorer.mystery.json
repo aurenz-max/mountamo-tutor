@@ -1,0 +1,144 @@
+{
+ "source": "qa/tutor-reports/matter-explorer-runtime-mystery-payload-2026-10-09.json",
+ "primitiveId": "matter-explorer",
+ "evalMode": "mystery",
+ "data": {
+  "title": "Kitchen and Backyard Matter Hunt",
+  "description": "Explore everyday objects to discover if they are solids, liquids, or gases!",
+  "objects": [
+   {
+    "id": "obj-rock",
+    "name": "rock",
+    "state": "solid",
+    "properties": {
+     "color": "gray",
+     "texture": "rough",
+     "transparency": "opaque",
+     "flexibility": "rigid",
+     "shape": "keeps_shape",
+     "weight": "medium"
+    },
+    "canChangeState": false,
+    "imagePrompt": "A smooth gray garden rock sitting on green grass",
+    "stateChangeTemp": null
+   },
+   {
+    "id": "obj-water",
+    "name": "water",
+    "state": "liquid",
+    "properties": {
+     "color": "clear",
+     "texture": "smooth",
+     "transparency": "transparent",
+     "flexibility": "flows",
+     "shape": "takes_container",
+     "weight": "light"
+    },
+    "canChangeState": true,
+    "imagePrompt": "A clear glass filled with fresh drinking water",
+    "stateChangeTemp": 0
+   },
+   {
+    "id": "obj-air",
+    "name": "air",
+    "state": "gas",
+    "properties": {
+     "color": "clear",
+     "texture": "smooth",
+     "transparency": "transparent",
+     "flexibility": "flows",
+     "shape": "fills_space",
+     "weight": "light"
+    },
+    "canChangeState": false,
+    "imagePrompt": "Blue sky with fluffy white clouds representing open air",
+    "stateChangeTemp": null
+   },
+   {
+    "id": "obj-sand",
+    "name": "sand",
+    "state": "solid",
+    "properties": {
+     "color": "tan",
+     "texture": "rough",
+     "transparency": "opaque",
+     "flexibility": "rigid",
+     "shape": "keeps_shape",
+     "weight": "medium"
+    },
+    "canChangeState": false,
+    "imagePrompt": "A small pile of golden playground sand on concrete",
+    "stateChangeTemp": null
+   },
+   {
+    "id": "obj-honey",
+    "name": "honey",
+    "state": "liquid",
+    "properties": {
+     "color": "yellow",
+     "texture": "smooth",
+     "transparency": "translucent",
+     "flexibility": "flows",
+     "shape": "takes_container",
+     "weight": "medium"
+    },
+    "canChangeState": false,
+    "imagePrompt": "Golden honey dripping slowly from a wooden dipper spoon",
+    "stateChangeTemp": null
+   },
+   {
+    "id": "obj-steam",
+    "name": "steam",
+    "state": "gas",
+    "properties": {
+     "color": "white",
+     "texture": "smooth",
+     "transparency": "translucent",
+     "flexibility": "flows",
+     "shape": "fills_space",
+     "weight": "light"
+    },
+    "canChangeState": false,
+    "imagePrompt": "Warm white steam rising gently from a hot cup of tea",
+    "stateChangeTemp": null
+   }
+  ],
+  "challenges": [
+   {
+    "id": "chal-1",
+    "type": "mystery",
+    "objectId": "obj-rock",
+    "instruction": "Name the state of this gray, rough, and hard mystery object!",
+    "narration": "I found something outdoors that is gray and rough to the touch. I wonder what state of matter it is?"
+   },
+   {
+    "id": "chal-2",
+    "type": "mystery",
+    "objectId": "obj-water",
+    "instruction": "Name the state of this clear, smooth, and light mystery substance!",
+    "narration": "I am looking at a clear substance that takes the shape of its cup. Let us figure out its state!"
+   },
+   {
+    "id": "chal-3",
+    "type": "mystery",
+    "objectId": "obj-sand",
+    "instruction": "Name the state of this tan, rough, and medium-weight mystery material!",
+    "narration": "Even though this material can be poured into little piles, every tiny piece keeps its own shape. What state is it?"
+   },
+   {
+    "id": "chal-4",
+    "type": "mystery",
+    "objectId": "obj-air",
+    "instruction": "Name the state of this clear, light, space-filling mystery gas!",
+    "narration": "It is all around us but we cannot always see it. Can you guess the state of this floating matter?"
+   }
+  ],
+  "showOptions": {
+   "showPropertyPanel": true,
+   "showTemperatureSlider": true,
+   "showParticleView": false,
+   "showVennDiagram": false
+  },
+  "gradeBand": "K-1"
+ }
+}

@@ -1,0 +1,84 @@
+{
+ "source": "qa/tutor-reports/push-pull-arena-runtime-compare-payload-2026-10-09.json",
+ "primitiveId": "push-pull-arena",
+ "evalMode": "compare",
+ "data": {
+  "title": "Super Sliding Comparison Arena",
+  "description": "Compare how different objects move when you give them the exact same push on various surfaces!",
+  "theme": "toys",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "compare",
+    "instruction": "Same push for both. Which one slides farther?",
+    "objectName": "Tennis Ball",
+    "objectWeight": 1,
+    "objectEmoji": "\ud83c\udfbe",
+    "surface": "wood",
+    "object2Name": "Book",
+    "object2Weight": 3,
+    "object2Emoji": "\ud83d\udcd5",
+    "pushStrength": 5,
+    "pushDirection": "push",
+    "spokenAnswer": "tennis ball",
+    "spokenAlternates": [
+     "ball"
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "compare",
+    "instruction": "Same push for both. Which one slides farther?",
+    "objectName": "Soccer Ball",
+    "objectWeight": 2,
+    "objectEmoji": "\u26bd",
+    "surface": "ice",
+    "object2Name": "Rock",
+    "object2Weight": 9,
+    "object2Emoji": "\ud83e\udea8",
+    "pushStrength": 5,
+    "pushDirection": "push",
+    "spokenAnswer": "soccer ball",
+    "spokenAlternates": [
+     "ball"
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "compare",
+    "instruction": "Same push for both. Which one slides farther?",
+    "objectName": "Toy Car",
+    "objectWeight": 2,
+    "objectEmoji": "\ud83d\ude97",
+    "surface": "carpet",
+    "object2Name": "Backpack",
+    "object2Weight": 5,
+    "object2Emoji": "\ud83c\udf92",
+    "pushStrength": 5,
+    "pushDirection": "push",
+    "spokenAnswer": "toy car",
+    "spokenAlternates": [
+     "car"
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "compare",
+    "instruction": "Same push for both. Which one slides farther?",
+    "objectName": "Brick",
+    "objectWeight": 4,
+    "objectEmoji": "\ud83e\uddf1",
+    "surface": "grass",
+    "object2Name": "Refrigerator",
+    "object2Weight": 10,
+    "object2Emoji": "\ud83e\uddca",
+    "pushStrength": 5,
+    "pushDirection": "push",
+    "spokenAnswer": "brick",
+    "spokenAlternates": [
+     "brick"
+    ]
+   }
+  ]
+ }
+}

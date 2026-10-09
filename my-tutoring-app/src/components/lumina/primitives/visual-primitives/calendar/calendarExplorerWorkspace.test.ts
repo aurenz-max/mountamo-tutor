@@ -28,7 +28,10 @@ const next = (currentDay: string, expectedDay: string) => ({ id: 's', type: 'day
 it.each([
   [next('Saturday', 'Sunday'), ['start_day', 'day_after', 'day_before_start', 'other_day'], ['Saturday', 'Monday', 'Friday', 'Wednesday'], 'Sunday'],
   [next('Monday', 'Tuesday'), ['start_day', 'day_after', 'day_before_start', 'other_day'], ['Monday', 'Wednesday', 'Sunday', 'Friday'], 'Tuesday'],
-  [{ id: 'm', type: 'month_sequence', currentMonth: 'May', expectedMonth: 'June' } as CalendarSequenceItem, [], [], ''],
+  [{ id: 'm', type: 'month_sequence', currentMonth: 'May', expectedMonth: 'June' } as CalendarSequenceItem,
+    ['start_month', 'month_after', 'month_before_start', 'other_month'], ['May', 'July', 'April', 'October'], 'June'],
+  [{ id: 'm', type: 'month_sequence', currentMonth: 'December', expectedMonth: 'January' } as CalendarSequenceItem,
+    ['start_month', 'month_after', 'month_before_start', 'other_month'], ['December', 'February', 'November', 'May'], 'January'],
 ] as const)('spoken row %#', (item, ids, examples, key) => {
   const misses = calendarSpokenMisses(item);
   expect(misses.map(m => m.id)).toEqual(ids);
