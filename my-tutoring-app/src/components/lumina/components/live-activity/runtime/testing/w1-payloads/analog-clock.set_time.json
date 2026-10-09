@@ -1,0 +1,52 @@
+{
+ "source": "qa/tutor-reports/analog-clock-runtime-set_time-payload-2026-10-09.json",
+ "primitiveId": "analog-clock",
+ "evalMode": "set_time",
+ "data": {
+  "title": "Telling Time to Five Minutes",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "set_time",
+    "instruction": "Set the clock hands to show 4:05.",
+    "targetHour": 4,
+    "targetMinute": 5,
+    "hint": "Remember that the minute hand points to the first small tick after the 12 for 5 minutes."
+   },
+   {
+    "id": "c2",
+    "type": "set_time",
+    "instruction": "Set the clock to 7:20.",
+    "targetHour": 7,
+    "targetMinute": 20,
+    "hint": "Count by fives around the clock face: 5, 10, 15, 20. Where should the minute hand point?"
+   },
+   {
+    "id": "c3",
+    "type": "set_time",
+    "instruction": "Can you set the clock to show 10:35?",
+    "targetHour": 10,
+    "targetMinute": 35,
+    "hint": "The minute hand points to the 7, which represents 35 minutes past the hour."
+   },
+   {
+    "id": "c4",
+    "type": "set_time",
+    "instruction": "Set the clock hands to show 2:50.",
+    "targetHour": 2,
+    "targetMinute": 50,
+    "hint": "At 50 minutes, the hour hand is almost all the way to the next hour, and the minute hand points to the 10."
+   },
+   {
+    "id": "c5",
+    "type": "set_time",
+    "instruction": "Set the clock to show 11:15.",
+    "targetHour": 11,
+    "targetMinute": 15,
+    "hint": "The minute hand points to the 3 for a quarter-past time, which is 15 minutes."
+   }
+  ],
+  "gradeBand": "3-5",
+  "description": "Practice setting analog clock hands accurately to five-minute intervals, building strong foundational time-reading skills."
+ }
+}

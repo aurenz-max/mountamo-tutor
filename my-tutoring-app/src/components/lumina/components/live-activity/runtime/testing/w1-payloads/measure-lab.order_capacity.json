@@ -1,0 +1,156 @@
+{
+ "source": "qa/tutor-reports/measure-lab-runtime-order_capacity-payload-2026-10-09.json",
+ "primitiveId": "measure-lab",
+ "evalMode": "order_capacity",
+ "data": {
+  "title": "The Balance Table",
+  "description": "Let us lift and compare things to see which is heavier or lighter!",
+  "challengeType": "order_capacity",
+  "challenges": [
+   {
+    "id": "ml-1",
+    "type": "order_capacity",
+    "prompt": "Put the pots in order. Start with the one that has the least.",
+    "hint": "Look at how high the water comes up in each one.",
+    "containers": [
+     {
+      "id": "jar-0-0",
+      "name": "pot 1",
+      "shape": "tall",
+      "capacity": 8,
+      "filled": 1
+     },
+     {
+      "id": "jar-0-1",
+      "name": "pot 2",
+      "shape": "tall",
+      "capacity": 8,
+      "filled": 7
+     },
+     {
+      "id": "jar-0-2",
+      "name": "pot 3",
+      "shape": "tall",
+      "capacity": 8,
+      "filled": 4
+     }
+    ],
+    "unitName": "scoops",
+    "unitEmoji": "\ud83e\udd44",
+    "expectedOrder": [
+     "jar-0-0",
+     "jar-0-2",
+     "jar-0-1"
+    ]
+   },
+   {
+    "id": "ml-2",
+    "type": "order_capacity",
+    "prompt": "Put the buckets in order. Start with the one that has the least.",
+    "hint": "Look at how high the water comes up in each one.",
+    "containers": [
+     {
+      "id": "jar-1-0",
+      "name": "bucket 1",
+      "shape": "wide",
+      "capacity": 8,
+      "filled": 2
+     },
+     {
+      "id": "jar-1-1",
+      "name": "bucket 2",
+      "shape": "wide",
+      "capacity": 8,
+      "filled": 4
+     },
+     {
+      "id": "jar-1-2",
+      "name": "bucket 3",
+      "shape": "wide",
+      "capacity": 8,
+      "filled": 7
+     }
+    ],
+    "unitName": "scoops",
+    "unitEmoji": "\ud83e\udd44",
+    "expectedOrder": [
+     "jar-1-0",
+     "jar-1-1",
+     "jar-1-2"
+    ]
+   },
+   {
+    "id": "ml-3",
+    "type": "order_capacity",
+    "prompt": "Put the pots in order. Start with the one that has the least.",
+    "hint": "Look at how high the water comes up in each one.",
+    "containers": [
+     {
+      "id": "jar-2-0",
+      "name": "pot 1",
+      "shape": "round",
+      "capacity": 8,
+      "filled": 1
+     },
+     {
+      "id": "jar-2-1",
+      "name": "pot 2",
+      "shape": "round",
+      "capacity": 8,
+      "filled": 5
+     },
+     {
+      "id": "jar-2-2",
+      "name": "pot 3",
+      "shape": "round",
+      "capacity": 8,
+      "filled": 7
+     }
+    ],
+    "unitName": "scoops",
+    "unitEmoji": "\ud83e\udd44",
+    "expectedOrder": [
+     "jar-2-0",
+     "jar-2-1",
+     "jar-2-2"
+    ]
+   },
+   {
+    "id": "ml-4",
+    "type": "order_capacity",
+    "prompt": "Put the cups in order. Start with the one that has the least.",
+    "hint": "Look at how high the water comes up in each one.",
+    "containers": [
+     {
+      "id": "jar-3-0",
+      "name": "cup 1",
+      "shape": "tall",
+      "capacity": 8,
+      "filled": 7
+     },
+     {
+      "id": "jar-3-1",
+      "name": "cup 2",
+      "shape": "tall",
+      "capacity": 8,
+      "filled": 2
+     },
+     {
+      "id": "jar-3-2",
+      "name": "cup 3",
+      "shape": "tall",
+      "capacity": 8,
+      "filled": 5
+     }
+    ],
+    "unitName": "scoops",
+    "unitEmoji": "\ud83e\udd44",
+    "expectedOrder": [
+     "jar-3-1",
+     "jar-3-2",
+     "jar-3-0"
+    ]
+   }
+  ]
+ }
+}

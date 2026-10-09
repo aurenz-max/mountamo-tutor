@@ -7,7 +7,8 @@
 
 import { ComponentDefinition } from '../../../types';
 import type { CalendarMiss, SpokenCalendarMiss } from '../../../primitives/visual-primitives/calendar/calendarExplorerWorkspace';
-import { missLists } from './missLists';
+import type { TimelineMiss } from '../../../primitives/visual-primitives/calendar/timelineBuilderWorkspace';
+import { missLists, sameMisses } from './missLists';
 
 export const CALENDAR_CATALOG: ComponentDefinition[] = [
   {
@@ -188,6 +189,21 @@ export const CALENDAR_CATALOG: ComponentDefinition[] = [
       + 'Students learn chronological sequencing, before/after relationships, and temporal scale. '
       + 'ESSENTIAL for K-8 social studies and math time concepts.',
     constraints: 'Requires 3-6 events with labels and correct chronological positions. Scale labels define the timeline range.',
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
+      guidance: 'The activity checks the order itself, and you are not told it: the learner taps an event in the bank, taps '
+        + 'a slot to place it, and with every slot filled presses Check Order. The bank is mixed up on purpose: when you '
+        + 'read the events, read them in the order given, never sorted by time, and never list more than two events, '
+        + 'dates or months in time order (that is the answer). Before the check, and after a wrong one, never say which '
+        + 'event comes first, next or last, which slot an event belongs in, or which two to trade. After a check the '
+        + 'screen marks each slot green or red; you may say how many are right, not where the red ones go. Asking about '
+        + 'one event (what happens when you wake up, which came before people had cars) and comparing two events is '
+        + 'teaching. A Kindergarten or Grade 1 learner may not read: read the instruction and the event names aloud. You '
+        + 'cannot place events for the learner.',
+      // The activity's own check (`timelineMiss`), read from the placed order; the same kinds on every timeline.
+      misses: missLists<TimelineMiss>(sameMisses(['sequence-daily', 'sequence-yearly', 'place-historical'],
+        ['reversed', 'adjacent_swap', 'two_swapped', 'one_moved', 'mixed_order'])),
+    },
     affordances: { representation: ['pictorial', 'symbolic'], answers: ['manipulate'], role: ['visualize', 'apply'], minutes: 8 },
     tutoring: {
       taskDescription:

@@ -18,6 +18,10 @@ import { sortingStationLiveDomain } from './adapters/sortingStationLive';
 import { numberTracerLiveDomain } from './adapters/numberTracerLive';
 import { comparisonBuilderLiveDomain } from './adapters/comparisonBuilderLive';
 import { coinCounterLiveDomain } from './adapters/coinCounterLive';
+import { measureLabLiveDomain } from './adapters/measureLabLive';
+import { lengthLabLiveDomain } from './adapters/lengthLabLive';
+import { analogClockLiveDomain } from './adapters/analogClockLive';
+import { timeSequencerLiveDomain } from './adapters/timeSequencerLive';
 import { angleWorkshopLiveDomain } from './adapters/angleWorkshopLive';
 import { arrayGridLiveDomain } from './adapters/arrayGridLive';
 import { compareObjectsLiveDomain } from './adapters/compareObjectsLive';
@@ -54,6 +58,7 @@ import { storyRibbonLiveDomain } from './adapters/storyRibbonLive';
 import { additionSubtractionSceneLiveDomain } from './adapters/additionSubtractionSceneLive';
 import { threeDShapeExplorerLiveDomain } from './adapters/threeDShapeExplorerLive';
 import { calendarExplorerLiveDomain } from './adapters/calendarExplorerLive';
+import { timelineBuilderLiveDomain } from './adapters/timelineBuilderLive';
 import { pushPullArenaLiveDomain } from './adapters/pushPullArenaLive';
 import { habitatDioramaLiveDomain } from './adapters/habitatDioramaLive';
 import { foodWebBuilderLiveDomain } from './adapters/foodWebBuilderLive';
@@ -120,6 +125,10 @@ export const LIVE_ADAPTERS = {
   'number-tracer': workspaceAdapter('number-tracer', numberTracerLiveDomain),
   'comparison-builder': workspaceAdapter('comparison-builder', comparisonBuilderLiveDomain),
   'coin-counter': workspaceAdapter('coin-counter', coinCounterLiveDomain),
+  'measure-lab': workspaceAdapter('measure-lab', measureLabLiveDomain),
+  'length-lab': workspaceAdapter('length-lab', lengthLabLiveDomain),
+  'analog-clock': workspaceAdapter('analog-clock', analogClockLiveDomain),
+  'time-sequencer': workspaceAdapter('time-sequencer', timeSequencerLiveDomain),
   'angle-workshop': workspaceAdapter('angle-workshop', angleWorkshopLiveDomain),
   'array-grid': workspaceAdapter('array-grid', arrayGridLiveDomain),
   'compare-objects': workspaceAdapter('compare-objects', compareObjectsLiveDomain),
@@ -156,6 +165,7 @@ export const LIVE_ADAPTERS = {
   'addition-subtraction-scene': workspaceAdapter('addition-subtraction-scene', additionSubtractionSceneLiveDomain),
   '3d-shape-explorer': workspaceAdapter('3d-shape-explorer', threeDShapeExplorerLiveDomain),
   'calendar-explorer': workspaceAdapter('calendar-explorer', calendarExplorerLiveDomain),
+  'timeline-builder': workspaceAdapter('timeline-builder', timelineBuilderLiveDomain),
   'push-pull-arena': workspaceAdapter('push-pull-arena', pushPullArenaLiveDomain),
   'habitat-diorama': workspaceAdapter('habitat-diorama', habitatDioramaLiveDomain),
   'food-web-builder': workspaceAdapter('food-web-builder', foodWebBuilderLiveDomain),

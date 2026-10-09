@@ -1,0 +1,180 @@
+{
+ "source": "qa/tutor-reports/timeline-builder-runtime-sequence-daily-payload-2026-10-09.json",
+ "primitiveId": "timeline-builder",
+ "evalMode": "sequence-daily",
+ "data": {
+  "title": "Daily Timeline: Ordering the events of a school day",
+  "description": "Practice ordering daily timeline events.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "daily",
+    "title": "A School Day",
+    "instruction": "Put these school day events in the correct order from morning to night.",
+    "scaleStart": "Morning",
+    "scaleEnd": "Bedtime",
+    "events": [
+     {
+      "id": "evt-0",
+      "label": "Wake Up",
+      "correctPosition": 0,
+      "description": "Get out of bed and get dressed for the day."
+     },
+     {
+      "id": "evt-1",
+      "label": "Morning Homeroom",
+      "correctPosition": 1,
+      "description": "Arrive at school and listen to morning announcements."
+     },
+     {
+      "id": "evt-2",
+      "label": "Eat Lunch",
+      "correctPosition": 2,
+      "description": "Enjoy a midday meal in the cafeteria with classmates."
+     },
+     {
+      "id": "evt-3",
+      "label": "Board the Bus",
+      "correctPosition": 3,
+      "description": "Ride the school bus back home at the end of the day."
+     },
+     {
+      "id": "evt-4",
+      "label": "Go to Sleep",
+      "correctPosition": 4,
+      "description": "Tuck into bed after finishing homework and relaxing."
+     }
+    ],
+    "hint": "Think about what you do first when you wake up for school.",
+    "narration": "Let us put a normal school day in the correct order!"
+   },
+   {
+    "id": "c2",
+    "type": "daily",
+    "title": "A Weekend Day",
+    "instruction": "Put these weekend events in the correct order from morning to night.",
+    "scaleStart": "Early Morning",
+    "scaleEnd": "Night",
+    "events": [
+     {
+      "id": "evt-0",
+      "label": "Sleep In",
+      "correctPosition": 0,
+      "description": "Wake up slowly on a relaxing Saturday morning."
+     },
+     {
+      "id": "evt-1",
+      "label": "Soccer Practice",
+      "correctPosition": 1,
+      "description": "Run drills and play a game on the field."
+     },
+     {
+      "id": "evt-2",
+      "label": "Eat Pizza",
+      "correctPosition": 2,
+      "description": "Have a tasty lunch with family in the afternoon."
+     },
+     {
+      "id": "evt-3",
+      "label": "Bike Ride",
+      "correctPosition": 3,
+      "description": "Cycle around the neighborhood before sunset."
+     },
+     {
+      "id": "evt-4",
+      "label": "Watch a Movie",
+      "correctPosition": 4,
+      "description": "Enjoy a family film together before going to bed."
+     }
+    ],
+    "hint": "On the weekend, you might sleep in a little later before playing.",
+    "narration": "Weekend days are fun and full of different activities!"
+   },
+   {
+    "id": "c3",
+    "type": "daily",
+    "title": "A Holiday Party",
+    "instruction": "Put these holiday events in the correct order from morning to night.",
+    "scaleStart": "Morning",
+    "scaleEnd": "Late Evening",
+    "events": [
+     {
+      "id": "evt-0",
+      "label": "Open Presents",
+      "correctPosition": 0,
+      "description": "Unwrap gifts early in the morning with excitement."
+     },
+     {
+      "id": "evt-1",
+      "label": "Bake Cookies",
+      "correctPosition": 1,
+      "description": "Mix sweet treats in the kitchen with family."
+     },
+     {
+      "id": "evt-2",
+      "label": "Greet Guests",
+      "correctPosition": 2,
+      "description": "Welcome family and friends as they arrive at the door."
+     },
+     {
+      "id": "evt-3",
+      "label": "Feast Dinner",
+      "correctPosition": 3,
+      "description": "Sit down together to enjoy a large holiday meal."
+     },
+     {
+      "id": "evt-4",
+      "label": "See Fireworks",
+      "correctPosition": 4,
+      "description": "Watch colorful lights fill the night sky outside."
+     }
+    ],
+    "hint": "Think about getting ready before guests arrive.",
+    "narration": "Holidays are special days packed with fun moments!"
+   },
+   {
+    "id": "c4",
+    "type": "daily",
+    "title": "A Summer Day",
+    "instruction": "Put these warm weather events in the correct order from morning to night.",
+    "scaleStart": "Sunup",
+    "scaleEnd": "Moonlight",
+    "events": [
+     {
+      "id": "evt-0",
+      "label": "Put on Sunscreen",
+      "correctPosition": 0,
+      "description": "Protect your skin before heading out into the sun."
+     },
+     {
+      "id": "evt-1",
+      "label": "Swim in Pool",
+      "correctPosition": 1,
+      "description": "Splash around in the cool water to beat the heat."
+     },
+     {
+      "id": "evt-2",
+      "label": "Eat Ice Cream",
+      "correctPosition": 2,
+      "description": "Enjoy a sweet cold treat on a hot afternoon."
+     },
+     {
+      "id": "evt-3",
+      "label": "Catch Fireflies",
+      "correctPosition": 3,
+      "description": "Hunt for glowing bugs in the yard as twilight begins."
+     },
+     {
+      "id": "evt-4",
+      "label": "Stargaze Outdoors",
+      "correctPosition": 4,
+      "description": "Look up at the constellations before heading inside."
+     }
+    ],
+    "hint": "Hot summer days usually involve cooling off in the water.",
+    "narration": "Summer days are long and filled with outdoor fun!"
+   }
+  ],
+  "gradeBand": "2-3"
+ }
+}

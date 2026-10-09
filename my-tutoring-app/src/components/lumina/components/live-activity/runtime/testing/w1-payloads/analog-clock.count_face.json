@@ -1,0 +1,44 @@
+{
+ "source": "qa/tutor-reports/analog-clock-runtime-count_face-payload-2026-10-09.json",
+ "primitiveId": "analog-clock",
+ "evalMode": "count_face",
+ "data": {
+  "title": "Exploring the Clock Face",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "count_face",
+    "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+    "targetHour": 12,
+    "targetMinute": 0,
+    "hint": "After 1 comes 2. Keep going round the same way."
+   },
+   {
+    "id": "c2",
+    "type": "count_face",
+    "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+    "targetHour": 3,
+    "targetMinute": 0,
+    "hint": "After 1 comes 2. Keep going round the same way."
+   },
+   {
+    "id": "c3",
+    "type": "count_face",
+    "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+    "targetHour": 6,
+    "targetMinute": 30,
+    "hint": "After 1 comes 2. Keep going round the same way."
+   },
+   {
+    "id": "c4",
+    "type": "count_face",
+    "instruction": "Touch the numbers all the way round the clock. Start at 1.",
+    "targetHour": 9,
+    "targetMinute": 30,
+    "hint": "After 1 comes 2. Keep going round the same way."
+   }
+  ],
+  "gradeBand": "K",
+  "description": "Young learners explore the parts of a clock by identifying and tapping numbers 1 through 12 in order around the clock face, building foundational counting skills and clock familiarity."
+ }
+}

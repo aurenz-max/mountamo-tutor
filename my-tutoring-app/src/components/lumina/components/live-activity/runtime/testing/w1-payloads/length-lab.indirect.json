@@ -1,0 +1,73 @@
+{
+ "source": "qa/tutor-reports/length-lab-runtime-indirect-payload-2026-10-09.json",
+ "primitiveId": "length-lab",
+ "evalMode": "indirect",
+ "data": {
+  "title": "Secret Length Detectives!",
+  "description": "Learn how to compare two objects by using a third reference object when they cannot be placed side-by-side.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "indirect",
+    "instruction": "Can you figure out which object is longer without placing them together? Read the clues to find out!",
+    "hint": "Think about how each object compares to the paintbrush first.",
+    "narration": "Welcome, detective! Let us use our special clues to solve this length mystery.",
+    "objectName0": "fork",
+    "objectLength0": 4,
+    "objectColor0": "#4DD0E1",
+    "objectName1": "straw",
+    "objectLength1": 7,
+    "objectColor1": "#E57373",
+    "correctAnswer": "straw",
+    "clue0": "The fork is shorter than the paintbrush.",
+    "clue1": "The paintbrush is shorter than the straw.",
+    "referenceObjectName": "paintbrush",
+    "unitType": "bears",
+    "referenceObjectLength": 6,
+    "referenceObjectColor": "#FFB74D"
+   },
+   {
+    "id": "c2",
+    "type": "indirect",
+    "instruction": "Use the clues about the feather to decide which object is longer!",
+    "hint": "Compare the straw and the paintbrush to the feather to see which one stretches further.",
+    "narration": "You are doing great! Let us try another puzzle with the feather.",
+    "objectName0": "straw",
+    "objectLength0": 6,
+    "objectColor0": "#E57373",
+    "objectName1": "paintbrush",
+    "objectLength1": 9,
+    "objectColor1": "#BA68C8",
+    "correctAnswer": "paintbrush",
+    "clue0": "The straw is shorter than the feather.",
+    "clue1": "The feather is shorter than the paintbrush.",
+    "referenceObjectName": "feather",
+    "unitType": "bears",
+    "referenceObjectLength": 8,
+    "referenceObjectColor": "#FFB74D"
+   },
+   {
+    "id": "c3",
+    "type": "indirect",
+    "instruction": "Read the clues carefully! Which item is the longer one?",
+    "hint": "Check how both the fork and the feather relate to the straw.",
+    "narration": "One more detective puzzle to test your super-smart math skills!",
+    "objectName0": "fork",
+    "objectLength0": 3,
+    "objectColor0": "#4DD0E1",
+    "objectName1": "feather",
+    "objectLength1": 8,
+    "objectColor1": "#BA68C8",
+    "correctAnswer": "feather",
+    "clue0": "The fork is shorter than the straw.",
+    "clue1": "The straw is shorter than the feather.",
+    "referenceObjectName": "straw",
+    "unitType": "bears",
+    "referenceObjectLength": 6,
+    "referenceObjectColor": "#FFB74D"
+   }
+  ],
+  "unitType": "bears",
+  "gradeBand": "1"
+ }
+}

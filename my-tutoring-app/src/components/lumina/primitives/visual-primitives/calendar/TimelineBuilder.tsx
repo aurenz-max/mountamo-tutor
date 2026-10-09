@@ -1,18 +1,24 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useLayoutEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { TimelineBuilderMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { dropZoneStateClass, motion, type DropZoneState } from '../../../ui';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useTeachingEvaluation';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { bankOrder, describeTimelineWork, timelineCorrect, timelineMiss, workspaceAssignment, workspaceScene,
+  type TimelineView } from './timelineBuilderWorkspace';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -56,6 +62,18 @@ export interface TimelineBuilderData {
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<TimelineBuilderMetrics>) => void;
 }
 
+/** PLATFORM PROP CONTRACT: registry primitives mount as
+ *  `<Component data={…} index={…} />` — the generated data arrives as ONE `data`
+ *  prop (evaluation props merged in), never spread across props. */
+interface TimelineBuilderProps {
+  data: TimelineBuilderData;
+  index?: number;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
+}
+
 // ============================================================================
 // Constants
 // ============================================================================
@@ -79,10 +97,9 @@ const SCALE_COLORS: Record<string, string> = {
 // Component
 // ============================================================================
 
-/** PLATFORM PROP CONTRACT: registry primitives mount as
- *  `<Component data={…} index={…} />` — the generated data arrives as ONE `data`
- *  prop (evaluation props merged in), never spread across props. */
-const TimelineBuilder: React.FC<{ data: TimelineBuilderData; index?: number }> = ({ data }) => {
+const TimelineBuilderSurface = ({ data, runtimePlanItemId, tutorOwned, useController }:
+  TimelineBuilderProps & { tutorOwned: boolean; useController: (options: ProgressOptions<TimelineBuilderChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -108,30 +125,51 @@ const TimelineBuilder: React.FC<{ data: TimelineBuilderData; index?: number }> =
     exhibitId,
   });
 
-  // ── AI Tutoring ─────────────────────────────────────────────────
+  // ── AI Tutoring (scripted path only: on the workspace the tutor reads the task and scene) ──
   const aiPrimitiveData = useMemo(() => ({
     title,
     gradeBand,
     currentChallenge: challenges[0]?.title,
   }), [title, gradeBand, challenges]);
 
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  const { sendText: sendLegacyText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'timeline-builder',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel,
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
-  // ── Challenge Progress ──────────────────────────────────────────
+  // ── Challenge Progress. On the workspace path the runtime moves the index. ──
+  // Bound below, once the setters and the evaluation exist.
+  const openItem = useRef<() => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: () => openItem.current(),
+    onFinished: result => finish.current(result),
+  });
   const {
     currentIndex,
     currentAttempts,
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
-    incrementAttempts,
     advance: advanceProgress,
-  } = useChallengeProgress({ challenges, getChallengeId: (ch) => ch.id });
+  } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  const learnerBlocked = () => workspaceClosed.current;
+  // The activity's own check is the workspace's checked gesture. A ref, so the check callback keeps its deps.
+  const commitCheck = useRef(progress.commitCheck);
+  commitCheck.current = progress.commitCheck;
 
   const phaseResults = usePhaseResults({
     challenges,
@@ -159,15 +197,26 @@ const TimelineBuilder: React.FC<{ data: TimelineBuilderData; index?: number }> =
 
   const currentChallenge = challenges[currentIndex];
 
+  /** A fresh challenge, or the same one reopened by Try again: the board starts blank. */
+  const clearBoard = useCallback(() => {
+    setPlacements({});
+    setSelectedEventId(null);
+    setFeedback(null);
+    setShowHint(false);
+    challengeStartRef.current = Date.now();
+  }, []);
+  openItem.current = clearBoard;
+
   // ── Derived: which events are placed vs in bank ─────────────────
   const placedEventIds = useMemo(
     () => new Set(Object.values(placements)),
     [placements],
   );
 
+  // The bank never shows the events in time order (`bankOrder`).
   const bankEvents = useMemo(() => {
     if (!currentChallenge) return [];
-    return currentChallenge.events.filter((e) => !placedEventIds.has(e.id));
+    return bankOrder(currentChallenge).filter((e) => !placedEventIds.has(e.id));
   }, [currentChallenge, placedEventIds]);
 
   const slotCount = currentChallenge?.events.length ?? 0;
@@ -176,14 +225,14 @@ const TimelineBuilder: React.FC<{ data: TimelineBuilderData; index?: number }> =
 
   /** Select an event from the bank */
   const handleSelectEvent = useCallback((eventId: string) => {
-    if (feedback?.checked) return;
+    if (feedback?.checked || learnerBlocked()) return;
     SoundManager.select();
     setSelectedEventId((prev) => (prev === eventId ? null : eventId));
   }, [feedback]);
 
   /** Click a slot on the timeline to place the selected event */
   const handleSlotClick = useCallback((slotIndex: number) => {
-    if (feedback?.checked) return;
+    if (feedback?.checked || learnerBlocked()) return;
 
     // If slot already has an event, remove it (send back to bank)
     if (placements[slotIndex]) {
@@ -214,8 +263,7 @@ const TimelineBuilder: React.FC<{ data: TimelineBuilderData; index?: number }> =
 
   /** Check the placement order */
   const handleCheck = useCallback(() => {
-    if (!currentChallenge) return;
-    incrementAttempts();
+    if (!currentChallenge || learnerBlocked()) return;
 
     const correctSlots = new Set<number>();
     const incorrectSlots = new Set<number>();
@@ -235,12 +283,12 @@ const TimelineBuilder: React.FC<{ data: TimelineBuilderData; index?: number }> =
       }
     }
 
-    const allCorrect = correctSlots.size === slotCount && incorrectSlots.size === 0;
+    const allCorrect = timelineCorrect(currentChallenge, placements);
 
     setFeedback({ checked: true, correctSlots, incorrectSlots });
 
+    // The activity's own score for this challenge, then the check itself (counts the attempt on both paths).
     if (allCorrect) {
-      SoundManager.playCorrect();
       recordResult({
         challengeId: currentChallenge.id,
         correct: true,
@@ -248,6 +296,15 @@ const TimelineBuilder: React.FC<{ data: TimelineBuilderData; index?: number }> =
         timeMs: Date.now() - challengeStartRef.current,
         score: 100,
       });
+    }
+    commitCheck.current(
+      describeTimelineWork(currentChallenge, { placements, marked: null, hintShown: false }),
+      allCorrect,
+      allCorrect ? undefined : timelineMiss(currentChallenge, placements),
+    );
+
+    if (allCorrect) {
+      SoundManager.playCorrect();
       sendText(
         `[ANSWER_CORRECT] Student placed all ${slotCount} events in the correct order on a ${currentChallenge.type} timeline: "${currentChallenge.title}". Congratulate briefly.`,
         { silent: true },
@@ -255,7 +312,8 @@ const TimelineBuilder: React.FC<{ data: TimelineBuilderData; index?: number }> =
     } else {
       SoundManager.playIncorrect();
       const pct = Math.round((correctSlots.size / slotCount) * 100);
-      if (currentAttempts + 1 >= 3) {
+      // Scripted path only: on the workspace the runtime owns retries and progression.
+      if (!tutorOwned && currentAttempts + 1 >= 3) {
         // Max attempts — record partial score and move on
         recordResult({
           challengeId: currentChallenge.id,
@@ -275,31 +333,25 @@ const TimelineBuilder: React.FC<{ data: TimelineBuilderData; index?: number }> =
         );
       }
     }
-  }, [currentChallenge, placements, slotCount, currentAttempts, incrementAttempts, recordResult, sendText]);
+  }, [currentChallenge, placements, slotCount, currentAttempts, recordResult, sendText, tutorOwned]);
 
-  /** Retry after incorrect check */
+  /** Retry after incorrect check (scripted path; the workspace's Try again is on the shell) */
   const handleRetry = useCallback(() => {
     setFeedback(null);
     // Keep placements so student can adjust
   }, []);
 
-  /** Advance to next challenge */
+  /** Advance to next challenge (scripted path) */
   const handleNext = useCallback(() => {
-    setPlacements({});
-    setSelectedEventId(null);
-    setFeedback(null);
-    setShowHint(false);
-    challengeStartRef.current = Date.now();
+    clearBoard();
 
     if (!advanceProgress()) {
       // All done — submit evaluation
-      const elapsedMs = Date.now() - startTimeRef.current;
-      const totalEvents = challengeResults.reduce((s, r) => s + 1, 0);
+      const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
       const correctChallenges = challengeResults.filter((r) => r.correct).length;
       const avgScore = challengeResults.length > 0
         ? Math.round(challengeResults.reduce((s, r) => s + (r.score ?? 0), 0) / challengeResults.length)
         : 0;
-      const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
 
       const metrics: TimelineBuilderMetrics = {
         type: 'timeline-builder',
@@ -311,7 +363,7 @@ const TimelineBuilder: React.FC<{ data: TimelineBuilderData; index?: number }> =
       };
 
       const success = avgScore >= 60;
-      submitResult(success, avgScore, metrics);
+      if (progress.recordsEvaluation !== false) submitResult(success, avgScore, metrics);
       setSubmittedResult({ score: avgScore });
 
       const phaseScoreStr = phaseResults.map(
@@ -328,17 +380,49 @@ const TimelineBuilder: React.FC<{ data: TimelineBuilderData; index?: number }> =
       `[NEXT_ITEM] Moving to timeline ${currentIndex + 2} of ${challenges.length}. Introduce it briefly.`,
       { silent: true },
     );
-  }, [advanceProgress, challengeResults, challenges, currentIndex, phaseResults, sendText, submitResult]);
+  }, [advanceProgress, challengeResults, challenges, clearBoard, currentIndex, phaseResults, progress.recordsEvaluation, sendText, submitResult]);
+
+  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // corrections and whose evidence carries each wrong check's named miss.
+  finish.current = (result) => {
+    if (submittedResult || progress.recordsEvaluation === false) return;
+    const metrics: TimelineBuilderMetrics = {
+      type: 'timeline-builder',
+      eventsPlaced: challenges.reduce((s, c) => s + c.events.length, 0),
+      eventsTotal: challenges.reduce((s, c) => s + c.events.length, 0),
+      orderCorrect: result.solvedCount === challenges.length,
+      positionAccuracy: result.accuracy,
+      attemptsCount: result.attemptsCount,
+    };
+    submitResult(result.passed, result.accuracy, metrics,
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+    setSubmittedResult({ score: result.accuracy });
+  };
 
   // ── Derived state ─────────────────────────────────────────────
   const hasAnsweredCurrent = challengeResults.some(
     (r) => r.challengeId === currentChallenge?.id,
   );
   const allSlotsFilled = Object.keys(placements).length === slotCount;
-  const canCheck = allSlotsFilled && !feedback?.checked;
+  const canCheck = allSlotsFilled && !feedback?.checked && !(tutorOwned && progress.canAttempt === false);
   const isCorrect = feedback?.checked && feedback.incorrectSlots.size === 0;
   const canRetry = feedback?.checked && !isCorrect && !hasAnsweredCurrent;
-  const canProceed = hasAnsweredCurrent;
+  const canProceed = hasAnsweredCurrent && !tutorOwned;
+
+  // Workspace path: what the tutor and the observer are shown, republished every render. W1: no levers,
+  // demonstrations or presentation.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge || allChallengesComplete) return;
+    const view: TimelineView = {
+      placements,
+      marked: feedback?.checked
+        ? { right: Array.from(feedback.correctSlots).sort(), wrong: Array.from(feedback.incorrectSlots).sort() } : null,
+      hintShown: showHint,
+    };
+    workspace.current = { ...workspaceScene(currentChallenge, view) };
+  });
 
   // ── Pip shared surface ───────────────────────────────────────────
   // A projection of this challenge's check state, the tutor's speech on it, and
@@ -370,6 +454,9 @@ const TimelineBuilder: React.FC<{ data: TimelineBuilderData; index?: number }> =
     );
   }
 
+  const overallScore = submittedResult?.score
+    ?? Math.round((challengeResults.filter((r) => r.correct).length / challenges.length) * 100);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -380,7 +467,7 @@ const TimelineBuilder: React.FC<{ data: TimelineBuilderData; index?: number }> =
               {title}
             </CardTitle>
             <Badge className="bg-white/5 border border-white/20 text-slate-300 text-xs">
-              {currentIndex + 1} / {challenges.length}
+              {Math.min(currentIndex + 1, challenges.length)} / {challenges.length}
             </Badge>
           </div>
           {description && (
@@ -393,7 +480,7 @@ const TimelineBuilder: React.FC<{ data: TimelineBuilderData; index?: number }> =
       {allChallengesComplete && phaseResults.length > 0 && (
         <PhaseSummaryPanel
           phases={phaseResults}
-          overallScore={submittedResult?.score ?? 0}
+          overallScore={overallScore}
           durationMs={Date.now() - startTimeRef.current}
           heading="Timeline Complete!"
           celebrationMessage="Great work placing events on the timeline!"
@@ -457,7 +544,7 @@ const TimelineBuilder: React.FC<{ data: TimelineBuilderData; index?: number }> =
                   const isCorrectSlot = feedback?.correctSlots.has(slotIdx);
                   const isIncorrectSlot = feedback?.incorrectSlots.has(slotIdx);
 
-                  // Show correct answer after max attempts
+                  // Show correct answer after max attempts (scripted path; the workspace never records a failed item)
                   let correctEventLabel: string | undefined;
                   if (hasAnsweredCurrent && !isCorrect) {
                     const correctEvt = currentChallenge.events.find(
@@ -482,6 +569,8 @@ const TimelineBuilder: React.FC<{ data: TimelineBuilderData; index?: number }> =
                   return (
                     <button
                       key={slotIdx}
+                      aria-label={`Slot ${slotIdx + 1}`}
+                      data-pip-object={`slot-${slotIdx + 1}`}
                       onClick={() => handleSlotClick(slotIdx)}
                       className={`
                         min-h-[4rem] rounded-lg p-2 text-center text-sm
@@ -521,6 +610,7 @@ const TimelineBuilder: React.FC<{ data: TimelineBuilderData; index?: number }> =
                     <Button
                       key={evt.id}
                       variant="ghost"
+                      aria-label={evt.label}
                       onClick={() => handleSelectEvent(evt.id)}
                       className={`
                         border text-left h-auto py-2 px-3 transition-all
@@ -572,7 +662,7 @@ const TimelineBuilder: React.FC<{ data: TimelineBuilderData; index?: number }> =
                   >
                     Check Order
                   </Button>
-                  {canRetry && (
+                  {canRetry && !tutorOwned && (
                     <Button
                       variant="ghost"
                       onClick={handleRetry}
@@ -583,7 +673,7 @@ const TimelineBuilder: React.FC<{ data: TimelineBuilderData; index?: number }> =
                   )}
                   <Button
                     variant="ghost"
-                    onClick={() => setShowHint(true)}
+                    onClick={() => { if (!learnerBlocked()) setShowHint(true); }}
                     className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400"
                     disabled={showHint}
                   >
@@ -614,5 +704,9 @@ const TimelineBuilder: React.FC<{ data: TimelineBuilderData; index?: number }> =
     </div>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const TimelineBuilder = withWorkspaceController<TimelineBuilderProps, ProgressOptions<TimelineBuilderChallenge>, Progress>(
+  'timeline-builder', TimelineBuilderSurface, useScriptedProgress, useWorkspaceProgressFor('timeline-builder'));
 
 export default TimelineBuilder;

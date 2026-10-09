@@ -1,0 +1,96 @@
+{
+ "source": "qa/tutor-reports/measure-lab-runtime-capacity_predict-payload-2026-10-09.json",
+ "primitiveId": "measure-lab",
+ "evalMode": "capacity_predict",
+ "data": {
+  "title": "The Balance Scale",
+  "description": "Let us find out which things are heavier and which are lighter!",
+  "challengeType": "capacity_predict",
+  "challenges": [
+   {
+    "id": "ml-1",
+    "type": "capacity_predict",
+    "prompt": "Which holds more \u2014 the cooking pot or the coffee mug?",
+    "hint": "Fill them both and watch. The one that takes more holds more.",
+    "containerA": {
+     "id": "cnt-0-a",
+     "name": "cooking pot",
+     "shape": "tall",
+     "capacity": 7
+    },
+    "containerB": {
+     "id": "cnt-0-b",
+     "name": "coffee mug",
+     "shape": "wide",
+     "capacity": 5
+    },
+    "unitName": "scoops",
+    "unitEmoji": "\ud83e\udd44",
+    "expectedChoice": "cnt-0-a"
+   },
+   {
+    "id": "ml-2",
+    "type": "capacity_predict",
+    "prompt": "Which holds more \u2014 the cooking pot or the soup bowl?",
+    "hint": "Fill them both and watch. The one that takes more holds more.",
+    "containerA": {
+     "id": "cnt-1-a",
+     "name": "cooking pot",
+     "shape": "round",
+     "capacity": 3
+    },
+    "containerB": {
+     "id": "cnt-1-b",
+     "name": "soup bowl",
+     "shape": "tall",
+     "capacity": 5
+    },
+    "unitName": "scoops",
+    "unitEmoji": "\ud83e\udd44",
+    "expectedChoice": "cnt-1-b"
+   },
+   {
+    "id": "ml-3",
+    "type": "capacity_predict",
+    "prompt": "Which holds more \u2014 the soup bowl or the glass jar?",
+    "hint": "Fill them both and watch. The one that takes more holds more.",
+    "containerA": {
+     "id": "cnt-2-a",
+     "name": "soup bowl",
+     "shape": "wide",
+     "capacity": 6
+    },
+    "containerB": {
+     "id": "cnt-2-b",
+     "name": "glass jar",
+     "shape": "tall",
+     "capacity": 3
+    },
+    "unitName": "scoops",
+    "unitEmoji": "\ud83e\udd44",
+    "expectedChoice": "cnt-2-a"
+   },
+   {
+    "id": "ml-4",
+    "type": "capacity_predict",
+    "prompt": "Which holds more \u2014 the cooking pot or the glass jar?",
+    "hint": "Fill them both and watch. The one that takes more holds more.",
+    "containerA": {
+     "id": "cnt-3-a",
+     "name": "cooking pot",
+     "shape": "tall",
+     "capacity": 3
+    },
+    "containerB": {
+     "id": "cnt-3-b",
+     "name": "glass jar",
+     "shape": "round",
+     "capacity": 6
+    },
+    "unitName": "scoops",
+    "unitEmoji": "\ud83e\udd44",
+    "expectedChoice": "cnt-3-b"
+   }
+  ]
+ }
+}

@@ -1,0 +1,97 @@
+{
+ "source": "qa/tutor-reports/time-sequencer-runtime-duration-compare-payload-2026-10-09.json",
+ "primitiveId": "time-sequencer",
+ "evalMode": "duration-compare",
+ "data": {
+  "title": "A Day at Grandma's House",
+  "description": "Explore fun daily activities at Grandma's house and figure out which one takes more time!",
+  "gradeBand": "K",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "duration-compare",
+    "instruction": "Look at these fun activities at Grandma's. Which one takes longer to do?",
+    "hint": "Think about which activity you can finish super fast and which one takes a longer time.",
+    "eventA": {
+     "id": "eA0",
+     "label": "Eat a cookie",
+     "emoji": "\ud83c\udf6a"
+    },
+    "eventB": {
+     "id": "eB0",
+     "label": "Play all afternoon",
+     "emoji": "\ud83c\udfa8"
+    },
+    "correctAnswer": "B"
+   },
+   {
+    "id": "c2",
+    "type": "duration-compare",
+    "instruction": "Let's check out these two fun things to do. Which one takes more time?",
+    "hint": "One of these is a quick brush, and the other takes a nice long sleep!",
+    "eventA": {
+     "id": "eA1",
+     "label": "Brush your teeth",
+     "emoji": "\ud83e\uddb7"
+    },
+    "eventB": {
+     "id": "eB1",
+     "label": "Sleep in the bed",
+     "emoji": "\ud83d\ude34"
+    },
+    "correctAnswer": "B"
+   },
+   {
+    "id": "c3",
+    "type": "duration-compare",
+    "instruction": "Which activity takes longer when you are visiting Grandma?",
+    "hint": "Putting on shoes is fast, but riding in the car takes a good long while.",
+    "eventA": {
+     "id": "eA2",
+     "label": "Put on shoes",
+     "emoji": "\ud83c\udf92"
+    },
+    "eventB": {
+     "id": "eB2",
+     "label": "Ride in the car",
+     "emoji": "\ud83d\ude8c"
+    },
+    "correctAnswer": "B"
+   },
+   {
+    "id": "c4",
+    "type": "duration-compare",
+    "instruction": "Look at these two yummy moments. Which one takes more time?",
+    "hint": "Drinking a quick sip is super fast compared to eating a big meal.",
+    "eventA": {
+     "id": "eA3",
+     "label": "Drink a sip",
+     "emoji": "\ud83e\udd64"
+    },
+    "eventB": {
+     "id": "eB3",
+     "label": "Eat yummy dinner",
+     "emoji": "\ud83c\udf7d\ufe0f"
+    },
+    "correctAnswer": "B"
+   },
+   {
+    "id": "c5",
+    "type": "duration-compare",
+    "instruction": "Compare these two cozy stories. Which one takes longer?",
+    "hint": "Sometimes Grandma reads books that take the exact same amount of time!",
+    "eventA": {
+     "id": "eA4",
+     "label": "Read one story",
+     "emoji": "\ud83d\udcda"
+    },
+    "eventB": {
+     "id": "eB4",
+     "label": "Read another story",
+     "emoji": "\ud83c\udfb5"
+    },
+    "correctAnswer": "same"
+   }
+  ]
+ }
+}

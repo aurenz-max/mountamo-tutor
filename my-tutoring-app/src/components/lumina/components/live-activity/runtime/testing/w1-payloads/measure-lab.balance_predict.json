@@ -1,0 +1,107 @@
+{
+ "source": "qa/tutor-reports/measure-lab-runtime-balance_predict-payload-2026-10-09.json",
+ "primitiveId": "measure-lab",
+ "evalMode": "balance_predict",
+ "data": {
+  "title": "The Balance Scale",
+  "description": "Let us find out which things are heavier and which are lighter",
+  "challengeType": "balance_predict",
+  "challenges": [
+   {
+    "id": "ml-1",
+    "type": "balance_predict",
+    "prompt": "Which is heavier \u2014 the book or the feather?",
+    "hint": "Put them both on. The side that goes DOWN is heavier.",
+    "left": {
+     "id": "obj-0-l",
+     "name": "book",
+     "emoji": "\ud83d\udcd6",
+     "weight": 8
+    },
+    "right": {
+     "id": "obj-0-r",
+     "name": "feather",
+     "emoji": "\ud83e\udeb6",
+     "weight": 5
+    },
+    "expectedChoice": "obj-0-l"
+   },
+   {
+    "id": "ml-2",
+    "type": "balance_predict",
+    "prompt": "Which is heavier \u2014 the rock or the brick?",
+    "hint": "Put them both on. The side that goes DOWN is heavier.",
+    "left": {
+     "id": "obj-1-l",
+     "name": "rock",
+     "emoji": "\ud83e\udea8",
+     "weight": 1
+    },
+    "right": {
+     "id": "obj-1-r",
+     "name": "brick",
+     "emoji": "\ud83e\uddf1",
+     "weight": 7
+    },
+    "expectedChoice": "obj-1-r"
+   },
+   {
+    "id": "ml-3",
+    "type": "balance_predict",
+    "prompt": "Which is heavier \u2014 the apple or the feather?",
+    "hint": "Put them both on. The side that goes DOWN is heavier.",
+    "left": {
+     "id": "obj-2-l",
+     "name": "apple",
+     "emoji": "\ud83c\udf4e",
+     "weight": 8
+    },
+    "right": {
+     "id": "obj-2-r",
+     "name": "feather",
+     "emoji": "\ud83e\udeb6",
+     "weight": 2
+    },
+    "expectedChoice": "obj-2-l"
+   },
+   {
+    "id": "ml-4",
+    "type": "balance_predict",
+    "prompt": "Which is heavier \u2014 the leaf or the apple?",
+    "hint": "Put them both on. The side that goes DOWN is heavier.",
+    "left": {
+     "id": "obj-3-l",
+     "name": "leaf",
+     "emoji": "\ud83c\udf42",
+     "weight": 4
+    },
+    "right": {
+     "id": "obj-3-r",
+     "name": "apple",
+     "emoji": "\ud83c\udf4e",
+     "weight": 9
+    },
+    "expectedChoice": "obj-3-r"
+   },
+   {
+    "id": "ml-5",
+    "type": "balance_predict",
+    "prompt": "Which is heavier \u2014 the sock or the rock?",
+    "hint": "Put them both on. The side that goes DOWN is heavier.",
+    "left": {
+     "id": "obj-4-l",
+     "name": "sock",
+     "emoji": "\ud83e\udde6",
+     "weight": 6
+    },
+    "right": {
+     "id": "obj-4-r",
+     "name": "rock",
+     "emoji": "\ud83e\udea8",
+     "weight": 1
+    },
+    "expectedChoice": "obj-4-l"
+   }
+  ]
+ }
+}

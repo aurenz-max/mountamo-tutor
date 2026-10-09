@@ -1,0 +1,92 @@
+{
+ "source": "qa/tutor-reports/analog-clock-runtime-elapsed-payload-2026-10-09.json",
+ "primitiveId": "analog-clock",
+ "evalMode": "elapsed",
+ "data": {
+  "title": "Elapsed Time Explorers",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "elapsed",
+    "instruction": "The train leaves the station at 2:00 and arrives at its destination at 2:30. How much time passed during the trip?",
+    "targetHour": 2,
+    "targetMinute": 30,
+    "hint": "Count by tens or count the minutes on the clock face from the start time to the end time.",
+    "elapsedDescription": "30 minutes later",
+    "startHour": 2,
+    "startMinute": 0,
+    "option0": "2 hours",
+    "option1": "30 minutes",
+    "option2": "1 hour",
+    "option3": "45 minutes",
+    "correctOptionIndex": 1
+   },
+   {
+    "id": "c2",
+    "type": "elapsed",
+    "instruction": "Art class starts at 3:15 and ends at 4:00. How long was art class?",
+    "targetHour": 4,
+    "targetMinute": 0,
+    "hint": "Think about how many minutes are left to get to the next hour, and then add the minutes of the new hour.",
+    "elapsedDescription": "45 minutes later",
+    "startHour": 3,
+    "startMinute": 15,
+    "option0": "2 hours 45 minutes",
+    "option1": "45 minutes",
+    "option2": "1 hour 15 minutes",
+    "option3": "2 hours 15 minutes",
+    "correctOptionIndex": 1
+   },
+   {
+    "id": "c3",
+    "type": "elapsed",
+    "instruction": "Soccer practice begins at 5:00 and finishes at 6:30. How long did you practice soccer?",
+    "targetHour": 6,
+    "targetMinute": 30,
+    "hint": "Look at the hours first. How many whole hours passed? Then check the minutes.",
+    "elapsedDescription": "1 hour and 30 minutes later",
+    "startHour": 5,
+    "startMinute": 0,
+    "option0": "1 hour 30 minutes",
+    "option1": "30 minutes",
+    "option2": "1 hour 15 minutes",
+    "option3": "2 hours 30 minutes",
+    "correctOptionIndex": 0
+   },
+   {
+    "id": "c4",
+    "type": "elapsed",
+    "instruction": "A movie starts at 7:15 and finishes at 8:45. How long was the movie?",
+    "targetHour": 8,
+    "targetMinute": 45,
+    "hint": "Find the difference between the starting hours and starting minutes, or count forward by hours and minutes.",
+    "elapsedDescription": "1 hour and 30 minutes later",
+    "startHour": 7,
+    "startMinute": 15,
+    "option0": "30 minutes",
+    "option1": "1 hour 30 minutes",
+    "option2": "1 hour",
+    "option3": "1 hour 15 minutes",
+    "correctOptionIndex": 1
+   },
+   {
+    "id": "c5",
+    "type": "elapsed",
+    "instruction": "Baking cookies takes you from 10:30 until 11:15. How much time did you spend baking?",
+    "targetHour": 11,
+    "targetMinute": 15,
+    "hint": "Count from 10:30 to 11:00, and then add the extra minutes past 11:00.",
+    "elapsedDescription": "45 minutes later",
+    "startHour": 10,
+    "startMinute": 30,
+    "option0": "45 minutes",
+    "option1": "1 hour",
+    "option2": "1 hour 30 minutes",
+    "option3": "3 hours 45 minutes",
+    "correctOptionIndex": 0
+   }
+  ],
+  "gradeBand": "1-2",
+  "description": "Learn how to calculate elapsed time by finding the duration between a start time and an end time on the analog clock using quarter-hour intervals."
+ }
+}

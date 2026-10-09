@@ -1,0 +1,180 @@
+{
+ "source": "qa/tutor-reports/timeline-builder-runtime-place-historical-payload-2026-10-09.json",
+ "primitiveId": "timeline-builder",
+ "evalMode": "place-historical",
+ "data": {
+  "title": "Historical Timeline: Ordering the events of a school day",
+  "description": "Practice ordering historical timeline events.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "historical",
+    "title": "Morning Routine History",
+    "instruction": "Put these morning events in the order they happened in history, from oldest to newest.",
+    "scaleStart": "1500",
+    "scaleEnd": "2000",
+    "events": [
+     {
+      "id": "evt-0",
+      "label": "Mechanical Alarm Clock",
+      "correctPosition": 0,
+      "description": "The first mechanical alarm clock that could ring at a set time was invented around 1500."
+     },
+     {
+      "id": "evt-1",
+      "label": "Glass Toothbrush",
+      "correctPosition": 1,
+      "description": "The modern toothbrush with bristles and a glass handle was mass-produced around 1780."
+     },
+     {
+      "id": "evt-2",
+      "label": "Instant Breakfast Cereal",
+      "correctPosition": 2,
+      "description": "Flaked breakfast cereals were first packaged and sold to families in 1894."
+     },
+     {
+      "id": "evt-3",
+      "label": "Electric Hair Dryer",
+      "correctPosition": 3,
+      "description": "The first handheld electric hair dryer for home use appeared around 1920."
+     },
+     {
+      "id": "evt-4",
+      "label": "Digital Coffee Maker",
+      "correctPosition": 4,
+      "description": "The first programmable automatic drip coffee makers came to kitchens in 1975."
+     }
+    ],
+    "hint": "Think about which morning habits people invented first long ago.",
+    "narration": "Let's explore how our morning routines changed over time!"
+   },
+   {
+    "id": "c2",
+    "type": "historical",
+    "title": "Getting to School",
+    "instruction": "Put these ways of traveling to school in the order they were invented, from oldest to newest.",
+    "scaleStart": "1800",
+    "scaleEnd": "2000",
+    "events": [
+     {
+      "id": "evt-0",
+      "label": "Horse-Drawn Omnibus",
+      "correctPosition": 0,
+      "description": "Horse-drawn carriages began carrying children and citizens around towns in the 1820s."
+     },
+     {
+      "id": "evt-1",
+      "label": "The Safety Bicycle",
+      "correctPosition": 1,
+      "description": "The modern bicycle with two equal-sized wheels became popular for riding around 1885."
+     },
+     {
+      "id": "evt-2",
+      "label": "Yellow School Bus",
+      "correctPosition": 2,
+      "description": "The standard yellow motor-powered school bus was introduced for students in 1939."
+     },
+     {
+      "id": "evt-3",
+      "label": "Subway System Ride",
+      "correctPosition": 3,
+      "description": "Electric urban underground trains became a daily commute option for kids in the 1950s."
+     },
+     {
+      "id": "evt-4",
+      "label": "Electric Scooter",
+      "correctPosition": 4,
+      "description": "Modern battery-powered stand-up scooters became a popular way to cruise to school by 2018."
+     }
+    ],
+    "hint": "Think about whether children rode horses or cars to school first.",
+    "narration": "Let's travel through time to see how students got to their classrooms!"
+   },
+   {
+    "id": "c3",
+    "type": "historical",
+    "title": "Classroom Tools",
+    "instruction": "Put these school supply inventions in the order they were created, from oldest to newest.",
+    "scaleStart": "1700",
+    "scaleEnd": "2000",
+    "events": [
+     {
+      "id": "evt-0",
+      "label": "Wooden Slate Pencil",
+      "correctPosition": 0,
+      "description": "Students used small stone slate boards and slate pencils for writing practice in the 1780s."
+     },
+     {
+      "id": "evt-1",
+      "label": "Rubber Eraser",
+      "correctPosition": 1,
+      "description": "Rubbers made from natural rubber to wipe away pencil marks were sold starting in 1770."
+     },
+     {
+      "id": "evt-2",
+      "label": "Colored Crayons",
+      "correctPosition": 2,
+      "description": "The first boxes of safe, colorful wax crayons for school children were made in 1903."
+     },
+     {
+      "id": "evt-3",
+      "label": "Ballpoint Pen",
+      "correctPosition": 3,
+      "description": "Modern ballpoint pens that did not spill ink everywhere became widely used in the 1940s."
+     },
+     {
+      "id": "evt-4",
+      "label": "Interactive Whiteboard",
+      "correctPosition": 4,
+      "description": "Large touch-sensitive digital screens began replacing chalkboards in classrooms in 1991."
+     }
+    ],
+    "hint": "Consider which tools students used in old-fashioned one-room schoolhouses.",
+    "narration": "Let's discover when your favorite school supplies were first invented!"
+   },
+   {
+    "id": "c4",
+    "type": "historical",
+    "title": "Recess and Playtime",
+    "instruction": "Put these recess games and playground items in the order they were invented, from oldest to newest.",
+    "scaleStart": "1850",
+    "scaleEnd": "2000",
+    "events": [
+     {
+      "id": "evt-0",
+      "label": "Playground Jungle Gym",
+      "correctPosition": 0,
+      "description": "The first metal climbing frame for schoolyards was patented in the early 1920s."
+     },
+     {
+      "id": "evt-1",
+      "label": "Rubber Playground Ball",
+      "correctPosition": 1,
+      "description": "Bouncy red rubber kickballs used for games at recess were invented in the 1930s."
+     },
+     {
+      "id": "evt-2",
+      "label": "The Hula Hoop",
+      "correctPosition": 2,
+      "description": "Plastic hula hoops became a massive playground craze across schools in 1958."
+     },
+     {
+      "id": "evt-3",
+      "label": "The Skateboard",
+      "correctPosition": 3,
+      "description": "Roller skate wheels attached to wooden boards turned into popular toys in the 1960s."
+     },
+     {
+      "id": "evt-4",
+      "label": "Handheld Digital Pet",
+      "correctPosition": 4,
+      "description": "Small digital egg-shaped toys that kids fed and cared for at recess launched in 1996."
+     }
+    ],
+    "hint": "Think about which games kids played on the playground long before video games.",
+    "narration": "Let's find out when children started playing with these classic recess items!"
+   }
+  ],
+  "gradeBand": "2-3"
+ }
+}

@@ -1,0 +1,61 @@
+{
+ "source": "qa/tutor-reports/length-lab-runtime-tile_and_count-payload-2026-10-09.json",
+ "primitiveId": "length-lab",
+ "evalMode": "tile_and_count",
+ "data": {
+  "title": "Measure with Erasers!",
+  "description": "Learn how to measure the length of everyday objects by tiling erasers end-to-end and counting them.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "tile_and_count",
+    "instruction": "How many erasers long is the crayon?",
+    "hint": "Try placing the erasers in a straight line along the crayon without leaving any gaps.",
+    "narration": "Let us measure this crayon using erasers. Drag and drop the erasers end-to-end along the crayon, then count how many you used!",
+    "objectName0": "crayon",
+    "objectLength0": 4,
+    "objectColor0": "#F06292",
+    "objectName1": "placeholder",
+    "objectLength1": 1,
+    "objectColor1": "#FFFFFF",
+    "correctAnswer": "longer",
+    "correctUnitCount": 4,
+    "unitType": "erasers"
+   },
+   {
+    "id": "c2",
+    "type": "tile_and_count",
+    "instruction": "Can you measure the length of the ribbon using erasers?",
+    "hint": "Make sure your erasers touch each other with no overlaps as you line them up.",
+    "narration": "Great job! Now let us measure the ribbon. Place your erasers carefully from one end to the other.",
+    "objectName0": "ribbon",
+    "objectLength0": 7,
+    "objectColor0": "#BA68C8",
+    "objectName1": "placeholder",
+    "objectLength1": 1,
+    "objectColor1": "#FFFFFF",
+    "correctAnswer": "longer",
+    "correctUnitCount": 7,
+    "unitType": "erasers"
+   },
+   {
+    "id": "c3",
+    "type": "tile_and_count",
+    "instruction": "How many erasers long is the straw?",
+    "hint": "Count each eraser one by one as you place them along the straw.",
+    "narration": "You are becoming a measurement star! Let us find out how many erasers long the straw is.",
+    "objectName0": "straw",
+    "objectLength0": 10,
+    "objectColor0": "#81C784",
+    "objectName1": "placeholder",
+    "objectLength1": 1,
+    "objectColor1": "#FFFFFF",
+    "correctAnswer": "longer",
+    "correctUnitCount": 10,
+    "unitType": "erasers"
+   }
+  ],
+  "unitType": "erasers",
+  "gradeBand": "K"
+ }
+}

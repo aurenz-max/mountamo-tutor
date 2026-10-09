@@ -5,6 +5,10 @@ import type { BarModelMiss, SpokenGraphMiss } from '../../../primitives/visual-p
 import type { SpokenBalanceMiss } from '../../../primitives/visual-primitives/math/balanceScaleWorkspace';
 import type { BaseTenMiss, SpokenBaseTenMiss } from '../../../primitives/visual-primitives/math/baseTenWorkspace';
 import type { CoinMiss } from '../../../primitives/visual-primitives/math/coinCounterWorkspace';
+import type { MeasureMiss } from '../../../primitives/visual-primitives/math/measureLabWorkspace';
+import type { LengthMiss } from '../../../primitives/visual-primitives/math/lengthLabWorkspace';
+import type { ClockMiss } from '../../../primitives/visual-primitives/math/analogClockWorkspace';
+import type { TimeSequencerMiss } from '../../../primitives/visual-primitives/math/timeSequencerWorkspace';
 import type { AreaMiss } from '../../../primitives/visual-primitives/math/polygonAreaWorkspace';
 import type { BuildAreaMiss, BuildPerimeterMiss } from '../../../primitives/visual-primitives/math/polygonAreaBuild';
 import type { CompareOrderMiss, SpokenCompareMiss } from '../../../primitives/visual-primitives/math/compareObjectsWorkspace';
@@ -3574,6 +3578,27 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Put three identical containers in order from least to most. K.MD.A.2.',
       },
     ],
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1'],
+      guidance: 'The activity runs the test and checks the answer itself, and you are not told it: no weight, how much a '
+        + 'container holds, how many cups fill it, or which jar has the least. A Kindergarten learner may not read: read '
+        + 'the question aloud. On heavier and holds-more the learner taps a guess first, then tests it (puts both on the '
+        + 'scale, or presses Pour); the guess is what is checked. Before the test, never say or hint which is heavier or '
+        + 'holds more; ask what they think and why. A tall container does not always hold more. Once the test has run, '
+        + 'the screen shows the result: after a wrong guess, ask the learner which side went down or which took more '
+        + 'cups, and let them say it; do not say it for them. On how-many-cups '
+        + 'the learner taps one cup at a time until it is full, then taps a number: counting each cup aloud together as '
+        + 'it is poured is teaching; saying how many it took is not. On least-to-most the learner taps the containers '
+        + 'from least water to most: never say which has the least or the most; ask them to look at how high the water '
+        + 'comes. You cannot tap, pour or place for the learner.',
+      // The activity's own check (`measureMiss`), every mode.
+      misses: missLists<MeasureMiss>({
+        balance_predict: ['picked_lighter'],
+        capacity_predict: ['tall_means_more', 'picked_less'],
+        pour_count: ['one_short', 'one_over', 'too_few', 'too_many'],
+        order_capacity: ['most_to_least', 'two_swapped', 'out_of_order'],
+      }),
+    },
     supportsEvaluation: true,
   },
   {
@@ -5277,6 +5302,28 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'length-lab',
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1'],
+      guidance: 'The activity checks the answer itself, and you are not told it: the learner taps a choice, lays units along '
+        + 'an object with + and presses Check, or taps three objects into the slots and presses Check Order. You are not told '
+        + 'any length, unit count or order. Before the check, and after a wrong one, never say which object is longer or '
+        + 'shorter, how many units reach the end, which unit was needed more, or where an object goes. Teaching is how to '
+        + 'measure: line up the starting ends and look at the far ends; lay units end to end with no gaps and no overlaps, '
+        + 'from one end of the object to the other, and count each one once; compare two objects at a time; on indirect, '
+        + 'read the clues as a chain through the reference object. A guess is never marked: any number is fine, and do not '
+        + 'say whether it is close. When unit marks or the fit line are hidden on screen, do not count cells or say whether '
+        + 'the units fit. The learner may not read: read the instruction, the clues and the choices aloud. You cannot tap, '
+        + 'lay or place for the learner.',
+      // The activity's own check (`lengthMiss`), every mode.
+      misses: missLists<LengthMiss>({
+        compare: ['reversed', 'said_same', 'missed_same'],
+        estimate_then_tile: ['tiled_to_guess', 'one_short', 'one_over', 'short', 'over'],
+        two_unit_compare: ['chose_bigger_unit'],
+        tile_and_count: ['one_short', 'one_over', 'short', 'over'],
+        order: ['reversed_order', 'swapped_pair', 'other_order'],
+        indirect: ['chose_shorter', 'said_same'],
+      }),
+    },
     description: 'Interactive length measurement lab for Kindergarten. Students compare object lengths visually, tile non-standard units end-to-end to measure, arrange objects by length, and use indirect comparison via a reference. The units can be classroom objects (cubes, paper clips, bears, erasers) or the body a child already has (hands, fingers, feet) when the objective asks them to measure with their hands. Two more K tasks: GUESS how many units it will take before any unit appears and then measure to find out, and measure the SAME object with two different-sized units and say which one was needed more of. Perfect for K.MD.1 and K.MD.2 standards. ESSENTIAL for Kindergarten measurement.',
     constraints: 'Objects limited to 1-12 unit lengths. In estimate_then_tile the guess is recorded and never marked wrong — the measuring is what is scored. In two_unit_compare the app picks both units and both counts so the object is a whole number of each, and the bigger unit is drawn wider so "fewer of them reach the end" is visible rather than asserted. K: compare, tile and order. G1 adds indirect (transitive reasoning through a reference object). `order` came down to K on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md): every object is drawn as a length bar and the picker chip carries the same colour, so the child matches a picture rather than reading a name. K.MD.2 asks for exactly this.',
     // reader: 'none' — BACKLOG direct-manipulation sibling audit (qa/reader-fit/BACKLOG.md,
@@ -5358,6 +5405,29 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'analog-clock',
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+      guidance: 'The activity checks the answer itself, and you are not told it: the learner touches a hand or the numbers, '
+        + 'picks a time, a clock face or a duration, or moves the hands, then presses Check. Before the check, and after a '
+        + 'wrong one, never say the time a clock shows, which choice or face is right, whether the short or the long hand is '
+        + 'the one asked for, or how long something took. Teaching is fine: one hand is short and one is long, ask which '
+        + 'number the short hand is on or just past, count by fives round the face together without saying where the count '
+        + 'stops. On hand_name which hand tells the hour or the minutes is the question, and there are only two: say how '
+        + 'each hand moves, but never tell the learner to touch the other hand, even after a wrong touch. When the minute numbers or the hand legend are hidden, do '
+        + 'not supply them: ask. On set_time the time to show is the task, so you may say it, but do not tell the learner '
+        + 'the hands are right before Check. A Kindergarten learner may not read: read the question aloud; on hear_time '
+        + 'saying the time asked for is the task, not the answer. You cannot touch, pick or move anything for the learner.',
+      // The activity's own check (`clockMiss`). count_face has none: a number out of order restarts the count, so a
+      // Check is only ever twelve in order.
+      misses: missLists<ClockMiss>({
+        hand_name: ['other_hand'],
+        hear_time: ['next_hour', 'previous_hour', 'wrong_hour'],
+        read: ['hands_swapped', 'next_hour', 'previous_hour', 'wrong_hour', 'minute_as_number', 'wrong_minute', 'other_time'],
+        match: ['hands_swapped', 'next_hour', 'previous_hour', 'wrong_hour', 'minute_as_number', 'wrong_minute', 'other_time'],
+        set_time: ['hands_swapped', 'next_hour', 'previous_hour', 'wrong_hour', 'minute_as_number', 'wrong_minute', 'other_time'],
+        elapsed: ['hour_off', 'too_short', 'too_long'],
+      }),
+    },
     description:
       'Interactive analog clock with draggable hands, digital display sync, and timeline scrubber. '
       + 'Students read clock faces, set times by dragging hands, match analog to digital, and measure elapsed time with a stopwatch. '
@@ -5646,6 +5716,30 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       ],
     },
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
+      guidance: 'The activity checks the answer itself, and you are not told it: the learner taps the cards in the order '
+        + 'they happen, or taps one choice (a time of day, a card, an activity), then presses Check. Tapping a placed card '
+        + 'takes it back out. Before the check, and after a wrong one, never say the order, which card comes first or next, '
+        + 'the time of day, which activity takes longer, or what happens at the schedule time. Asking about the learner’s '
+        + 'own day (what do you do when you wake up? is it light or dark then?) is teaching; then stop and let the learner '
+        + 'answer: never answer it for them or tie it to a choice (not “that is the morning”, not “a cookie is quick”). At '
+        + 'Kindergarten no clock time is printed: never say a time, a clock or a number, except on clock-sequence, where '
+        + 'each card’s analog face is the task: ask where the short hand points, never say the hour. On read-schedule, '
+        + 'help the learner find the asked time in the table and read across; do not read the activity out. A '
+        + 'Kindergarten or Grade 1 learner may not read: read the instruction and the card names aloud. You cannot tap '
+        + 'or order cards for the learner.',
+      // The activity's own check (`timeSequencerMiss`), every mode.
+      misses: missLists<TimeSequencerMiss>({
+        'sequence-3': ['reversed', 'swapped_pair', 'wrong_first'],
+        'time-of-day': ['next_period', 'far_period'],
+        'sequence-5': ['reversed', 'swapped_pair', 'wrong_first', 'out_of_order'],
+        'before-after': ['other_event'],
+        'duration-compare': ['said_same', 'missed_same', 'shorter_one'],
+        'clock-sequence': ['reversed', 'swapped_pair', 'wrong_first', 'out_of_order'],
+        'read-schedule': ['next_row', 'other_row', 'not_on_schedule'],
+      }),
+    },
     evalModes: [
       {
         evalMode: 'sequence-3',

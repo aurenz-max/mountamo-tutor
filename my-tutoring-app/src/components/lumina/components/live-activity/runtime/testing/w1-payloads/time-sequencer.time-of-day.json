@@ -1,0 +1,82 @@
+{
+ "source": "qa/tutor-reports/time-sequencer-runtime-time-of-day-payload-2026-10-09.json",
+ "primitiveId": "time-sequencer",
+ "evalMode": "time-of-day",
+ "data": {
+  "title": "Rainy Day Routines",
+  "description": "Discover when different fun activities happen on a rainy day!",
+  "gradeBand": "K",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "match-time-of-day",
+    "instruction": "Look at the yummy breakfast! When do we eat this yummy meal?",
+    "hint": "Think about what you do right after you wake up.",
+    "event": {
+     "id": "evt1",
+     "label": "Eat yummy breakfast",
+     "emoji": "\ud83c\udf73",
+     "typicalTime": "8:00 AM",
+     "dayFraction": 0.333
+    },
+    "correctPeriod": "morning"
+   },
+   {
+    "id": "c2",
+    "type": "match-time-of-day",
+    "instruction": "Time for indoor play! When do we play games during the day?",
+    "hint": "Think about the middle part of the day when the sun is high.",
+    "event": {
+     "id": "evt2",
+     "label": "Play indoor games",
+     "emoji": "\ud83c\udfa8",
+     "typicalTime": "2:00 PM",
+     "dayFraction": 0.583
+    },
+    "correctPeriod": "afternoon"
+   },
+   {
+    "id": "c3",
+    "type": "match-time-of-day",
+    "instruction": "The rain is still falling outside. When do we clean up our toys?",
+    "hint": "Think about what you do before getting ready for bed.",
+    "event": {
+     "id": "evt3",
+     "label": "Clean up toys",
+     "emoji": "\ud83e\uddf9",
+     "typicalTime": "5:00 PM",
+     "dayFraction": 0.708
+    },
+    "correctPeriod": "afternoon"
+   },
+   {
+    "id": "c4",
+    "type": "match-time-of-day",
+    "instruction": "Time to brush your teeth and get cozy. When do we get ready for sleep?",
+    "hint": "Think about when the moon and stars come out in the sky.",
+    "event": {
+     "id": "evt4",
+     "label": "Get cozy for bed",
+     "emoji": "\ud83e\uddb7",
+     "typicalTime": "7:30 PM",
+     "dayFraction": 0.813
+    },
+    "correctPeriod": "night"
+   },
+   {
+    "id": "c5",
+    "type": "match-time-of-day",
+    "instruction": "The day is done and the stars are out. When do we go to sleep?",
+    "hint": "Think about when you close your eyes to dream all night.",
+    "event": {
+     "id": "evt5",
+     "label": "Sleep and dream",
+     "emoji": "\ud83d\ude34",
+     "typicalTime": "8:00 PM",
+     "dayFraction": 0.833
+    },
+    "correctPeriod": "night"
+   }
+  ]
+ }
+}

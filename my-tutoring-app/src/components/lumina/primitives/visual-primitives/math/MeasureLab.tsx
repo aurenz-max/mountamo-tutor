@@ -19,11 +19,15 @@
  * PREDICTION BEFORE TEST is the pedagogy, so it is also the mechanic: the
  * prediction modes will not run the test until the child has committed, and the
  * score is the prediction, never the pouring.
+ *
+ * Shared teaching workspace (W1, plain shape): `measureLabWorkspace.ts` holds the
+ * assignment, the scene, the learner's work in words and the named miss. Under a
+ * live runtime the tutor owns the item; the activity's own check commits through
+ * `progress.commitCheck`, and the runtime owns Try again and Next.
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -33,7 +37,6 @@ import {
   LuminaCardHeader,
   LuminaCardTitle,
   LuminaBadge,
-  LuminaPanel,
   LuminaPrompt,
   LuminaButton,
   LuminaSectionLabel,
@@ -51,6 +54,12 @@ import {
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { measureLabPipPose } from '../../../pip/measureLabPipPose';
 import { useSpeechScope } from '../../../pip/useSpeechScope';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { describeMeasureWork, measureMiss, workspaceAssignment, workspaceScene, type MeasureView } from './measureLabWorkspace';
 
 // ---------------------------------------------------------------------------
 // Public types (mirrored by the generator)
@@ -138,6 +147,10 @@ export interface MeasureLabData {
 interface MeasureLabProps {
   data: MeasureLabData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -197,6 +210,8 @@ const ContainerView: React.FC<ContainerViewProps> = ({
       type="button"
       disabled={!onClick}
       onClick={onClick}
+      // Named by the container alone, so the badge (cups poured, or the tap order) is not what is pressed.
+      aria-label={container.name}
       className={`flex flex-col items-center gap-2 rounded-2xl border p-3 transition ${answerStateClass(state)} ${onClick ? 'cursor-pointer' : 'cursor-default'}`}
     >
       <svg width={w + 16} height={h + 16} viewBox={`0 0 ${w + 16} ${h + 16}`} aria-hidden>
@@ -239,7 +254,9 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
 // Main component
 // ---------------------------------------------------------------------------
 
-const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
+const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  MeasureLabProps & { tutorOwned: boolean; useController: (options: ProgressOptions<MeasureLabChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -255,15 +272,25 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
   const stableInstanceIdRef = useRef(instanceId || `measure-lab-${Math.round(performance.now())}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  const {
-    currentIndex,
-    currentAttempts,
-    results,
-    isComplete,
-    recordResult,
-    incrementAttempts,
-    advance,
-  } = useChallengeProgress({ challenges, getChallengeId: (c) => c.id });
+  // On the workspace path the runtime moves the index; a fresh item and Try again clear the bench (bound below).
+  const openItem = useRef<() => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges,
+    getChallengeId: (c) => c.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: () => openItem.current(),
+    onFinished: (result) => finish.current(result),
+  });
+  const { currentIndex, currentAttempts, results, isComplete, advance } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  const learnerBlocked = () => workspaceClosed.current;
+  // The activity's own check is the workspace's checked gesture. A ref, so the delayed verdicts read the latest.
+  const commitCheck = useRef(progress.commitCheck);
+  commitCheck.current = progress.commitCheck;
 
   const currentChallenge = challenges[currentIndex] ?? null;
 
@@ -309,15 +336,15 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
    * 900ms window would have cleared the pending timer and swallowed the verdict.
    * It was not observed failing in the Chrome drive, but a delay that any
    * unrelated re-render can cancel is a race waiting for a slower machine, so
-   * the timer is owned here where nothing else can reach it.
+   * the timer is owned here where nothing else can reach it. The capacity pour
+   * uses the same timer.
    */
   const verdictTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** Always the latest `submit`, so the timer never fires a stale closure. */
-  const submitRef = useRef<(correct: boolean, extras?: Record<string, unknown>) => void>(() => {});
+  const submitRef = useRef<(correct: boolean, work?: Partial<MeasureView>) => void>(() => {});
 
-  // Per-challenge reset — every slot above that depends on the active challenge.
-  useEffect(() => {
-    if (!currentChallenge) return;
+  /** The bench blank: a fresh challenge, Try again on the workspace path, or the scripted Try again. */
+  const clearWork = useCallback(() => {
     setPrediction(null);
     setPlaced({ left: false, right: false });
     setPoured({});
@@ -327,11 +354,23 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
     setShowHint(false);
     recordedRef.current = false;
     if (verdictTimerRef.current) { clearTimeout(verdictTimerRef.current); verdictTimerRef.current = null; }
-  }, [currentChallenge?.id]);
+  }, []);
+  openItem.current = clearWork;
+
+  // Per-challenge reset — every slot above that depends on the active challenge.
+  useEffect(() => {
+    if (!currentChallenge) return;
+    clearWork();
+  }, [currentChallenge?.id, clearWork]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => () => {
     if (verdictTimerRef.current) clearTimeout(verdictTimerRef.current);
   }, []);
+
+  /** The learner's work as the check reads it, as of the last render. */
+  const view: MeasureView = { prediction, placed, poured, order, chosenCount };
+  const viewRef = useRef(view);
+  viewRef.current = view;
 
   // ── AI tutoring ───────────────────────────────────────────────────────────
   const aiPrimitiveData = useMemo(() => ({
@@ -354,12 +393,17 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
     unitName: currentChallenge?.unitName,
   }), [title, currentChallenge, currentIndex, challenges.length, currentAttempts]);
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  // The scripted tutor's context and cues: off on the workspace path, and its cues send nothing there.
+  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'measure-lab',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: 'K',
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   const introducedRef = useRef(false);
   useEffect(() => {
@@ -384,9 +428,13 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
   }, [isConnected, currentChallenge, currentIndex, challenges.length, sendText]);
 
   // ── Judging ───────────────────────────────────────────────────────────────
-  const submit = useCallback((correct: boolean, extras: Record<string, unknown> = {}) => {
-    if (!currentChallenge) return;
-    incrementAttempts();
+  // `work` carries what the triggering tap changed before it renders; the rest is read from the last render.
+  const submit = useCallback((correct: boolean, work: Partial<MeasureView> = {}) => {
+    if (!currentChallenge || recordedRef.current) return;
+    const seen = { ...viewRef.current, ...work };
+    // Counts the attempt and records a correct result on both paths; on the workspace path it is the checked gesture.
+    commitCheck.current(describeMeasureWork(currentChallenge, seen), correct,
+      correct ? undefined : measureMiss(currentChallenge, seen));
     setFeedback(correct ? 'correct' : 'incorrect');
     if (!correct) {
       SoundManager.playIncorrect();
@@ -398,19 +446,12 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
       return;
     }
     SoundManager.playCorrect();
-    if (recordedRef.current) return;
     recordedRef.current = true;
-    recordResult({
-      challengeId: currentChallenge.id,
-      correct: true,
-      attempts: currentAttempts + 1,
-      ...extras,
-    });
     sendText(
       `[ANSWER_CORRECT] ${currentChallenge.type} solved on attempt ${currentAttempts + 1}. Congratulate briefly.`,
       { silent: true },
     );
-  }, [currentChallenge, currentAttempts, incrementAttempts, recordResult, sendText]);
+  }, [currentChallenge, currentAttempts, sendText]);
 
   submitRef.current = submit;
 
@@ -446,7 +487,8 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
       { silent: true },
     );
 
-    if (!evaluation.hasSubmitted) {
+    // The workspace path submits the scored session from `onFinished` (below), not this tally.
+    if (!evaluation.hasSubmitted && !tutorOwned) {
       evaluation.submitResult(correctCount === challenges.length, overallAccuracy, metrics, {
         studentWork: {
           challengeCount: challenges.length,
@@ -454,13 +496,41 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
         },
       });
     }
-  }, [isComplete, results, challenges, phaseResults, sendText, evaluation]);
+  }, [isComplete, results, challenges, phaseResults, sendText, evaluation, tutorOwned]);
+
+  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // corrections and whose evidence carries each wrong check's named miss.
+  finish.current = (result) => {
+    if (evaluation.hasSubmitted || challenges.length === 0) return;
+    const metrics: MeasureLabMetrics = {
+      type: 'measure-lab',
+      challengeType: challenges[0].type,
+      totalChallenges: challenges.length,
+      correctCount: result.solvedCount,
+      attemptsCount: result.attemptsCount,
+      firstTryCount: result.firstTryCount,
+      hintsViewed: challenges.length - result.firstTryCount,
+      overallAccuracy: result.accuracy,
+      averageAttemptsPerChallenge: Math.round((result.attemptsCount / challenges.length) * 10) / 10,
+    };
+    evaluation.submitResult(result.passed, result.accuracy, metrics,
+      { studentWork: { challengeCount: challenges.length, prompts: challenges.map((c) => c.prompt) },
+        challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
 
   // ── Interactions ──────────────────────────────────────────────────────────
   const bothPlaced = placed.left && placed.right;
 
+  const handlePredict = (id: string) => {
+    if (feedback !== null || learnerBlocked()) return;
+    SoundManager.select();
+    setPrediction(id);
+  };
+
   const handlePlace = (side: 'left' | 'right') => {
-    if (!currentChallenge || prediction === null || feedback === 'correct') return;
+    if (!currentChallenge || prediction === null || feedback !== null || learnerBlocked()) return;
     if (placed[side]) return;
     SoundManager.tick();
     const next = { ...placed, [side]: true };
@@ -474,13 +544,13 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
       if (verdictTimerRef.current) clearTimeout(verdictTimerRef.current);
       verdictTimerRef.current = setTimeout(() => {
         verdictTimerRef.current = null;
-        submitRef.current(prediction === expected, { prediction });
+        submitRef.current(prediction === expected);
       }, 900);
     }
   };
 
   const handlePour = (containerId: string, capacity: number) => {
-    if (!currentChallenge || feedback === 'correct') return;
+    if (!currentChallenge || feedback === 'correct' || learnerBlocked()) return;
     const already = poured[containerId] ?? 0;
     if (already >= capacity) return; // it is full — pouring more would spill
     SoundManager.tick();
@@ -489,17 +559,21 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
 
   const handleCapacityTest = () => {
     if (!currentChallenge?.containerA || !currentChallenge?.containerB) return;
+    if (prediction === null || feedback !== null || learnerBlocked()) return;
     const a = currentChallenge.containerA;
     const b = currentChallenge.containerB;
+    const expected = currentChallenge.expectedChoice;
     setPoured({ [a.id]: a.capacity, [b.id]: b.capacity });
-    setTimeout(() => {
-      if (recordedRef.current) return;
-      submit(prediction === currentChallenge.expectedChoice, { prediction });
+    // The balance's ref-owned settle: the child sees both levels before the verdict.
+    if (verdictTimerRef.current) clearTimeout(verdictTimerRef.current);
+    verdictTimerRef.current = setTimeout(() => {
+      verdictTimerRef.current = null;
+      submitRef.current(prediction === expected);
     }, 900);
   };
 
   const handleOrderTap = (containerId: string) => {
-    if (!currentChallenge || feedback === 'correct') return;
+    if (!currentChallenge || feedback === 'correct' || learnerBlocked()) return;
     if (order.includes(containerId)) {
       setOrder((prev) => prev.filter((id) => id !== containerId));
       return;
@@ -514,12 +588,19 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
   };
 
   const handleCountChoice = (n: number) => {
-    if (!currentChallenge || feedback === 'correct') return;
+    if (!currentChallenge || feedback === 'correct' || learnerBlocked()) return;
     setChosenCount(n);
-    submit(n === currentChallenge.expectedCount, { chosen: n });
+    submit(n === currentChallenge.expectedCount, { chosenCount: n });
   };
 
   const advanceToNext = () => { advance(); };
+
+  // Workspace path: what the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets, no presentation and no levers.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge) return;
+    workspace.current = { ...workspaceScene(currentChallenge, viewRef.current) };
+  });
 
   // ── Pip shared surface ────────────────────────────────────────────────────
   // A projection of this challenge's own state, the tutor's speech on it, and
@@ -563,6 +644,9 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
   const ch = currentChallenge;
   const unitEmoji = ch?.unitEmoji || '🥤';
   const unitName = ch?.unitName || 'cups';
+  /** The prediction modes run their test once; after a wrong guess the scripted path offers Try again. */
+  const scriptedRetry = !tutorOwned && feedback === 'incorrect'
+    && (ch?.type === 'balance_predict' || ch?.type === 'capacity_predict');
 
   return (
     <div className={`w-full max-w-4xl mx-auto my-12 animate-fade-in ${className || ''}`}>
@@ -620,7 +704,8 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
                           <button
                             key={obj.id}
                             type="button"
-                            onClick={() => { pip.look('scale'); SoundManager.select(); setPrediction(obj.id); }}
+                            aria-label={obj.name}
+                            onClick={() => { pip.look('scale'); handlePredict(obj.id); }}
                             className={`flex flex-col items-center gap-1 rounded-2xl border px-6 py-4 transition ${answerStateClass('idle')}`}
                           >
                             <span className="text-4xl leading-none">{obj.emoji}</span>
@@ -689,6 +774,7 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
                           <button
                             key={side}
                             type="button"
+                            aria-label={`Put ${obj.name} on`}
                             onClick={() => { pip.look('scale'); handlePlace(side); }}
                             className={`flex flex-col items-center gap-1 rounded-2xl border px-6 py-3 transition ${answerStateClass('idle')}`}
                           >
@@ -723,15 +809,16 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
                         capacity={c.capacity}
                         state={prediction === c.id ? 'selected' : 'idle'}
                         badge={poured[c.id] ? `${poured[c.id]} ${unitName}` : undefined}
-                        onClick={prediction === null && feedback !== 'correct'
-                          ? () => { pip.look(`container-${c.id}`); SoundManager.select(); setPrediction(c.id); }
+                        onClick={prediction === null && feedback === null
+                          ? () => { pip.look(`container-${c.id}`); handlePredict(c.id); }
                           : undefined}
                       />
                     ))}
                   </div>
                   {prediction !== null && !Object.keys(poured).length ? (
                     <div className="flex justify-center">
-                      <LuminaActionButton action="check" onClick={() => { pip.look('containers'); handleCapacityTest(); }}>
+                      <LuminaActionButton action="check"
+                        onClick={() => { pip.look('containers'); handleCapacityTest(); }}>
                         Pour {unitName} into both
                       </LuminaActionButton>
                     </div>
@@ -758,13 +845,16 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
                     <div ref={pip.ref('cups')} data-pip-object="cups" className="flex flex-wrap justify-center gap-2">
                       {Array.from({ length: ch.container.capacity + 2 }).map((_, i) => {
                         const used = i < (poured[ch.container!.id] ?? 0);
-                        return (
+                        // A poured cup is spent: drawn faded, no longer a control, so every "Pour one in" is a live one.
+                        return used ? (
+                          <span key={i} aria-hidden className="text-3xl leading-none opacity-20">{unitEmoji}</span>
+                        ) : (
                           <button
                             key={i}
                             type="button"
-                            disabled={used || feedback === 'correct'}
+                            disabled={feedback === 'correct'}
                             onClick={() => { pip.look('container'); handlePour(ch.container!.id, ch.container!.capacity); }}
-                            className={`text-3xl leading-none transition ${used ? 'opacity-20' : 'hover:scale-110'}`}
+                            className="text-3xl leading-none transition hover:scale-110"
                             aria-label="Pour one in"
                           >
                             {unitEmoji}
@@ -828,7 +918,7 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
                   </div>
                   {order.length > 0 && feedback !== 'correct' ? (
                     <div className="flex justify-center">
-                      <LuminaButton tone="ghost" onClick={() => setOrder([])}>Start over</LuminaButton>
+                      <LuminaButton tone="ghost" onClick={() => { if (!learnerBlocked()) setOrder([]); }}>Start over</LuminaButton>
                     </div>
                   ) : null}
                 </div>
@@ -844,7 +934,13 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
                 </LuminaFeedbackCard>
               ) : null}
 
-              {feedback === 'correct' ? (
+              {scriptedRetry ? (
+                <div className="text-center">
+                  <LuminaActionButton action="retry" onClick={clearWork}>Try again</LuminaActionButton>
+                </div>
+              ) : null}
+
+              {feedback === 'correct' && !tutorOwned ? (
                 <div className="text-center">
                   <LuminaActionButton action="next" onClick={advanceToNext}>
                     {currentIndex + 1 < challenges.length ? 'Next →' : 'Finish'}
@@ -869,5 +965,9 @@ const MeasureLab: React.FC<MeasureLabProps> = ({ data, className }) => {
     </div>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const MeasureLab = withWorkspaceController<MeasureLabProps, ProgressOptions<MeasureLabChallenge>, Progress>(
+  'measure-lab', MeasureLabSurface, useScriptedProgress, useWorkspaceProgressFor('measure-lab'));
 
 export default MeasureLab;

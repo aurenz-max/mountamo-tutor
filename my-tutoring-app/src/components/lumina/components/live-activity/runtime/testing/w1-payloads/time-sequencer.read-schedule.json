@@ -1,0 +1,192 @@
+{
+ "source": "qa/tutor-reports/time-sequencer-runtime-read-schedule-payload-2026-10-09.json",
+ "primitiveId": "time-sequencer",
+ "evalMode": "read-schedule",
+ "data": {
+  "title": "Field Trip Day Schedule",
+  "description": "Practice reading a daily schedule to find out what happens at specific times on our big field trip day!",
+  "gradeBand": "1",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "read-schedule",
+    "instruction": "Look at the field trip schedule! What activity is planned for 8:00 AM?",
+    "hint": "Start at the very top of the schedule to find the morning events.",
+    "schedule": [
+     {
+      "time": "8:00 AM",
+      "activity": "Board the big yellow bus",
+      "emoji": "\ud83d\ude8c"
+     },
+     {
+      "time": "9:30 AM",
+      "activity": "Arrive at the Science Museum",
+      "emoji": "\ud83c\udf92"
+     },
+     {
+      "time": "12:00 PM",
+      "activity": "Eat packed lunches",
+      "emoji": "\ud83c\udf4e"
+     },
+     {
+      "time": "2:00 PM",
+      "activity": "Return back to school",
+      "emoji": "\ud83c\udf05"
+     }
+    ],
+    "targetTime": "8:00 AM",
+    "correctActivity": "Board the big yellow bus",
+    "activityOptions": [
+     "Eat packed lunches",
+     "Return back to school",
+     "Board the big yellow bus",
+     "Arrive at the Science Museum"
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "read-schedule",
+    "instruction": "Check the schedule to see what we are doing at 9:30 AM!",
+    "hint": "Look for the time right after we board the bus.",
+    "schedule": [
+     {
+      "time": "8:00 AM",
+      "activity": "Board the big yellow bus",
+      "emoji": "\ud83d\ude8c"
+     },
+     {
+      "time": "9:30 AM",
+      "activity": "Explore the dinosaur fossils",
+      "emoji": "\ud83d\udcda"
+     },
+     {
+      "time": "12:00 PM",
+      "activity": "Picnic in the park",
+      "emoji": "\ud83c\udf4e"
+     },
+     {
+      "time": "2:30 PM",
+      "activity": "Ride the bus home",
+      "emoji": "\ud83c\udf07"
+     }
+    ],
+    "targetTime": "9:30 AM",
+    "correctActivity": "Explore the dinosaur fossils",
+    "activityOptions": [
+     "Board the big yellow bus",
+     "Explore the dinosaur fossils",
+     "Ride the bus home",
+     "Picnic in the park"
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "read-schedule",
+    "instruction": "It is lunchtime! What does the schedule say happens at 12:00 PM?",
+    "hint": "Find midday on the schedule when your tummy starts to rumble.",
+    "schedule": [
+     {
+      "time": "9:00 AM",
+      "activity": "Leave the school",
+      "emoji": "\ud83d\ude8c"
+     },
+     {
+      "time": "10:30 AM",
+      "activity": "Watch the planetarium show",
+      "emoji": "\u2600\ufe0f"
+     },
+     {
+      "time": "12:00 PM",
+      "activity": "Eat sandwich lunch together",
+      "emoji": "\ud83c\udf7d\ufe0f"
+     },
+     {
+      "time": "2:00 PM",
+      "activity": "Gift shop visit",
+      "emoji": "\ud83c\udf92"
+     }
+    ],
+    "targetTime": "12:00 PM",
+    "correctActivity": "Eat sandwich lunch together",
+    "activityOptions": [
+     "Gift shop visit",
+     "Eat sandwich lunch together",
+     "Leave the school",
+     "Watch the planetarium show"
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "read-schedule",
+    "instruction": "What fun activity is scheduled for 1:15 PM?",
+    "hint": "Look below the lunchtime entry to find the afternoon fun.",
+    "schedule": [
+     {
+      "time": "9:00 AM",
+      "activity": "Bus ride to the zoo",
+      "emoji": "\ud83d\ude8c"
+     },
+     {
+      "time": "11:00 AM",
+      "activity": "Visit the monkey exhibits",
+      "emoji": "\ud83c\udf4e"
+     },
+     {
+      "time": "12:30 PM",
+      "activity": "Lunch by the pond",
+      "emoji": "\ud83e\udd64"
+     },
+     {
+      "time": "1:15 PM",
+      "activity": "Watch the dolphin show",
+      "emoji": "\u2600\ufe0f"
+     }
+    ],
+    "targetTime": "1:15 PM",
+    "correctActivity": "Watch the dolphin show",
+    "activityOptions": [
+     "Watch the dolphin show",
+     "Lunch by the pond",
+     "Bus ride to the zoo",
+     "Visit the monkey exhibits"
+    ]
+   },
+   {
+    "id": "c5",
+    "type": "read-schedule",
+    "instruction": "The day is wrapping up! What happens at 3:00 PM?",
+    "hint": "Check the very last item on the schedule before heading home.",
+    "schedule": [
+     {
+      "time": "9:00 AM",
+      "activity": "Arrive at the art museum",
+      "emoji": "\ud83c\udfa8"
+     },
+     {
+      "time": "11:00 AM",
+      "activity": "Painting workshop",
+      "emoji": "\ud83d\udcda"
+     },
+     {
+      "time": "1:00 PM",
+      "activity": "Pizza lunch in the courtyard",
+      "emoji": "\ud83c\udf7d\ufe0f"
+     },
+     {
+      "time": "3:00 PM",
+      "activity": "Load the bus to go back",
+      "emoji": "\ud83d\ude8c"
+     }
+    ],
+    "targetTime": "3:00 PM",
+    "correctActivity": "Load the bus to go back",
+    "activityOptions": [
+     "Painting workshop",
+     "Arrive at the art museum",
+     "Load the bus to go back",
+     "Pizza lunch in the courtyard"
+    ]
+   }
+  ]
+ }
+}

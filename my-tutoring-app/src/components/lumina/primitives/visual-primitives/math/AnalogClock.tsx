@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import { Slider } from '@/components/ui/slider';
 import {
   LuminaCard,
@@ -17,7 +17,6 @@ import {
 } from '../../../evaluation';
 import type { AnalogClockMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -25,6 +24,12 @@ import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import type { PipTarget } from '../../../pip/PipSurfaceStore';
 import { analogClockPipPose } from '../../../pip/analogClockPipPose';
 import { useSpeechScope } from '../../../pip/useSpeechScope';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { clockMiss, describeClockWork, workspaceAssignment, workspaceScene, type ClockView } from './analogClockWorkspace';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -314,6 +319,7 @@ const ClockFace: React.FC<{
                 className="cursor-pointer"
                 role="button"
                 aria-label={`Number ${num}`}
+                data-pip-object={`number-${num}`}
                 onClick={() => onNumeralClick(num)}
               />
             ) : null}
@@ -367,6 +373,7 @@ const ClockFace: React.FC<{
             className="cursor-pointer"
             role="button"
             aria-label="Point at this hand (short)"
+            data-pip-object="hand-short"
             onClick={() => onHandClick('hour')}
           />
           {/* Only the stretch BEYOND the short hand, so the two targets never overlap. */}
@@ -378,6 +385,7 @@ const ClockFace: React.FC<{
             className="cursor-pointer"
             role="button"
             aria-label="Point at this hand (long)"
+            data-pip-object="hand-long"
             onClick={() => onHandClick('minute')}
           />
         </g>
@@ -505,13 +513,19 @@ function tutorRevealPolicy(
 interface AnalogClockProps {
   data: AnalogClockData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
 // Component
 // ============================================================================
 
-const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
+const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  AnalogClockProps & { tutorOwned: boolean; useController: (options: ProgressOptions<ClockChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -529,18 +543,38 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
   // State
   // -------------------------------------------------------------------------
 
+  // On the workspace path the runtime moves the index; the activity's own Check is the checked gesture.
+  const stableInstanceIdRef = useRef(instanceId || `analog-clock-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  // Bound below, once the setters and the evaluation exist.
+  const openItem = useRef<(index: number) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (index) => openItem.current(index),
+    onFinished: result => finish.current(result),
+  });
   const {
     currentIndex: currentChallengeIndex,
     currentAttempts,
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
-    incrementAttempts,
     advance: advanceProgress,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (ch) => ch.id,
-  });
+  } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const closed = tutorOwned && progress.canAttempt === false;
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = closed;
+  const learnerBlocked = () => workspaceClosed.current;
+  /** The learner's work, written each render below and read by the check. */
+  const clockView = useRef<ClockView | null>(null);
+  // Read at the call, so the check callback keeps its deps.
+  const commitCheck = useRef(progress.commitCheck);
+  commitCheck.current = progress.commitCheck;
 
   const phaseResults = usePhaseResults({
     challenges,
@@ -574,14 +608,13 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
   // Refs
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const prevMinuteRef = useRef<number>(0); // tracks last snapped minute for wraparound detection (sync, no stale closure)
-  const stableInstanceIdRef = useRef(instanceId || `analog-clock-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
   // -------------------------------------------------------------------------
   // Set clock to challenge target when challenge changes
   // -------------------------------------------------------------------------
-  useEffect(() => {
-    if (!currentChallenge) return;
+  const resetSurface = (challenge: ClockChallenge | null) => {
+    if (!challenge) return;
+    const currentChallenge = challenge;
     setSelectedOption(null);
     setFeedback('');
     setFeedbackType('');
@@ -614,7 +647,14 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
       setStopwatchRunning(false);
       setStopwatchStartTime(null);
     }
+  };
+  useEffect(() => {
+    resetSurface(currentChallenge);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChallengeIndex, currentChallenge]);
+  // Workspace path: a fresh challenge, Try again and the return from a practice item all open the challenge
+  // blank (no pick, no touched hand or numbers, the hands back where the challenge starts them).
+  openItem.current = (index) => resetSurface(challenges[index] ?? null);
 
   // -------------------------------------------------------------------------
   // Stopwatch animation for elapsed mode
@@ -679,12 +719,17 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
     currentChallenge, currentAttempts,
   ]);
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  // Its context carries the target time, so it is off on the workspace path, and its scripted cues send nothing there.
+  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'analog-clock',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: gradeBand === 'K' ? 'Kindergarten' : gradeBand === '1-2' ? 'Grade 1-2' : 'Grade 3-5',
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   // Activity introduction
   const hasIntroducedRef = useRef(false);
@@ -704,13 +749,13 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
   // Drag-to-set interaction (for set_time mode)
   // -------------------------------------------------------------------------
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    if (currentChallenge?.type !== 'set_time' || hasSubmittedEvaluation) return;
+    if (currentChallenge?.type !== 'set_time' || hasSubmittedEvaluation || learnerBlocked()) return;
     setIsDragging(true);
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
   }, [currentChallenge?.type, hasSubmittedEvaluation]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!isDragging || !svgContainerRef.current) return;
+    if (!isDragging || !svgContainerRef.current || learnerBlocked()) return;
     const rect = svgContainerRef.current.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
@@ -744,7 +789,7 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
   }, []);
 
   const handleCheckAnswer = useCallback(() => {
-    if (!currentChallenge || hasSubmittedEvaluation) return;
+    if (!currentChallenge || hasSubmittedEvaluation || learnerBlocked()) return;
 
     let correct = false;
     const targetTime = formatTime(currentChallenge.targetHour, currentChallenge.targetMinute);
@@ -777,6 +822,7 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
       SoundManager.playCorrect();
       setFeedback('Correct!');
       setFeedbackType('success');
+      // The clock's own fields; `commitCheck` below adds the verdict and the attempts on both paths.
       recordResult({
         challengeId: currentChallenge.id,
         correct: true,
@@ -790,8 +836,8 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
       );
     } else {
       SoundManager.playIncorrect();
-      incrementAttempts();
-      setFeedback(currentAttempts === 0 ? 'Not quite — try again!' : currentChallenge.hint);
+      // With the tutor, the tutor gives the hints: a generated read/match hint can name where the hands point.
+      setFeedback(currentAttempts === 0 || tutorOwned ? 'Not quite — try again!' : currentChallenge.hint);
       setFeedbackType('error');
       const revealClause = tutorRevealPolicy(currentChallenge.supportTier, currentChallenge.type);
       sendText(
@@ -802,23 +848,27 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
         { silent: true },
       );
     }
+    // Counts the attempt and records a correct result on both paths; on the workspace path it is the checked gesture.
+    const work = clockView.current;
+    if (work) commitCheck.current(describeClockWork(currentChallenge, work), correct,
+      correct ? undefined : clockMiss(currentChallenge, work));
   }, [
     currentChallenge, selectedOption, displayHour, displayMinute,
     pickedHand, countedNumerals,
-    currentAttempts, hasSubmittedEvaluation, recordResult, incrementAttempts, sendText,
+    currentAttempts, hasSubmittedEvaluation, recordResult, sendText, tutorOwned,
   ]);
 
   // ── K clock parts: pointing at a hand, and counting the face ──────────────
   const handleHandClick = useCallback((hand: 'hour' | 'minute') => {
     if (!currentChallenge || currentChallenge.type !== 'hand_name') return;
-    if (hasSubmittedEvaluation || feedbackType === 'success') return;
+    if (hasSubmittedEvaluation || feedbackType === 'success' || learnerBlocked()) return;
     SoundManager.select();
     setPickedHand(hand);
   }, [currentChallenge, hasSubmittedEvaluation, feedbackType]);
 
   const handleNumeralClick = useCallback((num: number) => {
     if (!currentChallenge || currentChallenge.type !== 'count_face') return;
-    if (hasSubmittedEvaluation || feedbackType === 'success') return;
+    if (hasSubmittedEvaluation || feedbackType === 'success' || learnerBlocked()) return;
     setCountedNumerals((prev) => {
       // Out of order: start the walk again rather than scoring it wrong. A
       // five-year-old losing their place mid-circle is the ordinary case, and
@@ -854,7 +904,8 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
         { silent: true },
       );
 
-      if (!hasSubmittedEvaluation) {
+      // The workspace path submits the scored session from `onFinished` (below), not this tally.
+      if (!hasSubmittedEvaluation && !tutorOwned) {
         const metrics: AnalogClockMetrics = {
           type: 'analog-clock',
           accuracy: overallScore / 100,
@@ -890,13 +941,32 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
     }
   }, [
     advanceProgress, challengeResults, challenges, phaseResults,
-    currentChallengeIndex, hasSubmittedEvaluation, submitEvaluation, sendText,
+    currentChallengeIndex, hasSubmittedEvaluation, submitEvaluation, sendText, tutorOwned,
   ]);
+
+  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // corrections and whose evidence carries each wrong check's named miss (`diagnosisEvidence.phases`).
+  finish.current = (result) => {
+    if (hasSubmittedEvaluation) return;
+    const metrics: AnalogClockMetrics = {
+      type: 'analog-clock',
+      accuracy: result.accuracy / 100,
+      totalChallenges: challenges.length,
+      correctAnswers: result.solvedCount,
+      averageAttempts: challenges.length ? result.attemptsCount / challenges.length : 0,
+      challengeTypes: Array.from(new Set(challenges.map(c => c.type))),
+    };
+    submitEvaluation(result.passed, result.accuracy, metrics,
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
 
   // -------------------------------------------------------------------------
   // Stopwatch controls
   // -------------------------------------------------------------------------
   const handleStopwatchToggle = useCallback(() => {
+    if (learnerBlocked()) return;
     SoundManager.toggle(!stopwatchRunning); // rising blips on start, falling on stop
     if (!stopwatchRunning && !stopwatchStartTime) {
       // Starting — record current time
@@ -906,6 +976,7 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
   }, [stopwatchRunning, stopwatchStartTime, displayHour, displayMinute]);
 
   const handleStopwatchReset = useCallback(() => {
+    if (learnerBlocked()) return;
     setStopwatchRunning(false);
     setStopwatchStartTime(null);
     if (currentChallenge?.type === 'elapsed') {
@@ -919,6 +990,7 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   const handleTimelineChange = useCallback((hour: number, minute: number) => {
     if (currentChallenge?.type === 'read' || currentChallenge?.type === 'match') return; // locked in read/match
+    if (learnerBlocked()) return;
     const snapped = snapMinute(minute, gradeBand);
     if (snapped !== displayMinute || hour !== displayHour) SoundManager.tick(); // tick only on a real time change
     setDisplayHour(hour);
@@ -947,6 +1019,19 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
   const isCurrentChallengeCorrect = currentChallenge
     ? challengeResults.some(r => r.challengeId === currentChallenge.id && r.correct)
     : false;
+
+  // The learner's work as the check and the tutor read it. Written every render, read by the check handler.
+  clockView.current = {
+    selectedOption, pickedHand, countedNumerals, displayHour, displayMinute,
+    minuteNumbersShown: showMinuteNumbers, handLegendShown: showHandLegend, digitalEchoShown: showDigitalEcho,
+  };
+
+  // Workspace path: what the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge || !clockView.current) return;
+    workspace.current = { ...workspaceScene(currentChallenge, clockView.current) };
+  });
 
   const localOverallScore = challenges.length > 0
     ? Math.round((challengeResults.filter(r => r.correct).length / challenges.length) * 100)
@@ -1118,7 +1203,8 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
                   currentChallenge?.type === 'read' ||
                   currentChallenge?.type === 'match' ||
                   stopwatchRunning ||
-                  hasSubmittedEvaluation
+                  hasSubmittedEvaluation ||
+                  closed
                 }
               />
             </div>
@@ -1133,12 +1219,14 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
                       : 'bg-emerald-500/20 border-white/20 hover:bg-emerald-500/30 text-emerald-300'
                   }
                   onClick={handleStopwatchToggle}
+                  disabled={closed}
                 >
                   {stopwatchRunning ? 'Stop' : stopwatchStartTime ? 'Resume' : 'Start'}
                 </LuminaButton>
                 <LuminaButton
                   className="text-slate-300"
                   onClick={handleStopwatchReset}
+                  disabled={closed}
                 >
                   Reset
                 </LuminaButton>
@@ -1158,8 +1246,8 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
                       key={i}
                       type="button"
                       aria-label={`Clock face ${i + 1}`}
-                      onClick={() => { SoundManager.select(); setSelectedOption(i); }}
-                      disabled={hasSubmittedEvaluation}
+                      onClick={() => { if (learnerBlocked()) return; SoundManager.select(); setSelectedOption(i); }}
+                      disabled={hasSubmittedEvaluation || closed}
                       className={`rounded-2xl border p-2 transition-colors disabled:opacity-50 ${
                         selectedOption === i
                           ? 'bg-blue-500/20 border-blue-400/60'
@@ -1200,8 +1288,8 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
                         ? 'bg-blue-500/20 border-blue-400/50 text-blue-200'
                         : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-200'
                     }`}
-                    onClick={() => { SoundManager.select(); setSelectedOption(i); }}
-                    disabled={hasSubmittedEvaluation}
+                    onClick={() => { if (learnerBlocked()) return; SoundManager.select(); setSelectedOption(i); }}
+                    disabled={hasSubmittedEvaluation || closed}
                   >
                     {option}
                   </button>
@@ -1227,6 +1315,7 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
                     onClick={handleCheckAnswer}
                     disabled={
                       hasSubmittedEvaluation ||
+                      closed ||
                       (currentChallenge.type === 'hand_name'
                         ? pickedHand === null
                         : currentChallenge.type === 'count_face'
@@ -1235,7 +1324,7 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
                       stopwatchRunning
                     }
                   />
-                ) : (
+                ) : tutorOwned ? null : (
                   <LuminaActionButton
                     action="next"
                     onClick={handleNext}
@@ -1251,5 +1340,9 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const AnalogClock = withWorkspaceController<AnalogClockProps, ProgressOptions<ClockChallenge>, Progress>(
+  'analog-clock', AnalogClockSurface, useScriptedProgress, useWorkspaceProgressFor('analog-clock'));
 
 export default AnalogClock;

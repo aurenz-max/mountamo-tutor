@@ -1,0 +1,180 @@
+{
+ "source": "qa/tutor-reports/timeline-builder-runtime-sequence-yearly-payload-2026-10-09.json",
+ "primitiveId": "timeline-builder",
+ "evalMode": "sequence-yearly",
+ "data": {
+  "title": "Yearly Timeline: Ordering the events of a school day",
+  "description": "Practice ordering yearly timeline events.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "yearly",
+    "title": "School Year Milestones",
+    "instruction": "Place these fun school events in the correct order from the start of the year to the end.",
+    "scaleStart": "August",
+    "scaleEnd": "June",
+    "events": [
+     {
+      "id": "evt-0",
+      "label": "First Day of School",
+      "correctPosition": 0,
+      "description": "Meet your new teacher and classmates in August."
+     },
+     {
+      "id": "evt-1",
+      "label": "Fall Picture Day",
+      "correctPosition": 1,
+      "description": "Smile for the camera in October."
+     },
+     {
+      "id": "evt-2",
+      "label": "Winter Holiday Show",
+      "correctPosition": 2,
+      "description": "Sing songs on stage in December."
+     },
+     {
+      "id": "evt-3",
+      "label": "100th Day of School",
+      "correctPosition": 3,
+      "description": "Celebrate learning a lot in February."
+     },
+     {
+      "id": "evt-4",
+      "label": "Field Day",
+      "correctPosition": 4,
+      "description": "Play fun games outside in May."
+     }
+    ],
+    "hint": "Think about when the school year begins and when it finishes.",
+    "narration": "Let's organize the big moments of our school year!"
+   },
+   {
+    "id": "c2",
+    "type": "yearly",
+    "title": "Seasons and Nature",
+    "instruction": "Arrange these outdoor changes in order from the beginning of the year to the end.",
+    "scaleStart": "January",
+    "scaleEnd": "December",
+    "events": [
+     {
+      "id": "evt-0",
+      "label": "Snowy Winter Mornings",
+      "correctPosition": 0,
+      "description": "Wear heavy coats and boots in January."
+     },
+     {
+      "id": "evt-1",
+      "label": "Spring Flowers Bloom",
+      "correctPosition": 1,
+      "description": "Green grass and colorful plants grow in April."
+     },
+     {
+      "id": "evt-2",
+      "label": "Sunny Summer Days",
+      "correctPosition": 2,
+      "description": "Go swimming and play outside in July."
+     },
+     {
+      "id": "evt-3",
+      "label": "Falling Leaves",
+      "correctPosition": 3,
+      "description": "Watch the trees turn orange and brown in October."
+     },
+     {
+      "id": "evt-4",
+      "label": "First Winter Frost",
+      "correctPosition": 4,
+      "description": "See crisp white ice on the grass in December."
+     }
+    ],
+    "hint": "Watch how the weather changes outside as the months go by.",
+    "narration": "How does nature change throughout the year?"
+   },
+   {
+    "id": "c3",
+    "type": "yearly",
+    "title": "Fun Annual Holidays",
+    "instruction": "Put these special celebration days in order from earliest to latest.",
+    "scaleStart": "January",
+    "scaleEnd": "December",
+    "events": [
+     {
+      "id": "evt-0",
+      "label": "Groundhog Day",
+      "correctPosition": 0,
+      "description": "Check to see if winter will stay in February."
+     },
+     {
+      "id": "evt-1",
+      "label": "Earth Day",
+      "correctPosition": 1,
+      "description": "Plant trees and clean up our park in April."
+     },
+     {
+      "id": "evt-2",
+      "label": "Labor Day",
+      "correctPosition": 2,
+      "description": "Enjoy a long weekend at the start of September."
+     },
+     {
+      "id": "evt-3",
+      "label": "Veterans Day",
+      "correctPosition": 3,
+      "description": "Honor brave heroes in November."
+     },
+     {
+      "id": "evt-4",
+      "label": "New Year's Eve",
+      "correctPosition": 4,
+      "description": "Count down to midnight on the last day of December."
+     }
+    ],
+    "hint": "Start with winter celebrations and work your way toward the end of the year.",
+    "narration": "Can you order these holidays correctly?"
+   },
+   {
+    "id": "c4",
+    "type": "yearly",
+    "title": "Sports and Club Activities",
+    "instruction": "Order these after-school activities from the first one in the year to the last.",
+    "scaleStart": "January",
+    "scaleEnd": "December",
+    "events": [
+     {
+      "id": "evt-0",
+      "label": "Indoor Basketball",
+      "correctPosition": 0,
+      "description": "Play hoops in the gymnasium during February."
+     },
+     {
+      "id": "evt-1",
+      "label": "Track and Field",
+      "correctPosition": 1,
+      "description": "Run races and jump hurdles in May."
+     },
+     {
+      "id": "evt-2",
+      "label": "Summer Swim Team",
+      "correctPosition": 2,
+      "description": "Practice swimming laps in July."
+     },
+     {
+      "id": "evt-3",
+      "label": "Flag Football",
+      "correctPosition": 3,
+      "description": "Play team sports on the crisp field in October."
+     },
+     {
+      "id": "evt-4",
+      "label": "Holiday Food Drive",
+      "correctPosition": 4,
+      "description": "Collect cans for neighbors in November."
+     }
+    ],
+    "hint": "Think about when spring sports and fall sports happen.",
+    "narration": "Let's track our sports and club fun through the year!"
+   }
+  ],
+  "gradeBand": "2-3"
+ }
+}

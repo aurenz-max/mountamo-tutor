@@ -1,0 +1,64 @@
+{
+ "source": "qa/tutor-reports/analog-clock-runtime-hear_time-payload-2026-10-09.json",
+ "primitiveId": "analog-clock",
+ "evalMode": "hear_time",
+ "data": {
+  "title": "Clock Party O'Clock",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "hear_time",
+    "instruction": "Which clock shows two o'clock?",
+    "targetHour": 2,
+    "targetMinute": 0,
+    "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+    "option0": "5:00",
+    "option1": "2:00",
+    "option2": "1:00",
+    "option3": "3:00",
+    "correctOptionIndex": 1
+   },
+   {
+    "id": "c2",
+    "type": "hear_time",
+    "instruction": "Which clock shows five o'clock?",
+    "targetHour": 5,
+    "targetMinute": 0,
+    "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+    "option0": "9:00",
+    "option1": "7:00",
+    "option2": "5:00",
+    "option3": "1:00",
+    "correctOptionIndex": 2
+   },
+   {
+    "id": "c3",
+    "type": "hear_time",
+    "instruction": "Which clock shows nine o'clock?",
+    "targetHour": 9,
+    "targetMinute": 0,
+    "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+    "option0": "4:00",
+    "option1": "3:00",
+    "option2": "2:00",
+    "option3": "9:00",
+    "correctOptionIndex": 3
+   },
+   {
+    "id": "c4",
+    "type": "hear_time",
+    "instruction": "Which clock shows twelve o'clock?",
+    "targetHour": 12,
+    "targetMinute": 0,
+    "hint": "Look at the short hand on each clock. Which one points at the number you heard?",
+    "option0": "11:00",
+    "option1": "4:00",
+    "option2": "12:00",
+    "option3": "3:00",
+    "correctOptionIndex": 2
+   }
+  ],
+  "gradeBand": "K",
+  "description": "Fun kindergarten activity to practice recognizing whole-hour times on an analog clock by listening and matching clock faces."
+ }
+}

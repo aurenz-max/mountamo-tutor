@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useLayoutEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   LuminaCard,
@@ -19,7 +19,12 @@ import {
 } from '../../../evaluation';
 import type { LengthLabMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { describeLengthWork, lengthLabMatches, lengthMiss, workspaceAssignment, workspaceScene, type LengthView }
+  from './lengthLabWorkspace';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -212,9 +217,13 @@ interface TilingWorkspaceProps {
   /** Pip's target: the object together with the row its units go in, never the count. */
   pipRef?: (element: Element | null) => void;
   pipId?: string;
+  /** Whether a wrong count prints the right one. Off on the tutor's workspace, where Try again follows. */
+  revealOnMiss?: boolean;
+  /** The tiles in the row as they change, for the tutor's view of the work. */
+  onCountChange?: (count: number) => void;
 }
 
-function TilingWorkspace({ objectName, objectLength, objectColor, unitType, correctCount, onComplete, disabled, showAlignmentFeedback = true, unitSpan = 1, pipRef, pipId }: TilingWorkspaceProps) {
+function TilingWorkspace({ objectName, objectLength, objectColor, unitType, correctCount, onComplete, disabled, showAlignmentFeedback = true, unitSpan = 1, pipRef, pipId, revealOnMiss = true, onCountChange }: TilingWorkspaceProps) {
   const [placedUnits, setPlacedUnits] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const objectWidthPx = Math.min(objectLength, MAX_BAR_UNITS) * UNIT_WIDTH;
@@ -242,6 +251,9 @@ function TilingWorkspace({ objectName, objectLength, objectColor, unitType, corr
     setPlacedUnits(0);
     setSubmitted(false);
   }, [objectName, correctCount, unitType]);
+
+  useEffect(() => { onCountChange?.(placedUnits); }, [placedUnits, onCountChange]);
+  const unitLabel = unitType.replace('_', ' ');
 
   const tileWidthPx = UNIT_WIDTH * Math.max(1, unitSpan);
   const unitWidthPx = placedUnits * tileWidthPx;
@@ -294,6 +306,7 @@ function TilingWorkspace({ objectName, objectLength, objectColor, unitType, corr
           variant="ghost"
           className="bg-white/5 border border-white/20 hover:bg-white/10 text-lg px-3"
           onClick={removeUnit}
+          aria-label={`Remove ${unitLabel}`}
           disabled={disabled || submitted || placedUnits === 0}
         >
           -
@@ -303,6 +316,7 @@ function TilingWorkspace({ objectName, objectLength, objectColor, unitType, corr
           variant="ghost"
           className="bg-white/5 border border-white/20 hover:bg-white/10 text-lg px-3"
           onClick={addUnit}
+          aria-label={`Add ${unitLabel}`}
           disabled={disabled || submitted}
         >
           +
@@ -327,7 +341,9 @@ function TilingWorkspace({ objectName, objectLength, objectColor, unitType, corr
       )}
       {isWrong && (
         <div className="text-red-400 text-sm font-medium">
-          Not quite. You placed {placedUnits}, but the {objectName} is {correctCount} {unitType.replace('_', ' ')} long.
+          {revealOnMiss
+            ? <>Not quite. You placed {placedUnits}, but the {objectName} is {correctCount} {unitLabel} long.</>
+            : <>Not quite. Look where your {unitLabel} end and where the {objectName} ends.</>}
         </div>
       )}
     </div>
@@ -347,11 +363,14 @@ interface OrderItem {
 interface OrderingWorkspaceProps {
   items: OrderItem[];
   correctOrderCsv: string;
-  onComplete: (correct: boolean) => void;
+  /** The names placed, shortest slot first; returns the activity's verdict. */
+  onComplete: (order: string[]) => boolean;
   disabled: boolean;
+  /** The names in the slots as they change, for the tutor's view of the work. */
+  onSlotsChange?: (order: string[]) => void;
 }
 
-function OrderingWorkspace({ items, correctOrderCsv, onComplete, disabled }: OrderingWorkspaceProps) {
+function OrderingWorkspace({ items, correctOrderCsv, onComplete, disabled, onSlotsChange }: OrderingWorkspaceProps) {
   const [slots, setSlots] = useState<(OrderItem | null)[]>([null, null, null]);
   const [availableItems, setAvailableItems] = useState<OrderItem[]>([...items]);
   const [submitted, setSubmitted] = useState(false);
@@ -386,14 +405,16 @@ function OrderingWorkspace({ items, correctOrderCsv, onComplete, disabled }: Ord
     setAvailableItems(prev => [...prev, item]);
   }, [disabled, submitted, slots]);
 
+  useEffect(() => {
+    onSlotsChange?.(slots.filter((s): s is OrderItem => s !== null).map(s => s.name));
+  }, [slots, onSlotsChange]);
+
   const handleSubmit = useCallback(() => {
-    const correctOrder = correctOrderCsv.split(',').map(s => s.trim());
-    const studentOrder = slots.map(s => s?.name || '');
-    const correct = correctOrder.every((name, i) => name === studentOrder[i]);
+    if (disabled) return;
+    const correct = onComplete(slots.map(s => s?.name || ''));
     setIsCorrect(correct);
     setSubmitted(true);
-    onComplete(correct);
-  }, [slots, correctOrderCsv, onComplete]);
+  }, [slots, disabled, onComplete]);
 
   const allFilled = slots.every(s => s !== null);
 
@@ -490,13 +511,19 @@ function OrderingWorkspace({ items, correctOrderCsv, onComplete, disabled }: Ord
 interface LengthLabProps {
   data: LengthLabData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
 // Main Component
 // ============================================================================
 
-const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
+const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }:
+  LengthLabProps & { tutorOwned: boolean; useController: (options: ProgressOptions<LengthLabChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -538,23 +565,41 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
     supportTier: challenges.find(c => c.supportTier)?.supportTier ?? null,
   }), [unitType, data.gradeBand, challenges]);
 
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  // Its cues carry the answers, so it is off on the workspace path, and its scripted cues send nothing there.
+  const { sendText: sendLegacyText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'length-lab',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: data.gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
-  // ── Challenge Progress (shared hook) ──
+  // ── Challenge Progress. On the workspace path the runtime moves the index. ──
+  /** Bound below, once the setters exist; the progress hook calls it only after render. */
+  const openItem = useRef<(retry: boolean) => void>(() => {});
+  const progress = useController({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (_index, retry) => openItem.current(retry),
+  });
   const {
     currentIndex,
     currentAttempts,
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
-    incrementAttempts,
     advance: advanceProgress,
-  } = useChallengeProgress({ challenges, getChallengeId: (ch) => ch.id });
+  } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const blocked = tutorOwned && progress.canAttempt === false;
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = blocked;
+  const learnerBlocked = () => workspaceClosed.current;
 
   const phaseResults = usePhaseResults({
     challenges,
@@ -574,6 +619,24 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
   /** two_unit_compare: the counts the child got with each unit, in order. */
   const [unitACount, setUnitACount] = useState<number | null>(null);
   const [unitBCount, setUnitBCount] = useState<number | null>(null);
+  /** The tiles in the row now, and the objects in the order slots (the tutor's view of the work). */
+  const [tiles, setTiles] = useState(0);
+  const [order, setOrder] = useState<string[]>([]);
+  /** Remounts the tiling and ordering rows, so Try again opens them blank. */
+  const [attemptKey, setAttemptKey] = useState(0);
+
+  // A fresh challenge starts clean. Try again clears the checked work but keeps the guess, which is never graded:
+  // the child measures again against the same guess.
+  openItem.current = (retry) => {
+    setSelectedAnswer(null);
+    setShowFeedback(false);
+    setUnitACount(null);
+    setUnitBCount(null);
+    setTiles(0);
+    setOrder([]);
+    if (!retry) setEstimate(null);
+    setAttemptKey(k => k + 1);
+  };
 
   // ── Stable order items (memoized so OrderingWorkspace doesn't reset on every parent re-render) ──
   const orderItems = useMemo<OrderItem[]>(() => {
@@ -589,14 +652,34 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
     return [...items].sort((a, b) => a.name.localeCompare(b.name));
   }, [currentChallenge]);
 
-  // Reset local state when challenge changes
+  // Reset local state when challenge changes (the scripted path; the workspace path also runs `openItem`)
   useEffect(() => {
     setSelectedAnswer(null);
     setShowFeedback(false);
     setEstimate(null);
     setUnitACount(null);
     setUnitBCount(null);
+    setTiles(0);
+    setOrder([]);
   }, [currentIndex]);
+
+  // ── The learner's work, as the check and the tutor read it ──
+  const unitA = currentChallenge?.unitType || unitType;
+  const unitB = currentChallenge?.unitTypeB || unitType;
+  const view = (over: Partial<LengthView> = {}): LengthView => ({
+    answer: selectedAnswer, tiles, estimate, countA: unitACount, countB: unitBCount, unitA, unitB, order,
+    ticksShown: !!currentChallenge?.showUnitTicks, fitShown: currentChallenge?.showAlignmentFeedback !== false,
+    ...over,
+  });
+  /** The activity's own check, committed as the workspace's checked gesture (the attempt counted on both paths). */
+  const commit = (work: LengthView): boolean => {
+    const ch = currentChallenge!;
+    const correct = lengthLabMatches(ch, work);
+    progress.commitCheck(describeLengthWork(ch, work), correct, correct ? undefined : lengthMiss(ch, work));
+    // The scripted path moves on after one try, so a miss is the challenge's result there.
+    if (!correct && !tutorOwned) recordResult({ challengeId: ch.id, correct: false, attempts: currentAttempts + 1 });
+    return correct;
+  };
 
   // ── Announce challenge to AI ──
   useEffect(() => {
@@ -611,6 +694,8 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
   // ── Submit evaluation when all complete ──
   useEffect(() => {
     if (!allChallengesComplete || hasSubmittedEval) return;
+    // The live host has no evaluation provider; a workspace family submits only under one.
+    if (progress.recordsEvaluation === false) return;
     setHasSubmittedEval(true);
 
     const correctCount = challengeResults.filter(r => r.correct).length;
@@ -637,46 +722,33 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
     // AI celebration
     const phaseScoreStr = phaseResults.map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`).join(', ');
     sendText(`[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. Give encouraging phase-specific feedback about measuring and comparing lengths.`, { silent: true });
-  }, [allChallengesComplete, hasSubmittedEval, challengeResults, challenges.length, phaseResults, submitEvaluation, sendText, elapsedMs]);
+  }, [allChallengesComplete, hasSubmittedEval, progress.recordsEvaluation, challengeResults, challenges.length, phaseResults, submitEvaluation, sendText, elapsedMs]);
 
   // ── Handle compare answer ──
-  const handleCompareAnswer = useCallback((answer: string) => {
-    if (!currentChallenge || showFeedback) return;
+  const handleCompareAnswer = (answer: string) => {
+    if (!currentChallenge || showFeedback || learnerBlocked()) return;
     setSelectedAnswer(answer);
     setShowFeedback(true);
-    incrementAttempts();
 
-    const correct = answer === currentChallenge.correctAnswer;
-
-    if (correct) {
+    if (commit(view({ answer }))) {
       SoundManager.playCorrect();
       sendText(`[ANSWER_CORRECT] Student correctly identified "${currentChallenge.objectName0}" vs "${currentChallenge.objectName1}" — answered "${answer}".`, { silent: true });
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      });
     } else {
       SoundManager.playIncorrect();
       sendText(`[ANSWER_INCORRECT] Student chose "${answer}" but correct is "${currentChallenge.correctAnswer}" for "${currentChallenge.objectName0}" vs "${currentChallenge.objectName1}". Give a hint.${tutorRevealPolicy(currentChallenge.supportTier, currentChallenge.type)}`, { silent: true });
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: false,
-        attempts: currentAttempts + 1,
-      });
     }
-  }, [currentChallenge, showFeedback, currentAttempts, incrementAttempts, recordResult, sendText]);
+  };
 
   // ── The guess, and the two-unit walk ────────────────────────────────────
-  const handleEstimate = useCallback((guess: number) => {
-    if (estimate !== null) return;
+  const handleEstimate = (guess: number) => {
+    if (estimate !== null || learnerBlocked()) return;
     SoundManager.select();
     setEstimate(guess);
     sendText(
       `[ESTIMATE] The child guessed ${guess} before measuring. Do not say whether that is close — they are about to find out by measuring.`,
       { silent: true },
     );
-  }, [estimate, sendText]);
+  };
 
   /** two_unit_compare: the first tiling is recorded, the second opens the question. */
   const handleUnitATile = useCallback((count: number) => {
@@ -686,60 +758,40 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
     setUnitBCount(count);
   }, []);
 
-  const handleTwoUnitAnswer = useCallback((answerUnit: string) => {
-    if (!currentChallenge || showFeedback) return;
+  const handleTwoUnitAnswer = (answerUnit: string) => {
+    if (!currentChallenge || showFeedback || learnerBlocked()) return;
     setSelectedAnswer(answerUnit);
     setShowFeedback(true);
-    incrementAttempts();
     // The unit you need MORE of is the smaller one — that inverse is the whole
     // insight, so it is re-derived from the two counts, never stored separately.
-    const countA = currentChallenge.correctUnitCount ?? 0;
-    const countB = currentChallenge.correctUnitCountB ?? 0;
-    const expected = countA > countB
-      ? (currentChallenge.unitType || unitType)
-      : (currentChallenge.unitTypeB || unitType);
-    const correct = answerUnit === expected;
-    if (correct) {
+    if (commit(view({ answer: answerUnit }))) {
       SoundManager.playCorrect();
-      sendText(`[ANSWER_CORRECT] The child saw that the ${expected} were needed more often. Congratulate briefly.`, { silent: true });
+      sendText(`[ANSWER_CORRECT] The child saw which unit was needed more often. Congratulate briefly.`, { silent: true });
     } else {
       SoundManager.playIncorrect();
       sendText(`[ANSWER_INCORRECT] The child picked "${answerUnit}". Ask them to look again at how many of each they laid down — never say which.`, { silent: true });
     }
-    recordResult({
-      challengeId: currentChallenge.id,
-      correct,
-      attempts: currentAttempts + 1,
-    });
-  }, [currentChallenge, showFeedback, currentAttempts, unitType, incrementAttempts, recordResult, sendText]);
+  };
 
   // ── Handle tile completion ──
-  const handleTileComplete = useCallback((count: number) => {
+  const handleTileComplete = (count: number) => {
     if (!currentChallenge) return;
-    incrementAttempts();
-    const correct = count === currentChallenge.correctUnitCount;
-
-    if (correct) {
+    setTiles(count);
+    if (commit(view({ tiles: count }))) {
       SoundManager.playCorrect();
       sendText(`[ANSWER_CORRECT] Student correctly tiled ${count} ${unitType} for "${currentChallenge.objectName0}".`, { silent: true });
     } else {
       SoundManager.playIncorrect();
       sendText(`[ANSWER_INCORRECT] Student placed ${count} ${unitType} but correct is ${currentChallenge.correctUnitCount} for "${currentChallenge.objectName0}". Hint about gaps or overlaps.${tutorRevealPolicy(currentChallenge.supportTier, currentChallenge.type)}`, { silent: true });
     }
-
-    recordResult({
-      challengeId: currentChallenge.id,
-      correct,
-      attempts: currentAttempts + 1,
-    });
     setShowFeedback(true);
-  }, [currentChallenge, currentAttempts, unitType, incrementAttempts, recordResult, sendText]);
+  };
 
   // ── Handle order completion ──
-  const handleOrderComplete = useCallback((correct: boolean) => {
-    if (!currentChallenge) return;
-    incrementAttempts();
-
+  const handleOrderComplete = (placed: string[]): boolean => {
+    if (!currentChallenge) return false;
+    setOrder(placed);
+    const correct = commit(view({ order: placed }));
     if (correct) {
       SoundManager.playCorrect();
       sendText(`[ANSWER_CORRECT] Student correctly ordered objects from shortest to longest.`, { silent: true });
@@ -747,40 +799,26 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
       SoundManager.playIncorrect();
       sendText(`[ANSWER_INCORRECT] Student ordered incorrectly. The correct order is: ${currentChallenge.correctOrderCsv}. Encourage comparing two at a time.${tutorRevealPolicy(currentChallenge.supportTier, currentChallenge.type)}`, { silent: true });
     }
-
-    recordResult({
-      challengeId: currentChallenge.id,
-      correct,
-      attempts: currentAttempts + 1,
-    });
     setShowFeedback(true);
-  }, [currentChallenge, currentAttempts, incrementAttempts, recordResult, sendText]);
+    return correct;
+  };
 
   // ── Handle indirect answer ──
-  const handleIndirectAnswer = useCallback((answer: string) => {
-    if (!currentChallenge || showFeedback) return;
+  const handleIndirectAnswer = (answer: string) => {
+    if (!currentChallenge || showFeedback || learnerBlocked()) return;
     setSelectedAnswer(answer);
     setShowFeedback(true);
-    incrementAttempts();
 
-    const correct = answer === currentChallenge.correctAnswer;
-
-    if (correct) {
+    if (commit(view({ answer }))) {
       SoundManager.playCorrect();
       sendText(`[ANSWER_CORRECT] Student correctly used indirect comparison: "${answer}".`, { silent: true });
     } else {
       SoundManager.playIncorrect();
       sendText(`[ANSWER_INCORRECT] Student chose "${answer}" but correct is "${currentChallenge.correctAnswer}". Remind them about the clues: "${currentChallenge.clue0}" and "${currentChallenge.clue1}".${tutorRevealPolicy(currentChallenge.supportTier, currentChallenge.type)}`, { silent: true });
     }
+  };
 
-    recordResult({
-      challengeId: currentChallenge.id,
-      correct,
-      attempts: currentAttempts + 1,
-    });
-  }, [currentChallenge, showFeedback, currentAttempts, incrementAttempts, recordResult, sendText]);
-
-  // ── Advance ──
+  // ── Advance (scripted path; the workspace path hides Next and the runtime advances) ──
   const handleNext = useCallback(() => {
     if (!advanceProgress()) return; // already at end
     setSelectedAnswer(null);
@@ -789,6 +827,13 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
     setUnitACount(null);
     setUnitBCount(null);
   }, [advanceProgress]);
+
+  // Workspace path: what the tutor and the observer are shown, republished every render. W1: no demonstration,
+  // no presentation, no levers.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge) return;
+    workspace.current = { ...workspaceScene(currentChallenge, view()) };
+  });
 
   // ── Pip shared surface ──
   // A projection of this challenge's check state, the tutor's speech on it, and
@@ -810,9 +855,9 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
       ['workspace', 'objects', 'clues', 'measure', 'measure-a', 'measure-b'],
       (id) => (id === 'objects' ? 'The objects' : id === 'clues' ? 'The clues' : id === 'workspace' ? 'Length workspace' : 'The object and its units'),
     );
-    const workspace = targets.find((target) => target.id === 'workspace')?.element;
+    const workspaceTarget = targets.find((target) => target.id === 'workspace')?.element;
     const touched = pipTouched?.scopeId === currentChallenge.id && pipTouched.element.isConnected
-      && workspace?.contains(pipTouched.element) ? pipTouched.element : null;
+      && workspaceTarget?.contains(pipTouched.element) ? pipTouched.element : null;
     if (touched) targets.push({ id: 'touched', label: 'Your last touch', element: touched });
     const step = currentChallenge.type === 'estimate_then_tile' ? (estimate === null ? 'guess' : 'measure')
       : currentChallenge.type === 'two_unit_compare'
@@ -830,6 +875,7 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
   });
 
   // ── Render challenge content ──
+  const inputClosed = allChallengesComplete || blocked;
   const renderChallenge = () => {
     if (!currentChallenge) return null;
     const ch = currentChallenge;
@@ -864,7 +910,7 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
                       ''
                     }`}
                     onClick={() => handleCompareAnswer(answer)}
-                    disabled={showFeedback}
+                    disabled={showFeedback || inputClosed}
                   >
                     {label}
                   </Button>
@@ -896,6 +942,7 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
                       variant="ghost"
                       className="bg-white/5 border border-white/20 hover:bg-white/10 px-5 text-lg font-mono"
                       onClick={() => handleEstimate(guess)}
+                      disabled={inputClosed}
                     >
                       {guess}
                     </Button>
@@ -908,16 +955,19 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
                   You guessed <span className="font-mono text-amber-300">{estimate}</span>. Now measure and see.
                 </p>
                 <TilingWorkspace
+                  key={`${ch.id}-${attemptKey}`}
                   objectName={ch.objectName0}
                   objectLength={ch.objectLength0}
                   objectColor={ch.objectColor0}
                   unitType={ch.unitType || unitType}
                   correctCount={ch.correctUnitCount || ch.objectLength0}
                   onComplete={handleTileComplete}
-                  disabled={allChallengesComplete}
+                  disabled={inputClosed}
                   showAlignmentFeedback={ch.showAlignmentFeedback !== false}
                   pipRef={pip.ref('measure')}
                   pipId="measure"
+                  revealOnMiss={!tutorOwned}
+                  onCountChange={setTiles}
                 />
               </>
             )}
@@ -928,9 +978,8 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
       // both out and then says which they needed more of — the inverse
       // relationship between unit size and count. ──
       case 'two_unit_compare': {
-        const unitA = ch.unitType || unitType;
-        const unitB = ch.unitTypeB || unitType;
         const label = (u: string) => u.replace('_', ' ');
+        const correctUnit = (ch.correctUnitCount ?? 0) > (ch.correctUnitCountB ?? 0) ? unitA : unitB;
         return (
           <div className="space-y-5">
             <div className="space-y-2">
@@ -938,14 +987,14 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
                 First, measure the {ch.objectName0} with {label(unitA)}.
               </p>
               <TilingWorkspace
-                key={`${ch.id}-a`}
+                key={`${ch.id}-a-${attemptKey}`}
                 objectName={ch.objectName0}
                 objectLength={ch.objectLength0}
                 objectColor={ch.objectColor0}
                 unitType={unitA}
                 correctCount={ch.correctUnitCount || ch.objectLength0}
                 onComplete={handleUnitATile}
-                disabled={allChallengesComplete}
+                disabled={inputClosed}
                 showAlignmentFeedback={ch.showAlignmentFeedback !== false}
                 pipRef={pip.ref('measure-a')}
                 pipId="measure-a"
@@ -958,7 +1007,7 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
                   Now measure the same {ch.objectName0} with {label(unitB)}.
                 </p>
                 <TilingWorkspace
-                  key={`${ch.id}-b`}
+                  key={`${ch.id}-b-${attemptKey}`}
                   objectName={ch.objectName0}
                   objectLength={ch.objectLength0}
                   objectColor={ch.objectColor0}
@@ -968,7 +1017,7 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
                   // fewer of them reach the end, so it is drawn, not asserted.
                   unitSpan={Math.max(1, Math.round(ch.objectLength0 / Math.max(1, ch.correctUnitCountB ?? 1)))}
                   onComplete={handleUnitBTile}
-                  disabled={allChallengesComplete}
+                  disabled={inputClosed}
                   showAlignmentFeedback={ch.showAlignmentFeedback !== false}
                   pipRef={pip.ref('measure-b')}
                   pipId="measure-b"
@@ -984,29 +1033,29 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
                 <div className="flex flex-wrap gap-2">
                   {[unitA, unitB].map((u) => {
                     const isSelected = selectedAnswer === u;
-                    const correctUnit = (ch.correctUnitCount ?? 0) > (ch.correctUnitCountB ?? 0) ? unitA : unitB;
                     return (
                       <Button
                         key={u}
                         variant="ghost"
+                        aria-label={label(u)}
                         className={`bg-white/5 border border-white/20 hover:bg-white/10 ${
                           isSelected && showFeedback && u === correctUnit ? 'bg-emerald-500/20 border-emerald-400/30 text-emerald-300' :
                           isSelected && showFeedback ? 'bg-red-500/20 border-red-400/30 text-red-300' : ''
                         }`}
                         onClick={() => handleTwoUnitAnswer(u)}
-                        disabled={showFeedback}
+                        disabled={showFeedback || inputClosed}
                       >
                         {UNIT_EMOJI[u] || '🟦'} {label(u)}
                       </Button>
                     );
                   })}
                 </div>
-                {showFeedback && selectedAnswer === ((ch.correctUnitCount ?? 0) > (ch.correctUnitCountB ?? 0) ? unitA : unitB) ? (
+                {showFeedback && selectedAnswer === correctUnit ? (
                   <div className="text-emerald-400 text-sm font-medium">
                     That&apos;s right — the smaller unit takes more of them to reach the end.
                   </div>
                 ) : null}
-                {showFeedback && selectedAnswer !== ((ch.correctUnitCount ?? 0) > (ch.correctUnitCountB ?? 0) ? unitA : unitB) ? (
+                {showFeedback && selectedAnswer !== correctUnit ? (
                   <div className="text-red-400 text-sm font-medium">
                     Not quite. Look back at how many of each you laid down.
                   </div>
@@ -1020,16 +1069,19 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
       case 'tile_and_count':
         return (
           <TilingWorkspace
+            key={`${ch.id}-${attemptKey}`}
             objectName={ch.objectName0}
             objectLength={ch.objectLength0}
             objectColor={ch.objectColor0}
             unitType={ch.unitType || unitType}
             correctCount={ch.correctUnitCount || ch.objectLength0}
             onComplete={handleTileComplete}
-            disabled={allChallengesComplete}
+            disabled={inputClosed}
             showAlignmentFeedback={ch.showAlignmentFeedback !== false}
             pipRef={pip.ref('measure')}
             pipId="measure"
+            revealOnMiss={!tutorOwned}
+            onCountChange={setTiles}
           />
         );
 
@@ -1044,11 +1096,12 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
             </div>
 
             <OrderingWorkspace
-              key={ch.id}
+              key={`${ch.id}-${attemptKey}`}
               items={orderItems}
               correctOrderCsv={ch.correctOrderCsv || ''}
               onComplete={handleOrderComplete}
-              disabled={allChallengesComplete}
+              disabled={inputClosed}
+              onSlotsChange={setOrder}
             />
           </div>
         );
@@ -1092,7 +1145,7 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
                       ''
                     }`}
                     onClick={() => handleIndirectAnswer(answer)}
-                    disabled={showFeedback}
+                    disabled={showFeedback || inputClosed}
                   >
                     {label}
                   </Button>
@@ -1184,8 +1237,8 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
               </div>
             )}
 
-            {/* Next button */}
-            {showFeedback && !allChallengesComplete && currentIndex < challenges.length - 1 && (
+            {/* Next button (scripted path only: on the workspace the runtime advances) */}
+            {!tutorOwned && showFeedback && !allChallengesComplete && currentIndex < challenges.length - 1 && (
               <LuminaActionButton action="next" onClick={handleNext}>
                 Next Challenge
               </LuminaActionButton>
@@ -1196,5 +1249,9 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const LengthLab = withWorkspaceController<LengthLabProps, ProgressOptions<LengthLabChallenge>, Progress>(
+  'length-lab', LengthLabSurface, useScriptedProgress, useWorkspaceProgressFor('length-lab'));
 
 export default LengthLab;

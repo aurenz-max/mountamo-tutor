@@ -1,0 +1,77 @@
+{
+ "source": "qa/tutor-reports/analog-clock-runtime-match-payload-2026-10-09.json",
+ "primitiveId": "analog-clock",
+ "evalMode": "match",
+ "data": {
+  "title": "Telling Time by Fives",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "match",
+    "instruction": "Look at the clock face. The long minute hand points to a number representing minutes by fives. Match it to the correct digital time.",
+    "targetHour": 3,
+    "targetMinute": 15,
+    "hint": "Remember that each number on the clock face counts as 5 minutes for the long hand. 3 times 5 is 15.",
+    "option0": "3:15",
+    "option1": "5:50",
+    "option2": "5:30",
+    "option3": "5:25",
+    "correctOptionIndex": 0
+   },
+   {
+    "id": "c2",
+    "type": "match",
+    "instruction": "Find the matching digital time for this clock. Notice where both the short hour hand and the long minute hand are pointing.",
+    "targetHour": 7,
+    "targetMinute": 30,
+    "hint": "When the long minute hand points straight down at the 6, it has traveled 30 minutes around the clock.",
+    "option0": "9:40",
+    "option1": "9:25",
+    "option2": "7:30",
+    "option3": "9:30",
+    "correctOptionIndex": 2
+   },
+   {
+    "id": "c3",
+    "type": "match",
+    "instruction": "Read the clock carefully by counting the minutes in groups of 5 around the dial. Select the matching digital time.",
+    "targetHour": 10,
+    "targetMinute": 45,
+    "hint": "Count by fives starting from the 12. The minute hand is past the 9, so it is 45 minutes past the hour.",
+    "option0": "9:10",
+    "option1": "12:45",
+    "option2": "10:15",
+    "option3": "10:45",
+    "correctOptionIndex": 3
+   },
+   {
+    "id": "c4",
+    "type": "match",
+    "instruction": "Examine this clock face showing minutes counting by fives. Choose the correct digital display.",
+    "targetHour": 1,
+    "targetMinute": 55,
+    "hint": "The hour hand is almost at the 2, and the minute hand is almost all the way around at the 11. That means 55 minutes.",
+    "option0": "11:30",
+    "option1": "3:10",
+    "option2": "1:55",
+    "option3": "12:10",
+    "correctOptionIndex": 2
+   },
+   {
+    "id": "c5",
+    "type": "match",
+    "instruction": "Put your skills together to find the correct digital time for this analog clock showing a 5-minute interval.",
+    "targetHour": 5,
+    "targetMinute": 20,
+    "hint": "The short hand is past the 5, and the long hand is pointing at the 4. Count by fives four times to find the minutes.",
+    "option0": "5:30",
+    "option1": "7:30",
+    "option2": "4:45",
+    "option3": "5:20",
+    "correctOptionIndex": 3
+   }
+  ],
+  "gradeBand": "3-5",
+  "description": "Students practice reading analog clocks and matching them to digital times using 5-minute intervals."
+ }
+}

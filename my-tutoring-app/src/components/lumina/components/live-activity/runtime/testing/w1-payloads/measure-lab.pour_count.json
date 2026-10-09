@@ -1,0 +1,96 @@
+{
+ "source": "qa/tutor-reports/measure-lab-runtime-pour_count-payload-2026-10-09.json",
+ "primitiveId": "measure-lab",
+ "evalMode": "pour_count",
+ "data": {
+  "title": "The Big Balance",
+  "description": "Let's find out which things are heavier and which are lighter!",
+  "challengeType": "pour_count",
+  "challenges": [
+   {
+    "id": "ml-1",
+    "type": "pour_count",
+    "prompt": "Fill the big bowl with scoops. How many does it take?",
+    "hint": "Count each scoop out loud as you pour it in.",
+    "container": {
+     "id": "cnt-0",
+     "name": "big bowl",
+     "shape": "tall",
+     "capacity": 4
+    },
+    "unitName": "scoops",
+    "unitEmoji": "\ud83e\udd44",
+    "expectedCount": 4,
+    "options": [
+     3,
+     4,
+     5,
+     6
+    ]
+   },
+   {
+    "id": "ml-2",
+    "type": "pour_count",
+    "prompt": "Fill the soup pot with scoops. How many does it take?",
+    "hint": "Count each scoop out loud as you pour it in.",
+    "container": {
+     "id": "cnt-1",
+     "name": "soup pot",
+     "shape": "wide",
+     "capacity": 3
+    },
+    "unitName": "scoops",
+    "unitEmoji": "\ud83e\udd44",
+    "expectedCount": 3,
+    "options": [
+     2,
+     3,
+     4,
+     5
+    ]
+   },
+   {
+    "id": "ml-3",
+    "type": "pour_count",
+    "prompt": "Fill the small cup with scoops. How many does it take?",
+    "hint": "Count each scoop out loud as you pour it in.",
+    "container": {
+     "id": "cnt-2",
+     "name": "small cup",
+     "shape": "round",
+     "capacity": 4
+    },
+    "unitName": "scoops",
+    "unitEmoji": "\ud83e\udd44",
+    "expectedCount": 4,
+    "options": [
+     3,
+     4,
+     5,
+     6
+    ]
+   },
+   {
+    "id": "ml-4",
+    "type": "pour_count",
+    "prompt": "Fill the soup pot with scoops. How many does it take?",
+    "hint": "Count each scoop out loud as you pour it in.",
+    "container": {
+     "id": "cnt-3",
+     "name": "soup pot",
+     "shape": "tall",
+     "capacity": 8
+    },
+    "unitName": "scoops",
+    "unitEmoji": "\ud83e\udd44",
+    "expectedCount": 8,
+    "options": [
+     7,
+     8,
+     9,
+     10
+    ]
+   }
+  ]
+ }
+}

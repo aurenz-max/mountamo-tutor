@@ -12,6 +12,9 @@
     "J2-miss-committed": "handoff 21 SW-4",
     "J5-credit-moves-on": "handoff 21 SW-4"
   },
+  "analog-clock.set_time": {
+    "J1-drivable": "the dry sweep has no drag or key input for the clock hands (dial drag or the time bar); AnalogClock.workspace.test.tsx drives the miss, Try again and the pass through the time bar"
+  },
   "fraction-circles.touch_fraction": {
     "J1-drivable": "handoff 21 SW-6"
   },

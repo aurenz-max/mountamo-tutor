@@ -1,0 +1,72 @@
+{
+ "source": "qa/tutor-reports/length-lab-runtime-order-payload-2026-10-09.json",
+ "primitiveId": "length-lab",
+ "evalMode": "order",
+ "data": {
+  "title": "Super Size Sorter!",
+  "description": "Help sort everyday objects from shortest to longest using your measuring skills!",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "order",
+    "instruction": "Put the crayon, pencil, and straw in order from shortest to longest!",
+    "hint": "Look at the starting line. Which one ends the soonest, and which one goes the furthest?",
+    "narration": "Let us practice ordering! Can you line these up from the shortest one to the longest one?",
+    "objectName0": "crayon",
+    "objectLength0": 3,
+    "objectColor0": "#4A90D9",
+    "objectName1": "pencil",
+    "objectLength1": 6,
+    "objectColor1": "#4DD0E1",
+    "correctAnswer": "crayon,pencil,straw",
+    "correctOrderCsv": "crayon,pencil,straw",
+    "objectName2": "straw",
+    "referenceObjectLength": 9,
+    "referenceObjectName": "toothbrush",
+    "unitType": "cubes",
+    "objectLength2": 7,
+    "objectColor2": "#81C784"
+   },
+   {
+    "id": "c2",
+    "type": "order",
+    "instruction": "Put the fork, toothbrush, and straw in order from shortest to longest!",
+    "hint": "Compare them side-by-side. Find the tiniest one first!",
+    "narration": "Great job! Here is another set. Let us find the shortest one and build our way up.",
+    "objectName0": "fork",
+    "objectLength0": 4,
+    "objectColor0": "#FFB74D",
+    "objectName1": "toothbrush",
+    "objectLength1": 8,
+    "objectColor1": "#4A90D9",
+    "correctAnswer": "fork,straw,toothbrush",
+    "correctOrderCsv": "fork,straw,toothbrush",
+    "objectName2": "straw",
+    "unitType": "cubes",
+    "objectLength2": 7,
+    "objectColor2": "#81C784"
+   },
+   {
+    "id": "c3",
+    "type": "order",
+    "instruction": "Put the crayon, toothbrush, and straw in order from shortest to longest!",
+    "hint": "Check the ends carefully. Which item is the longest of all three?",
+    "narration": "You are doing amazing! Let us try one more ordering challenge.",
+    "objectName0": "crayon",
+    "objectLength0": 2,
+    "objectColor0": "#4DD0E1",
+    "objectName1": "toothbrush",
+    "objectLength1": 7,
+    "objectColor1": "#FFB74D",
+    "correctAnswer": "crayon,straw,toothbrush",
+    "correctOrderCsv": "crayon,straw,toothbrush",
+    "objectName2": "straw",
+    "unitType": "cubes",
+    "objectLength2": 6,
+    "objectColor2": "#81C784"
+   }
+  ],
+  "unitType": "cubes",
+  "gradeBand": "K"
+ }
+}

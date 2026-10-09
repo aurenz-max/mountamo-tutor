@@ -81,7 +81,7 @@ describe('Length Lab drives Pip from its check state', () => {
     speak(true, rerender, again);
     expect(pose(store)).toEqual({ phase: 'introducing', gesture: 'point', targetId: 'measure-a' });
     const lay = () => {
-      const plus = screen.getAllByRole('button', { name: '+' }).pop()!;
+      const plus = screen.getAllByRole('button', { name: /^Add / }).pop()!;
       fireEvent.click(plus);
       fireEvent.click(screen.getByRole('button', { name: 'Check' }));
     };

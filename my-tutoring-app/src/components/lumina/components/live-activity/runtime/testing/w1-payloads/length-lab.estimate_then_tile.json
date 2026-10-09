@@ -1,0 +1,101 @@
+{
+ "source": "qa/tutor-reports/length-lab-runtime-estimate_then_tile-payload-2026-10-09.json",
+ "primitiveId": "length-lab",
+ "evalMode": "estimate_then_tile",
+ "data": {
+  "title": "Measure with Little Feet!",
+  "description": "Learn how to measure fun everyday objects by guessing how many little feet will fit and then finding out!",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "estimate_then_tile",
+    "instruction": "Look at the crayon. Can you guess how many little feet long it is? Make your guess, then place the feet to measure!",
+    "hint": "Try counting the spaces carefully from one end of the crayon to the other.",
+    "narration": "Let us measure this crayon together! First, take a guess at how many feet long it is.",
+    "objectName0": "crayon",
+    "objectLength0": 3,
+    "objectColor0": "#E57373",
+    "objectName1": "placeholder",
+    "objectLength1": 5,
+    "objectColor1": "#000000",
+    "correctAnswer": "3",
+    "unitType": "feet",
+    "correctUnitCount": 3,
+    "estimateOptions": [
+     2,
+     3,
+     4,
+     5
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "estimate_then_tile",
+    "instruction": "Now look at the straw. How many little feet do you think will fit along the straw? Guess first, then tile to check!",
+    "hint": "Remember to place the feet right next to each other with no gaps!",
+    "narration": "Here comes a straw! Make a smart guess on how many feet long it might be.",
+    "objectName0": "straw",
+    "objectLength0": 5,
+    "objectColor0": "#BA68C8",
+    "objectName1": "placeholder",
+    "objectLength1": 5,
+    "objectColor1": "#000000",
+    "correctAnswer": "5",
+    "unitType": "feet",
+    "correctUnitCount": 5,
+    "estimateOptions": [
+     4,
+     5,
+     6,
+     7
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "estimate_then_tile",
+    "instruction": "Time to measure the pencil! Make your best guess for its length, and then tile the feet to find out.",
+    "hint": "Look at the other objects we measured to help you make a great guess!",
+    "narration": "This pencil is a bit longer! How many feet do you think it will take to measure it?",
+    "objectName0": "pencil",
+    "objectLength0": 7,
+    "objectColor0": "#4A90D9",
+    "objectName1": "placeholder",
+    "objectLength1": 5,
+    "objectColor1": "#000000",
+    "correctAnswer": "7",
+    "unitType": "feet",
+    "correctUnitCount": 7,
+    "estimateOptions": [
+     6,
+     7,
+     8,
+     9
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "estimate_then_tile",
+    "instruction": "Look at this long toothbrush! Guess how many little feet will fit, then place them all the way across.",
+    "hint": "Count slowly as you place each foot down to make sure you get the right number.",
+    "narration": "Our last object is a toothbrush. Make your final guess and let us measure!",
+    "objectName0": "toothbrush",
+    "objectLength0": 9,
+    "objectColor0": "#BA68C8",
+    "objectName1": "placeholder",
+    "objectLength1": 5,
+    "objectColor1": "#000000",
+    "correctAnswer": "9",
+    "unitType": "feet",
+    "correctUnitCount": 9,
+    "estimateOptions": [
+     8,
+     9,
+     10,
+     11
+    ]
+   }
+  ],
+  "unitType": "feet",
+  "gradeBand": "K"
+ }
+}

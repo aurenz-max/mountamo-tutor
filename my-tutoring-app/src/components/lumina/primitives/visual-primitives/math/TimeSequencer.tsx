@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   LuminaCard,
@@ -17,13 +17,19 @@ import {
 } from '../../../evaluation';
 import type { TimeSequencerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { timeSequencerPipPose } from '../../../pip/timeSequencerPipPose';
 import { useSpeechScope } from '../../../pip/useSpeechScope';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { EMPTY_TIME_VIEW, describeTimeWork, timeSequencerMiss, workspaceAssignment, workspaceScene, type TimeView }
+  from './timeSequencerWorkspace';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -341,6 +347,7 @@ const EventCardVisual: React.FC<EventCardVisualProps> = ({
     ref={pipRef}
     data-pip-object={pipId}
     type="button"
+    aria-label={event.label}
     onClick={onClick}
     disabled={disabled}
     className={`
@@ -380,13 +387,24 @@ const EventCardVisual: React.FC<EventCardVisualProps> = ({
 interface TimeSequencerProps {
   data: TimeSequencerData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
+
+/** The first card of the day, pre-placed as a start-here anchor (easy/medium). Never more than the first. */
+const seededOrder = (c: TimeSequencerChallenge | undefined | null): string[] =>
+  c && (c.type === 'sequence-events' || c.type === 'clock-sequence') && c.prelabelFirstSlot && (c.correctOrder?.length ?? 0) > 1
+    ? [c.correctOrder![0]] : [];
 
 // ============================================================================
 // Component
 // ============================================================================
 
-const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
+const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  TimeSequencerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<TimeSequencerChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -401,19 +419,35 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
-  // ── Challenge Progress ─────────────────────────────────────────────
+  // ── Challenge Progress. On the workspace path the runtime moves the index. ──
+  const stableInstanceIdRef = useRef(instanceId || `time-sequencer-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  // Bound below, once the setters and the evaluation exist.
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onFinished: result => finish.current(result),
+  });
   const {
     currentIndex: currentChallengeIndex,
     currentAttempts,
     results: challengeResults,
     isComplete: allChallengesComplete,
-    recordResult,
-    incrementAttempts,
     advance: advanceProgress,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (ch) => ch.id,
-  });
+  } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  const learnerBlocked = () => workspaceClosed.current;
+  // The activity's own check is the workspace's checked gesture. A ref, so the check callbacks keep their deps.
+  const commitCheck = useRef(progress.commitCheck);
+  commitCheck.current = progress.commitCheck;
+  const timeView = useRef<TimeView>(EMPTY_TIME_VIEW);
 
   const phaseResults = usePhaseResults({
     challenges,
@@ -444,10 +478,6 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
   // read-schedule
   const [scheduleAnswer, setScheduleAnswer] = useState<string | null>(null);
 
-  // Refs
-  const stableInstanceIdRef = useRef(instanceId || `time-sequencer-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-
   // ── Evaluation Hook ────────────────────────────────────────────────
   const {
     submitResult: submitEvaluation,
@@ -475,12 +505,17 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
     supportTier: supportTier ?? null,
   }), [gradeBand, challenges.length, currentChallengeIndex, currentChallenge, currentAttempts, supportTier]);
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  // Its context carries the answers, so it is off on the workspace path, and its scripted cues send nothing there.
+  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'time-sequencer',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: gradeBand === 'K' ? 'Kindergarten' : `Grade ${gradeBand}`,
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   const hasIntroducedRef = useRef(false);
   useEffect(() => {
@@ -506,6 +541,11 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
     setFeedback('');
     setFeedbackType('');
   }, []);
+  // Workspace path: a fresh challenge and Try again both open blank, with the start-here card back in the first slot.
+  openItem.current = (index) => {
+    resetDomainState();
+    setOrderedEvents(seededOrder(challenges[index]));
+  };
 
   // ── Pre-seed the first ordered slot (easy/medium "start here" anchor) ──
   // ANSWER-LEAK GUARD: seeds ONLY the first event — never the full order. The
@@ -516,8 +556,8 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
       && currentChallenge.prelabelFirstSlot
       && (currentChallenge.correctOrder?.length ?? 0) > 1
     ) {
-      const firstId = currentChallenge.correctOrder![0];
-      setOrderedEvents((prev) => (prev.length === 0 ? [firstId] : prev));
+      const seeded = seededOrder(currentChallenge);
+      setOrderedEvents((prev) => (prev.length === 0 ? seeded : prev));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChallenge?.id]);
@@ -526,7 +566,6 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
 
   const handleCheckSequence = useCallback(() => {
     if (!currentChallenge) return false;
-    incrementAttempts();
     const correct = JSON.stringify(orderedEvents) === JSON.stringify(currentChallenge.correctOrder);
 
     if (correct) {
@@ -552,11 +591,10 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
       );
     }
     return correct;
-  }, [currentChallenge, orderedEvents, incrementAttempts, sendText]);
+  }, [currentChallenge, orderedEvents, sendText]);
 
   const handleCheckTimeOfDay = useCallback(() => {
     if (!currentChallenge || !selectedPeriod) return false;
-    incrementAttempts();
     const correct = selectedPeriod === currentChallenge.correctPeriod;
 
     if (correct) {
@@ -573,11 +611,10 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
       );
     }
     return correct;
-  }, [currentChallenge, selectedPeriod, incrementAttempts, sendText]);
+  }, [currentChallenge, selectedPeriod, sendText]);
 
   const handleCheckBeforeAfter = useCallback(() => {
     if (!currentChallenge || !selectedEvent) return false;
-    incrementAttempts();
     const correct = selectedEvent === currentChallenge.correctEvent;
 
     if (correct) {
@@ -595,11 +632,10 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
       );
     }
     return correct;
-  }, [currentChallenge, selectedEvent, incrementAttempts, sendText]);
+  }, [currentChallenge, selectedEvent, sendText]);
 
   const handleCheckDuration = useCallback(() => {
     if (!currentChallenge || !durationAnswer) return false;
-    incrementAttempts();
     const correct = durationAnswer === currentChallenge.correctAnswer;
 
     const aLabel = currentChallenge.eventA?.label ?? 'A';
@@ -622,11 +658,10 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
       );
     }
     return correct;
-  }, [currentChallenge, durationAnswer, incrementAttempts, sendText]);
+  }, [currentChallenge, durationAnswer, sendText]);
 
   const handleCheckSchedule = useCallback(() => {
     if (!currentChallenge || !scheduleAnswer) return false;
-    incrementAttempts();
     const correct = scheduleAnswer === currentChallenge.correctActivity;
 
     if (correct) {
@@ -643,7 +678,7 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
       );
     }
     return correct;
-  }, [currentChallenge, scheduleAnswer, incrementAttempts, sendText]);
+  }, [currentChallenge, scheduleAnswer, sendText]);
 
   // ── Master Check ───────────────────────────────────────────────────
   const handleCheckAnswer = useCallback(() => {
@@ -660,17 +695,13 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
       case 'read-schedule': correct = handleCheckSchedule(); break;
     }
 
-    if (correct) {
-      SoundManager.playCorrect();
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      });
-    } else {
-      SoundManager.playIncorrect();
-    }
-  }, [currentChallenge, currentAttempts, handleCheckSequence, handleCheckTimeOfDay, handleCheckBeforeAfter, handleCheckDuration, handleCheckSchedule, recordResult]);
+    if (correct) SoundManager.playCorrect();
+    else SoundManager.playIncorrect();
+    // Counts the attempt and records a correct result on both paths; on the workspace path it is the checked gesture.
+    const work = timeView.current;
+    commitCheck.current(describeTimeWork(currentChallenge, work), correct,
+      correct ? undefined : timeSequencerMiss(currentChallenge, work));
+  }, [currentChallenge, handleCheckSequence, handleCheckTimeOfDay, handleCheckBeforeAfter, handleCheckDuration, handleCheckSchedule]);
 
   // ── Advance ────────────────────────────────────────────────────────
   const advanceToNextChallenge = useCallback(() => {
@@ -688,7 +719,8 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
         { silent: true },
       );
 
-      if (!hasSubmittedEvaluation) {
+      // The workspace path submits the scored session from `onFinished` (below), not this tally.
+      if (!hasSubmittedEvaluation && !tutorOwned) {
         const correctCount = challengeResults.filter((r) => r.correct).length;
         const score = Math.round((correctCount / challenges.length) * 100);
         const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
@@ -720,8 +752,25 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
     );
   }, [
     advanceProgress, phaseResults, challengeResults, challenges, sendText,
-    hasSubmittedEvaluation, submitEvaluation, resetDomainState, currentChallengeIndex,
+    hasSubmittedEvaluation, submitEvaluation, resetDomainState, currentChallengeIndex, tutorOwned,
   ]);
+
+  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // corrections and whose evidence carries each wrong check's named miss (`diagnosisEvidence.phases`).
+  finish.current = (result) => {
+    if (hasSubmittedEvaluation) return;
+    const metrics: TimeSequencerMetrics = {
+      type: 'time-sequencer',
+      accuracy: result.accuracy,
+      totalAttempts: result.attemptsCount,
+      challengesCompleted: result.solvedCount,
+      challengesTotal: challenges.length,
+    };
+    submitEvaluation(result.passed, result.accuracy, metrics,
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
 
   // Auto-submit
   const hasAutoSubmittedRef = useRef(false);
@@ -767,8 +816,20 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
   }, [allChallengesComplete, challenges, challengeResults]);
 
   // ── Sequence event toggling ────────────────────────────────────────
+  // The learner's work as the check and the tutor read it. Written every render, read by the check handlers.
+  timeView.current = {
+    order: orderedEvents, period: selectedPeriod, picked: selectedEvent, duration: durationAnswer, activity: scheduleAnswer,
+  };
+
+  // Workspace path: what the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge) return;
+    workspace.current = { ...workspaceScene(currentChallenge, timeView.current) };
+  });
+
   const handleToggleSequenceEvent = useCallback((eventId: string) => {
-    if (isCurrentChallengeCorrect) return;
+    if (isCurrentChallengeCorrect || learnerBlocked()) return;
     SoundManager.tap();
     setOrderedEvents((prev) => {
       if (prev.includes(eventId)) {
@@ -888,7 +949,8 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
               ref={pip.ref(`period-${period}`)}
               data-pip-object={`period-${period}`}
               type="button"
-              onClick={() => { pip.look(`period-${period}`); if (!isCurrentChallengeCorrect) { SoundManager.select(); setSelectedPeriod(period); } }}
+              aria-label={display.label}
+              onClick={() => { pip.look(`period-${period}`); if (!isCurrentChallengeCorrect && !learnerBlocked()) { SoundManager.select(); setSelectedPeriod(period); } }}
               disabled={isCurrentChallengeCorrect}
               className={`
                 p-3 rounded-xl border-2 text-center transition-all
@@ -938,7 +1000,7 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
               selected={selectedEvent === event.id}
               pipId={`option-${event.id}`}
               pipRef={pip.ref(`option-${event.id}`)}
-              onClick={() => { pip.look(`option-${event.id}`); if (!isCurrentChallengeCorrect) { SoundManager.select(); setSelectedEvent(event.id); } }}
+              onClick={() => { pip.look(`option-${event.id}`); if (!isCurrentChallengeCorrect && !learnerBlocked()) { SoundManager.select(); setSelectedEvent(event.id); } }}
               disabled={isCurrentChallengeCorrect}
             />
           ))}
@@ -959,7 +1021,8 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
             ref={pip.ref('duration-A')}
             data-pip-object="duration-A"
             type="button"
-            onClick={() => { pip.look('duration-A'); if (!isCurrentChallengeCorrect) { SoundManager.select(); setDurationAnswer('A'); } }}
+            aria-label={eventA.label}
+            onClick={() => { pip.look('duration-A'); if (!isCurrentChallengeCorrect && !learnerBlocked()) { SoundManager.select(); setDurationAnswer('A'); } }}
             disabled={isCurrentChallengeCorrect}
             className={`p-3 rounded-xl border-2 transition-all ${
               durationAnswer === 'A'
@@ -974,7 +1037,8 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
             ref={pip.ref('duration-B')}
             data-pip-object="duration-B"
             type="button"
-            onClick={() => { pip.look('duration-B'); if (!isCurrentChallengeCorrect) { SoundManager.select(); setDurationAnswer('B'); } }}
+            aria-label={eventB.label}
+            onClick={() => { pip.look('duration-B'); if (!isCurrentChallengeCorrect && !learnerBlocked()) { SoundManager.select(); setDurationAnswer('B'); } }}
             disabled={isCurrentChallengeCorrect}
             className={`p-3 rounded-xl border-2 transition-all ${
               durationAnswer === 'B'
@@ -990,9 +1054,10 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
           <Button
             ref={pip.ref('duration-same')}
             data-pip-object="duration-same"
+            aria-label="About the Same"
             variant="ghost"
             size="sm"
-            onClick={() => { pip.look('duration-same'); if (!isCurrentChallengeCorrect) { SoundManager.select(); setDurationAnswer('same'); } }}
+            onClick={() => { pip.look('duration-same'); if (!isCurrentChallengeCorrect && !learnerBlocked()) { SoundManager.select(); setDurationAnswer('same'); } }}
             disabled={isCurrentChallengeCorrect}
             className={`text-sm ${
               durationAnswer === 'same'
@@ -1053,7 +1118,7 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
               ref={pip.ref(`activity-${i}`)}
               data-pip-object={`activity-${i}`}
               type="button"
-              onClick={() => { pip.look(`activity-${i}`); if (!isCurrentChallengeCorrect) { SoundManager.select(); setScheduleAnswer(activity); } }}
+              onClick={() => { pip.look(`activity-${i}`); if (!isCurrentChallengeCorrect && !learnerBlocked()) { SoundManager.select(); setScheduleAnswer(activity); } }}
               disabled={isCurrentChallengeCorrect}
               className={`
                 w-full px-4 py-3 rounded-xl border-2 text-left text-sm font-medium transition-all
@@ -1173,10 +1238,10 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
               {!isCurrentChallengeCorrect ? (
                 <LuminaActionButton
                   action="check"
-                  onClick={handleCheckAnswer}
-                  disabled={!canCheck}
+                  onClick={() => { if (!learnerBlocked()) handleCheckAnswer(); }}
+                  disabled={!canCheck || (tutorOwned && progress.canAttempt === false)}
                 />
-              ) : (
+              ) : tutorOwned ? null : (
                 <LuminaActionButton
                   action="next"
                   onClick={advanceToNextChallenge}
@@ -1199,5 +1264,9 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const TimeSequencer = withWorkspaceController<TimeSequencerProps, ProgressOptions<TimeSequencerChallenge>, Progress>(
+  'time-sequencer', TimeSequencerSurface, useScriptedProgress, useWorkspaceProgressFor('time-sequencer'));
 
 export default TimeSequencer;

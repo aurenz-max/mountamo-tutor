@@ -1,0 +1,182 @@
+{
+ "source": "qa/tutor-reports/time-sequencer-runtime-sequence-3-payload-2026-10-09.json",
+ "primitiveId": "time-sequencer",
+ "evalMode": "sequence-3",
+ "data": {
+  "title": "Morning Routine Adventure",
+  "description": "Put the morning routine cards in the correct order.",
+  "gradeBand": "K",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "sequence-events",
+    "instruction": "Put the cards in order. Which one happens first in the morning?",
+    "hint": "Which one happens right when you wake up?",
+    "events": [
+     {
+      "id": "e3",
+      "label": "Eat breakfast",
+      "emoji": "\ud83c\udf73",
+      "typicalTime": "8:00 AM",
+      "dayFraction": 0.333
+     },
+     {
+      "id": "e1",
+      "label": "Wake up",
+      "emoji": "\ud83c\udf05",
+      "typicalTime": "7:00 AM",
+      "dayFraction": 0.292
+     },
+     {
+      "id": "e2",
+      "label": "Brush teeth",
+      "emoji": "\ud83e\uddb7",
+      "typicalTime": "7:30 AM",
+      "dayFraction": 0.313
+     }
+    ],
+    "correctOrder": [
+     "e1",
+     "e2",
+     "e3"
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "sequence-events",
+    "instruction": "Can you put these morning steps in order?",
+    "hint": "Think about what you pack before you walk out the door.",
+    "events": [
+     {
+      "id": "e2",
+      "label": "Put on shoes",
+      "emoji": "\ud83c\udfc3",
+      "typicalTime": "8:05 AM",
+      "dayFraction": 0.337
+     },
+     {
+      "id": "e1",
+      "label": "Grab backpack",
+      "emoji": "\ud83c\udf92",
+      "typicalTime": "8:00 AM",
+      "dayFraction": 0.333
+     },
+     {
+      "id": "e3",
+      "label": "Ride the bus",
+      "emoji": "\ud83d\ude8c",
+      "typicalTime": "8:15 AM",
+      "dayFraction": 0.344
+     }
+    ],
+    "correctOrder": [
+     "e1",
+     "e2",
+     "e3"
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "sequence-events",
+    "instruction": "Order these fun morning activities from start to finish!",
+    "hint": "What do you drink or eat first thing when you are thirsty?",
+    "events": [
+     {
+      "id": "e3",
+      "label": "Feed the dog",
+      "emoji": "\ud83d\udc15",
+      "typicalTime": "8:00 AM",
+      "dayFraction": 0.333
+     },
+     {
+      "id": "e2",
+      "label": "Eat an apple",
+      "emoji": "\ud83c\udf4e",
+      "typicalTime": "7:30 AM",
+      "dayFraction": 0.313
+     },
+     {
+      "id": "e1",
+      "label": "Drink a cup",
+      "emoji": "\ud83e\udd64",
+      "typicalTime": "7:15 AM",
+      "dayFraction": 0.302
+     }
+    ],
+    "correctOrder": [
+     "e1",
+     "e2",
+     "e3"
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "sequence-events",
+    "instruction": "Put the pictures in the right order for getting ready.",
+    "hint": "What do you do right after you wake up?",
+    "events": [
+     {
+      "id": "e2",
+      "label": "Eat breakfast",
+      "emoji": "\ud83c\udf7d\ufe0f",
+      "typicalTime": "7:30 AM",
+      "dayFraction": 0.313
+     },
+     {
+      "id": "e3",
+      "label": "Pack school bag",
+      "emoji": "\ud83d\udcda",
+      "typicalTime": "8:00 AM",
+      "dayFraction": 0.333
+     },
+     {
+      "id": "e1",
+      "label": "Wake up",
+      "emoji": "\u2600\ufe0f",
+      "typicalTime": "7:00 AM",
+      "dayFraction": 0.292
+     }
+    ],
+    "correctOrder": [
+     "e1",
+     "e2",
+     "e3"
+    ]
+   },
+   {
+    "id": "c5",
+    "type": "sequence-events",
+    "instruction": "Tap the cards to show what comes first, next, and last.",
+    "hint": "Look at the sun! Which picture is at the very beginning of the day?",
+    "events": [
+     {
+      "id": "e2",
+      "label": "Brush teeth",
+      "emoji": "\ud83e\uddb7",
+      "typicalTime": "7:30 AM",
+      "dayFraction": 0.313
+     },
+     {
+      "id": "e3",
+      "label": "Wait for bus",
+      "emoji": "\ud83d\ude8c",
+      "typicalTime": "8:10 AM",
+      "dayFraction": 0.34
+     },
+     {
+      "id": "e1",
+      "label": "Wake up",
+      "emoji": "\ud83c\udf05",
+      "typicalTime": "7:00 AM",
+      "dayFraction": 0.292
+     }
+    ],
+    "correctOrder": [
+     "e1",
+     "e2",
+     "e3"
+    ]
+   }
+  ]
+ }
+}

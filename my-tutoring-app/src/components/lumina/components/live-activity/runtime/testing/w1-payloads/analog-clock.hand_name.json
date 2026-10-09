@@ -1,0 +1,48 @@
+{
+ "source": "qa/tutor-reports/analog-clock-runtime-hand_name-payload-2026-10-09.json",
+ "primitiveId": "analog-clock",
+ "evalMode": "hand_name",
+ "data": {
+  "title": "Meet the Clock Hands",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "hand_name",
+    "instruction": "Touch the hand that tells us the hour.",
+    "targetHour": 2,
+    "targetMinute": 0,
+    "hint": "One hand is short and one is long. The short one moves slowly, all day long.",
+    "targetHand": "hour"
+   },
+   {
+    "id": "c2",
+    "type": "hand_name",
+    "instruction": "Touch the hand that tells us the minutes.",
+    "targetHour": 6,
+    "targetMinute": 0,
+    "hint": "One hand is short and one is long. The long one races all the way round in an hour.",
+    "targetHand": "minute"
+   },
+   {
+    "id": "c3",
+    "type": "hand_name",
+    "instruction": "Touch the hand that tells us the hour.",
+    "targetHour": 9,
+    "targetMinute": 0,
+    "hint": "One hand is short and one is long. The short one moves slowly, all day long.",
+    "targetHand": "hour"
+   },
+   {
+    "id": "c4",
+    "type": "hand_name",
+    "instruction": "Touch the hand that tells us the minutes.",
+    "targetHour": 11,
+    "targetMinute": 30,
+    "hint": "One hand is short and one is long. The long one races all the way round in an hour.",
+    "targetHand": "minute"
+   }
+  ],
+  "gradeBand": "K",
+  "description": "Young learners explore the analog clock by identifying the short hour hand and the long minute hand."
+ }
+}

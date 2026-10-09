@@ -1,0 +1,202 @@
+{
+ "source": "qa/tutor-reports/time-sequencer-runtime-clock-sequence-payload-2026-10-09.json",
+ "primitiveId": "time-sequencer",
+ "evalMode": "clock-sequence",
+ "data": {
+  "title": "Morning Routine Fun",
+  "description": "Put the morning routine cards in the right order from start to finish.",
+  "gradeBand": "K",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "clock-sequence",
+    "instruction": "Put the morning cards in order. Which one happens first?",
+    "hint": "Think about what you do right after you wake up.",
+    "events": [
+     {
+      "id": "e1",
+      "label": "Wake Up",
+      "emoji": "\ud83c\udf05",
+      "typicalTime": "7:00 AM",
+      "clockHour": 7,
+      "dayFraction": 0.292
+     },
+     {
+      "id": "e2",
+      "label": "Eat Breakfast",
+      "emoji": "\ud83c\udf73",
+      "typicalTime": "8:00 AM",
+      "clockHour": 8,
+      "dayFraction": 0.333
+     },
+     {
+      "id": "e3",
+      "label": "Brush Teeth",
+      "emoji": "\ud83e\uddb7",
+      "typicalTime": "9:00 AM",
+      "clockHour": 9,
+      "dayFraction": 0.375
+     }
+    ],
+    "correctOrder": [
+     "e1",
+     "e2",
+     "e3"
+    ],
+    "showClockFace": true
+   },
+   {
+    "id": "c2",
+    "type": "clock-sequence",
+    "instruction": "Can you sort these morning steps?",
+    "hint": "Check what you do before you run outside.",
+    "events": [
+     {
+      "id": "e1",
+      "label": "Eat Breakfast",
+      "emoji": "\ud83c\udf73",
+      "typicalTime": "7:00 AM",
+      "clockHour": 7,
+      "dayFraction": 0.292
+     },
+     {
+      "id": "e2",
+      "label": "Brush Teeth",
+      "emoji": "\ud83e\uddb7",
+      "typicalTime": "8:00 AM",
+      "clockHour": 8,
+      "dayFraction": 0.333
+     },
+     {
+      "id": "e3",
+      "label": "Catch Bus",
+      "emoji": "\ud83d\ude8c",
+      "typicalTime": "9:00 AM",
+      "clockHour": 9,
+      "dayFraction": 0.375
+     }
+    ],
+    "correctOrder": [
+     "e1",
+     "e2",
+     "e3"
+    ],
+    "showClockFace": true
+   },
+   {
+    "id": "c3",
+    "type": "clock-sequence",
+    "instruction": "Put the school prep steps in order.",
+    "hint": "What do you grab before walking out the door?",
+    "events": [
+     {
+      "id": "e1",
+      "label": "Wake Up",
+      "emoji": "\ud83c\udf05",
+      "typicalTime": "7:00 AM",
+      "clockHour": 7,
+      "dayFraction": 0.292
+     },
+     {
+      "id": "e2",
+      "label": "Pack Bag",
+      "emoji": "\ud83c\udf92",
+      "typicalTime": "8:00 AM",
+      "clockHour": 8,
+      "dayFraction": 0.333
+     },
+     {
+      "id": "e3",
+      "label": "Catch Bus",
+      "emoji": "\ud83d\ude8c",
+      "typicalTime": "9:00 AM",
+      "clockHour": 9,
+      "dayFraction": 0.375
+     }
+    ],
+    "correctOrder": [
+     "e1",
+     "e2",
+     "e3"
+    ],
+    "showClockFace": true
+   },
+   {
+    "id": "c4",
+    "type": "clock-sequence",
+    "instruction": "Order these sunny morning activities.",
+    "hint": "Look at the sun getting higher in the sky.",
+    "events": [
+     {
+      "id": "e1",
+      "label": "Wake Up",
+      "emoji": "\ud83c\udf05",
+      "typicalTime": "7:00 AM",
+      "clockHour": 7,
+      "dayFraction": 0.292
+     },
+     {
+      "id": "e2",
+      "label": "Feed Dog",
+      "emoji": "\ud83d\udc15",
+      "typicalTime": "8:00 AM",
+      "clockHour": 8,
+      "dayFraction": 0.333
+     },
+     {
+      "id": "e3",
+      "label": "Eat Breakfast",
+      "emoji": "\ud83c\udf73",
+      "typicalTime": "9:00 AM",
+      "clockHour": 9,
+      "dayFraction": 0.375
+     }
+    ],
+    "correctOrder": [
+     "e1",
+     "e2",
+     "e3"
+    ],
+    "showClockFace": true
+   },
+   {
+    "id": "c5",
+    "type": "clock-sequence",
+    "instruction": "Put the morning routine in the correct order.",
+    "hint": "Think about your steps from waking up to going to school.",
+    "events": [
+     {
+      "id": "e1",
+      "label": "Wake Up",
+      "emoji": "\ud83c\udf05",
+      "typicalTime": "7:00 AM",
+      "clockHour": 7,
+      "dayFraction": 0.292
+     },
+     {
+      "id": "e2",
+      "label": "Brush Teeth",
+      "emoji": "\ud83e\uddb7",
+      "typicalTime": "8:00 AM",
+      "clockHour": 8,
+      "dayFraction": 0.333
+     },
+     {
+      "id": "e3",
+      "label": "Pack Bag",
+      "emoji": "\ud83c\udf92",
+      "typicalTime": "9:00 AM",
+      "clockHour": 9,
+      "dayFraction": 0.375
+     }
+    ],
+    "correctOrder": [
+     "e1",
+     "e2",
+     "e3"
+    ],
+    "showClockFace": true
+   }
+  ]
+ }
+}

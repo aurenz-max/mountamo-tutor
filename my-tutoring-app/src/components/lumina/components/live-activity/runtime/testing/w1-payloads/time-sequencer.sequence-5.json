@@ -1,0 +1,222 @@
+{
+ "source": "qa/tutor-reports/time-sequencer-runtime-sequence-5-payload-2026-10-09.json",
+ "primitiveId": "time-sequencer",
+ "evalMode": "sequence-5",
+ "data": {
+  "title": "My Fun Weekend Day",
+  "description": "Put your favorite weekend activities in order from morning to bedtime.",
+  "gradeBand": "K",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "sequence-events",
+    "instruction": "Put the cards in order. Which one happens first in the morning?",
+    "hint": "Think about what you do right after you wake up.",
+    "events": [
+     {
+      "id": "e1",
+      "label": "Wake up",
+      "emoji": "\ud83c\udf05",
+      "typicalTime": "7:00 AM",
+      "dayFraction": 0.292
+     },
+     {
+      "id": "e2",
+      "label": "Brush teeth",
+      "emoji": "\ud83e\uddb7",
+      "typicalTime": "7:15 AM",
+      "dayFraction": 0.302
+     },
+     {
+      "id": "e3",
+      "label": "Eat breakfast",
+      "emoji": "\ud83c\udf73",
+      "typicalTime": "7:30 AM",
+      "dayFraction": 0.313
+     },
+     {
+      "id": "e4",
+      "label": "Feed dog",
+      "emoji": "\ud83d\udc15",
+      "typicalTime": "8:00 AM",
+      "dayFraction": 0.333
+     }
+    ],
+    "correctOrder": [
+     "e1",
+     "e2",
+     "e3",
+     "e4"
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "sequence-events",
+    "instruction": "Put the cards in order. What do you do during the sunny morning?",
+    "hint": "Look for the fun game we play outside first.",
+    "events": [
+     {
+      "id": "e1",
+      "label": "Play outside",
+      "emoji": "\ud83c\udfc3",
+      "typicalTime": "9:30 AM",
+      "dayFraction": 0.396
+     },
+     {
+      "id": "e2",
+      "label": "Drink water",
+      "emoji": "\ud83e\udd64",
+      "typicalTime": "10:30 AM",
+      "dayFraction": 0.438
+     },
+     {
+      "id": "e3",
+      "label": "Paint pictures",
+      "emoji": "\ud83c\udfa8",
+      "typicalTime": "11:00 AM",
+      "dayFraction": 0.458
+     },
+     {
+      "id": "e4",
+      "label": "Eat lunch",
+      "emoji": "\ud83c\udf4e",
+      "typicalTime": "12:00 PM",
+      "dayFraction": 0.5
+     }
+    ],
+    "correctOrder": [
+     "e1",
+     "e2",
+     "e3",
+     "e4"
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "sequence-events",
+    "instruction": "Put the cards in order. What happens after lunch?",
+    "hint": "Which one helps keep our room nice and tidy?",
+    "events": [
+     {
+      "id": "e1",
+      "label": "Clean up toys",
+      "emoji": "\ud83e\uddf9",
+      "typicalTime": "1:00 PM",
+      "dayFraction": 0.542
+     },
+     {
+      "id": "e2",
+      "label": "Listen to music",
+      "emoji": "\ud83c\udfb5",
+      "typicalTime": "2:00 PM",
+      "dayFraction": 0.583
+     },
+     {
+      "id": "e3",
+      "label": "Eat snack",
+      "emoji": "\ud83e\udd64",
+      "typicalTime": "3:30 PM",
+      "dayFraction": 0.646
+     },
+     {
+      "id": "e4",
+      "label": "Play games",
+      "emoji": "\ud83c\udfa8",
+      "typicalTime": "4:00 PM",
+      "dayFraction": 0.667
+     }
+    ],
+    "correctOrder": [
+     "e1",
+     "e2",
+     "e3",
+     "e4"
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "sequence-events",
+    "instruction": "Put the cards in order as the sun goes down.",
+    "hint": "Think about getting ready for a delicious dinner.",
+    "events": [
+     {
+      "id": "e1",
+      "label": "Watch sunset",
+      "emoji": "\ud83c\udf07",
+      "typicalTime": "6:00 PM",
+      "dayFraction": 0.75
+     },
+     {
+      "id": "e2",
+      "label": "Eat dinner",
+      "emoji": "\ud83c\udf7d\ufe0f",
+      "typicalTime": "6:30 PM",
+      "dayFraction": 0.771
+     },
+     {
+      "id": "e3",
+      "label": "Take a bath",
+      "emoji": "\ud83d\udec1",
+      "typicalTime": "7:30 PM",
+      "dayFraction": 0.813
+     },
+     {
+      "id": "e4",
+      "label": "Brush teeth",
+      "emoji": "\ud83e\uddb7",
+      "typicalTime": "7:45 PM",
+      "dayFraction": 0.823
+     }
+    ],
+    "correctOrder": [
+     "e1",
+     "e2",
+     "e3",
+     "e4"
+    ]
+   },
+   {
+    "id": "c5",
+    "type": "sequence-events",
+    "instruction": "Put the cards in order for bedtime.",
+    "hint": "What is the very last thing you do before falling asleep?",
+    "events": [
+     {
+      "id": "e1",
+      "label": "Read a story",
+      "emoji": "\ud83d\udcda",
+      "typicalTime": "8:00 PM",
+      "dayFraction": 0.833
+     },
+     {
+      "id": "e2",
+      "label": "Hug family",
+      "emoji": "\u2b50",
+      "typicalTime": "8:15 PM",
+      "dayFraction": 0.844
+     },
+     {
+      "id": "e3",
+      "label": "Turn off light",
+      "emoji": "\ud83c\udf19",
+      "typicalTime": "8:25 PM",
+      "dayFraction": 0.851
+     },
+     {
+      "id": "e4",
+      "label": "Go to sleep",
+      "emoji": "\ud83d\ude34",
+      "typicalTime": "8:30 PM",
+      "dayFraction": 0.854
+     }
+    ],
+    "correctOrder": [
+     "e1",
+     "e2",
+     "e3",
+     "e4"
+    ]
+   }
+  ]
+ }
+}

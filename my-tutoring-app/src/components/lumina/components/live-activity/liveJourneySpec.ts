@@ -742,6 +742,174 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
+  'measure-lab': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/MeasureLab.tsx',
+    instanceId: 'measure',
+    defaults: { grade: 'Kindergarten', mode: 'balance_predict', di: false, topic: 'Heavier and lighter' },
+    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ALL_COMPLETE', 'NEXT_ITEM', 'ACTIVITY_START'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every type through its real controls: a guess then the test (both on the scale, or Pour), cups poured one at a
+    // time then a number, or the jars tapped in order. A wrong answer is the mode's signature error from
+    // `measureMiss`: the lighter guess, the guess that holds less, one cup short, the order reversed. Try again
+    // clears the bench, so every program starts from a blank one.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current measure-lab challenge');
+      const wrong = intent === 'wrong';
+      const choose = (label: string): DriverInput => ({ type: 'choose', label });
+      if (c.type === 'balance_predict') {
+        const guess = wrong ? [c.left, c.right].find((o: { id: string }) => o.id !== c.expectedChoice) : [c.left, c.right].find((o: { id: string }) => o.id === c.expectedChoice);
+        return [choose(guess.name), choose(`Put ${c.left.name} on`), choose(`Put ${c.right.name} on`)];
+      }
+      if (c.type === 'capacity_predict') {
+        const guess = [c.containerA, c.containerB].find((x: { id: string }) => (x.id === c.expectedChoice) !== wrong);
+        return [choose(guess.name), choose(`Pour ${c.unitName || 'cups'} into both`)];
+      }
+      if (c.type === 'pour_count') {
+        const want: number = c.expectedCount, options: number[] = c.options ?? [];
+        const pick = !wrong ? want : options.includes(want - 1) ? want - 1 : options.find(n => n !== want);
+        if (pick === undefined) throw new Error('measure-lab pour_count: no wrong number offered');
+        return [...Array.from({ length: c.container.capacity }, () => choose('Pour one in')), choose(String(pick))];
+      }
+      if (c.type === 'order_capacity') {
+        const byId = new Map((c.containers ?? []).map((j: { id: string; name: string }) => [j.id, j.name]));
+        const ids: string[] = wrong ? [...c.expectedOrder].reverse() : c.expectedOrder;
+        return ids.map(id => choose(String(byId.get(id))));
+      }
+      throw new Error(`measure-lab: no driver for ${c.type}`);
+    },
+    probes: { mounted: { selector: '[data-pip-object]' } },
+  },
+  'length-lab': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/LengthLab.tsx',
+    instanceId: 'length',
+    defaults: { grade: 'Kindergarten', mode: 'compare', di: false, topic: 'Comparing and measuring lengths' },
+    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ALL_COMPLETE', 'NEXT_ITEM', 'ACTIVITY_START', '[ESTIMATE', '[TIER'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every type through its real controls. A wrong answer is the mode's signature error from `lengthMiss`: the
+    // other comparison, one unit too many, tiling to the guess, the bigger unit, the order reversed, the other object.
+    // A guess kept from a wrong attempt (Try again keeps it) is read from the scene's `guess` fact.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current length-lab challenge');
+      const wrong = intent === 'wrong', check: DriverInput = { type: 'check' };
+      const unitOf = (u?: string) => (u || ctx.data.unitType || 'cubes').replace('_', ' ');
+      const lay = (unit: string, n: number): DriverInput[] => Array.from({ length: n }, () => ({ type: 'choose', label: `Add ${unit}` }));
+      const truth: number = c.correctUnitCount || c.objectLength0;
+      if (c.type === 'compare') {
+        const pick = !wrong ? c.correctAnswer : c.correctAnswer === 'same' ? 'longer' : c.correctAnswer === 'longer' ? 'shorter' : 'longer';
+        return [{ type: 'choose', label: pick === 'same' ? 'They are the same length' : `${c.objectName0} is ${pick}` }];
+      }
+      if (c.type === 'tile_and_count') return [...lay(unitOf(c.unitType), wrong ? truth + 1 : truth), check];
+      if (c.type === 'estimate_then_tile') {
+        const kept = Number(ctx.demand?.guess);
+        const guess = Number.isInteger(kept) ? kept
+          : wrong ? (c.estimateOptions ?? []).find((g: number) => g !== truth) ?? truth : truth;
+        const pick: DriverInput[] = Number.isInteger(kept) ? [] : [{ type: 'choose', label: String(guess) }];
+        return [...pick, ...lay(unitOf(c.unitType), !wrong ? truth : guess !== truth ? guess : truth + 1), check];
+      }
+      if (c.type === 'two_unit_compare') {
+        const a = unitOf(c.unitType), b = unitOf(c.unitTypeB);
+        const more = c.correctUnitCount > c.correctUnitCountB ? a : b;
+        return [...lay(a, c.correctUnitCount), check, ...lay(b, c.correctUnitCountB), check,
+          { type: 'choose', label: wrong ? (more === a ? b : a) : more }];
+      }
+      if (c.type === 'order') {
+        const names = String(c.correctOrderCsv ?? '').split(',').map((s: string) => s.trim());
+        return [...(wrong ? [...names].reverse() : names).map((label): DriverInput => ({ type: 'choose', label })), check];
+      }
+      if (c.type === 'indirect') {
+        const other = c.correctAnswer === c.objectName0 ? c.objectName1 : c.objectName0;
+        const pick = !wrong ? c.correctAnswer : c.correctAnswer === 'same' ? c.objectName0 : other;
+        return [{ type: 'choose', label: pick === 'same' ? 'Same length' : `${pick} is longer` }];
+      }
+      throw new Error(`length-lab: no driver input for ${c.type}`);
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'analog-clock': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/AnalogClock.tsx',
+    instanceId: 'clock',
+    defaults: { grade: 'Grade 1', mode: 'read', di: false, topic: 'Telling time to the hour and half hour' },
+    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ALL_COMPLETE', 'NEXT_ITEM', 'ACTIVITY_START', 'SUPPORT TIER'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every type through its real controls, then Check. A wrong answer is another option or face, or the other hand
+    // (`clockMiss`). count_face has no wrong check: a number out of order restarts the count, so wrong is empty.
+    // set_time moves the hands by dragging the dial or the bar under it; the driver has no drag input.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current analog-clock challenge');
+      const wrong = intent === 'wrong';
+      const check: DriverInput = { type: 'check' };
+      if (c.type === 'set_time') throw new Error('analog-clock set_time: the hands move by drag (dial or time bar); the driver has no drag input');
+      if (c.type === 'count_face') {
+        if (wrong) return [];
+        return [...Array.from({ length: 12 }, (_, i): DriverInput => ({ type: 'touch', target: `number-${i + 1}` })), check];
+      }
+      if (c.type === 'hand_name') {
+        const hand = (c.targetHand === 'hour') !== wrong ? 'short' : 'long';
+        return [{ type: 'touch', target: `hand-${hand}` }, check];
+      }
+      const options: string[] = [c.option0, c.option1, c.option2, c.option3].filter(Boolean);
+      // A wrong option that does not contain the right one's words ("2 hours 45 minutes" holds "45 minutes").
+      const right = options[c.correctOptionIndex] ?? '';
+      const at = wrong ? options.findIndex((o, i) => i !== c.correctOptionIndex && !o.includes(right)) : c.correctOptionIndex;
+      if (at < 0 || !options[at]) throw new Error(`analog-clock ${c.type}: no ${intent} option`);
+      return [{ type: 'choose', label: c.type === 'hear_time' ? `Clock face ${at + 1}` : options[at] }, check];
+    },
+    probes: { mounted: { selector: '[data-pip-object="clock"]' } },
+  },
+  'time-sequencer': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/TimeSequencer.tsx',
+    instanceId: 'times',
+    defaults: { grade: 'Kindergarten', mode: 'sequence-3', di: false, topic: 'Daily routines and the order of the day' },
+    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'NEXT_ITEM', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every type through its real buttons (cards and choices are named by their `aria-label`), then Check. A wrong
+    // answer is the mode's signature error from `timeSequencerMiss`: the day reversed (after a pre-placed first card,
+    // the rest reversed), the neighbouring time of day, another card, the shorter activity, another schedule row.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c: any = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current time-sequencer challenge');
+      const wrong = intent === 'wrong';
+      const check: DriverInput = { type: 'check' };
+      const choose = (label: string): DriverInput => ({ type: 'choose', label });
+      const labelOf = (cards: { id: string; label: string }[], id: string) => cards.find(e => e.id === id)!.label;
+      if (c.type === 'sequence-events' || c.type === 'clock-sequence') {
+        const order: string[] = c.correctOrder;
+        // The start-here card is already placed (and placed again after Try again): tapping it would take it out.
+        const rest = c.prelabelFirstSlot && order.length > 1 ? order.slice(1) : order;
+        if (wrong && rest.length < 2) throw new Error(`time-sequencer ${c.type}: one card left to place has no wrong order`);
+        return [...(wrong ? [...rest].reverse() : rest).map(id => choose(labelOf(c.events, id))), check];
+      }
+      if (c.type === 'match-time-of-day') {
+        const periods = ['morning', 'afternoon', 'evening', 'night'];
+        const pick = wrong ? periods[(periods.indexOf(c.correctPeriod) + 1) % 4] : c.correctPeriod;
+        return [choose(pick.charAt(0).toUpperCase() + pick.slice(1)), check];
+      }
+      if (c.type === 'before-after') {
+        const pick = wrong ? c.options.find((e: { id: string }) => e.id !== c.correctEvent).id : c.correctEvent;
+        return [choose(labelOf(c.options, pick)), check];
+      }
+      if (c.type === 'duration-compare') {
+        const label = (k: string) => k === 'same' ? 'About the Same' : (k === 'A' ? c.eventA : c.eventB).label;
+        const pick = !wrong ? c.correctAnswer : c.correctAnswer === 'A' ? 'B' : 'A';
+        return [choose(label(pick)), check];
+      }
+      const options: string[] = c.activityOptions ?? c.schedule.map((r: { activity: string }) => r.activity);
+      return [choose(wrong ? options.find(o => o !== c.correctActivity)! : c.correctActivity), check];
+    },
+    probes: { mounted: { selector: '[data-pip-object="events"], [data-pip-object="event"], [data-pip-object="reference"], '
+      + '[data-pip-object="durations"], [data-pip-object="schedule"]' } },
+  },
   'angle-workshop': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/math/AngleWorkshop.tsx',
@@ -2009,6 +2177,27 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [{ type: 'choose', label: c.options.find(o => o.trim().toLowerCase() === pick.trim().toLowerCase()) ?? pick }, check];
     },
     probes: { mounted: { selector: '[data-pip-object="grid"], [data-pip-object="offset"], [data-pip-object="stimulus"]' } },
+  },
+  'timeline-builder': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/calendar/TimelineBuilder.tsx',
+    instanceId: 'timeline',
+    defaults: { grade: 'Grade 2', mode: 'sequence-daily', di: false, topic: 'Ordering the events of a school day' },
+    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ALL_COMPLETE', 'NEXT_ITEM'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls: tap an event in the bank, tap its slot, then Check Order. A wrong order
+    // trades the first two events (`adjacent_swap`), every slot still filled.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current timeline-builder challenge');
+      const ordered: { label: string }[] = [...c.events].sort((a: any, b: any) => a.correctPosition - b.correctPosition);
+      if (ordered.length < 2) throw new Error(`timeline-builder ${c.type}: fewer than two events`);
+      const order = intent === 'wrong' ? [ordered[1], ordered[0], ...ordered.slice(2)] : ordered;
+      return [...order.flatMap((e, i): DriverInput[] => [{ type: 'choose', label: e.label }, { type: 'choose', label: `Slot ${i + 1}` }]),
+        { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
   'push-pull-arena': {
     execution: 'workspace',

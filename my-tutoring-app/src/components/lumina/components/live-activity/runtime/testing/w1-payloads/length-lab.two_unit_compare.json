@@ -1,0 +1,67 @@
+{
+ "source": "qa/tutor-reports/length-lab-runtime-two_unit_compare-payload-2026-10-09.json",
+ "primitiveId": "length-lab",
+ "evalMode": "two_unit_compare",
+ "data": {
+  "title": "Fun with Units: Straws and Pencils!",
+  "description": "Discover how measuring the same object with different units changes how many you need!",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "two_unit_compare",
+    "instruction": "Look at this straw! If you measure it with tiny beads versus big paper clips, which unit would you need more of?",
+    "hint": "Think about the size of the units. Smaller units mean you need more of them to cover the same length!",
+    "narration": "Let's look at this straw! Try measuring it with two different units to see which one you need more of.",
+    "objectName0": "straw",
+    "objectLength0": 6,
+    "objectColor0": "#E57373",
+    "objectName1": "placeholder",
+    "objectLength1": 1,
+    "objectColor1": "#000000",
+    "correctAnswer": "cubes",
+    "unitType": "cubes",
+    "correctUnitCount": 6,
+    "correctUnitCountB": 2,
+    "unitTypeB": "bears"
+   },
+   {
+    "id": "c2",
+    "type": "two_unit_compare",
+    "instruction": "Examine this paintbrush. Do you need more small erasers or large blocks to measure its length?",
+    "hint": "Remember, tiny pieces fit many times, while big pieces fit only a few times!",
+    "narration": "Here is a paintbrush! Let's find out which measuring unit takes a greater number to reach the end.",
+    "objectName0": "paintbrush",
+    "objectLength0": 8,
+    "objectColor0": "#81C784",
+    "objectName1": "placeholder",
+    "objectLength1": 1,
+    "objectColor1": "#000000",
+    "correctAnswer": "cubes",
+    "unitType": "cubes",
+    "correctUnitCount": 8,
+    "correctUnitCountB": 4,
+    "unitTypeB": "bears"
+   },
+   {
+    "id": "c3",
+    "type": "two_unit_compare",
+    "instruction": "Take a look at this ribbon. Which unit do you need more of to span the whole length?",
+    "hint": "Compare the size of the first unit to the second unit. Which one is tinier?",
+    "narration": "Time for the ribbon! Look closely at the units and decide which one you need more of.",
+    "objectName0": "ribbon",
+    "objectLength0": 10,
+    "objectColor0": "#F06292",
+    "objectName1": "placeholder",
+    "objectLength1": 1,
+    "objectColor1": "#000000",
+    "correctAnswer": "cubes",
+    "unitType": "cubes",
+    "correctUnitCount": 10,
+    "correctUnitCountB": 5,
+    "unitTypeB": "bears"
+   }
+  ],
+  "unitType": "cubes",
+  "gradeBand": "K"
+ }
+}

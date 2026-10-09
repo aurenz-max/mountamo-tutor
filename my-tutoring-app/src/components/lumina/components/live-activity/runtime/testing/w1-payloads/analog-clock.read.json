@@ -1,0 +1,77 @@
+{
+ "source": "qa/tutor-reports/analog-clock-runtime-read-payload-2026-10-09.json",
+ "primitiveId": "analog-clock",
+ "evalMode": "read",
+ "data": {
+  "title": "Telling Time to the Hour and Half Hour",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "read",
+    "instruction": "Look at the clock. What time is it?",
+    "targetHour": 3,
+    "targetMinute": 0,
+    "hint": "The short hour hand is pointing straight at the 3, and the long minute hand is pointing up at the 12.",
+    "option0": "5:00",
+    "option1": "3:00",
+    "option2": "2:30",
+    "option3": "3:30",
+    "correctOptionIndex": 1
+   },
+   {
+    "id": "c2",
+    "type": "read",
+    "instruction": "Check the clock hands. What time does this show?",
+    "targetHour": 6,
+    "targetMinute": 30,
+    "hint": "The long minute hand has gone halfway around the clock to the 6. Where is the short hour hand pointing?",
+    "option0": "5:00",
+    "option1": "6:30",
+    "option2": "6:00",
+    "option3": "8:30",
+    "correctOptionIndex": 1
+   },
+   {
+    "id": "c3",
+    "type": "read",
+    "instruction": "Read the time shown on the clock face.",
+    "targetHour": 9,
+    "targetMinute": 0,
+    "hint": "Think about what time you usually eat breakfast or go to sleep. The hour hand is on the 9.",
+    "option0": "11:00",
+    "option1": "10:30",
+    "option2": "9:00",
+    "option3": "11:30",
+    "correctOptionIndex": 2
+   },
+   {
+    "id": "c4",
+    "type": "read",
+    "instruction": "Can you tell what time is on this clock?",
+    "targetHour": 1,
+    "targetMinute": 30,
+    "hint": "The short hand is halfway between the 1 and the 2. The long hand is pointing straight down at the 6.",
+    "option0": "12:00",
+    "option1": "3:30",
+    "option2": "1:30",
+    "option3": "2:00",
+    "correctOptionIndex": 2
+   },
+   {
+    "id": "c5",
+    "type": "read",
+    "instruction": "Look closely at the hands to find the correct time.",
+    "targetHour": 12,
+    "targetMinute": 0,
+    "hint": "When both hands point straight up to the top, it is the very start of a new hour.",
+    "option0": "12:00",
+    "option1": "2:30",
+    "option2": "10:30",
+    "option3": "11:00",
+    "correctOptionIndex": 0
+   }
+  ],
+  "gradeBand": "K",
+  "description": "Learn to read analog clocks to the exact hour and half hour using easy-to-understand visual clues."
+ }
+}

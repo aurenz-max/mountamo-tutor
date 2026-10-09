@@ -1,0 +1,172 @@
+{
+ "source": "qa/tutor-reports/time-sequencer-runtime-before-after-payload-2026-10-09.json",
+ "primitiveId": "time-sequencer",
+ "evalMode": "before-after",
+ "data": {
+  "title": "My Weekend Day",
+  "description": "Explore the fun order of a day at home by looking at what happens next!",
+  "gradeBand": "K",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "before-after",
+    "instruction": "Look at the morning picture. What happens after you wake up?",
+    "hint": "Think about what is waiting in your bowl!",
+    "referenceEvent": {
+     "id": "ref0",
+     "label": "Wake Up",
+     "emoji": "\ud83c\udf05",
+     "typicalTime": "7:00 AM",
+     "dayFraction": 0.292
+    },
+    "relation": "after",
+    "options": [
+     {
+      "id": "opt0",
+      "label": "Eat Breakfast",
+      "emoji": "\ud83c\udf73"
+     },
+     {
+      "id": "opt1",
+      "label": "Go To Sleep",
+      "emoji": "\ud83d\ude34"
+     },
+     {
+      "id": "opt2",
+      "label": "Take A Bath",
+      "emoji": "\ud83d\udec1"
+     }
+    ],
+    "correctEvent": "opt0"
+   },
+   {
+    "id": "c2",
+    "type": "before-after",
+    "instruction": "What happens right BEFORE this one?",
+    "hint": "We need to make sure our hands are clean first!",
+    "referenceEvent": {
+     "id": "ref1",
+     "label": "Eat Lunch",
+     "emoji": "\ud83c\udf7d\ufe0f",
+     "typicalTime": "12:00 PM",
+     "dayFraction": 0.5
+    },
+    "relation": "before",
+    "options": [
+     {
+      "id": "opt0",
+      "label": "Wash Hands",
+      "emoji": "\ud83d\udec1"
+     },
+     {
+      "id": "opt1",
+      "label": "Put On Pajamas",
+      "emoji": "\ud83c\udf19"
+     },
+     {
+      "id": "opt2",
+      "label": "Dream",
+      "emoji": "\u2b50"
+     }
+    ],
+    "correctEvent": "opt0"
+   },
+   {
+    "id": "c3",
+    "type": "before-after",
+    "instruction": "Look at the afternoon playtime. What happens after playing outside?",
+    "hint": "Playing makes you thirsty for a cool drink!",
+    "referenceEvent": {
+     "id": "ref2",
+     "label": "Play Outside",
+     "emoji": "\ud83c\udfc3",
+     "typicalTime": "3:00 PM",
+     "dayFraction": 0.625
+    },
+    "relation": "after",
+    "options": [
+     {
+      "id": "opt0",
+      "label": "Drink Water",
+      "emoji": "\ud83e\udd64"
+     },
+     {
+      "id": "opt1",
+      "label": "Wake Up",
+      "emoji": "\ud83c\udf05"
+     },
+     {
+      "id": "opt2",
+      "label": "Brush Teeth",
+      "emoji": "\ud83e\uddb7"
+     }
+    ],
+    "correctEvent": "opt0"
+   },
+   {
+    "id": "c4",
+    "type": "before-after",
+    "instruction": "What happens right BEFORE this one?",
+    "hint": "It is important to keep your teeth sparkling clean!",
+    "referenceEvent": {
+     "id": "ref3",
+     "label": "Go To Sleep",
+     "emoji": "\ud83d\ude34",
+     "typicalTime": "8:00 PM",
+     "dayFraction": 0.833
+    },
+    "relation": "before",
+    "options": [
+     {
+      "id": "opt0",
+      "label": "Brush Teeth",
+      "emoji": "\ud83e\uddb7"
+     },
+     {
+      "id": "opt1",
+      "label": "Eat Breakfast",
+      "emoji": "\ud83c\udf73"
+     },
+     {
+      "id": "opt2",
+      "label": "Run Around",
+      "emoji": "\ud83c\udfc3"
+     }
+    ],
+    "correctEvent": "opt0"
+   },
+   {
+    "id": "c5",
+    "type": "before-after",
+    "instruction": "What happens right AFTER this one?",
+    "hint": "We need to tidy up our crayons and paper!",
+    "referenceEvent": {
+     "id": "ref4",
+     "label": "Paint Picture",
+     "emoji": "\ud83c\udfa8",
+     "typicalTime": "4:00 PM",
+     "dayFraction": 0.667
+    },
+    "relation": "after",
+    "options": [
+     {
+      "id": "opt0",
+      "label": "Clean Up",
+      "emoji": "\ud83e\uddf9"
+     },
+     {
+      "id": "opt1",
+      "label": "Wake Up",
+      "emoji": "\ud83c\udf05"
+     },
+     {
+      "id": "opt2",
+      "label": "Sleep",
+      "emoji": "\ud83c\udf19"
+     }
+    ],
+    "correctEvent": "opt0"
+   }
+  ]
+ }
+}

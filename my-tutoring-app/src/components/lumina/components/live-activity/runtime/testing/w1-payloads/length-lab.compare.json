@@ -1,0 +1,55 @@
+{
+ "source": "qa/tutor-reports/length-lab-runtime-compare-payload-2026-10-09.json",
+ "primitiveId": "length-lab",
+ "evalMode": "compare",
+ "data": {
+  "title": "Fun with Lengths!",
+  "description": "Compare different objects to find out which one is longer or shorter.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "compare",
+    "instruction": "Look at the crayon and the toothbrush. Which one is longer?",
+    "hint": "Check which object reaches further across the grid lines.",
+    "narration": "Let's compare a crayon and a toothbrush. Which one is longer?",
+    "objectName0": "crayon",
+    "objectLength0": 3,
+    "objectColor0": "#FFB74D",
+    "objectName1": "toothbrush",
+    "objectLength1": 7,
+    "objectColor1": "#4DD0E1",
+    "correctAnswer": "shorter"
+   },
+   {
+    "id": "c2",
+    "type": "compare",
+    "instruction": "Look at the paintbrush and the crayon. Which one is longer?",
+    "hint": "Look at both ends. Which bar stretches out further?",
+    "narration": "Now let's look at a paintbrush and a crayon. Can you find the longer one?",
+    "objectName0": "paintbrush",
+    "objectLength0": 8,
+    "objectColor0": "#81C784",
+    "objectName1": "crayon",
+    "objectLength1": 4,
+    "objectColor1": "#FFB74D",
+    "correctAnswer": "longer"
+   },
+   {
+    "id": "c3",
+    "type": "compare",
+    "instruction": "Look at the pencil and the paintbrush. Which one is longer?",
+    "hint": "Compare the two bars side by side on the grid.",
+    "narration": "Here is a pencil and a paintbrush. Which object is longer?",
+    "objectName0": "pencil",
+    "objectLength0": 6,
+    "objectColor0": "#4DD0E1",
+    "objectName1": "paintbrush",
+    "objectLength1": 9,
+    "objectColor1": "#81C784",
+    "correctAnswer": "shorter"
+   }
+  ],
+  "unitType": "erasers",
+  "gradeBand": "K"
+ }
+}
