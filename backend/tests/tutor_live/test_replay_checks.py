@@ -168,3 +168,13 @@ def test_a_change_claimed_in_the_pulling_turn(text, early):
 ])
 def test_naming_the_cards_left_is_not_a_fix(text, fix):
     assert (check(text, 'stuck', ask='Put the stages in order.')['checks']['no_fix_before_try'] is False) is fix
+
+
+@pytest.mark.parametrize('text,leak', [
+    # equation-workspace replay 10-09: the English word is not the wire tag.
+    ('What operation is currently adding 15 to 4m?', False),
+    ('CURRENT task: solve for x', True),
+    ('RUNTIME state follows', True),
+])
+def test_the_wire_tags_are_upper_case_words(text, leak):
+    assert (check(text, 'miss')['checks']['no_protocol_leak'] is False) is leak

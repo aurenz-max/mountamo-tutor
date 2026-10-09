@@ -15,7 +15,7 @@ PRE_TRY = ('start', 'miss', 'stuck', 'lever')
 
 # The shared wire's tags (run_live_runtime.py SHARED_LEAK), plus what only a text replay can show: ids, JSON,
 # the tool names, and the words the lever message forbids ("never call it a lever or a tool").
-SHARED_LEAK = r"User['’]s message content|System['’]s response|CURRENT|RUNTIME|\(not set\)|press.{0,20}check answer|wait for (?:the )?(?:student|learner) response|={4,}"
+SHARED_LEAK = r"User['’]s message content|System['’]s response|(?-i:\bCURRENT\b|\bRUNTIME\b)|\(not set\)|press.{0,20}check answer|wait for (?:the )?(?:student|learner) response|={4,}"
 REPLAY_LEAK = r"\blevers?\b|\bthe host\b|actionId|liveRuntime|observe_runtime|perform_runtime_action|pull_lever|begin_help|[{}]|\[[A-Z_]{3,}\]"
 
 NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve',

@@ -46,7 +46,7 @@ from lever_checks import analyze as analyze_lever_run
 ROOT = Path(__file__).resolve().parents[3]
 REPORTS = ROOT / 'my-tutoring-app/qa/tutor-reports'
 # Tags the shared wire owns, on top of whatever the primitive's own script declares.
-SHARED_LEAK = r"User['\u2019]s message content|System['\u2019]s response|CURRENT|RUNTIME|\(not set\)|press.{0,20}check answer|wait for (?:the )?(?:student|learner) response|={4,}"
+SHARED_LEAK = r"User['\u2019]s message content|System['\u2019]s response|(?-i:\bCURRENT\b|\bRUNTIME\b)|\(not set\)|press.{0,20}check answer|wait for (?:the )?(?:student|learner) response|={4,}"
 
 
 class Session:

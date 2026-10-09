@@ -11,7 +11,7 @@ stay with the reviewer in `lever_review.py`.
 import re
 
 # Tags the shared wire owns, on top of whatever the primitive's own script declares (same as run_live_runtime.py).
-SHARED_LEAK = r"User['’]s message content|System['’]s response|CURRENT|RUNTIME|\(not set\)|press.{0,20}check answer|wait for (?:the )?(?:student|learner) response|={4,}"
+SHARED_LEAK = r"User['’]s message content|System['’]s response|(?-i:\bCURRENT\b|\bRUNTIME\b)|\(not set\)|press.{0,20}check answer|wait for (?:the )?(?:student|learner) response|={4,}"
 
 CHECKS = {
     'lever_offered': 'An item offered a lever after a wrong answer',
