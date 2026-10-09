@@ -1,0 +1,1381 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ],
+   "no_key_before_try": [
+    0,
+    30
+   ],
+   "no_fix_before_try": [
+    0,
+    30
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "balance-scale.equality",
+   "primitiveId": "balance-scale",
+   "evalMode": "equality",
+   "keys": [
+    "add 1 weight",
+    "1"
+   ],
+   "stopped": "miss: the spoken answer opened no pending response",
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "balance-1-build",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "add 1 weight",
+       "1"
+      ],
+      "ask": "Put weights on the right until the scale balances.",
+      "leakTokens": [
+       "BE_",
+       "BW_",
+       "ANSWER_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "STEP_TAKEN"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Put weights on the right until the scale balances.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Put weights on the right until the scale balances.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Put weights on the right pan until the scale balances.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Put weights on the right until the scale balances.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Put weights on the right until the scale balances.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "balance-1-build",
+     "trigger": "The learner submitted \"Balanced the scale with right weights 1\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "add 1 weight",
+       "1"
+      ],
+      "ask": "Put weights on the right until the scale balances.",
+      "leakTokens": [
+       "BE_",
+       "BW_",
+       "ANSWER_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "STEP_TAKEN"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You balanced the scale by placing the 1 weight on the right!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You balanced the scale by placing the 1 weight on the right pan.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You placed the 1 weight and balanced the scale!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You balanced the scale by placing the 1 weight on the right!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You balanced the scale by placing the 1 weight on the right side!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "balance-scale.equality_hard",
+   "primitiveId": "balance-scale",
+   "evalMode": "equality_hard",
+   "keys": [
+    "add 2 weight",
+    "2"
+   ],
+   "stopped": "miss: the spoken answer opened no pending response",
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "workshop-1-compose",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "add 2 weight",
+       "2"
+      ],
+      "ask": "Add weights to the right until the scale balances.",
+      "leakTokens": [
+       "BE_",
+       "BW_",
+       "ANSWER_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "STEP_TAKEN"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Add weights to the right until the scale balances.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Add weights to the right until the scale balances.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Add weights to the right side until the scale balances.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Add weights to the right pan until the scale balances.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Add weights to the right pan until both sides balance.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "workshop-1-compose",
+     "trigger": "The learner submitted \"Added 2 weight. Now: Unnumbered left weight; chosen right blocks: 2. First combination: none. Scale balanced.\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "add 2 weight",
+       "2"
+      ],
+      "ask": "Add weights to the right until the scale balances.",
+      "leakTokens": [
+       "BE_",
+       "BW_",
+       "ANSWER_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "STEP_TAKEN"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You balanced the scale by adding the 2 weight!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You balanced the scale by adding the 2 weight!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You balanced the scale by adding the 2 weight!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You added the 2 weight, and the scale is perfectly balanced!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You balanced the scale by adding the 2 weight!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "balance-scale.one_step",
+   "primitiveId": "balance-scale",
+   "evalMode": "one_step",
+   "keys": [
+    "add 1 weight",
+    "3"
+   ],
+   "stopped": "miss: the spoken answer opened no pending response",
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "workshop-1-complete",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "add 1 weight",
+       "3"
+      ],
+      "ask": "The right side weighs 5. The left already has 1. Add weights to the left until it balances.",
+      "leakTokens": [
+       "BE_",
+       "BW_",
+       "ANSWER_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "STEP_TAKEN"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The right side weighs 5, and the left already has 1. Add weights to the left side until the scale balances.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The right side weighs 5, and the left already has 1. Add weights to the left side until the scale balances.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The right side weighs 5, and the left side already has 1. Add weights to the left side until the scale balances.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The right side weighs 5, and the left already has 1. Add weights to the left side until the scale balances.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The right side weighs 5, and the left already has 1. Add weights to the left side until the scale balances.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "workshop-1-complete",
+     "trigger": "The learner submitted \"Added 1 weight. Now: Left known weight 1, added blocks 3, 1. Right known weight 5. Scale balanced.\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "add 1 weight",
+       "3"
+      ],
+      "ask": "The right side weighs 5. The left already has 1. Add weights to the left until it balances.",
+      "leakTokens": [
+       "BE_",
+       "BW_",
+       "ANSWER_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "STEP_TAKEN"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You balanced the scale by adding the 3 and 1 weights to the left side!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You balanced the scale by adding the 3 and 1 weights to the left side! Both sides are equal now.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You balanced the scale by adding the 3 and the 1 to the left side!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You balanced it perfectly by adding the 3 and the 1!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You balanced the scale by adding weights of 3 and 1 to make both sides equal 5!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "balance-scale.one_step_hard",
+   "primitiveId": "balance-scale",
+   "evalMode": "one_step_hard",
+   "keys": [
+    "place unit in group 2",
+    "place unit in group 3",
+    "place unit in group 4",
+    "place unit in group 5",
+    "15",
+    "0",
+    "3"
+   ],
+   "stopped": "miss: the spoken answer opened no pending response",
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "workshop-1-share",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "place unit in group 2",
+       "place unit in group 3",
+       "place unit in group 4",
+       "place unit in group 5",
+       "15",
+       "0",
+       "3"
+      ],
+      "ask": "Share the weight into 5 equal groups, one for each identical parcel. Tap a unit, then its group, or drag it there.",
+      "leakTokens": [
+       "BE_",
+       "BW_",
+       "ANSWER_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "STEP_TAKEN"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Share the weight into 5 equal groups, one for each identical parcel. Tap a unit, then its group, or drag it there.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Share the weight into 5 equal groups, one for each identical parcel. You can tap a unit and then its group, or drag it over.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Share the weight into 5 equal groups, one for each identical parcel. Tap a unit, then its group, or drag it there.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Share the weight into 5 equal groups, one for each identical parcel. Tap a unit, then its group, or drag it there.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Share the weight into 5 equal groups, one for each identical parcel. You can tap a unit and then its group, or drag it there.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "workshop-1-share",
+     "trigger": "The learner submitted \"Moved unit 15 to group 5. Now: 5 identical sealed parcels. Known loose weight 0; moved aside on left: false. Original right weight 15; right units set aside: 0. Group counts: 3, 3, 3, 3, 3. Scale balanced.\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "place unit in group 2",
+       "place unit in group 3",
+       "place unit in group 4",
+       "place unit in group 5",
+       "15",
+       "0",
+       "3"
+      ],
+      "ask": "Share the weight into 5 equal groups, one for each identical parcel. Tap a unit, then its group, or drag it there.",
+      "leakTokens": [
+       "BE_",
+       "BW_",
+       "ANSWER_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "STEP_TAKEN"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You shared them out into 5 equal groups of 3!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You split the units evenly so each of the 5 groups has 3. Nicely done!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You shared the weights equally into 5 groups of 3!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You shared all the units into 5 equal groups of 3!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You shared the weight into 5 equal groups of 3!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "balance-scale.two_step",
+   "primitiveId": "balance-scale",
+   "evalMode": "two_step",
+   "keys": [
+    "unit 3",
+    "3",
+    "6",
+    "15",
+    "0"
+   ],
+   "stopped": "miss: the spoken answer opened no pending response",
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "workshop-1-separate",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "unit 3",
+       "3",
+       "6",
+       "15",
+       "0"
+      ],
+      "ask": "Set the known loose weight aside. Then set aside the same weight from the other side, leaving the parcels on the scale.",
+      "leakTokens": [
+       "BE_",
+       "BW_",
+       "ANSWER_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "STEP_TAKEN"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Set the known loose weight aside, and then set aside that same amount from the other side to keep the scale balanced.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Set the known loose weight aside, and then take the same weight off the other side to keep the scale balanced.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Set the known loose weight aside, and then set aside the same weight from the other side.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Set the known loose weight aside, and then take the same weight off the other side.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Set the known loose weight aside, and then take the same weight off the other side.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "workshop-1-separate",
+     "trigger": "The learner submitted \"Moved unit 3 to set aside. Now: 6 identical sealed parcels. Known loose weight 3; moved aside on left: true. Original right weight 15; right units set aside: 3. Group counts: 0, 0, 0, 0, 0, 0. Scale balanced.\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "unit 3",
+       "3",
+       "6",
+       "15",
+       "0"
+      ],
+      "ask": "Set the known loose weight aside. Then set aside the same weight from the other side, leaving the parcels on the scale.",
+      "leakTokens": [
+       "BE_",
+       "BW_",
+       "ANSWER_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "STEP_TAKEN"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You set aside 3 from each side, keeping the scale perfectly balanced with just the parcels left!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You set aside 3 from both sides and kept the scale perfectly balanced.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You set aside 3 from each side and kept the scale perfectly balanced!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You set aside 3 from both sides and kept the scale balanced!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You set aside 3 from both sides and kept the scale perfectly balanced!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "balance-scale.two_step_intro",
+   "primitiveId": "balance-scale",
+   "evalMode": "two_step_intro",
+   "keys": [
+    "unit 3",
+    "3",
+    "9",
+    "0"
+   ],
+   "stopped": "miss: the spoken answer opened no pending response",
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "workshop-1-separate",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "unit 3",
+       "3",
+       "9",
+       "0"
+      ],
+      "ask": "Set the known loose weight aside. Then set aside the same weight from the other side, leaving the parcels on the scale.",
+      "leakTokens": [
+       "BE_",
+       "BW_",
+       "ANSWER_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "STEP_TAKEN"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Set the known loose weight aside. Then set aside the same weight from the other side, leaving the parcels on the scale.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Set the known loose weight aside. Then set aside that same amount from the other side, leaving only the parcels on the scale.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Set the known loose weight aside, and then set aside that same weight from the other side so only the parcels remain on the scale.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Set the known loose weight aside. Then set aside that same weight from the other side so only the parcels stay on the scale.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Set the known loose weight aside. Then set aside that same weight from the other side, leaving the parcels on the scale.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "workshop-1-separate",
+     "trigger": "The learner submitted \"Moved unit 3 to set aside. Now: 3 identical sealed parcels. Known loose weight 3; moved aside on left: true. Original right weight 9; right units set aside: 3. Group counts: 0, 0, 0. Scale balanced.\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "unit 3",
+       "3",
+       "9",
+       "0"
+      ],
+      "ask": "Set the known loose weight aside. Then set aside the same weight from the other side, leaving the parcels on the scale.",
+      "leakTokens": [
+       "BE_",
+       "BW_",
+       "ANSWER_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "STEP_TAKEN"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You set aside the loose weight of 3 from both sides, keeping the scale perfectly balanced.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You set aside the 3 from both sides and kept the scale perfectly balanced.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You set aside 3 from each side, keeping the scale perfectly balanced.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You set aside 3 from both sides, keeping the scale perfectly balanced.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You set aside 3 from both sides and kept the scale balanced!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

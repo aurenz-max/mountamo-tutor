@@ -23,7 +23,7 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import { TWO_WAYS, describePlainCheck, describeTwoWaysCheck, plainMiss, plainWorkspaceAssignment, plainWorkspaceScene,
-  twoWaysInstruction, twoWaysMiss, twoWaysScene } from './baseTenWorkspace';
+  twoWaysMiss, twoWaysScene } from './baseTenWorkspace';
 import { BaseTenBuildScene, MatButtons, TenModel, columnCapacity, type MatPlace } from './BaseTenBuildScene';
 import { useBuildWatcher } from '../../build-layer/buildLayer';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
@@ -33,8 +33,8 @@ import CalculatorInput from '../../input-primitives/CalculatorInput';
 import { SoundManager } from '../../../utils/SoundManager';
 import BaseTenBlocksDi from './BaseTenBlocksDi';
 import { usesBaseTenDi } from './baseTenScript';
-import { BRACKET_LEVER, COUNTS_LEVER, PLAINER_LEVER, SIMPLER_OP_LEVER, SMALLER_LEVER, TEN_MODEL_LEVER, TOTAL_LEVER, baseTenLevers,
-  isOperate as isOperateType, leverFacts, plainerNumber, simplerOperation, smallerTwoWaysNumber, startLevers } from './baseTenLevers';
+import { BRACKET_LEVER, COUNTS_LEVER, PRACTICE_SUFFIX, TEN_MODEL_LEVER, TOTAL_LEVER, TRADE_MARK_LEVER, baseTenLevers,
+  isOperate as isOperateType, leverFacts, practiceItem, startLevers, tradeColumns } from './baseTenLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -358,6 +358,8 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
   // Operate never shows its total at any tier (contract R13): once the learner models the operation, the
   // total IS the typed answer, whatever the flag says. build_number keeps the default (R10).
   const bracketOn = pulledLevers.includes(BRACKET_LEVER);
+  // trade_mark: the columns this operation needs a trade in, marked with no count (the item on screen, practice included).
+  const markedColumns = isOperate && currentChallenge && pulledLevers.includes(TRADE_MARK_LEVER) ? tradeColumns(currentChallenge) : [];
   const showBlocksTotal = isReadBlocks || isOperate || isTwoWays ? false : isBuild ? pulledLevers.includes(TOTAL_LEVER)
     : (currentChallenge?.showBlocksTotal ?? true);
 
@@ -668,24 +670,10 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
         if (practice || !sessionChallenge || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
-        if (id === PLAINER_LEVER || id === SIMPLER_OP_LEVER || id === SMALLER_LEVER) {
-          let easier: PlainChallenge;
-          if (id === SMALLER_LEVER) {
-            const smaller = smallerTwoWaysNumber(sessionChallenge.targetNumber);
-            if (smaller === null) return 'There is no smaller number for this item.';
-            easier = { ...sessionChallenge, id: `${sessionChallenge.id}~smaller`, targetNumber: smaller,
-              instruction: twoWaysInstruction(smaller) };
-          } else if (id === PLAINER_LEVER) {
-            const plain = plainerNumber(sessionChallenge.targetNumber);
-            if (plain === null) return 'There is no plainer number for this item.';
-            easier = { ...sessionChallenge, id: `${sessionChallenge.id}~plainer`, targetNumber: plain,
-              instruction: `Build the number ${plain} with blocks.` };
-          } else {
-            const simpler = simplerOperation(sessionChallenge);
-            if (simpler === null) return 'There is no operation with fewer trades for this item.';
-            easier = { ...sessionChallenge, id: `${sessionChallenge.id}~simpler`, targetNumber: simpler.targetNumber,
-              secondNumber: simpler.second, instruction: simpler.instruction };
-          }
+        if (PRACTICE_SUFFIX[id]) {
+          // The same builders the journey row rebuilds a practice item with (`practiceFromId`).
+          const easier = practiceItem(sessionChallenge, id);
+          if (easier === null) return 'There is no simpler item for this one.';
           setLeverState(pulled);
           practiceRef.current = easier; setPractice(easier); setFirstWay(null);
           setColumns(startColumnsFor(easier)); setRegroupCount(0); setFeedback(''); setFeedbackType(''); setTypedAnswer('');
@@ -849,6 +837,10 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
                   <span className={`text-xs font-mono uppercase tracking-wider ${config.color}`}>
                     {config.label}
                   </span>
+                  {markedColumns.includes(place) && (
+                    <div data-lever="trade-mark" role="img" aria-label="This column needs a trade"
+                      className="mx-auto mt-1 w-fit rounded-full border border-amber-300 bg-amber-400/20 px-2 text-amber-200">&#8644;</div>
+                  )}
                   {showColumnCounts && (
                     <div className={`text-2xl font-bold ${config.color}`}>{count}</div>
                   )}
@@ -916,6 +908,14 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
             );
           })}
         </div>
+        )}
+
+        {/* The ten_model lever on the click mat's read and trade items (a mixed payload): outside the learner's mat. */}
+        {!isTwoWays && !showSummary && pulledLevers.includes(TEN_MODEL_LEVER)
+          && (currentChallenge?.type === 'read_blocks' || currentChallenge?.type === 'regroup') && (
+          <div className="flex justify-center">
+            <TenModel withHundred={activePlaces.includes('hundreds') && (currentChallenge?.targetNumber ?? 0) >= 100} />
+          </div>
         )}
 
         {/* Running Total from blocks (self-check aid) — off for read_blocks (BT-2) and withdrawn at the hard tier */}

@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { patternBuilderMiss, type PatternBuilderView } from './patternBuilderWorkspace';
+import { patternBuilderMiss, repeatKey, type PatternBuilderView } from './patternBuilderWorkspace';
 import type { PatternBuilderChallenge } from './PatternBuilder';
 
 // Row A B C A B C | hidden A B C; core A B C.
@@ -24,4 +24,12 @@ it.each([
   [data, ch('create'), view({ created: ['A', 'B', 'A', 'B'] }), undefined],
 ] as const)('row %#', (d, c, v, miss) => {
   expect(patternBuilderMiss(d, c, v)).toBe(miss);
+});
+
+it('the generator keys a repeating row from its shown tokens: AAB shown twice continues A A, not A B', () => {
+  expect(repeatKey(['r', 'r', 'b', 'r', 'r', 'b'], 2)).toEqual({ core: ['r', 'r', 'b'], hidden: ['r', 'r'] });
+  expect(repeatKey(['r', 'b', 'g', 'r', 'b', 'g', 'r'], 3)).toEqual({ core: ['r', 'b', 'g'], hidden: ['b', 'g', 'r'] });
+  expect(repeatKey(['r', 'b', 'g', 'r', 'b'], 3)).toBeNull(); // under two whole repeats: the LLM key stands
+  expect(repeatKey(['2', '4', '6', '8'], 2)).toBeNull();
+  expect(repeatKey(['r', 'r', 'r', 'r'], 2)).toBeNull();
 });

@@ -1,5 +1,6 @@
 import type { NumberLineData } from '../../../primitives/visual-primitives/math/NumberLine';
 import { workspaceOpening, type WorkspaceDomain } from './adapterContract';
+import { hopsTaskOf, waysFor } from '../../../primitives/visual-primitives/math/numberLineBuildHops';
 
 
 /** Validate the renderer contract at the service boundary, including jump arithmetic. */
@@ -12,10 +13,16 @@ export function validateActivityData(value: unknown): NumberLineData {
   const inRange = (v: unknown) => finite(v) && v >= d.range.min && v <= d.range.max;
   for (const c of d.challenges) {
     if (!c || typeof c.id !== 'string' || typeof c.instruction !== 'string' || typeof c.hint !== 'string'
-        || !['plot_point', 'show_jump', 'order_values', 'find_between'].includes(c.type)
+        || !['plot_point', 'show_jump', 'order_values', 'find_between', 'build_hops'].includes(c.type)
         || !Array.isArray(c.targetValues) || !c.targetValues.length || !c.targetValues.every(inRange))
       throw new Error('Generated number line has an invalid challenge');
     if (c.exactTargetValue !== undefined && !inRange(c.exactTargetValue)) throw new Error('Invalid missing value');
+    if (c.type === 'build_hops') {
+      // The open build: a start on the line, and a target its hop buttons reach at least two different ways.
+      const task = hopsTaskOf(c);
+      if (!task || !inRange(task.start) || task.target <= task.start || waysFor(task.target - task.start, task.hopCount).length < 2)
+        throw new Error('Invalid hops build');
+    }
     if (c.type === 'show_jump') {
       if (!inRange(c.startValue) || !Array.isArray(c.operations) || !c.operations.length) throw new Error('Missing jump operations');
       let landing = c.startValue!;

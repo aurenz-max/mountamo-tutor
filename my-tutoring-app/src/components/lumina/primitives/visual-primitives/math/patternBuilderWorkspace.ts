@@ -6,7 +6,8 @@
  *   - extend / find_rule: tokens tapped into the "?" blanks, then Check;
  *   - identify_core: the tokens of the repeating part tapped in the row, then Check;
  *   - translate: the new tokens tapped in order, following the drawn key, then Check;
- *   - create: the learner's own row, then Check; the check is code (does one part repeat?).
+ *   - create (open build, OB-9M): the learner's own row in the pattern shape the ask names (AB, ABB, ...), then
+ *     "I'm done!"; the check is code (a part of that shape, repeated at least twice). Try again keeps the row.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { PatternBuilderChallenge, PatternBuilderData } from './PatternBuilder';
@@ -44,13 +45,69 @@ export function translationOf(data: PatternSource, c: PatternBuilderChallenge): 
   return activeSequence(data, c).given.map(t => mapping[t.toLowerCase()] || mapping[t] || t);
 }
 
-/** Create: at least four tokens, and one starting part repeats all the way through (a part may be one token). */
+/** Create without an asked shape (an older payload): at least four tokens, at least two different ones, and one
+ *  starting part repeats all the way through. A row of one token repeated is not a pattern anyone made. */
 export function repeatsAPart(row: string[]): boolean {
-  if (row.length < 4) return false;
+  if (row.length < 4 || new Set(row.map(t => t.toLowerCase())).size < 2) return false;
   for (let coreLen = 1; coreLen <= Math.floor(row.length / 2); coreLen++) {
     if (row.every((t, i) => t.toLowerCase() === row[i % coreLen].toLowerCase())) return true;
   }
   return false;
+}
+
+/** The pattern shapes a create item may ask for, simplest first. Code picks one per item (the generator). */
+export const CREATE_SHAPES = ['AB', 'ABB', 'AAB', 'ABC', 'AABB'] as const;
+export type CreateShape = typeof CREATE_SHAPES[number];
+
+/** The letter shape of a part: each new token takes the next letter ("red blue blue" → "ABB"). */
+export function shapeOf(part: string[]): string {
+  const seen: string[] = [];
+  return part.map(t => {
+    const k = t.toLowerCase();
+    if (!seen.includes(k)) seen.push(k);
+    return String.fromCharCode(65 + seen.indexOf(k));
+  }).join('');
+}
+
+/** How many different tokens a shape needs. */
+export const tokensNeeded = (shape: string) => new Set(shape.split('')).size;
+
+/** The ask's words for a shape. The shape IS the task, so stating it is not a leak; the tokens are the learner's. */
+const SHAPE_WORDS: Record<string, string> = {
+  AB: 'two things taking turns',
+  ABB: 'one thing, then two the same',
+  AAB: 'two the same, then one different',
+  ABC: 'three different things in a row',
+  AABB: 'two the same, then two of another',
+};
+export const shapeLetters = (shape: string) => shape.split('').join(' ');
+export const createInstruction = (shape: string) =>
+  `Make your own ${shapeLetters(shape)} pattern (${SHAPE_WORDS[shape] ?? 'a part that repeats'}). Use any tokens, and repeat it at least two times.`;
+
+/** The asked shape's check: the first part has that shape and the row repeats it, at least two whole times
+ *  (a trailing part of the next repeat is fine: red blue blue red blue blue red). */
+export function makesShape(row: string[], shape: string): boolean {
+  const k = shape.length;
+  if (row.length < 2 * k) return false;
+  const part = row.slice(0, k);
+  return shapeOf(part) === shape && row.every((t, i) => t.toLowerCase() === part[i % k].toLowerCase());
+}
+
+/** The shortest part the row repeats from its start (at least two whole times), or null. */
+export function repeatedPart(row: readonly string[]): string[] | null {
+  for (let k = 1; k <= Math.floor(row.length / 2); k++) {
+    if (row.every((t, i) => t.toLowerCase() === row[i % k].toLowerCase())) return row.slice(0, k);
+  }
+  return null;
+}
+
+/** A repeating row's key from its shown tokens: the part it repeats and the `blanks` tokens that continue it. Null when
+ *  the shown row does not repeat a part of two or more different tokens. The generator writes extend and identify_core
+ *  keys from this, so an LLM key that does not continue the row (AAB shown, "A B" hidden) never reaches the check. */
+export function repeatKey(given: readonly string[], blanks: number): { core: string[]; hidden: string[] } | null {
+  const part = repeatedPart(given);
+  if (!part || new Set(part.map(t => t.toLowerCase())).size < 2) return null;
+  return { core: part, hidden: Array.from({ length: blanks }, (_, i) => part[(given.length + i) % part.length]) };
 }
 
 /** The learner's work on the current challenge. */
@@ -78,7 +135,7 @@ export function patternBuilderMatches(data: PatternSource, c: PatternBuilderChal
     case 'extend':
     case 'find_rule': return same(v.extension, seq.hidden);
     case 'identify_core': return same(selectedTokens(data, c, v), seq.core);
-    case 'create': return repeatsAPart(v.created);
+    case 'create': return c.createShape ? makesShape(v.created, c.createShape) : repeatsAPart(v.created);
     case 'translate': { const expected = translationOf(data, c); return !!expected && same(v.translated, expected); }
   }
 }
@@ -89,10 +146,12 @@ export function patternBuilderMatches(data: PatternSource, c: PatternBuilderChal
  *   `repeated_last` (extend, find_rule: every blank holds the row's last token), `started_over` (extend, find_rule:
  *   the blanks hold the row's first tokens), `two_swapped`, `one_wrong` (one place), `several_wrong`;
  * - identify_core: `two_repeats` (the part twice), `too_long`, `too_short`, `other_part` (as many tokens, not the part);
- * - create: `too_short` (under four tokens), `no_repeat` (no starting part repeats all the way through).
+ * - create: `too_short` (fewer than two whole repeats of the asked part, or under four tokens without a shape),
+ *   `other_shape` (a part repeats, but not of the asked shape: AB made when ABB was asked, or one token over and
+ *   over), `no_repeat` (no starting part repeats all the way through).
  */
 export type PatternBuilderMiss = 'blanks_left' | 'extra_tokens' | 'repeated_last' | 'started_over' | 'two_swapped' | 'one_wrong'
-  | 'several_wrong' | 'two_repeats' | 'too_long' | 'too_short' | 'other_part' | 'no_repeat';
+  | 'several_wrong' | 'two_repeats' | 'too_long' | 'too_short' | 'other_part' | 'no_repeat' | 'other_shape';
 
 const rowMiss = (got: string[], want: string[]): PatternBuilderMiss => {
   if (got.length < want.length) return 'blanks_left';
@@ -121,7 +180,13 @@ export function patternBuilderMiss(data: PatternSource, c: PatternBuilderChallen
       if (same(got, [...seq.core, ...seq.core])) return 'two_repeats';
       return got.length > seq.core.length ? 'too_long' : got.length < seq.core.length ? 'too_short' : 'other_part';
     }
-    case 'create': return v.created.length < 4 ? 'too_short' : 'no_repeat';
+    case 'create': {
+      const min = c.createShape ? 2 * c.createShape.length : 4;
+      if (v.created.length < min) return 'too_short';
+      const part = repeatedPart(v.created);
+      if (!part) return 'no_repeat';
+      return c.createShape || new Set(part.map(t => t.toLowerCase())).size < 2 ? 'other_shape' : 'no_repeat';
+    }
   }
 }
 
@@ -148,9 +213,10 @@ const CONSTRAINTS: Record<PatternBuilderChallenge['type'], string> = {
     + 'new token), tapping them in order, then presses Check; the builder checks it. You may read the whole key aloud, '
     + 'but never tie a key entry to a place in the row ("the first one", "the last color"). The new row is the answer: '
     + 'never say it, or which token goes in any place.',
-  create: 'The learner taps tokens to build their own pattern and presses Check; the builder accepts any row of at least '
-    + '4 tokens where one starting part repeats all the way through. There is no single answer: explain what makes a '
-    + 'pattern, but never tell the learner which tokens to tap.',
+  create: 'Open build: the learner taps tokens to make their own pattern of the asked shape (the letters in the task, '
+    + 'such as A B B) and presses I\'m done; the builder accepts any tokens whose first part has that shape and repeats at '
+    + 'least two whole times. Try again keeps the row to revise. There is no single answer: you may explain the shape '
+    + 'with tokens that are not on the palette, but never tell the learner which tokens to tap or say their next one.',
 };
 
 /** How far the tutor may coach at this support tier, so it never says what the tier withheld on screen. */
@@ -187,6 +253,7 @@ export function patternBuilderScene(data: PatternSource, c: PatternBuilderChalle
     ...(phase === 'copy' && data.showOptions?.showCore ? { highlightedPart: seq.core.join(', ') } : {}),
     ...(phase === 'translate' && mapping ? { key: Object.entries(mapping).map(([from, to]) => `${from} → ${to}`).join(', ') } : {}),
     ...(phase !== 'identify' ? { choices: paletteFor(data, c).join(' | ') } : {}),
+    ...(c.type === 'create' && c.createShape ? { askedShape: shapeLetters(c.createShape) } : {}),
     ...(tier ? { supportTier: tier } : {}),
     ...(tip ? { coaching: tip } : {}),
     constraints: CONSTRAINTS[c.type],
@@ -196,6 +263,14 @@ export function patternBuilderScene(data: PatternSource, c: PatternBuilderChalle
 type HarnessInput = { type: 'touch'; target: string } | { type: 'choose'; label: string };
 
 export const CHECK_LABEL = 'Check Answer';
+export const DONE_LABEL = "I'm done!";
+export const START_OVER_LABEL = 'Start over';
+
+/** create: the learner's row as facts, the made quantities as numbers (so `workHistory` records a turn back). */
+export function createdFacts(row: string[]): Record<string, string | number> {
+  return { row: row.length ? row.join(', ') : 'empty', tokensInRow: row.length,
+    differentTokens: new Set(row.map(t => t.toLowerCase())).size };
+}
 
 /** Taps for a row of tokens through the palette; the first palette token with that name. */
 function tapRow(palette: string[], row: string[]): HarnessInput[] {
@@ -217,7 +292,7 @@ function spoil(palette: string[], row: string[]): string[] {
  * The journey's inputs for one challenge, through the real controls, ending with Check. `wrong` swaps
  * the last token of a row, selects one token too many, or builds a row that does not repeat.
  */
-export function patternBuilderHarnessInputs(data: PatternSource, c: PatternBuilderChallenge, wrong: boolean): HarnessInput[] {
+export function patternBuilderHarnessInputs(data: PatternSource, c: PatternBuilderChallenge, wrong: boolean, kept = false): HarnessInput[] {
   const check: HarnessInput = { type: 'choose', label: CHECK_LABEL };
   const palette = paletteFor(data, c);
   const seq = activeSequence(data, c);
@@ -230,10 +305,20 @@ export function patternBuilderHarnessInputs(data: PatternSource, c: PatternBuild
     return [...tapRow(palette, wrong ? spoil(palette, row) : row), check];
   }
   if (c.type === 'create') {
+    // Open build: the asked shape in the palette's first different tokens, twice, then I'm done. Wrong: the other
+    // shape (AB, or ABB when AB was asked), twice. Try again keeps the row, so a kept row is cleared first.
     const distinct = palette.filter((t, i) => palette.findIndex(u => u.toLowerCase() === t.toLowerCase()) === i);
-    if (distinct.length < 2) throw new Error(`create ${c.id} has fewer than two distinct tokens`);
-    const [a, b] = distinct;
-    return [...tapRow(palette, wrong ? [a, b, b, a] : [a, b, a, b]), check];
+    if (!c.createShape) {
+      // An older payload with no asked shape: any repeat passes, so wrong is a row that does not repeat.
+      if (distinct.length < 2) throw new Error(`create ${c.id} has fewer than two distinct tokens`);
+      const [a, b] = distinct;
+      return [...tapRow(palette, wrong ? [a, b, b, a] : [a, b, a, b]), check];
+    }
+    const madeShape = wrong ? (c.createShape === 'AB' ? 'ABB' : 'AB') : c.createShape;
+    if (distinct.length < tokensNeeded(madeShape)) throw new Error(`create ${c.id} has too few different tokens for ${madeShape}`);
+    const part = madeShape.split('').map(l => distinct[l.charCodeAt(0) - 65]);
+    const clear: HarnessInput[] = kept ? [{ type: 'choose', label: START_OVER_LABEL }] : [];
+    return [...clear, ...tapRow(palette, [...part, ...part]), { type: 'choose', label: DONE_LABEL }];
   }
   // identify_core: the first place the core appears in the row, or one token more.
   const n = seq.core.length;

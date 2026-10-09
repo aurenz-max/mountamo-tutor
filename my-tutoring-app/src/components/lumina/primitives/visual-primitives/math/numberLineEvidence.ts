@@ -77,6 +77,33 @@ export function buildJumpDiagnosisEvidence(
   };
 }
 
+/** One "I'm done!" on a build_hops item, as the learner made it. Facts only; kept in `student_work.hopBuilds`. */
+export interface HopBuildResponse {
+  challengeId: string;
+  /** 1-based "I'm done!" press within the challenge, first way and second way together. */
+  attempt: number;
+  /** Which way was being made: 1 until the first way is checked right, then 2. */
+  way: 1 | 2;
+  start: number;
+  target: number;
+  hopsAsked: number;
+  hops: number[];
+  landing: number;
+  correct: boolean;
+  miss?: string;
+  levers?: string[];
+}
+
+export function hopBuildResponseFor(challengeId: string, attempt: number, way: 1 | 2,
+  task: { start: number; target: number; hopCount: number }, hops: readonly number[], miss: string | undefined,
+  pulled: readonly string[] = []): HopBuildResponse {
+  return {
+    challengeId, attempt, way, start: task.start, target: task.target, hopsAsked: task.hopCount, hops: [...hops],
+    landing: hops.reduce((at, h) => at + h, task.start), correct: !miss,
+    ...(miss ? { miss } : {}), ...(pulled.length ? { levers: [...pulled] } : {}),
+  };
+}
+
 /** Percent of jump challenges whose FIRST Check was correct; undefined if none were checked. */
 export function jumpFirstResponseScore(responses: readonly JumpResponse[]): number | undefined {
   // A first try made after the tutor pulled a lever is assisted, never a first-response success.

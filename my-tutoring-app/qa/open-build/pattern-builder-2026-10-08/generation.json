@@ -1,0 +1,656 @@
+{
+  "generatedAt": "2026-10-09T00:40:50.589Z",
+  "runs": [
+    {
+      "name": "k",
+      "grade": "Kindergarten",
+      "difficulty": null,
+      "intent": "Create your own AB and ABB color patterns",
+      "issues": [],
+      "shapes": [
+        "AB",
+        "ABB",
+        "AAB",
+        "ABB",
+        "AAB"
+      ],
+      "data": {
+        "title": "Creative Pattern Studio",
+        "description": "Design your own colorful patterns and show what you know",
+        "gradeBand": "K-1",
+        "patternType": "repeating",
+        "sequence": {
+          "given": [],
+          "hidden": [
+            "red",
+            "blue",
+            "red",
+            "blue"
+          ],
+          "core": [
+            "red",
+            "blue"
+          ],
+          "rule": "AB repeating"
+        },
+        "tokens": {
+          "available": [
+            "red",
+            "blue",
+            "green",
+            "yellow"
+          ],
+          "type": "colors"
+        },
+        "showOptions": {
+          "showCore": false,
+          "showStepNumbers": false,
+          "showRule": true,
+          "audioMode": false
+        },
+        "challenges": [
+          {
+            "id": "c1",
+            "type": "create",
+            "instruction": "Make your own A B pattern (two things taking turns). Use any tokens, and repeat it at least two times.",
+            "answer": [],
+            "hint": "Make your first part, then make the same part again.",
+            "narration": "Make a pattern of your own.",
+            "availableTokens": [
+              "red",
+              "blue",
+              "green",
+              "yellow"
+            ],
+            "sequence": {
+              "given": [],
+              "hidden": [
+                "red",
+                "blue",
+                "red",
+                "blue"
+              ],
+              "core": [
+                "red",
+                "blue"
+              ]
+            },
+            "createShape": "AB"
+          },
+          {
+            "id": "c2",
+            "type": "create",
+            "instruction": "Make your own A B B pattern (one thing, then two the same). Use any tokens, and repeat it at least two times.",
+            "answer": [],
+            "hint": "Make your first part, then make the same part again.",
+            "narration": "Make a pattern of your own.",
+            "availableTokens": [
+              "red",
+              "blue",
+              "green",
+              "yellow",
+              "orange"
+            ],
+            "sequence": {
+              "given": [],
+              "hidden": [
+                "red",
+                "red",
+                "blue",
+                "red",
+                "red",
+                "blue"
+              ],
+              "core": [
+                "red",
+                "red",
+                "blue"
+              ]
+            },
+            "createShape": "ABB"
+          },
+          {
+            "id": "c3",
+            "type": "create",
+            "instruction": "Make your own A A B pattern (two the same, then one different). Use any tokens, and repeat it at least two times.",
+            "answer": [],
+            "hint": "Make your first part, then make the same part again.",
+            "narration": "Make a pattern of your own.",
+            "availableTokens": [
+              "red",
+              "blue",
+              "green",
+              "yellow",
+              "purple"
+            ],
+            "sequence": {
+              "given": [],
+              "hidden": [
+                "red",
+                "blue",
+                "green",
+                "red",
+                "blue",
+                "green"
+              ],
+              "core": [
+                "red",
+                "blue",
+                "green"
+              ]
+            },
+            "createShape": "AAB"
+          },
+          {
+            "id": "c4",
+            "type": "create",
+            "instruction": "Make your own A B B pattern (one thing, then two the same). Use any tokens, and repeat it at least two times.",
+            "answer": [],
+            "hint": "Make your first part, then make the same part again.",
+            "narration": "Make a pattern of your own.",
+            "availableTokens": [
+              "red",
+              "blue",
+              "green",
+              "yellow",
+              "pink"
+            ],
+            "sequence": {
+              "given": [],
+              "hidden": [
+                "red",
+                "red",
+                "blue",
+                "blue",
+                "red",
+                "red",
+                "blue",
+                "blue"
+              ],
+              "core": [
+                "red",
+                "red",
+                "blue",
+                "blue"
+              ]
+            },
+            "createShape": "ABB"
+          },
+          {
+            "id": "c5",
+            "type": "create",
+            "instruction": "Make your own A A B pattern (two the same, then one different). Use any tokens, and repeat it at least two times.",
+            "answer": [],
+            "hint": "Make your first part, then make the same part again.",
+            "narration": "Make a pattern of your own.",
+            "availableTokens": [
+              "red",
+              "blue",
+              "green",
+              "yellow",
+              "purple",
+              "orange"
+            ],
+            "sequence": {
+              "given": [],
+              "hidden": [
+                "red",
+                "green",
+                "blue",
+                "yellow",
+                "red",
+                "green",
+                "blue",
+                "yellow"
+              ],
+              "core": [
+                "red",
+                "green",
+                "blue",
+                "yellow"
+              ]
+            },
+            "createShape": "AAB"
+          }
+        ]
+      }
+    },
+    {
+      "name": "g2",
+      "grade": "Grade 2",
+      "difficulty": null,
+      "intent": "Make repeating patterns of your own with shapes",
+      "issues": [],
+      "shapes": [
+        "AB",
+        "ABB",
+        "AAB",
+        "ABC",
+        "AABB"
+      ],
+      "data": {
+        "title": "Shape Pattern Studio",
+        "description": "Design your own wonderful shape patterns and share them with the class.",
+        "gradeBand": "2-3",
+        "patternType": "repeating",
+        "sequence": {
+          "given": [
+            "circle",
+            "square",
+            "circle",
+            "square"
+          ],
+          "hidden": [
+            "circle",
+            "square"
+          ],
+          "core": [
+            "circle",
+            "square"
+          ],
+          "rule": "AB repeating"
+        },
+        "tokens": {
+          "available": [
+            "circle",
+            "square",
+            "triangle",
+            "star",
+            "diamond"
+          ],
+          "type": "shapes"
+        },
+        "showOptions": {
+          "showCore": true,
+          "showStepNumbers": false,
+          "showRule": true,
+          "audioMode": false
+        },
+        "challenges": [
+          {
+            "id": "c1",
+            "type": "create",
+            "instruction": "Make your own A B pattern (two things taking turns). Use any tokens, and repeat it at least two times.",
+            "answer": [],
+            "hint": "Make your first part, then make the same part again.",
+            "narration": "Make a pattern of your own.",
+            "availableTokens": [
+              "circle",
+              "square",
+              "triangle",
+              "star"
+            ],
+            "sequence": {
+              "given": [],
+              "hidden": [
+                "circle",
+                "square",
+                "circle",
+                "square",
+                "circle",
+                "square"
+              ],
+              "core": [
+                "circle",
+                "square"
+              ]
+            },
+            "createShape": "AB"
+          },
+          {
+            "id": "c2",
+            "type": "create",
+            "instruction": "Make your own A B B pattern (one thing, then two the same). Use any tokens, and repeat it at least two times.",
+            "answer": [],
+            "hint": "Make your first part, then make the same part again.",
+            "narration": "Make a pattern of your own.",
+            "availableTokens": [
+              "circle",
+              "triangle",
+              "star",
+              "diamond"
+            ],
+            "sequence": {
+              "given": [],
+              "hidden": [
+                "triangle",
+                "star",
+                "star",
+                "triangle",
+                "star",
+                "star"
+              ],
+              "core": [
+                "triangle",
+                "star",
+                "star"
+              ]
+            },
+            "createShape": "ABB"
+          },
+          {
+            "id": "c3",
+            "type": "create",
+            "instruction": "Make your own A A B pattern (two the same, then one different). Use any tokens, and repeat it at least two times.",
+            "answer": [],
+            "hint": "Make your first part, then make the same part again.",
+            "narration": "Make a pattern of your own.",
+            "availableTokens": [
+              "square",
+              "diamond",
+              "heart",
+              "star"
+            ],
+            "sequence": {
+              "given": [],
+              "hidden": [
+                "diamond",
+                "diamond",
+                "heart",
+                "diamond",
+                "diamond",
+                "heart"
+              ],
+              "core": [
+                "diamond",
+                "diamond",
+                "heart"
+              ]
+            },
+            "createShape": "AAB"
+          },
+          {
+            "id": "c4",
+            "type": "create",
+            "instruction": "Make your own A B C pattern (three different things in a row). Use any tokens, and repeat it at least two times.",
+            "answer": [],
+            "hint": "Make your first part, then make the same part again.",
+            "narration": "Make a pattern of your own.",
+            "availableTokens": [
+              "circle",
+              "triangle",
+              "square",
+              "star",
+              "heart"
+            ],
+            "sequence": {
+              "given": [],
+              "hidden": [
+                "circle",
+                "triangle",
+                "square",
+                "circle",
+                "triangle",
+                "square"
+              ],
+              "core": [
+                "circle",
+                "triangle",
+                "square"
+              ]
+            },
+            "createShape": "ABC"
+          },
+          {
+            "id": "c5",
+            "type": "create",
+            "instruction": "Make your own A A B B pattern (two the same, then two of another). Use any tokens, and repeat it at least two times.",
+            "answer": [],
+            "hint": "Make your first part, then make the same part again.",
+            "narration": "Make a pattern of your own.",
+            "availableTokens": [
+              "circle",
+              "star",
+              "heart",
+              "diamond",
+              "triangle"
+            ],
+            "sequence": {
+              "given": [],
+              "hidden": [
+                "star",
+                "star",
+                "heart",
+                "heart",
+                "star",
+                "star",
+                "heart",
+                "heart"
+              ],
+              "core": [
+                "star",
+                "star",
+                "heart",
+                "heart"
+              ]
+            },
+            "createShape": "AABB"
+          }
+        ]
+      }
+    },
+    {
+      "name": "g3-hard",
+      "grade": "Grade 3",
+      "difficulty": "hard",
+      "intent": "Invent repeating patterns and describe the part that repeats",
+      "issues": [],
+      "shapes": [
+        "AB",
+        "ABB",
+        "AAB",
+        "ABC",
+        "AABB"
+      ],
+      "data": {
+        "title": "Pattern Studio",
+        "description": "Invent your own repeating patterns and explore how different core units repeat.",
+        "gradeBand": "2-3",
+        "patternType": "repeating",
+        "sequence": {
+          "given": [],
+          "hidden": [
+            "red",
+            "blue",
+            "red",
+            "blue"
+          ],
+          "core": [
+            "red",
+            "blue"
+          ],
+          "rule": "AB repeating"
+        },
+        "tokens": {
+          "available": [
+            "red",
+            "blue",
+            "green",
+            "yellow"
+          ],
+          "type": "colors"
+        },
+        "showOptions": {
+          "showCore": false,
+          "showStepNumbers": false,
+          "showRule": false,
+          "audioMode": false
+        },
+        "challenges": [
+          {
+            "id": "c1",
+            "type": "create",
+            "instruction": "Make your own A B pattern (two things taking turns). Use any tokens, and repeat it at least two times.",
+            "answer": [],
+            "hint": "Make your first part, then make the same part again.",
+            "narration": "Make a pattern of your own.",
+            "availableTokens": [
+              "red",
+              "blue",
+              "green",
+              "yellow"
+            ],
+            "sequence": {
+              "given": [],
+              "hidden": [
+                "red",
+                "blue",
+                "red",
+                "blue"
+              ],
+              "core": [
+                "red",
+                "blue"
+              ]
+            },
+            "createShape": "AB",
+            "supportTier": "hard"
+          },
+          {
+            "id": "c2",
+            "type": "create",
+            "instruction": "Make your own A B B pattern (one thing, then two the same). Use any tokens, and repeat it at least two times.",
+            "answer": [],
+            "hint": "Make your first part, then make the same part again.",
+            "narration": "Make a pattern of your own.",
+            "availableTokens": [
+              "circle",
+              "square",
+              "triangle",
+              "star"
+            ],
+            "sequence": {
+              "given": [],
+              "hidden": [
+                "circle",
+                "circle",
+                "square",
+                "circle",
+                "circle",
+                "square"
+              ],
+              "core": [
+                "circle",
+                "circle",
+                "square"
+              ]
+            },
+            "createShape": "ABB",
+            "supportTier": "hard"
+          },
+          {
+            "id": "c3",
+            "type": "create",
+            "instruction": "Make your own A A B pattern (two the same, then one different). Use any tokens, and repeat it at least two times.",
+            "answer": [],
+            "hint": "Make your first part, then make the same part again.",
+            "narration": "Make a pattern of your own.",
+            "availableTokens": [
+              "red",
+              "green",
+              "blue",
+              "yellow"
+            ],
+            "sequence": {
+              "given": [],
+              "hidden": [
+                "red",
+                "green",
+                "blue",
+                "red",
+                "green",
+                "blue"
+              ],
+              "core": [
+                "red",
+                "green",
+                "blue"
+              ]
+            },
+            "createShape": "AAB",
+            "supportTier": "hard"
+          },
+          {
+            "id": "c4",
+            "type": "create",
+            "instruction": "Make your own A B C pattern (three different things in a row). Use any tokens, and repeat it at least two times.",
+            "answer": [],
+            "hint": "Make your first part, then make the same part again.",
+            "narration": "Make a pattern of your own.",
+            "availableTokens": [
+              "square",
+              "triangle",
+              "circle",
+              "star"
+            ],
+            "sequence": {
+              "given": [],
+              "hidden": [
+                "square",
+                "triangle",
+                "triangle",
+                "square",
+                "triangle",
+                "triangle"
+              ],
+              "core": [
+                "square",
+                "triangle",
+                "triangle"
+              ]
+            },
+            "createShape": "ABC",
+            "supportTier": "hard"
+          },
+          {
+            "id": "c5",
+            "type": "create",
+            "instruction": "Make your own A A B B pattern (two the same, then two of another). Use any tokens, and repeat it at least two times.",
+            "answer": [],
+            "hint": "Make your first part, then make the same part again.",
+            "narration": "Make a pattern of your own.",
+            "availableTokens": [
+              "red",
+              "blue",
+              "green",
+              "yellow"
+            ],
+            "sequence": {
+              "given": [],
+              "hidden": [
+                "red",
+                "red",
+                "blue",
+                "blue",
+                "red",
+                "red",
+                "blue",
+                "blue"
+              ],
+              "core": [
+                "red",
+                "red",
+                "blue",
+                "blue"
+              ]
+            },
+            "createShape": "AABB",
+            "supportTier": "hard"
+          }
+        ]
+      }
+    }
+  ],
+  "logs": [
+    "[PatternBuilder] evalMode: \"create\" → schema enum: [create] (β=4.5)",
+    "[PatternBuilder] create shapes: [AB, ABB, AAB, ABB, AAB]",
+    "[PatternBuilder] Final: 5 challenge(s) → [create, create, create, create, create]",
+    "[PatternBuilder] evalMode: \"create\" → schema enum: [create] (β=4.5)",
+    "[PatternBuilder] create shapes: [AB, ABB, AAB, ABC, AABB]",
+    "[PatternBuilder] Final: 5 challenge(s) → [create, create, create, create, create]",
+    "[PatternBuilder] evalMode: \"create\" → schema enum: [create] (β=4.5)",
+    "[PatternBuilder] create shapes: [AB, ABB, AAB, ABC, AABB]",
+    "[PatternBuilder] Support tier \"hard\" applied per-challenge (single-mode create) → showCore=false, showRule=false",
+    "[PatternBuilder] Final: 5 challenge(s) → [create, create, create, create, create]"
+  ]
+}

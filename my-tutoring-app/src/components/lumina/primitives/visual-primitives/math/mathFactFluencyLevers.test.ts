@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import type { MathFactFluencyChallenge } from './MathFactFluency';
-import { equationResult, mathFactMatches } from './mathFactFluencyWorkspace';
+import { equationResult, mathFactMatches, mathFactMiss, type MathFactResponse } from './mathFactFluencyWorkspace';
 import { factModel, farMatch, leverFacts, mathFactLevers, simplerItem, smallerFact, startLevers } from './mathFactFluencyLevers';
 
 type C = MathFactFluencyChallenge;
@@ -37,10 +37,10 @@ describe('factModel', () => {
 describe('which levers each mode offers', () => {
   it.each([
     ['visual_fact', fact('visual-fact', 3, '+', 2, 'result', { visualType: 'dot-array', options: options(5) }), ['two_parts', 'count_marks', 'smaller_fact']],
-    ['visual_fact on fingers', fact('visual-fact', 3, '+', 2, 'result', { visualType: 'fingers', options: options(5) }), ['smaller_fact']],
+    ['visual_fact on fingers', fact('visual-fact', 3, '+', 2, 'result', { visualType: 'fingers', options: options(5) }), ['two_parts', 'count_marks', 'smaller_fact']],
     ['visual_fact already +1', fact('visual-fact', 3, '+', 1, 'result', { visualType: 'dot-array', options: options(4) }), ['two_parts', 'count_marks']],
     ['match picture → equation', fact('match', 2, '+', 3, 'result', { matchDirection: 'visual-to-equation', visualType: 'ten-frame' }), ['count_marks', 'far_match']],
-    ['match fingers → equation', fact('match', 2, '+', 3, 'result', { matchDirection: 'visual-to-equation', visualType: 'fingers' }), ['far_match']],
+    ['match fingers → equation', fact('match', 2, '+', 3, 'result', { matchDirection: 'visual-to-equation', visualType: 'fingers' }), ['count_marks', 'far_match']],
     ['match equation → picture', fact('match', 2, '+', 3, 'result', { matchDirection: 'equation-to-visual' }), ['fact_dots', 'far_match']],
     ['equation_solve', fact('equation-solve', 3, '+', 2, 'result', { options: options(5) }), ['fact_dots', 'smaller_fact']],
     ['missing_number', fact('missing-number', 3, '+', 4, 'operand2'), ['part_whole', 'smaller_fact']],
@@ -62,6 +62,11 @@ describe('this wrong answer, then this lever', () => {
     [solve, 'other_operation', 'fact_dots'], [solve, 'one_over', 'fact_dots'], [solve, 'over_by_more', 'fact_dots'],
     [missing, 'printed_number', 'part_whole'], [missing, 'short_by_more', 'part_whole'],
     [match, 'one_short', 'count_marks'], [match, 'over_by_more', 'count_marks'],
+    // Already +1: no smaller fact, so counting the picture answers a far miscount.
+    [fact('visual-fact', 3, '+', 1, 'result', { visualType: 'dot-array', options: options(4) }), 'over_by_more', 'count_marks'],
+    // Fingers pictures (the J12 gaps of 2026-10-09): the dots go under the hands.
+    [fact('visual-fact', 1, '+', 2, 'result', { visualType: 'fingers', options: [1, 3, 4, 5] }), 'other_operation', 'two_parts'],
+    [fact('match', 3, '+', 3, 'result', { matchDirection: 'visual-to-equation', visualType: 'fingers' }), 'one_short', 'count_marks'],
   ])('%#: %s', (c, miss, want) => {
     expect(nextLever(mathFactLevers(c, [], 10), miss)).toBe(want);
   });
@@ -79,6 +84,8 @@ describe('leak rules', () => {
     fact('match', 4, '+', 4, 'result', { matchDirection: 'equation-to-visual' }),
     fact('equation-solve', 6, '-', 2, 'result', { options: options(4) }),
     fact('missing-number', 7, '-', 4, 'operand1'),
+    fact('visual-fact', 1, '+', 2, 'result', { visualType: 'fingers', options: [1, 3, 4, 5] }),
+    fact('match', 3, '+', 3, 'result', { matchDirection: 'visual-to-equation', visualType: 'fingers' }),
   ];
   it.each(all.map(c => [c.type, c] as const))('%s: no lever text and no scene fact carries a number', (_t, c) => {
     const levers = mathFactLevers(c, [], 10);
@@ -186,7 +193,16 @@ describe('saved payloads', () => {
     for (const c of data.challenges as C[]) {
       const levers = mathFactLevers(c, [], data.maxNumber);
       if (mode === 'speed_round') { expect(levers).toEqual([]); continue; }
-      expect(levers.some(l => l.kind === 'help') || c.visualType === 'fingers').toBe(true);
+      expect(levers.some(l => l.kind === 'help')).toBe(true);
+      // Per item (J12): every wrong choice's miss is answered by a lever on THIS item.
+      const wrong: MathFactResponse[] = c.type === 'match'
+        ? (c.equationOptions ?? []).map(value => ({ kind: 'equation' as const, value }))
+        : (c.options?.length ? c.options : [c.correctAnswer - 1, c.correctAnswer + 1, c.correctAnswer + 3].filter(v => v >= 0))
+          .map(value => ({ kind: 'number' as const, value }));
+      for (const r of wrong) {
+        const miss = mathFactMiss(c, r);
+        if (miss) expect(levers.some(l => l.answers?.includes(miss)), `${c.id} ${miss}`).toBe(true);
+      }
       expect(leverFacts(c, levers.map(l => l.id))).not.toMatch(/\d/);
       const s = simplerItem(c, data.maxNumber);
       if (s) expectSimpler(c, s, data.maxNumber);

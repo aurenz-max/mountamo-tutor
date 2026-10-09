@@ -1,0 +1,156 @@
+{
+  "at": "2026-10-08T21:33:52.238Z",
+  "totals": [
+    3,
+    3,
+    4,
+    4,
+    5,
+    5
+  ],
+  "checks": [
+    {
+      "name": "mode routed: every item build_pair",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "frame opens empty",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "placed one over in two colours",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "levers bare at start",
+      "pass": true,
+      "detail": "[\"running_count: bare\",\"split_model: bare\",\"smaller_total: bare\"]"
+    },
+    {
+      "name": "no count on screen before a lever",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "miss: Try again offered",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Try again keeps the build",
+      "pass": true,
+      "detail": "4 counters"
+    },
+    {
+      "name": "tap a counter takes it off",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "right pair passes",
+      "pass": true,
+      "detail": "bers with Two Colors Build it I'm done! 2 + 1 = 3 YES! 🎙️ Show me on the frame ✕ stop Let us"
+    },
+    {
+      "name": "item 2 opens empty",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "ways_shown offered after a repeat",
+      "pass": true,
+      "detail": "[\"running_count\",\"split_model\",\"ways_shown\",\"smaller_total\"]"
+    },
+    {
+      "name": "ways_shown draws the learner's own way beside the frame",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "running_count shows the whole only",
+      "pass": true,
+      "detail": "\"Counters: 3\""
+    },
+    {
+      "name": "a different pair passes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "5+ watcher lines",
+      "pass": true,
+      "detail": "5"
+    },
+    {
+      "name": "watcher \"Ooh, bright red circles are appearing in the boxes!\" has no number/verdict",
+      "pass": true,
+      "detail": "2 red"
+    },
+    {
+      "name": "watcher \"Bright yellow circles are glowing right beside the red ones!\" has no number/verdict",
+      "pass": false,
+      "detail": "2 red, 2 yellow (one over)"
+    },
+    {
+      "name": "watcher \"Ooh, red and yellow circles are lining up!\" has no number/verdict",
+      "pass": true,
+      "detail": "2 red, 1 yellow (fixed)"
+    },
+    {
+      "name": "watcher \"Ooh, red and yellow circles are lining up!\" has no number/verdict",
+      "pass": true,
+      "detail": "same pair again"
+    },
+    {
+      "name": "watcher \"Ooh, bright yellow and red circles are shining inside the frame!\" has no number/verdict",
+      "pass": true,
+      "detail": "different pair"
+    },
+    {
+      "name": "frame fits a 360px card",
+      "pass": true,
+      "detail": "{\"frameRight\":600,\"cardRight\":625,\"cell\":38,\"palette\":[62,62]}"
+    },
+    {
+      "name": "palette buttons >= 44px",
+      "pass": true,
+      "detail": "[62,62]"
+    },
+    {
+      "name": "frame cells >= 40px at 360px",
+      "pass": false,
+      "detail": "38"
+    },
+    {
+      "name": "no page errors",
+      "pass": true,
+      "detail": "[]"
+    }
+  ],
+  "watcherLines": [
+    {
+      "state": "2 red",
+      "line": "Ooh, bright red circles are appearing in the boxes!"
+    },
+    {
+      "state": "2 red, 2 yellow (one over)",
+      "line": "Bright yellow circles are glowing right beside the red ones!"
+    },
+    {
+      "state": "2 red, 1 yellow (fixed)",
+      "line": "Ooh, red and yellow circles are lining up!"
+    },
+    {
+      "state": "same pair again",
+      "line": "Ooh, red and yellow circles are lining up!"
+    },
+    {
+      "state": "different pair",
+      "line": "Ooh, bright yellow and red circles are shining inside the frame!"
+    }
+  ],
+  "errors": []
+}

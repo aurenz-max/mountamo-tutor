@@ -26,6 +26,10 @@ import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import type { LearningResponseEvidence } from '../../../evaluation/learningResponseEvidence';
 import { modelSpatialDescription } from './spatialSceneDescriptionScript';
+import {
+  MARK_LEVER, PICTURE_LEVER, PRACTICE_NOTE, SIDES_LEVER, leverFacts, markCells, pictureWords, practiceItem,
+  spatialSceneLevers,
+} from './spatialSceneLevers';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import type { PipTarget } from '../../../pip/PipSurfaceStore';
 import { spatialScenePipPose } from '../../../pip/spatialScenePipPose';
@@ -157,12 +161,14 @@ const POSITION_LABELS: Record<PositionWord, string> = {
 interface PerspectiveSceneProps {
   challenge: SpatialSceneChallenge;
   revealRelation?: boolean;
+  /** The help lever `side_labels`: left and right hands at the bottom corners, "nearer you" by the arrow. */
+  sideLabels?: boolean;
   /** Pip only: registers the scene as a shared-surface target. */
   sceneRef?: (element: Element | null) => void;
 }
 
 /** Fixed viewer-relative scene: row 0 is far, row 2 is nearest the YOU marker. */
-const PerspectiveScene: React.FC<PerspectiveSceneProps> = ({ challenge, revealRelation = false, sceneRef }) => {
+const PerspectiveScene: React.FC<PerspectiveSceneProps> = ({ challenge, revealRelation = false, sideLabels = false, sceneRef }) => {
   const targetName = challenge.targetObject.name;
   const referenceName = challenge.referenceObjectName;
   return (
@@ -190,6 +196,13 @@ const PerspectiveScene: React.FC<PerspectiveSceneProps> = ({ challenge, revealRe
           </div>
         );
       })}
+      {sideLabels && (
+        <div data-lever="side-labels" className="pointer-events-none absolute inset-x-3 bottom-2 flex items-end justify-between text-amber-200">
+          <span className="flex flex-col items-center text-xs font-semibold"><span className="text-2xl" aria-hidden>🫲</span>left</span>
+          <span className="mb-12 rounded-full bg-amber-900/40 px-2 py-0.5 text-[10px] font-semibold">nearer you</span>
+          <span className="flex flex-col items-center text-xs font-semibold"><span className="text-2xl" aria-hidden>🫱</span>right</span>
+        </div>
+      )}
       <div className="absolute inset-x-0 bottom-2 flex flex-col items-center text-cyan-200" aria-label="Viewer position">
         <span className="text-xl">↑</span>
         <span className="rounded-full border border-cyan-300/40 bg-cyan-950/80 px-3 py-1 text-xs font-bold tracking-wide">YOU — LOOK THIS WAY</span>
@@ -206,11 +219,12 @@ const PerspectiveScene: React.FC<PerspectiveSceneProps> = ({ challenge, revealRe
 const SceneDescriptionStage: React.FC<{
   challenge: SpatialSceneChallenge;
   revealed: boolean;
+  sideLabels?: boolean;
   onHear: () => void;
   sceneRef?: (element: Element | null) => void;
-}> = ({ challenge, revealed, onHear, sceneRef }) => (
+}> = ({ challenge, revealed, sideLabels, onHear, sceneRef }) => (
   <div className="space-y-4">
-    <PerspectiveScene challenge={challenge} revealRelation={revealed} sceneRef={sceneRef} />
+    <PerspectiveScene challenge={challenge} revealRelation={revealed} sideLabels={sideLabels} sceneRef={sceneRef} />
     {revealed ? (
       <LuminaPanel accent="cyan">
         <p className="text-center text-sm font-medium text-cyan-100">{challenge.modelDescription ?? modelSpatialDescription(challenge)}</p>
@@ -225,6 +239,31 @@ const SceneDescriptionStage: React.FC<{
     </div>
   </div>
 );
+
+/**
+ * The help lever `word_picture`: what a position word means, drawn as a dot (the thing) and a square (the thing compared
+ * with). Shapes only, no text, so a word button keeps its label; never the scene's things.
+ */
+const WordPicture: React.FC<{ word: string; className?: string }> = ({ word, className = '' }) => {
+  const dot = <span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-300" />;
+  const box = <span className="inline-block h-3.5 w-3.5 rounded-sm bg-sky-400" />;
+  const gap = <span className="inline-block h-2 w-2" />;
+  const k = (node: React.ReactNode, i: number) => <React.Fragment key={i}>{node}</React.Fragment>;
+  const col = (...parts: React.ReactNode[]) => <span className="inline-flex flex-col items-center">{parts.map(k)}</span>;
+  const row = (...parts: React.ReactNode[]) => <span className="inline-flex items-center">{parts.map(k)}</span>;
+  const parts: Record<string, React.ReactNode> = {
+    above: col(dot, gap, box), on: col(dot, box), below: col(box, gap, dot), under: col(box, dot),
+    left_of: row(dot, gap, box), right_of: row(box, gap, dot), beside: row(box, dot), next_to: row(box, dot),
+    between: row(box, gap, dot, gap, box),
+    in: <span className="inline-flex h-5 w-6 items-end justify-center rounded-b-md border-2 border-t-0 border-sky-400 pb-0.5">{dot}</span>,
+  };
+  if (!parts[word]) return null;
+  return (
+    <span data-lever="word-picture" data-word={word} aria-hidden className={`inline-flex items-center justify-center ${className}`}>
+      {parts[word]}
+    </span>
+  );
+};
 
 // ============================================================================
 // Grid Scene Component
@@ -253,6 +292,8 @@ interface GridSceneProps {
    * must offer the tap affordance. Every other mode taps empty cells only (contract R11).
    */
   allowOccupiedTaps?: boolean;
+  /** The help lever `mark_reference`: cells ringed as the thing(s) to compare with. */
+  ringCells?: Array<{ row: number; col: number }>;
   /** Pip only: registers the grid as a shared-surface target. */
   sceneRef?: (element: Element | null) => void;
 }
@@ -265,7 +306,7 @@ interface CellContents {
 
 const GridScene: React.FC<GridSceneProps> = ({
   gridSize, sceneObjects, placedObjects = [], highlightCell, targetHighlight, onCellClick, interactive,
-  showGrid = true, showLabels = true, nestPlaced = false, allowOccupiedTaps = false, sceneRef,
+  showGrid = true, showLabels = true, nestPlaced = false, allowOccupiedTaps = false, ringCells = [], sceneRef,
 }) => {
   // Build a lookup map of what's in each cell
   const cellMap = useMemo(() => {
@@ -305,12 +346,14 @@ const GridScene: React.FC<GridSceneProps> = ({
         const isHighlighted = highlightCell?.row === row && highlightCell?.col === col;
         const isTarget = targetHighlight?.row === row && targetHighlight?.col === col;
         const tappable = interactive && (allowOccupiedTaps || !obj);
+        const ringed = ringCells.some(c => c.row === row && c.col === col);
 
         return (
           <button
             key={key}
             type="button"
             data-pip-object={`cell-${row}-${col}`}
+            data-lever={ringed ? 'mark-reference' : undefined}
             onClick={() => onCellClick?.(row, col)}
             disabled={!interactive}
             className={`
@@ -323,6 +366,7 @@ const GridScene: React.FC<GridSceneProps> = ({
                 : obj
                 ? (showGrid ? 'border-white/15 bg-slate-800/40' : 'border-transparent bg-slate-800/30')
                 : (showGrid ? 'border-white/5 bg-slate-900/20' : 'border-transparent bg-transparent')}
+              ${ringed ? 'ring-4 ring-amber-300/80' : ''}
               ${tappable ? 'hover:border-white/30 hover:bg-slate-800/30 cursor-pointer' : ''}
               ${!interactive ? 'cursor-default' : ''}
             `}
@@ -428,7 +472,13 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId }: SpatialScen
   });
 
   // ── State ──────────────────────────────────────────────────────────
-  const currentChallenge = challenges[currentChallengeIndex] ?? null;
+  // In-item levers (`spatialSceneLevers.ts`), keyed by the session item they were pulled on, and the easier practice
+  // scene a simplify lever puts in place of the session item until the observer returns to it.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<SpatialSceneChallenge | null>(null);
+  const sessionChallenge = challenges[currentChallengeIndex] ?? null;
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = sessionChallenge && leverState.item === sessionChallenge.id ? leverState.pulled : [];
 
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
@@ -477,6 +527,7 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId }: SpatialScen
   // A fresh item starts clean. Try again clears the rejected choice; a follow-directions
   // retry keeps the steps already placed and asks for the same step again.
   reopen.current = (_index, retry) => {
+    if (!retry) setPractice(null);
     if (!retry || currentChallenge?.type !== 'follow_directions') { resetDomainState(); return; }
     setFeedback(''); setFeedbackType('');
   };
@@ -723,6 +774,16 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId }: SpatialScen
     return hints;
   }, [currentChallenge]);
 
+  // ── Levers on screen ───────────────────────────────────────────────
+  // The session item's levers; a help lever is drawn on the session item only while it is pulled (or shown from the
+  // start on easy), never on a practice scene.
+  const stepNow = currentChallenge && stepOwner.current === currentChallenge.id ? currentStep : 0;
+  const itemLevers = sessionChallenge ? spatialSceneLevers(sessionChallenge, pulledLevers, stepNow, gridSize) : [];
+  const helpOn = (id: string) => !practice && itemLevers.some(l => l.id === id && l.pulled);
+  const ringCells = sessionChallenge && helpOn(MARK_LEVER) ? markCells(sessionChallenge, stepNow) : [];
+  const pictured = sessionChallenge && helpOn(PICTURE_LEVER) ? pictureWords(sessionChallenge, stepNow) : [];
+  const sidesOn = helpOn(SIDES_LEVER);
+
   // ── Pip shared surface ─────────────────────────────────────────────
   // A projection of this challenge's check state, the tutor's speech on it, and
   // the child's last touch; Pip never chooses, checks, or advances. Tutor audio
@@ -736,8 +797,31 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId }: SpatialScen
   // What the tutor and the observer are shown, republished every render. Item-scoped and derived here,
   // so opening an item adds no revision after the advance. A spoken description is always answerable.
   useLayoutEffect(() => {
-    if (!currentChallenge) return;
-    workspace.current = { ...spatialScene(currentChallenge, { step: stepOwner.current === currentChallenge.id ? currentStep : 0 }) };
+    if (!currentChallenge || !sessionChallenge) return;
+    const scene = spatialScene(currentChallenge, { step: stepNow });
+    const levers = practice ? [] : itemLevers;
+    const onScreen = practice ? undefined : leverFacts(sessionChallenge, levers.filter(l => l.pulled).map(l => l.id), stepNow);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      levers,
+      pullLever: (id: string) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already on screen.`;
+        const next = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = practiceItem(sessionChallenge, gridSize);
+          if (!easier) return 'This item is already the plainest of its kind.';
+          setLeverState(next); setPractice(easier); resetDomainState();
+          return { practice: spatialAssignment(easier) };
+        }
+        setLeverState(next);
+        return true as const;
+      },
+      // Back to the full item, blank: the practice scene is not the learner's work on it.
+      endPractice: () => { setPractice(null); resetDomainState(); },
+    };
   });
   const speechOnChallenge = useSpeechScope(currentChallenge?.id ?? null, tutorSpeaking);
   const pipTouch = (node: EventTarget) => {
@@ -775,6 +859,7 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId }: SpatialScen
           gridSize={gridSize}
           sceneObjects={currentChallenge.sceneObjects}
           highlightCell={currentChallenge.targetObject.position}
+          ringCells={ringCells}
           showGrid={currentChallenge.showGrid ?? true}
           showLabels={currentChallenge.showObjectLabels ?? true}
         />
@@ -811,6 +896,7 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId }: SpatialScen
                   ${isCurrentChallengeCorrect ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                 `}
               >
+                {pictured.includes(opt) && <WordPicture word={opt} className="mr-2 align-middle" />}
                 {label}
               </button>
             );
@@ -851,6 +937,7 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId }: SpatialScen
           <p className="text-slate-500 text-xs mt-1">
             {isContainment ? 'Tap what it goes inside' : 'Tap a cell to place it'}
           </p>
+          {pictured[0] && <div className="mt-2 flex justify-center"><WordPicture word={pictured[0]} className="rounded-lg bg-slate-800/50 p-2" /></div>}
         </div>
         <GridScene
           sceneRef={pip.ref('scene')}
@@ -860,6 +947,7 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId }: SpatialScen
           nestPlaced={isContainment}
           allowOccupiedTaps={isContainment}
           highlightCell={selectedCell}
+          ringCells={ringCells}
           targetHighlight={isCurrentChallengeCorrect ? currentChallenge.correctCell : undefined}
           showGrid /* place: cells are the tap surface — keep the frame, only labels withdraw */
           showLabels={currentChallenge.showObjectLabels ?? true}
@@ -912,6 +1000,7 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId }: SpatialScen
               <span className="text-xl">{step.targetObject.image}</span>
               <span className="text-slate-400 text-xs ml-1">{step.targetObject.name}</span>
             </div>
+            {pictured[0] && <div className="mt-1 flex justify-center"><WordPicture word={pictured[0]} className="rounded-lg bg-slate-800/50 p-2" /></div>}
           </div>
         )}
 
@@ -920,6 +1009,7 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId }: SpatialScen
           gridSize={gridSize}
           sceneObjects={currentChallenge.sceneObjects}
           placedObjects={placedObjects}
+          ringCells={ringCells}
           showGrid /* follow_directions: cells are the tap surface — keep the frame */
           showLabels={currentChallenge.showObjectLabels ?? true}
           onCellClick={(row, col) => {
@@ -994,6 +1084,7 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId }: SpatialScen
         {/* Current challenge */}
         {currentChallenge && !allChallengesComplete && (
           <div className="space-y-4">
+            {practice && <div className="text-center text-xs text-amber-300" data-practice>Practice scene</div>}
             <div className="p-3 rounded-xl bg-slate-800/30 border border-white/5">
               <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
             </div>
@@ -1013,6 +1104,7 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId }: SpatialScen
                 key={currentChallenge.id}
                 challenge={currentChallenge}
                 revealed={isCurrentChallengeCorrect}
+                sideLabels={sidesOn}
                 sceneRef={pip.ref('scene')}
                 onHear={() => ctx.sendText(hearSceneQuestionRequest(currentChallenge), { silent: true, author: 'host' })}
               />

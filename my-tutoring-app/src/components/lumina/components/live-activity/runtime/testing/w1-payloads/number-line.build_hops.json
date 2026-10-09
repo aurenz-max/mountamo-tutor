@@ -1,0 +1,53 @@
+{
+ "source": "scripts/number-line-build-hops-probe.mjs 2026-10-09 (g1, real generation)",
+ "primitiveId": "number-line",
+ "evalMode": "build_hops",
+ "data": {
+  "title": "Hop to the Number",
+  "description": "Make each number with your own hops on the number line, then make it a different way.",
+  "range": {
+   "min": 0,
+   "max": 20
+  },
+  "gradeBand": "K-2",
+  "numberType": "integer",
+  "interactionMode": "jump",
+  "challenges": [
+   {
+    "id": "build_hops-0",
+    "type": "build_hops",
+    "instruction": "Start at 0 and land on 9 in two hops.",
+    "hint": "Pick a hop, look where it lands on the line, then pick the next hop.",
+    "startValue": 0,
+    "targetValues": [
+     9
+    ],
+    "hopCount": 2
+   },
+   {
+    "id": "build_hops-1",
+    "type": "build_hops",
+    "instruction": "Start at 0 and land on 10 in two hops.",
+    "hint": "Pick a hop, look where it lands on the line, then pick the next hop.",
+    "startValue": 0,
+    "targetValues": [
+     10
+    ],
+    "hopCount": 2
+   },
+   {
+    "id": "build_hops-2",
+    "type": "build_hops",
+    "instruction": "Start at 0 and land on 17 in two hops.",
+    "hint": "Pick a hop, look where it lands on the line, then pick the next hop.",
+    "startValue": 0,
+    "targetValues": [
+     17
+    ],
+    "hopCount": 2
+   }
+  ],
+  "highlights": [],
+  "operations": []
+ }
+}

@@ -62,11 +62,14 @@ export const describeSpatialCheck = (c: SpatialSceneChallenge, view: { option?: 
  *     the container), `away_from_container`;
  *   - place_between: `next_to_one` (a cell touching one of the two references, not the gap), `touches_neither`;
  *   - follow_directions: `later_step_cell` (the cell a later direction asks for), `other_cell`.
- * `place` names none yet. Since RP-5 its challenge carries the reference and the word, so misses could be named
- * the way identify's are; not built. describe_scene is spoken (Part B).
+ *   - place: from the reference, `opposite_cell` (on the word's line, the other way: below for above),
+ *     `same_axis_cell` (on the word's line and side, the wrong distance: two away for on or beside),
+ *     `other_axis_cell` (on the other line: beside for above), `off_line_cell` (in neither its row nor its column).
+ * describe_scene is spoken (Part B).
  */
 export type SpatialMiss = 'opposite_word' | 'same_axis_word' | 'other_axis_word' | 'other_object' | 'next_to_container'
-  | 'away_from_container' | 'next_to_one' | 'touches_neither' | 'later_step_cell' | 'other_cell';
+  | 'away_from_container' | 'next_to_one' | 'touches_neither' | 'later_step_cell' | 'other_cell'
+  | 'opposite_cell' | 'same_axis_cell' | 'other_axis_cell' | 'off_line_cell';
 
 type Cell = { row: number; col: number };
 const WORD_STEP: Record<string, Cell> = { above: { row: -1, col: 0 }, on: { row: -1, col: 0 }, below: { row: 1, col: 0 },
@@ -92,6 +95,15 @@ export function spatialMiss(c: SpatialSceneChallenge, view: { option?: string | 
   }
   const cell = view.cell;
   if (!cell) return undefined;
+  if (c.type === 'place') {
+    const ref = at(c.referenceObjectName), word = c.correctPosition;
+    if (!ref || placeCellCorrect(c, cell) || same(cell, ref)) return undefined;
+    const dr = cell.row - ref.row, dc = cell.col - ref.col;
+    if (dr !== 0 && dc !== 0) return 'off_line_cell';
+    if (VERTICAL.has(word) !== (dc === 0)) return 'other_axis_cell';
+    const step = WORD_STEP[word];
+    return step && Math.sign(dr) === -step.row && Math.sign(dc) === -step.col ? 'opposite_cell' : 'same_axis_cell';
+  }
   if (c.type === 'place_in') {
     const box = at(c.referenceObjectName);
     if (!box || same(cell, box)) return undefined;

@@ -32,7 +32,9 @@ import {
   arrayMiss, arrayShape, cellKey, describeArrayWork, gridFor, makeArrayAsk, makeArrayMiss, workspaceAssignment, workspaceScene,
   type ArrayGridView,
 } from './arrayGridWorkspace';
-import { ROW_COUNTS_LEVER, SQUARE_COUNT_LEVER, arrayGridLevers, leverFacts, smallerArray } from './arrayGridLevers';
+import {
+  NUMBER_LABELS_LEVER, ROW_COUNTS_LEVER, ROW_STRIPS_LEVER, SQUARE_COUNT_LEVER, arrayGridLevers, leverFacts, smallerArray,
+} from './arrayGridLevers';
 import { ArrayBuildGrid, FirstArray } from './ArrayBuildGrid';
 
 /**
@@ -210,8 +212,9 @@ const ArrayGridSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
   /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
   const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
 
-  // make_array levers (`arrayGridLevers.ts`), keyed by the session item they were pulled on, and the easier ask a
-  // simplify lever put on screen in its place. The item starts bare: no lever comes from the tier.
+  // Levers (`arrayGridLevers.ts`), keyed by the session item they were pulled on, and the easier item a simplify
+  // lever put on screen in its place. The item starts bare: no lever comes from the tier (the tier's labels and
+  // strategy tip are session-level starting positions, not levers).
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<ArrayGridChallenge | null>(null);
   const sessionChallenge = challenges[currentIndex] ?? null;
@@ -219,6 +222,8 @@ const ArrayGridSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
   const currentChallenge = practice ?? sessionChallenge;
   const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
   const leverOn = (id: string) => !practice && pulledLevers.includes(id);
+  /** The session's labels, or the number_labels lever on this item. */
+  const labelsShown = showLabels || leverOn(NUMBER_LABELS_LEVER);
 
   const targetRows = currentChallenge?.targetRows ?? 0;
   const targetColumns = currentChallenge?.targetColumns ?? 0;
@@ -399,7 +404,7 @@ const ArrayGridSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
   // ── The learner's work, as the check, the tutor and the scene read it ──
   const view: ArrayGridView = {
     mode: sessionChallengeType, icon, rows: currentRows, columns: currentColumns, totalAnswer, rowsAnswer, columnsAnswer,
-    labelsShown: showLabels, cells, firstWay,
+    labelsShown: labelsShown, cells, firstWay,
   };
   /** Counts the attempt and records a correct result on both paths; on the workspace path it is the checked gesture. */
   const commit = (correct: boolean) => {
@@ -682,13 +687,13 @@ const ArrayGridSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
   }, [challengeDone, isMakeMode, cells.length, isMultiplyMode, rowsAnswer, columnsAnswer, totalAnswer, arrayBuilt]);
 
   // ── Workspace path: what the tutor and the observer are shown, republished every render ──
-  // W1 offers no demonstration targets and no presentation. Only make_array declares levers.
+  // W1 offers no demonstration targets and no presentation. Every mode declares levers (`arrayGridLevers.ts`).
   useLayoutEffect(() => {
     if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
     const scene = workspaceScene(currentChallenge, view);
-    if (!isMakeMode) { workspace.current = { ...scene }; return; }
+    const ctx = { mode: sessionChallengeType, labelsShown: showLabels };
     const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
-    const levers = practice ? [] : arrayGridLevers(sessionChallenge, pulledLevers);
+    const levers = practice ? [] : arrayGridLevers(sessionChallenge, pulledLevers, ctx);
     workspace.current = {
       ...scene,
       ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
@@ -697,6 +702,12 @@ const ArrayGridSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
         const lever = levers.find((l) => l.id === id);
         if (practice || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        // A help lever on a given array draws on the array: on build there is none until rows and columns are picked.
+        if (id === ROW_STRIPS_LEVER || id === NUMBER_LABELS_LEVER) {
+          if (!(isPreBuilt ? targetRows : currentRows) || !(isPreBuilt ? targetColumns : currentColumns)) {
+            return 'There is no array on screen yet: the learner picks the rows and columns first.';
+          }
+        }
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
           const easier = smallerArray(sessionChallenge);
@@ -759,6 +770,7 @@ const ArrayGridSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
   const displayRows = isPreBuilt ? targetRows : currentRows;
   const displayColumns = isPreBuilt ? targetColumns : currentColumns;
   const hasNextChallenge = currentIndex + 1 < challenges.length;
+  const stripsOn = leverOn(ROW_STRIPS_LEVER);
 
   // ── Pip shared surface ───────────────────────────────────────────
   // A projection of this item's check state, the tutor's speech on it, and
@@ -965,8 +977,8 @@ const ArrayGridSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
             <div className="flex justify-center items-center mb-8">
               <div className="relative inline-block">
                 {/* Column Labels */}
-                {showLabels && (
-                  <div className="flex mb-2" style={{ marginLeft: showLabels ? '40px' : '0' }}>
+                {labelsShown && (
+                  <div className="flex mb-2" data-axis-labels="columns" style={{ marginLeft: '40px' }}>
                     {Array.from({ length: displayColumns }).map((_, index) => (
                       <div
                         key={`col-label-${index}`}
@@ -980,8 +992,8 @@ const ArrayGridSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
 
                 <div className="flex">
                   {/* Row Labels */}
-                  {showLabels && (
-                    <div className="flex flex-col mr-2">
+                  {labelsShown && (
+                    <div className="flex flex-col mr-2" data-axis-labels="rows">
                       {Array.from({ length: displayRows }).map((_, index) => (
                         <div
                           key={`row-label-${index}`}
@@ -993,24 +1005,26 @@ const ArrayGridSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
                     </div>
                   )}
 
-                  {/* Grid */}
-                  <div
-                    className="grid gap-2"
-                    style={{ gridTemplateColumns: `repeat(${displayColumns}, 64px)` }}
-                  >
-                    {Array.from({ length: displayRows }).map((_, rowIndex) =>
-                      Array.from({ length: displayColumns }).map((_, colIndex) => {
-                        const key = cellKey(rowIndex, colIndex);
-                        return (
+                  {/* Grid: one flex row per array row, so the row_strips lever can outline each row (a ring, no layout shift). */}
+                  <div className="flex flex-col gap-2">
+                    {Array.from({ length: displayRows }).map((_, rowIndex) => (
+                      <div
+                        key={`row-${rowIndex}`}
+                        data-lever={stripsOn ? 'row-strip' : undefined}
+                        className={`flex gap-2 rounded-xl ${stripsOn
+                          ? rowIndex % 2 === 0 ? 'ring-2 ring-amber-400/70 bg-amber-400/10' : 'ring-2 ring-sky-400/70 bg-sky-400/10'
+                          : ''}`}
+                      >
+                        {Array.from({ length: displayColumns }).map((_, colIndex) => (
                           <div
-                            key={key}
+                            key={cellKey(rowIndex, colIndex)}
                             className="w-16 h-16 rounded-lg flex items-center justify-center transition-all duration-200 border-2 bg-slate-800/30 border-slate-600"
                           >
                             {renderIcon()}
                           </div>
-                        );
-                      }),
-                    )}
+                        ))}
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>

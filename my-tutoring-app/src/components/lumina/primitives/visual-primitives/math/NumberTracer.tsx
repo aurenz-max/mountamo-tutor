@@ -79,6 +79,8 @@ export interface NumberTracerChallenge {
   showStrokeArrows?: boolean; // directional stroke-order arrows
   showStartDot?: boolean;     // the green "start here" dot
   supportTier?: 'easy' | 'medium' | 'hard';
+  /** A practice item that is one stroke of a numeral (`trace_part`, numberTracerLevers.ts): geometry checks it alone. */
+  strokePart?: boolean;
 }
 
 import type { LearningAdaptation } from '../../../service/generation/learningAdaptation';
@@ -89,6 +91,10 @@ import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type Progr
   from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import { describeWriting, numberTracerMiss, workspaceAssignment, workspaceScene } from './numberTracerWorkspace';
 import { DIGIT_PATHS, getDigitPaths } from './numberTracerPaths';
+import {
+  ARROWS_LEVER, COUNT_DOTS_LEVER, DOTS_LEVER, FIRST_PART_LEVER, GHOST_LEVER, MODEL_STROKES_LEVER, PRACTICE_NOTE,
+  countDots, firstPart, leverFacts, numberTracerLevers, practiceItem, startDots, startingLevers,
+} from './numberTracerLevers';
 export { getDigitPaths };
 export interface NumberTracerData {
   /** Safe adaptation metadata; `source` is stamped only by the observation delivery server. */
@@ -374,6 +380,9 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
   const [hasChecked, setHasChecked] = useState(false);
   const [lastScore, setLastScore] = useState<number | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
+  // Levers (numberTracerLevers.ts): runtime pulls on the session item, and the easier item a simplify lever opened.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<NumberTracerChallenge | null>(null);
 
   // ── Challenge Progress (shared hooks). On the workspace path the runtime moves the index.
   const stableInstanceIdRef = useRef(instanceId || `number-tracer-${Date.now()}`);
@@ -383,10 +392,11 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
     workspace, assignment: workspaceAssignment,
-    // A fresh challenge and Try again both start from an empty canvas.
-    onItemOpened: () => {
+    // A fresh challenge and Try again both start from an empty canvas; Try again keeps a practice item open.
+    onItemOpened: (_index, retry) => {
       setAllStrokes([]); setCurrentStroke([]); setFeedback(''); setFeedbackType('');
       setHasChecked(false); setLastScore(null);
+      if (!retry) setPractice(null);
     },
   });
   const {
@@ -409,10 +419,18 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
     getScore: (rs) => Math.round(rs.reduce((s, r) => s + (r.score ?? (r.correct ? 100 : 0)), 0) / rs.length),
   });
 
-  const currentChallenge = useMemo(
+  const sessionChallenge = useMemo(
     () => challenges[currentChallengeIndex] || null,
     [challenges, currentChallengeIndex],
   );
+  /** The item on the canvas: an easier practice item in place of the session item while one is open. */
+  const currentChallenge = practice ?? sessionChallenge;
+  /** Help levers in force on the session item: where its tier started them, plus the tutor's pulls. None on a practice item. */
+  const runtimePulled = !practice && sessionChallenge && leverState.item === sessionChallenge.id ? leverState.pulled : [];
+  const leversOn = useMemo(() => (sessionChallenge && !practice
+    ? Array.from(new Set([...startingLevers(sessionChallenge, paintedGuides(sessionChallenge)), ...runtimePulled])) : []),
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [sessionChallenge, practice, runtimePulled.join(' ')]);
 
   const idealPaths = useMemo(() => {
     if (!currentChallenge) return [];
@@ -422,6 +440,14 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
     }
     return getDigitPaths(currentChallenge.digit);
   }, [currentChallenge]);
+
+  /** The guides on the canvas: the tier's painted guides plus the help levers in force. Nothing on a sequence (NT-7). */
+  const canvasGuides = useMemo(() => {
+    if (!currentChallenge || currentChallenge.type === 'sequence') return { ghost: false, arrows: false, dots: false, firstPart: false };
+    const g = paintedGuides(currentChallenge);
+    return { ghost: g.ghost || leversOn.includes(GHOST_LEVER), arrows: g.arrows || leversOn.includes(ARROWS_LEVER),
+      dots: g.startDot || leversOn.includes(DOTS_LEVER), firstPart: leversOn.includes(FIRST_PART_LEVER) };
+  }, [currentChallenge, leversOn]);
 
   const isCurrentChallengeComplete = challengeResults.some(
     r => r.challengeId === currentChallenge?.id,
@@ -674,63 +700,73 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // ── Resolve which tracing guides to paint ── (the tier only withdraws guides; copy's
-    // model panel is rendered in JSX, not on the canvas)
-    const { ghost: paintGhost, arrows: paintArrows, startDot: paintStartDot } = paintedGuides(currentChallenge);
+    // ── Which guides to paint: the tier's starting guides plus the help levers in force
+    // (canvasGuides). Copy's model panel is rendered in JSX, not on the canvas.
+    const { ghost: paintGhost, arrows: paintArrows, dots: paintStartDots, firstPart: paintFirstPart } = canvasGuides;
     // Faint the ghost at non-easy tiers so withdrawal feels graduated.
     const ghostFaint = currentChallenge.supportTier != null && currentChallenge.supportTier !== 'easy';
+    const dotted = (points: PathPoint[], style: string, width: number) => {
+      if (points.length < 2) return;
+      ctx.strokeStyle = style;
+      ctx.lineWidth = width;
+      ctx.setLineDash([4, 8]);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    };
 
-    // Draw guide paths (ghost numeral the student traces over)
+    // Ghost numeral the student traces over
     if (paintGhost) {
       for (const path of idealPaths) {
-        if (path.length < 2) continue;
-        // Dotted guide
-        ctx.strokeStyle = currentChallenge.type === 'trace'
+        dotted(path, currentChallenge.type === 'trace'
           ? (ghostFaint ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.4)')
-          : 'rgba(148, 163, 184, 0.2)';
-        ctx.lineWidth = currentChallenge.type === 'trace' ? 12 : 8;
-        ctx.setLineDash([4, 8]);
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.beginPath();
-        ctx.moveTo(path[0].x, path[0].y);
-        for (let i = 1; i < path.length; i++) {
-          ctx.lineTo(path[i].x, path[i].y);
-        }
-        ctx.stroke();
-        ctx.setLineDash([]);
+          : 'rgba(148, 163, 184, 0.2)', currentChallenge.type === 'trace' ? 12 : 8);
+      }
+    }
+    // write's `first_part`: the opening of the first stroke only (firstPartLeaks bounds it)
+    if (paintFirstPart) dotted(firstPart(idealPaths), 'rgba(59, 130, 246, 0.4)', 12);
 
-        // Start dot (withdrawable scaffold)
-        if (paintStartDot) {
-          ctx.fillStyle = 'rgba(34, 197, 94, 0.8)';
+    // Direction arrows along each stroke (withdrawable scaffold / `stroke_arrows`)
+    if (paintArrows) {
+      for (const path of idealPaths) {
+        for (let i = 2; i < path.length - 1; i += 3) {
+          const dx = path[i + 1].x - path[i].x;
+          const dy = path[i + 1].y - path[i].y;
+          const len = Math.sqrt(dx * dx + dy * dy);
+          if (len < 1) continue;
+          const nx = dx / len;
+          const ny = dy / len;
+          const ax = path[i].x + nx * 5;
+          const ay = path[i].y + ny * 5;
+          ctx.fillStyle = 'rgba(59, 130, 246, 0.5)';
           ctx.beginPath();
-          ctx.arc(path[0].x, path[0].y, 8, 0, Math.PI * 2);
+          ctx.moveTo(ax + nx * 8, ay + ny * 8);
+          ctx.lineTo(ax - ny * 4, ay + nx * 4);
+          ctx.lineTo(ax + ny * 4, ay - nx * 4);
+          ctx.closePath();
           ctx.fill();
         }
-
-        // Direction arrows (withdrawable scaffold)
-        if (paintArrows) {
-          // Arrow indicators at intervals
-          for (let i = 2; i < path.length - 1; i += 3) {
-            const dx = path[i + 1].x - path[i].x;
-            const dy = path[i + 1].y - path[i].y;
-            const len = Math.sqrt(dx * dx + dy * dy);
-            if (len < 1) continue;
-            const nx = dx / len;
-            const ny = dy / len;
-            const ax = path[i].x + nx * 5;
-            const ay = path[i].y + ny * 5;
-
-            ctx.fillStyle = 'rgba(59, 130, 246, 0.5)';
-            ctx.beginPath();
-            ctx.moveTo(ax + nx * 8, ay + ny * 8);
-            ctx.lineTo(ax - ny * 4, ay + nx * 4);
-            ctx.lineTo(ax + ny * 4, ay - nx * 4);
-            ctx.closePath();
-            ctx.fill();
-          }
-        }
       }
+    }
+
+    // Start dots (withdrawable scaffold / `start_dots`), numbered in drawing order when there is more than one stroke
+    if (paintStartDots) {
+      const dots = startDots(idealPaths);
+      dots.forEach((p, i) => {
+        ctx.fillStyle = 'rgba(34, 197, 94, 0.8)';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
+        ctx.fill();
+        if (dots.length > 1) {
+          ctx.fillStyle = 'rgba(187, 247, 208, 0.95)';
+          ctx.font = 'bold 16px sans-serif';
+          ctx.fillText(String(i + 1), p.x + 11, p.y - 9);
+        }
+      });
     }
 
     // Draw completed strokes
@@ -761,7 +797,7 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
       }
       ctx.stroke();
     }
-  }, [currentChallenge, idealPaths, allStrokes, currentStroke]);
+  }, [currentChallenge, idealPaths, allStrokes, currentStroke, canvasGuides]);
 
   // ── Check / Submit Handlers ────────────────────────────────────────
 
@@ -776,7 +812,9 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
 
     setHasChecked(true);
     const guides = paintedGuides(currentChallenge);
-    const record = (writtenAs: string | null, score: number, correct: boolean) => responsesRef.current.push({
+    // A practice item (a simplify lever's easier item) is ungraded: no response record, no session result.
+    const isPractice = !!practice;
+    const record = (writtenAs: string | null, score: number, correct: boolean) => isPractice ? 0 : responsesRef.current.push({
       challengeId: currentChallenge.id, type: currentChallenge.type, attempt: currentAttempts + 1, target: currentChallenge.digit,
       ...(currentChallenge.type === 'sequence' ? { sequenceNumbers: currentChallenge.sequenceNumbers, missingIndex: currentChallenge.missingIndex } : {}),
       writtenAs, score, correct, guideShown: guides.ghost, modelShown: currentChallenge.type === 'copy' && currentChallenge.showModel,
@@ -791,6 +829,18 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
     const coverage = computePathCoverage(allStrokes, idealPaths, shouldNormalize);
     const geoScore = Math.round(accuracy * 0.6 + coverage * 0.4);
 
+    // One stroke of a numeral (`trace_part`) is not a numeral the vision judge can read: geometry decides it alone.
+    if (currentChallenge.strokePart) {
+      const ok = geoScore >= 70;
+      setLastScore(geoScore);
+      progress.commitCheck(describeWriting(geoScore, null), ok,
+        ok ? undefined : numberTracerMiss(currentChallenge.digit, { writtenAs: null, accuracy, coverage }));
+      if (ok) SoundManager.playCorrect(); else SoundManager.playIncorrect();
+      setFeedback(ok ? 'Good tracing!' : 'Follow the dotted path more closely.');
+      setFeedbackType(ok ? 'success' : 'error');
+      return;
+    }
+
     // trace: geometry at the guide's position establishes the stroke, so a close trace is accepted outright.
     // copy/write/sequence: geometry is scaled into the target's box and cannot tell which numeral was
     // written (a 2 scored 90 against 3), so the vision judge decides every check (NT-6).
@@ -802,7 +852,7 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
       setLastScore(geoScore);
       setFeedback('Excellent writing!');
       setFeedbackType('success');
-      recordResult({
+      if (!isPractice) recordResult({
         challengeId: currentChallenge.id,
         correct: true,
         attempts: currentAttempts + 1,
@@ -847,7 +897,7 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
           ?? (finalScore >= 80 ? 'Excellent writing!' : 'Good job! You wrote the number!');
         setFeedback(feedbackMsg);
         setFeedbackType('success');
-        recordResult({
+        if (!isPractice) recordResult({
           challengeId: currentChallenge.id,
           correct: true,
           attempts: currentAttempts + 1,
@@ -883,7 +933,7 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
       setIsEvaluating(false);
     }
   }, [currentChallenge, allStrokes, idealPaths, currentAttempts, isEvaluating, recordResult, sendText, tutorRevealClause,
-      learnerClosed, progress, tutorOwned]);
+      learnerClosed, progress, tutorOwned, practice]);
 
   const handleClear = useCallback(() => {
     setAllStrokes([]);
@@ -961,9 +1011,37 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
   // Workspace path: what the tutor and the observer are shown, republished every render.
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge) return;
-    workspace.current = { ...workspaceScene(currentChallenge, { strokes: allStrokes.length }),
-      readyForResponse: !isEvaluating };
+    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    const scene = workspaceScene(currentChallenge, { strokes: allStrokes.length });
+    // Levers belong to the session item; a practice item offers none. A starting guide (the tier's) shows as pulled.
+    const levers = practice ? [] : numberTracerLevers(sessionChallenge, leversOn);
+    const onScreen = practice ? undefined : leverFacts(sessionChallenge, leversOn);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
+        ...(practice ? { practice: practice.strokePart ? `${PRACTICE_NOTE} It is one stroke of the numeral.` : PRACTICE_NOTE } : {}) },
+      readyForResponse: !isEvaluating,
+      levers,
+      pullLever: (id: string) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already on the screen.`;
+        const next = { item: sessionChallenge.id, pulled: [...runtimePulled, id] };
+        if (lever.kind === 'simplify') {
+          const easier = practiceItem(sessionChallenge, id);
+          if (!easier) return 'There is no easier item for this one.';
+          setLeverState(next); setPractice(easier);
+          setAllStrokes([]); setCurrentStroke([]); setFeedback(''); setFeedbackType(''); setHasChecked(false); setLastScore(null);
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState(next);
+        return true as const;
+      },
+      endPractice: () => {
+        setPractice(null);
+        setAllStrokes([]); setCurrentStroke([]); setFeedback(''); setFeedbackType(''); setHasChecked(false); setLastScore(null);
+      },
+    };
   });
 
   // ── Render ──────────────────────────────────────────────────────────
@@ -979,6 +1057,11 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
   }
 
   const isSequenceMode = currentChallenge?.type === 'sequence';
+  const showModelStrokes = leversOn.includes(MODEL_STROKES_LEVER);
+  const dotRows = leversOn.includes(COUNT_DOTS_LEVER) && currentChallenge ? countDots(currentChallenge) : null;
+  /** What the canvas paints, for the DOM (jsdom has no 2D context): the guides in force, by name. */
+  const guideNames = [canvasGuides.ghost && 'ghost', canvasGuides.dots && 'start_dots', canvasGuides.arrows && 'arrows',
+    canvasGuides.firstPart && 'first_part'].filter(Boolean).join(' ');
   const typeAccent = (CHALLENGE_TYPE_CONFIG[currentChallenge?.type ?? 'trace']?.accentColor
     ?? 'blue') as LuminaAccent;
 
@@ -1019,13 +1102,34 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
         )}
 
         {/* Copy mode: show model digit alongside */}
-        {currentChallenge?.type === 'copy' && currentChallenge.showModel && !allChallengesComplete && (
+        {currentChallenge?.type === 'copy' && (currentChallenge.showModel || showModelStrokes) && !allChallengesComplete && (
           <div className="flex justify-center">
-            <LuminaPanel className="p-3">
-              <p className="text-xs text-slate-500 text-center mb-1">Model</p>
-              <div ref={pip.ref('model')} data-pip-object="model" className="text-7xl font-bold text-slate-300 text-center px-4 select-none">
-                {currentChallenge.digit}
+            <LuminaPanel className="p-3 flex items-center gap-3">
+              <div>
+                <p className="text-xs text-slate-500 text-center mb-1">Model</p>
+                <div ref={pip.ref('model')} data-pip-object="model" className="text-7xl font-bold text-slate-300 text-center px-4 select-none">
+                  {currentChallenge.digit}
+                </div>
               </div>
+              {/* `model_strokes`: the model as its strokes, a numbered start dot and an arrow on each; the canvas stays blank */}
+              {showModelStrokes && (
+                <svg data-lever="model-strokes" width={120} height={96} viewBox={`0 0 ${CANVAS_WIDTH} ${CANVAS_HEIGHT}`} aria-hidden>
+                  {idealPaths.map((stroke, si) => {
+                    const last = stroke[stroke.length - 1], prev = stroke[stroke.length - 2] ?? stroke[0];
+                    const angle = Math.atan2(last.y - prev.y, last.x - prev.x) * 180 / Math.PI;
+                    return (
+                      <g key={si} data-stroke={si + 1}>
+                        <polyline points={stroke.map(p => `${p.x},${p.y}`).join(' ')} fill="none" stroke="rgba(203, 213, 225, 0.8)"
+                          strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M -18 -14 L 10 0 L -18 14 Z" fill="rgba(96, 165, 250, 0.95)"
+                          transform={`translate(${last.x},${last.y}) rotate(${angle})`} />
+                        <circle cx={stroke[0].x} cy={stroke[0].y} r={22} fill="rgba(34, 197, 94, 0.9)" />
+                        <text x={stroke[0].x} y={stroke[0].y + 10} textAnchor="middle" fontSize={30} fontWeight="bold" fill="#052e16">{si + 1}</text>
+                      </g>
+                    );
+                  })}
+                </svg>
+              )}
             </LuminaPanel>
           </div>
         )}
@@ -1039,12 +1143,23 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
                     let a malformed array stretch off-screen and OOM the tab again. */}
                 {currentChallenge.sequenceNumbers.slice(0, 12).map((num, i) => (
                   <React.Fragment key={i}>
-                    <span ref={i === currentChallenge.missingIndex ? pip.ref('gap') : undefined}
-                      data-pip-object={i === currentChallenge.missingIndex ? 'gap' : undefined} className={i === currentChallenge.missingIndex
-                      ? 'text-blue-400 border-b-2 border-blue-400 px-2'
-                      : 'text-slate-200 px-1'
-                    }>
-                      {i === currentChallenge.missingIndex ? '?' : num}
+                    <span className="inline-flex flex-col items-center">
+                      <span ref={i === currentChallenge.missingIndex ? pip.ref('gap') : undefined}
+                        data-pip-object={i === currentChallenge.missingIndex ? 'gap' : undefined} className={i === currentChallenge.missingIndex
+                        ? 'text-blue-400 border-b-2 border-blue-400 px-2'
+                        : 'text-slate-200 px-1'
+                      }>
+                        {i === currentChallenge.missingIndex ? '?' : num}
+                      </span>
+                      {/* `count_dots`: as many dots as the shown number; nothing under the gap */}
+                      {dotRows && (
+                        <span data-lever="count-dots" data-dots={dotRows[i] ?? 'gap'}
+                          className="mt-1 grid grid-cols-5 gap-0.5 min-h-[8px] w-[44px] justify-items-center">
+                          {Array.from({ length: dotRows[i] ?? 0 }, (_, k) => (
+                            <span key={k} className="h-1.5 w-1.5 rounded-full bg-amber-300" />
+                          ))}
+                        </span>
+                      )}
                     </span>
                     {i < Math.min(currentChallenge.sequenceNumbers!.length, 12) - 1 && (
                       <span className="text-slate-600 text-2xl">,</span>
@@ -1064,6 +1179,7 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
               <canvas
                 ref={canvasRef}
                 data-pip-object="canvas"
+                data-guides={guideNames || undefined}
                 width={CANVAS_WIDTH}
                 height={CANVAS_HEIGHT}
                 className="rounded-xl border border-white/10 bg-slate-950/60 cursor-crosshair touch-none"

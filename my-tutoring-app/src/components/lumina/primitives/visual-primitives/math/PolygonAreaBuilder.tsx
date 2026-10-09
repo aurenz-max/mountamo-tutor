@@ -33,10 +33,16 @@ import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type Progr
 import { useBuildWatcher } from '../../build-layer/buildLayer';
 import { areaMiss, describeAreaWork, workspaceAssignment, workspaceScene, type PolygonAreaView } from './polygonAreaWorkspace';
 import {
-  BUILD_AREA, NUMBERS_LEVER, PIECES_LEVER, SMALLER_LEVER, TURNED_LEVER, buildAreaLevers, buildAreaMiss, buildAreaVerdict,
-  buildLeverFacts, cellKey, connectedParts, describeBuild, smallerArea, turnedToMatch, type Cell,
+  EDGES_LEVER, NUMBERS_LEVER, PIECES_LEVER, SMALLER_LEVER, SMALLER_PERIMETER_LEVER, TURNED_LEVER, buildAreaLevers,
+  buildAreaMiss, buildAreaVerdict, buildLeverFacts, buildPerimeterLeverFacts, buildPerimeterLevers, buildPerimeterMiss,
+  buildPerimeterVerdict, cellKey, connectedParts, describeBuild, describePerimeterBuild, holesIn, isBuildPerimeter,
+  isGridBuild, outsideSides, smallerArea, smallerPerimeter, turnedToMatch, type Cell,
 } from './polygonAreaBuild';
 import { AreaBuildGrid, AreaShapeThumb } from './AreaBuildGrid';
+import {
+  CUT_LEVER, GRID_LEVER, HALF_LEVER, LEFT_OUT_LEVER, OUTSIDE_LEVER, ROWS_LEVER, SIMPLER_FIGURE_LEVERS, SLIDE_LEVER, SLOT_LEVER,
+  SPLIT_LEVER, TURNED_COPY_LEVER, figureLeverFacts, figureLevers, figureOverlay, leftOutPieces, overlayPoints, smallerFigure,
+} from './polygonAreaLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -49,7 +55,9 @@ export type PolygonAreaChallengeType =
   | 'composite_area'
   | 'coordinate_polygon'
   /** Open build: shade squares on an empty grid into one shape with a stated area (`polygonAreaBuild.ts`). */
-  | 'build_area';
+  | 'build_area'
+  /** Open build: shade squares on an empty grid into one shape with a stated perimeter (`polygonAreaBuild.ts`). */
+  | 'build_perimeter';
 
 export type PolygonFigureType =
   | 'triangle'
@@ -99,13 +107,16 @@ export interface PolygonAreaChallenge {
   // --- Coordinate polygon ---
   vertices?: PolygonVertex[];
 
-  /** Pre-computed correct area (single source of truth). On build_area it equals `targetArea`. */
+  /** Pre-computed correct area (single source of truth). On build_area it equals `targetArea`; on build_perimeter it
+   *  holds the stated perimeter `targetPerimeter` (the item's one key number; there is no area to find). */
   expectedArea: number;
 
-  // --- Open build (build_area) ---
+  // --- Open builds (build_area, build_perimeter) ---
   /** The area to make, in unit squares. Stated in the instruction: it IS the task. */
   targetArea?: number;
-  /** 1: one shape. 2: one shape, then a different shape with the same area. */
+  /** build_perimeter: the perimeter to make, in units (even, 8-24). Stated in the instruction: it IS the task. */
+  targetPerimeter?: number;
+  /** 1: one shape. 2: one shape, then a different shape with the same area (or perimeter). */
   shapesAsked?: 1 | 2;
 
   // --- Support-tier scaffolds (set in post-process when config.difficulty present) ---
@@ -153,6 +164,7 @@ const PHASE_CONFIG_BY_TYPE: Record<PolygonAreaChallengeType, PhaseConfig> = {
   composite_area:                  { label: 'Composite',   icon: '🧩', accentColor: 'amber' },
   coordinate_polygon:              { label: 'Coordinate',  icon: '🗺️', accentColor: 'emerald' },
   build_area:                      { label: 'Build It',    icon: '🟦', accentColor: 'cyan' },
+  build_perimeter:                 { label: 'Perimeter',   icon: '🔲', accentColor: 'cyan' },
 };
 
 // ============================================================================
@@ -346,16 +358,27 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
   const learnerBlocked = () => workspaceClosed.current
     || (!!liveRuntime && !['empty', 'active'].includes(liveRuntime.getSnapshot().status));
 
-  // Open build (build_area) levers (`polygonAreaBuild.ts`), keyed by the session item they were pulled on, and the
-  // easier build a simplify lever put on screen in its place. The item starts bare: no lever comes from the tier.
-  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  // Levers (`polygonAreaBuild.ts` for the open build, `polygonAreaLevers.ts` for the typed-area modes), keyed by the
+  // session item they were pulled on, and the easier item a simplify lever put on screen in its place. A pull never
+  // comes from the tier: a tier's grid or guides are a starting position. `left`: the composite pieces the learner's
+  // last area left out, fixed when `left_out_piece` was pulled.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[]; left?: number[] }>({ item: '', pulled: [] });
+  /** composite_area: the pieces the last checked area left out, when it was one piece's area (read by `left_out_piece`). */
+  const lastLeftOut = useRef<{ item: string; left: number[] } | null>(null);
   const [practice, setPractice] = useState<PolygonAreaChallenge | null>(null);
   const sessionChallenge = challenges[currentChallengeIndex] ?? null;
   /** What is on screen: the easier build while a simplify lever holds it, else the session item. */
   const currentChallenge = practice ?? sessionChallenge;
   const challengeType = currentChallenge?.type ?? 'find_area_triangle_parallelogram';
   const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  const leftOut = leverState.item === sessionChallenge?.id ? leverState.left ?? [] : [];
   const leverOn = (id: string) => !practice && pulledLevers.includes(id);
+  /** The figure levers pulled on the item on screen (none on a practice item); a stable key for the canvas effect. */
+  const figurePulled = practice ? '' : `${pulledLevers.join(',')}|${leftOut.join(',')}`;
+  const pulledNowList = practice ? [] : pulledLevers;
+  /** What the pulled figure levers draw on the item on screen. */
+  const overlay = useMemo(() => currentChallenge ? figureOverlay(currentChallenge, pulledNowList, leftOut) : null,
+    [currentChallenge, figurePulled]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // -------------------------------------------------------------------------
   // Per-challenge UI state
@@ -375,7 +398,9 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
   // right (keyed by the item on screen, so a practice build has its own).
   const [cells, setCells] = useState<Cell[]>([]);
   const [firstShape, setFirstShape] = useState<{ item: string; cells: Cell[] } | null>(null);
-  const isBuild = currentChallenge?.type === BUILD_AREA;
+  const isBuild = isGridBuild(currentChallenge);
+  /** The perimeter build (`build_perimeter`): the same grid, its own check, levers and facts. */
+  const isPerimeter = isBuildPerimeter(currentChallenge);
   const firstNow = isBuild && currentChallenge?.shapesAsked === 2 && firstShape?.item === currentChallenge.id
     ? firstShape.cells : null;
 
@@ -393,10 +418,16 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
   // -------------------------------------------------------------------------
   // Coordinate mapping (stable per challenge)
   // -------------------------------------------------------------------------
-  const mapper = useMemo(() => {
-    if (!currentChallenge) return makeMapper({ minX: 0, maxX: 1, minY: 0, maxY: 1 });
-    return makeMapper(getBounds(currentChallenge));
-  }, [currentChallenge]);
+  /** The figure's bounds, grown to fit what a pulled lever draws (the turned trapezoid copy reaches past the figure). */
+  const figureBounds = useMemo((): Bounds => {
+    if (!currentChallenge) return { minX: 0, maxX: 1, minY: 0, maxY: 1 };
+    const b = getBounds(currentChallenge);
+    for (const p of overlayPoints(overlay)) {
+      b.minX = Math.min(b.minX, p.x); b.maxX = Math.max(b.maxX, p.x); b.minY = Math.min(b.minY, p.y); b.maxY = Math.max(b.maxY, p.y);
+    }
+    return b;
+  }, [currentChallenge, overlay]);
+  const mapper = useMemo(() => makeMapper(figureBounds), [figureBounds]);
   const mapperRef = useRef(mapper);
   mapperRef.current = mapper;
 
@@ -426,7 +457,7 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
   // verdict (the learner revises the build); it clears a typed area.
   openItem.current = (retry) => {
     if (!retry) { resetItem(); setPractice(null); return; }
-    if (currentChallenge?.type === BUILD_AREA) return;
+    if (isGridBuild(currentChallenge)) return;
     setAreaInput('');
     setFeedback('');
     setFeedbackType('');
@@ -525,7 +556,8 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
     const guidesShown = currentChallenge.showDecompositionGuides ?? true; // decompose/composite legacy = shown
     const overlayOptIn = currentChallenge.showDecompositionGuides === true; // coord/trap overlay only when explicitly on
     const regionAreaShown = currentChallenge.showRegionAreaLabel === true;
-    const gridOverlayShown = currentChallenge.showGridOverlay === true;
+    const pulledNow = pulledNowList;
+    const gridOverlayShown = currentChallenge.showGridOverlay === true || pulledNow.includes(GRID_LEVER);
 
     // ---- Optional self-check grid behind ungridded figures (easy tier) ----
     if (
@@ -534,7 +566,7 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
         || currentChallenge.figureType === 'parallelogram'
         || currentChallenge.figureType === 'trapezoid')
     ) {
-      const bounds = getBounds(currentChallenge);
+      const bounds = figureBounds;
       ctx.save();
       ctx.strokeStyle = GRID_COLOR;
       ctx.lineWidth = 0.5;
@@ -616,7 +648,7 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
         );
         // Target slot outline (where the triangle needs to go) — the
         // decomposition guideline. Withdrawn at the hard tier.
-        if (guidesShown) {
+        if (guidesShown || pulledNow.includes(SLOT_LEVER)) {
           ctx.save();
           ctx.setLineDash([6, 5]);
           ctx.strokeStyle = 'rgba(148, 163, 184, 0.5)';
@@ -662,7 +694,7 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
       );
       // Easy-tier decomposition overlay: drop faint cut lines from the top-base
       // corners to split the trapezoid into a rectangle + corner triangles.
-      if (overlayOptIn) {
+      if (overlayOptIn || pulledNow.includes(CUT_LEVER)) {
         ctx.save();
         ctx.setLineDash([5, 4]);
         ctx.strokeStyle = 'rgba(148, 163, 184, 0.45)';
@@ -682,7 +714,7 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
       drawDimLabel(off + b2 / 2, h, `${b2} ${unit}`, 0, -16); // top base b2
     } else if (currentChallenge.figureType === 'composite') {
       const parts = currentChallenge.parts ?? [];
-      if (guidesShown) {
+      if (guidesShown || pulledNow.includes(SPLIT_LEVER)) {
         // EASY / MEDIUM: the decomposition is GIVEN — each rectangle piece is
         // drawn and dimension-labelled. easy additionally shows ONE piece's
         // worked area as a model. (Leak guard: only the FIRST piece, so the
@@ -780,7 +812,49 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
         ctx.fillText(`(${v.x}, ${v.y})`, p.x + 7, p.y - 5);
       });
     }
-  }, [currentChallenge, challengeType, mapper, dragOffset, rearranged, resizeTick]);
+    // ---- Pulled figure lever: the shape the figure is part of or becomes, tinted pieces, rows of squares, bold pieces.
+    // It draws outlines and tints only; the figure's own givens stay the only numbers on the canvas.
+    if (overlay) {
+      const path = (pts: Array<{ x: number; y: number }>) => {
+        ctx.beginPath();
+        pts.forEach((pt, i) => { const c = toCanvas(pt.x, pt.y); if (i === 0) ctx.moveTo(c.x, c.y); else ctx.lineTo(c.x, c.y); });
+        ctx.closePath();
+      };
+      ctx.save();
+      for (const r of overlay.rows) {
+        if (r.row % 2) continue;
+        path(r.cells);
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.28)';
+        ctx.fill();
+      }
+      for (const piece of overlay.tinted) {
+        path(piece);
+        ctx.fillStyle = 'rgba(168, 85, 247, 0.30)';
+        ctx.fill();
+      }
+      for (const piece of overlay.outlined) {
+        path(piece);
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+      }
+      ctx.setLineDash([6, 5]);
+      ctx.lineWidth = 1.5;
+      if (overlay.moved) {
+        path(overlay.moved);
+        ctx.fillStyle = 'rgba(168, 85, 247, 0.16)';
+        ctx.fill();
+        ctx.strokeStyle = '#a855f7';
+        ctx.stroke();
+      }
+      if (overlay.rectangle.length) {
+        path(overlay.rectangle);
+        ctx.strokeStyle = '#fbbf24';
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }, [currentChallenge, challengeType, mapper, figureBounds, overlay, dragOffset, rearranged, resizeTick, figurePulled]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Redraw crisply when the canvas's displayed size changes.
   useEffect(() => {
@@ -980,6 +1054,8 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
     }
     const unit = currentChallenge.unitLabel;
     const correct = Math.abs(parsed - currentChallenge.expectedArea) < 0.01;
+    const left = correct || practice ? null : leftOutPieces(currentChallenge, parsed);
+    lastLeftOut.current = left ? { item: currentChallenge.id, left } : null;
     // Counts the attempt and records a correct result on both paths; on the workspace path it is the checked gesture.
     progress.commitCheck(
       describeAreaWork(currentChallenge, { areaInput, rearranged, cells: [], firstShape: null, practice: false }),
@@ -1102,13 +1178,21 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
   const buildSolved = isBuild && challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct);
   const buildOpen = isBuild && !buildSolved && !hasSubmittedEvaluation
     && !(tutorOwned && progress.canAttempt === false);
-  // The live line (shared build layer): what the shape looks like so far, NEVER a number — counting the squares is the task.
+  // The live line (shared build layer): what the shape looks like so far, NEVER a number — counting the squares (or the
+  // sides around them) is the task. On the perimeter build `made` says whether it is one shape and whether it has a hole,
+  // the two things the picture alone can mislead on; no number.
+  const perimeterPieces = isPerimeter ? connectedParts(cells).length : 0;
   const buildSeeing = useBuildWatcher({
     buildKey: `${firstNow ? 2 : 1}:${cells.map(cellKey).sort().join('|')}`,
     enabled: buildOpen && cells.length > 0,
     svg: gridRef,
-    request: { task: currentChallenge?.instruction ?? '',
-      sceneNote: 'A square grid. Each shaded square is one square unit the learner shaded.', numbers: 'never' },
+    request: isPerimeter
+      ? { task: currentChallenge?.instruction ?? '', numbers: 'never',
+        sceneNote: 'A square grid. Each shaded square is a square the learner shaded; each side of a square is one unit long.',
+        made: `${perimeterPieces > 1 ? 'separate pieces of shaded squares' : 'one shape of shaded squares'}`
+          + `${holesIn(cells) > 0 ? ' with a hole inside it' : ''}` }
+      : { task: currentChallenge?.instruction ?? '',
+        sceneNote: 'A square grid. Each shaded square is one square unit the learner shaded.', numbers: 'never' },
   });
 
   const toggleCell = (cell: Cell) => {
@@ -1130,17 +1214,23 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
    */
   const doneBuilding = () => {
     if (!currentChallenge || !isBuild || !buildOpen || learnerBlocked()) return;
-    const area = currentChallenge.targetArea ?? currentChallenge.expectedArea;
-    const miss = buildAreaMiss(area, cells, firstNow);
+    const target = isPerimeter
+      ? currentChallenge.targetPerimeter ?? currentChallenge.expectedArea
+      : currentChallenge.targetArea ?? currentChallenge.expectedArea;
+    const miss = isPerimeter ? buildPerimeterMiss(target, cells, firstNow) : buildAreaMiss(target, cells, firstNow);
     if (currentChallenge.shapesAsked === 2 && !firstNow && !miss) {
       SoundManager.snap();
       setFirstShape({ item: currentChallenge.id, cells: [...cells] });
-      setFeedback(`Yes, that shape has an area of ${area} squares. Now change it into a different shape with the same area.`);
+      setFeedback(isPerimeter
+        ? `Yes, that shape has a perimeter of ${target} units. Now change it into a different shape with the same perimeter.`
+        : `Yes, that shape has an area of ${target} squares. Now change it into a different shape with the same area.`);
       setFeedbackType('success');
       return;
     }
-    progress.commitCheck(describeBuild(cells, firstNow), !miss, miss);
-    setFeedback(buildAreaVerdict(area, miss, cells, !!firstNow));
+    progress.commitCheck(isPerimeter ? describePerimeterBuild(cells, firstNow) : describeBuild(cells, firstNow), !miss, miss);
+    setFeedback(isPerimeter
+      ? buildPerimeterVerdict(target, miss as Parameters<typeof buildPerimeterVerdict>[1], cells, !!firstNow)
+      : buildAreaVerdict(target, miss as Parameters<typeof buildAreaVerdict>[1], cells, !!firstNow));
     setFeedbackType(miss ? 'error' : 'success');
     if (miss) { SoundManager.playIncorrect(); return; }
     SoundManager.playCorrect();
@@ -1152,9 +1242,13 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
   useLayoutEffect(() => {
     if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
     const scene = workspaceScene(currentChallenge, { areaInput, rearranged, cells, firstShape: firstNow, practice: !!practice });
-    if (sessionChallenge.type !== BUILD_AREA) { workspace.current = { ...scene }; return; }
-    const onScreen = practice ? '' : buildLeverFacts(sessionChallenge, pulledLevers);
-    const levers = practice ? [] : buildAreaLevers(sessionChallenge, pulledLevers);
+    const build = isGridBuild(sessionChallenge);
+    const perimeter = isBuildPerimeter(sessionChallenge);
+    const onScreen = practice ? '' : perimeter ? buildPerimeterLeverFacts(sessionChallenge, pulledLevers)
+      : build ? buildLeverFacts(sessionChallenge, pulledLevers) : figureLeverFacts(sessionChallenge, pulledLevers);
+    const levers = practice ? [] : perimeter ? buildPerimeterLevers(sessionChallenge, pulledLevers)
+      : build ? buildAreaLevers(sessionChallenge, pulledLevers) : figureLevers(sessionChallenge, pulledLevers);
+    if (!build && !practice && !levers.length) { workspace.current = { ...scene }; return; }
     workspace.current = {
       ...scene,
       ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
@@ -1164,9 +1258,25 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
         const lever = levers.find((l) => l.id === id);
         if (practice || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
-        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
-        if (id === SMALLER_LEVER) {
-          const easier = smallerArea(sessionChallenge);
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id], left: leftOut };
+        if (SIMPLER_FIGURE_LEVERS.includes(id)) {
+          const smaller = smallerFigure(sessionChallenge);
+          if (!smaller) return 'This figure has no simpler version; try a help lever.';
+          setLeverState(pulled); setAreaInput(''); setFeedback(''); setFeedbackType(''); setShowHint(false);
+          setDragOffset(0); setRearranged(false); setPractice(smaller);
+          return { practice: workspaceAssignment(smaller) };
+        }
+        if (id === SLOT_LEVER && rearranged) return 'The cut triangle is already in its slot; the rectangle is made.';
+        if (id === LEFT_OUT_LEVER) {
+          const last = lastLeftOut.current;
+          if (!last || last.item !== sessionChallenge.id) {
+            return "The learner's last area was not the area of one piece, so there is no left-out piece to outline.";
+          }
+          setLeverState({ ...pulled, left: last.left });
+          return true;
+        }
+        if (id === SMALLER_LEVER || id === SMALLER_PERIMETER_LEVER) {
+          const easier = id === SMALLER_LEVER ? smallerArea(sessionChallenge) : smallerPerimeter(sessionChallenge);
           if (!easier) return 'This item has no easier shape; try a help lever.';
           setLeverState(pulled); setCells([]); setFirstShape(null); setFeedback(''); setFeedbackType(''); setPractice(easier);
           return { practice: workspaceAssignment(easier) };
@@ -1175,8 +1285,11 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
         setLeverState(pulled);
         return true;
       },
-      // The full item comes back on an empty grid.
-      endPractice: () => { setCells([]); setFirstShape(null); setFeedback(''); setFeedbackType(''); setPractice(null); },
+      // The full item comes back blank: an empty grid, an empty answer box.
+      endPractice: () => {
+        setCells([]); setFirstShape(null); setAreaInput(''); setFeedback(''); setFeedbackType('');
+        setDragOffset(0); setRearranged(false); setPractice(null);
+      },
     };
   });
 
@@ -1282,7 +1395,8 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
           /* Open build — the empty grid the learner shades, one square per tap. No count and no target beside it. */
           <div className="p-3 bg-slate-800/30 rounded-2xl border border-cyan-500/20 space-y-3">
             <div className="flex flex-wrap items-start justify-center gap-4">
-              <AreaBuildGrid ref={gridRef} cells={cells} numbers={leverOn(NUMBERS_LEVER)} pieces={pieceOf}
+              <AreaBuildGrid ref={gridRef} cells={cells} numbers={!isPerimeter && leverOn(NUMBERS_LEVER)} pieces={pieceOf}
+                edges={isPerimeter && leverOn(EDGES_LEVER) ? outsideSides(cells) : null}
                 disabled={!buildOpen} onToggle={toggleCell} />
               {firstNow && (
                 <div className="flex flex-col items-center gap-1 text-xs text-slate-400">
@@ -1324,6 +1438,57 @@ const PolygonAreaBuilderSurface = ({ data, className, runtimePlanItemId, tutorOw
             }`}
             style={{ aspectRatio: `${CANVAS_W} / ${CANVAS_H}` }}
           />
+          {/* What a pulled figure lever drew, said in words for the screen reader and the probes. Never a number. */}
+          {leverOn(GRID_LEVER) && !currentChallenge.showGridOverlay && (
+            <p data-lever="unit-grid" className="text-center text-xs text-slate-400 mt-2">
+              Each square of the grid is one square {unit}.
+            </p>
+          )}
+          {currentChallenge.figureType === 'triangle' && leverOn(HALF_LEVER) && (
+            <p data-lever="half-of-rectangle" className="text-center text-xs text-amber-200/90 mt-2">
+              The dashed rectangle has the same base and height as the triangle. Each tinted piece matches a piece of the triangle.
+            </p>
+          )}
+          {currentChallenge.figureType === 'parallelogram' && leverOn(SLIDE_LEVER) && (
+            <p data-lever="slide-corner" className="text-center text-xs text-purple-200/90 mt-2">
+              Slide the tinted corner to the other end: the parallelogram becomes the dashed rectangle, with the same base and height.
+            </p>
+          )}
+          {challengeType === 'decompose' && leverOn(SLOT_LEVER) && (
+            <p data-lever="show-slot" className="text-center text-xs text-slate-400 mt-2">
+              The dashed slot shows where the cut triangle fits.
+            </p>
+          )}
+          {currentChallenge.figureType === 'trapezoid' && leverOn(CUT_LEVER) && (
+            <p data-lever="cut-lines" className="text-center text-xs text-slate-400 mt-2">
+              The dashed lines run straight down from the top corners.
+            </p>
+          )}
+          {currentChallenge.figureType === 'trapezoid' && leverOn(TURNED_COPY_LEVER) && (
+            <p data-lever="turned-copy" className="text-center text-xs text-purple-200/90 mt-2">
+              A copy of the trapezoid, turned upside down, sits against it. Together they make the dashed parallelogram.
+            </p>
+          )}
+          {currentChallenge.figureType === 'composite' && leverOn(SPLIT_LEVER) && (
+            <p data-lever="split-pieces" className="text-center text-xs text-slate-400 mt-2">
+              The figure is split into its rectangle pieces.
+            </p>
+          )}
+          {currentChallenge.figureType === 'composite' && leverOn(LEFT_OUT_LEVER) && (
+            <p data-lever="left-out-piece" className="text-center text-xs text-amber-200/90 mt-2">
+              The bold outline marks the part your last answer left out.
+            </p>
+          )}
+          {leverOn(ROWS_LEVER) && (
+            <p data-lever="square-rows" className="text-center text-xs text-emerald-200/90 mt-2">
+              Every other row of squares is tinted.
+            </p>
+          )}
+          {currentChallenge.figureType === 'coordinate' && leverOn(OUTSIDE_LEVER) && (
+            <p data-lever="outside-box" className="text-center text-xs text-purple-200/90 mt-2">
+              The dashed rectangle goes around the polygon. The tinted part is outside the polygon.
+            </p>
+          )}
           {challengeType === 'decompose' && !rearranged && (
             <p className="text-center text-xs text-purple-300/80 mt-2">
               Drag the purple triangle across into the dashed slot to form a rectangle.

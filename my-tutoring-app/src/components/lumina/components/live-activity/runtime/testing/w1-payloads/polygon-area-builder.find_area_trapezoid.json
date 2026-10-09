@@ -1,0 +1,69 @@
+{
+ "source": "batch-gate 2026-10-09 generation (Area of trapezoids)",
+ "primitiveId": "polygon-area-builder",
+ "evalMode": "find_area_trapezoid",
+ "data": {
+  "title": "Finding the Area of Trapezoids",
+  "description": "Practice calculating the area of various trapezoids by applying the average-of-bases formula.",
+  "challengeType": "find_area_trapezoid",
+  "gradeBand": "6",
+  "challenges": [
+   {
+    "type": "find_area_trapezoid",
+    "figureType": "trapezoid",
+    "base": 10,
+    "base2": 4,
+    "height": 3,
+    "topOffset": 3,
+    "expectedArea": 21,
+    "unitLabel": "in",
+    "narration": "The cross-section of a bucket is shaped like this trapezoid.",
+    "instruction": "Find the area of this trapezoid.",
+    "hint": "Average the two bases, then multiply by the height: ½ × (b₁ + b₂) × height.",
+    "id": "pab-1"
+   },
+   {
+    "type": "find_area_trapezoid",
+    "figureType": "trapezoid",
+    "base": 8,
+    "base2": 2,
+    "height": 6,
+    "topOffset": 3,
+    "expectedArea": 30,
+    "unitLabel": "m",
+    "narration": "A garden plot is shaped like this trapezoid.",
+    "instruction": "Find the area of this trapezoid.",
+    "hint": "Average the two bases, then multiply by the height: ½ × (b₁ + b₂) × height.",
+    "id": "pab-2"
+   },
+   {
+    "type": "find_area_trapezoid",
+    "figureType": "trapezoid",
+    "base": 13,
+    "base2": 7,
+    "height": 3,
+    "topOffset": 3,
+    "expectedArea": 30,
+    "unitLabel": "cm",
+    "narration": "A table top is shaped like this trapezoid.",
+    "instruction": "Find the area of this trapezoid.",
+    "hint": "Average the two bases, then multiply by the height: ½ × (b₁ + b₂) × height.",
+    "id": "pab-3"
+   },
+   {
+    "type": "find_area_trapezoid",
+    "figureType": "trapezoid",
+    "base": 8,
+    "base2": 6,
+    "height": 7,
+    "topOffset": 1,
+    "expectedArea": 49,
+    "unitLabel": "cm",
+    "narration": "A lampshade panel is shaped like this trapezoid.",
+    "instruction": "Find the area of this trapezoid.",
+    "hint": "Average the two bases, then multiply by the height: ½ × (b₁ + b₂) × height.",
+    "id": "pab-4"
+   }
+  ]
+ }
+}

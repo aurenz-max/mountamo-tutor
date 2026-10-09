@@ -208,7 +208,12 @@ export function workspaceScene(c: BarModelChallenge, view: BarModelView): Worksp
     drawn.rows = c.secondValues ? `${c.graphLabel}: ${counts(c.values)}; ${c.secondGraphLabel}: ${counts(c.secondValues)}` : counts(c.values);
   }
   if (c.graphStyle === 'picture' && (c.scale?.iconValue ?? 1) > 1) drawn.key = `one picture stands for ${c.scale?.iconValue}`;
-  if (c.graphStyle === 'scaled_bar' && c.scale) drawn.axis = `numbered in steps of ${c.scale.step} up to ${c.scale.max}`;
+  // build_graph: the step is the answer, so the axis is numbered by the learner's chosen step (only 0 and the top
+  // before one is chosen), never by the key's step.
+  if (c.graphStyle === 'scaled_bar' && c.scale) {
+    const step = c.evalMode === 'build_graph' ? view.chosenStep : c.scale.step;
+    drawn.axis = step ? `numbered in steps of ${step} up to ${c.scale.max}` : `numbered only at 0 and ${c.scale.max} until a step is chosen`;
+  }
   if (OPTION_MODES.has(c.evalMode) && c.options?.length) drawn.choices = c.options.join(', ');
   if (c.sourceItems?.length) drawn.pile = c.evalMode === 'build_one_to_one' ? 'a pile of objects to record' : 'a group of objects to count';
   if (c.evalMode === 'build_graph' && c.availableScaleSteps?.length) drawn.steps = c.availableScaleSteps.join(', ');

@@ -11,6 +11,9 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceRunner, type TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { workshopAssignment, workshopScene } from './balanceScaleWorkspace';
+import { BALANCE_MODEL, BALANCE_SIMPLIFY, modelWeight, ON_SCALE, ONE_GROUP, PART_WHOLE, UNIT_CELLS, workshopLeverFacts,
+  workshopLevers, workshopPracticeItem, workshopSessionAnswers } from './balanceScaleLevers';
+import { BalanceModel, PartWholeBar, UnitCells } from './BalanceLeverViews';
 import type { BalanceSurfaceProps } from './BalanceScaleEquality';
 import { SoundManager } from '../../../utils/SoundManager';
 import { enterWorkshopStage, groupCounts, initialWorkshopBoard, isHands, moveWorkshopUnit,
@@ -32,11 +35,16 @@ function BalanceScaleWorkshopSurface({ data, className, runtimePlanItemId }: Bal
   const undo = useRef<WorkshopBoard[]>([]);
   const modeled = useRef(new Set<string>());
   const nextId = useRef(0);
-  const [board, setBoard] = useState<WorkshopBoard>(() => built.problems[0] ? initialWorkshopBoard(built.problems[0])
+  const [sessionBoard, setBoard] = useState<WorkshopBoard>(() => built.problems[0] ? initialWorkshopBoard(built.problems[0])
     : { weights: [], first: [], leftAside: false, units: [] });
   const [selected, setSelected] = useState<number | null>(null);
   const [feedback, setFeedback] = useState('Move the weights and watch what changes.');
   const reduced = useReducedMotion();
+  // In-item levers (`balanceScaleLevers.ts`), keyed by the session item they were pulled on, and the easier
+  // practice step a simplify lever put on screen in its place. The ref is what the retry callback reads.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<{ item: WorkshopItem; board: WorkshopBoard } | null>(null);
+  const practiceRef = useRef<{ item: WorkshopItem; board: WorkshopBoard } | null>(null);
   const boardFor = (item: WorkshopItem) => boards.current[item.problem.id] ?? initialWorkshopBoard(item.problem);
   const evaluation = usePrimitiveEvaluation<BalanceScaleMetrics>({ primitiveType: 'balance-scale', instanceId: instance.current,
     skillId: data.skillId, subskillId: data.subskillId, objectiveId: data.objectiveId, exhibitId: data.exhibitId, onSubmit: data.onEvaluationSubmit });
@@ -71,7 +79,12 @@ function BalanceScaleWorkshopSurface({ data, className, runtimePlanItemId }: Bal
     instanceId: instance.current, objectiveId: data.objectiveId, planItemId: runtimePlanItemId,
     onFinished: finish,
     onAffirmed: (done) => setAffirmedIds((prev) => new Set(prev).add(done.id)),
-    onItemOpened: (item, index) => {
+    onItemOpened: (item, index) => openItem(item, index),
+    // A retry on the practice step keeps it; only endPractice gives the full item back.
+    onCorrectionRetry: (item) => { if (!practiceRef.current) openItem(item, items.indexOf(item)); },
+  });
+  function openItem(item: WorkshopItem, index: number) {
+      practiceRef.current = null; setPractice(null);
       if (index === 0) { boards.current = {}; moves.current = {}; modeled.current.clear(); }
       if (item.step === STAGES[item.problem.mode][0]) {
         boards.current[item.problem.id] = initialWorkshopBoard(item.problem); moves.current[item.problem.id] = []; nextId.current = 0;
@@ -81,9 +94,12 @@ function BalanceScaleWorkshopSurface({ data, className, runtimePlanItemId }: Bal
       if (prepared.modeled) modeled.current.add(item.id);
       undo.current = []; setSelected(null); setBoard(prepared.board);
       setFeedback(isHands(item.step) ? workshopFeedback(item.problem, item.step, prepared.board) : '');
-    },
-  });
-  const item = runner.currentItem;
+  }
+  const sessionItem = runner.currentItem;
+  /** What is on screen: the practice step while a simplify lever holds it, else the session item. */
+  const item = practice?.item ?? sessionItem;
+  const board = practice?.board ?? sessionBoard;
+  const pulledLevers = practice || leverState.item !== sessionItem?.id ? [] : leverState.pulled;
   const canMove = !!item && isHands(item.step) && runner.canAttempt && runner.cuedItemId === item.id && !runner.isAwaitingGesture();
   const publish = (next: WorkshopBoard | null, description: string, saveUndo = true) => {
     if (!next || !item || !canMove || runner.isAwaitingGesture()) return;
@@ -108,16 +124,44 @@ function BalanceScaleWorkshopSurface({ data, className, runtimePlanItemId }: Bal
   // What the tutor and the observer are shown, republished every render. W1 offers no
   // demonstration targets and no presentation.
   useLayoutEffect(() => {
-    if (!item) return;
-    workspace.current = { ...workshopScene(item, board) };
+    if (!item || !sessionItem) return;
+    const scene = workshopScene(item, board);
+    const atSession = boardFor(sessionItem);
+    const levers = practice ? [] : workshopLevers(sessionItem, atSession, pulledLevers, built.problems);
+    const onScreen = practice ? '' : workshopLeverFacts(sessionItem, pulledLevers, built.problems);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice scale, ungraded. The full item comes back after it.' } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: (id) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        const pulled = { item: sessionItem.id, pulled: [...pulledLevers, id] };
+        if (BALANCE_SIMPLIFY.has(id)) {
+          const easier = workshopPracticeItem(sessionItem, id, atSession, built.problems);
+          if (!easier) return 'There is no easier scale for this item.';
+          practiceRef.current = easier;
+          setLeverState(pulled); setPractice(easier);
+          return { practice: workshopAssignment(easier.item) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { practiceRef.current = null; setPractice(null); setBoard(boardFor(sessionItem)); },
+    };
   });
   // The live host has no evaluation provider, so the workspace's own summary ends the activity there.
   const finished = evaluation.hasSubmitted || !!runner.practiceSummary;
   const solvedIds = affirmedIds;
 
-  if (!item || built.error) return <LuminaCard className={className}><LuminaCardContent>{built.error || 'No weight challenges are available.'}</LuminaCardContent></LuminaCard>;
+  if (!item || !sessionItem || built.error) return <LuminaCard className={className}><LuminaCardContent>{built.error || 'No weight challenges are available.'}</LuminaCardContent></LuminaCard>;
   const p = item.problem;
   const state = workshopBalance(p, board);
+  const modelK = pulledLevers.includes(BALANCE_MODEL) ? modelWeight(p.target, workshopSessionAnswers(built.problems)) : null;
+  const oneGroup = pulledLevers.includes(ONE_GROUP), onScale = pulledLevers.includes(ON_SCALE);
   const grouping = p.parcels > 1 && ['share', 'each', 'infer', 'explain'].includes(item.step);
   const gathering = p.parcels === 1 && !isHands(item.step);
   const animation = reduced ? { duration: 0 } : { type: 'spring' as const, stiffness: 190, damping: 25 };
@@ -154,8 +198,9 @@ function BalanceScaleWorkshopSurface({ data, className, runtimePlanItemId }: Bal
       <LuminaBadge accent="purple">Hands + voice</LuminaBadge></div></LuminaCardHeader>
     <LuminaCardContent className="space-y-5">
       {finished ? <p className="text-center text-xl text-emerald-200">You built the math with weights. Nice work!</p> : <>
-        <LuminaChallengeCounter current={built.problems.indexOf(p) + 1} total={built.problems.length} variant="dots" />
-        {items.some((entry) => entry.problem.id === p.id && modeled.current.has(entry.id)) && <p className="text-center text-amber-200">Tutor's example includes a demonstrated step.</p>}
+        <LuminaChallengeCounter current={built.problems.indexOf(sessionItem.problem) + 1} total={built.problems.length} variant="dots" />
+        {practice && <p className="text-center text-sm text-amber-200">Practice scale - your full scale comes back after this.</p>}
+        {!practice && items.some((entry) => entry.problem.id === p.id && modeled.current.has(entry.id)) && <p className="text-center text-amber-200">Tutor's example includes a demonstrated step.</p>}
         <LayoutGroup id={instance.current}>
           <div aria-label="Balance scale workspace" className="px-2 pb-4">
             <div className="grid grid-cols-2 items-end gap-5">
@@ -167,7 +212,8 @@ function BalanceScaleWorkshopSurface({ data, className, runtimePlanItemId }: Bal
                     {!gathering ? <div className="flex flex-wrap items-end justify-center gap-1">{board.weights.map(weight)}</div>
                       : <p className="text-center text-xs text-cyan-200">Added weights shown below</p>}
                   </> : <>
-                    <div className="flex flex-wrap justify-center gap-2">{Array.from({ length: p.parcels }, (_, index) => parcel(index))}</div>
+                    <div data-lever={onScale ? 'parcels-together' : undefined}
+                      className={`flex flex-wrap justify-center gap-2 ${onScale ? 'rounded-xl p-1 ring-2 ring-amber-200/80' : ''}`}>{Array.from({ length: p.parcels }, (_, index) => parcel(index))}</div>
                     <p className="text-center text-xs text-purple-200">{p.parcels} identical parcels</p>
                     {p.known > 0 && !board.leftAside && <button type="button" aria-label={`Set aside known ${p.known} weight`} disabled={!canMove || item.step !== 'separate'}
                       onClick={() => publish({ ...boardFor(item), leftAside: true }, `Set aside the known ${p.known} weight`)} className="flex min-h-11 min-w-11 flex-col items-center gap-1 rounded-lg border border-purple-200/40 p-2">
@@ -190,7 +236,8 @@ function BalanceScaleWorkshopSurface({ data, className, runtimePlanItemId }: Bal
             <div className="mx-auto h-6 w-3 bg-slate-500" /><div className="mx-auto h-2 w-24 rounded-full bg-slate-500" />
           </div>
           <p className="text-center text-cyan-200" aria-live="polite">{state === 'balanced' ? 'Balanced - equal weight' : state === 'left-heavy' ? 'Left side is heavier' : 'Right side is heavier'}</p>
-          {p.known > 0 && p.parcels > 1 && <div className="grid grid-cols-2 gap-3" aria-label="Known weights set aside">
+          {p.known > 0 && p.parcels > 1 && <div data-lever={onScale ? 'faded' : undefined}
+            className={`grid grid-cols-2 gap-3 ${onScale ? 'opacity-30' : ''}`} aria-label="Known weights set aside">
             <LuminaPanel><p className="mb-2 text-sm text-purple-200">Set aside from left</p>{board.leftAside && <LuminaButton size="sm" disabled={!canMove || item.step !== 'separate'}
               onClick={() => publish({ ...boardFor(item), leftAside: false }, 'Returned the known weight to the left')}>Return {p.known} weight</LuminaButton>}</LuminaPanel>
             <LuminaPanel><p className="mb-2 text-sm text-cyan-200">Set aside from right</p><div className="flex flex-wrap gap-1">{board.units.map((place, index) => place === -2 ? unit(index) : null)}</div></LuminaPanel>
@@ -202,7 +249,8 @@ function BalanceScaleWorkshopSurface({ data, className, runtimePlanItemId }: Bal
             </section>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {groupCounts(p, board).map((count, group) => <section key={group} aria-label={`Parcel group ${group + 1}`} onDragOver={(event) => event.preventDefault()}
-                onDrop={(event) => dropUnit(event, group)} className="space-y-2 rounded-xl border border-purple-300/30 p-3">
+                onDrop={(event) => dropUnit(event, group)} data-lever={oneGroup ? group === 0 ? 'one-group' : 'faded' : undefined}
+                className={`space-y-2 rounded-xl border border-purple-300/30 p-3 ${oneGroup ? group === 0 ? 'ring-2 ring-amber-200/80' : 'opacity-30' : ''}`}>
                 <button type="button" aria-label={`Place unit in group ${group + 1}`} disabled={!canMove || item.step !== 'share' || !board.units.includes(-1)}
                   onClick={() => { const index = selected !== null && board.units[selected] === -1 ? selected : board.units.indexOf(-1); if (index >= 0) moveUnit(index, group); }}
                   className="flex w-full flex-col items-center gap-2 rounded-lg p-2 focus-visible:outline focus-visible:outline-purple-200">
@@ -220,6 +268,9 @@ function BalanceScaleWorkshopSurface({ data, className, runtimePlanItemId }: Bal
             <div className="flex flex-wrap items-end justify-center gap-1">{board.weights.map((block, index) => <React.Fragment key={block.id}>
               {index > 0 && <span className="pb-3">+</span>}{weight(block)}</React.Fragment>)}<span className="pb-3">=</span>
               <span className="pb-3 text-cyan-200">{['relate', 'infer'].includes(item.step) ? p.target : 'Say the total'}</span></div>
+            {pulledLevers.includes(UNIT_CELLS) && <div className="mt-3"><UnitCells values={board.weights.map((block) => block.value)} /></div>}
+            {pulledLevers.includes(PART_WHOLE) && <div className="mt-3"><PartWholeBar whole={p.total} part={p.known} /></div>}
+            {modelK !== null && <div className="mt-3"><BalanceModel weight={modelK} /></div>}
           </section>}
         </LayoutGroup>
         {p.mode === 'two_step' && <LuminaPanel><p className="text-sm text-purple-200">Your moves as an equation - x means one parcel</p>
@@ -243,8 +294,8 @@ function BalanceScaleWorkshopSurface({ data, className, runtimePlanItemId }: Bal
                 : { ...current, weights: [] }, 'Reset this step');
           }}>Reset this step</LuminaButton>
         </div><p className="text-center text-sm text-slate-300" aria-live="polite">{feedback}</p></div>}
-        <DiActionPanel run={runner} running={runner.running} stage={runner.stage} currentItem={item}
-          steps={items.filter((step) => step.problem.id === p.id)} completedIds={solvedIds}
+        <DiActionPanel run={runner} running={runner.running} stage={runner.stage} currentItem={sessionItem}
+          steps={items.filter((step) => step.problem.id === sessionItem.problem.id)} completedIds={solvedIds}
           carriedIds={new Set(items.filter((step, index) => index < runner.currentIndex && !solvedIds.has(step.id)).map((step) => step.id))}
           startInstruction="Start the tutor, then work with the weights." />
       </>}

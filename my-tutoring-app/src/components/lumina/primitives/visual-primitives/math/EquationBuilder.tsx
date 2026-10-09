@@ -32,7 +32,10 @@ import {
   equationBuilderMiss, equationBuilderScene, evaluateEquation, makeNMiss, parseEquationTokens, tileLabel, waysAsked,
   type EquationBuilderMiss, type EquationBuilderView,
 } from './equationBuilderWorkspace';
-import { DOTS_LEVER, FRAME_LEVER, makeNLeverFacts, makeNLevers, smallerMakeN } from './equationBuilderLevers';
+import {
+  DOTS_LEVER, EQ_FRAME_LEVER, FRAME_LEVER, MATCH_LEVER, PRINTED_DOTS_LEVER, REWRITE_MODEL_LEVER, equationBuilderLevers,
+  equationFrame, equationLeverFacts, matchMarked, practiceItem, printedDots, rewriteModel,
+} from './equationBuilderLevers';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -124,10 +127,10 @@ const makeMissWords = (miss: EquationBuilderMiss | undefined, total: number, can
   }
 };
 
-/** `number_dots` lever: as many dots as one number tile says, in rows of five. */
-function NumberDots({ n }: { n: number }) {
+/** `number_dots` / `printed_dots` lever: as many dots as one number tile says, in rows of five. */
+function NumberDots({ n, lever = 'number-dots' }: { n: number; lever?: string }) {
   return (
-    <div data-lever="number-dots" aria-label={`${n} dots`} className="grid grid-cols-5 gap-0.5 w-14">
+    <div data-lever={lever} aria-label={`${n} dots`} className="grid grid-cols-5 gap-0.5 w-14">
       {Array.from({ length: n }).map((_, i) => <span key={i} className="h-2 w-2 rounded-full bg-indigo-300/80" />)}
     </div>
   );
@@ -226,24 +229,30 @@ function EquationDisplay({
   size = 'lg',
   rowRef,
   gapRef,
+  dots,
 }: {
   parts: string[];
   blankIndex?: number;
   size?: 'sm' | 'md' | 'lg';
   rowRef?: (element: Element | null) => void;
   gapRef?: (element: Element | null) => void;
+  /** `printed_dots`: dots under each printed number, none under the ?. */
+  dots?: boolean;
 }) {
+  const counts = printedDots(parts.map((p, i) => i === blankIndex ? '?' : p));
   return (
-    <div ref={rowRef} data-pip-object={rowRef ? 'equation' : undefined} className="flex items-center justify-center gap-2 flex-wrap">
+    <div ref={rowRef} data-pip-object={rowRef ? 'equation' : undefined} className="flex items-start justify-center gap-2 flex-wrap">
       {parts.map((part, i) => (
-        <Tile
-          key={i}
-          value={i === blankIndex ? '?' : part}
-          disabled
-          size={size}
-          buttonRef={i === blankIndex ? gapRef : undefined}
-          pipObject={i === blankIndex && gapRef ? 'gap' : undefined}
-        />
+        <div key={i} className="flex flex-col items-center gap-1">
+          <Tile
+            value={i === blankIndex ? '?' : part}
+            disabled
+            size={size}
+            buttonRef={i === blankIndex ? gapRef : undefined}
+            pipObject={i === blankIndex && gapRef ? 'gap' : undefined}
+          />
+          {dots && counts[i] !== null && <NumberDots n={counts[i]!} lever="printed-dots" />}
+        </div>
       ))}
     </div>
   );
@@ -256,26 +265,31 @@ function BuildWorkspace({
   onRemoveSlot,
   disabled,
   slotRef,
+  dots,
 }: {
   slots: string[];
   maxSlots: number;
   onRemoveSlot: (index: number) => void;
   disabled: boolean;
   slotRef?: (index: number) => (element: Element | null) => void;
+  /** `number_dots`: dots under each number tile the learner placed. */
+  dots?: boolean;
 }) {
   const emptySlots = Math.max(0, maxSlots - slots.length);
   return (
-    <div className="flex items-center justify-center gap-2 min-h-[70px] flex-wrap">
+    <div className="flex items-start justify-center gap-2 min-h-[70px] flex-wrap">
       {slots.map((tile, i) => (
-        <Tile
-          key={`slot-${i}`}
-          value={tile}
-          onClick={() => !disabled && onRemoveSlot(i)}
-          disabled={disabled}
-          size="md"
-          buttonRef={slotRef?.(i)}
-          pipObject={slotRef ? `slot-${i}` : undefined}
-        />
+        <div key={`slot-${i}`} className="flex flex-col items-center gap-1">
+          <Tile
+            value={tile}
+            onClick={() => !disabled && onRemoveSlot(i)}
+            disabled={disabled}
+            size="md"
+            buttonRef={slotRef?.(i)}
+            pipObject={slotRef ? `slot-${i}` : undefined}
+          />
+          {dots && /^\d+$/.test(tile) && <NumberDots n={parseInt(tile, 10)} />}
+        </div>
       ))}
       {Array.from({ length: emptySlots }).map((_, i) => (
         <div
@@ -294,23 +308,31 @@ function TilePool({
   tiles,
   onPickTile,
   disabled,
+  marked,
 }: {
   tiles: string[];
   onPickTile: (index: number) => void;
   disabled: boolean;
+  /** `match_marks`: which tiles get a ring. */
+  marked?: (tile: string) => boolean;
 }) {
   return (
     <div className="flex items-center justify-center gap-2 flex-wrap">
-      {tiles.map((tile, i) => (
-        <Tile
-          key={`pool-${i}-${tile}`}
-          value={tile}
-          onClick={() => onPickTile(i)}
-          disabled={disabled}
-          size="md"
-          ariaLabel={tileLabel(tile)}
-        />
-      ))}
+      {tiles.map((tile, i) => {
+        const tileButton = (
+          <Tile
+            key={`pool-${i}-${tile}`}
+            value={tile}
+            onClick={() => onPickTile(i)}
+            disabled={disabled}
+            size="md"
+            ariaLabel={tileLabel(tile)}
+          />
+        );
+        return marked?.(tile)
+          ? <span key={`pool-${i}-${tile}`} data-lever="match-mark" className="rounded-xl ring-2 ring-cyan-300/70 ring-offset-2 ring-offset-transparent">{tileButton}</span>
+          : tileButton;
+      })}
     </div>
   );
 }
@@ -383,13 +405,19 @@ function EquationBuilderSurface({ data, className, runtimePlanItemId }: Equation
   });
 
   const sessionChallenge = challenges[currentChallengeIndex] ?? null;
-  // make-n levers (`equationBuilderLevers.ts`), keyed by the session item they were pulled on, and the easier item a
+  // Levers (`equationBuilderLevers.ts`), keyed by the session item they were pulled on, and the easier item a
   // simplify lever put on screen in its place.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<EquationBuilderChallenge | null>(null);
+  /** The practice item as of now, not as of the last render: closing it reopens the session item in the same commit. */
+  const practiceNow = useRef<EquationBuilderChallenge | null>(null);
+  const showPractice = (item: EquationBuilderChallenge | null) => { practiceNow.current = item; setPractice(item); };
   /** What is on screen: the easier item while a simplify lever holds it, else the session item. */
   const currentChallenge = practice ?? sessionChallenge;
   const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  /** The session item's levers; `pulled` includes an easy tier's starting dots. They stay drawn on a practice item. */
+  const sessionLevers = equationBuilderLevers(sessionChallenge, pulledLevers, supportTier);
+  const leverOn = (id: string) => sessionLevers.some(l => l.id === id && l.pulled);
 
   // -------------------------------------------------------------------------
   // Domain-specific state
@@ -483,10 +511,12 @@ function EquationBuilderSurface({ data, className, runtimePlanItemId }: Equation
   }, []);
   // A make-n build survives Try again, and so does its verdict until the next check (open build). A fresh item
   // starts clean and drops any easier practice item.
+  // Try again on a practice item reopens the practice item, not the session item behind it. (The runtime reports the
+  // full item coming back after practice as a retry of that item, after endPractice has run: read the ref.)
   reopen.current = (index, retry) => {
     if (retry && currentChallenge?.type === 'make-n') return;
-    if (!retry) setPractice(null);
-    openChallenge(challenges[index]);
+    if (!retry) showPractice(null);
+    openChallenge(retry && practiceNow.current ? practiceNow.current : challenges[index]);
   };
 
   useEffect(() => {
@@ -661,32 +691,31 @@ function EquationBuilderSurface({ data, className, runtimePlanItemId }: Equation
   useLayoutEffect(() => {
     if (!currentChallenge) return;
     const scene = equationBuilderScene(currentChallenge, { supportTier, work: { slots: makeWork.row, made: makeWork.made } });
-    const onScreen = makeNLeverFacts(pulledLevers);
-    const levers = practice ? [] : makeNLevers(sessionChallenge, pulledLevers);
+    const onScreen = equationLeverFacts(currentChallenge, sessionLevers);
+    // While an easier item is up the levers are off, and endPractice brings the full item back, blank.
+    const levers = practice ? [] : sessionLevers;
     workspace.current = {
       ...scene,
       ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
-      // Only make-n has levers; while its easier item is up they are off, and endPractice brings the full item back.
-      ...(sessionChallenge?.type === 'make-n' ? {
-        levers,
-        // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
-        pullLever: (id: string) => {
-          const lever = levers.find(l => l.id === id);
-          if (practice || !sessionChallenge || !lever) return `No lever ${id} on this item.`;
-          if (lever.pulled) return `${id} is already pulled.`;
-          const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
-          if (lever.kind === 'simplify') {
-            const easier = smallerMakeN(sessionChallenge);
-            if (!easier) return 'There is no easier item for this one.';
-            setLeverState(pulled);
-            setFeedback(''); setFeedbackType(''); setChallengeSolved(false); setPractice(easier);
-            return { practice: equationBuilderAssignment(easier) };
-          }
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: (id: string) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !sessionChallenge || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already on screen.`;
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = practiceItem(sessionChallenge);
+          if (!easier) return 'There is no easier item for this one.';
           setLeverState(pulled);
-          return true as const;
-        },
-        endPractice: () => { setFeedback(''); setFeedbackType(''); setChallengeSolved(false); setPractice(null); },
-      } : {}),
+          openChallenge(easier);
+          showPractice(easier);
+          return { practice: equationBuilderAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true as const;
+      },
+      endPractice: () => { showPractice(null); openChallenge(sessionChallenge ?? undefined); },
     };
   });
 
@@ -796,12 +825,22 @@ function EquationBuilderSurface({ data, className, runtimePlanItemId }: Equation
         {/* Workspace */}
         <LuminaPanel ref={pip.ref('workspace')} data-pip-object="workspace">
           <p className="text-xs text-slate-500 mb-2 text-center">Your equation</p>
+          {leverOn(EQ_FRAME_LEVER) && (
+            <div data-lever="equation-frame" aria-label="Equation shape" className="mb-3 flex items-center justify-center gap-2 text-slate-400">
+              {equationFrame(currentChallenge!).map((box, i) => box === 'equals'
+                ? <span key={i} className="text-lg">=</span>
+                : <span key={i} className={box === 'sign'
+                  ? 'w-8 h-8 rounded-full border border-dashed border-amber-400/50'
+                  : 'w-10 h-10 rounded-lg border border-dashed border-indigo-400/50'} />)}
+            </div>
+          )}
           <BuildWorkspace
             slots={workspaceSlots}
             maxSlots={targetTokenCount}
             onRemoveSlot={(i) => { pip.look('pool'); handleRemoveSlot(i); }}
             disabled={disabled}
             slotRef={(i) => pip.ref(`slot-${i}`)}
+            dots={leverOn(DOTS_LEVER)}
           />
         </LuminaPanel>
 
@@ -843,7 +882,7 @@ function EquationBuilderSurface({ data, className, runtimePlanItemId }: Equation
       <div className="space-y-6">
         {/* Display equation with blank */}
         <EquationDisplay parts={tokens} blankIndex={blankIdx} size="lg"
-          rowRef={pip.ref('equation')} gapRef={pip.ref('gap')} />
+          rowRef={pip.ref('equation')} gapRef={pip.ref('gap')} dots={leverOn(PRINTED_DOTS_LEVER)} />
 
         {pipDock}
 
@@ -889,7 +928,7 @@ function EquationBuilderSurface({ data, className, runtimePlanItemId }: Equation
     return (
       <div className="space-y-6">
         {/* Display equation */}
-        <EquationDisplay parts={tokens} size="lg" rowRef={pip.ref('equation')} />
+        <EquationDisplay parts={tokens} size="lg" rowRef={pip.ref('equation')} dots={leverOn(PRINTED_DOTS_LEVER)} />
 
         {pipDock}
 
@@ -943,22 +982,26 @@ function EquationBuilderSurface({ data, className, runtimePlanItemId }: Equation
     const leftTokens = parseEquationTokens(currentChallenge?.leftSide ?? '');
     const rightTokens = parseEquationTokens(currentChallenge?.rightSide ?? '');
     const blankIdx = rightTokens.indexOf('?');
+    const dotsOn = leverOn(PRINTED_DOTS_LEVER);
+    const withDots = (t: string, tile: React.ReactNode, key: string) => (
+      <div key={key} className="flex flex-col items-center gap-1">
+        {tile}
+        {dotsOn && /^\d+$/.test(t) && <NumberDots n={parseInt(t, 10)} lever="printed-dots" />}
+      </div>
+    );
 
     return (
       <div className="space-y-6">
         {/* Balance display: left = right */}
-        <div ref={pip.ref('equation')} data-pip-object="equation" className="flex items-center justify-center gap-4 flex-wrap">
-          <div className="flex items-center gap-1">
-            {leftTokens.map((t, i) => (
-              <Tile key={`l-${i}`} value={t} disabled size="md" />
-            ))}
+        <div ref={pip.ref('equation')} data-pip-object="equation" className="flex items-start justify-center gap-4 flex-wrap">
+          <div className="flex items-start gap-1">
+            {leftTokens.map((t, i) => withDots(t, <Tile value={t} disabled size="md" />, `l-${i}`))}
           </div>
           <Tile value="=" disabled size="md" />
-          <div className="flex items-center gap-1">
-            {rightTokens.map((t, i) => (
-              <Tile key={`r-${i}`} value={i === blankIdx ? '?' : t} disabled size="md"
-                buttonRef={i === blankIdx ? pip.ref('gap') : undefined} pipObject={i === blankIdx ? 'gap' : undefined} />
-            ))}
+          <div className="flex items-start gap-1">
+            {rightTokens.map((t, i) => withDots(i === blankIdx ? '?' : t,
+              <Tile value={i === blankIdx ? '?' : t} disabled size="md"
+                buttonRef={i === blankIdx ? pip.ref('gap') : undefined} pipObject={i === blankIdx ? 'gap' : undefined} />, `r-${i}`))}
           </div>
         </div>
 
@@ -999,6 +1042,7 @@ function EquationBuilderSurface({ data, className, runtimePlanItemId }: Equation
   const renderRewriteChallenge = (disabled: boolean) => {
     const original = currentChallenge?.originalEquation ?? '';
     const originalTokens = parseEquationTokens(original);
+    const model = leverOn(REWRITE_MODEL_LEVER) ? rewriteModel(currentChallenge!) : null;
     // For rewrite, show the original equation + workspace to build a new form
     return (
       <div className="space-y-6">
@@ -1007,6 +1051,16 @@ function EquationBuilderSurface({ data, className, runtimePlanItemId }: Equation
           <p className="text-xs text-slate-500 mb-2">Original equation</p>
           <EquationDisplay parts={originalTokens} size="md" />
         </div>
+
+        {/* `rewrite_model`: an example in other numbers, never the learner's */}
+        {model && (
+          <div data-lever="rewrite-model" className="flex items-center justify-center gap-3 flex-wrap rounded-xl border border-dashed border-cyan-300/30 p-2">
+            <span className="text-xs text-slate-400">Like this:</span>
+            <EquationDisplay parts={parseEquationTokens(model.from)} size="sm" />
+            <span className="text-slate-400" aria-hidden>→</span>
+            <EquationDisplay parts={parseEquationTokens(model.to)} size="sm" />
+          </div>
+        )}
 
         {/* Workspace */}
         <LuminaPanel ref={pip.ref('workspace')} data-pip-object="workspace">
@@ -1017,6 +1071,7 @@ function EquationBuilderSurface({ data, className, runtimePlanItemId }: Equation
             onRemoveSlot={(i) => { pip.look('pool'); handleRemoveSlot(i); }}
             disabled={disabled}
             slotRef={(i) => pip.ref(`slot-${i}`)}
+            dots={leverOn(DOTS_LEVER)}
           />
         </LuminaPanel>
 
@@ -1025,7 +1080,8 @@ function EquationBuilderSurface({ data, className, runtimePlanItemId }: Equation
         {/* Tile pool */}
         <div ref={pip.ref('pool')} data-pip-object="pool">
           <p className="text-xs text-slate-500 mb-2 text-center">Available tiles</p>
-          <TilePool tiles={poolTiles} onPickTile={(i) => { pip.look(`slot-${workspaceSlots.length}`); handlePickTile(i); }} disabled={disabled} />
+          <TilePool tiles={poolTiles} onPickTile={(i) => { pip.look(`slot-${workspaceSlots.length}`); handlePickTile(i); }} disabled={disabled}
+            marked={leverOn(MATCH_LEVER) ? (tile) => matchMarked(currentChallenge!, tile) : undefined} />
         </div>
 
         {/* Actions */}

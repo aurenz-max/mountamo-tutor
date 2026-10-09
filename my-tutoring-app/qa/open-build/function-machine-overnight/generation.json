@@ -1,0 +1,175 @@
+{
+  "generatedAt": "2026-10-09T03:53:15.856Z",
+  "runs": [
+    {
+      "name": "g3",
+      "grade": "Grade 3",
+      "difficulty": null,
+      "intent": "Input-output tables: one rule, many ways",
+      "issues": [],
+      "asks": [
+        "Make a machine that turns 4 into 20.",
+        "Make a machine that turns 2 into 6.",
+        "Make a machine that turns 20 into 5."
+      ],
+      "data": {
+        "title": "Function Machine Builders",
+        "description": "Discover how many different rules can create the exact same input-output pair. Build and test multiple working rules for the same challenge.",
+        "challengeType": "make_rule",
+        "challenges": [
+          {
+            "id": "fm-1",
+            "rule": "5*x",
+            "inputQueue": [
+              4
+            ],
+            "showRule": false,
+            "makeInput": 4,
+            "makeOutput": 20
+          },
+          {
+            "id": "fm-2",
+            "rule": "3*x",
+            "inputQueue": [
+              2
+            ],
+            "showRule": false,
+            "makeInput": 2,
+            "makeOutput": 6
+          },
+          {
+            "id": "fm-3",
+            "rule": "x/4",
+            "inputQueue": [
+              20
+            ],
+            "showRule": false,
+            "makeInput": 20,
+            "makeOutput": 5
+          }
+        ],
+        "ruleComplexity": "oneStep",
+        "gradeBand": "3-4",
+        "outputDisplay": "animated"
+      }
+    },
+    {
+      "name": "g5",
+      "grade": "Grade 5",
+      "difficulty": null,
+      "intent": "Write rules for input-output pairs",
+      "issues": [],
+      "asks": [
+        "Make a machine that turns 4 into 18.",
+        "Make a machine that turns 6 into 25.",
+        "Make a machine that turns 5 into 20."
+      ],
+      "data": {
+        "title": "Build Your Own Function Machine",
+        "description": "Discover that multiple rules can produce the same output by building different custom function machines for given input-output pairs.",
+        "challengeType": "make_rule",
+        "challenges": [
+          {
+            "id": "fm-1",
+            "rule": "4*x + 2",
+            "inputQueue": [
+              4
+            ],
+            "showRule": false,
+            "makeInput": 4,
+            "makeOutput": 18
+          },
+          {
+            "id": "fm-2",
+            "rule": "4*x + 1",
+            "inputQueue": [
+              6
+            ],
+            "showRule": false,
+            "makeInput": 6,
+            "makeOutput": 25
+          },
+          {
+            "id": "fm-3",
+            "rule": "4*x",
+            "inputQueue": [
+              5
+            ],
+            "showRule": false,
+            "makeInput": 5,
+            "makeOutput": 20
+          }
+        ],
+        "ruleComplexity": "twoStep",
+        "gradeBand": "5",
+        "outputDisplay": "animated"
+      }
+    },
+    {
+      "name": "g8-hard",
+      "grade": "Grade 8",
+      "difficulty": "hard",
+      "intent": "Functions: one input-output pair does not determine a function",
+      "issues": [],
+      "asks": [
+        "Make a machine that turns 6 into 37.",
+        "Make a machine that turns 4 into 13.",
+        "Make a machine that turns 2 into 8."
+      ],
+      "data": {
+        "title": "One Pair, Many Rules",
+        "description": "Explore how a single input-output pair can be created by multiple different rules, discovering that one point is not enough to define a unique function.",
+        "challengeType": "make_rule",
+        "challenges": [
+          {
+            "id": "fm-1",
+            "rule": "x^2 + 1",
+            "inputQueue": [
+              6
+            ],
+            "showRule": false,
+            "makeInput": 6,
+            "makeOutput": 37,
+            "hintLevel": "none"
+          },
+          {
+            "id": "fm-2",
+            "rule": "x^2 - 3",
+            "inputQueue": [
+              4
+            ],
+            "showRule": false,
+            "makeInput": 4,
+            "makeOutput": 13,
+            "hintLevel": "none"
+          },
+          {
+            "id": "fm-3",
+            "rule": "4*x",
+            "inputQueue": [
+              2
+            ],
+            "showRule": false,
+            "makeInput": 2,
+            "makeOutput": 8,
+            "hintLevel": "none"
+          }
+        ],
+        "ruleComplexity": "expression",
+        "gradeBand": "advanced",
+        "outputDisplay": "animated",
+        "supportTier": "hard",
+        "showComplexityBadge": true
+      }
+    }
+  ],
+  "logs": [
+    "[FunctionMachine] evalMode: \"make_rule\" → schema enum: [make_rule] (β=4)",
+    "[FunctionMachine] Final: challengeType=make_rule, complexity=oneStep, instances=3 [4->20 | 2->6 | 20->5]",
+    "[FunctionMachine] evalMode: \"make_rule\" → schema enum: [make_rule] (β=4)",
+    "[FunctionMachine] Final: challengeType=make_rule, complexity=twoStep, instances=3 [4->18 | 6->25 | 5->20]",
+    "[FunctionMachine] evalMode: \"make_rule\" → schema enum: [make_rule] (β=4)",
+    "[FunctionMachine] Support tier \"hard\" applied per-challenge (single-mode make_rule); showRule untouched (mode identity)",
+    "[FunctionMachine] Final: challengeType=make_rule, complexity=expression, instances=3 [6->37 | 4->13 | 2->8]"
+  ]
+}

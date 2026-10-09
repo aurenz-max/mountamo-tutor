@@ -149,6 +149,17 @@ treat "how many real attempts exist" as unknown, not zero.
 - **Evidence:** `CoinCounter.build.workspace.test.tsx`; journey sweep payload `coin-counter.show-amount.json`;
   `qa/open-build/coin-counter-2026-10-07/REPORT.md`.
 
+### R13 — every mode's levers leave the answer to the learner · OBSERVED (NEW 2026-10-08)
+- **Property:** `coinCounterLevers.ts`. identify: `size_row` reorders every option by size (reads only the options; R4
+  holds: no name, no value) and `two_coins` asks for another coin, never showing the asked one. count: `coin_values`
+  never on a one-coin card (G4), `skip_strip` runs at least three steps past the total with nothing marked and is off at
+  K (R9's taps already count), `sort_coins` orders by worth only when values are on screen; count-mixed coins stay inert
+  (R3). compare: `sort_coins`, no total. make-change: `change_bar` prints only paid, cost and "?". Easier items
+  (`<id>~smaller`) keep the mode (count keeps `countMode`; mixed stays mixed), are never the item, its total or half of
+  it, and are ungraded; the full item comes back blank. make-amount's running total from the tier counts as pulled.
+- **Evidence:** `coinCounterLevers.test.ts`, `CoinCounter.levers.workspace.test.tsx`; report
+  `qa/eval-reports/coin-counter-levers-2026-10-08.md`.
+
 ## Conflicts
 
 ### C1 — R9 (K count-like enacted) vs R3 (count-mixed typed) — **RESOLVED 2026-07-25 via fork rung 1 (eval-mode split) + rung 2 (band gate)**
@@ -296,3 +307,5 @@ total teaches the interval by demonstration). **Kept default-true.** Sole except
   existing mode's component path, check or generator branch changed. Catalog `teachingWorkspace.levers: true`
   (only show-amount publishes levers), so every mode's tutor guidance now also carries `LEVER_DOCTRINE` and one
   build sentence. Existing coin-counter suites green.
+- 2026-10-08 — levers on every mode (R13), `/add-support-tiers`. No existing path removed: the tier aids, enacted counts
+  (R9, R11), typed mixed count (R3) and identify's hidden name/value (R4) are unchanged until a lever is pulled.

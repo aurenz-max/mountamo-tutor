@@ -77,7 +77,16 @@ import { asRecordArray, checkAnswerVariety, parseScopeCeiling } from './helpers'
  * gap. Leak/pedagogy stays with /eval-test.
  */
 
-const KNOWN_TYPES = new Set(['plot_point', 'show_jump', 'order_values', 'find_between']);
+const KNOWN_TYPES = new Set(['plot_point', 'show_jump', 'order_values', 'find_between', 'build_hops']);
+/** Mirrors numberLineBuildHops.ts: the hop buttons go 1..10, and a "different way" needs two hop sets. */
+const MAX_HOP = 10;
+/** How many different sets of `count` hops of 1..MAX_HOP cover `distance` (order does not matter). */
+function hopSets(distance: number, count: number, cap = MAX_HOP): number {
+  if (count === 0) return distance === 0 ? 1 : 0;
+  let n = 0;
+  for (let h = Math.min(cap, distance); h >= 1; h--) n += hopSets(distance - h, count - 1, h);
+  return n;
+}
 const OP_TYPES = new Set(['add', 'subtract']);
 const EPS = 1e-9;
 
@@ -146,6 +155,7 @@ export const numberLineOracle: ContentOracle = {
       show_jump: [],
       order_values: [],
       find_between: [],
+      build_hops: [],
     };
     const cardSeen = new Map<string, number>();
     let checked = 0;
@@ -238,6 +248,35 @@ export const numberLineOracle: ContentOracle = {
         const finalLanding = landings[landings.length - 1];
         derivedByType.show_jump.push(finalLanding);
         bump(cardSeen, `jump|${ops.map((o) => `${o.startValue}${String(o.type) === 'add' ? '+' : '-'}${o.changeValue}`).join('>')}`);
+        continue;
+      }
+
+      // ── build_hops (open build): many builds pass, so the check is that at least TWO hop sets exist ──
+      // The component judges landing == start + hops, hop count == hopCount, and a second way that differs. The oracle
+      // re-derives from start and target alone that the hop buttons can make the target in that many hops at least two
+      // different ways, on the line, and that the instruction states the target (it is the task).
+      if (type === 'build_hops') {
+        const start = c.startValue, hopCount = c.hopCount ?? 2;
+        const target = targets?.[0];
+        if (!isInt(start) || !isInt(target) || !isInt(hopCount) || (hopCount as number) < 2) {
+          violations.push({ check: 'schema', where: id, detail: `build_hops needs integer startValue, targetValues[0] and hopCount >= 2; got ${JSON.stringify({ start, target, hopCount })}` });
+          continue;
+        }
+        checked++;
+        const s0 = start as number, t = target as number, n = hopCount as number;
+        if (!inRange(s0) || !inRange(t)) {
+          violations.push({ check: 'answer-key-desync', where: id, detail: `start ${s0} or target ${t} is off the line [${rangeMin},${rangeMax}]` });
+        }
+        const sets = t > s0 ? hopSets(t - s0, n) : 0;
+        if (sets < 2) {
+          violations.push({ check: 'answer-key-desync', where: id, detail: `${s0} to ${t} in ${n} hops of 1-${MAX_HOP} has ${sets} hop set(s); the second way is impossible` });
+        }
+        if (!String(c.instruction ?? '').includes(String(t))) {
+          violations.push({ check: 'schema', where: id, detail: `the instruction does not state the target ${t}: "${c.instruction}"` });
+        }
+        scopeCheck([s0, t], id, 'build_hops value');
+        derivedByType.build_hops.push(t);
+        bump(cardSeen, `build|${s0}>${t}x${n}`);
         continue;
       }
 

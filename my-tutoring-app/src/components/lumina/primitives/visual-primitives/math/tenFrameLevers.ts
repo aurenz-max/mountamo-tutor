@@ -8,6 +8,8 @@
  *   2026-09-29), `five_frame` (never on five), `smaller_build` (about half, never the item's number).
  * - decompose: `split_model` (a model frame of a total no split item still ahead uses), `ways_shown` (the learner's
  *   own ways for this total, never an unshown way), `smaller_total` (a smaller total no split item still ahead uses).
+ * - build_pair (open build): `running_count` (all the counters on the frame; the total is public), and decompose's
+ *   `split_model`, `ways_shown` and `smaller_total`, each kept to build_pair items (a split's ways are not a pair's).
  * - decompose_teen: `running_count` (the yellow counters only; the ten is public), `ten_model` (a full model frame of
  *   ten beside the item, never on its counters), `smaller_teen` (about half the ones, never the item's teen number).
  * - make_ten: K fills the frame, so `empty_glow` (the empty boxes pulse, no count); grades 1-2 say the complement, so
@@ -22,7 +24,7 @@
  * `frameMiss` names what a wrong placement shows on every gesture kind (handoff 20).
  */
 import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
-import { itemsFromChallenges, judgeSplit, teenTargetFor, waysToSplit, teenTotalFor, type TenFrameBand, type TenFrameChallengeLike,
+import { isPairKind, itemsFromChallenges, judgeSplit, teenTargetFor, waysToSplit, teenTotalFor, type TenFrameBand, type TenFrameChallengeLike,
   type TenFrameItem, type TenFrameSplit } from './tenFrameScript';
 
 export const COUNT_LEVER = 'running_count';
@@ -54,15 +56,22 @@ export const SIMPLIFY_LEVERS: ReadonlySet<string> = new Set([SMALLER_LEVER, SMAL
  * - `all_flipped` / `none_flipped`: the whole group turned yellow, or none of it (split; decompose_teen's
  *   whole group when that is more than one over);
  * - `same_way_again`: a split already shown for this total while another way remains.
+ * - `one_colour` (build_pair): the right number on the frame, all of it one colour. A wrong total on build_pair is
+ *   named by the count misses above, whatever the colours.
  * Only the observable pattern; why the learner did it is the tutor's and the distiller's to judge.
  * Undefined for a right placement or a spoken item.
  */
 export type FrameMiss = 'one_short' | 'one_over' | 'short_by_more' | 'over_by_more' | 'filled_frame'
-  | 'all_flipped' | 'none_flipped' | 'same_way_again';
+  | 'all_flipped' | 'none_flipped' | 'same_way_again' | 'one_colour';
 
-export function frameMiss(item: TenFrameItem | null, work: { placed: number; shownWays?: ReadonlySet<string> }): FrameMiss | undefined {
+export function frameMiss(item: TenFrameItem | null, work: { placed: number; yellow?: number; shownWays?: ReadonlySet<string> }):
+  FrameMiss | undefined {
   if (!item || item.answerKind !== 'gesture') return undefined;
   const { placed } = work;
+  if (item.kind === 'build_pair' && placed === item.answer) {
+    const verdict = judgeSplit(item, { a: placed - (work.yellow ?? 0), b: work.yellow ?? 0 }, work.shownWays);
+    return verdict === 'repeat' ? 'same_way_again' : verdict === 'correct' ? undefined : 'one_colour';
+  }
   if (item.kind === 'split') {
     const verdict = judgeSplit(item, { a: item.answer - placed, b: placed }, work.shownWays);
     if (verdict === 'repeat') return 'same_way_again';
@@ -75,7 +84,8 @@ export function frameMiss(item: TenFrameItem | null, work: { placed: number; sho
   if (off === -1) return 'one_short';
   if (off === 1) return 'one_over';
   if (off > 0 && item.kind === 'decompose_teen' && placed === item.answer) return 'all_flipped';
-  if (off > 0 && (item.kind === 'build' || item.kind === 'build_teen') && placed === item.capacity - item.shown) return 'filled_frame';
+  if (off > 0 && (item.kind === 'build' || item.kind === 'build_teen' || item.kind === 'build_pair')
+    && placed === item.capacity - item.shown) return 'filled_frame';
   return off < 0 ? 'short_by_more' : 'over_by_more';
 }
 
@@ -83,7 +93,7 @@ export function frameMiss(item: TenFrameItem | null, work: { placed: number; sho
 export interface LeverContext {
   /** Every item of the session, in order: a number still ahead of the learner stays out of a model or practice item. */
   session?: readonly TenFrameItem[];
-  /** decompose: the ways the learner already showed for this item's total (`splitKey`s). */
+  /** decompose, build_pair: the ways the learner already showed for this item's total (`splitKey`s). */
   shownWays?: ReadonlySet<string>;
 }
 
@@ -137,8 +147,8 @@ export function smallerBuild(item: TenFrameItem, band: TenFrameBand): TenFrameIt
 
 /** A model split of a total no split item still ahead asks for, so it shows no pair of any of them. */
 export function splitModel(item: TenFrameItem, session: readonly TenFrameItem[] = []): ModelFrame | null {
-  if (item.kind !== 'split') return null;
-  const used = answersAhead(item, session, ['split']);
+  if (!isPairKind(item.kind)) return null;
+  const used = answersAhead(item, session, [item.kind]);
   const total = [6, 7, 2, 8, 9, 10].find(t => !used.has(t));
   if (total === undefined) return null;
   const yellow = total >= 6 ? 2 : 1;
@@ -148,17 +158,17 @@ export function splitModel(item: TenFrameItem, session: readonly TenFrameItem[] 
 /** The ways the learner already showed for this total, in order; never a way they have not shown. Empty once every
  *  way is shown: then any split is right again (`judgeSplit`), so the shown ways would be answers. */
 export function waysShown(item: TenFrameItem, shownWays: ReadonlySet<string> = new Set()): TenFrameSplit[] {
-  if (item.kind !== 'split' || item.answer > 10 || shownWays.size >= waysToSplit(item.answer)) return [];
+  if (!isPairKind(item.kind) || item.answer > 10 || shownWays.size >= waysToSplit(item.answer)) return [];
   return Array.from(shownWays).map(key => key.split('+').map(Number)).filter(([a, b]) => a >= 1 && b >= 1 && a + b === item.answer)
     .map(([a, b]) => ({ a, b }));
 }
 
 /** A split of a smaller total (2 or more) that no split item still ahead asks for. */
 export function smallerTotal(item: TenFrameItem, band: TenFrameBand, session: readonly TenFrameItem[] = []): TenFrameItem | null {
-  if (item.kind !== 'split' || item.answer < 3) return null;
-  const used = answersAhead(item, session, ['split']);
+  if (!isPairKind(item.kind) || item.answer < 3) return null;
+  const used = answersAhead(item, session, [item.kind]);
   const total = smallerOrder(item.answer, 2).find(t => !used.has(t));
-  return total === undefined ? null : simpler(item, band, { type: 'split', targetCount: total });
+  return total === undefined ? null : simpler(item, band, { type: item.kind, targetCount: total });
 }
 
 // ── decompose_teen ─────────────────────────────────────────────────────────
@@ -252,7 +262,7 @@ export function smallerNumbers(item: TenFrameItem, band: TenFrameBand, session: 
 export function practiceItem(item: TenFrameItem, band: TenFrameBand, session: readonly TenFrameItem[] = []): TenFrameItem | null {
   switch (item.kind) {
     case 'build': case 'build_teen': return smallerBuild(item, band);
-    case 'split': return smallerTotal(item, band, session);
+    case 'split': case 'build_pair': return smallerTotal(item, band, session);
     case 'decompose_teen': return smallerTeen(item, band);
     case 'make_ten': return nearTen(item, band, session);
     case 'subitize': return fewerDots(item, band, session);
@@ -301,6 +311,21 @@ export function tenFrameLevers(item: TenFrameItem | null, pulled: readonly strin
         'Shows beside the frame small pictures of the ways the learner already showed for this number. Never a way they have not shown.'));
       push(smallerTotal(item, band, session), () => lever(SMALLER_TOTAL_LEVER, 'simplify', 'shown', ['none_flipped', 'all_flipped'],
         'The learner cannot make two groups from this many yet.', `Opens a split of a smaller group first. ${back}`));
+      return levers;
+    case 'build_pair':
+      // Bare at every tier: the count of what is on the frame is half the task, so it comes on a miss.
+      push(true, () => lever(COUNT_LEVER, 'help', 'both', ['one_short', 'one_over', 'filled_frame'],
+        'The learner miscounts while making the number: one too many, one too few, or loses track.',
+        'Shows under the frame how many counters are on it so far, red and yellow together. Never how many of each colour.'));
+      push(splitModel(item, session), () => lever(SPLIT_MODEL_LEVER, 'help', 'both', ['one_colour'],
+        'The learner makes the number all in one colour, so there is only one group.',
+        'Shows a small model frame beside this one with a different number made of red and yellow. Never a pair for this number.'));
+      push(waysShown(item, ctx.shownWays).length, () => lever(WAYS_LEVER, 'help', 'shown', ['same_way_again'],
+        'The learner makes the same pair they already made.',
+        'Shows beside the frame small pictures of the ways the learner already made this number. Never a way they have not made.'));
+      push(smallerTotal(item, band, session), () => lever(SMALLER_TOTAL_LEVER, 'simplify', 'shown',
+        ['short_by_more', 'over_by_more', 'one_colour'],
+        'The learner cannot make this number from two colours yet.', `Opens a smaller number to make from red and yellow first. ${back}`));
       return levers;
     case 'decompose_teen':
       push(true, () => lever(COUNT_LEVER, 'help', 'both', ['one_short', 'one_over'],
@@ -360,7 +385,7 @@ export interface LeverView {
   /** The frame whose top row is outlined and marked 5, or -1. */
   five: number;
   models: ModelFrame[];
-  /** decompose: the learner's own ways for this total. */
+  /** decompose, build_pair: the learner's own ways for this total. */
   ways: TenFrameSplit[];
   emptyGlow: boolean;
   hideEmpty: boolean;
@@ -395,6 +420,7 @@ export function leverFacts(item: TenFrameItem | null, pulled: readonly string[],
     view.five >= 0 && 'The top row of the frame is outlined and marked 5.',
     ...view.models.map(m => `A small model ${m.whole === 5 ? 'five-frame' : 'frame'} beside the item shows: ${m.says}`),
     view.ways.length && `Beside the frame, the ways the learner already showed: ${view.ways.map(w => `${w.a} red and ${w.b} yellow`).join('; ')}.`,
+    item.kind === 'build_pair' && pulled.includes(COUNT_LEVER) && 'Under the frame, a count shows how many counters are on it, both colours together.',
     view.emptyGlow && 'The empty boxes on the frame pulse.',
     view.hideEmpty && 'During the quick look the empty boxes fade, so only the counters stand out.',
     view.longLook && 'The next quick look lasts twice as long.',

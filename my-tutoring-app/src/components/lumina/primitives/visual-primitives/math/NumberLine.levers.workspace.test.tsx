@@ -116,17 +116,34 @@ it('numbers the learner\'s own wrong jump in the same commit, and records the le
   expect(levers(h).every(l => !l.pulled)).toBe(true);
 });
 
-it('a jump of 1 offers no lever until the learner places a jump away from the start, and never draws a model hop', () => {
-  const h = mount([jump('j0', 8, 1)]);
-  expect(h.offered('pull_lever')).toBeUndefined();
+it('a jump of 1: placed on the start, the which-way arrow answers it in one commit; never a model hop (J12 show_jump-2)', () => {
+  const h = mount([jump('j0', 8, 1), jump('j1', 15, 4)]);
+  expect(levers(h).map(l => [l.id, l.kind, l.pulled])).toEqual([['which_way', 'help', false]]);
   h.tap(8); h.check();
-  // Placed on the start itself: there is still nothing safe to number.
-  expect(h.offered('pull_lever')).toBeUndefined();
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: false, miss: 'wrong_direction' });
+  expect(observerLever(h.state(), true)).toBe('which_way');
+  const arrow = () => h.view.container.querySelector('[data-lever="which-way"]');
+  expect(arrow()).toBeNull();
+  // Refused: a lever this item does not declare. The line, the levers and the attempts are unchanged.
+  const before = { levers: JSON.stringify(levers(h)), attempts: h.state().task!.workspace!.attempts.length, svg: h.view.container.innerHTML };
+  expect(h.dispatch('pull_lever', { lever: 'numbered_hops' }).status).toBe('blocked');
+  expect({ levers: JSON.stringify(levers(h)), attempts: h.state().task!.workspace!.attempts.length, svg: h.view.container.innerHTML }).toEqual(before);
+  const receipt = h.dispatch('pull_lever', { lever: 'which_way' });
+  expect(receipt.status).toBe('committed');
+  expect(arrow()?.getAttribute('data-dir')).toBe('left');
+  expect(receipt.state.task!.demand.onScreen).toBe('A short arrow at 8 points left, the way this jump goes; it is shorter than one hop.');
+  expect(JSON.stringify(receipt.state.task!.demand)).not.toMatch(/[^0-9]7[^0-9]/);
+
+
   h.dispatch('retry');
-  h.tap(6); h.check();
-  expect(h.dispatch('pull_lever', { lever: 'numbered_hops' }).status).toBe('committed');
-  expect(h.hopLabels('learner-hops')).toEqual(['1', '2']);
+  expect(arrow()).not.toBeNull();
   expect(h.hopLabels('model-hop')).toEqual([]);
+  h.tap(7); h.check();
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ itemId: 'j0', correct: true, assisted: true, levers: ['which_way'] });
+  h.dispatch('advance');
+  expect(h.state().task!.itemId).toBe('j1');
+  expect(arrow()).toBeNull();
+  expect(levers(h).map(l => l.id)).toEqual(['numbered_hops', 'simpler_jump']);
 });
 
 it('easy starts with the hops lever pulled: no worked arc to the landing, and not recorded as a pull', () => {

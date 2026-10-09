@@ -69,6 +69,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "ten-frame": {
         "build":     PriorConfig(1.5, "Concrete: place counters on frame"),
         "decompose": PriorConfig(2.0, "Concrete: partition a group into two colour groups, a different pair each time (K.OA.3)"),
+        "build_pair": PriorConfig(2.1, "Concrete open build: make N from red and yellow counters on an empty frame, a different pair each time (K.OA.3)"),
         "build_teen": PriorConfig(2.0, "Concrete: place the ones beside a given ten to make 11-19 (K.NBT.1)"),
         "subitize":  PriorConfig(2.5, "Perceptual: flash count identification"),
         "decompose_teen": PriorConfig(3.0, "Concrete: find the ten inside a scattered teen group of 11-19 (K.NBT.1)"),
@@ -79,6 +80,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "identify":  PriorConfig(0.5, "Concrete: identify numbers on labeled 0-10 line"),
         "plot":      PriorConfig(1.5, "Concrete: place value on number line"),
         "jump":      PriorConfig(2.5, "Pictorial: show operation as movement"),
+        "build_hops": PriorConfig(2.6, "Open build: choose your own hops from a start to a stated number, then a different way (1.OA/2.OA addition as movement)"),
         "order":     PriorConfig(3.5, "Pictorial: sequence multiple values"),
         "between":   PriorConfig(4.5, "Transitional: estimate between marks"),
     },
@@ -121,6 +123,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "predict":       PriorConfig(3.0, "Pictorial: predict output for new input"),
         "discover_rule": PriorConfig(3.5, "Strategy: identify hidden function rule"),
         "create_rule":   PriorConfig(4.5, "Transitional: write rule for given I/O pairs"),
+        "make_rule":     PriorConfig(4.0, "Open build: make your own rule for one input-output pair, then a different one"),
     },
     "coordinate-graph": {
         "plot_point":     PriorConfig(-1.0, "Student clicks correct grid intersection for given coordinates"),
@@ -212,6 +215,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "polygon-area-builder": {
         "decompose":                       PriorConfig(1.5, "Rearrange a parallelogram into a rectangle; find base x height (conservation of area)."),
         "build_area":                      PriorConfig(1.6, "Open build: shade unit squares on an empty grid into one shape with a stated area, then a different shape with the same area (3.MD.C.5-6)."),
+        "build_perimeter":                 PriorConfig(2.4, "Open build: shade unit squares on an empty grid into one shape with a stated perimeter, then a different shape with the same perimeter (3.MD.D.8)."),
         "find_area_triangle_parallelogram": PriorConfig(2.5, "Compute area of a triangle (1/2 * b * h) or parallelogram (b * h) from labels."),
         "find_area_trapezoid":             PriorConfig(3.5, "Trapezoid area via average-of-bases 1/2 * (b1 + b2) * h."),
         "composite_area":                  PriorConfig(4.5, "Decompose an irregular figure into known rectangles and sum."),
@@ -455,8 +459,8 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "describe_scene":    PriorConfig(4.5, "Describe a fixed-perspective spatial relation aloud"),
     },
     "shape-composer": {
-        "free-create":     PriorConfig(-1.0, "Open-ended shape composition exploration"),
         "compose-match":   PriorConfig(-0.5, "Compose shapes to match a target silhouette"),
+        "free-create":     PriorConfig(-0.3, "Open build: compose your own picture from a recipe of shapes, all touching"),
         "compose-picture": PriorConfig(0.0, "Arrange shapes to compose a target picture"),
         "decompose":       PriorConfig(0.5, "Identify component shapes of a composite"),
         "how-many-ways":   PriorConfig(1.0, "Determine minimum pieces needed for composition"),

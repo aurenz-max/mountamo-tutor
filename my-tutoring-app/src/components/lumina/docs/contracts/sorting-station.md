@@ -98,6 +98,11 @@
 - **AMENDS R1's `sort_variety` probe.** That probe reads "the object set stays constant" across rounds. It now holds **within a set**, not across the lesson. The 3-per-set cap is the pedagogy the old global cap was really protecting — past three axes a draw invents perceptual ones (an observed draw sorted elephant/mouse/dog/horse by "Tall/Round"). Rounds are added by adding SETS, never by forcing a fourth axis onto one. `axisRank` also spends a set's rounds on category/type/size before shape/color.
 - **Probe:** `&count=5` at K on `sort_variety` ×2 → 5 rounds, every round's axis a real property of its own set; no round sorts by an axis the pictures do not show.
 
+### R13 — in-item levers never answer the item · OBSERVED (added 2026-10-08)
+- **Property:** every lever in `sortingStationLevers.ts` changes the screen without naming a group, card, rule or count. Leak rules in code: `tray_pictures` is withheld when a tray picture is the card's own picture; `show_trays` is withheld when a tray is named with a way to sort, and its trays stay EMPTY on a pick-the-rule ask (filled, they are the next asks' answers); `tray_examples` shows only cards credited in an EARLIER challenge by the same rule and never a card on the current page (sort-variety reuses its set); `odd_model` is a fixed shape row, never the cards; `tap_marks`/`check_boxes` show only the learner's own taps. Simplify (`three_cards`, `far_compare`) opens an ungraded item built from a fixed picture pool that never shares a picture with the page; the full item comes back and only its unassisted answer is credited. The count badge rule (`hidesCounts`) is untouched.
+- **Demanded by:** `/add-support-tiers`; the tutor/JEV `pull_lever` operation.
+- **Probe:** `sortingStationLevers.test.ts` (miss → lever over every saved payload item; leak rules; builders fire on every saved odd/compare item) + `SortingStation.levers.workspace.test.tsx`.
+
 ## Conflicts
 
 ### C1 — content variety vs R1 rule stability — RESOLVED 2026-07-14 (generator fix, no fork needed)
@@ -181,3 +186,4 @@ sort, 0.683) is fully served today — the other close matches are gaps:
   checks green on both saved probe draws; suites 5/5 new + 11/11 existing;
   `typecheck:lumina` 0. Not verified: any browser run.
 - 2026-09-27 — handoff 19 (shared runtime, `/add-live-tutor-tools`): the workspace reads the eval mode from the wrapper's lesson pin, not a mode rebuilt in this primitive (slice 1), and publishes the scene after every render, so the scene setter drops its publish call and default fields (slice 3). The scripted runtime registration keeps its mode as `scriptedEvalMode` until that path is deleted. Wiring only: no content, check, miss, verdict or tutor input changed; the sweep over saved payloads (J1-J8) and this primitive's tests pass. Compatible: no requirement changed.
+- 2026-10-08 — `/add-support-tiers` (class sweep): in-item levers on all seven modes, R13 added. Additive: no item, ask, judge input or K presentation changed; the scripted path gets no levers. Report: `qa/eval-reports/sorting-station-levers-2026-10-08.md`.

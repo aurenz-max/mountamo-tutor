@@ -1,0 +1,138 @@
+{
+  "recipes": [
+    [
+      {
+        "shape": "square",
+        "count": 2
+      }
+    ],
+    [
+      {
+        "shape": "square",
+        "count": 2
+      },
+      {
+        "shape": "triangle",
+        "count": 1
+      }
+    ],
+    [
+      {
+        "shape": "triangle",
+        "count": 2
+      },
+      {
+        "shape": "square",
+        "count": 1
+      }
+    ],
+    [
+      {
+        "shape": "circle",
+        "count": 1
+      },
+      {
+        "shape": "square",
+        "count": 3
+      }
+    ]
+  ],
+  "checks": [
+    {
+      "name": "routed: every item free-create with a recipe",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "recipes distinct",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "item 1 opens empty, recipe drawn",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "extra shape -> extra_piece words",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "removed the extra piece",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "pieces apart -> not_touching words",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "the build is kept after a miss",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "joined row passes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "item 2 opens empty",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "stacked -> overlapping words",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "item 2 row passes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "watcher produced lines",
+      "pass": true,
+      "detail": "3 of 3 looks"
+    },
+    {
+      "name": "watcher lines pass the leak rules",
+      "pass": true,
+      "detail": "[{\"state\":\"recipe + extra, apart\",\"line\":\"Ooh, the purple triangle and blue squares are making shapes!\"},{\"state\":\"row\",\"line\":\"Ooh, bright blue squares are starting to form a wide shape!\"},{\"state\":\"row 2\",\"line\":\"Ooh, blue squares and a purple triangle are sitting down low!\"}]"
+    },
+    {
+      "name": "no horizontal scroll at 390",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "no page errors",
+      "pass": false,
+      "detail": "Error: <ellipse> attribute rx: Expected length, \"undefined\". | Error: <circle> attribute r: Expected length, \"undefined\". | Error: <ellipse> attribute rx: Expected length, \"undefined\"."
+    }
+  ],
+  "watcherLines": [
+    {
+      "state": "recipe + extra, apart",
+      "line": "Ooh, the purple triangle and blue squares are making shapes!"
+    },
+    {
+      "state": "row",
+      "line": "Ooh, bright blue squares are starting to form a wide shape!"
+    },
+    {
+      "state": "row 2",
+      "line": "Ooh, blue squares and a purple triangle are sitting down low!"
+    }
+  ],
+  "errors": [
+    "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+    "Error: <circle> attribute r: Expected length, \"undefined\".",
+    "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+    "Error: <ellipse> attribute ry: Expected length, \"undefined\".",
+    "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+  ]
+}

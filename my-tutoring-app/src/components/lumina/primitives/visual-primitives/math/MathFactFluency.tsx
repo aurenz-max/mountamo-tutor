@@ -579,20 +579,24 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
   const modelUnderFact = !currentChallenge ? null
     : (currentChallenge.type === 'equation-solve' || currentChallenge.type === 'match') && leverOn(DOTS_LEVER) ? 'fact-dots'
       : currentChallenge.type === 'missing-number' && leverOn(WHOLE_LEVER) ? 'part-whole' : null;
-  /** The picture the fact is read from: as drawn, or redrawn by `two_parts` / `count_marks` (never on fingers). */
+  /**
+   * The picture the fact is read from: as drawn, or redrawn by `two_parts` / `count_marks`. Hands cannot be tapped
+   * or split, so on a fingers picture the lever's dots are drawn under the hands.
+   */
   const renderPicture = (type: string) => {
     const c = currentChallenge!;
     const count = c.visualCount ?? c.correctAnswer;
     const parts = c.type === 'visual-fact' && leverOn(PARTS_LEVER);
-    const marks = leverOn(MARKS_LEVER) && type !== 'fingers';
-    if (type === 'fingers' || (!parts && !marks)) return <VisualAid type={type} count={count} />;
+    const marks = leverOn(MARKS_LEVER);
+    if (!parts && !marks) return <VisualAid type={type} count={count} />;
     const onTap = marks ? (i: number) => {
       if (learnerBlocked()) return;
       SoundManager.tick();
       setTapped(prev => prev.includes(i) ? prev : [...prev, i]);
     } : undefined;
-    return <LeverDots lever={parts ? 'two-parts' : 'count-marks'} segments={parts ? factModel(c) : [{ count, tone: 'plain' }]}
+    const dots = <LeverDots lever={parts ? 'two-parts' : 'count-marks'} segments={parts ? factModel(c) : [{ count, tone: 'plain' }]}
       tapped={marks ? tapped : undefined} onTap={onTap} />;
+    return type === 'fingers' ? <><VisualAid type={type} count={count} />{dots}</> : dots;
   };
 
   const renderChoiceButtons = (options: number[]) => (

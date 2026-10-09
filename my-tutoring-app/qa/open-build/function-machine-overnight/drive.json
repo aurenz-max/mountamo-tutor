@@ -1,0 +1,158 @@
+{
+  "pairs": [
+    [
+      2,
+      8,
+      "4*x"
+    ],
+    [
+      3,
+      6,
+      "2*x"
+    ],
+    [
+      20,
+      5,
+      "x/4"
+    ]
+  ],
+  "checks": [
+    {
+      "name": "routed: make_rule, every item a whole-number pair",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "item 1 ask states the pair",
+      "pass": true,
+      "detail": "Make a machine that turns 2 into 8."
+    },
+    {
+      "name": "item 1 opens empty, nothing to check",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "the stored machine is not on screen",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "the machine body shows the row as built",
+      "pass": true,
+      "detail": "f(x) = x + 7"
+    },
+    {
+      "name": "one over -> wrong_output naming what it gave",
+      "pass": true,
+      "detail": "Your machine turns 2 into 9, not 8. Change a tile and try again."
+    },
+    {
+      "name": "the output chute shows what the machine gave",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Try again keeps the build",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "fixed machine accepted as the first way",
+      "pass": true,
+      "detail": "Yes! f(x) = x + 6 turns 2 into 8."
+    },
+    {
+      "name": "first machine kept, ask turns to a different machine",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "row opens empty for the second machine",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "the same machine written another way -> same_machine",
+      "pass": true,
+      "detail": "That machine works the same as your first one: it gives the same output for every input. Make one that works differently. Hint: what could the machine do to 2: add something, take something away, multiply, or divide?"
+    },
+    {
+      "name": "Start over clears the row",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "a different machine passes; both fed one more number",
+      "pass": true,
+      "detail": "Both your machines turn 2 into 8. Feed them 5: f(x) = x + 6 gives 11 f(x) = 4 × x gives 20 Ready for the next one?"
+    },
+    {
+      "name": "item 2 opens empty with its own ask",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "a bare number -> no_input",
+      "pass": true,
+      "detail": "That machine gives the same number whatever goes in. Use x, so what goes in changes what comes out."
+    },
+    {
+      "name": "a dangling sign -> not_a_rule",
+      "pass": true,
+      "detail": "The machine cannot run that yet. Every sign needs a number or x on both sides. Hint: what could the machine do to 3: add something, take something away, multiply, or divide?"
+    },
+    {
+      "name": "item 2: two machines pass",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "miss words never write a rule",
+      "pass": true,
+      "detail": "[{\"kind\":\"wrong_output\",\"text\":\"Your machine turns 2 into 9, not 8. Change a tile and try again.\"},{\"kind\":\"same_machine\",\"text\":\"That machine works the same as your first one: it gives the same output for every input. Make one that works differently. Hint: what could the machine do to 2: add something, take something away, multiply, or divide?\"},{\"kind\":\"no_input\",\"text\":\"That machine gives the same number whatever goes in. Use x, so what goes in changes what comes out.\"},{\"kind\":\"not_a_rule\",\"text\":\"The machine cannot run that yet. Every sign needs a number or x on both sides. Hint: what could the machine do to 3: add something, take something away, multiply, or divide?\"}]"
+    },
+    {
+      "name": "keypad fits a 360 px card, every key >= 44 px",
+      "pass": true,
+      "detail": "{\"ok\":true,\"over\":0,\"small\":0}"
+    },
+    {
+      "name": "no page errors",
+      "pass": false,
+      "detail": "Error: <ellipse> attribute rx: Expected length, \"undefined\". | Error: <circle> attribute r: Expected length, \"undefined\". | Error: <ellipse> attribute rx: Expected length, \"undefined\"."
+    }
+  ],
+  "verdicts": [
+    {
+      "kind": "wrong_output",
+      "text": "Your machine turns 2 into 9, not 8. Change a tile and try again."
+    },
+    {
+      "kind": "way",
+      "text": "Yes! f(x) = x + 6 turns 2 into 8."
+    },
+    {
+      "kind": "same_machine",
+      "text": "That machine works the same as your first one: it gives the same output for every input. Make one that works differently. Hint: what could the machine do to 2: add something, take something away, multiply, or divide?"
+    },
+    {
+      "kind": "no_input",
+      "text": "That machine gives the same number whatever goes in. Use x, so what goes in changes what comes out."
+    },
+    {
+      "kind": "not_a_rule",
+      "text": "The machine cannot run that yet. Every sign needs a number or x on both sides. Hint: what could the machine do to 3: add something, take something away, multiply, or divide?"
+    },
+    {
+      "kind": "way",
+      "text": "Yes! f(x) = 2 × x turns 3 into 6."
+    }
+  ],
+  "errors": [
+    "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+    "Error: <circle> attribute r: Expected length, \"undefined\".",
+    "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+    "Error: <ellipse> attribute ry: Expected length, \"undefined\"."
+  ]
+}

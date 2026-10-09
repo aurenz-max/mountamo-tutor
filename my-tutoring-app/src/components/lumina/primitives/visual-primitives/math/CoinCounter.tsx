@@ -30,7 +30,10 @@ import { withWorkspaceController } from '../../../components/live-activity/runti
 import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
   from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import { COIN_CENTS, coinMiss, describeCoinWork, workspaceAssignment, workspaceScene, type CoinView } from './coinCounterWorkspace';
-import { RUNNING_TOTAL_LEVER, VALUE_TAGS_LEVER, coinCounterLevers, leverFacts, runningValues, smallerAmount } from './coinCounterLevers';
+import {
+  CHANGE_BAR_LEVER, COIN_VALUES_LEVER, PRACTICE_NOTE, RUNNING_TOTAL_LEVER, SIZE_ROW_LEVER, SKIP_STRIP_LEVER, SORT_LEVER, VALUE_TAGS_LEVER,
+  changeBar, coinCounterLevers, leverFacts, practiceItem, runningValues, sizeOrder, skipStrip, sortedRows, type CoinLeverView,
+} from './coinCounterLevers';
 import { CoinBuildTray, MAX_TRAY } from './CoinBuildTray';
 import { useBuildWatcher } from '../../build-layer/buildLayer';
 
@@ -319,15 +322,25 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   });
 
   // ── State ──────────────────────────────────────────────────────────
-  // show-amount levers (`coinCounterLevers.ts`), keyed by the session item they were pulled on, and the easier
-  // ask a simplify lever put on screen in its place. The item starts bare: no lever comes from the tier.
+  // Levers (`coinCounterLevers.ts`), keyed by the session item they were pulled on, and the easier ask a simplify
+  // lever put on screen in its place. A tier aid already on screen (make-amount's running total) counts as pulled.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<CoinCounterChallenge | null>(null);
   const sessionChallenge = challenges[currentChallengeIndex] ?? null;
   /** What is on screen: the easier ask while a simplify lever holds it, else the session item. */
   const currentChallenge = practice ?? sessionChallenge;
   const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  const leverView: CoinLeverView = {
+    valuesShown: showCoinValues, runningTotalShown: showRunningTotal,
+    enactedTap: gradeBand === 'K' && sessionChallenge?.type === 'count' && sessionChallenge.countMode === 'like',
+  };
+  const itemLevers = practice ? [] : coinCounterLevers(sessionChallenge, pulledLevers, leverView);
+  /** A runtime pull on the session item; never on a practice item. */
   const leverOn = (id: string) => !practice && pulledLevers.includes(id);
+  /** Coin values on the coins (never on identify): the tier's, or the coin_values lever. */
+  const valuesOn = showCoinValues || leverOn(COIN_VALUES_LEVER);
+  /** make-amount's running total: the tier's, or the lever. */
+  const makeTotalOn = showRunningTotal || leverOn(RUNNING_TOTAL_LEVER);
 
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
@@ -758,22 +771,21 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     selectedCoin, countInput, counted: countedOrder.length,
     enacted: isEnactedCount ? 'tap' : isEnactedCountG1 ? 'tag' : null,
     placed: placedCoins, selectedGroup, changeInput,
-    valuesShown: showCoinValues && currentChallenge?.type !== 'identify',
-    runningTotalShown: showRunningTotal,
+    valuesShown: valuesOn && currentChallenge?.type !== 'identify',
+    runningTotalShown: currentChallenge?.type === 'make-amount' ? makeTotalOn : showRunningTotal,
   };
   coinView.current = currentView;
 
   // Workspace path: what the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation. Only show-amount declares levers.
+  // W1 offers no demonstration targets and no presentation. Every mode declares its levers.
   useLayoutEffect(() => {
     if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
     const scene = workspaceScene(currentChallenge, coinView.current);
-    if (sessionChallenge.type !== 'show-amount') { workspace.current = { ...scene }; return; }
-    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
-    const levers = practice ? [] : coinCounterLevers(sessionChallenge, pulledLevers);
+    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers, leverView);
+    const levers = itemLevers;
     workspace.current = {
       ...scene,
-      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id) => {
         const lever = levers.find(l => l.id === id);
@@ -781,15 +793,16 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const easier = smallerAmount(sessionChallenge);
+          const easier = practiceItem(sessionChallenge);
           if (!easier) return 'This item has no easier ask; try a help lever.';
-          setLeverState(pulled); setPlacedCoins([]); setFeedback(''); setFeedbackType(''); setPractice(easier);
+          // The practice item and the full item share no work: both start blank.
+          setLeverState(pulled); resetDomainState(); setPractice(easier);
           return { practice: workspaceAssignment(easier) };
         }
         setLeverState(pulled);
         return true;
       },
-      endPractice: () => { setPlacedCoins([]); setFeedback(''); setFeedbackType(''); setPractice(null); },
+      endPractice: () => { resetDomainState(); setPractice(null); },
     };
   });
 
@@ -858,14 +871,43 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
 
   const renderCoinGroup = (coins: CoinDef[], label?: string) => {
     const expanded = expandCoins(coins);
+    // The sort_coins lever: one row per kind, most valuable first only when values are on screen.
+    const rows = leverOn(SORT_LEVER) ? sortedRows(coins, valuesOn) : null;
     return (
       <div className="flex flex-col items-center gap-2">
         {label && <span className="text-slate-400 text-sm font-medium">{label}</span>}
-        <div className="flex flex-wrap gap-2 justify-center p-3 rounded-xl bg-slate-800/30 border border-white/5 min-h-[60px]">
-          {expanded.map((coin, i) => (
-            <CoinVisual key={`${coin}-${i}`} type={coin} disabled showValue={showCoinValues} />
-          ))}
-        </div>
+        {rows ? (
+          <div className="flex flex-col gap-2 p-3 rounded-xl bg-slate-800/30 border border-white/5 min-h-[60px]">
+            {rows.map(row => (
+              <div key={row.type} data-lever="sorted-row" data-kind={row.type} className="flex flex-wrap gap-2 justify-center">
+                {expandCoins([row]).map((coin, i) => (
+                  <CoinVisual key={`${coin}-${i}`} type={coin} disabled showValue={valuesOn} />
+                ))}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2 justify-center p-3 rounded-xl bg-slate-800/30 border border-white/5 min-h-[60px]">
+            {expanded.map((coin, i) => (
+              <CoinVisual key={`${coin}-${i}`} type={coin} disabled showValue={valuesOn} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  /** The skip_strip lever: a strip counting by one coin's value, past the total, nothing marked. */
+  const renderSkipStrip = () => {
+    const strip = leverOn(SKIP_STRIP_LEVER) && currentChallenge ? skipStrip(currentChallenge) : null;
+    if (!strip) return null;
+    return (
+      <div data-lever="skip-strip" className="flex flex-wrap justify-center gap-1">
+        {strip.map(n => (
+          <span key={n} data-step className="min-w-9 px-1.5 py-1 rounded-md bg-slate-800/60 border border-white/10 text-center text-xs text-slate-200 tabular-nums">
+            {n}
+          </span>
+        ))}
       </div>
     );
   };
@@ -873,10 +915,15 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   const renderIdentifyChallenge = () => {
     if (!currentChallenge) return null;
     const coinOptions = currentChallenge.options || ['penny', 'nickel', 'dime', 'quarter'] as CoinType[];
+    // The size_row lever: every option on one shelf, smallest first, bottoms even. Each keeps its own label.
+    const sizeRow = leverOn(SIZE_ROW_LEVER);
+    const order = sizeRow ? sizeOrder(coinOptions) : coinOptions.map((_, i) => i);
     return (
       <div className="space-y-4">
-        <div className="flex flex-wrap gap-3 justify-center">
-          {coinOptions.map((coin, i) => (
+        <div {...(sizeRow ? { 'data-lever': 'size-row' } : {})}
+          className={sizeRow ? 'flex gap-3 justify-center items-end border-b-4 border-amber-700/60 pb-1 px-4 mx-auto w-fit'
+            : 'flex flex-wrap gap-3 justify-center'}>
+          {order.map(i => [coinOptions[i], i] as const).map(([coin, i]) => (
             <CoinVisual
               key={coin}
               type={coin}
@@ -931,7 +978,7 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
                   onClick={() => handleEnactedCoinTap(i)}
                   selected={counted}
                   disabled={isCurrentChallengeCorrect}
-                  showValue={showCoinValues}
+                  showValue={valuesOn}
                   ariaLabel={`Coin ${i + 1}`}
                   className={wrongCoin === i ? motion.shake : ''}
                 />
@@ -987,7 +1034,7 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
                   onClick={() => handleEnactedCoinTap(i)}
                   selected={counted}
                   disabled={isCurrentChallengeCorrect}
-                  showValue={showCoinValues}
+                  showValue={valuesOn}
                   ariaLabel={`Coin ${i + 1}`}
                   className={wrongCoin === i ? motion.shake : ''}
                 />
@@ -1003,6 +1050,7 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
             );
           })}
         </div>
+        {renderSkipStrip()}
 
         {!allEnactedCounted ? (
           /* Short cue in house style ("Tap a coin to add it"); its spoken twin is
@@ -1037,6 +1085,7 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     return (
       <div className="space-y-4">
         {renderCoinGroup(coins)}
+        {renderSkipStrip()}
         <div className="flex items-center gap-3 justify-center">
           <span className="text-slate-400 text-sm">Total:</span>
           <LuminaInput
@@ -1060,6 +1109,7 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     if (!currentChallenge) return null;
     const available = currentChallenge.availableCoins || ['penny', 'nickel', 'dime', 'quarter'] as CoinType[];
     const target = currentChallenge.targetAmount ?? 0;
+    const placedTags = leverOn(VALUE_TAGS_LEVER) ? runningValues(placedCoins) : null;
 
     return (
       <div className="space-y-4">
@@ -1080,7 +1130,7 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
                 setPlacedCoins((prev) => [...prev, coin]);
               }}
               disabled={isCurrentChallengeCorrect}
-              showValue={showCoinValues}
+              showValue={valuesOn}
               ariaLabel={`Add a ${coin}`}
             />
           ))}
@@ -1091,16 +1141,17 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
         <div className="p-3 rounded-xl bg-slate-800/30 border border-white/5 min-h-[60px]">
           <div className="flex items-center justify-between mb-2">
             <span className="text-slate-400 text-xs">Your coins:</span>
-            {showRunningTotal && (
-              <span className={`text-sm font-bold ${placedTotal === target ? 'text-emerald-300' : 'text-slate-300'}`}>
+            {makeTotalOn && (
+              <span data-lever={leverOn(RUNNING_TOTAL_LEVER) ? 'running-total' : undefined}
+                className={`text-sm font-bold ${placedTotal === target ? 'text-emerald-300' : 'text-slate-300'}`}>
                 {formatCents(placedTotal)}
               </span>
             )}
           </div>
           <div className="flex flex-wrap gap-2 justify-center">
             {placedCoins.map((coin, i) => (
+              <div key={`placed-${i}`} className="relative">
               <CoinVisual
-                key={`placed-${i}`}
                 type={coin}
                 onClick={() => {
                   if (isCurrentChallengeCorrect || learnerBlocked()) return;
@@ -1112,10 +1163,17 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
                   });
                 }}
                 disabled={isCurrentChallengeCorrect}
-                showValue={showCoinValues}
+                showValue={valuesOn}
                 ariaLabel={`Take out a ${coin}`}
                 className="hover:ring-2 hover:ring-red-400/50"
               />
+              {/* The value_tags lever: what the coins add up to at this coin, in the order put in. */}
+              {placedTags && (
+                <span data-lever="value-tag" className="absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] px-1 rounded-full bg-orange-500 text-white text-[11px] font-bold flex items-center justify-center pointer-events-none select-none">
+                  {placedTags[i]}
+                </span>
+              )}
+              </div>
             ))}
             {placedCoins.length === 0 && (
               <span className="text-slate-600 text-sm py-2">Tap coins above to add them here</span>
@@ -1155,14 +1213,14 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
                 setPlacedCoins((prev) => [...prev, coin]);
               }}
               disabled={!buildOpen || full}
-              showValue={showCoinValues}
+              showValue={valuesOn}
               ariaLabel={`Add a ${coin}`}
             />
           ))}
         </div>
         <p className="text-slate-500 text-xs text-center">Tap a coin to put it on your tray. Tap a coin on the tray to take it off.</p>
         <div className="flex justify-center">
-          <CoinBuildTray ref={trayRef} coins={placedCoins} valuesShown={showCoinValues}
+          <CoinBuildTray ref={trayRef} coins={placedCoins} valuesShown={valuesOn}
             tags={leverOn(VALUE_TAGS_LEVER) ? runningValues(placedCoins) : null} disabled={!buildOpen}
             onRemove={(i) => {
               if (!buildOpen) return;
@@ -1245,6 +1303,25 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     );
   };
 
+  /** The change_bar lever: a bar for what was paid, the cost shaded, the rest "?" with unlabelled ticks every 5¢.
+   *  Its only numbers are the paid amount and the cost, both already on screen (`changeBarLabels`). */
+  const renderChangeBar = () => {
+    const bar = leverOn(CHANGE_BAR_LEVER) && currentChallenge ? changeBar(currentChallenge) : null;
+    if (!bar) return null;
+    const W = 300, X0 = 10, L = 280, x = (c: number) => X0 + (c / bar.paid) * L;
+    return (
+      <svg data-lever="change-bar" viewBox={`0 0 ${W} 64`} width={W} height={64} className="mx-auto max-w-full"
+        role="img" aria-label="A bar for what was paid, the cost shaded">
+        <rect x={X0} y={8} width={L} height={24} rx={4} fill="#1e293b" stroke="#94a3b8" />
+        <rect x={X0} y={8} width={x(bar.cost) - X0} height={24} rx={4} fill="#f97316" fillOpacity={0.6} />
+        {bar.ticks.map(t => <line key={t} x1={x(t)} x2={x(t)} y1={22} y2={32} stroke="#cbd5e1" strokeWidth={1.5} />)}
+        <text x={(x(bar.cost) + X0 + L) / 2} y={24} fontSize={13} fill="#6ee7b7" textAnchor="middle" fontWeight="bold">?</text>
+        <text x={x(bar.cost)} y={48} fontSize={11} fill="#fdba74" textAnchor="middle">{formatCents(bar.cost)}</text>
+        <text x={X0 + L} y={48} fontSize={11} fill="#93c5fd" textAnchor="end">{formatCents(bar.paid)}</text>
+      </svg>
+    );
+  };
+
   const renderMakeChangeChallenge = () => {
     if (!currentChallenge) return null;
     const paid = currentChallenge.paidAmount ?? 0;
@@ -1268,6 +1345,7 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
             <span className="text-xl font-bold text-emerald-300">?</span>
           </div>
         </div>
+        {renderChangeBar()}
         <div className="flex items-center gap-3 justify-center">
           <LuminaInput
             type="number"
@@ -1359,6 +1437,7 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
         {currentChallenge && !allChallengesComplete && (
           <div className="space-y-4">
             {/* Instruction */}
+            {practice && <div className="text-center text-xs text-amber-300" data-practice>Practice</div>}
             <LuminaPanel className="p-3 rounded-xl">
               <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
             </LuminaPanel>

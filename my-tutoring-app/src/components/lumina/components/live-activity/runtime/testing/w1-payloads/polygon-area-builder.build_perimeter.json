@@ -1,0 +1,61 @@
+{
+ "source": "qa/open-build/polygon-area-builder-overnight/generation.json#g3",
+ "primitiveId": "polygon-area-builder",
+ "evalMode": "build_perimeter",
+ "data": {
+  "title": "Building Shapes with Fixed Perimeter",
+  "description": "Practice creating different geometric shapes on a grid that share the same given perimeter. Explore how figures with equal perimeters can have different areas.",
+  "challengeType": "build_perimeter",
+  "gradeBand": "3",
+  "challenges": [
+   {
+    "type": "build_perimeter",
+    "figureType": "grid",
+    "targetPerimeter": 8,
+    "shapesAsked": 1,
+    "expectedArea": 8,
+    "unitLabel": "units",
+    "narration": "Each side of a square on the grid is one unit long.",
+    "instruction": "Make a shape with a perimeter of 8 units.",
+    "hint": "Walk around the outside of your shape and count each side of a square as you pass it.",
+    "id": "pab-1"
+   },
+   {
+    "type": "build_perimeter",
+    "figureType": "grid",
+    "targetPerimeter": 10,
+    "shapesAsked": 1,
+    "expectedArea": 10,
+    "unitLabel": "units",
+    "narration": "Each side of a square on the grid is one unit long.",
+    "instruction": "Make a shape with a perimeter of 10 units.",
+    "hint": "Walk around the outside of your shape and count each side of a square as you pass it.",
+    "id": "pab-2"
+   },
+   {
+    "type": "build_perimeter",
+    "figureType": "grid",
+    "targetPerimeter": 12,
+    "shapesAsked": 2,
+    "expectedArea": 12,
+    "unitLabel": "units",
+    "narration": "Each side of a square on the grid is one unit long.",
+    "instruction": "Make a shape with a perimeter of 12 units. Then make a different shape with the same perimeter.",
+    "hint": "Walk around the outside of your shape and count each side of a square as you pass it.",
+    "id": "pab-3"
+   },
+   {
+    "type": "build_perimeter",
+    "figureType": "grid",
+    "targetPerimeter": 16,
+    "shapesAsked": 2,
+    "expectedArea": 16,
+    "unitLabel": "units",
+    "narration": "Each side of a square on the grid is one unit long.",
+    "instruction": "Make a shape with a perimeter of 16 units. Then make a different shape with the same perimeter.",
+    "hint": "Walk around the outside of your shape and count each side of a square as you pass it.",
+    "id": "pab-4"
+   }
+  ]
+ }
+}

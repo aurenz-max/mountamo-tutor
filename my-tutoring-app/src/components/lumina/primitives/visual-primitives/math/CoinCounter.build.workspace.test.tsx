@@ -180,7 +180,8 @@ it('misses, lever text and catalog wiring for the build', () => {
   expect(levers.every(l => /tray|amount/i.test(l.does))).toBe(true);
   expect(smallerAmount(SHOW)).toMatchObject({ id: 'a~smaller', targetAmount: 8 });
   expect(smallerAmount(smallerAmount(SHOW)!)).toBeNull();
-  expect(coinCounterLevers({ ...SHOW, type: 'make-amount' }, [])).toEqual([]);
+  // make-amount has its own levers; their text names putting coins in, never the tray.
+  expect(coinCounterLevers({ ...SHOW, type: 'make-amount' }, []).map(l => l.id)).toEqual(['running_total', 'value_tags', 'smaller_amount']);
 
   const entry = getComponentById('coin-counter')!;
   const mode = entry.evalModes!.find(m => m.evalMode === 'show-amount')!;

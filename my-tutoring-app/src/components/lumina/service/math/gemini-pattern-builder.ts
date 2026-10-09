@@ -11,6 +11,8 @@ import {
 } from "../evalMode";
 import { buildScopePromptSection } from "../scopeContext";
 
+import { createInstruction, repeatKey, tokensNeeded, type CreateShape } from '../../primitives/visual-primitives/math/patternBuilderWorkspace';
+
 // ---------------------------------------------------------------------------
 // Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
 // ---------------------------------------------------------------------------
@@ -137,6 +139,20 @@ function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): 
 }
 
 // ---------------------------------------------------------------------------
+// create (open build): the asked shape is CODE-OWNED
+// ---------------------------------------------------------------------------
+
+/** The shapes a session's create items ask for, in order: K-1 the three two-token shapes, grades 2-3 all five. */
+export function createShapesFor(count: number, gradeBand: 'K-1' | '2-3'): CreateShape[] {
+  const ladder: CreateShape[] = gradeBand === 'K-1' ? ['AB', 'ABB', 'AAB'] : ['AB', 'ABB', 'AAB', 'ABC', 'AABB'];
+  return Array.from({ length: count }, (_, i) => ladder[i < ladder.length ? i : 1 + ((i - ladder.length) % (ladder.length - 1))]);
+}
+
+const CREATE_FALLBACK_TOKENS: Record<string, string[]> = {
+  colors: ['red', 'blue', 'yellow', 'green'], shapes: ['circle', 'square', 'triangle', 'star'],
+};
+
+// ---------------------------------------------------------------------------
 // Challenge type documentation registry
 // ---------------------------------------------------------------------------
 
@@ -171,12 +187,10 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
   create: {
     promptDoc:
-      `"create": Student builds their own pattern from available tokens. `
-      + `No specific answer required — open-ended. Provide 4-6 token options. `
-      + `The builder accepts ANY row of 4+ tokens in which one starting part repeats, so the instruction must invite the `
-      + `child's OWN repeating pattern and must NOT require a structure ("make an AAB pattern") or a token combination `
-      + `("yellow circles": every token is one color OR one shape). It may suggest which tokens to use. `
-      + `Primarily grades 2-3. Transitional symbolic/pictorial.`,
+      `"create": OPEN BUILD. The student makes their own repeating pattern on an empty row, in a pattern shape the APP `
+      + `chooses (AB, ABB, AAB, ...), with any tokens they like, and presses "I'm done!". Provide 4-6 token options, `
+      + `every token one color OR one shape (never "yellow circles"). The app writes the instruction, hint and narration; `
+      + `write only the title and description, and never name a shape or a token row in them.`,
     schemaDescription: "'create' (build original pattern)",
   },
   find_rule: {
@@ -653,6 +667,21 @@ Return the complete pattern builder configuration.
     return { ...c, availableTokens: tokens };
   });
 
+  // ── extend / identify_core keys are code: the part the shown row repeats, and the tokens that continue it. A saved
+  // extend lesson had 3 of 6 AAB rows keyed "A B" after "A A B A A B", so the right answer was marked wrong. ──
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data.challenges = data.challenges.map((c: any) => {
+    if ((c.type !== 'extend' && c.type !== 'identify_core') || !Array.isArray(c.sequence?.given)) return c;
+    const blanks = Array.isArray(c.sequence.hidden) && c.sequence.hidden.length > 0 ? c.sequence.hidden.length : 2;
+    const key = repeatKey(c.sequence.given, blanks);
+    if (!key) return c;
+    const tokens: string[] = [...(c.availableTokens ?? [])];
+    for (const t of key.hidden) if (!tokens.some(u => u.toLowerCase() === t.toLowerCase())) tokens.push(t);
+    return c.type === 'extend'
+      ? { ...c, sequence: { ...c.sequence, hidden: key.hidden, core: key.core }, answer: key.hidden, availableTokens: tokens }
+      : { ...c, sequence: { ...c.sequence, core: key.core }, answer: key.core };
+  });
+
   // Ensure at least one challenge (use eval constraint fallback type)
   if (data.challenges.length === 0) {
     const fallbackType = evalConstraint?.allowedTypes[0] ?? 'extend';
@@ -743,6 +772,26 @@ Return the complete pattern builder configuration.
   if (config) {
     if (config.patternType !== undefined) data.patternType = config.patternType;
     if (config.gradeBand !== undefined) data.gradeBand = config.gradeBand;
+  }
+
+  // ── create (open build): every shape, instruction, hint and narration is code-written, and the palette holds
+  // enough different tokens for the shape (ABC needs three). The model's prose could name a row to copy. ──
+  {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const creates = (data.challenges as any[]).filter((c) => c.type === 'create');
+    const shapes = createShapesFor(creates.length, data.gradeBand === 'K-1' ? 'K-1' : '2-3');
+    creates.forEach((c, i) => {
+      const shape = shapes[i];
+      const distinct = Array.from(new Set<string>((c.availableTokens ?? []).map((t: string) => t.toLowerCase())));
+      const extra = CREATE_FALLBACK_TOKENS[data.tokens?.type] ?? CREATE_FALLBACK_TOKENS.colors;
+      for (const t of [...data.tokens.available.map((x: string) => x.toLowerCase()), ...extra]) {
+        if (distinct.length >= Math.max(3, tokensNeeded(shape))) break;
+        if (!distinct.includes(t)) distinct.push(t);
+      }
+      Object.assign(c, { createShape: shape, availableTokens: distinct, answer: [], instruction: createInstruction(shape),
+        hint: 'Make your first part, then make the same part again.', narration: 'Make a pattern of your own.' });
+    });
+    if (creates.length) console.log(`[PatternBuilder] create shapes: [${shapes.join(', ')}]`);
   }
 
   // ── Apply the support tier deterministically (per challenge) ──

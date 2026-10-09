@@ -1,0 +1,151 @@
+{
+  "perimeters": [
+    [
+      10,
+      1
+    ],
+    [
+      12,
+      1
+    ],
+    [
+      16,
+      2
+    ],
+    [
+      18,
+      2
+    ]
+  ],
+  "checks": [
+    {
+      "name": "routed: every item build_perimeter, even, distinct, grade 3",
+      "pass": true,
+      "detail": "[10,12,16,18]"
+    },
+    {
+      "name": "a two-shape item in the session",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "item 1 opens empty, the ask states the perimeter",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "the grid prints no number",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "one column over -> count-the-sides words, no number",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "the build is kept after the miss",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "item 1 passes after the fix",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "item 2 opens empty",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "12 squares (perimeter not 12) -> counted_squares words",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "a ring -> has_hole words",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "item 2 passes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "a right first shape is kept and the second asked for",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "the first shape is drawn beside the grid",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "the first shape turned -> same_as_first words",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "a different shape with the same perimeter passes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "an L with the perimeter passes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "item 4 second shape (a rectangle) passes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "watcher produced lines",
+      "pass": true,
+      "detail": "4 of 4-5 looks"
+    },
+    {
+      "name": "watcher lines pass the leak rules",
+      "pass": true,
+      "detail": "[{\"state\":\"item 1, one column wide\",\"line\":\"Ooh, that bright cyan stripe is growing across the top!\"},{\"state\":\"item 2, a ring\",\"line\":\"Ooh, a bright blue square frame with a hole is growing!\"},{\"state\":\"item 3, second shape\",\"line\":\"Ooh, a long bright blue strip is growing at the top!\"},{\"state\":\"item 4, an L\",\"line\":\"Ooh, that bright blue shape is growing down the edge!\"}]"
+    },
+    {
+      "name": "no horizontal scroll at 390",
+      "pass": true,
+      "detail": "0px"
+    },
+    {
+      "name": "grid squares at a 360 card (44 px guideline, reported)",
+      "pass": true,
+      "detail": "20px per square"
+    },
+    {
+      "name": "no page errors",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "watcherLines": [
+    {
+      "state": "item 1, one column wide",
+      "line": "Ooh, that bright cyan stripe is growing across the top!"
+    },
+    {
+      "state": "item 2, a ring",
+      "line": "Ooh, a bright blue square frame with a hole is growing!"
+    },
+    {
+      "state": "item 3, second shape",
+      "line": "Ooh, a long bright blue strip is growing at the top!"
+    },
+    {
+      "state": "item 4, an L",
+      "line": "Ooh, that bright blue shape is growing down the edge!"
+    }
+  ],
+  "errors": []
+}

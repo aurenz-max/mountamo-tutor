@@ -6,7 +6,7 @@ import type { SpokenBalanceMiss } from '../../../primitives/visual-primitives/ma
 import type { BaseTenMiss, SpokenBaseTenMiss } from '../../../primitives/visual-primitives/math/baseTenWorkspace';
 import type { CoinMiss } from '../../../primitives/visual-primitives/math/coinCounterWorkspace';
 import type { AreaMiss } from '../../../primitives/visual-primitives/math/polygonAreaWorkspace';
-import type { BuildAreaMiss } from '../../../primitives/visual-primitives/math/polygonAreaBuild';
+import type { BuildAreaMiss, BuildPerimeterMiss } from '../../../primitives/visual-primitives/math/polygonAreaBuild';
 import type { CompareOrderMiss, SpokenCompareMiss } from '../../../primitives/visual-primitives/math/compareObjectsWorkspace';
 import type { ComparisonMiss } from '../../../primitives/visual-primitives/math/comparisonBuilderWorkspace';
 import type { CountMiss, SpokenCountMiss } from '../../../primitives/visual-primitives/math/countingBoardDomain';
@@ -18,10 +18,11 @@ import { EQUAL_BUILD_MISSES, type EqualBuildMiss } from '../../../primitives/vis
 import type { HundredsChartMiss } from '../../../primitives/visual-primitives/math/hundredsChartWorkspace';
 import type { MathFactMiss } from '../../../primitives/visual-primitives/math/mathFactFluencyWorkspace';
 import type { AdditionFactMiss } from '../../../primitives/visual-primitives/math/additionFactStrategiesWorkspace';
-import { MAKE_ANGLE_MISSES } from '../../../primitives/visual-primitives/math/angleWorkshopWorkspace';
+import { CLASSIC_MISSES as ANGLE_CLASSIC_MISSES, MAKE_ANGLE_MISSES } from '../../../primitives/visual-primitives/math/angleWorkshopWorkspace';
 import type { BondMiss } from '../../../primitives/visual-primitives/math/numberBondModes';
 import type { SpokenBondMiss } from '../../../primitives/visual-primitives/math/numberBondWorkspace';
-import type { JumpMiss } from '../../../primitives/visual-primitives/math/numberLineLevers';
+import type { JumpMiss, LineMiss as NumberLineMiss } from '../../../primitives/visual-primitives/math/numberLineLevers';
+import type { BuildHopsMiss } from '../../../primitives/visual-primitives/math/numberLineBuildHops';
 import type { OrderMiss, SpokenSequencerMiss } from '../../../primitives/visual-primitives/math/numberSequencerDomain';
 import type { NumberTracerMiss } from '../../../primitives/visual-primitives/math/numberTracerWorkspace';
 import type { LineMiss, SpokenOrdinalMiss } from '../../../primitives/visual-primitives/math/ordinalLineWorkspace';
@@ -78,11 +79,13 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       // The graph's own check (`barModelMiss`), and the two spoken modes' known wrong comparisons (`barModelSpokenMisses`).
       misses: (() => {
         const off: BarModelMiss[] = ['one_short', 'one_over', 'short_by_more', 'over_by_more'];
-        const read: BarModelMiss[] = ['picked_icon_count', 'another_row', 'one_step_off', ...off];
+        // A scaled bar graph has no picture key, so `picked_icon_count` is named on picture_graph only; two bars have no
+        // middle row, so compare_bars names only `reversed`. Every miss here is answered by a lever (barModelLevers.ts).
+        const scaled: BarModelMiss[] = ['another_row', 'one_step_off', ...off];
         const rows: BarModelMiss[] = ['rows_swapped', 'several_rows_off', ...off];
         return missLists<BarModelMiss | SpokenGraphMiss>({
-          read_one_to_one: ['another_row', ...off], read_scale: read, picture_graph: read, scaled_bar_graph: read,
-          graph_word_problem: read, compare_bars: ['reversed', 'other_row'], most_least: ['reversed', 'other_row'],
+          read_one_to_one: ['another_row', ...off], read_scale: scaled, picture_graph: ['picked_icon_count', ...scaled],
+          scaled_bar_graph: scaled, graph_word_problem: scaled, compare_bars: ['reversed'], most_least: ['reversed', 'other_row'],
           match_to_bar: off, build_one_to_one: rows, build_graph: [...rows, 'wrong_step'],
           make_graph: ['reversed', 'tied', 'other_row', 'not_same', 'left_empty', ...off],
           say_what_it_shows: ['reversed_comparison', 'same_for_different', 'no_comparison'],
@@ -261,9 +264,23 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
       guidance: 'The learner places points or jumps on the line and presses Check; the line checks the work itself, and '
         + 'talk about a half-placed line is teaching, not a verdict. The target values are not yours to say. You cannot '
-        + 'place, move, clear or highlight points.',
+        + 'place, move, clear or highlight points. On build_hops the learner picks their own hops to land on the asked '
+        + 'number and presses I am done, then makes it a different way; never say where the hops land, a hop size to use, '
+        + 'or how far is left: choosing the hops is the task.',
       levers: true,
-      misses: missLists<JumpMiss>({ jump: ['one_short', 'one_past', 'off_by_more', 'wrong_direction', 'second_jump_off', 'no_landing'] }),
+      misses: missLists<JumpMiss | BuildHopsMiss | NumberLineMiss>({
+        jump: ['one_short', 'one_past', 'off_by_more', 'wrong_direction', 'second_jump_off', 'no_landing'],
+        identify: ['one_short', 'one_past', 'off_by_more'],
+        plot: ['one_short', 'one_past', 'off_by_more'],
+        order: ['reversed', 'out_of_order'],
+        between: ['on_end', 'outside', 'wrong_inside'],
+        build_hops: ['one_short', 'one_past', 'off_by_more', 'other_hop_count', 'same_way_again'],
+      }),
+      // build_hops `other_hop_count` (the right number in fewer hops than asked) has no lever: the ask names the count,
+      // and a hop slot tag is not built.
+      // between `wrong_inside` (inside, but not the exact missing number) occurs only on a fraction or decimal grid,
+      // where no number-line lever is built.
+      unanswered: { build_hops: ['other_hop_count'], between: ['wrong_inside'] },
     },
     misconceptionScope: 'skill',
     observationDelivery: 'server',
@@ -332,6 +349,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Show operation as movement on number line.',
       },
       {
+        evalMode: 'build_hops',
+        affordances: { answers: ['build'] },
+        label: 'Build Hops (Open Build)',
+        beta: 2.6,
+        scaffoldingMode: 2,
+        challengeTypes: ['build_hops'],
+        description: 'OPEN BUILD of addition as movement (1.OA/2.OA): the line shows only a start; the child picks their own hop sizes to land on a stated number ("land on 12 in two hops"), presses "I am done!", then lands there a different way. Many hop sets pass (5+7, 6+6, 10+2); the line judges the landing, the hop count and that the second way differs in code. Three hops at the hard tier.',
+      },
+      {
         evalMode: 'order',
         affordances: { answers: ['tap', 'manipulate'] },
         label: 'Order (Tier 3)',
@@ -381,7 +407,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         build_two_ways: ['one_short', 'one_over', 'one_ten_off', 'digits_swapped', 'short_by_more', 'over_by_more', 'same_as_first'],
       }),
       // operate `digits_swapped` has no lever (approved table). The click-mat misses of regroup and read_blocks come
-      // only from a mixed payload, whose regroup and read_blocks items have no levers.
+      // only from a mixed payload; there the click mat answers them (`ten_model`, `plainer_read`), and a homogeneous
+      // read_blocks or regroup payload runs on the spoken mat, which never checks them.
       unanswered: { operate: ['digits_swapped'], regroup: ['no_trade', 'value_changed'], read_blocks: ['one_ten_off', 'digits_swapped'] },
     },
     // Only read_blocks emits correction evidence; the other modes supply none,
@@ -988,7 +1015,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'Many arrays pass: never say how many rows or columns to use, how many squares are on the grid, or how many more '
         + 'are needed; if they stop, invite them to check that every row has the same number of squares. You cannot tap, '
         + 'build or type for the learner.',
-      // make_array publishes levers (`arrayGridLevers.ts`); the other modes have none yet.
+      // Every mode publishes levers (`arrayGridLevers.ts`): make_array row counts / square count / smaller ask; the
+      // given-array modes row strips, number labels (build/count, labels hidden) and a smaller array.
       levers: true,
       // The activity's own check (`arrayMiss`), every mode.
       misses: missLists<ArrayMiss>({
@@ -1439,6 +1467,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   {
     id: 'balance-scale',
     teachingWorkspace: {
+      levers: true,
       grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
       guidance: 'Hands steps and spoken steps alternate. Hands: tap numbered weights onto a pan, set a known weight aside '
         + 'on both sides, or share weight units into one equal group per identical parcel. Spoken: a total, the weight in one '
@@ -1614,7 +1643,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
             'In observe mode: let the student explore freely, narrate the transformation. '
             + 'In predict mode: ask "What do you think will come out?" BEFORE revealing the output. Celebrate correct predictions. '
             + 'In discover_rule mode: guide toward the rule using scaffolding. Never reveal the rule directly. '
-            + 'In create_rule mode: focus on writing the rule symbolically. Confirm understanding of the operation order.',
+            + 'In create_rule mode: focus on writing the rule symbolically. Confirm understanding of the operation order. '
+            + 'In make_rule mode the learner invents a rule that turns one input into one output, then a different rule for the '
+            + 'same pair; never say a rule, an operation or a number that would make the pair. Talk about the machine they built.',
         },
         {
           title: 'GRADE-BAND ADAPTATION',
@@ -1668,6 +1699,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 4,
         challengeTypes: ['create_rule'],
         description: 'Write the rule expression for given I/O pairs.',
+      },
+      {
+        evalMode: 'make_rule',
+        affordances: { answers: ['build'] },
+        label: 'Make a Machine (Open Build)',
+        beta: 4.0,
+        scaffoldingMode: 4,
+        challengeTypes: ['make_rule'],
+        description: 'OPEN BUILD: one input-output pair ("make a machine that turns 4 into 12"); the learner builds their own rule from x, number and sign tiles and presses "I\'m done!", then builds a DIFFERENT rule for the same pair (3x, x + 8, 2x + 4 all pass). Code judges: the rule runs, uses its input, makes the pair, and the second works differently from the first. Shows that one pair does not fix a function.',
       },
     ],
   },
@@ -1871,22 +1911,27 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'a two-shape item then asks for a different shape with the same area, and the first shape moved, turned or '
         + 'flipped is not different. The grid checks the count, that it is one shape, and that the second differs. '
         + 'Counting the squares is the skill: never say how many are shaded or how many more are needed. You cannot '
-        + 'type, drag, shade or clear squares for the learner.',
+        + 'type, drag, shade or clear squares for the learner. The perimeter build (build_perimeter) is the same grid: '
+        + 'one shape, no hole, whose sides around the outside make the perimeter the task states; never say how many sides '
+        + 'go around the shape or how many squares it has.',
       levers: true,
-      // The screen's own check (`areaMiss` for a typed area, `buildAreaMiss` for the open build).
+      // The screen's own check (`areaMiss` for a typed area, `buildAreaMiss` / `buildPerimeterMiss` for the open builds).
       misses: (() => {
         const typed: AreaMiss[] = ['forgot_half', 'halved', 'added_sides', 'wrong_area'];
-        return missLists<AreaMiss | BuildAreaMiss>({
+        return missLists<AreaMiss | BuildAreaMiss | BuildPerimeterMiss>({
           decompose: ['halved', 'added_sides', 'wrong_area'],
           find_area_triangle_parallelogram: typed,
           find_area_trapezoid: ['forgot_half', 'added_sides', 'wrong_area'],
           composite_area: ['one_piece', 'halved', 'wrong_area'],
-          coordinate_polygon: ['bounding_box', 'forgot_half', 'halved', 'wrong_area'],
+          // No forgot_half: `areaMiss` names a coordinate triangle's base × height `bounding_box` (it is the rectangle).
+          coordinate_polygon: ['bounding_box', 'halved', 'wrong_area'],
           build_area: ['one_short', 'one_over', 'short_by_more', 'over_by_more', 'not_connected', 'same_as_first'],
+          build_perimeter: ['two_short', 'two_over', 'short_by_more', 'over_by_more', 'counted_squares', 'not_connected',
+            'has_hole', 'same_as_first'],
         });
       })(),
     },
-    description: 'Multi-figure polygon-area session (3-6 distinct figures of the same eval mode, surfaced sequentially). Students derive and apply area formulas by composing and decomposing shapes on a canvas grid: rearrange a parallelogram into a rectangle by sliding the cut triangle (conservation of area), compute triangle / parallelogram / trapezoid areas from labeled dimensions, decompose composite figures into known rectangles and sum, and find the area of a polygon from its vertex coordinates. Canvas-based with five progressive difficulty tiers (decompose → triangle/parallelogram → trapezoid → composite → coordinate polygon). CCSS 6.G.A.1. Grades 6-7. One more mode is an OPEN BUILD for Grade 3 (build_area, 3.MD.C.5-6): on an empty square grid the student shades unit squares into a shape with a stated area, then a different shape with the same area; any shape with that area passes. The system pre-builds each figure (dimensions, coordinates, rectangle parts, build areas) deterministically per challenge — the manifest must NOT specify dimensions, coordinates, or areas.',
+    description: 'Multi-figure polygon-area session (3-6 distinct figures of the same eval mode, surfaced sequentially). Students derive and apply area formulas by composing and decomposing shapes on a canvas grid: rearrange a parallelogram into a rectangle by sliding the cut triangle (conservation of area), compute triangle / parallelogram / trapezoid areas from labeled dimensions, decompose composite figures into known rectangles and sum, and find the area of a polygon from its vertex coordinates. Canvas-based with five progressive difficulty tiers (decompose → triangle/parallelogram → trapezoid → composite → coordinate polygon). CCSS 6.G.A.1. Grades 6-7. One more mode is an OPEN BUILD for Grade 3 (build_area, 3.MD.C.5-6): on an empty square grid the student shades unit squares into a shape with a stated area, then a different shape with the same area; any shape with that area passes. A second open build is for Grade 3 perimeter (build_perimeter, 3.MD.D.8): the student shades a shape whose perimeter is stated, then a different shape with the same perimeter (same perimeter, different area). The system pre-builds each figure (dimensions, coordinates, rectangle parts, build areas) deterministically per challenge — the manifest must NOT specify dimensions, coordinates, or areas.',
     constraints: 'The manifest must NOT supply per-figure dimensions, coordinates, rectangle parts, or areas — the pool service builds 3-6 distinct figures deterministically from the selected eval mode and gradeBand. The manifest may supply gradeBand and instanceCount only (default 4, max 6). Each eval mode maps to exactly one challenge type of the same name.',
     affordances: { representation: 'pictorial', answers: ['type'], role: 'apply', minutes: 8 },
     evalModes: [
@@ -1907,6 +1952,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 2,
         challengeTypes: ['build_area'],
         description: 'Open build (Grade 3, 3.MD.C.5-6): shade unit squares on an empty grid into one shape with a stated area, then a different shape with the same area. Any shape with that area passes; area is measured by counting unit squares.',
+      },
+      {
+        evalMode: 'build_perimeter',
+        affordances: { representation: 'concrete', answers: ['build'] },
+        label: 'Build a Shape with a Perimeter (Open Build)',
+        beta: 2.4,
+        scaffoldingMode: 2,
+        challengeTypes: ['build_perimeter'],
+        description: 'Open build (Grade 3, 3.MD.D.8): shade unit squares on an empty grid into one shape (no holes) with a stated perimeter, then a different shape with the same perimeter. Any shape with that perimeter passes (a 3 by 3 square, a 2 by 4 rectangle, an L); perimeter is measured by counting the unit sides around the outside, so a shape with the same perimeter can have a different area.',
       },
       {
         evalMode: 'find_area_triangle_parallelogram',
@@ -2072,10 +2126,10 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'work, and the screen does not show it: never say it, never say whether their angle is acute, right, obtuse '
         + 'or straight, and never say which way to turn the ray; ask them to compare their angle with a square corner '
         + 'or a straight line. You cannot type, tap or move the ray for the learner.',
-      // make_angle (the open build) publishes levers (`angleWorkshopLevers.ts`); the classic modes have none.
+      // Every mode publishes levers (`angleWorkshopLevers.ts`); a help picture on the figure, a simpler item of the mode.
       levers: true,
-      // The open build's own check (`makeAngleMiss`); the classic modes name no misses yet.
-      misses: { make_angle: MAKE_ANGLE_MISSES },
+      // The open build's check (`makeAngleMiss`) and the classic modes' (`classicMiss`, named for the value typed).
+      misses: { make_angle: MAKE_ANGLE_MISSES, ...ANGLE_CLASSIC_MISSES },
       // make_angle `not_opened` has no lever: the ray never left the fixed ray, and the screen already says to open it.
       unanswered: { make_angle: ['not_opened'] },
     },
@@ -2569,7 +2623,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
       guidance: 'The frame checks placed or flipped counters itself once the learner stops; '
         + 'talk about a part-built frame is teaching, not a verdict. On a quick-look item, call present when the learner '
-        + 'is ready: the counters show briefly, then hide. Never count them out. You cannot place, remove or flip counters.',
+        + 'is ready: the counters show briefly, then hide. Never count them out. You cannot place, remove or flip counters. '
+        + 'On build_pair the learner makes the number in red and yellow and presses I am done; never name a pair, '
+        + 'how many of a colour to use, or how many are on the frame.',
       levers: true,
       // The frame's own check (`frameMiss`), and the spoken items' known wrong answers (`tenFrameSpokenMisses`:
       // subitize, operate, make_ten at grades 1-2), named by the `spoken_miss` observer.
@@ -2579,6 +2635,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         subitize: ['empty_count', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
         operate: ['said_addend', 'said_start', 'said_change', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
         decompose: ['all_flipped', 'none_flipped', 'same_way_again'],
+        build_pair: ['one_short', 'one_over', 'filled_frame', 'short_by_more', 'over_by_more', 'one_colour', 'same_way_again'],
         build_teen: ['one_short', 'one_over', 'filled_frame', 'short_by_more', 'over_by_more'],
         decompose_teen: ['one_short', 'one_over', 'all_flipped', 'short_by_more', 'over_by_more'],
       }),
@@ -2612,6 +2669,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 1,
         challengeTypes: ['build_teen'],
         description: 'A DOUBLE frame whose top half arrives full — that is one ten — and the child places the remaining ones to make a teen number 11-19. CCSS K.NBT.1 composition: 14 is ten and four more. Concrete manipulative; no microphone needed.',
+      },
+      {
+        evalMode: 'build_pair',
+        affordances: { answers: ['build'] },
+        label: 'Make It Two Colours (Open Build)',
+        beta: 2.1,
+        scaffoldingMode: 1,
+        challengeTypes: ['build_pair'],
+        description: 'OPEN BUILD of K.OA.3: the frame starts EMPTY and the child makes the number from red and yellow counters, any pair, then presses "I\'m done!"; the same total comes back asking for a DIFFERENT pair. The child makes both the whole and its parts (decompose hands the group over). Judged by the frame in code. Concrete manipulative; no microphone needed.',
       },
       {
         evalMode: 'subitize',
@@ -2744,8 +2810,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         compare: ['smaller_group', 'said_total', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
         ...sameMisses<SpokenCountMiss>(['take_away', 'add_more'], ['said_start', 'said_change', 'one_short', 'one_over', 'short_by_more', 'over_by_more']),
       }),
-      // recount_moved has no lever: holding the number while the set moves is the task (approved table).
-      unanswered: { recount_moved: ['one_short', 'one_over', 'short_by_more', 'over_by_more'] },
+      // recount_moved: no lever helps across the move (holding the number is the task); `line_up` steadies the count
+      // before it and `smaller_set` moves a smaller set (class sweep 2026-10-08), so every miss has a lever.
       // RP-2 pilot on real Live transcripts (spoken-miss/rp2-pilot-2026-09-29): 0/510 right-answer and 0/393
       // non-answer readings named wrong.
       missFromWords: ['count'],
@@ -3062,10 +3128,12 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     },
     supportsEvaluation: true,
     teachingWorkspace: {
+      levers: true,
       grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3'],
       guidance: 'The builder checks the learner’s answer itself when they press Check, and you are not told the answer: '
         + 'the learner taps tokens into the "?" blanks to continue a pattern, taps the tokens of the part that repeats, '
-        + 'rebuilds a pattern with new tokens by following the drawn key, or builds a pattern of their own. The learner may '
+        + 'rebuilds a pattern with new tokens by following the drawn key, or makes a pattern of their own in the asked shape '
+        + '(A B B: the letters are the task, the tokens are theirs) and presses I\'m done; Try again keeps that row. The learner may '
         + 'not read well: say the instruction and the pattern row in your own words first (colors and shapes by name). '
         + 'Before the learner has checked, never say a missing token or number, the new row, or the repeating part, how '
         + 'many tokens it has or which ones to select, and never point to the token to tap; this holds after a wrong '
@@ -3077,8 +3145,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         find_rule: ['blanks_left', 'extra_tokens', 'repeated_last', 'started_over', 'two_swapped', 'one_wrong', 'several_wrong'],
         translate: ['blanks_left', 'extra_tokens', 'two_swapped', 'one_wrong', 'several_wrong'],
         identify_core: ['two_repeats', 'too_long', 'too_short', 'other_part'],
-        create: ['too_short', 'no_repeat'],
+        create: ['too_short', 'other_shape', 'no_repeat'],
       }),
+      // `patternBuilderLevers.ts`. A Check with "?" blanks left needs no picture (the blanks are on screen); a row
+      // longer than its blanks cannot be made (the row stops at the last blank).
+      unanswered: missLists<PatternBuilderMiss>({ extend: ['blanks_left', 'extra_tokens'], find_rule: ['blanks_left', 'extra_tokens'] }),
     },
     evalModes: [
       {
@@ -3115,7 +3186,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['create'],
-        description: 'Generate a pattern from a rule.',
+        description: 'OPEN BUILD: make your own repeating pattern on an empty row in the shape the ask names (AB, ABB, AAB; ABC, AABB at grades 2-3) with any tokens, repeated at least twice, then "I\'m done!". Many rows pass; the builder checks the shape in code. Try again keeps the row.',
       },
       {
         evalMode: 'find_rule',
@@ -3289,6 +3360,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     },
     supportsEvaluation: true,
     teachingWorkspace: {
+      levers: true,
       grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3'],
       guidance: 'The chart checks the learner’s work itself: the learner taps numbers on the chart, or picks a choice, and '
         + 'presses Check, and you are not told the answer. The learner may not read the instruction: say it in your own '
@@ -3296,10 +3368,12 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'belong, the shape the highlighted cells make and the skip value are the answers: before the learner has checked, '
         + 'never say them, never count the pattern on past the highlighted numbers, and never give the difference between '
         + 'two highlighted numbers. You cannot tap or pick for the learner.',
-      // The chart's own check (`hundredsChartMiss`); identify_pattern's description choices name none.
+      // The chart's own check (`hundredsChartMiss`); identify_pattern names what the chosen description describes.
+      // Levers: hundredsChartLevers.ts (report qa/eval-reports/hundreds-chart-levers-2026-10-08.md).
       misses: missLists<HundredsChartMiss>({
         highlight_sequence: ['stopped_early', 'gaps_left', 'extra_cells', 'other_step', 'stray_cells'],
         complete_sequence: ['stopped_early', 'gaps_left', 'extra_cells', 'other_step', 'stray_cells'],
+        identify_pattern: ['chose_rows', 'chose_columns', 'chose_diagonal', 'chose_scattered'],
         find_skip_value: ['twice_the_step', 'half_the_step', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
       }),
     },
@@ -4104,6 +4178,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     ],
     supportsEvaluation: true,
     teachingWorkspace: {
+      levers: true,
       grades: ['Kindergarten', 'Grade 1'],
       guidance: 'A story picture of objects. Read the story aloud and ask its question; the printed story states only its '
         + 'own numbers, never the one the child must find. Solve-story and Grade 1 act-out are answered by saying the '
@@ -4322,6 +4397,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   {
     id: 'sorting-station',
     teachingWorkspace: {
+      levers: true,
       grades: ['Kindergarten', 'Grade 1'],
       guidance: 'Every answer here is said aloud; nothing is dragged or tapped. At Kindergarten the tray labels are words a '
         + 'pre-reader cannot read, so name the groups aloud when you ask. On a count or compare item the tray counts stay hidden '
@@ -4524,6 +4600,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'learner names; the shape\'s own name is not a group. '
         + 'Use demonstrate with visible shape or mat IDs to draw purple dashed tutor rings for comparison; [] clears them. Those marks '
         + 'never change the gold-ringed assignment or move a shape onto a mat. You cannot move, rotate, count, or sort a shape for the learner.',
+      // In-item levers (`shapeSorterLevers.ts`): every miss below has a lever on every saved payload item.
+      levers: true,
       // Every item is spoken: its known wrong answers (`shapeSorterSpokenMisses`), named by the `spoken_miss` observer.
       misses: missLists<SpokenShapeMiss>({
         identify: ['near_name', 'other_shape_name'],
@@ -4784,7 +4862,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'teach from: a flat look-alike for a solid (circle for sphere), the object\'s own name instead of its solid, '
         + 'the solid\'s name when the face was asked, a count one off, a riddle answer that fits only some clues. '
         + 'Before an attempt never say the answer. The replay button asks you to repeat the question only. You cannot '
-        + 'rotate, mark or change the shape.',
+        + 'rotate or mark the shape yourself; its levers change what is drawn.',
+      // In-item levers (`threeDShapeExplorerLevers.ts`): every miss below has a lever on every saved payload item.
+      levers: true,
       // Every item is spoken: its known wrong answers (`threeDShapeSpokenMisses`), named by the `spoken_miss` observer.
       misses: missLists<SpokenSolidMiss>({
         identify_3d: ['flat_look_alike', 'similar_solid', 'other_solid'],
@@ -4969,6 +5049,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     },
     supportsEvaluation: true,
     teachingWorkspace: {
+      levers: true,
       grades: ['Kindergarten', 'Grade 1'],
       guidance: 'The activity checks the learner’s answer itself: the learner taps a number, an equation or a picture, or '
         + 'sets a number with the − and + buttons and presses Submit, and you are not told the answer. The learner may not '
@@ -4979,6 +5060,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       // The activity's own check (`mathFactMiss`), every mode.
       misses: sameMisses<MathFactMiss>(['visual_fact', 'match', 'equation_solve', 'missing_number', 'speed_round'],
         ['other_operation', 'printed_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more']),
+      // speed_round is aid-free recall (user ruling 2026-10-02): a picture would make it equation_solve, and recall
+      // has no step to make simpler, so none of its misses has a lever.
+      unanswered: { speed_round: ['other_operation', 'printed_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'] },
     },
   },
   {
@@ -5026,6 +5110,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     },
     supportsEvaluation: true,
     teachingWorkspace: {
+      levers: true,
       grades: ['Grade 1', 'Grade 2'],
       guidance: 'The activity checks the learner’s answer itself: the learner taps the total on a 0 to 18 number pad, and you '
         + 'are not told the answer. Each session practises one strategy, named on screen; teach that strategy (adding zero, '
@@ -5060,6 +5145,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     },
     supportsEvaluation: true,
     teachingWorkspace: {
+      levers: true,
       grades: ['Kindergarten', 'Grade 1'],
       guidance: 'The picker checks the learner’s answer itself when they press Check, and you are not told the answer: the '
         + 'learner sets a number with the − and + buttons after following a strategy picture, taps a strategy from the menu '
@@ -5126,9 +5212,12 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       guidance: 'The learner writes the numeral on the canvas with a finger and presses Check; the canvas checks the writing '
         + 'itself, and talk about a half-written numeral is teaching, not a verdict. On a missing-number item the missing number '
         + 'is the answer: never say, trace or describe it. You cannot draw, trace or clear.',
+      levers: true,
       // The canvas's own check (`numberTracerMiss`), every mode.
       misses: sameMisses<NumberTracerMiss>(['trace', 'copy', 'write', 'sequence'],
         ['other_numeral', 'digits_swapped', 'not_readable', 'poorly_formed', 'part_left_out', 'shape_off']),
+      // Levers: `numberTracerLevers.ts`. On a missing-number item every formation guide would draw the hidden numeral (NT-7).
+      unanswered: { sequence: ['poorly_formed', 'part_left_out', 'shape_off'] },
     },
     misconceptionScope: 'skill',
     observationDelivery: 'server',
@@ -5396,7 +5485,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + '(at Grade 1, then type the total). On show-amount the learner makes the amount any way they like and presses '
         + '“I’m done!”. Never say how much is on the tray or how much more is needed; if they stop, invite them to count '
         + 'what their coins are worth. You cannot tap, place or type for the learner.',
-      // Only show-amount publishes levers (`coinCounterLevers.ts`); every miss it names is answered by one.
+      // Every mode publishes levers (`coinCounterLevers.ts`); every miss below is answered by one on every saved payload
+      // item (`coinCounterLevers.test.ts`). fewest-coins renders and checks as make-amount, so it has make-amount's.
       levers: true,
       // The activity's own check (`coinMiss`), every mode. Kindergarten like coins check themselves on the last tap.
       misses: missLists<CoinMiss>({
@@ -5654,12 +5744,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'the learner says where the object is from the YOU arrow, naming the relation and the other object; left '
         + 'and right are as the learner sees them, and in front of means nearer the arrow. Never give the relation '
         + 'before an attempt. You cannot pick, tap or place for the learner.',
-      // The scene's own check (`spatialMiss`). `place` names none: its challenge stores only the target cell.
+      levers: true,
+      // The scene's own check (`spatialMiss`); levers in `spatialSceneLevers.ts`.
       // describe_scene names only the reversed relation (`spatialSpokenMisses`); the rest of a description is open.
       misses: missLists<SpatialMiss>({
         describe_scene: ['opposite_word'],
         identify: ['opposite_word', 'same_axis_word', 'other_axis_word'],
         describe: ['opposite_word', 'same_axis_word', 'other_axis_word'],
+        place: ['opposite_cell', 'same_axis_cell', 'other_axis_cell', 'off_line_cell'],
         place_in: ['other_object', 'next_to_container', 'away_from_container'],
         place_between: ['next_to_one', 'touches_neither'],
         follow_directions: ['later_step_cell', 'other_cell'],
@@ -5739,20 +5831,20 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     affordances: { representation: 'concrete', reader: 'none', answers: ['build'], role: ['visualize', 'apply'], minutes: 8 },
     evalModes: [
       {
-        evalMode: 'free-create',
-        label: 'Free Create (Explore)',
-        beta: -1.0,
-        scaffoldingMode: 1,
-        challengeTypes: ['free-create'],
-        description: 'Open-ended shape composition exploration — always succeeds with 2+ shapes',
-      },
-      {
         evalMode: 'compose-match',
         label: 'Compose Match (Easy)',
         beta: -0.5,
         scaffoldingMode: 2,
         challengeTypes: ['compose-match'],
         description: 'Drag pieces to fill a target silhouette with snap-to-fit guidance',
+      },
+      {
+        evalMode: 'free-create',
+        label: 'Free Create (Open build)',
+        beta: -0.3,
+        scaffoldingMode: 2,
+        challengeTypes: ['free-create'],
+        description: 'Open build: compose your own picture from a stated recipe of shapes (e.g. two triangles and one square), every shape touching another. Code judges the shapes used, no piece on top of another, and one connected composite; many pictures pass',
       },
       {
         evalMode: 'compose-picture',
@@ -5800,7 +5892,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
           instruction:
             'Build spatial vocabulary: "Turn it," "Flip it," "Slide it over," "It fits in the corner." '
             + 'Celebrate creative solutions — there is often more than one way to compose a shape! '
-            + 'In free-create mode, describe what you see: "Wow, you used a triangle on top and a square below — that looks like a house!" '
+            + 'In free-create the learner composes their own picture from the shapes on the list; describe what you see ("a triangle on top of a square — that looks like a house!"), '
+            + 'but never say how many shapes are on the board or still needed, and never say which piece to add or move: choosing and joining the shapes is the task. '
             + 'Never say a solution is wrong if it is geometrically valid.',
         },
       ],
@@ -5941,7 +6034,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'allows. Talk about = as "the same amount on both sides", never "the answer is". You cannot place a tile, pick '
         + 'or type for the learner. On make-n the learner makes their own sentence for the total and presses "I\'m done!": '
         + 'never say what their row makes or a sentence that works; if they stop, invite them to work out their row.',
-      // make-n (the open build) publishes levers (`equationBuilderLevers.ts`); the other modes have none yet.
+      // Every mode publishes levers (`equationBuilderLevers.ts`): dots, a frame, a rewrite model, match marks, and a
+      // smaller-numbers practice item.
       levers: true,
       // The builder's own check (`equationBuilderMiss`), every mode.
       misses: missLists<EquationBuilderMiss>({

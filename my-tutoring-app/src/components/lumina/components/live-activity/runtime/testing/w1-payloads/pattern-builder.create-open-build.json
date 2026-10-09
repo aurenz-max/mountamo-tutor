@@ -1,0 +1,205 @@
+{
+ "source": "qa/open-build/pattern-builder-2026-10-08/generation.json (k)",
+ "primitiveId": "pattern-builder",
+ "evalMode": "create",
+ "data": {
+  "title": "Creative Pattern Studio",
+  "description": "Design your own colorful patterns and show what you know",
+  "gradeBand": "K-1",
+  "patternType": "repeating",
+  "sequence": {
+   "given": [],
+   "hidden": [
+    "red",
+    "blue",
+    "red",
+    "blue"
+   ],
+   "core": [
+    "red",
+    "blue"
+   ],
+   "rule": "AB repeating"
+  },
+  "tokens": {
+   "available": [
+    "red",
+    "blue",
+    "green",
+    "yellow"
+   ],
+   "type": "colors"
+  },
+  "showOptions": {
+   "showCore": false,
+   "showStepNumbers": false,
+   "showRule": true,
+   "audioMode": false
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "create",
+    "instruction": "Make your own A B pattern (two things taking turns). Use any tokens, and repeat it at least two times.",
+    "answer": [],
+    "hint": "Make your first part, then make the same part again.",
+    "narration": "Make a pattern of your own.",
+    "availableTokens": [
+     "red",
+     "blue",
+     "green",
+     "yellow"
+    ],
+    "sequence": {
+     "given": [],
+     "hidden": [
+      "red",
+      "blue",
+      "red",
+      "blue"
+     ],
+     "core": [
+      "red",
+      "blue"
+     ]
+    },
+    "createShape": "AB"
+   },
+   {
+    "id": "c2",
+    "type": "create",
+    "instruction": "Make your own A B B pattern (one thing, then two the same). Use any tokens, and repeat it at least two times.",
+    "answer": [],
+    "hint": "Make your first part, then make the same part again.",
+    "narration": "Make a pattern of your own.",
+    "availableTokens": [
+     "red",
+     "blue",
+     "green",
+     "yellow",
+     "orange"
+    ],
+    "sequence": {
+     "given": [],
+     "hidden": [
+      "red",
+      "red",
+      "blue",
+      "red",
+      "red",
+      "blue"
+     ],
+     "core": [
+      "red",
+      "red",
+      "blue"
+     ]
+    },
+    "createShape": "ABB"
+   },
+   {
+    "id": "c3",
+    "type": "create",
+    "instruction": "Make your own A A B pattern (two the same, then one different). Use any tokens, and repeat it at least two times.",
+    "answer": [],
+    "hint": "Make your first part, then make the same part again.",
+    "narration": "Make a pattern of your own.",
+    "availableTokens": [
+     "red",
+     "blue",
+     "green",
+     "yellow",
+     "purple"
+    ],
+    "sequence": {
+     "given": [],
+     "hidden": [
+      "red",
+      "blue",
+      "green",
+      "red",
+      "blue",
+      "green"
+     ],
+     "core": [
+      "red",
+      "blue",
+      "green"
+     ]
+    },
+    "createShape": "AAB"
+   },
+   {
+    "id": "c4",
+    "type": "create",
+    "instruction": "Make your own A B B pattern (one thing, then two the same). Use any tokens, and repeat it at least two times.",
+    "answer": [],
+    "hint": "Make your first part, then make the same part again.",
+    "narration": "Make a pattern of your own.",
+    "availableTokens": [
+     "red",
+     "blue",
+     "green",
+     "yellow",
+     "pink"
+    ],
+    "sequence": {
+     "given": [],
+     "hidden": [
+      "red",
+      "red",
+      "blue",
+      "blue",
+      "red",
+      "red",
+      "blue",
+      "blue"
+     ],
+     "core": [
+      "red",
+      "red",
+      "blue",
+      "blue"
+     ]
+    },
+    "createShape": "ABB"
+   },
+   {
+    "id": "c5",
+    "type": "create",
+    "instruction": "Make your own A A B pattern (two the same, then one different). Use any tokens, and repeat it at least two times.",
+    "answer": [],
+    "hint": "Make your first part, then make the same part again.",
+    "narration": "Make a pattern of your own.",
+    "availableTokens": [
+     "red",
+     "blue",
+     "green",
+     "yellow",
+     "purple",
+     "orange"
+    ],
+    "sequence": {
+     "given": [],
+     "hidden": [
+      "red",
+      "green",
+      "blue",
+      "yellow",
+      "red",
+      "green",
+      "blue",
+      "yellow"
+     ],
+     "core": [
+      "red",
+      "green",
+      "blue",
+      "yellow"
+     ]
+    },
+    "createShape": "AAB"
+   }
+  ]
+ }
+}

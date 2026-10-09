@@ -34,11 +34,23 @@ describe('which lever answers which miss', () => {
     [{ type: 'group_count', count: 15, groupSize: 5, targetAnswer: 15 }, 'groups', 'said_group_count', GROUP_TAG_LEVER],
     [{ type: 'group_count', count: 15, groupSize: 5, targetAnswer: 15 }, 'groups', 'short_by_more', FEWER_GROUPS_LEVER],
     [{ type: 'compare', count: 9, compareGroups: [4, 5], targetAnswer: 5 }, 'groups', 'smaller_group', ROWS_LEVER],
+    [{ type: 'recount_moved', count: 8, targetAnswer: 8 }, 'scattered', 'one_over', LINE_LEVER],
+    [{ type: 'recount_moved', count: 8, targetAnswer: 8 }, 'scattered', 'short_by_more', SMALLER_SET_LEVER],
+    [{ type: 'recount_moved', count: 8, targetAnswer: 8 }, 'line', 'one_short', SMALLER_SET_LEVER],
   ])('%o on a %s board, after %s: %s', (ch, arrangement, miss, lever) => {
     expect(nextLever(countingBoardSpokenLevers(item(ch as never), [], arrangement, []), miss)).toBe(lever);
   });
-  it('recount_moved and the gesture kinds declare no spoken levers', () => {
-    expect(countingBoardSpokenLevers(item({ type: 'recount_moved', count: 6, targetAnswer: 6 }), [], 'scattered', [])).toEqual([]);
+  it('recount_moved: the row before the move and a smaller moving set; nothing on a set too small to halve', () => {
+    expect(countingBoardSpokenLevers(item({ type: 'recount_moved', count: 6, targetAnswer: 6 }), [], 'scattered', [])
+      .map(l => [l.id, l.kind])).toEqual([[LINE_LEVER, 'help'], [SMALLER_SET_LEVER, 'simplify']]);
+    expect(countingBoardSpokenLevers(item({ type: 'recount_moved', count: 4, targetAnswer: 4 }), [], 'line', [])).toEqual([]);
+  });
+  it('recount_moved: the row fact holds only until the set has moved', () => {
+    const r = item({ type: 'recount_moved', count: 6, targetAnswer: 6 });
+    expect(spokenLeverFacts(r, [LINE_LEVER], { moved: false })).toMatch(/single row/);
+    expect(spokenLeverFacts(r, [LINE_LEVER], { moved: true })).toBe('');
+  });
+  it('the gesture kinds declare no spoken levers', () => {
     expect(countingBoardSpokenLevers(item({ type: 'give_me_n', count: 8, targetAnswer: 3 }), [], 'scattered', [])).toEqual([]);
   });
   it('line_up is not offered on a board already in a row; tag_one_group only on a board that draws its groups', () => {
@@ -78,6 +90,7 @@ describe('the easier boards', () => {
       const on = itemFromChallenge({ id: `o${n}-${c}`, type: 'count_on', count: n, startFrom: c, targetAnswer: n }, { objectWord: 'bears' });
       [take, add, on].forEach(x => { if (x) shapes.push(x); });
     }
+    shapes.push(item({ type: 'recount_moved', count: n, targetAnswer: n }));
   }
   for (const size of [2, 5, 10]) for (let g = 2; g <= 5; g++)
     shapes.push(item({ type: 'group_count', count: size * g, groupSize: size, targetAnswer: size * g }));
@@ -97,6 +110,8 @@ describe('the easier boards', () => {
       if (p.target === other.target) expect(spokenPractice(source, lever, [])!.item.target).toBe(other.target);
       expect(countingBoardSpokenMisses(p).length).toBeGreaterThan(0);
       if (lever === SMALLER_SET_LEVER) expect(p.count).toBeLessThanOrEqual(Math.ceil(source.count / 2));
+      // A moving set of three or more: the move is still something to see past.
+      if (source.kind === 'recount_moved') expect([p.count, p.target === p.count, p.count >= 3]).toEqual([p.count, true, true]);
       if (lever === CHANGE_ONE_LEVER) expect(p.changeBy).toBe(1);
       if (lever === COUNT_ON_LEVER) expect([p.startFrom, p.target - (p.startFrom ?? 0)]).toEqual([source.startFrom, 2]);
       if (lever === FEWER_GROUPS_LEVER) expect([p.groupSize, p.count / (p.groupSize ?? 1)]).toEqual([source.groupSize, 2]);

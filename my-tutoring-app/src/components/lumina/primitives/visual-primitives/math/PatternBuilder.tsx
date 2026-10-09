@@ -22,9 +22,16 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import {
-  activeMapping as mappingFor, activeSequence as sequenceFor, describePatternBuilderCheck, paletteFor,
-  patternBuilderAssignment, patternBuilderMatches, patternBuilderMiss, patternBuilderScene, phaseFor, type PatternBuilderView, type PatternPhase,
+  activeMapping as mappingFor, activeSequence as sequenceFor, createdFacts, describePatternBuilderCheck, paletteFor,
+  patternBuilderAssignment, patternBuilderMatches, patternBuilderMiss, patternBuilderScene, phaseFor, shapeLetters,
+  DONE_LABEL, START_OVER_LABEL, type PatternBuilderView, type PatternPhase,
 } from './patternBuilderWorkspace';
+import { useBuildWatcher } from '../../build-layer/buildLayer';
+import {
+  CORE_MODEL_LEVER, GROUPS_LEVER, LINE_LEVER, MARKER_LEVER, MODEL_LEVER, PRACTICE_NOTE, coreModel, coreModelFact, groupsFact,
+  lineFact, markerFact, markerPlace, modelFact, numberLine, patternBuilderLevers, practiceItem, repeatGroups, shapeModel,
+  type NumberLineModel,
+} from './patternBuilderLevers';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -60,6 +67,9 @@ export interface PatternBuilderChallenge {
    * tutor may coach (a scene fact) — NEVER changes the pattern length or elements.
    */
   supportTier?: 'easy' | 'medium' | 'hard';
+  /** create (open build): the pattern shape the ask names ('AB', 'ABB', 'AAB', 'ABC', 'AABB'), chosen in code. The
+   *  learner picks the tokens; the builder checks the shape repeats. Absent on older payloads (any repeat passes). */
+  createShape?: string;
 }
 
 export interface PatternBuilderData {
@@ -162,6 +172,9 @@ function getTokenDisplay(token: string): { bg: string; border: string; text: str
 
 const CELL_SIZE = 52;
 
+/** The asked shape's glyphs (create): grey and token-free, so no glyph can be read as a token to copy. */
+const SHAPE_GLYPHS: Record<string, string> = { A: '◯', B: '△', C: '◇' };
+
 // ============================================================================
 // Props
 // ============================================================================
@@ -209,7 +222,7 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
   const stableInstanceIdRef = useRef(instanceId || `pattern-builder-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
   /** Bound after the state it clears is declared; the progress hook calls it only after render. */
-  const reopen = useRef<() => void>(() => {});
+  const reopen = useRef<(retry: boolean) => void>(() => {});
 
   // -------------------------------------------------------------------------
   // Challenge progress: the teaching workspace owns it
@@ -219,7 +232,7 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
     workspace, assignment: patternBuilderAssignment,
-    onItemOpened: () => reopen.current(),
+    onItemOpened: (_index, retry) => reopen.current(retry),
   });
   const {
     currentIndex: currentChallengeIndex,
@@ -265,7 +278,13 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
   const [translationCorrect, setTranslationCorrect] = useState(false);
   const [patternTypesExplored] = useState(new Set<string>([patternType]));
 
-  const currentChallenge = challenges[currentChallengeIndex] || null;
+  // In-item levers (`patternBuilderLevers.ts`), keyed by the session item they were pulled on, and the easier
+  // practice item a simplify lever puts in place of the session item until the observer returns to it.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<PatternBuilderChallenge | null>(null);
+  const sessionChallenge = challenges[currentChallengeIndex] || null;
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = sessionChallenge && leverState.item === sessionChallenge.id ? leverState.pulled : [];
   const currentPhase: PatternPhase = phaseFor(currentChallenge?.type);
 
   // Per-challenge sequence override (single-type eval modes give each challenge its own pattern).
@@ -285,8 +304,12 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
     return phases;
   }, [challenges]);
 
-  // A fresh challenge, or the same one after Try again, starts clean.
-  reopen.current = () => {
+  // A fresh challenge, or the same one after Try again, starts clean, except an open build: its Try again keeps
+  // the learner's row and the verdict's words, to revise.
+  const isOpenBuild = currentChallenge?.type === 'create' && !!currentChallenge.createShape;
+  reopen.current = (retry) => {
+    if (retry && isOpenBuild) return;
+    if (!retry) setPractice(null);
     setFeedback('');
     setFeedbackType('');
     setExtensionAnswers([]);
@@ -363,6 +386,12 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
     clearFeedback();
   };
 
+  const handleStartOver = () => {
+    if (learnerBlocked()) return;
+    setCreatedPattern([]);
+    clearFeedback();
+  };
+
   const handleAddTranslatedToken = (token: string) => {
     if (learnerBlocked()) return;
     SoundManager.tap();
@@ -389,9 +418,15 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
       case 'extend': return correct ? 'Great job! You extended the pattern correctly!' : 'Not quite! Look at the pattern again. What repeats?';
       case 'identify_core': return correct ? 'You found the repeating core!'
         : 'That\'s not quite the repeating unit. Try selecting the smallest group that repeats.';
-      case 'create': return correct ? 'Wonderful! You created a valid pattern!'
-        : createdPattern.length >= 4 ? 'You placed tokens, but I can\'t see a repeating pattern. Try making something that repeats!'
-          : 'Add more tokens to show your pattern. A pattern needs to repeat at least twice!';
+      case 'create': {
+        if (correct) return 'Wonderful! You made your own pattern!';
+        // Never the tokens to use: the miss in words, and the asked shape (the task) again.
+        const shape = currentChallenge.createShape ? shapeLetters(currentChallenge.createShape) : '';
+        const miss = patternBuilderMiss(data, currentChallenge, view);
+        if (miss === 'too_short') return shape ? `Make your ${shape} part, then make it again.` : 'Add more tokens. A pattern needs to repeat at least twice!';
+        if (miss === 'other_shape') return shape ? `That repeats, but it is not ${shape} yet. Look at your first part.` : 'Use at least two different tokens.';
+        return 'I can\'t see the same part again. Look at your first part, then make it again.';
+      }
       case 'translate': return correct ? 'Perfect translation! Same pattern, different look!'
         : 'Not quite. Each token maps to a specific new token. Check the mapping!';
       case 'find_rule': return correct ? (challengeRule ? `Great thinking! The rule is: "${challengeRule}"` : 'You figured out the pattern!')
@@ -405,7 +440,8 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
     const correct = patternBuilderMatches(data, currentChallenge, view);
     setFeedback(checkFeedback(correct));
     setFeedbackType(correct ? 'success' : 'error');
-    if (correct) {
+    // An easier practice item is ungraded: its success records nothing for the session.
+    if (correct && !practice) {
       if (currentChallenge.type === 'identify_core') setCoreIdentifiedCorrectly(true);
       if (currentChallenge.type === 'find_rule') setRuleArticulated(true);
       if (currentChallenge.type === 'create') setPatternCreated(true);
@@ -417,6 +453,8 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
         type: currentChallenge.type,
         attempts: currentAttempts + 1,
       });
+    } else if (correct) {
+      SoundManager.playCorrect();
     } else {
       SoundManager.playIncorrect();
     }
@@ -453,11 +491,74 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
   }, [allChallengesComplete, hasSubmittedEvaluation, progress.recordsEvaluation, challengeResults, challenges,
     coreIdentifiedCorrectly, ruleArticulated, patternCreated, translationCorrect, patternTypesExplored, submitEvaluation]);
 
+  // The session item's levers (`patternBuilderLevers.ts`); a help lever's picture is drawn beside or on the session
+  // item only while it is pulled (or shown from the start on easy), never on a practice item.
+  const itemLevers = sessionChallenge ? patternBuilderLevers(sessionChallenge, data, pulledLevers) : [];
+  const helpOn = (id: string) => !practice && itemLevers.some(l => l.id === id && l.pulled);
+  const shownModel = sessionChallenge && helpOn(MODEL_LEVER) ? shapeModel(sessionChallenge, paletteFor(data, sessionChallenge)) : null;
+  const groupLen = sessionChallenge && helpOn(GROUPS_LEVER) ? repeatGroups(data, sessionChallenge) : null;
+  const shownLine = sessionChallenge && helpOn(LINE_LEVER) ? numberLine(data, sessionChallenge) : null;
+  const shownCoreModel = sessionChallenge && helpOn(CORE_MODEL_LEVER) ? coreModel(data, sessionChallenge) : null;
+  const markerOn = !!sessionChallenge && helpOn(MARKER_LEVER);
+  const markerAt = markerOn && sessionChallenge ? markerPlace(data, sessionChallenge, translatedPattern.length) : null;
+
+  /** Every learner row back to empty: a practice item and the full item it stands in for share no work. */
+  const clearWork = () => {
+    setExtensionAnswers([]); setSelectedCoreIndices(new Set()); setCreatedPattern([]); setTranslatedPattern([]); clearFeedback();
+  };
+
   // What the tutor and the observer are shown, republished every render. Derived from the challenge
   // alone, so opening an item adds no revision after the advance.
   useLayoutEffect(() => {
-    if (!currentChallenge) return;
-    workspace.current = { ...patternBuilderScene(data, currentChallenge) };
+    if (!currentChallenge || !sessionChallenge) return;
+    const scene = patternBuilderScene(data, currentChallenge);
+    const levers = practice ? [] : itemLevers;
+    const onScreen = shownModel ? modelFact(shownModel)
+      : groupLen ? groupsFact(data, sessionChallenge, groupLen)
+      : shownLine ? lineFact(shownLine)
+      : shownCoreModel ? coreModelFact(shownCoreModel)
+      : markerOn ? markerFact(data, sessionChallenge, translatedPattern.length) : undefined;
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(isOpenBuild ? createdFacts(createdPattern) : {}),
+        ...(onScreen ? { onScreen } : {}),
+        // The gaps show where the row starts over, so the tier's "do not point it out" no longer holds.
+        ...(groupLen ? { coaching: 'The gaps where the row starts over are on screen: you may point to them. Never say a blank\'s token.' } : {}),
+        ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      levers,
+      pullLever: (id: string) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already on screen.`;
+        const next = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = practiceItem(sessionChallenge, data);
+          if (!easier) return 'This item is already the plainest of its kind.';
+          setLeverState(next); setPractice(easier); clearWork();
+          return { practice: patternBuilderAssignment(easier) };
+        }
+        setLeverState(next);
+        return true as const;
+      },
+      // Back to the full item, blank: the practice row is not the learner's work on it.
+      endPractice: () => { setPractice(null); clearWork(); },
+    };
+  });
+
+  // The live line (shared build layer) on an open build: what the row looks like, never a verdict or a count.
+  const rowSvgRef = useRef<SVGSVGElement | null>(null);
+  const buildSeeing = useBuildWatcher({
+    buildKey: `${currentChallenge?.id}:${createdPattern.join(',')}`,
+    enabled: isOpenBuild && createdPattern.length > 0 && !learnerBlocked(),
+    svg: rowSvgRef,
+    // The task without its shape words: the ask's "two", "pattern" and "repeat" are what the line may never say, and
+    // a watcher handed them echoes them (a drive kept 2 of 5 lines).
+    request: { task: 'Putting coloured tiles in a row, in an order the child chooses', numbers: 'never',
+      neverSay: ['pattern', 'repeat', 'repeats', 'repeating'],
+      // The row's token names, so the line names the learner's colours and shapes as placed (a drive caught the
+      // watcher calling a red tile purple from the picture alone). Their own work, so naming it leaks nothing.
+      sceneNote: 'A strip where the child places tiles, left to right, six to a line. Each tile shows its first letter.',
+      made: `tiles, left to right: ${createdPattern.join(', ')}` },
   });
 
   // -------------------------------------------------------------------------
@@ -624,6 +725,7 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
             </p>
           </LuminaPanel>
         )}
+        {practice && <div className="text-center text-xs text-amber-300" data-practice>Practice row</div>}
 
         {/* Pattern Display */}
         {(currentPhase === 'copy' || currentPhase === 'identify') && (
@@ -647,7 +749,7 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
                 {activeSequence.given.map((token, i) => {
                   const isCorePos = showCore && i < activeSequence.core.length;
                   const isIdentifyMode = currentPhase === 'identify';
-                  return renderToken(token, i, {
+                  const cell = renderToken(token, i, {
                     onClick: isIdentifyMode && !isCurrentChallengeComplete
                       ? () => { pip.look(`seq-${i}`); handleToggleCoreIndex(i); }
                       : undefined,
@@ -655,6 +757,14 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
                     isCoreHighlight: isCorePos && !isIdentifyMode,
                     pipId: isIdentifyMode ? `seq-${i}` : undefined,
                   });
+                  // The help lever `repeat_groups`: a gap on the shown row where it starts over, never on a blank.
+                  if (!groupLen || i === 0 || i % groupLen !== 0) return cell;
+                  return (
+                    <React.Fragment key={`gap-${i}`}>
+                      <div data-lever="repeat-gap" aria-hidden className="mx-1.5 h-10 border-l-2 border-dashed border-amber-300/60" />
+                      {cell}
+                    </React.Fragment>
+                  );
                 })}
 
                 {/* Separator */}
@@ -681,6 +791,22 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
               </div>
             </div>
 
+            {shownLine && <HopLine line={shownLine} />}
+            {shownCoreModel && (
+              // The help lever `core_model`: a row in other pictures with its OWN part boxed, beside the item and never
+              // on it; its shape differs from the item's part, so no box length carries over.
+              <div className="flex flex-wrap items-center justify-center gap-2" data-lever="core-model"
+                aria-label={`Like this: ${shownCoreModel.names.join(', ')}`}>
+                <span className="mr-1 text-sm text-slate-400">Like this:</span>
+                {Array.from({ length: shownCoreModel.glyphs.length / shownCoreModel.shape.length }, (_, g) => (
+                  <span key={g} data-model-part className="flex gap-1 rounded-md border-2 border-amber-300/60 px-1.5 py-0.5">
+                    {shownCoreModel.glyphs.slice(g * shownCoreModel.shape.length, (g + 1) * shownCoreModel.shape.length)
+                      .map((glyph, i) => <span key={i} className="text-2xl leading-none">{glyph}</span>)}
+                  </span>
+                ))}
+              </div>
+            )}
+
             {/* Core highlight label */}
             {showCore && currentPhase !== 'identify' && (
               <div className="text-center">
@@ -695,6 +821,37 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
         {/* Create Mode */}
         {currentPhase === 'create' && (
           <div className="space-y-3">
+            {isOpenBuild && currentChallenge?.createShape && (
+              // The shape as grey glyphs, one per letter: no token's colour, shape or initial, so it reads as the
+              // structure to make and never as tokens to copy. The letters stay small under each glyph for readers.
+              <div className="flex items-end justify-center gap-2" data-asked-shape aria-label={`Shape ${shapeLetters(currentChallenge.createShape)}`}>
+                <span className="mr-1 text-sm text-slate-400">Shape:</span>
+                {currentChallenge.createShape.split('').map((letter, i) => (
+                  <span key={i} className="flex flex-col items-center">
+                    <span className="text-2xl leading-none text-slate-400">{SHAPE_GLYPHS[letter] ?? '◯'}</span>
+                    <span className="text-[10px] text-slate-500">{letter}</span>
+                  </span>
+                ))}
+              </div>
+            )}
+            {shownModel && (
+              // The help lever: the asked shape twice in pictures that are not on the palette, beside the build and
+              // never on it, so it shows how the shape goes without giving a row to copy.
+              <div className="flex items-center justify-center gap-2" data-lever="shape-model"
+                aria-label={`Like this: ${shownModel.names.join(', ')}`}>
+                <span className="mr-1 text-sm text-slate-400">Like this:</span>
+                {shownModel.glyphs.map((glyph, i) => <span key={i} className="text-2xl leading-none">{glyph}</span>)}
+              </div>
+            )}
+            {isOpenBuild ? (
+              <div ref={pip.ref('build')} data-pip-object="build"
+                className="flex min-h-[60px] items-center justify-center rounded-lg border border-white/5 bg-slate-800/20 p-3">
+                {createdPattern.length === 0
+                  ? <p className="text-slate-500 text-sm">Tap tokens below to make your pattern</p>
+                  : <CreatedRow ref={rowSvgRef} row={createdPattern}
+                    onTapLast={!learnerBlocked() ? () => { pip.look('build'); handleRemoveLastCreated(); } : undefined} />}
+              </div>
+            ) : (
             <div ref={pip.ref('build')} data-pip-object="build"
               className="flex items-center justify-center gap-1.5 flex-wrap min-h-[60px] bg-slate-800/20 rounded-lg p-3 border border-white/5">
               {createdPattern.length === 0 ? (
@@ -709,6 +866,12 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
                 )
               )}
             </div>
+            )}
+            {isOpenBuild && (
+              <div className="flex min-h-8 items-center justify-center" aria-live="polite" data-testid="build-watcher">
+                {buildSeeing && <span className="rounded-full bg-white/10 px-4 py-1.5 text-base text-amber-100">👀 {buildSeeing}</span>}
+              </div>
+            )}
           </div>
         )}
 
@@ -720,10 +883,18 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
               <p className="text-slate-400 text-xs text-center">
                 Original ({translationTarget?.sourceType || 'source'}):
               </p>
-              <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                {activeSequence.given.map((token, i) =>
-                  renderToken(token, i)
-                )}
+              <div className="flex items-start justify-center gap-1.5 flex-wrap" data-lever={markerOn ? 'place-marker' : undefined}>
+                {activeSequence.given.map((token, i) => !markerOn ? renderToken(token, i) : (
+                  // The help lever `place_marker`: a tick under each place made and a marker under the next, from the
+                  // learner's own row; nothing on the build row or the palette.
+                  <div key={`src-${i}`} className="flex flex-col items-center gap-0.5">
+                    {renderToken(token, i, { isSelected: markerAt === i })}
+                    <span className="h-4 text-xs leading-4" data-place={i < translatedPattern.length ? 'done' : markerAt === i ? 'next' : undefined}>
+                      {i < translatedPattern.length ? <span className="text-emerald-400">✓</span>
+                        : markerAt === i ? <span className="text-orange-300">▲</span> : null}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -815,7 +986,19 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
         {/* Action Buttons: the runtime advances, so there is no Next here */}
         {challenges.length > 0 && (
           <div className="flex justify-center gap-3">
-            {!isCurrentChallengeComplete && !allChallengesComplete && (
+            {!isCurrentChallengeComplete && !allChallengesComplete && isOpenBuild && (
+              <>
+                {createdPattern.length > 0 && (
+                  <LuminaButton tone="subtle" className="text-xs" disabled={learnerBlocked()} onClick={handleStartOver}>
+                    {START_OVER_LABEL}
+                  </LuminaButton>
+                )}
+                <LuminaButton tone="primary" onClick={handleCheckAnswer} disabled={learnerBlocked() || createdPattern.length === 0}>
+                  {DONE_LABEL}
+                </LuminaButton>
+              </>
+            )}
+            {!isCurrentChallengeComplete && !allChallengesComplete && !isOpenBuild && (
               <>
                 {/* Undo button */}
                 {(extensionAnswers.length > 0 || createdPattern.length > 0 || translatedPattern.length > 0) && (
@@ -872,6 +1055,53 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
         )}
       </LuminaCardContent>
     </LuminaCard>
+  );
+}
+
+/** The open build's row as one svg, so the build watcher's picture is exactly what the learner sees. Six to a line;
+ *  the last token taps off. No grouping or count is drawn (the parts are the learner's to make). */
+const CreatedRow = React.forwardRef<SVGSVGElement, { row: string[]; onTapLast?: () => void }>(function CreatedRow({ row, onTapLast }, ref) {
+  const size = 48, gap = 6, perLine = 6;
+  const cols = Math.min(perLine, row.length), lines = Math.ceil(row.length / perLine);
+  const width = cols * (size + gap) - gap, height = lines * (size + gap) - gap;
+  return (
+    <svg ref={ref} width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="h-auto max-w-full" data-created-row>
+      {row.map((token, i) => {
+        const d = getTokenDisplay(token);
+        const x = (i % perLine) * (size + gap), y = Math.floor(i / perLine) * (size + gap);
+        const last = i === row.length - 1;
+        return (
+          <g key={i} data-created-token={i} onClick={last ? onTapLast : undefined} style={last && onTapLast ? { cursor: 'pointer' } : undefined}>
+            <rect x={x} y={y} width={size} height={size} rx={8} fill={d.bg} stroke={d.border} strokeWidth={2} />
+            <text x={x + size / 2} y={y + size / 2 + 7} textAnchor="middle" fontSize={20} fontWeight={700} fill={d.text}>{d.label}</text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+});
+
+/** The help lever `number_line`: the shown numbers as dots on a line that spans them only, a hop from each to the
+ *  next and no size written. Nothing past the last shown number, so no blank's place is drawn. */
+function HopLine({ line }: { line: NumberLineModel }) {
+  const width = 320, pad = 18, y = 46;
+  const x = (v: number) => pad + ((v - line.min) / (line.max - line.min)) * (width - 2 * pad);
+  return (
+    <div className="flex justify-center" data-lever="number-line">
+      <svg width={width} height={70} viewBox={`0 0 ${width} 70`} className="max-w-full" aria-label={`Number line from ${line.min} to ${line.max}`}>
+        <line x1={pad} x2={width - pad} y1={y} y2={y} stroke="#94a3b8" strokeWidth={2} />
+        {line.points.slice(1).map((p, i) => {
+          const a = x(line.points[i]), b = x(p), mid = (a + b) / 2, rise = Math.min(30, Math.abs(b - a) / 2 + 6);
+          return <path key={`hop-${i}`} data-hop d={`M ${a} ${y} Q ${mid} ${y - rise * 2} ${b} ${y}`} fill="none" stroke="#fbbf24" strokeWidth={2} />;
+        })}
+        {line.points.map((p, i) => (
+          <g key={`dot-${i}`}>
+            <circle cx={x(p)} cy={y} r={5} fill="#38bdf8" />
+            <text x={x(p)} y={y + 18} textAnchor="middle" fontSize={12} fill="#cbd5e1">{p}</text>
+          </g>
+        ))}
+      </svg>
+    </div>
   );
 }
 

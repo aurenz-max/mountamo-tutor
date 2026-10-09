@@ -47,8 +47,8 @@ import {
 import { boardGroups, buildPlaceFor, countMiss, makesASet, workspaceAssignment, workspaceScene } from './countingBoardDomain';
 import { CountingBuildScene, type BuiltSpot } from './CountingBuildScene';
 import { useBuildWatcher } from '../../build-layer/buildLayer';
-import { COUNT_LEVER, HANDS_LEVER, LINE_LEVER, SMALLER_LEVER, TAGS_LEVER, countingBoardLevers, droppedHand, leverFacts,
-  smallerGive, startLevers } from './countingBoardLevers';
+import { COUNT_LEVER, HANDS_LEVER, LINE_LEVER, PAIR_LEVER, SMALLER_LEVER, TAGS_LEVER, countingBoardLevers, droppedHand,
+  leverFacts, pairedHand, smallerGive, startLevers } from './countingBoardLevers';
 import { FIVES_LEVER, GROUP_TAG_LEVER, ROWS_LEVER, SPOKEN_SIMPLIFY, countingBoardSpokenLevers, spokenLeverFacts,
   spokenPractice } from './countingBoardSpokenLevers';
 import { countingBoardEvidenceSummary, countingObservation } from './countingBoardEvidence';
@@ -454,6 +454,8 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
   // ask a simplify lever put on screen in its place. The refs are what event handlers read.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<CountingItem | null>(null);
+  /** The learner's last wrong hand, keyed by item: what `pair_up` draws against the group. A retry clears the pick, not this. */
+  const [missedHand, setMissedHand] = useState<{ item: string; fingers: number } | null>(null);
   const practiceRef = useRef<CountingItem | null>(null);
   const displayItemRef = useRef<CountingItem | null>(null);
 
@@ -676,6 +678,8 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
   const startPulled = startLevers(sessionItem, { showRunningCount, showLastNumber });
   const pulledLevers = leverState.item === sessionItem?.id ? leverState.pulled : startPulled;
   const leverArrangement = sessionChallenge?.arrangement ?? 'scattered';
+  const missedOnItem = !practice && missedHand && missedHand.item === sessionItem?.id ? missedHand.fingers : null;
+  const pairHand = pulledLevers.includes(PAIR_LEVER) ? pairedHand(currentItem, missedOnItem) : null;
 
   // ── Per-challenge layout ──────────────────────────────────────────────────
   const startCount = currentChallenge?.count ?? 5;
@@ -944,6 +948,7 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
     SoundManager.tap();
     setHandChoice(fingers);
     handChoiceRef.current = fingers;
+    if (fingers !== item.target && !practiceRef.current) setMissedHand({ item: item.id, fingers });
     commitGesture(runner, { response: String(fingers), correct: fingers === item.target,
       miss: countMiss(item, fingers), cue: () => handVerdictCue(item, fingers) });
   }, [runner, evaluation.hasSubmitted]);
@@ -956,9 +961,9 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
       added: addedExtras, moved: hasMoved, covered: coveredCount, hidden: isKSubitize && !isSubitizeFlashing })
       : { objects: [], facts: {} };
     const spoken = sessionItem?.answerKind === 'voice';
-    const onScreen = spoken ? spokenLeverFacts(currentItem, pulledLevers) : leverFacts(currentItem, pulledLevers);
+    const onScreen = spoken ? spokenLeverFacts(currentItem, pulledLevers, { moved: hasMoved }) : leverFacts(currentItem, pulledLevers);
     const levers = practice ? [] : spoken ? countingBoardSpokenLevers(sessionItem, pulledLevers, leverArrangement, items)
-      : countingBoardLevers(sessionItem, pulledLevers, leverArrangement);
+      : countingBoardLevers(sessionItem, pulledLevers, leverArrangement, missedOnItem);
     workspace.current = {
       ...scene,
       ...(onScreen || practice ? { facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
@@ -986,6 +991,9 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
           return { practice: workspaceAssignment(easier) };
         }
         setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
+        // recount_moved: the row is for the count before the move. Pulled after the move, the board comes back
+        // uncounted in a row for a fresh count, so the pull shows; the last tap moves it again.
+        if (id === LINE_LEVER && sessionItem.kind === 'recount_moved' && hasMoved) resetBoardFor(sessionItem);
         return true;
       },
       endPractice: () => { practiceRef.current = null; setPractice(null); },
@@ -1375,6 +1383,27 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
             {kind === 'subitize_perceptual' && (
               <div className="flex flex-col items-center gap-3">
                 <span className="text-slate-300 text-sm">Which hand shows how many you saw?</span>
+                {/* `pair_up`: the group in a row over the fingers of the learner's last wrong hand, joined pair by
+                    pair. No number; an object or a finger without a partner is left for the learner to see. */}
+                {pairHand !== null && (() => {
+                  const cols = Math.max(startCount, pairHand), cell = 40;
+                  return (
+                    <svg data-lever="pair-up" width={cols * cell} height={88} viewBox={`0 0 ${cols * cell} 88`} aria-label="The group matched to the fingers of the hand you picked">
+                      {Array.from({ length: cols }, (_, i) => {
+                        const x = i * cell + cell / 2;
+                        return (
+                          <g key={i}>
+                            {i < startCount && <text x={x} y={18} textAnchor="middle" dominantBaseline="central" fontSize={22}
+                              className="select-none pointer-events-none" data-pair="object">{emoji}</text>}
+                            {i < startCount && i < pairHand && <line x1={x} y1={34} x2={x} y2={52} stroke="#22d3ee" strokeWidth={3} strokeLinecap="round" />}
+                            {i < pairHand && <rect data-pair="finger" x={x - 5} y={56} width={10} height={28} rx={5}
+                              fill="#fde7c3" stroke="#c98a52" strokeWidth={2} />}
+                          </g>
+                        );
+                      })}
+                    </svg>
+                  );
+                })()}
                 <div className="flex items-center justify-center gap-4">
                   {handOptions.map((choice) => {
                     const isPicked = handChoice === choice;

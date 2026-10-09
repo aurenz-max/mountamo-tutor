@@ -16,6 +16,9 @@
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { AngleTargetKind, AngleWorkshopChallenge, AnglePairRelationship } from './AngleWorkshop';
 
+/** The miss for a total other than the figure's (ids are words: the catalog's miss ids take no digits). */
+const TOTAL_MISS = { 90: 'total_ninety', 180: 'total_one_eighty', 360: 'total_three_sixty' } as const;
+
 export const RIGHT_TOL = 3;
 export const STRAIGHT_MIN = 177;
 export const MIN_OPEN = 5;
@@ -68,6 +71,100 @@ export function makeAngleMiss(c: AngleWorkshopChallenge, deg: number): MakeAngle
   if (band === 'closed') return 'not_opened';
   if (c.targetKind === 'range') return deg < (c.targetMin ?? 0) ? 'below_range' : 'above_range';
   return `made_${band}` as MakeAngleMiss;
+}
+
+// ── The classic modes' misses: what a wrong typed or tapped answer shows ──────
+
+/**
+ * The pattern a wrong answer shows on a classic mode, named for the value typed (never a guessed cause). Each id is the
+ * total or given the learner's number matches, checked in this order; `near` / `far` are the rest.
+ * - measure: `other_scale` (the reading from the other end of the scale, 180 − the angle).
+ * - classify_pairs: `chose_<relationship>` (the relationship tapped).
+ * - solve_unknown: `total_ninety` / `total_one_eighty` / `total_three_sixty` (a total other than the figure's minus the labeled angles),
+ *   `copied_known` (a labeled angle), `one_known_left` (360 minus one labeled angle only, around a point).
+ * - solve_algebraic: `typed_an_angle` (the value of one labeled expression, not x), `total_ninety` / `total_one_eighty` (x for a
+ *   sum to the other total, or to a total on equal angles).
+ * - transversal: `supplement_given` (180 − the marked angle), `copied_given` (a labeled angle), `added_givens` (the two
+ *   labeled angles added, on a triangle), `one_given_left` (180 minus one labeled angle only), `found_interior` (the
+ *   triangle's own corner where the exterior angle is, 180 − both labeled angles).
+ */
+export const CLASSIC_MISSES = {
+  measure: ['other_scale', 'near', 'far'],
+  classify_pairs: ['chose_complementary', 'chose_supplementary', 'chose_vertical', 'chose_adjacent'],
+  solve_unknown: ['total_ninety', 'total_one_eighty', 'total_three_sixty', 'copied_known', 'one_known_left', 'near', 'far'],
+  solve_algebraic: ['typed_an_angle', 'total_ninety', 'total_one_eighty', 'near', 'far'],
+  transversal: ['supplement_given', 'copied_given', 'added_givens', 'one_given_left', 'found_interior', 'near', 'far'],
+} as const;
+
+/** A typed answer within this many degrees (or 2 for x) of the key, missed, is `near`. */
+const NEAR_DEG = 10;
+const NEAR_X = 2;
+
+/** The total a solve_unknown figure's angles fill, or null on vertical angles (equal, no total). */
+export function solveTotal(c: AngleWorkshopChallenge): number | null {
+  switch (c.solveConfig) {
+    case 'complementary': return 90;
+    case 'supplementary': return 180;
+    case 'around_point': return 360;
+    default: return null;
+  }
+}
+
+/** The two labeled angles' measures on a solve_algebraic item, from its x. */
+export function algebraicAngles(c: AngleWorkshopChallenge): [number, number] {
+  const x = c.expectedAnswer;
+  return [(c.a1 ?? 1) * x + (c.b1 ?? 0), (c.a2 ?? 1) * x + (c.b2 ?? 0)];
+}
+
+/** The miss a wrong classic answer shows; undefined when it is right (or on make_angle, judged by `makeAngleMiss`). */
+export function classicMiss(c: AngleWorkshopChallenge, answer: { value?: number; relationship?: AnglePairRelationship | null }):
+  string | undefined {
+  if (c.type === 'make_angle') return undefined;
+  if (c.type === 'classify_pairs') {
+    const r = answer.relationship;
+    return r && r !== c.expectedRelationship ? `chose_${r}` : undefined;
+  }
+  const v = answer.value;
+  if (v === undefined || !Number.isFinite(v) || Math.abs(v - c.expectedAnswer) <= c.tolerance) return undefined;
+  const is = (target: number, tol = c.tolerance) => Math.abs(v - target) <= tol;
+  const rest = (near: number) => Math.abs(v - c.expectedAnswer) <= near ? 'near' : 'far';
+  switch (c.type) {
+    case 'measure':
+      return is(180 - (c.angleMeasure ?? c.expectedAnswer)) ? 'other_scale' : rest(NEAR_DEG);
+    case 'solve_unknown': {
+      const k1 = c.knownAngle ?? 0, k2 = c.knownAngle2;
+      const known = k1 + (c.solveConfig === 'around_point' ? k2 ?? 0 : 0);
+      const own = solveTotal(c);
+      for (const t of [90, 180, 360] as const) if (t !== own && is(t - known)) return TOTAL_MISS[t];
+      if (is(k1) || (k2 !== undefined && is(k2))) return 'copied_known';
+      if (c.solveConfig === 'around_point' && (is(360 - k1) || (k2 !== undefined && is(360 - k2)))) return 'one_known_left';
+      return rest(NEAR_DEG);
+    }
+    case 'solve_algebraic': {
+      const [A1, A2] = algebraicAngles(c);
+      if (is(A1, 0.5) || is(A2, 0.5)) return 'typed_an_angle';
+      const a = (c.a1 ?? 1) + (c.a2 ?? 1), b = (c.b1 ?? 0) + (c.b2 ?? 0);
+      const own = c.algConfig === 'complementary' ? 90 : c.algConfig === 'supplementary' ? 180 : null;
+      for (const t of [90, 180] as const) if (t !== own && is((t - b) / a, 0.05)) return TOTAL_MISS[t];
+      return rest(NEAR_X);
+    }
+    case 'transversal': {
+      const g1 = c.givenAngle ?? 0, g2 = c.givenAngle2;
+      if (c.transversalShape === 'parallel_transversal') {
+        if (is(180 - g1)) return 'supplement_given';
+        if (is(g1)) return 'copied_given';
+        return rest(NEAR_DEG);
+      }
+      const g = g2 ?? 0;
+      if (c.transversalShape === 'exterior_angle' && is(180 - g1 - g)) return 'found_interior';
+      if (c.transversalShape === 'triangle_sum' && is(g1 + g)) return 'added_givens';
+      if (is(g1) || is(g)) return 'copied_given';
+      if (c.transversalShape === 'triangle_sum' && (is(180 - g1) || is(180 - g))) return 'one_given_left';
+      return rest(NEAR_DEG);
+    }
+    default:
+      return undefined;
+  }
 }
 
 /** The ask. It states the target: that is the task, not a leak. */
@@ -135,7 +232,7 @@ function figure(c: AngleWorkshopChallenge): string {
 export function workspaceScene(c: AngleWorkshopChallenge, view: AngleView): WorkspaceScene {
   const facts: Record<string, string | number> = { kind: c.type, figure: figure(c) };
   if (c.type === 'measure') facts.protractor = view.protractorShown ? 'placed' : 'not placed';
-  if (c.type === 'classify_pairs') facts.choices = 'complementary | supplementary | vertical | adjacent';
+  if (c.type === 'classify_pairs') facts.choices = (c.choices ?? RELATIONS).join(' | ');
   if (c.type === 'make_angle') facts.openingDegrees = view.opening;
   facts.learnerWork = describeAngleWork(c, view);
   facts.constraints = c.type === 'make_angle'
@@ -186,7 +283,7 @@ export function angleWorkshopHarnessInputs(c: AngleWorkshopChallenge, wrong: boo
   }
   if (c.type === 'classify_pairs') {
     const key = c.expectedRelationship ?? 'adjacent';
-    const pick = wrong ? RELATIONS.find(r => r !== key)! : key;
+    const pick = wrong ? (c.choices ?? RELATIONS).find(r => r !== key)! : key;
     return [{ type: 'choose', label: RELATION_LABEL[pick] }, { type: 'check' }];
   }
   const off = c.answerKind === 'x_value' ? 3 : c.expectedAnswer + 20 <= 180 ? 20 : -20;

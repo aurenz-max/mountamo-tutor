@@ -24,6 +24,10 @@ import {
   BOTH_SAME, CHECK_LABEL, STEP_DOWN, STEP_UP, describeStrategyPickerCheck, menuLabel, optionLabel, strategyLabel,
   strategyPickerAssignment, strategyPickerMatches, strategyPickerMiss, strategyPickerScene, type StrategyPickerView,
 } from './strategyPickerWorkspace';
+import {
+  PARTS_LEVER, PICTURES_LEVER, PRACTICE_NOTE, exampleProblem, optionPictures, partsFact, picturesFact, practiceItem,
+  strategyPickerLevers,
+} from './strategyPickerLevers';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
@@ -139,9 +143,26 @@ const STRATEGY_INFO: Record<StrategyId, { label: string; icon: string; color: st
 
 const SVG_W = 420;
 const SVG_H = 140;
+const FIRST_COLOR = '#3b82f6';
+const SECOND_COLOR = '#eab308';
 
-function NumberLineViz({ operand1, operand2, operation, hopsRevealed }: {
-  operand1: number; operand2: number; operation: 'addition' | 'subtraction'; hopsRevealed: number;
+/** The help lever `two_parts`: a swatch and the number for each part of the picture, the equation's own numbers. */
+function PartsLegend({ first, second, y }: { first: number; second: number; y: number }) {
+  const cx = SVG_W / 2;
+  return (
+    <g data-lever="two-parts">
+      {([[first, FIRST_COLOR, cx - 50], [second, SECOND_COLOR, cx + 20]] as const).map(([n, color, x]) => (
+        <g key={color}>
+          <rect x={x} y={y - 11} width={14} height={14} rx={3} fill={color} />
+          <text x={x + 20} y={y} fontSize={14} fontWeight="bold" fill="rgba(255,255,255,0.9)" data-part-label>{n}</text>
+        </g>
+      ))}
+    </g>
+  );
+}
+
+function NumberLineViz({ operand1, operand2, operation, hopsRevealed, parts }: {
+  operand1: number; operand2: number; operation: 'addition' | 'subtraction'; hopsRevealed: number; parts?: boolean;
 }) {
   const max = Math.max(operand1 + operand2 + 2, 12);
   const startNum = operation === 'subtraction' ? operand1 : operand1;
@@ -166,7 +187,8 @@ function NumberLineViz({ operand1, operand2, operation, hopsRevealed }: {
           </g>
         );
       })}
-      {/* Start marker */}
+      {/* Start marker; the help lever `two_parts` rings it */}
+      {parts && <circle data-lever="two-parts" cx={margin + startNum * step} cy={lineY} r={11} fill="none" stroke="#fbbf24" strokeWidth={2} />}
       <circle cx={margin + startNum * step} cy={lineY} r={6} fill="#3b82f6" />
       {/* Hop arcs */}
       {Array.from({ length: Math.min(hopsRevealed, hopCount) }, (_, i) => {
@@ -188,6 +210,12 @@ function NumberLineViz({ operand1, operand2, operation, hopsRevealed }: {
             <text x={midX} y={lineY - 38} textAnchor="middle" fontSize={9} fill="#93c5fd">
               {direction === -1 ? '−1' : '+1'}
             </text>
+            {/* The help lever `two_parts`: each hop numbered in order, over its arc, never at a tick */}
+            {parts && (
+              <text x={midX} y={lineY - 52} textAnchor="middle" fontSize={13} fontWeight="bold" fill="#fbbf24" data-hop-number>
+                {i + 1}
+              </text>
+            )}
           </g>
         );
       })}
@@ -195,7 +223,7 @@ function NumberLineViz({ operand1, operand2, operation, hopsRevealed }: {
   );
 }
 
-function TenFrameViz({ operand1, operand2 }: { operand1: number; operand2: number }) {
+function TenFrameViz({ operand1, operand2, parts }: { operand1: number; operand2: number; parts?: boolean }) {
   const total = operand1 + operand2;
   const cellW = 36;
   const cellH = 36;
@@ -234,12 +262,18 @@ function TenFrameViz({ operand1, operand2 }: { operand1: number; operand2: numbe
           </g>
         );
       })}
+      {/* The help lever `two_parts`: the top row of five outlined, and each colour's number */}
+      {parts && (
+        <rect data-lever="two-parts" data-five-row x={startX - 4} y={startY - 4} width={frameW + 8} height={cellH + 8} rx={6}
+          fill="none" stroke="#fbbf24" strokeWidth={2} strokeDasharray="6 3" />
+      )}
+      {parts && <PartsLegend first={operand1} second={operand2} y={startY + rows * (cellH + gap) + 24} />}
     </svg>
   );
 }
 
-function DoublesViz({ operand1, operand2, isNearDoubles }: {
-  operand1: number; operand2: number; isNearDoubles: boolean;
+function DoublesViz({ operand1, operand2, isNearDoubles, parts }: {
+  operand1: number; operand2: number; isNearDoubles: boolean; parts?: boolean;
 }) {
   const base = Math.min(operand1, operand2);
   const extra = Math.abs(operand1 - operand2);
@@ -296,11 +330,26 @@ function DoublesViz({ operand1, operand2, isNearDoubles }: {
           stroke="#f472b6"
         />
       )}
+      {/* The help lever `two_parts`: each equal group labelled with its number, the extra dot +1 */}
+      {parts && (
+        <g data-lever="two-parts">
+          {[startX + groupW / 2, startX + groupW + groupGap + groupW / 2].map((x, i) => (
+            <text key={i} x={x} y={startY + rowsPerGroup * dotGap + 22} textAnchor="middle" fontSize={14} fontWeight="bold"
+              fill="#fbbf24" data-part-label>{base}</text>
+          ))}
+          {isNearDoubles && extra > 0 && (
+            <text x={startX + groupW * 2 + groupGap + dotGap / 2 + dotR} y={startY + rowsPerGroup * dotGap + 22}
+              textAnchor="middle" fontSize={14} fontWeight="bold" fill="#f472b6" data-part-label>+1</text>
+          )}
+        </g>
+      )}
     </svg>
   );
 }
 
-function TallyViz({ total }: { total: number }) {
+function TallyViz({ total, split }: { total: number; split?: number }) {
+  /** The help lever `two_parts` colours the first number's marks apart from the second's. */
+  const colorOf = (i: number) => (split === undefined ? '#eab308' : i < split ? FIRST_COLOR : SECOND_COLOR);
   const groups = Math.floor(total / 5);
   const remainder = total % 5;
   const tallyGap = 14;
@@ -320,7 +369,7 @@ function TallyViz({ total }: { total: number }) {
     for (let i = 0; i < 4; i++) {
       elements.push(
         <line key={`g${g}-v${i}`} x1={x} y1={startY} x2={x} y2={startY + lineH}
-          stroke="#eab308" strokeWidth={3} strokeLinecap="round" />
+          stroke={colorOf(g * 5 + i)} strokeWidth={3} strokeLinecap="round" />
       );
       x += tallyGap;
     }
@@ -328,7 +377,7 @@ function TallyViz({ total }: { total: number }) {
     elements.push(
       <line key={`g${g}-d`} x1={x - 4 * tallyGap + 2} y1={startY + lineH - 5}
         x2={x - 2} y2={startY + 5}
-        stroke="#eab308" strokeWidth={3} strokeLinecap="round" />
+        stroke={colorOf(g * 5 + 4)} strokeWidth={3} strokeLinecap="round" />
     );
     x += groupGap;
   }
@@ -337,7 +386,7 @@ function TallyViz({ total }: { total: number }) {
   for (let i = 0; i < remainder; i++) {
     elements.push(
       <line key={`rem-${i}`} x1={x} y1={startY} x2={x} y2={startY + lineH}
-        stroke="#eab308" strokeWidth={3} strokeLinecap="round" />
+        stroke={colorOf(groups * 5 + i)} strokeWidth={3} strokeLinecap="round" />
     );
     x += tallyGap;
   }
@@ -345,11 +394,12 @@ function TallyViz({ total }: { total: number }) {
   return (
     <svg width={SVG_W} height={SVG_H} viewBox={`0 0 ${SVG_W} ${SVG_H}`} className="max-w-full h-auto">
       {elements}
+      {split !== undefined && <PartsLegend first={split} second={total - split} y={startY + lineH + 32} />}
     </svg>
   );
 }
 
-function DrawObjectsViz({ total }: { total: number }) {
+function DrawObjectsViz({ total, split }: { total: number; split?: number }) {
   const cols = Math.min(total, 5);
   const rows = Math.ceil(total / 5);
   const r = 14;
@@ -369,36 +419,41 @@ function DrawObjectsViz({ total }: { total: number }) {
             cx={startX + col * gap}
             cy={startY + row * gap}
             r={r}
-            fill="rgba(251,146,60,0.3)"
-            stroke="#fb923c"
+            fill={split === undefined ? 'rgba(251,146,60,0.3)' : i < split ? 'rgba(59,130,246,0.3)' : 'rgba(234,179,8,0.3)'}
+            stroke={split === undefined ? '#fb923c' : i < split ? FIRST_COLOR : SECOND_COLOR}
             strokeWidth={2}
           />
         );
       })}
+      {/* The help lever `two_parts`: the first number's circles apart from the second's, each part's number */}
+      {split !== undefined && <PartsLegend first={split} second={total - split} y={startY + rows * gap + 14} />}
     </svg>
   );
 }
 
-function StrategyVisualization({ strategy, problem, hopsRevealed }: {
+function StrategyVisualization({ strategy, problem, hopsRevealed, parts }: {
   strategy: StrategyId;
   problem: StrategyPickerChallenge['problem'];
   hopsRevealed: number;
+  /** The help lever `two_parts` is pulled: mark the picture's parts (`partsMarks`). */
+  parts?: boolean;
 }) {
+  const split = parts ? problem.operand1 : undefined;
   switch (strategy) {
     case 'counting-on':
     case 'counting-back':
       return <NumberLineViz operand1={problem.operand1} operand2={problem.operand2}
-        operation={problem.operation} hopsRevealed={hopsRevealed} />;
+        operation={problem.operation} hopsRevealed={hopsRevealed} parts={parts} />;
     case 'make-ten':
-      return <TenFrameViz operand1={problem.operand1} operand2={problem.operand2} />;
+      return <TenFrameViz operand1={problem.operand1} operand2={problem.operand2} parts={parts} />;
     case 'doubles':
-      return <DoublesViz operand1={problem.operand1} operand2={problem.operand2} isNearDoubles={false} />;
+      return <DoublesViz operand1={problem.operand1} operand2={problem.operand2} isNearDoubles={false} parts={parts} />;
     case 'near-doubles':
-      return <DoublesViz operand1={problem.operand1} operand2={problem.operand2} isNearDoubles={true} />;
+      return <DoublesViz operand1={problem.operand1} operand2={problem.operand2} isNearDoubles={true} parts={parts} />;
     case 'tally-marks':
-      return <TallyViz total={problem.operand1 + problem.operand2} />;
+      return <TallyViz total={problem.operand1 + problem.operand2} split={split} />;
     case 'draw-objects':
-      return <DrawObjectsViz total={problem.operand1 + problem.operand2} />;
+      return <DrawObjectsViz total={problem.operand1 + problem.operand2} split={split} />;
     default:
       return null;
   }
@@ -421,29 +476,35 @@ const NEUTRAL_EXEMPLAR_PROBLEM: StrategyPickerChallenge['problem'] = {
   result: 8,
 };
 
-function StrategyExemplarStrip({ strategies }: { strategies: StrategyId[] }) {
+function StrategyExemplarStrip({ strategies, avoid, lever }: {
+  strategies: StrategyId[];
+  /** The item's own problem: no exemplar is drawn on it. */
+  avoid?: StrategyPickerChallenge['problem'];
+  /** Drawn by the help lever `option_pictures`. */
+  lever?: boolean;
+}) {
   const unique = Array.from(new Set(strategies)).filter((s) => STRATEGY_INFO[s]);
   if (unique.length === 0) return null;
   return (
-    <LuminaPanel className="p-3 space-y-2">
+    <LuminaPanel className="p-3 space-y-2" data-lever={lever ? 'option-pictures' : undefined}>
       <p className="text-slate-400 text-xs font-medium text-center">
-        How each strategy works (example: 4 + 4)
+        How each strategy works, on its own example
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {unique.map((strat) => (
-          <div key={strat} className="bg-slate-800/20 rounded-lg p-2 border border-white/5">
-            <p className="text-center text-[11px] text-slate-400 mb-1 font-medium">
-              {STRATEGY_INFO[strat]?.icon} {STRATEGY_INFO[strat]?.label}
-            </p>
-            <div className="scale-90 origin-top">
-              <StrategyVisualization
-                strategy={strat}
-                problem={NEUTRAL_EXEMPLAR_PROBLEM}
-                hopsRevealed={999}
-              />
+        {unique.map((strat) => {
+          // Each strategy on a problem it draws well (near doubles needs its extra one), never the item's.
+          const example = exampleProblem(strat, avoid ? [avoid] : []) ?? NEUTRAL_EXEMPLAR_PROBLEM;
+          return (
+            <div key={strat} className="bg-slate-800/20 rounded-lg p-2 border border-white/5" data-option-picture={strat}>
+              <p className="text-center text-[11px] text-slate-400 mb-1 font-medium">
+                {STRATEGY_INFO[strat]?.icon} {STRATEGY_INFO[strat]?.label} · {example.equation}
+              </p>
+              <div className="scale-90 origin-top">
+                <StrategyVisualization strategy={strat} problem={example} hopsRevealed={999} />
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </LuminaPanel>
   );
@@ -511,7 +572,7 @@ function StrategyPickerSurface({ data, className, runtimePlanItemId }: StrategyP
   const stableInstanceIdRef = useRef(instanceId || `strategy-picker-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
   /** Bound after the state it clears is declared; the progress hook calls it only after render. */
-  const reopen = useRef<() => void>(() => {});
+  const reopen = useRef<(retry: boolean) => void>(() => {});
 
   // -------------------------------------------------------------------------
   // Challenge progress: the teaching workspace owns it
@@ -521,7 +582,7 @@ function StrategyPickerSurface({ data, className, runtimePlanItemId }: StrategyP
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
     workspace, assignment: strategyPickerAssignment,
-    onItemOpened: () => reopen.current(),
+    onItemOpened: (_index, retry) => reopen.current(retry),
   });
   const {
     currentIndex: currentChallengeIndex,
@@ -554,11 +615,19 @@ function StrategyPickerSurface({ data, className, runtimePlanItemId }: StrategyP
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
   const [strategiesUsed, setStrategiesUsed] = useState<Set<string>>(new Set());
 
-  const currentChallenge = challenges[currentChallengeIndex] ?? null;
+  // In-item levers (`strategyPickerLevers.ts`), keyed by the session item they were pulled on, and the easier
+  // practice item a simplify lever puts in place of the session item until the observer returns to it.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<StrategyPickerChallenge | null>(null);
+  const sessionChallenge = challenges[currentChallengeIndex] ?? null;
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = sessionChallenge && leverState.item === sessionChallenge.id ? leverState.pulled : [];
   const chosenStrategy = chosen && chosen.challengeId === currentChallenge?.id ? chosen.strategy : null;
 
-  // A fresh challenge, or the same one after Try again, starts with no number or pick.
-  reopen.current = () => {
+  // A fresh challenge, or the same one after Try again, starts with no number or pick. A practice item stays through
+  // its own Try again; a fresh item, or the full item back after it, drops it.
+  reopen.current = (retry) => {
+    if (!retry) setPractice(null);
     setAnswerInput('');
     setMatchSelection(null);
     setCompareAnswer(null);
@@ -633,7 +702,12 @@ function StrategyPickerSurface({ data, className, runtimePlanItemId }: StrategyP
     const { type, problem } = currentChallenge;
     const correct = strategyPickerMatches(currentChallenge, view);
 
-    if (correct) {
+    if (correct && practice) {
+      // An easier practice item is ungraded: its success records nothing for the session.
+      SoundManager.playCorrect();
+      setFeedbackType('success');
+      setFeedback(type === 'match-strategy' ? `Yes! That's ${strategyLabel(matchSelection ?? '')}!` : 'Correct! Now back to the full problem.');
+    } else if (correct) {
       SoundManager.playCorrect();
       setFeedbackType('success');
       if (type === 'match-strategy') {
@@ -691,9 +765,42 @@ function StrategyPickerSurface({ data, className, runtimePlanItemId }: StrategyP
 
   // What the tutor and the observer are shown, republished every render. Derived from the challenge and
   // the menu choice alone, so opening an item adds no revision after the advance.
+  // The session item's levers; a help picture is drawn on the session item only while it is pulled (or from the start
+  // on easy), never on a practice item.
+  const itemLevers = sessionChallenge ? strategyPickerLevers(sessionChallenge, data, pulledLevers) : [];
+  const helpOn = (id: string) => !practice && itemLevers.some(l => l.id === id && l.pulled);
+  const partsOn = helpOn(PARTS_LEVER);
+  const picturesOn = helpOn(PICTURES_LEVER);
+  const drawnStrategy = currentChallenge?.assignedStrategy ?? chosenStrategy;
+
   useLayoutEffect(() => {
-    if (!currentChallenge) return;
-    workspace.current = { ...strategyPickerScene(currentChallenge, { chosen: chosenStrategy, supportTier }, strategiesIntroduced) };
+    if (!currentChallenge || !sessionChallenge) return;
+    const scene = strategyPickerScene(currentChallenge, { chosen: chosenStrategy, supportTier }, strategiesIntroduced);
+    const levers = practice ? [] : itemLevers;
+    const onScreen = partsOn && drawnStrategy ? partsFact(drawnStrategy, currentChallenge.problem)
+      : picturesOn ? picturesFact(optionPictures(currentChallenge)) : undefined;
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      levers,
+      pullLever: (id: string) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already on screen.`;
+        if (id === PARTS_LEVER && !drawnStrategy) return 'Nothing is drawn yet: the learner picks a strategy from the menu first.';
+        const next = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = practiceItem(sessionChallenge, data);
+          if (!easier) return 'This problem is already the smallest of its kind.';
+          setLeverState(next); setPractice(easier); reopen.current(true);
+          return { practice: strategyPickerAssignment(easier) };
+        }
+        setLeverState(next);
+        return true as const;
+      },
+      // Back to the full item, blank: the practice work is not the learner's work on it.
+      endPractice: () => { setPractice(null); setChosen(null); reopen.current(true); },
+    };
   });
 
   // -------------------------------------------------------------------------
@@ -789,6 +896,7 @@ function StrategyPickerSurface({ data, className, runtimePlanItemId }: StrategyP
               <p className="text-slate-200 text-sm font-medium text-center">
                 {currentChallenge.instruction}
               </p>
+              {practice && <p className="text-amber-300 text-xs text-center mt-1" data-practice>Practice problem</p>}
             </LuminaPanel>
 
             {/* Support tier (easy): feature hint — names what to NOTICE about the
@@ -823,6 +931,7 @@ function StrategyPickerSurface({ data, className, runtimePlanItemId }: StrategyP
                   strategy={activeStrategy}
                   problem={currentChallenge.problem}
                   hopsRevealed={hopsRevealed}
+                  parts={partsOn}
                 />
               </div>
             )}
@@ -863,6 +972,7 @@ function StrategyPickerSurface({ data, className, runtimePlanItemId }: StrategyP
               currentChallenge.showStrategyExemplars && (
               <StrategyExemplarStrip
                 strategies={(currentChallenge.availableStrategies ?? strategiesIntroduced) as StrategyId[]}
+                avoid={currentChallenge.problem}
               />
             )}
 
@@ -910,9 +1020,12 @@ function StrategyPickerSurface({ data, className, runtimePlanItemId }: StrategyP
                     descriptions={currentChallenge.strategyDescriptions}
                   />
                 )}
-                {currentChallenge.showStrategyExemplars && (
+                {/* The help lever `option_pictures`: every choice on its own example, never this problem. */}
+                {picturesOn && (
                   <StrategyExemplarStrip
                     strategies={(currentChallenge.strategyOptions ?? []) as StrategyId[]}
+                    avoid={currentChallenge.problem}
+                    lever
                   />
                 )}
                 <div className="flex flex-wrap gap-2 justify-center">

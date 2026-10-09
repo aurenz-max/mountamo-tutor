@@ -97,7 +97,8 @@ it.each(MODES)('%s binds the workspace under tutor ownership, spoken, with no ru
   expect(h.state().owner).toBe('tutor');
   expect(h.state().task!.task).not.toMatch(/Say exactly|\[SS_/);
   expect(h.state().task!.workspace!.expectedAnswer).toBeTruthy();
-  expect(tutorTools(h)).toEqual(['begin_help']);
+  // Every item kind carries at least one in-item lever (sortingStationLevers.ts).
+  expect(tutorTools(h)).toEqual(['begin_help', 'pull_lever']);
   expect(seam.send.mock.calls.flat().join(' ')).not.toMatch(/\[SS_|Say exactly/);
 });
 

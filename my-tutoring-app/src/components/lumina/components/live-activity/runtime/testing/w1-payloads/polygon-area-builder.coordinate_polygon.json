@@ -1,0 +1,113 @@
+{
+ "source": "batch-gate 2026-10-09 generation (Polygons in the coordinate plane)",
+ "primitiveId": "polygon-area-builder",
+ "evalMode": "coordinate_polygon",
+ "data": {
+  "title": "Finding the Area of Polygons",
+  "description": "Practice finding the area of various polygons plotted on a coordinate grid by using decomposition and bounding-box reasoning.",
+  "challengeType": "coordinate_polygon",
+  "gradeBand": "7",
+  "challenges": [
+   {
+    "type": "coordinate_polygon",
+    "figureType": "coordinate",
+    "vertices": [
+     {
+      "x": 0,
+      "y": 0
+     },
+     {
+      "x": 6,
+      "y": 0
+     },
+     {
+      "x": 0,
+      "y": 2
+     }
+    ],
+    "expectedArea": 6,
+    "unitLabel": "units",
+    "narration": "A plot of land on a survey grid — find its area from the corner coordinates.",
+    "instruction": "Find the area of this polygon using its vertex coordinates.",
+    "hint": "Count the width and height between corners. A rectangle is width × height; a right triangle is ½ × base × height.",
+    "id": "pab-1"
+   },
+   {
+    "type": "coordinate_polygon",
+    "figureType": "coordinate",
+    "vertices": [
+     {
+      "x": 0,
+      "y": 3
+     },
+     {
+      "x": 8,
+      "y": 3
+     },
+     {
+      "x": 0,
+      "y": 5
+     }
+    ],
+    "expectedArea": 8,
+    "unitLabel": "units",
+    "narration": "A plot of land on a survey grid — find its area from the corner coordinates.",
+    "instruction": "Find the area of this polygon using its vertex coordinates.",
+    "hint": "Count the width and height between corners. A rectangle is width × height; a right triangle is ½ × base × height.",
+    "id": "pab-2"
+   },
+   {
+    "type": "coordinate_polygon",
+    "figureType": "coordinate",
+    "vertices": [
+     {
+      "x": 1,
+      "y": 2
+     },
+     {
+      "x": 8,
+      "y": 2
+     },
+     {
+      "x": 1,
+      "y": 8
+     }
+    ],
+    "expectedArea": 21,
+    "unitLabel": "units",
+    "narration": "A plot of land on a survey grid — find its area from the corner coordinates.",
+    "instruction": "Find the area of this polygon using its vertex coordinates.",
+    "hint": "Count the width and height between corners. A rectangle is width × height; a right triangle is ½ × base × height.",
+    "id": "pab-3"
+   },
+   {
+    "type": "coordinate_polygon",
+    "figureType": "coordinate",
+    "vertices": [
+     {
+      "x": 1,
+      "y": 1
+     },
+     {
+      "x": 7,
+      "y": 1
+     },
+     {
+      "x": 7,
+      "y": 6
+     },
+     {
+      "x": 1,
+      "y": 6
+     }
+    ],
+    "expectedArea": 30,
+    "unitLabel": "units",
+    "narration": "A plot of land on a survey grid — find its area from the corner coordinates.",
+    "instruction": "Find the area of this polygon using its vertex coordinates.",
+    "hint": "Count the width and height between corners. A rectangle is width × height; a right triangle is ½ × base × height.",
+    "id": "pab-4"
+   }
+  ]
+ }
+}

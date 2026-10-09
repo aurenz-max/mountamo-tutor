@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hopsLeak, jumpLevers, jumpMiss, learnerHops, modelHop, simplerJump } from './numberLineLevers';
+import { hopsLeak, jumpLevers, jumpMiss, learnerHops, modelHop, simplerJump, wayArrow, wayArrowLeak } from './numberLineLevers';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import type { NumberLineChallenge, NumberLineOperation } from './NumberLine';
 
@@ -63,10 +63,11 @@ describe('simpler jump builder', () => {
     expect(built).toBeGreaterThan(400);
   });
   it('declares the simplify lever only when a simpler jump exists', () => {
-    // A jump of 1: no model hop, so numbered hops only once the learner has placed a jump away from the start.
-    expect(jumpLevers(item([op('add', 4, 1)]), [], range)).toEqual([]);
-    expect(jumpLevers(item([op('add', 4, 1)]), [], range, [4])).toEqual([]);
-    expect(jumpLevers(item([op('add', 4, 1)]), [], range, [6]).map(l => l.id)).toEqual(['numbered_hops']);
+    // A jump of 1: no model hop, so numbered hops only once the learner has placed a jump away from the start;
+    // the which-way arrow is there from the start.
+    expect(jumpLevers(item([op('add', 4, 1)]), [], range).map(l => l.id)).toEqual(['which_way']);
+    expect(jumpLevers(item([op('add', 4, 1)]), [], range, [4]).map(l => l.id)).toEqual(['which_way']);
+    expect(jumpLevers(item([op('add', 4, 1)]), [], range, [6]).map(l => l.id)).toEqual(['which_way', 'numbered_hops']);
     expect(jumpLevers(item([op('add', 4, 3)]), ['numbered_hops'], range).map(l => [l.id, l.pulled]))
       .toEqual([['numbered_hops', true], ['simpler_jump', false]]);
     expect(jumpLevers({ ...item([op('add', 4, 3)]), type: 'plot_point' }, [], range)).toEqual([]);
@@ -100,5 +101,36 @@ describe('what a wrong jump shows, and the lever that answers it (code, not a Li
     const pulled = jumpLevers(two, ['numbered_hops'], { min: 0, max: 20 });
     expect(nextLever(pulled, 'off_by_more')).toBe('simpler_jump');
     expect(nextLever(jumpLevers(two, [], { min: 0, max: 20 }))).toBe('numbered_hops');
+  });
+});
+
+describe('which way (a jump of 1)', () => {
+  it('only on a jump of 1, at the first start, pointing the way the jump goes, and never reaching another number', () => {
+    for (let start = 0; start <= 30; start++) for (const change of [1, 2, 3, 4, 5]) for (const type of ['add', 'subtract'] as const) {
+      const o = op(type, start, change), way = wayArrow(o);
+      if (change !== 1) { expect(way).toBeNull(); continue; }
+      expect(way).toMatchObject({ from: start, dir: type === 'add' ? 'right' : 'left' });
+      expect(Math.sign(way!.to - way!.from)).toBe(type === 'add' ? 1 : -1);
+      expect(wayArrowLeak(o, way!)).toBe(false);
+      // The tip stays nearer the start than any other tick, so it never points at the landing.
+      expect(Math.abs(way!.to - start)).toBeLessThan(0.5);
+    }
+    expect(wayArrowLeak(op('subtract', 3, 1), { from: 3, to: 2, dir: 'left' })).toBe(true);
+    expect(wayArrowLeak(op('subtract', 3, 1), { from: 2.4, to: 2, dir: 'left' })).toBe(true);
+  });
+  it('the payload item show_jump-2 (3 back 1, placed on the start): the arrow answers wrong_direction', () => {
+    const ch = item([op('subtract', 3, 1)], 'show_jump-2');
+    expect(jumpMiss(ch, [3])).toBe('wrong_direction');
+    expect(nextLever(jumpLevers(ch, [], { min: 0, max: 10 }, [3]), 'wrong_direction')).toBe('which_way');
+    expect(nextLever(jumpLevers(ch, [], { min: 0, max: 10 }), 'no_landing')).toBe('which_way');
+    // Placed the wrong way: the arrow first, then the learner's own hop numbered.
+    const wrongWay = jumpLevers(ch, ['which_way'], { min: 0, max: 10 }, [4]);
+    expect(nextLever(wrongWay, jumpMiss(ch, [4]))).toBe('numbered_hops');
+  });
+  it('a chained jump whose first jump is 1 gets the arrow too; its second start is never marked', () => {
+    const ch = item([op('subtract', 20, 1), op('subtract', 19, 5)]);
+    const levers = jumpLevers(ch, [], { min: 0, max: 30 });
+    expect(levers.map(l => l.id)).toEqual(['which_way', 'simpler_jump']);
+    expect(levers[0].does).not.toMatch(/19/);
   });
 });

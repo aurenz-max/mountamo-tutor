@@ -1,0 +1,210 @@
+{
+  "generatedAt": "2026-10-09T04:11:23.642Z",
+  "runs": [
+    {
+      "name": "k",
+      "grade": "K",
+      "difficulty": null,
+      "topic": "Addition within 10",
+      "intent": "Put together two numbers to make a number within 10",
+      "issues": [],
+      "asks": [
+        "Start at 0 and land on 5 in two hops.",
+        "Start at 0 and land on 8 in two hops.",
+        "Start at 0 and land on 6 in two hops."
+      ],
+      "data": {
+        "title": "Hop to the Number",
+        "description": "Make each number with your own hops on the number line, then make it a different way.",
+        "range": {
+          "min": 0,
+          "max": 10
+        },
+        "gradeBand": "K-2",
+        "numberType": "integer",
+        "interactionMode": "jump",
+        "challenges": [
+          {
+            "id": "build_hops-0",
+            "type": "build_hops",
+            "instruction": "Start at 0 and land on 5 in two hops.",
+            "hint": "Pick a hop, look where it lands on the line, then pick the next hop.",
+            "startValue": 0,
+            "targetValues": [
+              5
+            ],
+            "hopCount": 2
+          },
+          {
+            "id": "build_hops-1",
+            "type": "build_hops",
+            "instruction": "Start at 0 and land on 8 in two hops.",
+            "hint": "Pick a hop, look where it lands on the line, then pick the next hop.",
+            "startValue": 0,
+            "targetValues": [
+              8
+            ],
+            "hopCount": 2
+          },
+          {
+            "id": "build_hops-2",
+            "type": "build_hops",
+            "instruction": "Start at 0 and land on 6 in two hops.",
+            "hint": "Pick a hop, look where it lands on the line, then pick the next hop.",
+            "startValue": 0,
+            "targetValues": [
+              6
+            ],
+            "hopCount": 2
+          }
+        ],
+        "highlights": [],
+        "operations": []
+      }
+    },
+    {
+      "name": "g1",
+      "grade": "1",
+      "difficulty": null,
+      "topic": "Add within 20",
+      "intent": "Add within 20 by counting on, as hops on a number line",
+      "issues": [],
+      "asks": [
+        "Start at 0 and land on 6 in two hops.",
+        "Start at 0 and land on 13 in two hops.",
+        "Start at 0 and land on 4 in two hops."
+      ],
+      "data": {
+        "title": "Hop to the Number",
+        "description": "Make each number with your own hops on the number line, then make it a different way.",
+        "range": {
+          "min": 0,
+          "max": 20
+        },
+        "gradeBand": "K-2",
+        "numberType": "integer",
+        "interactionMode": "jump",
+        "challenges": [
+          {
+            "id": "build_hops-0",
+            "type": "build_hops",
+            "instruction": "Start at 0 and land on 6 in two hops.",
+            "hint": "Pick a hop, look where it lands on the line, then pick the next hop.",
+            "startValue": 0,
+            "targetValues": [
+              6
+            ],
+            "hopCount": 2
+          },
+          {
+            "id": "build_hops-1",
+            "type": "build_hops",
+            "instruction": "Start at 0 and land on 13 in two hops.",
+            "hint": "Pick a hop, look where it lands on the line, then pick the next hop.",
+            "startValue": 0,
+            "targetValues": [
+              13
+            ],
+            "hopCount": 2
+          },
+          {
+            "id": "build_hops-2",
+            "type": "build_hops",
+            "instruction": "Start at 0 and land on 4 in two hops.",
+            "hint": "Pick a hop, look where it lands on the line, then pick the next hop.",
+            "startValue": 0,
+            "targetValues": [
+              4
+            ],
+            "hopCount": 2
+          }
+        ],
+        "highlights": [],
+        "operations": []
+      }
+    },
+    {
+      "name": "g2-hard",
+      "grade": "2",
+      "difficulty": "hard",
+      "topic": "Add within 20",
+      "intent": "Make a sum within 20 from three addends",
+      "issues": [],
+      "asks": [
+        "Start at 0 and land on 9 in three hops.",
+        "Start at 0 and land on 11 in three hops.",
+        "Start at 0 and land on 8 in three hops."
+      ],
+      "data": {
+        "title": "Hop to the Number",
+        "description": "Make each number with your own hops on the number line, then make it a different way.",
+        "range": {
+          "min": 0,
+          "max": 20
+        },
+        "gradeBand": "K-2",
+        "numberType": "integer",
+        "interactionMode": "jump",
+        "challenges": [
+          {
+            "id": "build_hops-0",
+            "type": "build_hops",
+            "instruction": "Start at 0 and land on 9 in three hops.",
+            "hint": "Pick a hop, look where it lands on the line, then pick the next hop.",
+            "startValue": 0,
+            "targetValues": [
+              9
+            ],
+            "hopCount": 3,
+            "highlights": []
+          },
+          {
+            "id": "build_hops-1",
+            "type": "build_hops",
+            "instruction": "Start at 0 and land on 11 in three hops.",
+            "hint": "Pick a hop, look where it lands on the line, then pick the next hop.",
+            "startValue": 0,
+            "targetValues": [
+              11
+            ],
+            "hopCount": 3,
+            "highlights": []
+          },
+          {
+            "id": "build_hops-2",
+            "type": "build_hops",
+            "instruction": "Start at 0 and land on 8 in three hops.",
+            "hint": "Pick a hop, look where it lands on the line, then pick the next hop.",
+            "startValue": 0,
+            "targetValues": [
+              8
+            ],
+            "hopCount": 3,
+            "highlights": []
+          }
+        ],
+        "highlights": [],
+        "operations": [],
+        "supportTier": "hard"
+      }
+    }
+  ],
+  "logs": [
+    "[NumberLine] evalMode: \"build_hops\" → schema enum: [build_hops] (β=2.6)",
+    "[NumberLine] topic-resolved scope: {\n  range: { min: 0, max: 10 },\n  jumpOperation: 'add',\n  focusRange: undefined,\n  hasExplicitRange: true,\n  requiresExactMissingNumber: false\n} (topic=\"Addition within 10\", intent=\"Put together two numbers to make a number within 10\")",
+    "[NumberLine] display: { min: 0, max: 5 } pool: [ 0, 1, 2, 3, 4, 5 ] difficulty: none",
+    "[NumberLine] Final: 3 challenge(s) → [build_hops, build_hops, build_hops]",
+    "Number Line Generated: {\n  topic: 'Addition within 10',\n  gradeBand: 'K-2',\n  mode: 'jump',\n  numberType: 'integer',\n  range: '0-10',\n  challengeCount: 3,\n  operationCount: 0\n}",
+    "[NumberLine] evalMode: \"build_hops\" → schema enum: [build_hops] (β=2.6)",
+    "[NumberLine] topic-resolved scope: {\n  range: { min: 0, max: 20 },\n  jumpOperation: 'add',\n  focusRange: undefined,\n  hasExplicitRange: true,\n  requiresExactMissingNumber: false\n} (topic=\"Add within 20\", intent=\"Add within 20 by counting on, as hops on a number line\")",
+    "[NumberLine] display: { min: 3, max: 11 } pool: [\n  3, 4,  5,  6, 7,\n  8, 9, 10, 11\n] difficulty: none",
+    "[NumberLine] Final: 3 challenge(s) → [build_hops, build_hops, build_hops]",
+    "Number Line Generated: {\n  topic: 'Add within 20',\n  gradeBand: 'K-2',\n  mode: 'jump',\n  numberType: 'integer',\n  range: '0-20',\n  challengeCount: 3,\n  operationCount: 0\n}",
+    "[NumberLine] evalMode: \"build_hops\" → schema enum: [build_hops] (β=2.6)",
+    "[NumberLine] topic-resolved scope: {\n  range: { min: 0, max: 20 },\n  jumpOperation: 'add',\n  focusRange: undefined,\n  hasExplicitRange: true,\n  requiresExactMissingNumber: false\n} (topic=\"Add within 20\", intent=\"Make a sum within 20 from three addends\")",
+    "[NumberLine] display: { min: 7, max: 12 } pool: [ 7, 8, 9, 10, 11, 12 ] difficulty: hard",
+    "[NumberLine] Support tier \"hard\" applied per-challenge (single-mode build_hops) → tickInterval=default, anchors=0, jumpArc=off",
+    "[NumberLine] Final: 3 challenge(s) → [build_hops, build_hops, build_hops]",
+    "Number Line Generated: {\n  topic: 'Add within 20',\n  gradeBand: 'K-2',\n  mode: 'jump',\n  numberType: 'integer',\n  range: '0-20',\n  challengeCount: 3,\n  operationCount: 0\n}"
+  ]
+}

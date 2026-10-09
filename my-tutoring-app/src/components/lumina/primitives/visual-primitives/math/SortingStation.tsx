@@ -97,6 +97,9 @@ import { withWorkspaceController } from '../../../components/live-activity/runti
 import { useWorkspaceRunner, type LiveRun, type WorkspaceRunOptions }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { workspaceAssignment, workspaceScene } from './sortingStationWorkspace';
+import { CHECKS_LEVER, EXAMPLES_LEVER, FOCUS_LEVER, LINE_UP_LEVER, ODD_MODEL_LEVER, PICTURES_LEVER, SHOW_TRAYS_LEVER,
+  SIMPLIFY_LEVERS, TAP_LEVER, TRY_EACH_LEVER, sortingLeverFacts, sortingLevers, sortingSimpler, trayExamples,
+  type CreditedCard, type Easier } from './sortingStationLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -273,6 +276,13 @@ const SortingStationSurface = ({ data, className, autoStart = false, runtimePlan
    *  reveal would paint on the last item and nowhere else (18b).
    *  `runner.revealHeld` is the gate. */
   const [reward, setReward] = useState<string | null>(null);
+  // In-item levers (`sortingStationLevers.ts`), keyed by the session item they were pulled on; the easier item a
+  // simplify lever put on screen in its place (with its own page); the learner's taps on the tap_marks pictures and the
+  // check_boxes, keyed by the item on screen.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<Easier | null>(null);
+  const [marks, setMarks] = useState<{ item: string; ids: string[] }>({ item: '', ids: [] });
+  const [checks, setChecks] = useState<{ item: string; values: Record<string, 'yes' | 'no'> }>({ item: '', values: {} });
 
   const stableInstanceIdRef = useRef(
     instanceId || `sorting-station-${Math.round(performance.now())}`,
@@ -399,6 +409,8 @@ const SortingStationSurface = ({ data, className, autoStart = false, runtimePlan
     gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
     exhibitId,
     onFinished: handleFinished,
+    // A fresh item never carries an easier item over from the last one.
+    onItemOpened: () => { setPractice(null); },
     onAffirmed: (item) => {
       // The first moment an answer may appear on screen.
       switch (item.kind) {
@@ -418,12 +430,27 @@ const SortingStationSurface = ({ data, className, autoStart = false, runtimePlan
     },
   });
 
-  const currentItem = runner.currentItem;
+  const sessionItem = runner.currentItem;
+  /** What is on screen: the easier item while a simplify lever holds it, else the session item. */
+  const currentItem = practice?.item ?? sessionItem;
   // The workspace path shows its summary without an evaluation provider (the live host has none).
   const showSummary = !!runner.practiceSummary || evaluation.hasSubmitted;
-  const currentChallenge = currentItem
-    ? challengeById.get(currentItem.challengeId) ?? null
-    : null;
+  const sessionChallenge = sessionItem ? challengeById.get(sessionItem.challengeId) ?? null : null;
+  const currentChallenge = (practice?.challenge as SortingStationChallenge | undefined)
+    ?? (currentItem ? challengeById.get(currentItem.challengeId) ?? null : null);
+  const pulledLevers = !practice && leverState.item === sessionItem?.id ? leverState.pulled : [];
+  const pulled = (id: string) => pulledLevers.includes(id);
+  const markedIds = marks.item === currentItem?.id ? marks.ids : [];
+  const checkValues = checks.item === currentItem?.id ? checks.values : {};
+  /** Every card credited on a sort so far, for `tray_examples`. */
+  const credited = useMemo<CreditedCard[]>(() => Object.entries(filed).flatMap(([key, group]) => {
+    const [challengeId, objectId] = key.split('::');
+    const ch = challengeById.get(challengeId), obj = ch?.objects.find(o => o.id === objectId);
+    return ch && obj && ch.sortingAttribute ? [{ challengeId, label: obj.label, emoji: obj.emoji, group, rule: ch.sortingAttribute }] : [];
+  }), [filed, challengeById]);
+  const leverContext = { challenge: sessionChallenge, preReader: isPreReader, credited };
+  const examples = pulled(EXAMPLES_LEVER) ? trayExamples(sessionItem, leverContext) : new Map<string, CreditedCard>();
+  const showTraysPulled = pulled(SHOW_TRAYS_LEVER);
 
   // ── The page: what is on the table for this item ─────────────────────────
 
@@ -439,11 +466,13 @@ const SortingStationSurface = ({ data, className, autoStart = false, runtimePlan
         currentItem.choices.some((l) => l.toLowerCase() === c.label.toLowerCase()),
       );
     }
-    if (currentItem.kind === 'count_group' || currentItem.kind === 'compare') {
+    // show_trays: the empty trays under the cards on a pick-the-rule ask.
+    if (currentItem.kind === 'count_group' || currentItem.kind === 'compare'
+      || (currentItem.kind === 'pick_rule' && showTraysPulled)) {
       return currentChallenge.categories ?? [];
     }
     return [];
-  }, [currentItem, currentChallenge]);
+  }, [currentItem, currentChallenge, showTraysPulled]);
 
   /** Which objects belong to a tray, for the count/compare board and for the
    *  filed reveal on a sort. */
@@ -494,7 +523,32 @@ const SortingStationSurface = ({ data, className, autoStart = false, runtimePlan
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!tutorOwned || !currentItem) return;
-    workspace.current = { ...workspaceScene(currentItem) };
+    const scene = workspaceScene(currentItem);
+    const onScreen = sortingLeverFacts(currentItem, pulledLevers);
+    // No lever on an easier item: it is practice, and the full item's levers come back with it.
+    const levers = practice ? [] : sortingLevers(sessionItem, pulledLevers, leverContext);
+    workspace.current = {
+      ...scene,
+      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: (id) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !sessionItem || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        const next = { item: sessionItem.id, pulled: [...pulledLevers, id] };
+        if ((SIMPLIFY_LEVERS as readonly string[]).includes(id)) {
+          const easier = sortingSimpler(id, sessionItem, sessionChallenge);
+          if (!easier) return 'There is no easier item for this one.';
+          setLeverState(next);
+          setPractice(easier);
+          return { practice: workspaceAssignment(easier.item) };
+        }
+        setLeverState(next);
+        return true;
+      },
+      endPractice: () => { setPractice(null); },
+    };
   });
   // AFTER the runtime mount is registered, never before: `start()` waits for
   // `grantOwnership('runner')`, which cannot be granted until this primitive's
@@ -614,6 +668,16 @@ const SortingStationSurface = ({ data, className, autoStart = false, runtimePlan
               </div>
             )}
 
+            {/* odd_model lever: a fixed model row beside the cards, never the cards themselves. */}
+            {currentItem.kind === 'odd_one' && pulled(ODD_MODEL_LEVER) && (
+              <div data-lever="odd-model" className="flex items-center justify-center gap-3 py-2" aria-label="a model row">
+                {['circle', 'circle', 'circle', 'square'].map((shape, i) => (
+                  <span key={i} data-model-shape={shape}
+                    className={shape === 'circle' ? 'h-8 w-8 rounded-full bg-blue-400/80' : 'h-8 w-8 rounded-md bg-red-400/80'} />
+                ))}
+              </div>
+            )}
+
             {/* ── The trays. R4: at K a tray is a PICTURE with the word as a
                    small caption; the word never gates, the tutor names each one. */}
             {trays.length > 0 && (
@@ -636,19 +700,32 @@ const SortingStationSurface = ({ data, className, autoStart = false, runtimePlan
                           (o) => filed[`${currentItem.challengeId}::${o.id}`] === cat.label,
                         ),
                       ]
-                    : objectsInTray(cat.label);
+                    // show_trays on a pick-the-rule ask: the trays stay EMPTY (filled, they are the next asks' answers).
+                    : currentItem.kind === 'pick_rule' ? [] : objectsInTray(cat.label);
                   const isRevealedTray = runner.revealHeld
                     && currentItem.kind === 'sort'
                     && cat.label.toLowerCase() === currentItem.answer.toLowerCase();
+                  const example = currentItem.kind === 'sort' ? examples.get(cat.label.toLowerCase()) : undefined;
+                  // focus_tray: every tray but the counted one dims. tap_marks: the counted tray's pictures take a ring.
+                  const counted = currentItem.kind === 'count_group' && cat.label.toLowerCase() === currentItem.stimulus.toLowerCase();
+                  const dimmed = currentItem.kind === 'count_group' && pulled(FOCUS_LEVER) && !counted;
+                  const tappable = counted && pulled(TAP_LEVER);
                   return (
                     <LuminaPanel
                       key={cat.label}
                       ref={pip.ref(`tray-${cat.label.toLowerCase()}`)}
                       data-pip-object={`tray-${cat.label.toLowerCase()}`}
+                      data-dimmed={dimmed ? 'true' : undefined}
                       className={`transition-all duration-200 ${color.bg} ${
                         isRevealedTray ? 'ring-2 ring-emerald-400 scale-105' : ''
-                      } ${isPreReader ? 'min-h-[168px] p-3' : 'min-h-[100px] p-2'}`}
+                      } ${dimmed ? 'opacity-25' : ''} ${isPreReader ? 'min-h-[168px] p-3' : 'min-h-[100px] p-2'}`}
                     >
+                      {/* try_each lever: the card's picture with a question mark on EVERY tray; no tray is marked. */}
+                      {currentItem.kind === 'sort' && pulled(TRY_EACH_LEVER) && focusObject && (
+                        <div data-lever="try-each" className="mb-1 flex items-center justify-center gap-1 opacity-70">
+                          <span className="text-2xl">{focusObject.emoji || focusObject.label}</span><span className="text-lg">❓</span>
+                        </div>
+                      )}
                       {isPreReader ? (
                         <div className="flex flex-col items-center gap-1 mb-2">
                           <span className="text-5xl leading-none" aria-hidden>
@@ -658,21 +735,44 @@ const SortingStationSurface = ({ data, className, autoStart = false, runtimePlan
                         </div>
                       ) : (
                         <div className="flex items-center justify-between mb-2">
-                          <span className={`text-sm font-medium ${color.text}`}>{cat.label}</span>
+                          <span className={`text-sm font-medium ${color.text}`}>
+                            {/* tray_pictures lever (readers; the pre-reader render always shows it), and show_trays. */}
+                            {((currentItem.kind === 'sort' && pulled(PICTURES_LEVER)) || currentItem.kind === 'pick_rule') && cat.bucketEmoji && (
+                              <span data-lever="tray-picture" className="mr-1 text-xl">{cat.bucketEmoji}</span>
+                            )}
+                            {cat.label}
+                          </span>
                           {/* ⭐ The count badge is the ANSWER on a count ask. The
                               easy-tier lever turns it on; `hidesCounts` overrides
                               that until the tutor has affirmed the number. */}
-                          {showCounts && (!currentItem.hidesCounts || runner.revealHeld) && (
+                          {showCounts && currentItem.kind !== 'pick_rule' && (!currentItem.hidesCounts || runner.revealHeld) && (
                             <LuminaBadge accent="cyan" className="text-xs">{inTray.length}</LuminaBadge>
                           )}
                         </div>
                       )}
                       <div className="flex flex-wrap justify-center gap-2">
-                        {inTray.map((obj) => (
+                        {inTray.map((obj) => tappable ? (
+                          <button key={obj.id} type="button" data-tap-mark={obj.id}
+                            data-ringed={markedIds.includes(obj.id) ? 'true' : 'false'}
+                            onClick={() => setMarks(prev => {
+                              const ids = prev.item === currentItem.id ? prev.ids : [];
+                              return { item: currentItem.id, ids: ids.includes(obj.id) ? ids.filter(i => i !== obj.id) : [...ids, obj.id] };
+                            })}
+                            className={`flex flex-col items-center gap-0.5 rounded-full p-1 ${
+                              markedIds.includes(obj.id) ? 'ring-2 ring-amber-300' : ''}`}>
+                            <span className={isPreReader ? 'text-4xl' : 'text-xl'}>{obj.emoji}</span>
+                          </button>
+                        ) : (
                           <div key={obj.id} className="flex flex-col items-center gap-0.5">
                             <span className={isPreReader ? 'text-4xl' : 'text-xl'}>{obj.emoji}</span>
                           </div>
                         ))}
+                        {/* tray_examples lever: a card credited in an earlier round, on the tray it went to. */}
+                        {example && (
+                          <div data-lever="tray-example" className="flex flex-col items-center gap-0.5 opacity-60">
+                            <span className={isPreReader ? 'text-4xl' : 'text-xl'}>{example.emoji}</span>
+                          </div>
+                        )}
                       </div>
                     </LuminaPanel>
                   );
@@ -680,17 +780,46 @@ const SortingStationSurface = ({ data, className, autoStart = false, runtimePlan
               </div>
             )}
 
+            {/* line_up lever: each group's pictures in a row, one per column, from the same left edge. No numbers. */}
+            {currentItem.kind === 'compare' && pulled(LINE_UP_LEVER) && (
+              <div data-lever="line-up" className="mx-auto flex w-fit flex-col gap-2 rounded-2xl border border-white/10 p-3">
+                {trays.map((cat, idx) => (
+                  <div key={cat.label} data-line-row={cat.label.toLowerCase()} className="flex items-center gap-2">
+                    <span className="w-10 text-center text-2xl">{cat.bucketEmoji || FALLBACK_BIN_EMOJI[idx % FALLBACK_BIN_EMOJI.length]}</span>
+                    {objectsInTray(cat.label).map((obj) => (
+                      <span key={obj.id} data-line-cell className="w-10 text-center text-3xl">{obj.emoji}</span>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* ── two-attributes: the two criteria as picture-free word cues.
-                   The question is spoken; these only anchor what "both" means. */}
+                   The question is spoken; these only anchor what "both" means.
+                   check_boxes lever: an empty box beside each; only the learner's taps fill it. */}
             {currentItem.kind === 'both_criteria' && currentItem.criteria && (
               <div className="flex justify-center gap-3">
-                <LuminaBadge accent="purple" className="text-sm capitalize">
-                  {currentItem.criteria.primary}
-                </LuminaBadge>
-                <span className="text-slate-500 self-center text-sm">and</span>
-                <LuminaBadge accent="cyan" className="text-sm capitalize">
-                  {currentItem.criteria.secondary}
-                </LuminaBadge>
+                {(['primary', 'secondary'] as const).map((part, i) => (
+                  <React.Fragment key={part}>
+                    {i === 1 && <span className="text-slate-500 self-center text-sm">and</span>}
+                    <LuminaBadge accent={part === 'primary' ? 'purple' : 'cyan'} className="text-sm capitalize">
+                      {currentItem.criteria![part]}
+                    </LuminaBadge>
+                    {pulled(CHECKS_LEVER) && (
+                      <button type="button" data-lever="check-box" data-check={part} data-value={checkValues[part] ?? ''}
+                        aria-label={`mark ${currentItem.criteria![part]}`}
+                        onClick={() => setChecks(prev => {
+                          const values = prev.item === currentItem.id ? prev.values : {};
+                          const now = values[part], nextValue = now === undefined ? 'yes' : now === 'yes' ? 'no' : undefined;
+                          const { [part]: _drop, ...rest } = values;
+                          return { item: currentItem.id, values: nextValue ? { ...rest, [part]: nextValue } : rest };
+                        })}
+                        className="h-9 w-9 self-center rounded-lg border-2 border-white/40 text-xl leading-none">
+                        {checkValues[part] === 'yes' ? '✓' : checkValues[part] === 'no' ? '✗' : ''}
+                      </button>
+                    )}
+                  </React.Fragment>
+                ))}
               </div>
             )}
 

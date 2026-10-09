@@ -55,12 +55,18 @@ import { asRecordArray, checkAnswerVariety, parseScopeCeiling } from './helpers'
  *    for hidden-rule modes (a 1-input table fits infinitely many rules), and the
  *    `showRule` flag matches the session mode.
  *
- * uncheckedTypes: any session challengeType outside the four known modes — the
+ * make_rule (open build): each item asks for ONE pair (makeInput -> makeOutput) and the learner invents the rule, so
+ * the hidden-rule determinability check does not apply. Instead: the pair is whole numbers inside the ceiling, the
+ * stored witness rule really makes it (independent evaluator), at least two DIFFERENT machines make it with the
+ * operations the band knows (an add/subtract machine and a multiply/divide or witness machine that disagree on
+ * another input), no two items share an input or an output, and neither machine appears in the prose.
+ *
+ * uncheckedTypes: any session challengeType outside the known modes — the
  * solvability/scope/clustering checks still run, but the mode-identity and leak
  * checks are skipped and the type is recorded.
  */
 
-const KNOWN_MODES = new Set(['observe', 'predict', 'discover_rule', 'create_rule']);
+const KNOWN_MODES = new Set(['observe', 'predict', 'discover_rule', 'create_rule', 'make_rule']);
 const HIDDEN_RULE_MODES = new Set(['discover_rule', 'create_rule']);
 
 // Intrinsic output ceiling when neither the harness nor the topic names one — a
@@ -243,6 +249,57 @@ export const functionMachineOracle: ContentOracle = {
 
     const ruleValues: string[] = [];
     let checked = 0;
+
+    // ── make_rule (open build): one pair per item, many machines make it ──
+    if (mode === 'make_rule') {
+      const inputs = new Set<number>();
+      const outputs = new Set<number>();
+      for (let i = 0; i < challenges.length; i++) {
+        const c = challenges[i];
+        const id = String(c.id ?? `#${i + 1}`);
+        const input = c.makeInput;
+        const output = c.makeOutput;
+        if (!isInt(input) || !isInt(output)) {
+          violations.push({ check: 'schema', where: id, detail: `make_rule needs whole-number makeInput/makeOutput; got ${JSON.stringify([input, output])}` });
+          continue;
+        }
+        checked++;
+        if (c.showRule === true) {
+          violations.push({ check: 'answer-leak', where: id, detail: `make_rule shows a stored rule on screen (showRule=true): one machine that makes the pair is given away` });
+        }
+        if (input === output) {
+          violations.push({ check: 'schema', where: id, detail: `pair ${input} -> ${output} is the input itself: a machine that does nothing passes` });
+        }
+        if (inputs.has(input) || outputs.has(output)) {
+          violations.push({ check: 'clustering', where: id, detail: `pair ${input} -> ${output} repeats an input or output from an earlier item` });
+        }
+        inputs.add(input); outputs.add(output);
+        if (Math.abs(input) > ceiling || Math.abs(output) > ceiling) {
+          violations.push({ check: 'scope', where: id, detail: `pair ${input} -> ${output} exceeds objective ceiling ${ceiling} (topic "${ctx.topic}")` });
+        }
+        const witness = typeof c.rule === 'string' ? c.rule.trim() : '';
+        const wOut = witness ? evalRuleIndependent(witness, input) : null;
+        if (wOut === null || Math.abs(wOut - output) > 0.001) {
+          violations.push({ check: 'answer-key-desync', where: id, detail: `stored machine "${witness}" gives ${wOut} for ${input}, not ${output}: the pair is not known to be makeable` });
+        }
+        // Two different machines: x + d (or x - d), and the witness or a whole-number multiply/divide, disagreeing on 2*input+1.
+        const d = output - input;
+        const additive = d >= 0 ? `x + ${d}` : `x - ${-d}`;
+        const k = output % input === 0 ? `${output / input}*x` : input % output === 0 ? `x/${input / output}` : witness;
+        const probe = 2 * input + 1;
+        const a = evalRuleIndependent(additive, probe);
+        const b = evalRuleIndependent(k, probe);
+        if (a === null || b === null || Math.abs(a - b) < 0.001) {
+          violations.push({ check: 'answer-key-desync', where: id, detail: `pair ${input} -> ${output}: no second machine found that works differently from "${additive}"` });
+        }
+        for (const r of [witness, additive]) {
+          if (r && ruleLeaksInto(prose, r)) {
+            violations.push({ check: 'answer-leak', where: id, detail: `a machine that makes the pair ("${r}") appears in the title/description` });
+          }
+        }
+      }
+      return { violations, uncheckedTypes: Array.from(uncheckedTypes), checkedChallenges: checked };
+    }
 
     for (let i = 0; i < challenges.length; i++) {
       const c = challenges[i];

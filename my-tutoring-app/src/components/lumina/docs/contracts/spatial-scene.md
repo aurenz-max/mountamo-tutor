@@ -203,6 +203,22 @@ curriculum row to break. Channel [4] (calibration) requires auth and was not rea
 - **Probe:** generate `targetEvalMode=describe_scene`; recompute the relation from the
   two object coordinates and inspect the spoken cue before and after one judged attempt.
 
+### R17 — in-item levers never state the answer, and practice is ungraded · OBSERVED
+- **Property:** `spatialSceneLevers.ts` levers: `mark_reference` rings only the thing(s) compared with (never the
+  target, an empty cell or an answer cell; never offered on `place_in`, whose container IS the answer); `word_picture`
+  draws a dot-and-square picture of EVERY option word on identify/describe, or of the asked word only on the cell modes,
+  never with the scene's things; `side_labels` (describe_scene) are the same left/right/nearer marks on every scene.
+  `fewer_things` opens `<item>~simpler`, same mode, two things (place: one), in things the item does not use, whose
+  answer neither repeats the item's word nor shares a cell with its answer; its checks record nothing for the session.
+  follow_directions has no simplify (two steps round one thing is its floor; one step is `place`). Easy starts with
+  `mark_reference` shown (an R8-style perception aid, not a pull). `place` names its miss (`opposite_cell`,
+  `same_axis_cell`, `other_axis_cell`, `off_line_cell`).
+- **Demanded by:** the tutor/JEV workspace (`/add-support-tiers`), both consumers.
+- **Evidence:** `spatialSceneLevers.test.ts` (leak rules, builders over the saved payloads and moved-reference
+  variants, miss→lever tables, per-item coverage), `SpatialScene.levers.workspace.test.tsx`; journey sweep on the seven
+  saved payloads clean. `qa/eval-reports/spatial-scene-levers-2026-10-08.md`.
+- **Probe:** the two suites above.
+
 ## Conflicts
 
 ### C1 — R1 vs the LA preposition consumer — **RESOLVED 2026-08-05 via rung 3 (config axis)**
@@ -292,7 +308,10 @@ The 2026-06-07 curriculum-fit sweep scored this entry **0.766 "diffuse"** and fl
 
 ## Changelog
 
-- **2026-09-27 (latest)** — handoff 19 (shared runtime, `/add-live-tutor-tools`): the workspace reads the eval mode from the wrapper's lesson pin, not a mode rebuilt in this primitive (slice 1), and publishes the scene after every render, so the scene setter drops its publish call and default fields (slice 3). Its checks now call `commitCheck`, which counts the attempt and records the correct result on both paths; its own attempt counter and base-only result records are deleted (slice 4). Wiring only: no content, check, miss, verdict or tutor input changed; the sweep over saved payloads (J1-J8) and this primitive's tests pass. Compatible: no requirement changed.
+- **2026-10-09 (latest)** — `/add-support-tiers`: R17 added (levers, place misses). R8 holds: the tier still only
+  toggles display (easy now also starts the reference ring). R11/R13/R14 hold: no lever writes `correctCell` or
+  `acceptableCells`; the ring is refused on `place_in`. R16 holds: side labels never name the relation. Compatible.
+- **2026-09-27** — handoff 19 (shared runtime, `/add-live-tutor-tools`): the workspace reads the eval mode from the wrapper's lesson pin, not a mode rebuilt in this primitive (slice 1), and publishes the scene after every render, so the scene setter drops its publish call and default fields (slice 3). Its checks now call `commitCheck`, which counts the attempt and records the correct result on both paths; its own attempt counter and base-only result records are deleted (slice 4). Wiring only: no content, check, miss, verdict or tutor input changed; the sweep over saved payloads (J1-J8) and this primitive's tests pass. Compatible: no requirement changed.
 - **2026-09-27** — the checks name their miss (handoff 20 Part A): `spatialMiss` in
   `spatialSceneWorkspace.ts` reads the chosen word or cell against the scene's geometry and is passed to
   `commitCheck`; the catalog lists it for identify/describe/place_in/place_between/follow_directions.

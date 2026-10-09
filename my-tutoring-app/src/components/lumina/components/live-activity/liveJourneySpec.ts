@@ -22,23 +22,32 @@
 import type { SupportArtifact } from './runtime/contract';
 import type { LivePrimitiveId } from './activityContract';
 import { itemsFromChallenges as shapeItems, shapeSorterHarnessAnswers } from '../../primitives/visual-primitives/math/shapeSorterScript';
-import { simplerJump } from '../../primitives/visual-primitives/math/numberLineLevers';
+import { simplerFromId as simplerShapeFromId } from '../../primitives/visual-primitives/math/shapeSorterLevers';
+import { simplerItem } from '../../primitives/visual-primitives/math/numberLineLevers';
+import { settledView } from '../../primitives/visual-primitives/math/numberLineView';
+import { CHANGE_ONE_LEVER, COUNT_ON_LEVER, FEWER_GROUPS_LEVER, SMALLER_SET_LEVER, spokenPractice }
+  from '../../primitives/visual-primitives/math/countingBoardSpokenLevers';
+import { itemsFromChallenges as countingItems } from '../../primitives/visual-primitives/math/countingBoardDomain';
+import { hopsHarnessBuilds, hopsTaskOf, simplerHops } from '../../primitives/visual-primitives/math/numberLineBuildHops';
+import type { NumberLineChallenge } from '../../primitives/visual-primitives/math/NumberLine';
 import { simplerItem as simplerComparison } from '../../primitives/visual-primitives/math/comparisonBuilderLevers';
 import { simplerItem as simplerMathFact } from '../../primitives/visual-primitives/math/mathFactFluencyLevers';
 import { farThree } from '../../primitives/visual-primitives/math/compareObjectsLevers';
 import { threeCards } from '../../primitives/visual-primitives/math/numberSequencerLevers';
 import { threePlaces } from '../../primitives/visual-primitives/math/ordinalLineLevers';
 import { COIN_CENTS, fewestCoins } from '../../primitives/visual-primitives/math/coinCounterWorkspace';
+import { practiceItem as coinPracticeItem, practiceParent as coinPracticeParent } from '../../primitives/visual-primitives/math/coinCounterLevers';
 import { arraysOf, gridFor } from '../../primitives/visual-primitives/math/arrayGridWorkspace';
 import { smallerArray } from '../../primitives/visual-primitives/math/arrayGridLevers';
 import type { ArrayGridChallenge } from '../../primitives/visual-primitives/math/ArrayGrid';
-import { smallerArea } from '../../primitives/visual-primitives/math/polygonAreaBuild';
+import { smallerArea, smallerPerimeter } from '../../primitives/visual-primitives/math/polygonAreaBuild';
+import { smallerFigure } from '../../primitives/visual-primitives/math/polygonAreaLevers';
 import { askOf } from '../../primitives/visual-primitives/math/shapeBuilderWorkspace';
 import { witnessesFor } from '../../primitives/visual-primitives/math/shapeMakeBuild';
 import { simplerItem as simplerFraction } from '../../primitives/visual-primitives/math/fractionCirclesLevers';
 import { cutsFor, equalWays } from '../../primitives/visual-primitives/math/fractionEqualBuild';
 import { buildFractionTouchItems, twoPictureItem } from '../../primitives/visual-primitives/math/fractionCirclesWorkspace';
-import { smallerBarTarget } from '../../primitives/visual-primitives/math/fractionBarWorkspace';
+import { barPractice } from '../../primitives/visual-primitives/math/fractionBarLevers';
 
 /** touch_fraction's easier item (two_pictures) as the fraction to touch; the builder reads only the parent's fraction. */
 const twoPictureFraction = (parent: any) => {
@@ -66,10 +75,13 @@ import { expandNumberBondInteractions } from '../../primitives/visual-primitives
 import { buildCompareItems, compareObjectsHarnessAnswers } from '../../primitives/visual-primitives/math/compareObjectsScript';
 import { itemsFromChallenges as placeValueItems, placeValueHarnessAnswers } from '../../primitives/visual-primitives/math/placeValueScript';
 import { getDigitPaths } from '../../primitives/visual-primitives/math/numberTracerPaths';
+import { tracePart } from '../../primitives/visual-primitives/math/numberTracerLevers';
 import { itemsFromChallenges as sortingItems, sortingStationHarnessAnswers } from '../../primitives/visual-primitives/math/sortingStationScript';
+import { simplerFromParent as sortingSimplerFromParent } from '../../primitives/visual-primitives/math/sortingStationLevers';
 import { placeLabel } from '../../primitives/visual-primitives/math/spokenNumberWords';
 import { baseTenHarnessAnswers, itemsFromChallenges as baseTenItems, usesBaseTenDi, wrongTradePlace }
   from '../../primitives/visual-primitives/math/baseTenScript';
+import { practiceFromId as baseTenPracticeFromId } from '../../primitives/visual-primitives/math/baseTenLevers';
 import { blockNoun, blockNounPlural, readCount } from '../../primitives/visual-primitives/math/baseTenModel';
 import { itemsFromChallenges as ordinalItems, ordinalLineHarnessAnswers } from '../../primitives/visual-primitives/math/ordinalLineScript';
 import { balanceSurface, explainHarnessAnswers, weightsFor } from '../../primitives/visual-primitives/math/balanceScaleWorkspace';
@@ -83,6 +95,8 @@ import { dictationItems, spellingHarnessAnswers } from '../../primitives/visual-
 import { cvcHarnessAnswers } from '../../primitives/visual-primitives/literacy/cvcSpellerWorkspace';
 import { OPTION_MODES, ROW_TAP_MODES, barModelHarnessAnswers, isSpokenGraph }
   from '../../primitives/visual-primitives/math/barModelWorkspace';
+import { simplerGraph, simplerParent } from '../../primitives/visual-primitives/math/barModelLevers';
+import { twoBarPractice } from '../../primitives/visual-primitives/math/barModelBuild';
 import { youAndMeHarnessAnswers } from '../../primitives/visual-primitives/literacy/youAndMeWorkspace';
 import { itemsFromChallenges as syllableItems } from '../../primitives/visual-primitives/literacy/syllableClapperScript';
 import { syllableHarnessAnswers } from '../../primitives/visual-primitives/literacy/syllableClapperWorkspace';
@@ -111,8 +125,11 @@ import { itemsFromChallenges as ribbonItems } from '../../primitives/visual-prim
 import { storyRibbonJourneyAnswers } from '../../primitives/visual-primitives/literacy/storyRibbonWorkspace';
 import { itemsFromChallenges as addSubItems } from '../../primitives/visual-primitives/math/additionSubtractionSceneScript';
 import { additionSubtractionJourneyAnswers } from '../../primitives/visual-primitives/math/additionSubtractionSceneWorkspace';
+import { practiceParent as addSubPracticeParent, smallerStory as addSubSmallerStory }
+  from '../../primitives/visual-primitives/math/additionSubtractionSceneLevers';
 import { buildThreeDShapeItems } from '../../primitives/visual-primitives/math/threeDShapeExplorerScript';
 import { threeDShapeJourneyAnswers } from '../../primitives/visual-primitives/math/threeDShapeExplorerWorkspace';
+import { simplerFromId as simplerSolidFromId } from '../../primitives/visual-primitives/math/threeDShapeExplorerLevers';
 import type { CalendarExplorerChallenge } from '../../primitives/visual-primitives/calendar/CalendarExplorer';
 import { calendarSequenceItemsFromChallenges, calendarSequenceJourneyAnswers, isGridDateAnswer }
   from '../../primitives/visual-primitives/calendar/calendarExplorerWorkspace';
@@ -166,15 +183,23 @@ import { deductionItems, diDeductionHarnessAnswers } from '../../primitives/visu
 import { diWorkedProcedureHarnessAnswers, workedProcedureItems } from '../../primitives/visual-primitives/direct-instruction/diWorkedProcedureWorkspace';
 import { diWordProblemHarnessAnswers, wordProblemHarnessPlacements, wordProblemItems } from '../../primitives/visual-primitives/direct-instruction/diWordProblemWorkspace';
 import { spatialHarnessInputs } from '../../primitives/visual-primitives/math/spatialSceneWorkspace';
+import { practiceItem as spatialPracticeItem, practiceParent as spatialPracticeParent } from '../../primitives/visual-primitives/math/spatialSceneLevers';
 import { hundredsChartHarnessInputs } from '../../primitives/visual-primitives/math/hundredsChartWorkspace';
+import { practiceItem as hundredsChartPracticeItem, practiceParent as hundredsChartPracticeParent }
+  from '../../primitives/visual-primitives/math/hundredsChartLevers';
 import { mathFactHarnessInputs } from '../../primitives/visual-primitives/math/mathFactFluencyWorkspace';
 import { additionFactHarnessInputs } from '../../primitives/visual-primitives/math/additionFactStrategiesWorkspace';
 import { smallerFact as smallerAdditionFact } from '../../primitives/visual-primitives/math/additionFactStrategiesLevers';
 import { equationBuilderHarnessInputs } from '../../primitives/visual-primitives/math/equationBuilderWorkspace';
+import { practiceItem as equationBuilderPracticeItem, practiceParent as equationBuilderPracticeParent } from '../../primitives/visual-primitives/math/equationBuilderLevers';
 import { patternBuilderHarnessInputs } from '../../primitives/visual-primitives/math/patternBuilderWorkspace';
+import { practiceItem as patternPracticeItem, practiceParent } from '../../primitives/visual-primitives/math/patternBuilderLevers';
 import { angleWorkshopHarnessInputs } from '../../primitives/visual-primitives/math/angleWorkshopWorkspace';
-import { coarserMakeAngle } from '../../primitives/visual-primitives/math/angleWorkshopLevers';
+import { practiceFor as angleWorkshopPracticeFor, practiceParent as angleWorkshopPracticeParent }
+  from '../../primitives/visual-primitives/math/angleWorkshopLevers';
 import { strategyPickerHarnessInputs } from '../../primitives/visual-primitives/math/strategyPickerWorkspace';
+import { practiceItem as strategyPracticeItem, practiceParent as strategyPracticeParent }
+  from '../../primitives/visual-primitives/math/strategyPickerLevers';
 import { carButtonName, carFor as trainCarFor, fewestCars as trainFewestCars, fewestEngines as trainFewestEngines } from '../../primitives/visual-primitives/engineering/trainYardModel';
 import { simplerJob as simplerTrainJob } from '../../primitives/visual-primitives/engineering/trainYardLevers';
 
@@ -327,7 +352,31 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     inputsFor: (intent, ctx) => {
       const parent = ctx.itemId?.endsWith('~simpler')
         ? (ctx.data.challenges ?? []).find((c: { id: string }) => `${c.id}~simpler` === ctx.itemId) : null;
-      const challenge = parent ? simplerJump(parent, ctx.data.range) : ctx.challenge;
+      // build_hops (open build): hop buttons, then I'm done. Correct: Start over (Try again keeps the build), a first
+      // way, I'm done (kept, no commit), a different second way, I'm done. Wrong: a first way one short (`one_short`).
+      if (parent?.type === 'build_hops' || ctx.challenge?.type === 'build_hops') {
+        const task = hopsTaskOf(parent ? simplerHops(parent, ctx.data.range) : ctx.challenge as NumberLineChallenge | null);
+        if (intent === 'warmup' || !task) return [];
+        const builds = hopsHarnessBuilds(task);
+        const hops = (sizes: number[]) => sizes.map((n): DriverInput => ({ type: 'choose', label: `Hop ${n}` }));
+        const done: DriverInput = { type: 'choose', label: "I'm done!" };
+        if (intent === 'wrong') return [...hops(builds.wrong), done];
+        return [{ type: 'choose', label: 'Start over' }, ...hops(builds.first), done, ...hops(builds.second), done];
+      }
+      const challenge = parent ? simplerItem(parent, ctx.data as never, settledView(ctx.data as never, parent)) : ctx.challenge;
+      if (intent !== 'warmup' && challenge?.type === 'order_values') {
+        // Tap each value, then its own spot on the line (smallest at the left). Wrong: each at its mirror's spot (`reversed`).
+        const values: number[] = challenge.targetValues, sorted = [...values].sort((a, b) => a - b);
+        const spot = (v: number) => intent === 'wrong' ? sorted[sorted.length - 1 - sorted.indexOf(v)] : v;
+        return [...values.flatMap((v): DriverInput[] => [{ type: 'choose', label: String(v) }, { type: 'place', value: spot(v) }]),
+          { type: 'check' }];
+      }
+      if (intent !== 'warmup' && challenge?.type === 'find_between') {
+        // One point inside (the exact missing number when the item has one). Wrong: on the lower given number (`on_end`).
+        const lo = Math.min(...challenge.targetValues), hi = Math.max(...challenge.targetValues);
+        const inside = typeof challenge.exactTargetValue === 'number' ? challenge.exactTargetValue : lo + 1 < hi ? lo + 1 : (lo + hi) / 2;
+        return [{ type: 'place', value: intent === 'wrong' ? lo : inside }, { type: 'check' }];
+      }
       // One landing per jump, in order. On two chained jumps the wrong answer lands the first right and the second one
       // past (`second_jump_off`, the miss the easier single jump answers).
       const landings: number[] = (challenge?.targetValues ?? []).filter((v: unknown): v is number => typeof v === 'number');
@@ -357,6 +406,19 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       const item = parent ? practiceItem(parent, d.gradeBand ?? 'K', all) ?? undefined : all.find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current ten-frame assignment');
       const answers = tenFrameHarnessAnswers(item);
+      // build_pair (open build): Try again keeps the build, so a kept frame is cleared counter by counter first (the
+      // driver placed it from cell 0). Wrong: the whole number in red. Correct: red, then yellow, a pair that moves
+      // with the item's ordinal so a repeated total gets a different way; then I'm done.
+      if (item.kind === 'build_pair') {
+        const cell = (i: number): DriverInput => ({ type: 'touch', target: `cell-${i}` });
+        const kept = Number(ctx.demand?.countersOnFrame ?? 0);
+        const clear = Array.from({ length: Number.isInteger(kept) ? kept : 0 }, (_, i) => cell(i));
+        const n = item.answer;
+        const yellow = intent === 'wrong' ? 0 : Math.min(n - 1, Math.max(1, Math.floor(n / 2) + (item.splitOrdinal ?? 1) - 1));
+        return [...clear, { type: 'choose', label: 'Red counters' }, ...Array.from({ length: n - yellow }, (_, i) => cell(i)),
+          ...(yellow ? [{ type: 'choose' as const, label: 'Yellow counters' }, ...Array.from({ length: yellow }, (_, i) => cell(n - yellow + i))] : []),
+          { type: 'choose', label: "I'm done!" }];
+      }
       // A quick look not yet shown is the learner's to start: they press Show me, then answer.
       const look: DriverInput[] = item.kind === 'subitize' && ctx.demand?.presentation !== 'ready' ? [{ type: 'choose', label: 'Show me' }] : [];
       if (item.answerKind !== 'gesture' || !answers.placed) return [...look, { type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
@@ -373,11 +435,20 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     leakTokens: ['CB_', 'COUNT_'],
     prompts: WORKSPACE_PROMPTS,
     // The easier ask (the `smaller_give` lever) is not a generated challenge: the same pile, about half as many,
-    // as `smallerGive` builds it. A hand match picks the hand by its finger count; the wrong one is one finger off.
+    // as `smallerGive` builds it. A spoken kind's easier board (`~simpler`) is rebuilt from its parent with the
+    // same builder (`spokenPractice`). A hand match picks the hand by its finger count; the wrong one is one finger off.
     inputsFor: (intent, ctx) => {
       const parent = ctx.itemId?.endsWith('~smaller')
         ? (ctx.data.challenges ?? []).find((c: { id: string }) => `${c.id}~smaller` === ctx.itemId) : null;
-      const ch = parent ? { ...parent, targetAnswer: Math.ceil(parent.targetAnswer / 2) } : ctx.challenge;
+      const simpler = ctx.itemId?.endsWith('~simpler') ? (() => {
+        const session = countingItems(ctx.data.challenges ?? [], { objectWord: ctx.data.objects?.type ?? 'objects' });
+        const from = session.find(i => `${i.id}~simpler` === ctx.itemId);
+        const lever = from && ({ count_all: SMALLER_SET_LEVER, recount_moved: SMALLER_SET_LEVER, take_away: CHANGE_ONE_LEVER,
+          add_more: CHANGE_ONE_LEVER, count_on: COUNT_ON_LEVER, group_count: FEWER_GROUPS_LEVER } as Record<string, string>)[from.kind];
+        const easier = from && lever ? spokenPractice(from, lever, session) : null;
+        return easier ? { ...(ctx.data.challenges ?? []).find((c: { id: string }) => c.id === from!.id), ...easier.challenge } : null;
+      })() : null;
+      const ch = parent ? { ...parent, targetAnswer: Math.ceil(parent.targetAnswer / 2) } : simpler ?? ctx.challenge;
       if (!ch) throw new Error('No current counting task');
       if (intent === 'warmup') return [];
       const n = ch.targetAnswer + (intent === 'wrong' ? 1 : 0);
@@ -506,8 +577,12 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // Every item is spoken: the pack's own right answer, or its plain wrong one.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const item = sortingItems(ctx.data.challenges ?? [], { tier: ctx.data.supportTier,
-        isPreReader: (ctx.data.gradeBand ?? 'K') === 'K' }).find(i => i.id === ctx.itemId);
+      const built = sortingItems(ctx.data.challenges ?? [], { tier: ctx.data.supportTier,
+        isPreReader: (ctx.data.gradeBand ?? 'K') === 'K' });
+      // An easier item (a simplify lever) is not a generated challenge: rebuild it from its parent.
+      const parent = ctx.itemId?.endsWith('~simpler') ? built.find(i => `${i.id}~simpler` === ctx.itemId) : undefined;
+      const item = parent ? sortingSimplerFromParent(parent, (ctx.data.challenges ?? []).find((c: { id: string }) => c.id === parent.challengeId) ?? null)?.item
+        : built.find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current sorting-station assignment');
       const answers = sortingStationHarnessAnswers(item);
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
@@ -527,7 +602,10 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // judge reads, which the driver cannot produce, so they throw.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const challenge = ctx.challenge;
+      // A trace_part practice item (`~simpler`, numberTracerLevers.ts) is rebuilt from its parent with the same builder.
+      const parent = ctx.itemId?.endsWith('~simpler')
+        ? (ctx.data.challenges ?? []).find((c: { id: string }) => `${c.id}~simpler` === ctx.itemId) : null;
+      const challenge = parent ? tracePart(parent) : ctx.challenge;
       if (challenge?.type !== 'trace') throw new Error(`Number-tracer ${challenge?.type ?? 'unknown'} is not driven at W1`);
       // The component's own fallback when a challenge carries no strokes (the generator never sends them).
       const guide: { x: number; y: number }[][] = challenge.strokePaths?.length ? challenge.strokePaths : getDigitPaths(challenge.digit);
@@ -598,7 +676,9 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // one coin twice, a double count the activity refuses on the coin itself.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      // An easier item (`~smaller`) is rebuilt from its parent with the same builder.
+      const parent = coinPracticeParent(ctx.itemId, ctx.data.challenges ?? []);
+      const c: any = parent ? coinPracticeItem(parent) : (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
       if (!c) throw new Error('No current coin-counter challenge');
       const wrong = intent === 'wrong', band = ctx.data.gradeBand ?? '1';
       const check: DriverInput = { type: 'check' };
@@ -664,8 +744,8 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
       const all = ctx.data.challenges ?? [];
-      const parent = ctx.itemId?.endsWith('~coarser') ? all.find((x: { id: string }) => `${x.id}~coarser` === ctx.itemId) : undefined;
-      const c = parent ? coarserMakeAngle(parent) : all.find((x: { id: string }) => x.id === ctx.itemId);
+      const parent = angleWorkshopPracticeParent(ctx.itemId, all);
+      const c = parent ? angleWorkshopPracticeFor(parent) : all.find((x: { id: string }) => x.id === ctx.itemId);
       if (!c) throw new Error('No current angle-workshop challenge');
       return angleWorkshopHarnessInputs(c, intent === 'wrong', ctx.demand);
     },
@@ -821,7 +901,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       const parent = (ctx.data.challenges ?? []).find((ch: { id: string }) => ch.id === parentId);
       const band = ctx.data.gradeBand;
       // An easier practice item (the simplify lever) is not a generated challenge: rebuild it from its parent.
-      const c = !easier ? parent : parent ? smallerBarTarget(parent, band) : null;
+      const c = !easier ? parent : parent ? barPractice(ctx.data.challengeType, parent, band) : null;
       if (!c) throw new Error('No current fraction-bar assignment');
       const wrong = intent === 'wrong';
       const off = (n: number, max: number) => (n + 1 <= max ? n + 1 : n - 1);
@@ -881,8 +961,11 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
         if (readCount(item.problem) >= 2) return [tap(item.problem.place), tap(item.problem.place)];
         throw new Error('base-ten-blocks regroup: this mat has no wrong trade the driver can tap');
       }
-      // The click mat's challenge ids are `${type}-${index}` (assigned by the component).
-      const c = challenges[Number(ctx.itemId?.split('-').pop())];
+      // The click mat's challenge ids are `${type}-${index}` (assigned by the component). A simplify lever's practice
+      // item (`<id>~plainer|simpler|smaller`) is rebuilt from its parent by the lever's own builder.
+      const [parentId, practiceSuffix] = (ctx.itemId ?? '').split('~');
+      const parent = challenges[Number(parentId.split('-').pop())];
+      const c = parent && practiceSuffix ? baseTenPracticeFromId({ ...parent, id: parentId }, ctx.itemId!) : parent;
       if (!c) throw new Error('No current base-ten-blocks challenge');
       if (ctx.data.decimalMode) throw new Error(`base-ten-blocks ${c.type}: decimal mats are not driven at W1`);
       if (c.type === 'build_number') {
@@ -947,6 +1030,9 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // program then records guidance without a verdict. The plain solver (mixed sessions) is not driven.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
+      // A simplify lever's practice step (`~simpler`, balanceScaleLevers.ts) is always a spoken number step that
+      // publishes its own key, built from its parent by the same builder; it is answered like any spoken step.
+      if (ctx.itemId?.endsWith('~simpler')) return spokenExpected(ctx, intent);
       const data = ctx.data as any;
       const wrong = intent === 'wrong';
       const add = (values: number[]) => values.map((v): DriverInput => ({ type: 'choose', label: `Add ${v} weight` }));
@@ -1012,8 +1098,17 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       topic: 'Naming flat shapes by their sides and corners' },
     leakTokens: ['SH_'],
     prompts: WORKSPACE_PROMPTS,
-    inputsFor: spokenWorkspaceInputs(challenges => shapeItems(challenges, { isPreReader: false }),
-      shapeSorterHarnessAnswers, 'shape'),
+    // A practice item (`~simpler`, shapeSorterLevers.ts) is rebuilt from its parent with the component's builder.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const challenges = ctx.data.challenges ?? [];
+      const built = shapeItems(challenges, { isPreReader: (ctx.data.gradeBand ?? 'K') === 'K' });
+      const item = built.find(i => i.id === ctx.itemId) ?? simplerShapeFromId(ctx.itemId ?? '', built,
+        parent => challenges.find((c: { id: string }) => c.id === parent.challengeId)?.shapes ?? [])?.item;
+      if (!item) throw new Error('No current shape assignment');
+      const answers = shapeSorterHarnessAnswers(item);
+      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
+    },
     probes: { mounted: { selector: '[data-pip-object="shape"]' },
       demonstration: { selector: '[data-tutor-demonstration="true"]', kind: 'count' } },
   },
@@ -1127,7 +1222,11 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // or another; a sticker chart or built graph is complete, with one row a sticker off or the wrong step.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId) as BarModelChallenge | undefined;
+      const all = (ctx.data.challenges ?? []) as BarModelChallenge[];
+      // An easier graph (a simplify lever) is not a generated challenge: rebuild it from its parent with the same builder.
+      const twoParent = ctx.itemId?.endsWith('~two') ? all.find(x => `${x.id}~two` === ctx.itemId) : undefined;
+      const simpler = simplerParent(ctx.itemId, all);
+      const c = all.find(x => x.id === ctx.itemId) ?? (simpler ? simplerGraph(simpler) : twoParent ? twoBarPractice(twoParent) : null);
       if (!c) throw new Error('No current bar-model challenge');
       const wrong = intent === 'wrong';
       if (isSpokenGraph(c)) {
@@ -1562,7 +1661,10 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // a spoken description. Derived from the mounted challenge, never from Python.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      const all = ctx.data.challenges ?? [];
+      // The easier practice scene (a simplify lever) is not a generated challenge: rebuild it from its parent.
+      const parent = spatialPracticeParent(ctx.itemId, all);
+      const c = parent ? spatialPracticeItem(parent, ctx.data.gridSize ?? 3) : all.find((x: { id: string }) => x.id === ctx.itemId);
       if (!c) throw new Error('No current spatial-scene challenge');
       return spatialHarnessInputs(c, intent === 'wrong', ctx.data.gridSize ?? 3, ctx.demand?.step as string | undefined);
     },
@@ -1798,7 +1900,11 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // button brings one in, a tap on the last object sends it away). Hands turns commit on stillness.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const item = addSubItems(ctx.data.challenges ?? [], { band: ctx.data.gradeBand ?? 'K' }).find(i => i.id === ctx.itemId);
+      const all = addSubItems(ctx.data.challenges ?? [], { band: ctx.data.gradeBand ?? 'K' });
+      // A practice story (`~simpler`) is rebuilt from its parent with the same builder.
+      const parent = addSubPracticeParent(ctx.itemId, all);
+      const item = parent ? addSubSmallerStory(parent, { items: all, maxNumber: ctx.data.maxNumber ?? 10 }) ?? undefined
+        : all.find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current addition-subtraction-scene item');
       const answers = additionSubtractionJourneyAnswers(item);
       const wrong = intent === 'wrong';
@@ -1824,10 +1930,12 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     defaults: { grade: 'Kindergarten', mode: 'identify_3d', di: false, topic: 'Naming solid shapes: cube, sphere, cylinder, cone' },
     leakTokens: ['3DS_ITEM', '3DS_MOVE', '3DS_COMPLETE', '3DS_HEAR'],
     prompts: WORKSPACE_PROMPTS,
-    // Every item is one spoken answer (a challenge may fan out into several items).
+    // Every item is one spoken answer (a challenge may fan out into several items). A practice item (`~simpler`,
+    // threeDShapeExplorerLevers.ts) is rebuilt from its parent with the component's builder.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const item = buildThreeDShapeItems(ctx.data.challenges ?? []).items.find(i => i.id === ctx.itemId);
+      const built = buildThreeDShapeItems(ctx.data.challenges ?? []).items;
+      const item = built.find(i => i.id === ctx.itemId) ?? simplerSolidFromId(ctx.itemId ?? '', built);
       if (!item) throw new Error('No current 3d-shape-explorer item');
       const answers = threeDShapeJourneyAnswers(item);
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
@@ -2222,7 +2330,10 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // mounted challenge, never from Python.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      const all = ctx.data.challenges ?? [];
+      // The easier practice chart (a simplify lever) is not a generated challenge: rebuild it from its parent.
+      const parent = hundredsChartPracticeParent(ctx.itemId, all);
+      const c = parent ? hundredsChartPracticeItem(parent, ctx.data as never) : all.find((x: { id: string }) => x.id === ctx.itemId);
       if (!c) throw new Error('No current hundreds-chart challenge');
       return hundredsChartHarnessInputs(c, intent === 'wrong', ctx.data.gridMax ?? 100);
     },
@@ -2278,7 +2389,10 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // or the number typed, then Check. Derived from the mounted challenge, never from Python.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      const all = ctx.data.challenges ?? [];
+      // An easier practice item (a simplify lever) is not a generated challenge: rebuild it from its parent.
+      const parent = equationBuilderPracticeParent(ctx.itemId, all);
+      const c = parent ? equationBuilderPracticeItem(parent) : all.find((x: { id: string }) => x.id === ctx.itemId);
       if (!c) throw new Error('No current equation-builder challenge');
       return equationBuilderHarnessInputs(c, intent === 'wrong');
     },
@@ -2295,9 +2409,13 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // tokens of the pattern row selected, then Check. Derived from the mounted challenge, never from Python.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      const all = ctx.data.challenges ?? [];
+      // The easier practice row (a simplify lever) is not a generated challenge: rebuild it from its parent.
+      const parent = practiceParent(ctx.itemId, all);
+      const c = parent ? patternPracticeItem(parent, ctx.data as never) : all.find((x: { id: string }) => x.id === ctx.itemId);
       if (!c) throw new Error('No current pattern-builder challenge');
-      return patternBuilderHarnessInputs(ctx.data as never, c, intent === 'wrong');
+      // An open-build create keeps its row through Try again; the driver starts over on a kept row.
+      return patternBuilderHarnessInputs(ctx.data as never, c, intent === 'wrong', Number(ctx.demand?.tokensInRow ?? 0) > 0);
     },
     probes: { mounted: { selector: '[data-pip-object="pattern"], [data-pip-object="build"]' } },
   },
@@ -2313,7 +2431,10 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // then Check. Compare has no wrong answer, so its wrong phase throws. Derived from the mounted challenge.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      // A simpler item (`<item>~simpler`) is not a generated challenge: rebuild it from its parent with the same builder.
+      const all = ctx.data.challenges ?? [];
+      const parent = strategyPracticeParent(ctx.itemId ?? '', all);
+      const c = parent ? strategyPracticeItem(parent, ctx.data as never) : all.find((x: { id: string }) => x.id === ctx.itemId);
       if (!c) throw new Error('No current strategy-picker challenge');
       // Try again keeps a choose item's menu pick; the scene publishes it.
       const picked = typeof ctx.demand?.chosen === 'string' && ctx.demand.chosen !== 'none yet';
@@ -2397,14 +2518,18 @@ function picturePairInputs(ctx: JourneyContext, wrong: boolean): DriverInput[] {
  * signature error (the ½ left out of a triangle or trapezoid, else half the area). The open build shades squares on
  * the grid, then I'm done: the first shape fills rows left to right, a second shape fills columns three squares tall
  * (never the first one turned for any area of 4 or more). Try again keeps the build, so it is cleared first; wrong is
- * one square short. decompose needs a canvas drag the row does not drive.
+ * one square short. decompose needs a canvas drag the row does not drive. A practice item (`~smaller`) is rebuilt from
+ * its parent with the builder its lever used (`smallerArea` or `smallerFigure`).
  */
 function polygonAreaInputs(ctx: JourneyContext, wrong: boolean): DriverInput[] {
   const id = ctx.itemId ?? '';
   const session = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === id.replace(/~smaller$/, ''));
-  const c = id.endsWith('~smaller') && session ? smallerArea(session) : session;
+  const c = id.endsWith('~smaller') && session
+    ? (session.type === 'build_perimeter' ? smallerPerimeter(session)
+      : session.type === 'build_area' ? smallerArea(session) : smallerFigure(session)) : session;
   if (!c) throw new Error('No current polygon-area-builder challenge');
   if (c.type === 'decompose') throw new Error('polygon-area-builder decompose: the cut-triangle drag on the canvas is not driven');
+  if (c.type === 'build_perimeter') return perimeterBuildInputs(ctx, c, wrong);
   if (c.type !== 'build_area') {
     const halfLeftOut = c.figureType === 'triangle' || c.figureType === 'trapezoid';
     const typed = wrong ? (halfLeftOut ? c.expectedArea * 2 : c.expectedArea / 2) : c.expectedArea;
@@ -2422,6 +2547,26 @@ function polygonAreaInputs(ctx: JourneyContext, wrong: boolean): DriverInput[] {
   if (second) return [...clear, ...columns(area), done];
   return [...clear, ...rows(area), done, ...(c.shapesAsked === 2 ? [{ type: 'choose', label: 'Clear grid' } as DriverInput,
     ...columns(area), done] : [])];
+}
+
+/**
+ * The perimeter build (`build_perimeter`): a P-unit perimeter as a rectangle h rows tall and P/2 - h wide. The first
+ * shape is 1 row tall (2 when that would not fit the 10-wide grid), the second one row taller, so never the first one
+ * turned. Wrong is the same rectangle one column narrower: its perimeter is two short.
+ */
+function perimeterBuildInputs(ctx: JourneyContext, c: { targetPerimeter?: number; shapesAsked?: number }, wrong: boolean): DriverInput[] {
+  const p = c.targetPerimeter ?? 0;
+  const firstRows = p / 2 - 1 > 10 ? 2 : 1;
+  const rect = (rows: number, narrower = 0): DriverInput[] => {
+    const cols = p / 2 - rows - narrower;
+    return Array.from({ length: rows * cols }, (_, i) => ({ type: 'touch' as const, target: `cell-${i % cols}-${Math.floor(i / cols)}` }));
+  };
+  const clear: DriverInput[] = Number(ctx.demand?.squaresPlaced ?? 0) > 0 ? [{ type: 'choose', label: 'Clear grid' }] : [];
+  const done: DriverInput = { type: 'choose', label: "I'm done!" };
+  const rows = ctx.demand?.shape === 'second' ? firstRows + 1 : firstRows;
+  if (wrong) return [...clear, ...rect(rows, 1), done];
+  return [...clear, ...rect(rows), done, ...(c.shapesAsked === 2 && rows === firstRows
+    ? [{ type: 'choose', label: 'Clear grid' } as DriverInput, ...rect(firstRows + 1), done] : [])];
 }
 
 /** Shared by every primitive: both belong to the runtime shell, not to any one board. */

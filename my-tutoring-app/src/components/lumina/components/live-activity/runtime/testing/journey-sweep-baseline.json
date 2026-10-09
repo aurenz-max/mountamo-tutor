@@ -75,11 +75,8 @@
   "habitat-diorama.connect": {
     "J12-item-miss-answered": "qa/support-levers/QUEUE-item-gaps-2026-10-09.md"
   },
-  "number-line.between": {
-    "J5-credit-moves-on": "handoff 21 SW-1"
-  },
-  "number-line.order": {
-    "J1-drivable": "handoff 21 SW-2"
+  "pattern-builder.create": {
+    "J12-item-miss-answered": "qa/support-levers/QUEUE-item-gaps-2026-10-09.md"
   },
   "read-aloud-studio.expression": {
     "J1-drivable": "handoff 24 SW-L2"

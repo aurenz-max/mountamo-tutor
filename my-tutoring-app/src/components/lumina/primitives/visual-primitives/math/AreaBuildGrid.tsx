@@ -21,10 +21,17 @@ export const AreaBuildGrid = React.forwardRef<SVGSVGElement, {
   numbers: boolean;
   /** The piece-colours lever: the piece index of each shaded square, by `cellKey`. */
   pieces: ReadonlyMap<string, number> | null;
+  /** The perimeter build's edge-marks lever: a dot on each side around the shape (`outsideSides`). No number. */
+  edges?: ReadonlyArray<Cell & { side: 'right' | 'left' | 'bottom' | 'top' }> | null;
   disabled: boolean;
   onToggle: (cell: Cell) => void;
-}>(({ cells, numbers, pieces, disabled, onToggle }, ref) => {
+}>(({ cells, numbers, pieces, edges, disabled, onToggle }, ref) => {
   const order = new Map(cells.map((x, i) => [cellKey(x), i]));
+  const edgeAt = (e: Cell & { side: string }) => {
+    const x = PAD + e.c * CELL, y = PAD + e.r * CELL;
+    return e.side === 'right' ? [x + CELL, y + CELL / 2] : e.side === 'left' ? [x, y + CELL / 2]
+      : e.side === 'bottom' ? [x + CELL / 2, y + CELL] : [x + CELL / 2, y];
+  };
   return (
     <svg ref={ref} xmlns="http://www.w3.org/2000/svg" viewBox={`0 0 ${GRID_W} ${GRID_H}`} width={GRID_W} height={GRID_H}
       role="group" aria-label="Your square grid" data-build-scene="area-grid" className="h-auto max-w-full rounded-xl">
@@ -50,6 +57,11 @@ export const AreaBuildGrid = React.forwardRef<SVGSVGElement, {
           </g>
         );
       }))}
+      {edges?.map((e) => {
+        const [cx, cy] = edgeAt(e);
+        return <circle key={`${e.c},${e.r},${e.side}`} data-aid="edge" data-lever="edge-mark" cx={cx} cy={cy} r={4}
+          fill="#fbbf24" stroke="#0f172a" strokeWidth={1.5} style={{ pointerEvents: 'none' }} />;
+      })}
     </svg>
   );
 });

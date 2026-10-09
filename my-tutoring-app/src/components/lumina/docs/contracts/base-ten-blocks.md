@@ -169,6 +169,11 @@ Not a consumer: K teen numbers. The math-k atlas routes teens to ten-frame/numbe
 - **Probe:** `BaseTenBlocks.twoWays.workspace.test.tsx` (7), `baseTenTwoWays.test.ts` (11); generation `qa/open-build/base-ten-blocks-2026-10-07/generation.json`.
 - **Compatibility:** `blocksAreTheAnswer` now includes `build_two_ways` (its check describes blocks). The catalog guidance's "the right value without the fewest blocks is not yet a build" is scoped to build.
 
+### R25 — per-item lever coverage on the click mat (J12) · IMPLEMENTED 2026-10-09
+- **Property:** operate adds `trade_mark` (help, answers `one_ten_off`): a mark on each column where the item needs a carry or borrow (`tradeColumns`), offered on every item with a regroup, so a one-trade item and an unmodelled mat have a lever for a lost trade. A mixed payload's click-mat read_blocks declares `ten_model` (help: `one_ten_off`, `digits_swapped`) and `plainer_read` (simplify: one off and far off; an ungraded read of `plainerNumber` with the same places, then the full mat); its click-mat regroup declares `ten_model` (help: `no_trade`, `value_changed`) and no simplify. All simplify builders are one function, `practiceItem`, and `practiceFromId` rebuilds a practice item from its id for the journey row.
+- **Leak rules (code, `baseTenLevers.test.ts`):** trade marks are place names only, one per regroup (400 built items), no digit, count or result; `ten_model` is drawn outside the learner's mat with no number (R5 holds: read_blocks still prints no count or value); `plainer_read` is never the number or its reversal over 10-999; no lever text or fact carries a number.
+- **Probe:** `BaseTenBlocks.levers.workspace.test.tsx` (4 new cases); `journeySweep -t base-ten` 7/7 with the J12 baseline entries removed.
+
 ## Conflicts
 
 _None open._ Notes for the four M1 fixes and the lever slice:
@@ -194,6 +199,8 @@ Proposed only; not applied.
 - **tutoring (outside the curator prompt):** the `aiDirectives` "CHALLENGE TYPE COACHING" line says "For READ_BLOCKS: … Count each column and combine", which contradicts R6 (the child never composes the number), and "For REGROUP: Trade 10 ones for 1 ten!", which names the trade (R14's concern). `scaffoldingLevels` level2 and level3 recite the column counts and `{{currentTotal}}`, which is the answer on read_blocks. No reference to these fields was found under `components/live-activity/runtime/` (not verified at runtime). Both surfaces are workspace-only, so these lines may be unread; confirm before trimming.
 
 ## Changelog
+
+- 2026-10-09 — R25 added (J12 per-item gaps). Compatible: additive levers; an unpulled mat renders as before. The operate lever list gains `trade_mark` before `single_regroup`, so a lost carry with no full column now gets the marks first.
 
 - 2026-10-07 — R24 added (build_two_ways, open build). Compatible: no existing mode's component path, generator path or lever changes; the guidance sentence on non-standard builds is now scoped to build; the W1 fixture list gains the mode; new payload `w1-payloads/base-ten-blocks.build_two_ways.json` and a journey branch.
 

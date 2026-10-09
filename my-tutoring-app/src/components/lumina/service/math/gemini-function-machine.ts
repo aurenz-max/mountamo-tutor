@@ -32,6 +32,7 @@ import type {
   FunctionMachineData,
   FunctionMachineChallenge,
 } from "../../primitives/visual-primitives/math/FunctionMachine";
+import { evaluateRule, makeRulePairs } from "../../primitives/visual-primitives/math/functionMachineDomain";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -62,6 +63,13 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       `"create_rule": Student is given a complete table of I/O pairs and must write the rule expression. `
       + `Transitional symbolic — bridges concrete understanding to algebraic notation.`,
     schemaDescription: "'create_rule' (write rule for given I/O pairs)",
+  },
+  make_rule: {
+    promptDoc:
+      `"make_rule": OPEN BUILD. The student is given ONE input-output pair ("make a machine that turns 4 into 12") `
+      + `and builds their own rule from x, number and sign tiles, then a DIFFERENT rule that makes the same pair. `
+      + `Many rules pass (3x, x + 8, 2x + 4). The system picks the pairs; never name a rule or a number.`,
+    schemaDescription: "'make_rule' (build your own rule for one input-output pair, then a different one)",
   },
 };
 
@@ -225,6 +233,17 @@ function resolveSupportStructure(
             : 'The rule stays HIDDEN; the standard pair set, with a hint after two attempts.',
       );
       break;
+    case 'make_rule':
+      // Open build: no rule to hide or reveal; the tier only times the strategy hint (easy after one miss, hard never).
+      hintLevel = tier === 'easy' ? 'full' : tier === 'hard' ? 'none' : 'minimal';
+      promptLines.push(
+        tier === 'easy'
+          ? 'The student builds their own rules; a strategy hint (what could the machine do to the input) comes after one miss.'
+          : tier === 'hard'
+            ? 'The student builds their own rules with no hint.'
+            : 'The student builds their own rules; a strategy hint comes after two misses.',
+      );
+      break;
     case 'create_rule':
       // Rule HIDDEN (mode identity). easy: FULL table + 1 worked-exemplar row + hint.
       // medium: full table, no exemplar (current). hard: PARTIAL table (≥2 rows), no hint.
@@ -274,6 +293,8 @@ const MODE_PROFILES: Record<string, ModeProfile> = {
   predict:       { showRule: true,  defaultComplexity: 'oneStep', inputQueue: [2, 3, 4, 6, 8] },
   discover_rule: { showRule: false, defaultComplexity: 'twoStep', inputQueue: [0, 1, 2, 3, 4], preferIncludeZero: true },
   create_rule:   { showRule: false, defaultComplexity: 'twoStep', inputQueue: [0, 1, 2, 3, 5], preferIncludeZero: true },
+  // make_rule: one input per item, set from the code-owned pair (see buildMakeRuleChallenges).
+  make_rule:     { showRule: false, defaultComplexity: 'oneStep', inputQueue: [] },
 };
 
 // ---------------------------------------------------------------------------
@@ -287,7 +308,8 @@ type FunctionMachineChallengeType =
   | 'observe'
   | 'predict'
   | 'discover_rule'
-  | 'create_rule';
+  | 'create_rule'
+  | 'make_rule';
 
 const DEFAULT_INSTANCE_COUNT = 4; // T3 fallback for any future mode not listed
 const MAX_INSTANCE_COUNT = 6;
@@ -297,6 +319,7 @@ const COUNT_BY_MODE: Record<FunctionMachineChallengeType, number> = {
   predict: 5,        // T2 — B4 bump 3 → 5
   discover_rule: 4,  // T3 hold (B5)
   create_rule: 4,    // T3 hold (B5)
+  make_rule: 3,      // open build: two machines per item, so three items are six makes
 };
 
 // ---------------------------------------------------------------------------
@@ -325,21 +348,6 @@ function ruleFamily(rule: string): 'add' | 'sub' | 'mul' | 'div' | 'two' | 'sq' 
   if (hasPlus) return 'add';
   if (hasMinus) return 'sub';
   return 'other';
-}
-
-/** Evaluate the rule for an input — used to filter overly-clean or messy outputs. */
-function evaluateRule(rule: string, x: number): number | null {
-  if (!rule || !rule.trim()) return null;
-  try {
-    const expression = rule.replace(/x/g, `(${x})`);
-    if (!/^[\d+\-*/().^\s]+$/.test(expression)) return null;
-    const safe = expression.replace(/\^/g, '**');
-    const result = new Function('return ' + safe)();
-    if (typeof result !== 'number' || !isFinite(result)) return null;
-    return Math.round(result * 100) / 100;
-  } catch {
-    return null;
-  }
 }
 
 /** Pre-flight check: rule produces integer outputs for the given inputs and stays under 100. */
@@ -436,6 +444,25 @@ function buildChallenges(
   }));
 }
 
+/**
+ * make_rule items: code owns every pair (distinct inputs and outputs per session, each makeable at least two
+ * different ways at the band). `rule` keeps one machine that makes the pair, for the oracle; it is never shown.
+ */
+export function buildMakeRuleChallenges(
+  complexity: 'oneStep' | 'twoStep' | 'expression',
+  count: number,
+  rng: () => number = Math.random,
+): FunctionMachineChallenge[] {
+  return makeRulePairs(complexity, count, rng).map((pair, idx) => ({
+    id: `fm-${idx + 1}`,
+    rule: pair.witness,
+    inputQueue: [pair.input],
+    showRule: false,
+    makeInput: pair.input,
+    makeOutput: pair.output,
+  }));
+}
+
 // ---------------------------------------------------------------------------
 // Wrapper schema — Gemini emits session-level metadata only
 // ---------------------------------------------------------------------------
@@ -445,7 +472,7 @@ const functionMachineWrapperSchema: Schema = {
   properties: {
     challengeType: {
       type: Type.STRING,
-      enum: ["observe", "predict", "discover_rule", "create_rule"],
+      enum: ["observe", "predict", "discover_rule", "create_rule", "make_rule"],
       description: "Challenge type for the session.",
     },
     title: {
@@ -578,7 +605,7 @@ Return ONLY the wrapper fields described above.
   }
 
   // ── Validate challengeType ──
-  const validTypes = ['observe', 'predict', 'discover_rule', 'create_rule'];
+  const validTypes = ['observe', 'predict', 'discover_rule', 'create_rule', 'make_rule'];
   if (!validTypes.includes(wrapper.challengeType)) {
     wrapper.challengeType = evalConstraint?.allowedTypes[0] ?? 'observe';
   }
@@ -600,12 +627,16 @@ Return ONLY the wrapper fields described above.
   }
 
   // ── Pre-select rules for the session (local, deterministic-variance) ──
-  const rules = selectFunctionMachineRules(wrapper.challengeType, {
-    count: config?.instanceCount,
-    complexity: wrapper.ruleComplexity,
-  });
-
-  const challenges = buildChallenges(rules, wrapper.challengeType);
+  // make_rule: code picks the input-output pairs instead (open build; many rules make each pair).
+  const isMake = wrapper.challengeType === 'make_rule';
+  const makeCount = Math.max(3, Math.min(MAX_INSTANCE_COUNT, config?.instanceCount ?? COUNT_BY_MODE.make_rule));
+  const challenges = isMake
+    ? buildMakeRuleChallenges(wrapper.ruleComplexity, makeCount)
+    : buildChallenges(selectFunctionMachineRules(wrapper.challengeType, {
+        count: config?.instanceCount,
+        complexity: wrapper.ruleComplexity,
+      }), wrapper.challengeType);
+  const rules = challenges.map((c) => isMake ? `${c.makeInput}->${c.makeOutput}` : c.rule);
 
   // ── Apply the support-tier structure deterministically (code owns the SUPPORT
   // structure; the LLM only chose the wrapper text). Runs at the END, after the

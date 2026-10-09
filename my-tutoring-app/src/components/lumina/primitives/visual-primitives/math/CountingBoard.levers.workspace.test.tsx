@@ -11,8 +11,8 @@ vi.mock('@/components/lumina/evaluation', async () => (await import('@/component
 vi.mock('@/components/lumina/utils/SoundManager', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).soundSeam());
 vi.mock('@/components/lumina/components/JudgedMicPanel', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).micPanelSeam());
 
-import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { cleanup } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, fireEvent } from '@testing-library/react';
 import { installRuntimeTimers, restoreRuntimeTimers } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 
@@ -105,6 +105,38 @@ it('two_hands takes away the far hand, keeps the matching one, and the pick afte
   h.close();
 });
 
+it('pair_up: on a single object, after a hand one too many, pairs the group with the fingers of that hand; the pick after is assisted', () => {
+  const h = mountWorkspace({ primitiveId: 'counting-board', evalMode: 'subitize_perceptual', data: handData, instanceId: 'board' });
+  const strip = () => h.view.container.querySelector('[data-lever="pair-up"]');
+  const snapshot = () => [h.view.container.innerHTML, JSON.stringify(h.state().task!.demand), JSON.stringify(levers(h)),
+    h.state().task!.workspace!.attempts.length];
+  // Before a wrong pick there is nothing to pair: refused, and nothing changes.
+  let before = snapshot();
+  expect(h.dispatch('pull_lever', { lever: 'pair_up' }).status).toBe('blocked');
+  expect(snapshot()).toEqual(before);
+  h.touch('hand-2');
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: false, miss: 'one_over' });
+  expect(levers(h).find(l => l.id === 'pair_up')).toMatchObject({ kind: 'help', pulled: false });
+  expect(strip()).toBeNull();
+  h.dispatch('pull_lever', { lever: 'pair_up' });
+  // Same commit: the strip is drawn (one object, the two fingers of the hand picked, one line) and the fact says so.
+  expect(strip()!.querySelectorAll('[data-pair="object"]')).toHaveLength(1);
+  expect(strip()!.querySelectorAll('[data-pair="finger"]')).toHaveLength(2);
+  expect(strip()!.querySelectorAll('line')).toHaveLength(1);
+  expect(h.state().task!.demand.onScreen).toMatch(/fingers of the hand the learner picked last/);
+  expect(String(h.state().task!.demand.onScreen)).not.toMatch(/\d|\b(one|two|three)\b/i);
+  // A refused re-pull changes nothing (revision aside).
+  before = snapshot();
+  expect(h.dispatch('pull_lever', { lever: 'pair_up' }).status).toBe('blocked');
+  expect(snapshot()).toEqual(before);
+  // Try again clears the pick, not the picture.
+  h.dispatch('retry');
+  expect(strip()).not.toBeNull();
+  h.touch('hand-1');
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true, levers: ['pair_up'] });
+  h.close();
+});
+
 // ── The spoken kinds (M1 spoken slice) ───────────────────────────────────────
 
 const spokenData = (gradeBand: string, ...challenges: object[]) => ({ title: 'Count', gradeBand,
@@ -177,4 +209,144 @@ it('K subitize: five_groups shows the hidden set again in rows of five, for the 
   h.settle(5000);
   expect(drawn(h)).toBe(0);
   h.close();
+});
+
+// ── recount_moved and build_n (class sweep 2026-10-08) ───────────────────────
+
+it('recount_moved: line_up after the move brings the same set back uncounted in a row; the answer after it is assisted', () => {
+  const h = mountWorkspace({ primitiveId: 'counting-board', evalMode: 'recount_moved', instanceId: 'board',
+    data: spokenData('K', { type: 'recount_moved', count: 8, targetAnswer: 8 }, { type: 'recount_moved', count: 6, targetAnswer: 6 }) });
+  expect(levers(h).map(l => [l.id, l.kind])).toEqual([['line_up', 'help'], ['smaller_set', 'simplify']]);
+  const countAll = () => { for (let i = 0; i < 8; i++) h.touch(`object-${i}`); };
+  countAll();
+  expect(h.state().task!.demand.moved).toBe('yes');
+  h.say('nine'); h.feedback('incorrect');
+  if (h.state().task!.demand.moved !== 'yes') countAll();
+  expect(objectRows(h).size).toBeGreaterThan(1);
+  expect(h.view.container.querySelector('[data-lever]')).toBeNull();
+  h.dispatch('pull_lever', { lever: 'line_up' });
+  // Same commit: the set is back, uncounted, in one row, and the fact says so.
+  expect(h.state().task!.demand.moved).toBe('no');
+  expect(objectRows(h).size).toBe(1);
+  expect(drawn(h)).toBe(8);
+  expect(h.view.container.querySelector('svg[data-lever="line-up"]')).not.toBeNull();
+  expect(h.state().task!.demand.onScreen).toMatch(/single row/);
+  expect(JSON.stringify(h.state().task!.demand)).not.toMatch(/\b8\b|eight/);
+  // A refused pull (already pulled) changes nothing.
+  const before = [h.view.container.innerHTML, h.state().task!.demand.onScreen, h.state().assistance.length];
+  expect(h.dispatch('pull_lever', { lever: 'line_up' }).status).toBe('blocked');
+  expect([h.view.container.innerHTML, h.state().task!.demand.onScreen, h.state().assistance.length]).toEqual(before);
+  // The observer's Try again keeps the row; the learner counts the row, and the last tap moves it again.
+  h.dispatch('retry');
+  expect(objectRows(h).size).toBe(1);
+  countAll();
+  // Moved: scattered, and the row fact is gone.
+  expect(h.state().task!.demand.moved).toBe('yes');
+  expect(objectRows(h).size).toBeGreaterThan(1);
+  expect(h.state().task!.demand.onScreen ?? '').not.toMatch(/single row/);
+  h.say('eight'); h.feedback('correct');
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true, levers: ['line_up'] });
+  h.close();
+});
+
+it('recount_moved: smaller_set opens an easier board that moves too, ungraded; the full board comes back uncounted and is credited', () => {
+  const h = mountWorkspace({ primitiveId: 'counting-board', evalMode: 'recount_moved', instanceId: 'board',
+    data: spokenData('K', { type: 'recount_moved', count: 8, targetAnswer: 8, arrangement: 'line' }) });
+  expect(levers(h).map(l => l.id)).toEqual(['smaller_set']);
+  for (let i = 0; i < 8; i++) h.touch(`object-${i}`);
+  h.say('ten'); h.feedback('incorrect');
+  const full = h.state().task!.itemId;
+  h.dispatch('pull_lever', { lever: 'smaller_set' });
+  expect(h.state().task).toMatchObject({ itemId: `${full}~simpler` });
+  expect(h.state().task!.workspace!.expectedAnswer).toBe('4');
+  expect([drawn(h), h.state().task!.demand.moved]).toEqual([4, 'no']);
+  for (let i = 0; i < 4; i++) h.touch(`object-${i}`);
+  expect(h.state().task!.demand.moved).toBe('yes');
+  h.say('four'); h.feedback('correct', 'advance'); h.confirmVisible();
+  expect(h.state().task!.itemId).toBe(full);
+  expect([drawn(h), h.state().task!.demand.moved]).toEqual([8, 'no']);
+  for (let i = 0; i < 8; i++) h.touch(`object-${i}`);
+  h.say('eight'); h.feedback('correct');
+  const attempts = h.state().task!.workspace!.attempts;
+  expect(attempts.map(a => [a.itemId, a.correct, !!(a as { practice?: boolean }).practice])).toEqual([
+    [full, false, false], [`${full}~simpler`, true, true], [full, true, false]]);
+  expect(attempts.at(-1)).toMatchObject({ assisted: true, levers: ['smaller_set'] });
+  h.close();
+});
+
+describe('build_n', () => {
+  const buildData = { title: 'Build', gradeBand: 'K', objects: { type: 'bears', count: 6, arrangement: 'scattered' },
+    showOptions: { showRunningCount: true, showLastNumber: true, showGroupCircles: false, highlightOnTap: true },
+    challenges: [{ id: 'b1', type: 'build_n', instruction: 'Put six bears on the blanket.', count: 6, targetAnswer: 6, arrangement: 'scattered' },
+      { id: 'b2', type: 'build_n', instruction: 'Put five bears on the blanket.', count: 5, targetAnswer: 5, arrangement: 'scattered' }] };
+  // jsdom has no SVG geometry: a tap lands where the client point says. The build watcher's fetch gets no reply.
+  let realFetch: typeof fetch;
+  beforeEach(() => {
+    const proto = SVGSVGElement.prototype as unknown as Record<string, unknown>;
+    proto.getScreenCTM = () => ({ inverse: () => ({}) });
+    proto.createSVGPoint = () => ({ x: 0, y: 0, matrixTransform(this: { x: number; y: number }) { return { x: this.x, y: this.y }; } });
+    realFetch = globalThis.fetch;
+    globalThis.fetch = (async () => ({ ok: false })) as unknown as typeof fetch;
+  });
+  afterEach(() => { globalThis.fetch = realFetch; });
+  const built = (h: WorkspaceHarness) => h.view.container.querySelectorAll('[data-built-index]').length;
+  const put = (h: WorkspaceHarness, n: number) => {
+    const placed = built(h);
+    for (let i = 0; i < n; i++) act(() => {
+      const k = placed + i;
+      fireEvent.click(h.view.container.querySelector('[data-build-scene]')!, { clientX: 40 + (k % 8) * 50, clientY: 40 + Math.floor(k / 8) * 60 });
+    });
+  };
+
+  it('starts bare; running_count shows what was put in, in the same commit; a refused pull changes nothing; the build after is assisted', () => {
+    const h = mountWorkspace({ primitiveId: 'counting-board', evalMode: 'build_n', data: buildData, instanceId: 'board' });
+    expect(levers(h).map(l => [l.id, l.kind, l.pulled])).toEqual([['running_count', 'help', false], ['count_tags', 'help', false],
+      ['smaller_give', 'simplify', false]]);
+    put(h, 4);
+    expect(built(h)).toBe(4);
+    h.press(/done/);
+    expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: false, miss: 'short_by_more', assisted: false });
+    expect(h.view.container.querySelector('[data-lever="running-count"]')).toBeNull();
+    h.dispatch('pull_lever', { lever: 'running_count' });
+    expect(h.view.container.querySelector('[data-lever="running-count"]')?.textContent).toMatch(/Put in:\s*4/);
+    expect(h.state().task!.demand.onScreen).toMatch(/put in so far/);
+    expect(String(h.state().task!.demand.onScreen)).not.toMatch(/\d|six/);
+    const before = [h.view.container.innerHTML, h.state().task!.demand.onScreen, h.state().assistance.length];
+    expect(h.dispatch('pull_lever', { lever: 'running_count' }).status).toBe('blocked');
+    expect([h.view.container.innerHTML, h.state().task!.demand.onScreen, h.state().assistance.length]).toEqual(before);
+    h.dispatch('pull_lever', { lever: 'count_tags' });
+    expect(Array.from(h.view.container.querySelectorAll('[data-aid="tag"]')).map(t => t.textContent)).toEqual(['1', '2', '3', '4']);
+    h.dispatch('retry');
+    put(h, 6 - built(h));
+    expect(built(h)).toBe(6);
+    h.press(/done/);
+    expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true });
+    expect(h.state().task!.workspace!.attempts.at(-1)!.levers).toEqual(['running_count', 'count_tags']);
+    h.close();
+  });
+
+  it('smaller_give opens an easier build on an empty scene, ungraded; the full build comes back empty and is credited', () => {
+    const h = mountWorkspace({ primitiveId: 'counting-board', evalMode: 'build_n', data: buildData, instanceId: 'board' });
+    put(h, 9);
+    h.press(/done/);
+    expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: false, miss: 'over_by_more' });
+    h.dispatch('pull_lever', { lever: 'smaller_give' });
+    expect(h.state().task).toMatchObject({ itemId: 'b1~smaller' });
+    expect(h.state().task!.task).toMatch(/three bears/);
+    expect(h.state().task!.workspace!.practice).toEqual({ returnsTo: 'b1' });
+    expect(built(h)).toBe(0);
+    put(h, 3);
+    h.press(/done/);
+    expect(h.state().task!.workspace!.lastResponse).toMatchObject({ correct: true });
+    h.dispatch('advance');
+    expect(h.state().task).toMatchObject({ itemId: 'b1' });
+    expect(built(h)).toBe(0);
+    put(h, 6);
+    h.press(/done/);
+    const attempts = h.state().task!.workspace!.attempts;
+    expect(attempts.map(a => [a.itemId, a.correct, !!(a as { practice?: boolean }).practice])).toEqual([
+      ['b1', false, false], ['b1~smaller', true, true], ['b1', true, false]]);
+    expect(attempts.at(-1)).toMatchObject({ levers: ['smaller_give'], assisted: true });
+    h.close();
+  });
 });

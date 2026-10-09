@@ -154,3 +154,88 @@ it('match: far_match opens two far-apart choices on a different fact', () => {
   expect(eqs).toEqual(['1 + 1 = 2', '4 + 1 = 5']);
   h.close();
 });
+
+// Fingers pictures (J12 gaps, 2026-10-09): the hands cannot be tapped or split, so the dots are drawn under them.
+const fingers = (id: string, type: 'visual-fact' | 'match', extra: Partial<MathFactFluencyChallenge> = {}): MathFactFluencyChallenge => ({
+  id, type, instruction: 'How many fingers in all?', operation: 'addition', operand1: 1, operand2: 2, result: 3, equation: '1 + 2 = 3',
+  correctAnswer: 3, unknownPosition: 'result', visualType: 'fingers', visualCount: 3, ...extra });
+const fingersData = (challenges: MathFactFluencyChallenge[]) => ({ ...data(challenges), maxNumber: 5 });
+const facts = (h: WorkspaceHarness) => JSON.stringify(h.state().task!.demand);
+
+it('visual_fact on fingers: two_parts adds the two parts as dots under the hands in one commit, and the next attempt carries it', () => {
+  const c = fingers('f1', 'visual-fact', { options: [1, 3, 4, 5] });
+  const h = mountWorkspace({ primitiveId: 'math-fact-fluency', evalMode: 'visual_fact', data: fingersData([c]), instanceId: 'facts' });
+  expect(levers(h).map(l => l.id)).toEqual(['two_parts', 'count_marks', 'smaller_fact']);
+  answer(h, c, true);
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: false, miss: 'other_operation' });
+  const hands = () => h.view.container.querySelector('[data-pip-object="visual"]')!.textContent;
+  const handsBefore = hands();
+  expect(lever(h, 'two-parts')).toHaveLength(0);
+  const receipt = h.dispatch('pull_lever', { lever: 'two_parts' });
+  expect(receipt.status).toBe('committed');
+  const parts = lever(h, 'two-parts')[0];
+  expect(Array.from(parts.querySelectorAll('[data-lever-dot]')).map(d => d.getAttribute('data-lever-dot'))).toEqual(['plain', 'added', 'added']);
+  expect(parts.textContent).not.toMatch(/\d/);
+  expect(hands()).toContain(handsBefore);
+  expect(String(receipt.state.task!.demand.onScreen)).toMatch(/Dots under the hands show the fact's two parts/);
+  expect(String(receipt.state.task!.demand.onScreen)).not.toMatch(/\d/);
+
+  // A refused pull changes nothing: the screen, the scene, the levers and the attempts stay as they were.
+  const screen = h.view.container.innerHTML, scene = facts(h), was = JSON.stringify(levers(h));
+  const attempts = h.state().task!.workspace!.attempts.length;
+  expect(h.dispatch('pull_lever', { lever: 'two_parts' }).status).toBe('blocked');
+  expect(h.dispatch('pull_lever', { lever: 'fact_dots' }).status).toBe('blocked');
+  expect(h.view.container.innerHTML).toBe(screen);
+  expect(facts(h)).toBe(scene);
+  expect(JSON.stringify(levers(h))).toBe(was);
+  expect(h.state().task!.workspace!.attempts).toHaveLength(attempts);
+
+  h.dispatch('retry');
+  answer(h, c, false);
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ itemId: 'f1', correct: true, assisted: true, levers: ['two_parts'] });
+  h.close();
+});
+
+it('match on fingers: count_marks adds tappable dots under the hands; tapping numbers only the dots tapped', () => {
+  const c = fingers('m1', 'match', { operand1: 3, operand2: 3, result: 6, equation: '3 + 3 = 6', correctAnswer: 6, visualCount: 6,
+    matchDirection: 'visual-to-equation', equationOptions: ['2 + 3 = 5', '3 + 3 = 6', '4 + 3 = 7', '3 + 2 = 5'] });
+  const h = mountWorkspace({ primitiveId: 'math-fact-fluency', evalMode: 'match', data: data([c]), instanceId: 'facts' });
+  expect(levers(h).map(l => l.id)).toEqual(['count_marks', 'far_match']);
+  answer(h, c, true);
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: false, miss: 'one_short' });
+  const receipt = h.dispatch('pull_lever', { lever: 'count_marks' });
+  expect(receipt.status).toBe('committed');
+  expect(String(receipt.state.task!.demand.onScreen)).toMatch(/Dots under the hands are tap targets/);
+  const dots = () => Array.from(lever(h, 'count-marks')[0].querySelectorAll('button'));
+  expect(dots()).toHaveLength(6);
+  expect(lever(h, 'count-marks')[0].textContent).not.toMatch(/\d/);
+  h.dispatch('retry');
+  act(() => { fireEvent.click(dots()[0]); fireEvent.click(dots()[1]); });
+  expect(Array.from(lever(h, 'tap-number')).map(t => t.textContent)).toEqual(['1', '2']);
+  answer(h, c, false);
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ itemId: 'm1', correct: true, levers: ['count_marks'] });
+  h.close();
+});
+
+it('visual_fact on fingers: smaller_fact opens an ungraded smaller fact, then the full item comes back blank and is credited', () => {
+  const c = fingers('f1', 'visual-fact', { options: [1, 3, 4, 5] });
+  const h = mountWorkspace({ primitiveId: 'math-fact-fluency', evalMode: 'visual_fact', data: fingersData([c]), instanceId: 'facts' });
+  answer(h, c, true);
+  const receipt = h.dispatch('pull_lever', { lever: 'smaller_fact' });
+  expect(receipt.status).toBe('committed');
+  expect(receipt.state.task!.itemId).toBe('f1~simpler');
+  const options = () => Array.from(h.view.container.querySelectorAll('[data-pip-object^="option-"]')).map(b => b.textContent);
+  // 3 + 1: not the learner's fact, and not its answer.
+  expect(h.view.container.querySelector('[data-pip-object="problem"]')?.textContent).toBe('3 + 1 = ?');
+  h.touch('option-4');
+  expect(h.state().task!.workspace!.lastResponse).toMatchObject({ correct: true });
+  h.dispatch('advance');
+  expect(h.state().task!.itemId).toBe('f1');
+  expect(options()).toEqual(['1', '3', '4', '5']);
+  expect(h.view.container.textContent).not.toMatch(/Correct!|Not quite/);
+  answer(h, c, false);
+  const attempts = h.state().task!.workspace!.attempts;
+  expect(attempts.map(a => [a.itemId, a.correct, 'practice' in a])).toEqual([['f1', false, false], ['f1~simpler', true, true], ['f1', true, false]]);
+  expect(attempts.at(-1)).toMatchObject({ levers: ['smaller_fact'], assisted: true });
+  h.close();
+});

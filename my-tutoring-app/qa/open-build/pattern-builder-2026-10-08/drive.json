@@ -1,0 +1,117 @@
+{
+  "at": "2026-10-09T00:56:27.459Z",
+  "shapes": [
+    "AB",
+    "ABB",
+    "AAB",
+    "ABB",
+    "AAB"
+  ],
+  "checks": [
+    {
+      "name": "routed: every item create with a shape",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "row opens empty, shape shown",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "miss names the shape, never a row",
+      "pass": true,
+      "detail": "That repeats, but it is not A B yet."
+    },
+    {
+      "name": "Try again keeps the row",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Start over clears the row",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "AB made twice passes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "item 2 opens empty with ABB",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "too short is named",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "ABB made twice passes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "5+ watcher lines",
+      "pass": false,
+      "detail": "3"
+    },
+    {
+      "name": "watcher \"Ooh, red and blue tiles are filling the strip!\" no verdict/number",
+      "pass": true,
+      "detail": "a b b a b b"
+    },
+    {
+      "name": "watcher \"Ooh, bright red and blue tiles are lining up together!\" no verdict/number",
+      "pass": true,
+      "detail": "a b a b"
+    },
+    {
+      "name": "watcher \"Ooh, bright red and green tiles are lining up together!\" no verdict/number",
+      "pass": true,
+      "detail": "c a a c a"
+    },
+    {
+      "name": "watcher \"Ooh, red and blue tiles are filling the strip!\" names only placed colours",
+      "pass": true,
+      "detail": "a b b a b b -> red,blue"
+    },
+    {
+      "name": "watcher \"Ooh, bright red and blue tiles are lining up together!\" names only placed colours",
+      "pass": true,
+      "detail": "a b a b -> red,blue"
+    },
+    {
+      "name": "watcher \"Ooh, bright red and green tiles are lining up together!\" names only placed colours",
+      "pass": true,
+      "detail": "c a a c a -> green,red"
+    },
+    {
+      "name": "palette tokens >= 44px",
+      "pass": true,
+      "detail": "{\"token\":[44,44],\"done\":40,\"docW\":390,\"vw\":390}"
+    },
+    {
+      "name": "no page errors",
+      "pass": true,
+      "detail": "[]"
+    }
+  ],
+  "watcherLines": [
+    {
+      "state": "a b b a b b",
+      "line": "Ooh, red and blue tiles are filling the strip!"
+    },
+    {
+      "state": "a b a b",
+      "line": "Ooh, bright red and blue tiles are lining up together!"
+    },
+    {
+      "state": "c a a c a",
+      "line": "Ooh, bright red and green tiles are lining up together!"
+    }
+  ],
+  "errors": []
+}

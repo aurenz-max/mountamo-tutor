@@ -35,6 +35,9 @@ import { OPTION_MODES, ROW_TAP_MODES, barModelMiss, describeGraphWork, workspace
 import { COUNTS_LEVER, LINE_LEVER, TWO_BARS_LEVER, isPracticeGraph, levelLineRow, makeGraphLevers, makeGraphMiss,
   makeGraphVerdict, twoBarPractice, GRAPH_MAX, type GraphRule } from './barModelBuild';
 import { GraphBuildScene } from './GraphBuildScene';
+import { BAR_VALUES, DATA_BESIDE, GROUP_FIVES, GUIDE_LINE, ICON_VALUES, MARK_BARS, MARK_ROW, MINOR_TICKS, PAIR_ROWS, PILE_ROW,
+  PRACTICE_NOTE, SORT_PILE, STEP_MARKS, WORD_MODEL, barModelLevers, fivesRows, isSimplerGraph, leverFacts, leverRefusal, minorStep,
+  namedRows, simplerGraph, stepMarks, wordModel, type WordModel } from './barModelLevers';
 import { useBuildWatcher } from '../../build-layer/buildLayer';
 
 // ---------------------------------------------------------------------------
@@ -190,6 +193,18 @@ interface BarsAreaProps {
   showPlacedCount?: boolean;
   /** Registers each row (label and bar) as a Pip target. */
   rowRef?: (id: string) => (element: Element | null) => void;
+  /** Lever `mark_bars`: more rows with the amber mark. */
+  markedRows?: readonly number[];
+  /** Lever `group_fives`: the rows drawn with a gap after every fifth picture. */
+  fivesRows?: readonly number[];
+  /** Lever `guide_line`: a dashed line at the end of this row's bar, down to the axis. */
+  guideRow?: number | null;
+  /** Lever `minor_ticks`: unlabelled axis marks at this spacing. */
+  minorStep?: number | null;
+  /** Lever `icon_values`: the key's number under every picture. */
+  iconValues?: boolean;
+  /** Lever `pile_row`: the group to count, drawn as a row in the graph's columns above the rows. */
+  pileRow?: { emoji: string; count: number } | null;
 }
 
 const BarsArea: React.FC<BarsAreaProps> = ({
@@ -206,6 +221,12 @@ const BarsArea: React.FC<BarsAreaProps> = ({
   showEmptySlots = false,
   showPlacedCount = false,
   rowRef,
+  markedRows = [],
+  fivesRows = [],
+  guideRow = null,
+  minorStep = null,
+  iconValues = false,
+  pileRow = null,
 }) => {
   // A one-to-one chart carries NO numeric axis: the icons are the count, and a
   // numbered axis under them lets the child read the answer off the scale
@@ -213,7 +234,9 @@ const BarsArea: React.FC<BarsAreaProps> = ({
   // = N picture graphs keep theirs; reading the axis is their skill.
   const showAxis = (graphStyle === 'scaled_bar' || (graphStyle === 'picture' && (scale?.iconValue ?? 1) > 1)) && !!scale;
   const maxBar = Math.max(1, ...values.map((v) => v.value));
-  const axisMax = scale?.max ?? maxBar;
+  const axisMax = Math.max(scale?.max ?? maxBar, pileRow?.count ?? 0);
+  const minorTicks = showAxis && minorStep ? Array.from({ length: Math.floor(axisMax / minorStep) + 1 }, (_, k) => k * minorStep)
+    .filter(t => !scale || Math.abs(t / (scale.step || 1) - Math.round(t / (scale.step || 1))) > 1e-9) : [];
   const ticks = useMemo(() => {
     if (!showAxis || !scale) return [];
     const step = scale.step || 1;
@@ -248,13 +271,28 @@ const BarsArea: React.FC<BarsAreaProps> = ({
                 />
               );
             })}
+            {minorTicks.map(t => (
+              <div key={`m${t}`} data-lever="minor-tick" className="absolute top-0 bottom-0 w-px border-l border-dotted border-white/10"
+                style={{ left: `${(t / axisMax) * 100}%` }} />
+            ))}
+            {guideRow != null && values[guideRow] ? (
+              <div data-lever="guide-line" className="absolute -top-1 -bottom-3 border-l-2 border-dashed border-amber-300/80"
+                style={{ left: `${Math.min(100, (values[guideRow].value / Math.max(1, axisMax)) * 100)}%` }} />
+            ) : null}
           </div>
         ) : null}
 
         {/* Bars */}
         <div className="space-y-3 relative">
+          {pileRow ? (
+            <div data-lever="pile-row" className="space-y-1">
+              <div className="text-sm font-medium text-cyan-200">The group</div>
+              <PictureBar value={pileRow.count} iconEmoji={pileRow.emoji} iconValue={1} axisMax={axisMax}
+                ringClass="border-dashed border-cyan-300/40" />
+            </div>
+          ) : null}
           {values.map((item, i) => {
-            const isHighlighted = highlightedIndex === i;
+            const isHighlighted = highlightedIndex === i || markedRows.includes(i);
             const isSelected = selectedIndex === i;
             const fb = feedbackIndex?.index === i ? feedbackIndex : null;
             // Grading state (selected/correct/incorrect) is FRAME → tokenized
@@ -300,6 +338,8 @@ const BarsArea: React.FC<BarsAreaProps> = ({
                     ringClass={ringClass}
                     showEmptySlots={showEmptySlots}
                     label={item.label}
+                    groupFives={fivesRows.includes(i)}
+                    iconValueLabel={iconValues && (scale?.iconValue ?? 1) > 1 ? scale?.iconValue ?? null : null}
                     onClick={clickable && onBarClick ? () => onBarClick(i) : undefined}
                   />
                 ) : (
@@ -340,6 +380,9 @@ const BarsArea: React.FC<BarsAreaProps> = ({
       {/* Axis tick labels */}
       {showAxis && scale ? (
         <div className="relative mt-2 h-5">
+          {minorTicks.map(t => (
+            <div key={`m${t}`} aria-hidden className="absolute top-0 h-1.5 w-px bg-slate-500" style={{ left: `${(t / axisMax) * 100}%` }} />
+          ))}
           {ticks.map((t, i) => {
             const left = (t / axisMax) * 100;
             return (
@@ -368,9 +411,14 @@ interface PictureBarProps {
   /** The row's name, the tappable button's label. */
   label?: string;
   onClick?: () => void;
+  /** Lever `group_fives`: a gap after every fifth cell. */
+  groupFives?: boolean;
+  /** Lever `icon_values`: this number under every picture. Never a running total. */
+  iconValueLabel?: number | null;
 }
 
-const PictureBar: React.FC<PictureBarProps> = ({ value, iconEmoji, iconValue, axisMax, ringClass, showEmptySlots = false, label, onClick }) => {
+const PictureBar: React.FC<PictureBarProps> = ({ value, iconEmoji, iconValue, axisMax, ringClass, showEmptySlots = false, label, onClick,
+  groupFives = false, iconValueLabel = null }) => {
   const iconCount = Math.max(0, Math.round(value / iconValue));
   const maxIconCount = Math.max(1, Math.ceil(axisMax / iconValue));
 
@@ -383,14 +431,21 @@ const PictureBar: React.FC<PictureBarProps> = ({ value, iconEmoji, iconValue, ax
       className={`grid gap-1 w-full px-2 py-1.5 rounded-lg border ${ringClass} bg-slate-800/30 ${onClick ? 'cursor-pointer hover:border-white/30' : 'cursor-default'} transition`}
       style={{ gridTemplateColumns: `repeat(${maxIconCount}, minmax(0, 1fr))` }}
     >
-      {Array.from({ length: maxIconCount }).map((_, i) => (
-        <span
-          key={i}
-          className={`text-2xl text-center leading-none select-none ${i < iconCount ? '' : 'text-white/20'}`}
-        >
-          {i < iconCount ? iconEmoji : (showEmptySlots ? '○' : ' ')}
-        </span>
-      ))}
+      {Array.from({ length: maxIconCount }).map((_, i) => {
+        const gap = groupFives && (i + 1) % 5 === 0 && i < maxIconCount - 1;
+        return (
+          <span
+            key={i}
+            data-five-gap={gap ? 'true' : undefined}
+            className={`text-2xl text-center leading-none select-none ${i < iconCount ? '' : 'text-white/20'} ${gap ? 'mr-3 border-r-2 border-dashed border-amber-300/50 pr-1' : ''}`}
+          >
+            {i < iconCount ? iconEmoji : (showEmptySlots ? '○' : ' ')}
+            {iconValueLabel != null && i < iconCount ? (
+              <span data-lever="icon-value" className="block text-[10px] font-mono text-amber-200">{iconValueLabel}</span>
+            ) : null}
+          </span>
+        );
+      })}
     </button>
   );
 };
@@ -405,14 +460,26 @@ interface SourceCollectionProps {
   items: { emoji: string; categoryIndex: number }[];
   scattered?: boolean;
   heading: string;
+  /** Lever `sort_pile`: one line per kind, in the order of the rows. */
+  sorted?: boolean;
 }
 
-const SourceCollection: React.FC<SourceCollectionProps> = ({ items, scattered = false, heading }) => (
+const SourceCollection: React.FC<SourceCollectionProps> = ({ items, scattered = false, heading, sorted = false }) => (
   <LuminaPanel className="px-4 py-4">
     <div className="text-center">
       <LuminaSectionLabel accent="cyan" size="sm">{heading}</LuminaSectionLabel>
     </div>
-    <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+    {sorted ? (
+      <div data-lever="sorted-pile" className="mt-3 space-y-2">
+        {Array.from(new Set(items.map(it => it.categoryIndex))).sort((a, b) => a - b).map(k => (
+          <div key={k} data-pile-line={k} className="flex flex-wrap items-center justify-center gap-x-4">
+            {items.filter(it => it.categoryIndex === k).map((it, i) => (
+              <span key={i} className="text-3xl leading-none select-none">{it.emoji}</span>
+            ))}
+          </div>
+        ))}
+      </div>
+    ) : <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
       {items.map((item, i) => (
         <span
           key={i}
@@ -423,6 +490,20 @@ const SourceCollection: React.FC<SourceCollectionProps> = ({ items, scattered = 
         >
           {item.emoji}
         </span>
+      ))}
+    </div>}
+  </LuminaPanel>
+);
+
+/** Lever `word_model`: rows in pictures the graph does not use, labelled with the comparison words. Not part of the graph. */
+const WordModelPanel: React.FC<{ model: WordModel }> = ({ model }) => (
+  <LuminaPanel className="px-4 py-3" data-lever="word-model">
+    <div className="space-y-1.5">
+      {model.rows.map((r, i) => (
+        <div key={i} className="flex items-center gap-3">
+          <span className="w-16 text-right text-sm font-semibold text-amber-200">{r.word}</span>
+          <span className="text-2xl leading-none select-none">{model.glyph.repeat(r.count)}</span>
+        </div>
       ))}
     </div>
   </LuminaPanel>
@@ -463,6 +544,10 @@ interface BuildControlsProps {
   chosenStep: number | null;
   onChooseStep: (s: number) => void;
   disabled?: boolean;
+  /** Lever `data_beside`: the number the question gives for each row. */
+  given?: Record<string, number> | null;
+  /** Lever `step_marks`: how many numbered marks each step needs to reach the learner's tallest bar. */
+  marks?: Record<number, number> | null;
 }
 
 const BuildControls: React.FC<BuildControlsProps> = ({
@@ -472,6 +557,8 @@ const BuildControls: React.FC<BuildControlsProps> = ({
   chosenStep,
   onChooseStep,
   disabled,
+  given = null,
+  marks = null,
 }) => {
   const adjust = (i: number, delta: number) => {
     SoundManager.tick();
@@ -488,7 +575,9 @@ const BuildControls: React.FC<BuildControlsProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {values.map((v, i) => (
             <LuminaPanel key={i} className="flex items-center justify-between gap-3 px-3 py-2">
-              <span className="text-sm text-slate-200">{v.label}</span>
+              <span className="text-sm text-slate-200">{v.label}
+                {given?.[v.label] != null ? <span data-lever="data-beside" className="ml-2 font-mono text-xs text-amber-200">({given[v.label]})</span> : null}
+              </span>
               <div className="flex items-center gap-2">
                 <LuminaButton
                   size="sm"
@@ -519,15 +608,17 @@ const BuildControls: React.FC<BuildControlsProps> = ({
         <LuminaSectionLabel accent="cyan" size="sm">Choose a scale step</LuminaSectionLabel>
         <div className="flex flex-wrap gap-2">
           {scaleSteps.map((s) => (
-            <LuminaButton
-              key={s}
-              tone={chosenStep === s ? 'primary' : 'ghost'}
-              disabled={disabled}
-              onClick={() => { SoundManager.select(); onChooseStep(s); }}
-              className="px-4 py-2"
-            >
-              Step of {s}
-            </LuminaButton>
+            <div key={s} className="flex flex-col items-center gap-1">
+              <LuminaButton
+                tone={chosenStep === s ? 'primary' : 'ghost'}
+                disabled={disabled}
+                onClick={() => { SoundManager.select(); onChooseStep(s); }}
+                className="px-4 py-2"
+              >
+                Step of {s}
+              </LuminaButton>
+              {marks?.[s] != null ? <span data-lever="step-marks" className="text-xs text-amber-200">{marks[s]} marks</span> : null}
+            </div>
           ))}
         </div>
       </div>
@@ -626,8 +717,8 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // make_graph levers (`barModelBuild.ts`), keyed by the session item they were pulled on, and the easier two-bar
-  // graph the simplify lever put on screen in its place.
+  // In-item levers (make_graph: `barModelBuild.ts`; every other mode: `barModelLevers.ts`), keyed by the session item
+  // they were pulled on, and the easier graph a simplify lever put on screen in its place.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<BarModelChallenge | null>(null);
   const sessionChallenge = challenges[currentIndex] ?? null;
@@ -656,7 +747,8 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
   const spokenMisses = useRef(0);
   // The runtime opens every item, fresh or after Try again, so no revision lands after it opens.
   openItem.current = (index, retry) => {
-    const next = challenges[index];
+    // Try again on an easier graph reopens that graph, never the full one it stands in for.
+    const next = retry && practice ? practice : challenges[index];
     if (!next) return;
     // make_graph: Try again keeps the graph and the verdict, so the learner revises their own work.
     if (retry && next.evalMode === 'make_graph') return;
@@ -758,7 +850,7 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
       if (correct) {
         if (recordedRef.current) return;
         // The easier two-bar graph is ungraded practice: it records no result of its own.
-        if (isPracticeGraph(currentChallenge)) { SoundManager.playCorrect(); return; }
+        if (isPracticeGraph(currentChallenge) || isSimplerGraph(currentChallenge)) { SoundManager.playCorrect(); return; }
         recordedRef.current = true;
         SoundManager.playCorrect();
         recordResult({
@@ -859,6 +951,9 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
   };
   const graphRule = isMakeGraph ? currentChallenge?.graphRule : undefined;
   const leverOn = (id: string) => !practice && pulledLevers.includes(id);
+  // Every other mode's levers: drawn on the session graph only while pulled (or on from the tier), never on an easier graph.
+  const itemLevers = sessionChallenge?.evalMode === 'make_graph' ? [] : barModelLevers(sessionChallenge, pulledLevers);
+  const helpOn = (id: string) => !practice && itemLevers.some(l => l.id === id && l.pulled);
   // The live line (shared build layer): what the graph looks like so far. Never a number, never a comparison:
   // which bar is tallest is the skill.
   const graphSeeing = useBuildWatcher({
@@ -881,7 +976,8 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
 
   const scaleToRender: BarModelScale | undefined =
     currentChallenge?.evalMode === 'build_graph' && currentChallenge.scale
-      ? { ...currentChallenge.scale, step: chosenStep ?? currentChallenge.scale.step }
+      // The best step is the answer: until the learner picks one the axis is numbered only at 0 and the top.
+      ? { ...currentChallenge.scale, step: chosenStep ?? currentChallenge.scale.max }
       : currentChallenge?.scale;
 
   const showOptions = !!currentChallenge && OPTION_MODES.has(currentChallenge.evalMode);
@@ -898,9 +994,28 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
   // Amber "read this one" cue — a tracking aid the support tier can withdraw
   // (showTargetHighlight === false at the hard tier). Defaults ON when absent.
   const highlightedIndex =
-    answerBarIndex != null && currentChallenge?.showTargetHighlight !== false
+    answerBarIndex != null && (currentChallenge?.showTargetHighlight !== false || helpOn(MARK_ROW))
       ? answerBarIndex
       : null;
+  // What the pulled help levers draw (`barModelLevers.ts`); each is off on an easier graph.
+  const leverDraw = !currentChallenge || practice ? null : {
+    fives: helpOn(GROUP_FIVES) ? fivesRows(currentChallenge) : [],
+    pile: helpOn(PILE_ROW) && currentChallenge.stimulusCount
+      ? { emoji: currentChallenge.sourceItems?.[0]?.emoji ?? currentChallenge.scale?.iconEmoji ?? '⭐', count: currentChallenge.stimulusCount } : null,
+    model: helpOn(WORD_MODEL) ? wordModel(currentChallenge) : null,
+    guide: helpOn(GUIDE_LINE) ? currentChallenge.targetBarIndex ?? null : null,
+    minor: helpOn(MINOR_TICKS) ? minorStep(currentChallenge) : null,
+    marked: helpOn(MARK_BARS) ? namedRows(currentChallenge) : [],
+    given: helpOn(DATA_BESIDE) ? Object.fromEntries((currentChallenge.expectedDataset ?? []).map(e => [e.label, e.value])) : null,
+    marks: helpOn(STEP_MARKS) ? stepMarks(currentChallenge.availableScaleSteps ?? [1, 2, 5, 10], builtValues) : null,
+  };
+  const pairRows = helpOn(PAIR_ROWS) && currentChallenge?.secondValues?.length === currentChallenge?.values.length;
+  /** compare_two_graphs with `pair_rows`: each kind's two rows together, one from each survey. */
+  const pairedValues: BarValue[] = pairRows && currentChallenge?.secondValues
+    ? currentChallenge.values.flatMap((v, i) => [{ ...v, label: `${v.label}: ${currentChallenge.graphLabel ?? 'first'}` },
+      { ...currentChallenge.secondValues![i], label: `${currentChallenge.secondValues![i].label}: ${currentChallenge.secondGraphLabel ?? 'second'}`,
+        color: v.color }])
+    : [];
 
   const rowTapFeedback =
     currentChallenge && ROW_TAP_MODES.has(currentChallenge.evalMode)
@@ -947,30 +1062,38 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
   // What the tutor and the observer are shown, republished every render.
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
-    if (!currentChallenge) return;
+    if (!currentChallenge || !sessionChallenge) return;
     const scene = workspaceScene(currentChallenge, { built: builtValues, selectedOption, selectedRow: selectedBarIndex, chosenStep });
-    if (sessionChallenge?.evalMode !== 'make_graph') { workspace.current = { ...scene }; return; }
-    const levers = practice ? [] : makeGraphLevers(sessionChallenge, pulledLevers);
-    const emptyGraph = (c: BarModelChallenge) => { setBuiltValues(c.values); setFeedback(null); setVerdictText(''); };
+    const makeGraph = sessionChallenge.evalMode === 'make_graph';
+    const levers = practice ? [] : makeGraph ? makeGraphLevers(sessionChallenge, pulledLevers) : itemLevers;
+    /** A practice graph and the full graph it stands in for share no work. */
+    const showItem = (c: BarModelChallenge) => {
+      setBuiltValues(c.values); setFeedback(null); setVerdictText(''); setSelectedOption(null); setSelectedBarIndex(null);
+      setChosenStep(null); setShowHint(false);
+    };
+    const onScreen = practice || makeGraph ? undefined : leverFacts(sessionChallenge, helpOn, builtValues);
+    const note = makeGraph ? 'An easier graph with two bars, ungraded. The full graph comes back after it.' : PRACTICE_NOTE;
     workspace.current = {
       ...scene,
-      ...(practice ? { facts: { ...scene.facts, practice: 'An easier graph with two bars, ungraded. The full graph comes back after it.' } } : {}),
-      levers,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: note } : {}) },
+      ...(levers.length || practice ? { levers } : {}),
       pullLever: (id) => {
         const lever = levers.find(l => l.id === id);
         if (practice || !lever) return `No lever ${id} on this graph.`;
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        const refusal = makeGraph ? undefined : leverRefusal(sessionChallenge, id, builtValues);
+        if (refusal) return refusal;
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
-        if (id === TWO_BARS_LEVER) {
-          const easier = twoBarPractice(sessionChallenge);
+        if (lever.kind === 'simplify') {
+          const easier = id === TWO_BARS_LEVER ? twoBarPractice(sessionChallenge) : simplerGraph(sessionChallenge);
           if (!easier) return 'This graph has no easier version; try a help lever.';
-          setLeverState(pulled); setPractice(easier); emptyGraph(easier);
+          setLeverState(pulled); setPractice(easier); showItem(easier);
           return { practice: workspaceAssignment(easier) };
         }
         setLeverState(pulled);
         return true;
       },
-      endPractice: () => { setPractice(null); emptyGraph(sessionChallenge); },
+      endPractice: () => { setPractice(null); showItem(sessionChallenge); },
     };
   });
   /** A solved answer, or a checked one waiting for Try again or Next challenge. */
@@ -1045,6 +1168,7 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
                 <div ref={pip.ref('source')} data-pip-object="source">
                   <SourceCollection
                     items={currentChallenge.sourceItems}
+                    sorted={helpOn(SORT_PILE)}
                     scattered={currentChallenge.sourceScattered}
                     heading={isStickerBuild ? 'Everything we found' : 'Count this group'}
                   />
@@ -1054,7 +1178,9 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
               {/* Every graph on screen, as one Pip region. */}
               <div ref={pip.ref('graph')} data-pip-object="graph" className="space-y-6">
                 <div className="px-2 space-y-5">
-                  {currentChallenge.graphLabel && <h3 className="text-lg font-semibold text-cyan-200">{currentChallenge.graphLabel}</h3>}
+                  {leverDraw?.model && <WordModelPanel model={leverDraw.model} />}
+                  {currentChallenge.graphLabel && !pairRows && <h3 className="text-lg font-semibold text-cyan-200">{currentChallenge.graphLabel}</h3>}
+                  {pairRows && <div data-lever="pair-rows" className="text-sm text-cyan-200">{currentChallenge.graphLabel} and {currentChallenge.secondGraphLabel}, row by row</div>}
                   {isMakeGraph ? (
                     <div className="flex justify-center">
                       <GraphBuildScene ref={graphSvgRef} bars={builtValues} disabled={!graphOpen}
@@ -1062,7 +1188,7 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
                         onAdd={i => setBar(i, 1)} onRemove={i => setBar(i, -1)} rowRef={pip.ref} />
                     </div>
                   ) : <BarsArea
-                    values={valuesToRender}
+                    values={pairRows ? pairedValues : valuesToRender}
                     graphStyle={graphStyle}
                     scale={scaleToRender}
                     highlightedIndex={highlightedIndex}
@@ -1077,15 +1203,21 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
                       && !answerClosed
                     }
                     feedbackIndex={rowTapFeedback}
-                    showBarValues={currentChallenge.showBarValues ?? true}
+                    showBarValues={(currentChallenge.showBarValues ?? true) || helpOn(BAR_VALUES)}
                     answerBarIndex={answerBarIndex}
                     showEmptySlots={isStickerBuild}
                     showPlacedCount={false}
                     rowRef={pip.ref}
+                    markedRows={leverDraw?.marked}
+                    fivesRows={leverDraw?.fives}
+                    guideRow={leverDraw?.guide}
+                    minorStep={leverDraw?.minor}
+                    iconValues={helpOn(ICON_VALUES)}
+                    pileRow={leverDraw?.pile}
                   />}
                 </div>
 
-                {currentChallenge.secondValues && <div className="px-2 space-y-3">
+                {currentChallenge.secondValues && !pairRows && <div className="px-2 space-y-3">
                   <h3 className="text-lg font-semibold text-amber-200">{currentChallenge.secondGraphLabel}</h3>
                   <BarsArea values={currentChallenge.secondValues} graphStyle="picture" scale={scaleToRender} showBarValues={false} />
                 </div>}
@@ -1113,6 +1245,12 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
                   </div>
                 </div>
               ) : null}
+
+              {practice && !isMakeGraph && (
+                <div data-practice-graph="true" className="text-center text-xs text-cyan-200">
+                  An easier graph first. It is not graded; the full graph comes back after it.
+                </div>
+              )}
 
               {isStickerBuild ? (
                 <div className="space-y-4">
@@ -1170,6 +1308,8 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
                       chosenStep={chosenStep}
                       onChooseStep={setChosenStep}
                       disabled={answerClosed}
+                      given={leverDraw?.given}
+                      marks={leverDraw?.marks}
                     />
                   </div>
                   <div className="flex justify-center">

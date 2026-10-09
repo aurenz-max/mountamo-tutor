@@ -3,7 +3,9 @@ import { asRecordArray, checkAnswerVariety, parseScopeCeiling } from './helpers'
 import {
   BUILD_COLS,
   BUILD_MAX_AREA,
+  BUILD_MAX_PERIMETER,
   BUILD_MIN_AREA,
+  BUILD_MIN_PERIMETER,
   BUILD_ROWS,
 } from '../../../primitives/visual-primitives/math/polygonAreaBuild';
 
@@ -85,6 +87,11 @@ import {
  *  - clustering        : distinct areas across the session (the shared variety check and no repeated area).
  *  The answer-leak check is skipped for build_area: the stated area is the task.
  *
+ * Open perimeter build (build_perimeter, 3.MD.D.8): the same, for a stated perimeter (`targetPerimeter` =
+ * expectedArea): even, inside [BUILD_MIN_PERIMETER, BUILD_MAX_PERIMETER], at least two different rectangles with that
+ * perimeter fit the grid (a witness that a first and a different second shape exist), the instruction asks for that
+ * perimeter, under the scope ceiling, distinct across the session. The answer-leak check is skipped likewise.
+ *
  * Deliberately NOT checked:
  *  - On-canvas dimension labels. Every mode asks for the AREA; the drawn base/
  *    height/bases/piece dimensions/vertex coordinates are the task's givens,
@@ -117,6 +124,7 @@ const KNOWN_TYPES = new Set([
   'composite_area',
   'coordinate_polygon',
   'build_area',
+  'build_perimeter',
 ]);
 
 /** figureType families each challenge type may draw (component render branches). */
@@ -127,6 +135,7 @@ const FIGURES_BY_TYPE: Record<string, Set<string>> = {
   composite_area: new Set(['composite']),
   coordinate_polygon: new Set(['coordinate']),
   build_area: new Set(['grid']),
+  build_perimeter: new Set(['grid']),
 };
 
 // Intrinsic ceilings on the produced AREA, from the generator's uncapped
@@ -142,6 +151,7 @@ const INTRINSIC_BY_MODE: Record<string, number> = {
   composite_area: 100,
   coordinate_polygon: 50,
   build_area: BUILD_MAX_AREA,
+  build_perimeter: BUILD_MAX_PERIMETER,
 };
 const DEFAULT_INTRINSIC = 150;
 
@@ -326,6 +336,51 @@ export const polygonAreaBuilderOracle: ContentOracle = {
         }
         areaValues.push(area);
         const key = `build|${area}`;
+        cardSeen.set(key, (cardSeen.get(key) ?? 0) + 1);
+        continue;
+      }
+      // ── Open perimeter build: the stated perimeter is the key, and the task ──
+      if (type === 'build_perimeter') {
+        checked++;
+        const p = c.targetPerimeter;
+        if (!isNum(p) || !Number.isInteger(p) || !near(p, expectedArea)) {
+          violations.push({
+            check: 'answer-key-desync',
+            where: id,
+            detail: `targetPerimeter=${String(p)} is not a whole number equal to expectedArea=${expectedArea} — the grid checks the sides around the shape against targetPerimeter`,
+          });
+          continue;
+        }
+        // A shape of unit squares always has an even perimeter; an odd target can never pass. Independent witness: two
+        // different rectangles with this perimeter that fit the grid, so a first AND a different second shape exist.
+        const fits = [] as string[];
+        for (let h = 1; h <= BUILD_ROWS; h++) {
+          const w = p / 2 - h;
+          if (Number.isInteger(w) && w >= h && w <= BUILD_COLS) fits.push(`${h}x${w}`);
+        }
+        if (p % 2 !== 0 || p < BUILD_MIN_PERIMETER || p > BUILD_MAX_PERIMETER || fits.length < 2) {
+          violations.push({
+            check: 'answer-key-desync',
+            where: id,
+            detail: `perimeter ${p} is odd or outside [${BUILD_MIN_PERIMETER}, ${BUILD_MAX_PERIMETER}] or has fewer than two different rectangles on the ${BUILD_COLS}×${BUILD_ROWS} grid (${fits.join(', ') || 'none'}) — unbuildable or no second shape`,
+          });
+        }
+        if (c.shapesAsked !== 1 && c.shapesAsked !== 2) {
+          violations.push({ check: 'schema', where: id, detail: `shapesAsked=${String(c.shapesAsked)} — must be 1 or 2` });
+        }
+        if (!/perimeter/i.test(String(c.instruction ?? '')) || !new RegExp(`\\b${p}\\b`).test(String(c.instruction ?? ''))) {
+          violations.push({
+            check: 'schema',
+            where: id,
+            detail: `the instruction does not ask for the perimeter ${p}: "${String(c.instruction ?? '').slice(0, 100)}"`,
+          });
+        }
+        const ceiling = topicCeiling ?? BUILD_MAX_PERIMETER;
+        if (p > ceiling) {
+          violations.push({ check: 'scope', where: id, detail: `perimeter ${p} exceeds objective ceiling ${ceiling} (topic "${ctx.topic}")` });
+        }
+        areaValues.push(p);
+        const key = `perimeter|${p}`;
         cardSeen.set(key, (cardSeen.get(key) ?? 0) + 1);
         continue;
       }

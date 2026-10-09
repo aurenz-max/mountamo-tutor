@@ -11,6 +11,9 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceRunner, type TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { equalityAssignment, equalityScene } from './balanceScaleWorkspace';
+import { BALANCE_MODEL, BALANCE_SIMPLIFY, equalityLeverFacts, equalityLevers, equalityPracticeItem, equalitySessionAnswers,
+  modelWeight, UNIT_CELLS } from './balanceScaleLevers';
+import { BalanceModel, UnitCells } from './BalanceLeverViews';
 import { SoundManager } from '../../../utils/SoundManager';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { balanceEqualityPipPose } from '../../../pip/balanceEqualityPipPose';
@@ -42,10 +45,15 @@ function BalanceScaleEqualitySurface({ data, className, runtimePlanItemId }: Bal
   const histories = useRef<Record<string, EqualityChange[]>>({});
   const undoStacks = useRef<Record<string, EqualityBoard[]>>({});
   const helped = useRef(new Set<string>());
-  const [board, setBoard] = useState<EqualityBoard>(built.problems[0] ? initialBoard(built.problems[0]) : initialBoard());
+  const [sessionBoardState, setBoard] = useState<EqualityBoard>(built.problems[0] ? initialBoard(built.problems[0]) : initialBoard());
   const nextBlockId = useRef(0);
   const reduceMotion = useReducedMotion();
   const [feedback, setFeedback] = useState('Add weights on the right and watch the scale.');
+  // In-item levers (`balanceScaleLevers.ts`), keyed by the session item they were pulled on, and the easier
+  // practice step a simplify lever put on screen in its place. The ref is what the retry callback reads.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<{ item: EqualityItem; board: EqualityBoard } | null>(null);
+  const practiceRef = useRef<{ item: EqualityItem; board: EqualityBoard } | null>(null);
   const boardFor = (item: EqualityItem) => boards.current[item.problem.id] ?? initialBoard(item.problem);
   const evaluation = usePrimitiveEvaluation<BalanceScaleMetrics>({ primitiveType: 'balance-scale',
     instanceId: instance.current, skillId: data.skillId, subskillId: data.subskillId,
@@ -84,7 +92,12 @@ function BalanceScaleEqualitySurface({ data, className, runtimePlanItemId }: Bal
     instanceId: instance.current, objectiveId: data.objectiveId, planItemId: runtimePlanItemId,
     onFinished: finish,
     onAffirmed: (done) => setAffirmedIds((prev) => new Set(prev).add(done.id)),
-    onItemOpened: (item, index) => {
+    onItemOpened: (item, index) => openItem(item, index),
+    // A retry on the practice step keeps it; only endPractice gives the full item back.
+    onCorrectionRetry: (item) => { if (!practiceRef.current) openItem(item, items.indexOf(item)); },
+  });
+  function openItem(item: EqualityItem, index: number) {
+      practiceRef.current = null; setPractice(null);
       pip.clear();
       if (index === 0) { boards.current = {}; histories.current = {}; undoStacks.current = {}; helped.current.clear(); }
       if (item.step === 'build') {
@@ -99,9 +112,13 @@ function BalanceScaleEqualitySurface({ data, className, runtimePlanItemId }: Bal
         setFeedback('The tutor placed a matching set of weights.');
       }
       setBoard(boardFor(item));
-    },
-  });
-  const item = runner.currentItem;
+  }
+  const sessionItem = runner.currentItem;
+  /** What is on screen: the practice step while a simplify lever holds it, else the session item. */
+  const item = practice?.item ?? sessionItem;
+  const pulledLevers = practice || leverState.item !== sessionItem?.id ? [] : leverState.pulled;
+  const modelK = pulledLevers.includes(BALANCE_MODEL) && sessionItem
+    ? modelWeight(sessionItem.problem.target, equalitySessionAnswers(built.problems)) : null;
   const canChange = !!item && item.step === 'build' && runner.canAttempt
     && runner.cuedItemId === item.id && !runner.isAwaitingGesture();
 
@@ -156,18 +173,45 @@ function BalanceScaleEqualitySurface({ data, className, runtimePlanItemId }: Bal
   // What the tutor and the observer are shown, republished every render. W1 offers no
   // demonstration targets and no presentation.
   useLayoutEffect(() => {
-    if (!item) return;
-    workspace.current = { ...equalityScene(item, board) };
+    if (!item || !sessionItem) return;
+    const scene = equalityScene(item, practice?.board ?? sessionBoardState);
+    const sessionBoard = boardFor(sessionItem);
+    const levers = practice ? [] : equalityLevers(sessionItem, sessionBoard, pulledLevers, built.problems);
+    const onScreen = practice ? '' : equalityLeverFacts(sessionItem, pulledLevers, built.problems);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice scale, ungraded. The full item comes back after it.' } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: (id) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled.`;
+        const pulled = { item: sessionItem.id, pulled: [...pulledLevers, id] };
+        if (BALANCE_SIMPLIFY.has(id)) {
+          const easier = equalityPracticeItem(sessionItem, id, sessionBoard, built.problems);
+          if (!easier) return 'There is no easier scale for this item.';
+          practiceRef.current = easier;
+          setLeverState(pulled); setPractice(easier);
+          return { practice: equalityAssignment(easier.item) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { practiceRef.current = null; setPractice(null); setBoard(boardFor(sessionItem)); },
+    };
   });
   // The live host has no evaluation provider, so the workspace's own summary ends the activity there.
   const finished = evaluation.hasSubmitted || !!runner.practiceSummary;
 
-  if (!item || built.error) return <LuminaCard className={className}><LuminaCardContent>
+  if (!item || !sessionItem || built.error) return <LuminaCard className={className}><LuminaCardContent>
     <p>{built.error || 'No equality challenges are available.'}</p>
   </LuminaCardContent></LuminaCard>;
+  const board = practice?.board ?? sessionBoardState;
   const state = balanceState(item.problem, board);
   const tilt = state === 'left-heavy' ? -7 : state === 'right-heavy' ? 7 : 0;
-  const equationIndex = built.problems.findIndex((problem) => problem.id === item.problem.id);
+  const equationIndex = built.problems.findIndex((problem) => problem.id === sessionItem.problem.id);
 
   const gathered = item.step !== 'build';
   const drawBlock = (block: WeightBlock) => <motion.button key={block.id} type="button"
@@ -192,7 +236,7 @@ function BalanceScaleEqualitySurface({ data, className, runtimePlanItemId }: Bal
         <p className="text-slate-300">You matched weights and used equal balance to find the other weight.</p>
       </div> : <>
         <LuminaChallengeCounter current={equationIndex + 1} total={built.problems.length} variant="dots" />
-        {helped.current.has(item.problem.id) && <p className="text-center text-amber-200">Tutor's example: a matching set of weights.</p>}
+        {!practice && helped.current.has(item.problem.id) && <p className="text-center text-amber-200">Tutor's example: a matching set of weights.</p>}
         <LayoutGroup id={instance.current}>
           <div className="relative px-2 pb-6" aria-label="Balance scale workspace">
             <div className="grid grid-cols-2 items-end gap-5">
@@ -235,8 +279,11 @@ function BalanceScaleEqualitySurface({ data, className, runtimePlanItemId }: Bal
               <span aria-hidden="true" className="pb-3 text-xl text-slate-300">=</span>
               <span className="pb-3 text-sm text-cyan-200">{item.step === 'total' ? 'Say the total' : item.problem.target}</span>
             </div>
+            {pulledLevers.includes(UNIT_CELLS) && <UnitCells values={board.blocks.map((block) => block.value)} />}
             {item.step === 'infer' && <p className="text-center text-purple-200">Balanced sides have equal weight.</p>}
+            {modelK !== null && <BalanceModel weight={modelK} />}
           </section>}
+        {practice && <p className="text-center text-sm text-amber-200">Practice scale - your full scale comes back after this.</p>}
         </LayoutGroup>
         {item.step === 'build' && <div className="space-y-3">
           <div ref={pip.ref('tray')} data-pip-object="tray" className="flex flex-wrap items-end justify-center gap-3" aria-label="Weight tray">
@@ -258,8 +305,8 @@ function BalanceScaleEqualitySurface({ data, className, runtimePlanItemId }: Bal
           </div>
           <p className="text-center text-sm text-slate-300" aria-live="polite">{feedback}</p>
         </div>}
-        <DiActionPanel run={runner} running={runner.running} stage={runner.stage} currentItem={item}
-          steps={items.filter((step) => step.problem.id === item.problem.id)} completedIds={affirmedIds}
+        <DiActionPanel run={runner} running={runner.running} stage={runner.stage} currentItem={sessionItem}
+          steps={items.filter((step) => step.problem.id === sessionItem.problem.id)} completedIds={affirmedIds}
           carriedIds={new Set(items.filter((step, index) => index < runner.currentIndex && !affirmedIds.has(step.id)).map((step) => step.id))}
           startInstruction="Start the tutor, then put weights on the right to balance the scale." />
       </>}

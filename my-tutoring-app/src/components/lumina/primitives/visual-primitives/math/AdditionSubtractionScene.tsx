@@ -106,6 +106,10 @@ import {
   hearStoryRequest,
   sceneMatches,
 } from './additionSubtractionSceneWorkspace';
+import {
+  FRAME_FACT, FRAME_LEVER, GROUPS_LEVER, PRACTICE_NOTE, addSubLevers, departedSlots, frameBoxes, groupLayout,
+  groupsFact, groupsOffered, smallerStory,
+} from './additionSubtractionSceneLevers';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -320,6 +324,13 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
   const [reward, setReward] = useState<string | null>(null);
   /** What the scene / tray held when it last stopped changing. */
   const pendingSceneRef = useRef(0);
+  // In-item levers (`additionSubtractionSceneLevers.ts`), keyed by the session item they were pulled on, and the
+  // easier practice story a simplify lever puts in place of the session item until the observer returns to it.
+  // The ref is what event handlers read.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<AddSubSceneItem | null>(null);
+  const practiceRef = useRef<AddSubSceneItem | null>(null);
+  const clearPractice = () => { practiceRef.current = null; setPractice(null); };
   const pendingTilesRef = useRef<string[]>([]);
 
   const stableInstanceIdRef = useRef(instanceId || `add-sub-scene-${Math.round(performance.now())}`);
@@ -437,7 +448,10 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
     // Catalog modes are underscored (`act_out`); the item's kind is hyphenated (`act-out`).
     instanceId: resolvedInstanceId,
     onFinished: finish,
-    onItemOpened: resetSceneFor,
+    // A fresh item never carries a practice story over from the last one.
+    onItemOpened: (item) => { clearPractice(); resetSceneFor(item); },
+    // The full item back, blank, after its practice story.
+    onPracticeClosed: (item) => { clearPractice(); resetSceneFor(item); },
     // The change group arrives when the tutor presents it (or the learner presses Show me).
     onPresentStimulus: () => setChangeRevealed(true),
     onAffirmed: (item) => {
@@ -446,7 +460,9 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
       setChangeRevealed(true);
       setReward(item.equation);
     },
-    onCorrectionRetry: (item) => {
+    onCorrectionRetry: (sessionItem) => {
+      // Try again on a practice story keeps it: reset ITS surface, not the full item's.
+      const item = practiceRef.current ?? sessionItem;
       // Try again restores the working surface for another go; the change group,
       // once presented, stays (the story does not un-happen).
       pip.clear();
@@ -466,7 +482,16 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
     },
   });
 
-  const currentItem = runner.currentItem;
+  const sessionItem = runner.currentItem;
+  /** What is on screen: the practice story while a simplify lever holds it, else the session item. */
+  const currentItem = practice ?? sessionItem;
+  /** What a handler acts on: read through the ref, so a pull and a tap in one tick agree. */
+  const shownItem = () => practiceRef.current ?? runner.currentItem;
+  const pulledLevers = leverState.item === sessionItem?.id ? leverState.pulled : [];
+  const leverContext = { items, maxNumber };
+  // A help lever draws on the session item only, never on a practice story.
+  const groupsOn = !practice && pulledLevers.includes(GROUPS_LEVER) && groupsOffered(sessionItem);
+  const frameOn = !practice && pulledLevers.includes(FRAME_LEVER) && sessionItem?.kind === 'build-equation';
   const currentSolved = runner.currentSolved;
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
   // Pip's presentation is a projection of the runner's phase and the child's
@@ -512,15 +537,21 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
   const sceneCapacity = useMemo(() => {
     if (!currentItem) return 0;
     if (!isEnactedScene) return Math.max(currentItem.resultCount, currentItem.startCount);
-    return currentItem.operation === 'addition'
-      ? Math.max(currentItem.startCount, currentItem.resultCount)
-      : currentItem.startCount;
-  }, [currentItem, isEnactedScene]);
+    // Every object the add button can bring in has a place (up to maxNumber), so a picture built past the story
+    // shows the extra one. Scattered positions are drawn in order, so the first ones never move.
+    return Math.max(currentItem.startCount, currentItem.resultCount, maxNumber);
+  }, [currentItem, isEnactedScene, maxNumber]);
 
-  const positions = useMemo(
-    () => scenePositions(sceneCapacity, runner.currentIndex * 31 + 7),
-    [sceneCapacity, runner.currentIndex],
+  // The `story_groups` lever lays the start group out in a pen on the left and the rest to its right.
+  const groupLayoutNow = useMemo(
+    () => (groupsOn && currentItem ? groupLayout(currentItem.startCount, sceneCapacity, SCENE_HEIGHT) : null),
+    [groupsOn, currentItem, sceneCapacity],
   );
+  const positions = useMemo(
+    () => groupLayoutNow?.positions ?? scenePositions(sceneCapacity, runner.currentIndex * 31 + 7),
+    [groupLayoutNow, sceneCapacity, runner.currentIndex],
+  );
+  const departed = groupsOn && currentItem ? departedSlots(currentItem, sceneSlots) : [];
 
   const sceneObjects = useMemo(() => {
     if (isEnactedScene) {
@@ -544,7 +575,7 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
   // turn commits on stillness and the activity checks it; a wrong scene commits
   // exactly as readily as a right one.
   const commitScene = useCallback(() => {
-    const item = runner.currentItem;
+    const item = shownItem();
     if (!item || item.answerKind !== 'gesture' || item.kind === 'build-equation') return;
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
     const placed = pendingSceneRef.current;
@@ -553,7 +584,7 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
   }, [runner]);
 
   const commitEquation = useCallback(() => {
-    const item = runner.currentItem;
+    const item = shownItem();
     if (!item || item.kind !== 'build-equation') return;
     if (!runner.canAttempt || runner.isAwaitingGesture()) return;
     const tiles = [...pendingTilesRef.current];
@@ -582,7 +613,7 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
   // opens the next item in the same dispatch, so a stage-gated scene ships dead
   // from item 2 on (ten-frame drive 1). `canAttempt` reads the solved ledger.
   const handleObjectTap = useCallback((slotId: number) => {
-    const item = runner.currentItem;
+    const item = shownItem();
     if (!item || !runner.canAttempt || showSummary) return;
     if (runner.isAwaitingGesture()) return;
 
@@ -616,7 +647,7 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
 
   /** Bring one more object in — the addition interaction on any enacted scene. */
   const addSceneObject = useCallback(() => {
-    const item = runner.currentItem;
+    const item = shownItem();
     if (!item || !isEnactedScene || !runner.canAttempt || showSummary) return;
     if (runner.isAwaitingGesture() || builtCount >= maxNumber) return;
     // Append the lowest unused slot id so re-adding after a removal fills the
@@ -657,10 +688,34 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
   // demonstration targets; `present` brings in a change group that waits for the story.
   useLayoutEffect(() => {
     if (!currentItem) return;
+    const scene = additionSubtractionScene(currentItem, { inPicture: builtCount, changeWaiting });
+    const levers = practice ? [] : addSubLevers(sessionItem, pulledLevers, leverContext);
+    const onScreen = [groupsOn && sessionItem ? groupsFact(sessionItem) : '', frameOn ? FRAME_FACT : ''].filter(Boolean).join(' ');
     workspace.current = {
-      ...additionSubtractionScene(currentItem, { inPicture: builtCount, changeWaiting }),
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       canPresent: changeWaiting,
-      readyForResponse: !changeWaiting };
+      readyForResponse: !changeWaiting,
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: (id: string) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !sessionItem || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already on screen.`;
+        const next = { item: sessionItem.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = smallerStory(sessionItem, leverContext);
+          if (!easier) return 'There is no smaller story for this item.';
+          runner.clearStillness();
+          setLeverState(next); practiceRef.current = easier; setPractice(easier); resetSceneFor(easier);
+          return { practice: additionSubtractionAssignment(easier) };
+        }
+        setLeverState(next);
+        return true;
+      },
+      // Back to the full item, blank: the practice story is not the learner's work on it.
+      endPractice: () => { clearPractice(); if (runner.currentItem) resetSceneFor(runner.currentItem); },
+    };
   });
 
   /** Asks the tutor for the story again: a silent host request, never the answer. */
@@ -808,6 +863,8 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
               </LuminaPrompt>
             )}
 
+            {practice && <div className="text-center text-xs text-amber-300" data-practice>Practice story</div>}
+
             {/* The number sentence a create-story item must be built FOR — the
                 given prompt, not an answer. */}
             {kind === 'create-story' && (
@@ -836,6 +893,20 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
                   viewBox={`0 0 ${SCENE_WIDTH} ${SCENE_HEIGHT}`}
                   className="absolute inset-0 w-full h-full"
                 >
+                  {/* The help lever `story_groups`: a dashed pen around the start group, and a faded outline
+                      where each one that went away stood. Not objects: nothing here can be tapped or counted in. */}
+                  {groupLayoutNow && (
+                    <g data-lever="story-groups" style={{ pointerEvents: 'none' }}>
+                      <rect x={groupLayoutNow.pen.x} y={groupLayoutNow.pen.y} width={groupLayoutNow.pen.w} height={groupLayoutNow.pen.h}
+                        rx={14} fill="rgba(255,255,255,0.04)" stroke="rgba(125,211,252,0.7)" strokeWidth={2} strokeDasharray="8 6" />
+                      {departed.map(slot => positions[slot] && (
+                        <text key={slot} data-lever="departed" x={positions[slot].x} y={positions[slot].y} textAnchor="middle"
+                          dominantBaseline="central" fontSize={OBJ_SIZE * 0.7} opacity={0.25} className="select-none">
+                          {emoji}
+                        </text>
+                      ))}
+                    </g>
+                  )}
                   {sceneObjects.map(({ slotId, pos }) => {
                     const isTapped = tappedObjects.includes(slotId);
                     const isChangeGroup = !startGroup.has(slotId);
@@ -942,7 +1013,26 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
               <div className="space-y-3">
                 <div ref={pip.ref('tray')} data-pip-object="tray"
                   className="flex items-center justify-center gap-1 min-h-[44px] bg-slate-800/30 rounded-lg p-2 border border-white/5">
-                  {equationTiles.length === 0 ? (
+                  {frameOn ? (
+                    // The help lever `sentence_frame`: five boxes, square for a number and round for a sign, filled
+                    // by the learner's own tiles in order. A tile past the fifth still shows, after the boxes.
+                    <div className="flex items-center gap-1" data-lever="sentence-frame">
+                      {frameBoxes(equationTiles).map((box, i) => (
+                        <button key={i} type="button" data-frame-box={box.shape}
+                          onClick={() => { if (box.tile !== null) { pip.look('tray'); removeTile(i); } }}
+                          className={`h-9 w-9 border-2 border-dashed border-sky-300/50 text-purple-200 text-lg font-mono ${box.shape === 'sign' ? 'rounded-full' : 'rounded-md'}`}>
+                          {box.tile ?? ''}
+                        </button>
+                      ))}
+                      {equationTiles.slice(5).map((tile, i) => (
+                        <LuminaButton key={`extra-${i}`}
+                          className="bg-purple-500/20 border border-purple-400/30 text-purple-200 text-lg font-mono h-9 w-9 p-0"
+                          onClick={() => { pip.look('tray'); removeTile(i + 5); }} title="Tap to remove">
+                          {tile}
+                        </LuminaButton>
+                      ))}
+                    </div>
+                  ) : equationTiles.length === 0 ? (
                     <span className="text-slate-600 text-sm">Tap the tiles to build the number sentence</span>
                   ) : (
                     equationTiles.map((tile, i) => (

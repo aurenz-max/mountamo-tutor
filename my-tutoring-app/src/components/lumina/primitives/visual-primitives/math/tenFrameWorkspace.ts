@@ -19,9 +19,10 @@ export const evalModeForKind = (kind: TenFrameItem['kind']): string =>
 /** What a flip mode counts: the counters turned yellow, not the counters on the frame. */
 export const countsFlips = (item: TenFrameItem) => item.kind === 'split' || item.kind === 'decompose_teen';
 
-/** The committed placement in the learner's terms, as the tutor and the observer read it. */
-export function describeFrameResponse(item: TenFrameItem, value: number): string {
+/** The committed placement in the learner's terms, as the tutor and the observer read it. `yellow` is build_pair's. */
+export function describeFrameResponse(item: TenFrameItem, value: number, yellow = 0): string {
   const n = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`;
+  if (item.kind === 'build_pair') return `${value - yellow} red and ${yellow} yellow on the frame (${n(value, 'counter')})`;
   if (item.kind === 'split') return `${item.answer - value} red and ${value} yellow`;
   if (item.kind === 'decompose_teen') return `${n(value, 'counter')} turned yellow`;
   if (item.kind === 'build_teen') return `${n(value, 'counter')} placed below the full ten`;
@@ -88,11 +89,16 @@ export function workspaceScene(item: TenFrameItem, view: TenFrameView): Workspac
       ...(item.answerKind === 'gesture' || item.kind === 'subitize'
         ? { countersOnFrame: view.hidden ? 'hidden' : view.onFrame } : {}),
       ...(countsFlips(item) ? { turnedYellow: view.yellow } : {}),
+      // build_pair: the made pair as numbers, so `workHistory` records where each turned back.
+      ...(item.kind === 'build_pair' ? { redOnFrame: view.onFrame - view.yellow, yellowOnFrame: view.yellow, makeTotal: item.answer } : {}),
       ...(isTeenKind(item.kind) ? { teenNumber: item.teenTotal ?? item.answer } : {}),
       ...(item.kind === 'add' ? { addends: `${item.addend1} and ${item.addend2}` } : {}),
       ...(item.kind === 'subtract' ? { takeAway: item.removed ?? 0 } : {}),
       constraints: item.kind === 'subitize'
         ? 'Quick look: call present when the learner is ready. The counters show briefly, then hide; do not count them out.'
+        : item.kind === 'build_pair'
+          ? 'Open build: the learner makes the number with red and yellow counters, any pair, and presses I am done; '
+            + 'the frame checks the total, both colours, and a pair not already made for this number. Never name a pair or how many to use.'
         : item.answerKind === 'gesture'
           ? 'The learner answers on the frame. The frame checks the placement once the learner stops.'
           : 'The learner says the number. The frame is a working surface only.',

@@ -56,6 +56,17 @@
   qa/open-build/equation-builder-2026-10-07.
 - **Probe:** `npm test -- EquationBuilder.workspace equationBuilderLevers`; `node scripts/equation-builder-make-n-probe.mjs --run`.
 
+### R6 — levers on the six other modes never state the answer, and practice is ungraded · OBSERVED
+- **Property:** `equationBuilderLevers.ts`. Help levers draw what is printed or placed, never a side's value: `printed_dots`
+  (none under the ?), `number_dots` (the learner's row only), `equation_frame` (no number or sign, `frameLeaks`),
+  `rewrite_model` (numbers the item does not use, not an accepted form, `rewriteModelLeaks`), `match_marks` (numbers only).
+  `smaller_numbers` opens a `~smaller` practice item of the same type and sign (`practiceItem`): never the item's numbers
+  (`repeatsItem`), never the item's missing number, ungraded; the full item comes back blank and only it is credited, with
+  the levers on the attempt. Easy starts the dots shown, not recorded as a pull. R1-R5 unchanged.
+- **Demanded by:** build-simple, missing-result, true-false, missing-operand, balance-both-sides, rewrite.
+- **Evidence:** `equationBuilderLevers.test.ts` (six-mode block), `EquationBuilder.levers.workspace.test.tsx`.
+- **Probe:** `npm test -- equationBuilderLevers EquationBuilder.levers.workspace`.
+
 ## Conflicts
 
 None.
@@ -67,3 +78,4 @@ None.
   eval-test all six modes at G1 (30 challenges, every key recomputes, no Unicode minus left), journey sweep green.
 - 2026-10-07 — make-n (open build) added as a fork (R5); R1-R4 untouched. Existing equation-builder tests and the
   live-activity suite green; the other modes' Try again still clears the row.
+- 2026-10-09 — R6: levers on the six other modes (`/add-support-tiers`). Edit is additive; R1-R5 tests green (80/80).

@@ -1,0 +1,2274 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ],
+   "no_change_before_receipt": [
+    0,
+    20
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "addition-subtraction-scene.act_out",
+   "primitiveId": "addition-subtraction-scene",
+   "evalMode": "act_out",
+   "keys": [
+    "3"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3"
+      ],
+      "ask": "2 ducks are swimming in the pond. 1 more duck joins them. bring one more in.",
+      "leakTokens": [
+       "ASS_ITEM",
+       "ASS_MOVE",
+       "ASS_COMPLETE",
+       "ASS_HEAR",
+       "ASS_SCENE",
+       "ASS_EQUATION"
+      ]
+     },
+     "samples": [
+      {
+       "text": "2 ducks are swimming in the pond. 1 more duck joins them. Can you bring one more duck in?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Two ducks are swimming in the pond. One more duck joins them! Can you bring one more duck in?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "2 ducks are swimming in the pond, and 1 more duck joins them. Bring one more duck in!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "2 ducks are swimming in the pond. 1 more duck joins them. Can you bring one more duck into the pond?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Two ducks are swimming in the pond. One more duck joins them! Can you bring one more duck in?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ch1",
+     "trigger": "The learner submitted \"The picture ends with 4 ducks.\". The board checked it: not right.",
+     "miss": "one_over",
+     "scoredWith": {
+      "keys": [
+       "3"
+      ],
+      "ask": "2 ducks are swimming in the pond. 1 more duck joins them. bring one more in.",
+      "leakTokens": [
+       "ASS_ITEM",
+       "ASS_MOVE",
+       "ASS_COMPLETE",
+       "ASS_HEAR",
+       "ASS_SCENE",
+       "ASS_EQUATION"
+      ]
+     },
+     "samples": [
+      {
+       "text": "That's a few too many ducks! We started with 2 ducks, and only 1 more joins them. Try again!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's try again! 2 ducks were swimming, and just 1 more duck joins them. Tap a duck to send it away, or add one if you need to, until just 1 more has joined.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "We had 2 ducks at the start, and only 1 more duck joins them. Let's try tapping ducks to send some away so only 1 duck joined!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There were 2 ducks in the pond, and just 1 more duck joined them. Let's try tapping ducks to send some away until just 1 joined.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's try again! 2 ducks were in the pond, and just 1 more duck joins them. Tap a duck to send it away until just 1 joined.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ch1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3"
+      ],
+      "ask": "2 ducks are swimming in the pond. 1 more duck joins them. bring one more in.",
+      "leakTokens": [
+       "ASS_ITEM",
+       "ASS_MOVE",
+       "ASS_COMPLETE",
+       "ASS_HEAR",
+       "ASS_SCENE",
+       "ASS_EQUATION"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look, the 2 ducks from the start are inside the pen on the left! Tap a duck to send it away until only 1 duck is outside the pen.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "story_groups",
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look, the two ducks from the start are inside the dashed box! Tap a duck to send it away until only one duck is joining next to the box.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "story_groups",
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the dashed box on the left\u2014that shows the 2 ducks we had at the start! You can tap a duck to send it away until only 1 duck is outside the box.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "story_groups",
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the screen\u2014the 2 ducks from the start are inside the pen on the left, and the ducks that joined are on the right. Tap a duck to send it away until only 1 duck has joined outside the pen!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "story_groups",
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now the 2 ducks from the start are inside the pen on the left. Can you tap ducks to send them away until just 1 duck is outside the pen joining them?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "story_groups",
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ch1",
+     "trigger": "The learner said they were stuck, so the host pulled story_groups (help). It is on screen now: Moves the objects there at the start into a dashed pen on the left; any that join sit to the right of it, any that go away stay as faded outlines inside it. You may point to the pen and the groups; never count them for the learner or say the answer. First point the learner to it: say what is now drawn an",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3"
+      ],
+      "ask": "2 ducks are swimming in the pond. 1 more duck joins them. bring one more in.",
+      "leakTokens": [
+       "ASS_ITEM",
+       "ASS_MOVE",
+       "ASS_COMPLETE",
+       "ASS_HEAR",
+       "ASS_SCENE",
+       "ASS_EQUATION"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the pond now! The 2 ducks from the start are inside the pen on the left, and the ducks that joined are outside it. Give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The ducks that were there at the start are now inside the pen on the left, and any that joined are on the right. Give it a try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The ducks from the start are inside the pen on the left, and the ones that joined are on the right. Tap a duck to send it away until only 1 duck joined!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the picture now\u2014the ducks that started in the pond are inside the dashed pen on the left! Any ducks that join go on the right side. You can tap ducks to send them away until just one has joined.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The ducks from the start are inside the pen on the left, and the ducks that joined are outside it. Tap the ducks to make sure only 1 joined duck is swimming outside!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch1",
+     "trigger": "The learner submitted \"The picture ends with 3 ducks.\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3"
+      ],
+      "ask": "2 ducks are swimming in the pond. 1 more duck joins them. bring one more in.",
+      "leakTokens": [
+       "ASS_ITEM",
+       "ASS_MOVE",
+       "ASS_COMPLETE",
+       "ASS_HEAR",
+       "ASS_SCENE",
+       "ASS_EQUATION"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You did it! You fixed the pond so there are 3 ducks altogether.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed it and brought the ducks to 3! You sent that extra duck away so just 1 joined the 2 in the pen.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed it and brought in just 1 more duck to make 3 ducks in all!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed it and brought in just 1 duck to make 3 ducks in total! Fantastic job!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed it and got 3 ducks in the pond! Great job bringing in just 1 more duck to join the 2 ducks.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "addition-subtraction-scene.build_equation",
+   "primitiveId": "addition-subtraction-scene",
+   "evalMode": "build_equation",
+   "keys": [
+    "add tile +"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "add tile +"
+      ],
+      "ask": "2 ducks are swimming in the pond. 1 more duck joins them. build the number sentence for that story.",
+      "leakTokens": [
+       "ASS_ITEM",
+       "ASS_MOVE",
+       "ASS_COMPLETE",
+       "ASS_HEAR",
+       "ASS_SCENE",
+       "ASS_EQUATION"
+      ]
+     },
+     "samples": [
+      {
+       "text": "2 ducks are swimming in the pond, and 1 more duck joins them. Can you build the number sentence for that story?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "2 ducks are swimming in the pond, and 1 more duck joins them. Build the number sentence for that story.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "2 ducks are swimming in the pond, and 1 more duck joins them. Build the number sentence for that story.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "2 ducks are swimming in the pond, and 1 more duck joins them. Build the number sentence for that story.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "2 ducks are swimming in the pond, and 1 more duck joins them. Build the number sentence for that story.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ch1",
+     "trigger": "The learner submitted \"Built the number sentence \\\"3 - 1 = 2\\\".\". The board checked it: not right.",
+     "miss": "other_operation",
+     "scoredWith": {
+      "keys": [
+       "add tile +"
+      ],
+      "ask": "2 ducks are swimming in the pond. 1 more duck joins them. build the number sentence for that story.",
+      "leakTokens": [
+       "ASS_ITEM",
+       "ASS_MOVE",
+       "ASS_COMPLETE",
+       "ASS_HEAR",
+       "ASS_SCENE",
+       "ASS_EQUATION"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The ducks from the start are in the box, and the duck joining is next to them. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "story_groups"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the ducks in the pen on the left, and the duck joining next to them. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "story_groups"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That was a good try! Remember, another duck is joining them, so let's give it another go.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The story says 1 duck joins the 2 ducks in the pond. Let's give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, the ducks that were there first are in the pen, and the duck that joined is next to them. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "story_groups",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ch1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "add tile +"
+      ],
+      "ask": "2 ducks are swimming in the pond. 1 more duck joins them. build the number sentence for that story.",
+      "leakTokens": [
+       "ASS_ITEM",
+       "ASS_MOVE",
+       "ASS_COMPLETE",
+       "ASS_HEAR",
+       "ASS_SCENE",
+       "ASS_EQUATION"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The ducks that were there first are inside the box, and the duck joining is next to it. Which sign shows that a duck is joining?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "story_groups"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the pond now: the ducks there at the start are inside the pen, and the duck joining is outside. When a duck joins, do we put them together with plus, or take away?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "story_groups",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look, the ducks that were there first are in the dashed pen, and the duck joining is outside. When more ducks join, do we add or take away?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "story_groups",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look, now the 2 starting ducks are inside the dashed box, and the 1 duck joining is on the right! When a duck joins, are we adding or taking away?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "story_groups"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the pond now: the ducks from the start are inside the pen, and the duck joining is next to it. Which tile shows the ducks we started with?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "story_groups"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ch1",
+     "trigger": "The learner said they were stuck, so the host pulled story_groups (help). It is on screen now: Moves the objects there at the start into a dashed pen on the left; any that join sit to the right of it, any that go away stay as faded outlines inside it. You may point to the pen and the groups; never count them for the learner or say the answer. First point the learner to it: say what is now drawn an",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "add tile +"
+      ],
+      "ask": "2 ducks are swimming in the pond. 1 more duck joins them. build the number sentence for that story.",
+      "leakTokens": [
+       "ASS_ITEM",
+       "ASS_MOVE",
+       "ASS_COMPLETE",
+       "ASS_HEAR",
+       "ASS_SCENE",
+       "ASS_EQUATION"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the pond now: the ducks that started there are inside the dashed pen on the left, and the duck joining is outside to the right. Try building the number sentence again with your tiles!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the picture now: the ducks there at the start are inside the dashed box on the left, and the one that joined is outside on the right. You can try putting the tiles together again!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the picture now: the ducks there at the start are in the dashed box, and the duck that joined is right next to it. What number sentence can you make for that story?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the pond now: the ducks that were there first are inside the dashed box on the left, and the one that joined is sitting on the right. Give building your number sentence another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the picture now: the ducks that started in the pond are inside the dashed box, and the duck that joined is sitting on the right. Give the number sentence another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch1",
+     "trigger": "The learner submitted \"Built the number sentence \\\"2 + 1 = 3\\\".\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "add tile +"
+      ],
+      "ask": "2 ducks are swimming in the pond. 1 more duck joins them. build the number sentence for that story.",
+      "leakTokens": [
+       "ASS_ITEM",
+       "ASS_MOVE",
+       "ASS_COMPLETE",
+       "ASS_HEAR",
+       "ASS_SCENE",
+       "ASS_EQUATION"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You built 2 + 1 = 3! You matched the 2 ducks that started and added the 1 duck joining them.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You built 2 + 1 = 3 to match the ducks!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You built 2 plus 1 equals 3 to match the ducks joining the pond.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You built 2 plus 1 equals 3! You matched the 2 ducks that started and added the 1 duck joining them.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You built 2 plus 1 equals 3! You matched the 2 ducks that started and added the 1 duck joining them.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "addition-subtraction-scene.create_story",
+   "primitiveId": "addition-subtraction-scene",
+   "evalMode": "create_story",
+   "keys": [
+    "3"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3"
+      ],
+      "ask": "Here is a number sentence: two plus one equals three. make that story with the ducks in the pond.",
+      "leakTokens": [
+       "ASS_ITEM",
+       "ASS_MOVE",
+       "ASS_COMPLETE",
+       "ASS_HEAR",
+       "ASS_SCENE",
+       "ASS_EQUATION"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Here is a number sentence: two plus one equals three. Make that story with the ducks in the pond!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is a number sentence: two plus one equals three. Use the button to make that story with the ducks in the pond!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is a number sentence: two plus one equals three. Use the button to bring ducks into the pond to show that story!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is a number sentence: two plus one equals three. Use the button to make that story with the ducks in the pond!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Here is our story: two plus one equals three. Use the add button to bring ducks into the pond to make that story!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ch1",
+     "trigger": "The learner submitted \"The picture ends with 2 ducks.\". The board checked it: not right.",
+     "miss": "no_change",
+     "scoredWith": {
+      "keys": [
+       "3"
+      ],
+      "ask": "Here is a number sentence: two plus one equals three. make that story with the ducks in the pond.",
+      "leakTokens": [
+       "ASS_ITEM",
+       "ASS_MOVE",
+       "ASS_COMPLETE",
+       "ASS_HEAR",
+       "ASS_SCENE",
+       "ASS_EQUATION"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You put two ducks in the pond. What happens when one more joins them?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You have two ducks in the pond so far. What happens when one more joins them?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You have two ducks in the pond so far. What happens when one more joins them?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You have two ducks in the pond so far. Look at our number sentence: what happens next?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You put two ducks in. Look at our number sentence: what does it say to add next?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ch1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3"
+      ],
+      "ask": "Here is a number sentence: two plus one equals three. make that story with the ducks in the pond.",
+      "leakTokens": [
+       "ASS_ITEM",
+       "ASS_MOVE",
+       "ASS_COMPLETE",
+       "ASS_HEAR",
+       "ASS_SCENE",
+       "ASS_EQUATION"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the dashed box on the pond! Try adding another duck so one joins next to the box.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "story_groups"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now there is a dashed pen on the left for your first ducks. Try bringing in your ducks to show two plus one.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "story_groups"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look, a pen appeared on the pond for your first ducks! Try adding one more duck outside the pen to see what happens.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "story_groups",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the pond now: there is a box for your first two ducks. Try adding the duck that joins them outside the box!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "story_groups",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look, a dashed pen appeared for the first ducks! Try adding one more duck to the right of it.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "story_groups",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ch1",
+     "trigger": "The learner said they were stuck, so the host pulled story_groups (help). It is on screen now: Draws an empty dashed pen on the left, sized for the first number of the number sentence: the first objects brought in go inside it, any more go to its right. You may point to the pen and the groups; never count them for the learner or say the answer. First point the learner to it: say what is now drawn ",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3"
+      ],
+      "ask": "Here is a number sentence: two plus one equals three. make that story with the ducks in the pond.",
+      "leakTokens": [
+       "ASS_ITEM",
+       "ASS_MOVE",
+       "ASS_COMPLETE",
+       "ASS_HEAR",
+       "ASS_SCENE",
+       "ASS_EQUATION"
+      ]
+     },
+     "samples": [
+      {
+       "text": "There is a dashed pen on the left for the first two ducks, and any new ones go right beside it. Give it a try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is a dashed pen on the left for your first ducks, and any ducks that join go outside it. Give it a try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A dashed pen is drawn on the pond to hold your first two ducks. Tap the button to add one more duck next to the pen!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is a dashed pen on the pond now holding your first ducks. Try bringing in the duck that joins them next to it!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is a dashed pen on the left for your first two ducks. Give the add button a tap to bring in the duck that joins them!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch1",
+     "trigger": "The learner submitted \"The picture ends with 3 ducks.\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3"
+      ],
+      "ask": "Here is a number sentence: two plus one equals three. make that story with the ducks in the pond.",
+      "leakTokens": [
+       "ASS_ITEM",
+       "ASS_MOVE",
+       "ASS_COMPLETE",
+       "ASS_HEAR",
+       "ASS_SCENE",
+       "ASS_EQUATION"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You added that duck to make three ducks in the pond!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You brought in three ducks to match the story!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You added that duck to make three ducks in all!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You brought in three ducks altogether to show two plus one equals three!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You added one more duck to make three ducks in all!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "addition-subtraction-scene.solve_story",
+   "primitiveId": "addition-subtraction-scene",
+   "evalMode": "solve_story",
+   "keys": [
+    "five (5). counting aloud that ends on five counts, and so does the number with the ducks named after it. three or two, a number the story says out loud, is not it.",
+    "five"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "five (5). counting aloud that ends on five counts, and so does the number with the ducks named after it. three or two, a number the story says out loud, is not it.",
+       "five"
+      ],
+      "ask": "3 ducks are swimming in the pond. 2 more ducks join them. How many ducks are there now?",
+      "leakTokens": [
+       "ASS_ITEM",
+       "ASS_MOVE",
+       "ASS_COMPLETE",
+       "ASS_HEAR",
+       "ASS_SCENE",
+       "ASS_EQUATION"
+      ]
+     },
+     "samples": [
+      {
+       "text": "3 ducks are swimming in the pond. 2 more ducks join them. How many ducks are there now?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "3 ducks are swimming in the pond. 2 more ducks join them. How many ducks are there now?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "3 ducks are swimming in the pond. 2 more ducks join them. How many ducks are there now?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "3 ducks are swimming in the pond. 2 more ducks join them. How many ducks are there now?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "3 ducks are swimming in the pond. 2 more ducks join them. How many ducks are there now?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ch1",
+     "trigger": "four",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "five (5). counting aloud that ends on five counts, and so does the number with the ducks named after it. three or two, a number the story says out loud, is not it.",
+       "five"
+      ],
+      "ask": "3 ducks are swimming in the pond. 2 more ducks join them. How many ducks are there now?",
+      "leakTokens": [
+       "ASS_ITEM",
+       "ASS_MOVE",
+       "ASS_COMPLETE",
+       "ASS_HEAR",
+       "ASS_SCENE",
+       "ASS_EQUATION"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Close try! Let's count them again: there are 3 ducks, and 2 more join. How many ducks are there in all?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite four. Try counting the 3 ducks in the pond and the 2 ducks joining them again!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Close, but not quite! Let's count them again to see how many ducks are in the pond now.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite four. Let's count them again: there are 3 ducks, and 2 more come to join!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Not quite four. Try counting the 3 ducks in the pond and the 2 ducks that joined them one more time!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ch1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "five (5). counting aloud that ends on five counts, and so does the number with the ducks named after it. three or two, a number the story says out loud, is not it.",
+       "five"
+      ],
+      "ask": "3 ducks are swimming in the pond. 2 more ducks join them. How many ducks are there now?",
+      "leakTokens": [
+       "ASS_ITEM",
+       "ASS_MOVE",
+       "ASS_COMPLETE",
+       "ASS_HEAR",
+       "ASS_SCENE",
+       "ASS_EQUATION"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the picture now: the 3 ducks from the start are inside the dashed box, and the 2 new ducks are next to them. How many ducks do you see altogether?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "story_groups"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look, the 3 ducks from the start are inside the pen on the left, and the 2 new ducks are on the right. How many ducks are there altogether?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "story_groups"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look, the first 3 ducks are inside the pen on the left, and the 2 ducks that joined are outside to the right. Try counting all of them together!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "story_groups"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The first ducks are now inside the dashed line, and the ones that joined are next to them. Can you count all of them together?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "story_groups"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the screen: the 3 ducks from the start are inside the pen on the left, and the 2 that joined are on the right. How many ducks are there altogether?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "story_groups",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ch1",
+     "trigger": "The learner said they were stuck, so the host pulled story_groups (help). It is on screen now: Moves the objects there at the start into a dashed pen on the left; any that join sit to the right of it, any that go away stay as faded outlines inside it. You may point to the pen and the groups; never count them for the learner or say the answer. First point the learner to it: say what is now drawn an",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "five (5). counting aloud that ends on five counts, and so does the number with the ducks named after it. three or two, a number the story says out loud, is not it.",
+       "five"
+      ],
+      "ask": "3 ducks are swimming in the pond. 2 more ducks join them. How many ducks are there now?",
+      "leakTokens": [
+       "ASS_ITEM",
+       "ASS_MOVE",
+       "ASS_COMPLETE",
+       "ASS_HEAR",
+       "ASS_SCENE",
+       "ASS_EQUATION"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the picture now: the 3 ducks from the start are inside the dashed box on the left, and the 2 ducks that joined are right next to them. How many ducks are there now in all?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the picture now: the 3 ducks from the start are inside the dashed box on the left, and the 2 ducks that joined are next to it. How many ducks are there now in all?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the picture now: the 3 ducks from the start are inside the dashed box on the left, and the 2 ducks that joined are next to it. How many ducks are there now in all?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The 3 ducks from the start are now inside the dashed box on the left, and the 2 new ducks are sitting right next to it. How many ducks are there altogether now?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The 3 ducks from the start are inside the dashed pen on the left, and the 2 new ducks are right beside it. How many ducks are there now in all?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch1",
+     "trigger": "five",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "five (5). counting aloud that ends on five counts, and so does the number with the ducks named after it. three or two, a number the story says out loud, is not it.",
+       "five"
+      ],
+      "ask": "3 ducks are swimming in the pond. 2 more ducks join them. How many ducks are there now?",
+      "leakTokens": [
+       "ASS_ITEM",
+       "ASS_MOVE",
+       "ASS_COMPLETE",
+       "ASS_HEAR",
+       "ASS_SCENE",
+       "ASS_EQUATION"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it, five ducks! You counted the 3 in the box and the 2 joining together.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That's right, five! You counted all the ducks together to find five in the pond.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! 3 ducks and 2 more make 5 ducks altogether!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! There are five ducks in all.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it, five! You counted the 3 ducks in the pen and the 2 new ducks together.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

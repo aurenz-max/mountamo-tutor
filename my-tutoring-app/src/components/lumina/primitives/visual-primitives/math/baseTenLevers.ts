@@ -22,6 +22,19 @@
  *   operands, the same places, M > S; then the full item. Answers a ten off and far off. Leak rule: never the
  *   item's operands (either order) or its result. `digits_swapped` has no lever on operate.
  *
+ * - `trade_mark` (help): a mark on each column where this operation needs a trade (addition: the column that makes
+ *   ten or more; subtraction: the column whose top digit is too small), with no count. Answers a ten off on every item
+ *   with a regroup, including one-trade items and a mat the learner has not modelled (where `ten_bracket` is absent and
+ *   `single_regroup` has no floor below). Leak rule: column positions only, never a digit, a count or the result.
+ *
+ * read_blocks and regroup on the click mat (a mixed payload; a homogeneous payload uses the spoken mat):
+ * - `ten_model` (help): as on build_two_ways, beside the mat. read_blocks: answers a ten off and swapped digits (a
+ *   big block read at the wrong worth). regroup: answers no trade and a changed value (a trade swaps one bigger block
+ *   for ten smaller ones and keeps the value). Leak rule: drawn outside the learner's mat, no count, no number.
+ * - `plainer_read` (simplify, read_blocks): an ungraded mat of `plainerNumber` (same places, fewer blocks in each
+ *   column) to read first, then the full mat. Answers one off and far off. Leak rule: never the number or its reversal.
+ *   regroup has no simplify: one trade is already the smallest trade.
+ *
  * build_two_ways (open build, references/build-mode.md). Starts bare at every tier: keeping track of the blocks is the
  * task, so the counts come on a miss, and no total is ever offered (the value of the build IS the skill).
  * - `column_counts` (help): as above, on the learner's own blocks. Answers every value miss.
@@ -32,7 +45,8 @@
  *   exists), ungraded, then the full item on an empty mat. Answers far off. Leak rule: never the number or its reversal.
  */
 import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
-import { analyzeBorrows, buildAdditionOperands, buildSubtractionOperands, countCarries } from './baseTenOperands';
+import { analyzeBorrows, buildAdditionOperands, buildSubtractionOperands, countCarries, toDigits } from './baseTenOperands';
+import { twoWaysInstruction } from './baseTenWorkspace';
 
 export const COUNTS_LEVER = 'column_counts';
 export const TOTAL_LEVER = 'blocks_total';
@@ -41,6 +55,13 @@ export const PLAINER_LEVER = 'plainer_build';
 export const SIMPLER_OP_LEVER = 'single_regroup';
 export const TEN_MODEL_LEVER = 'ten_model';
 export const SMALLER_LEVER = 'smaller_number';
+export const TRADE_MARK_LEVER = 'trade_mark';
+export const PLAINER_READ_LEVER = 'plainer_read';
+
+/** A simplify lever's practice item id is the session item's id plus this suffix. */
+export const PRACTICE_SUFFIX: Readonly<Record<string, string>> = {
+  [PLAINER_LEVER]: 'plainer', [PLAINER_READ_LEVER]: 'plainer', [SIMPLER_OP_LEVER]: 'simpler', [SMALLER_LEVER]: 'smaller',
+};
 
 /** The smaller number to show two ways first, or null: about half, at least ten, never the number or its reversal. */
 export function smallerTwoWaysNumber(target: number): number | null {
@@ -117,6 +138,62 @@ export function simplerOperation(item: LeverItem): SimplerOperation | null {
   return null;
 }
 
+const WHOLE_PLACES = ['ones', 'tens', 'hundreds', 'thousands'];
+
+/**
+ * The columns where an operate item needs a trade, by place name: addition, each column that makes ten or more
+ * (with the carry in); subtraction, each column whose top digit (after a borrow out) is smaller than the bottom one.
+ */
+export function tradeColumns(item: LeverItem): string[] {
+  const shape = operateShape(item);
+  if (!shape) return [];
+  const a = toDigits(shape.first, shape.places), b = toDigits(shape.second, shape.places);
+  const add = item.type === 'add_with_blocks';
+  const out: string[] = [];
+  let carry = 0;
+  for (let i = 0; i < shape.places; i++) {
+    const trades = add ? a[i] + b[i] + carry >= 10 : a[i] - carry < b[i];
+    if (trades) out.push(WHOLE_PLACES[i]);
+    carry = trades ? 1 : 0;
+  }
+  return out;
+}
+
+type PracticeSource = LeverItem & { id: string; instruction: string };
+
+/** The practice item a simplify lever opens in place of the session item, or null when the item has none. */
+export function practiceItem<T extends PracticeSource>(challenge: T, lever: string): T | null {
+  const id = `${challenge.id}~${PRACTICE_SUFFIX[lever]}`;
+  if (lever === SMALLER_LEVER && challenge.type === 'build_two_ways') {
+    const n = smallerTwoWaysNumber(challenge.targetNumber);
+    return n === null ? null : { ...challenge, id, targetNumber: n, instruction: twoWaysInstruction(n) };
+  }
+  if (lever === PLAINER_LEVER && challenge.type === 'build_number') {
+    const n = plainerNumber(challenge.targetNumber);
+    return n === null ? null : { ...challenge, id, targetNumber: n, instruction: `Build the number ${n} with blocks.` };
+  }
+  // The read instruction names no number (BT-3), so the practice mat keeps it.
+  if (lever === PLAINER_READ_LEVER && challenge.type === 'read_blocks') {
+    const n = plainerNumber(challenge.targetNumber);
+    return n === null ? null : { ...challenge, id, targetNumber: n };
+  }
+  if (lever === SIMPLER_OP_LEVER && isOperate(challenge.type)) {
+    const op = simplerOperation(challenge);
+    return op === null ? null : { ...challenge, id, targetNumber: op.targetNumber, secondNumber: op.second, instruction: op.instruction };
+  }
+  return null;
+}
+
+/** Rebuilds a practice item from its session item and its id (`<item>~<suffix>`), with the lever's own builder. */
+export function practiceFromId<T extends PracticeSource>(challenge: T, practiceId: string): T | null {
+  const suffix = practiceId.split('~')[1];
+  for (const lever of Object.keys(PRACTICE_SUFFIX)) {
+    const built = PRACTICE_SUFFIX[lever] === suffix ? practiceItem(challenge, lever) : null;
+    if (built) return built;
+  }
+  return null;
+}
+
 /** Levers the tier starts pulled: a starting position, never a recorded pull. */
 export function startLevers(type: string | undefined, show: { showColumnCounts?: boolean; showBlocksTotal?: boolean }): string[] {
   if (isOperate(type)) return show.showColumnCounts ?? true ? [COUNTS_LEVER] : [];
@@ -142,6 +219,9 @@ export function baseTenLevers(challenge: LeverItem | null, pulled: readonly stri
   if (challenge && isOperate(challenge.type)) return [
     counts(['one_short', 'one_over'], 'The learner miscounts the blocks after modelling the operation.'),
     ...bracket(['one_ten_off'], 'The learner has ten or more blocks in a column and reads the result without trading them.'),
+    ...(tradeColumns(challenge).length > 0 ? [lever(TRADE_MARK_LEVER, 'help', ['one_ten_off'],
+      'The learner loses a carry or a borrow: a trade the operation needs was not made.',
+      'Marks each column where this operation needs a trade, with no count on it.')] : []),
     ...(simplerOperation(challenge) !== null ? [lever(SIMPLER_OP_LEVER, 'simplify', ['one_ten_off', 'short_by_more', 'over_by_more'],
       'The learner loses track when an operation needs several trades.',
       'Opens an easier operation first, needing fewer trades, with the same number of places. It is not graded; the full item comes back after it.')] : []),
@@ -155,6 +235,17 @@ export function baseTenLevers(challenge: LeverItem | null, pulled: readonly stri
     ...(smallerTwoWaysNumber(challenge.targetNumber) !== null ? [lever(SMALLER_LEVER, 'simplify', ['short_by_more', 'over_by_more'],
       'The learner cannot build a number this big yet.',
       'Opens a smaller number to build both ways first. It is not graded; the full item comes back after it, on an empty mat.')] : []),
+  ];
+  const tenModel = (answers: string[], when: string) => lever(TEN_MODEL_LEVER, 'help', answers, when,
+    'Shows beside the mat a ten-stick next to the ones cubes it is worth, and a hundred-flat next to the ten-sticks it is worth, with no count.');
+  if (challenge?.type === 'read_blocks') return [
+    tenModel(['one_ten_off', 'digits_swapped'], 'The learner reads a big block at the wrong worth, so a place comes out wrong.'),
+    ...(plainerNumber(challenge.targetNumber) !== null ? [lever(PLAINER_READ_LEVER, 'simplify', ['one_short', 'one_over', 'short_by_more', 'over_by_more'],
+      'The learner loses count on a mat with this many blocks.',
+      'Opens a mat with fewer blocks in each column to read first, with the same places. It is not graded; the full item comes back after it.')] : []),
+  ];
+  if (challenge?.type === 'regroup') return [
+    tenModel(['no_trade', 'value_changed'], 'The learner does not see that a bigger block can be swapped for ten smaller ones and keep the value.'),
   ];
   if (challenge?.type !== 'build_number') return [];
   return [
@@ -178,5 +269,6 @@ export function leverFacts(pulled: readonly string[], started: readonly string[]
     live.includes(TOTAL_LEVER) && "The total of the learner's blocks is under the mat.",
     pulled.includes(BRACKET_LEVER) && 'Any column holding ten or more blocks has a bracket round it.',
     pulled.includes(TEN_MODEL_LEVER) && 'Beside the mat, a big block is shown next to the smaller blocks it is worth.',
+    pulled.includes(TRADE_MARK_LEVER) && 'The columns where this operation needs a trade are marked.',
   ].filter((s): s is string => !!s).join(' ');
 }

@@ -6,7 +6,9 @@ export interface TenFrameResponse {
   heard?: string | null;
   /** Gesture items at commit: counters on the frame (placement modes) or counters turned yellow (split, decompose_teen). */
   onFrame?: number;
-  /** `split` only: the code verdict on the committed pair. */
+  /** build_pair only: how many of the counters on the frame are yellow. */
+  yellow?: number;
+  /** `split` and `build_pair`: the code verdict on the committed pair. */
   splitVerdict?: SplitVerdict | null;
   /** add / subtract: the equation with a question mark was printed (readers, easiest support). */
   equationShown?: boolean;
@@ -41,6 +43,10 @@ export function tenFrameTask(item: TenFrameItem, response: Pick<TenFrameResponse
       return { challenge: `${item.answer} red counters on ${frame}; turn some yellow to make two groups`
         + ((item.splitOrdinal ?? 1) > 1 ? `, a pair not yet shown for ${item.answer} this session.` : '.'),
       expected: 'Both colours on the frame, and a pair not already shown for this total while an unshown pair remains.' };
+    case 'build_pair':
+      return { challenge: `An empty ${frame.slice(2)}; make ${item.answer} with red and yellow counters, any pair`
+        + ((item.splitOrdinal ?? 1) > 1 ? `, a pair not yet made for ${item.answer} this session.` : '.') + count,
+      expected: `${counters(item.answer)} on the frame, both colours, and a pair not already made for this total while an unmade pair remains.` };
     case 'build_teen':
       return { challenge: `A double frame with the top frame full (ten counters); place more counters to make ${teenTotalFor(item)}.${count}`,
         expected: `${item.answer} more placed beside the ten (${teenTotalFor(item)} on the frames).` };
@@ -66,6 +72,11 @@ export function tenFrameObservation(item: TenFrameItem, response: TenFrameRespon
     const tail = response.splitVerdict === 'empty_part' ? ', leaving one colour with no counters.'
       : response.splitVerdict === 'repeat' ? `, a pair already shown for ${item.answer} this session.` : '.';
     observed = `Left ${item.answer - onFrame} red and turned ${onFrame} yellow${tail}`;
+  } else if (item.kind === 'build_pair') {
+    const yellow = response.yellow ?? 0;
+    const tail = response.splitVerdict === 'empty_part' ? ', all one colour.'
+      : response.splitVerdict === 'repeat' ? `, a pair already made for ${item.answer} this session.` : '.';
+    observed = `Put ${onFrame - yellow} red and ${yellow} yellow on the frame (${counters(onFrame)})${tail}`;
   } else if (item.kind === 'decompose_teen') {
     observed = `Turned ${onFrame} yellow and left ${item.answer - onFrame} red.`;
   } else if (item.kind === 'build_teen') {
@@ -85,6 +96,7 @@ const EXPECTED: Record<TenFrameItemKind, string> = {
   split: 'Two non-empty colour groups, a different pair each time the same total is asked again.',
   build_teen: 'The ones beside the given ten: the teen number minus ten.',
   decompose_teen: 'Exactly ten counters turned yellow.',
+  build_pair: 'The number made on an empty frame from red and yellow counters, both colours, a different pair each time the same total comes back.',
   add: 'The number altogether: the first number plus the second.',
   subtract: 'The number left: the start minus the number taken away.',
 };
@@ -96,6 +108,7 @@ const SESSION: Record<TenFrameItemKind, string> = {
   split: 'a group of red counters is on the frame and the learner turns some yellow to make two groups, a different way each time',
   build_teen: 'the top frame is full and the learner places the ones to make a teen number',
   decompose_teen: 'a teen group is scattered over two frames and the learner turns ten of them yellow',
+  build_pair: 'the frame is empty and the learner makes the number from red and yellow counters, a different pair each time',
   add: 'the tutor says an addition and the learner says how many altogether',
   subtract: 'the tutor says a take-away and the learner says how many are left',
 };

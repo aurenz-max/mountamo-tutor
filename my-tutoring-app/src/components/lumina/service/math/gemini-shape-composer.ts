@@ -8,6 +8,7 @@ import {
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection } from '../scopeContext';
+import { buildRecipes, recipeInstruction } from "../../primitives/visual-primitives/math/shapeComposerBuild";
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -39,9 +40,9 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
   "free-create": {
     promptDoc:
-      `"free-create": Open-ended creative mode. Student places 2+ shapes freely. `
-      + `Always passes if they place at least 2 shapes.`,
-    schemaDescription: "'free-create' (open creative mode)",
+      `"free-create": Open build. The student composes their own picture from a stated recipe of shapes `
+      + `("two triangles and one square"), every shape touching another. Code writes the recipe and judges the build.`,
+    schemaDescription: "'free-create' (compose your own picture from a recipe)",
   },
   "how-many-ways": {
     promptDoc:
@@ -1080,34 +1081,6 @@ const howManyWaysSchema: Schema = {
   required: ["title", "description", "challenges"],
 };
 
-const freeCreateSchema: Schema = {
-  type: Type.OBJECT,
-  properties: {
-    title: { type: Type.STRING, description: "Title for the shape activity" },
-    description: {
-      type: Type.STRING,
-      description: "Brief educational description",
-    },
-    challenges: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          id: { type: Type.STRING, description: "Unique challenge ID" },
-          instruction: {
-            type: Type.STRING,
-            description:
-              "Creative prompt e.g. 'Use shapes to build your favorite animal!'",
-          },
-        },
-        required: ["id", "instruction"],
-      },
-      description: "3-4 free-create challenges",
-    },
-  },
-  required: ["title", "description", "challenges"],
-};
-
 // ===========================================================================
 // Per-type sub-generators
 // ===========================================================================
@@ -1385,50 +1358,17 @@ Generate 5-6 challenges progressing in difficulty. Use ONLY the known targets an
     .filter((c): c is ShapeComposerChallenge => c !== null);
 }
 
-async function generateFreeCreateChallenges(
-  topic: string,
-  scopeSection: string,
-  gradeLevel: string,
-  _gradeBand: string,
-  _tierSection = "",
-): Promise<ShapeComposerChallenge[]> {
-  const prompt = `
-Create an educational FREE-CREATE shape activity for "${topic}" (${gradeLevel} students).
-${scopeSection}
-Theme: ${randomTheme()}.
-
-Students freely place shapes to create anything they imagine.
-Each challenge is an open-ended creative prompt. There is no wrong answer — just creative play.
-
-For each challenge:
-- Write a fun, imaginative instruction like "Use shapes to build your dream house!" or "Create a funny robot using shapes!"
-- Keep it encouraging and open-ended
-
-Generate 3-4 creative challenges.
-`;
-
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: freeCreateSchema,
-    },
-  });
-
-  const data = result.text ? JSON.parse(result.text) : null;
-  if (!data?.challenges?.length) return [];
-
-  return (data.challenges as FlatChallenge[])
-    .map(
-      (flat): ShapeComposerChallenge => ({
-        id: flat.id as string,
-        type: "free-create",
-        instruction:
-          (flat.instruction as string) ||
-          "Use shapes to create something amazing!",
-      }),
-    );
+/**
+ * free-create is an open build: code owns the recipe (which shapes, how many), the ask and the order, so there is no
+ * model call. Distinct recipes per session, piece totals rising within the grade band's ceiling.
+ */
+function buildFreeCreateChallenges(gradeBand: string): ShapeComposerChallenge[] {
+  return buildRecipes(gradeBand === "1" ? "1" : "K", 4).map((recipe, i) => ({
+    id: `fc${i}`,
+    type: "free-create",
+    instruction: recipeInstruction(recipe),
+    recipe,
+  }));
 }
 
 // ===========================================================================
@@ -1472,7 +1412,8 @@ const FALLBACKS: Record<string, ShapeComposerChallenge> = {
   "free-create": {
     id: "c1",
     type: "free-create",
-    instruction: "Use shapes to create anything you like!",
+    instruction: recipeInstruction([{ shape: "triangle", count: 2 }, { shape: "square", count: 1 }]),
+    recipe: [{ shape: "triangle", count: 2 }, { shape: "square", count: 1 }],
   },
   "how-many-ways": {
     id: "c1",
@@ -1567,9 +1508,7 @@ export const generateShapeComposer = async (
         );
         break;
       case "free-create":
-        generators.push(
-          generateFreeCreateChallenges(topic, scopeSection, gradeLevel, gradeBand, section),
-        );
+        generators.push(Promise.resolve(buildFreeCreateChallenges(gradeBand)));
         break;
     }
   }
@@ -1619,7 +1558,7 @@ export const generateShapeComposer = async (
     "compose-match": "Shape Composition",
     "compose-picture": "Picture Building",
     decompose: "Shape Decomposition",
-    "free-create": "Creative Shapes",
+    "free-create": "Shape Pictures",
     "how-many-ways": "Shape Counting",
   };
 

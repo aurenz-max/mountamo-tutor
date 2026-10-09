@@ -36,16 +36,25 @@ export function hundredsChartMatches(c: HundredsChartChallenge, view: { cells: S
  * - cells: `stopped_early` (only pattern numbers, the last ones left untapped), `gaps_left` (only pattern
  *   numbers, some in the middle left), `extra_cells` (the whole pattern and more), `other_step` (a run that
  *   counts by another amount), `stray_cells` (numbers outside the pattern in place of some in it);
- * - a skip value: `twice_the_step`, `half_the_step`, then `one_short` / `one_over` / `short_by_more` / `over_by_more`.
- * identify_pattern names none: its choices are description sentences, and the item records no kind for them.
+ * - a skip value: `twice_the_step`, `half_the_step`, then `one_short` / `one_over` / `short_by_more` / `over_by_more`;
+ * - a description (identify_pattern), by what the chosen sentence describes: `chose_diagonal` (a diagonal, zigzag or
+ *   shifting shape), `chose_columns`, `chose_rows`, else `chose_scattered` (no shape: scattered, checkerboard, whole grid).
  */
 export type HundredsChartMiss = 'stopped_early' | 'gaps_left' | 'extra_cells' | 'other_step' | 'stray_cells'
-  | 'twice_the_step' | 'half_the_step' | 'one_short' | 'one_over' | 'short_by_more' | 'over_by_more';
+  | 'twice_the_step' | 'half_the_step' | 'one_short' | 'one_over' | 'short_by_more' | 'over_by_more'
+  | 'chose_diagonal' | 'chose_columns' | 'chose_rows' | 'chose_scattered';
+
+/** What a description sentence describes, for the miss on a wrong one. */
+export function describedShape(option: string): 'chose_diagonal' | 'chose_columns' | 'chose_rows' | 'chose_scattered' {
+  const o = option.toLowerCase();
+  return /diagonal|zigzag|shift/.test(o) ? 'chose_diagonal' : /column/.test(o) ? 'chose_columns'
+    : /row/.test(o) ? 'chose_rows' : 'chose_scattered';
+}
 
 export function hundredsChartMiss(c: HundredsChartChallenge | null, view: { cells: Set<number>; option: string | null }):
   HundredsChartMiss | undefined {
   if (!c || hundredsChartMatches(c, view)) return undefined;
-  if (c.type === 'identify_pattern') return undefined;
+  if (c.type === 'identify_pattern') return view.option === null ? undefined : describedShape(view.option);
   if (c.type === 'find_skip_value') {
     const got = Number(view.option), want = c.skipValue;
     if (view.option === null || Number.isNaN(got)) return undefined;

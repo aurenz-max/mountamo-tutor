@@ -29,6 +29,7 @@ type ChallengeType =
   | 'split'
   | 'build_teen'
   | 'decompose_teen'
+  | 'build_pair'
   | 'add'
   | 'subtract';
 
@@ -53,6 +54,7 @@ const COUNT_BY_MODE: Record<ChallengeType, number> = {
                    // a seven-item session is still all-distinct content.
   decompose_teen: 6, // T1 flip, but counting out ten from a scattered group is
                    // slower work than placing a few ones.
+  build_pair: 6,   // open build: three totals, each made two different ways
   add: 5,          // hold at current (operate mode)
   subtract: 5,     // hold at current (operate mode)
 };
@@ -116,6 +118,14 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `(five has four: 1+4, 2+3, 3+2, 4+1), so never ask the same total more times than it has ways. `
       + `Good shape for a 6-item set: 3, 3, 4, 4, 5, 5. There is no addend/startCount field to set.`,
     schemaDescription: "'split' (partition a group into two colour groups)",
+  },
+  build_pair: {
+    promptDoc:
+      `"build_pair": OPEN BUILD. The frame starts EMPTY; the student makes the number with red AND yellow counters, `
+      + `any pair, and presses "I'm done!" (K.OA.3: decompose numbers up to 10 into pairs in more than one way). `
+      + `The app chooses every targetCount (a few totals, each made twice, a different way the second time); `
+      + `write only the title, description, hint and narration, and never name a pair of numbers in any of them.`,
+    schemaDescription: "'build_pair' (make a number from two colours, a different way each time)",
   },
   build_teen: {
     promptDoc:
@@ -258,6 +268,10 @@ function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): 
             : 'Mix teen numbers across the middle of the range (13-16).',
       );
       break;
+    case 'build_pair':
+      // The levers are bare at every tier (open build); the tier states only how much the hints may say.
+      promptLines.push('Hints point to the two colours and to counting the whole, never to a pair of numbers.');
+      break;
     case 'add':
     case 'subtract':
       promptLines.push(
@@ -296,6 +310,8 @@ function buildInstruction(ch: TenFrameChallenge, mode: 'single' | 'double'): str
       return `The top frame is full — that is 10. Make ${ch.targetCount}!`;
     case 'decompose_teen':
       return `Here are ${ch.targetCount} counters. Turn 10 of them yellow!`;
+    case 'build_pair':
+      return `Make ${ch.targetCount} with red and yellow counters!`;
     case 'add':
       return `Show ${ch.addend1} + ${ch.addend2} on the frame!`;
     case 'subtract': {
@@ -447,6 +463,32 @@ function buildTenFrameSchema(count: number): Schema {
   },
   required: ["title", "description", "mode", "counters", "challenges", "showOptions", "gradeBand"]
   };
+}
+
+// ---------------------------------------------------------------------------
+// build_pair: the totals are CODE-OWNED (open build)
+// ---------------------------------------------------------------------------
+
+/** The bound the lesson names ("to 5", "within 10", "up to 7"), the same pattern the oracle checks. */
+function namedCeiling(...texts: Array<string | undefined>): number | undefined {
+  const bounds = texts.map(t => (t ?? '').match(/\b(?:to|within|up to)\s+(\d{1,3})\b/i)).filter(Boolean)
+    .map(m => parseInt((m as RegExpMatchArray)[1], 10));
+  return bounds.length ? Math.min(...bounds) : undefined;
+}
+
+/**
+ * The totals of a build_pair session: up to three distinct totals inside the bound (3..ceiling, at most 10, the
+ * frame), each asked TWICE in a row so the second ask is "a different way". Three is the floor: a total of two has
+ * one pair, so its second ask could not ask for a different one.
+ */
+export function pairTotals(count: number, ceiling: number, rand: () => number = Math.random): number[] {
+  const top = Math.max(3, Math.min(10, ceiling));
+  const pool = Array.from({ length: top - 2 }, (_, i) => i + 3);
+  for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+  const distinct = pool.slice(0, Math.max(1, Math.ceil(count / 2))).sort((a, b) => a - b);
+  const out: number[] = [];
+  for (let i = 0; out.length < count; i++) out.push(distinct[Math.floor(i / 2) % distinct.length]);
+  return out;
 }
 
 // ---------------------------------------------------------------------------
@@ -685,13 +727,14 @@ Return the complete ten frame configuration.
   // split is a K decomposition skill on groups of 2-10 — a double frame adds
   // twenty empty boxes around a group of five and nothing else. Single, always.
   const isSplitEvalMode =
-    resolution?.allowedTypes.length === 1 && resolution.allowedTypes[0] === 'split';
+    resolution?.allowedTypes.length === 1
+    && (resolution.allowedTypes[0] === 'split' || resolution.allowedTypes[0] === 'build_pair');
   if (isSplitEvalMode) {
     data.mode = 'single';
   }
 
   // Filter to valid challenge types (safety net — schema enum handles the eval mode case)
-  const validTypes = ['build', 'subitize', 'make_ten', 'split', 'build_teen', 'decompose_teen', 'add', 'subtract'];
+  const validTypes = ['build', 'subitize', 'make_ten', 'split', 'build_teen', 'decompose_teen', 'build_pair', 'add', 'subtract'];
   data.challenges = (data.challenges || []).filter(
     (c: { type: string }) => validTypes.includes(c.type)
   );
@@ -736,6 +779,22 @@ Return the complete ten frame configuration.
       const maxCount = data.mode === 'double' ? 20 : 10;
       if (!Number.isInteger(ch.targetCount) || ch.targetCount < 2) ch.targetCount = 3;
       if (ch.targetCount > maxCount) ch.targetCount = maxCount;
+    }
+  }
+
+  // ── build_pair: every total is CODE-OWNED, and so are the hint and narration (a model line naming a pair
+  // would answer the item). The bound is the one the lesson names, else the frame. ──
+  {
+    const pairChallenges = (data.challenges as TenFrameChallenge[]).filter((ch) => ch.type === 'build_pair');
+    if (pairChallenges.length > 0) {
+      const ceiling = namedCeiling(topic, config?.objectiveText, config?.intent) ?? 10;
+      const totals = pairTotals(pairChallenges.length, ceiling);
+      pairChallenges.forEach((ch, i) => {
+        ch.targetCount = totals[i];
+        ch.hint = 'Use red and yellow. Count all the counters on the frame.';
+        ch.narration = 'Make the number with two colours, your own way.';
+      });
+      console.log(`[TenFrame] build_pair totals (bound ${ceiling}): [${totals.join(', ')}]`);
     }
   }
 
@@ -847,6 +906,7 @@ Return the complete ten frame configuration.
             && ch.targetCount < capacity
             && sayable(capacity - ch.targetCount);
         case 'split':
+        case 'build_pair':
           // Gestural, and the total is PUBLIC (the ask states it), so the
           // spoken bench does not bind. Two is the floor: a group of one has
           // no two-part decomposition and the item would have no right answer.
@@ -895,6 +955,7 @@ Return the complete ten frame configuration.
       make_ten: { type: 'make_ten', targetCount: 6, hint: 'Count the empty spaces!', narration: "Some counters are already here. How many more do we need?" },
       split: { type: 'split', targetCount: 5, hint: 'Turn some yellow — but leave some red!', narration: "Here is a group of five. Let's break it into two groups." },
       build_teen: { type: 'build_teen', targetCount: 14, hint: 'The top frame is a ten. Count on from ten!', narration: "The top frame is full — that is ten. Let's make a teen number." },
+      build_pair: { type: 'build_pair', targetCount: 5, hint: 'Use red and yellow. Count all the counters on the frame.', narration: 'Make the number with two colours, your own way.' },
       decompose_teen: { type: 'decompose_teen', targetCount: 14, hint: 'Count them out one at a time and stop at ten!', narration: "Here is a mixed-up group. Let's find the ten hiding inside it." },
       add: { type: 'add', targetCount: 7, addend1: 3, addend2: 4, hint: 'Place 3, then add 4 more.', narration: "Let's add these numbers using the ten frame." },
       subtract: { type: 'subtract', targetCount: 5, startCount: 8, hint: 'Tap counters to take them off!', narration: "Let's practice taking away." },
@@ -904,10 +965,10 @@ Return the complete ten frame configuration.
     // in more than one way" needs a second ask on the same total, and the
     // component's distinctness rule only has something to compare against from
     // item two onward. So its fallback is a pair, not a singleton.
-    data.challenges = fallbackType === 'split'
+    data.challenges = fallbackType === 'split' || fallbackType === 'build_pair'
       ? [
-          { id: 'c1', ...fallbacks.split },
-          { id: 'c2', ...fallbacks.split },
+          { id: 'c1', ...fallbacks[fallbackType] },
+          { id: 'c2', ...fallbacks[fallbackType] },
         ] as TenFrameChallenge[]
       : [{ id: 'c1', ...fallbacks[fallbackType] ?? fallbacks.build }];
   }

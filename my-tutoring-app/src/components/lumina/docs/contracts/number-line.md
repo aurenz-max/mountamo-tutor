@@ -112,6 +112,16 @@ Real-usage channel [4]: unknown (auth), not zero.
 - **Evidence:** `numberLineLevers.test.ts` (leak rule over every K-2 jump; builder over >400 items), `NumberLine.levers.workspace.test.tsx`, live bench `qa/eval-reports/number-line-levers-2026-09-27.md`.
 - **Probe:** `npm test -- numberLineLevers NumberLine.levers`; `run_live_runtime.py --primitive number-line --lesson-entry --lever`.
 
+### R15 — In-item plot / identify / order / between levers, and the session-fitted window · OBSERVED (2026-10-08, `/add-support-tiers`)
+- **Property:** on an integer line each Check names a miss (`lineMiss`: plot/identify `one_short`/`one_past`/`off_by_more`; order `reversed`/`out_of_order`; between `on_end`/`outside`/`wrong_inside`). Levers (`lineLevers`): `count_hops` (help; plot, identify, exact between) numbers the learner's point in unit hops from a labelled number (the line's first label when every tick is labelled, else the nearest label at least two below the target) and, before placement, draws hop 1 only; no hop the learner did not make reaches or passes the target (`countHopsLeak`). `bigger_arrow` (help; order) draws a smaller-to-bigger arrow and marks no number. `end_marks` (help; legacy between) rings the two given numbers, never a point between them, and is not offered on an exact item (`endMarksLeak`). Simplify (ungraded practice `<id>~simpler`, built from the payload alone by `simplerItem`): `nearer_number` (target half as far from the count start), `fewer_numbers` (one number fewer, none from the item, listed out of order), `wider_gap` (legacy pair two farther apart). Easy tier starts with the item's help shown, not recorded as a pull. Plot and between now fit the view to every item of their kind (`autoView`), so a single target or an exact missing number is no longer the centre of the line; jump and order keep the per-item fit; R8's span cap is unchanged.
+- **Demanded by:** `/add-support-tiers` class sweep 2026-10-08; journey J8/J9.
+- **Evidence:** `numberLineLevers.line.test.ts`, `NumberLine.lineLevers.workspace.test.tsx`, journey sweep (all number-line payloads), report `qa/eval-reports/number-line-levers-2026-10-08.md`.
+- **Probe:** `npm test -- numberLineLevers.line NumberLine.lineLevers`; `npm test -- journeySweep -t number-line`.
+
+### R16 — Per-item levers where the item's help would draw the answer · OBSERVED (2026-10-09, J12)
+- **Property:** `which_way` (help, jump): on a first jump of 1 only, a short arrow at the item's first start pointing the jump's way, under half a unit long (`wayArrowLeak`); answers `wrong_direction`, `no_landing`. `last_try` (help, plot/identify): only where `countStart` is null (the target is the first label, e.g. 0), a dashed ring on the learner's last checked wrong point, kept across Try again, never on the target (`lastTryLeak`); answers `one_short`, `one_past`, `off_by_more`. Facts name what is drawn. Easy starts a jump of 1 with `which_way` shown, not a pull.
+- **Evidence:** `numberLineLevers.test.ts`, `numberLineLevers.line.test.ts`, `NumberLine.levers.workspace.test.tsx`, `NumberLine.lineLevers.workspace.test.tsx`; report addendum `qa/eval-reports/number-line-levers-2026-10-08.md`.
+
 ## Conflicts
 
 ### C1 — G1 magnitude demand (≤120) vs K-2 legibility clamp (≤30) — **RESOLVED 2026-08-04**
@@ -147,3 +157,10 @@ or 3-5 behavior.
   in-range target has a nearest grid point, and a target exactly halfway accepts both. Jump grading (R4/R14) untouched.
   `--check` **COMPATIBLE**: journey sweep green on all five number-line modes (J2 now passes on plot/identify, J5 credit
   unchanged), number-line vitest green.
+- 2026-10-08 — R15 added (`/add-support-tiers`: plot, identify, order, between levers). Grading unchanged; a Check now names
+  a miss on every mode. Behaviour change: plot/between auto-zoom fits the session's items of that kind instead of
+  centring each target (the single-target fit put the answer in the middle of the line; an exact missing number too).
+  R3 identify still shows 0-10 fully labelled (the whole line, since its targets span it); R6 exact windows stay local and
+  legible (span ≤ 30, unit ticks); R8 cap untouched. `--check` COMPATIBLE: number-line vitest (23 files) and the
+  number-line journey sweep pass; the sweep's order/between rows now drive (SW-1, SW-2 closed).
+- 2026-10-09 — R16 added (J12 per-item gaps: identify target 0, jump of 1). Additive levers on item shapes that had none; R14/R15 leak rules, grading and generation unchanged. Compatible.

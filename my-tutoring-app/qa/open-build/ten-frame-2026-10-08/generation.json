@@ -1,0 +1,248 @@
+{
+  "generatedAt": "2026-10-08T21:29:34.045Z",
+  "runs": [
+    {
+      "name": "k-to-5",
+      "grade": "Kindergarten",
+      "difficulty": null,
+      "intent": "Decompose numbers up to 5 into pairs in more than one way",
+      "issues": [],
+      "ordinals": [
+        1,
+        2,
+        1,
+        2,
+        1,
+        2
+      ],
+      "data": {
+        "title": "Two-Colour Number Partners",
+        "description": "Explore how to make numbers up to 5 using red and yellow counters in different ways.",
+        "gradeBand": "K",
+        "mode": "single",
+        "showOptions": {
+          "showCount": true,
+          "showEquation": false,
+          "showEmptyCount": false,
+          "allowFlip": true
+        },
+        "challenges": [
+          {
+            "id": "c1",
+            "type": "build_pair",
+            "targetCount": 3,
+            "hint": "Use red and yellow. Count all the counters on the frame.",
+            "narration": "Make the number with two colours, your own way.",
+            "instruction": "Make 3 with red and yellow counters!"
+          },
+          {
+            "id": "c2",
+            "type": "build_pair",
+            "targetCount": 3,
+            "hint": "Use red and yellow. Count all the counters on the frame.",
+            "narration": "Make the number with two colours, your own way.",
+            "instruction": "Make 3 with red and yellow counters!"
+          },
+          {
+            "id": "c3",
+            "type": "build_pair",
+            "targetCount": 4,
+            "hint": "Use red and yellow. Count all the counters on the frame.",
+            "narration": "Make the number with two colours, your own way.",
+            "instruction": "Make 4 with red and yellow counters!"
+          },
+          {
+            "id": "c4",
+            "type": "build_pair",
+            "targetCount": 4,
+            "hint": "Use red and yellow. Count all the counters on the frame.",
+            "narration": "Make the number with two colours, your own way.",
+            "instruction": "Make 4 with red and yellow counters!"
+          },
+          {
+            "id": "c5",
+            "type": "build_pair",
+            "targetCount": 5,
+            "hint": "Use red and yellow. Count all the counters on the frame.",
+            "narration": "Make the number with two colours, your own way.",
+            "instruction": "Make 5 with red and yellow counters!"
+          },
+          {
+            "id": "c6",
+            "type": "build_pair",
+            "targetCount": 5,
+            "hint": "Use red and yellow. Count all the counters on the frame.",
+            "narration": "Make the number with two colours, your own way.",
+            "instruction": "Make 5 with red and yellow counters!"
+          }
+        ]
+      }
+    },
+    {
+      "name": "k-to-10",
+      "grade": "Kindergarten",
+      "difficulty": null,
+      "intent": "Decompose numbers within 10 into two parts using counters",
+      "issues": [],
+      "ordinals": [
+        1,
+        2,
+        1,
+        2,
+        1,
+        2
+      ],
+      "data": {
+        "title": "Decomposing Numbers with Two-Colour Counters",
+        "description": "Explore how numbers can be made in different ways using red and yellow counters.",
+        "gradeBand": "K",
+        "mode": "single",
+        "showOptions": {
+          "showCount": true,
+          "showEquation": false,
+          "showEmptyCount": false,
+          "allowFlip": true
+        },
+        "challenges": [
+          {
+            "id": "c1",
+            "type": "build_pair",
+            "targetCount": 5,
+            "hint": "Use red and yellow. Count all the counters on the frame.",
+            "narration": "Make the number with two colours, your own way.",
+            "instruction": "Make 5 with red and yellow counters!"
+          },
+          {
+            "id": "c2",
+            "type": "build_pair",
+            "targetCount": 5,
+            "hint": "Use red and yellow. Count all the counters on the frame.",
+            "narration": "Make the number with two colours, your own way.",
+            "instruction": "Make 5 with red and yellow counters!"
+          },
+          {
+            "id": "c3",
+            "type": "build_pair",
+            "targetCount": 6,
+            "hint": "Use red and yellow. Count all the counters on the frame.",
+            "narration": "Make the number with two colours, your own way.",
+            "instruction": "Make 6 with red and yellow counters!"
+          },
+          {
+            "id": "c4",
+            "type": "build_pair",
+            "targetCount": 6,
+            "hint": "Use red and yellow. Count all the counters on the frame.",
+            "narration": "Make the number with two colours, your own way.",
+            "instruction": "Make 6 with red and yellow counters!"
+          },
+          {
+            "id": "c5",
+            "type": "build_pair",
+            "targetCount": 10,
+            "hint": "Use red and yellow. Count all the counters on the frame.",
+            "narration": "Make the number with two colours, your own way.",
+            "instruction": "Make 10 with red and yellow counters!"
+          },
+          {
+            "id": "c6",
+            "type": "build_pair",
+            "targetCount": 10,
+            "hint": "Use red and yellow. Count all the counters on the frame.",
+            "narration": "Make the number with two colours, your own way.",
+            "instruction": "Make 10 with red and yellow counters!"
+          }
+        ]
+      }
+    },
+    {
+      "name": "g1-hard",
+      "grade": "Grade 1",
+      "difficulty": "hard",
+      "intent": "Make a number two different ways with red and yellow counters",
+      "issues": [],
+      "ordinals": [
+        1,
+        2,
+        1,
+        2,
+        1,
+        2
+      ],
+      "data": {
+        "title": "Making Numbers Two Ways",
+        "description": "Explore number decomposition by building numbers using two different colors on the ten frame.",
+        "gradeBand": "1-2",
+        "mode": "single",
+        "showOptions": {
+          "showCount": false,
+          "showEquation": false,
+          "showEmptyCount": false,
+          "allowFlip": true
+        },
+        "challenges": [
+          {
+            "id": "c1",
+            "type": "build_pair",
+            "targetCount": 4,
+            "hint": "Use red and yellow. Count all the counters on the frame.",
+            "narration": "Make the number with two colours, your own way.",
+            "instruction": "Make 4 with red and yellow counters!"
+          },
+          {
+            "id": "c2",
+            "type": "build_pair",
+            "targetCount": 4,
+            "hint": "Use red and yellow. Count all the counters on the frame.",
+            "narration": "Make the number with two colours, your own way.",
+            "instruction": "Make 4 with red and yellow counters!"
+          },
+          {
+            "id": "c3",
+            "type": "build_pair",
+            "targetCount": 6,
+            "hint": "Use red and yellow. Count all the counters on the frame.",
+            "narration": "Make the number with two colours, your own way.",
+            "instruction": "Make 6 with red and yellow counters!"
+          },
+          {
+            "id": "c4",
+            "type": "build_pair",
+            "targetCount": 6,
+            "hint": "Use red and yellow. Count all the counters on the frame.",
+            "narration": "Make the number with two colours, your own way.",
+            "instruction": "Make 6 with red and yellow counters!"
+          },
+          {
+            "id": "c5",
+            "type": "build_pair",
+            "targetCount": 9,
+            "hint": "Use red and yellow. Count all the counters on the frame.",
+            "narration": "Make the number with two colours, your own way.",
+            "instruction": "Make 9 with red and yellow counters!"
+          },
+          {
+            "id": "c6",
+            "type": "build_pair",
+            "targetCount": 9,
+            "hint": "Use red and yellow. Count all the counters on the frame.",
+            "narration": "Make the number with two colours, your own way.",
+            "instruction": "Make 9 with red and yellow counters!"
+          }
+        ]
+      }
+    }
+  ],
+  "logs": [
+    "[TenFrame] modes: build_pair (explicit) → types [build_pair]",
+    "[TenFrame] build_pair totals (bound 5): [3, 3, 4, 4, 5, 5]",
+    "[TenFrame] Final: 6 challenge(s) → [build_pair, build_pair, build_pair, build_pair, build_pair, build_pair]",
+    "[TenFrame] modes: build_pair (explicit) → types [build_pair]",
+    "[TenFrame] build_pair totals (bound 10): [5, 5, 6, 6, 10, 10]",
+    "[TenFrame] Final: 6 challenge(s) → [build_pair, build_pair, build_pair, build_pair, build_pair, build_pair]",
+    "[TenFrame] modes: build_pair (explicit) → types [build_pair]",
+    "[TenFrame] build_pair totals (bound 10): [4, 4, 6, 6, 9, 9]",
+    "[TenFrame] Final: 6 challenge(s) → [build_pair, build_pair, build_pair, build_pair, build_pair, build_pair]",
+    "[TenFrame] Support tier \"hard\" on mode \"build_pair\" → showCount=false, showEquation=false, flash=1000"
+  ]
+}

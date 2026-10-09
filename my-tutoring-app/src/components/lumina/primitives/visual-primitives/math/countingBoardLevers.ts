@@ -19,6 +19,11 @@
  *   - `two_hands` (help): the hand farthest from the group is taken away, two remain. Removing a choice is
  *     assisted work on the same item (ruling 3, handoff 21). Leak rule: the matching hand always remains;
  *     only when one hand is uniquely farthest (a group of 1 or 3).
+ *   - `pair_up` (help, 2026-10-09): after a wrong hand, the group set in a row above the fingers of the hand the
+ *     learner picked last, a line joining each object to the finger under it; a finger or an object with no partner
+ *     is left standing alone. Answers a hand one off on every item, including a single object and a group already
+ *     in a row, where `line_up` changes nothing (J12 queue row). Leak rule: drawn only for a hand the learner picked
+ *     that does NOT match; never the matching hand, never a hand the learner did not pick, no number anywhere.
  * The spoken kinds name no misses and declare no levers yet (help-first, handoff 21).
  */
 import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
@@ -29,6 +34,7 @@ export const TAGS_LEVER = 'count_tags';
 export const LINE_LEVER = 'line_up';
 export const SMALLER_LEVER = 'smaller_give';
 export const HANDS_LEVER = 'two_hands';
+export const PAIR_LEVER = 'pair_up';
 
 /** The finger hands a hand-match item offers. */
 export const HANDS = [1, 2, 3] as const;
@@ -50,6 +56,12 @@ export function droppedHand(item: CountingItem): number | null {
   return far.length === 1 && far[0] !== item.target ? far[0] : null;
 }
 
+/** The hand `pair_up` pairs with the group, or null: only the learner's own wrong pick, never the matching hand. */
+export function pairedHand(item: CountingItem | null, missed: number | null | undefined): number | null {
+  if (item?.kind !== 'subitize_perceptual' || missed == null) return null;
+  return (HANDS as readonly number[]).includes(missed) && missed !== item.target ? missed : null;
+}
+
 /** The easier ask for `item`, or null: about half as many from the same pile, never the number asked for. */
 export function smallerGive(item: CountingItem): CountingItem | null {
   if (!makesASet(item.kind)) return null;
@@ -58,7 +70,9 @@ export function smallerGive(item: CountingItem): CountingItem | null {
   return { ...item, id: `${item.id}~smaller`, target, ...(item.kind === 'build_n' ? { count: target } : {}) };
 }
 
-export function countingBoardLevers(item: CountingItem | null, pulled: readonly string[], arrangement: string): WorkspaceLever[] {
+/** `missed`: the learner's last wrong hand on this item (subitize_perceptual), which `pair_up` draws against the group. */
+export function countingBoardLevers(item: CountingItem | null, pulled: readonly string[], arrangement: string,
+  missed?: number | null): WorkspaceLever[] {
   if (!item || item.answerKind !== 'gesture') return [];
   const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: string[], when: string,
     does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
@@ -89,7 +103,11 @@ export function countingBoardLevers(item: CountingItem | null, pulled: readonly 
     'The learner picks a hand far from the group.',
     // No number words: the item is pre-numeric, and "one hand went away" spoke the answer to a group of one
     // in every replay sample (counting-board replay 09-28).
-    'The hand farthest from the group is gone. The match is still among the hands on screen.')] : [])];
+    'The hand farthest from the group is gone. The match is still among the hands on screen.')] : []),
+    ...(pairedHand(item, missed) !== null || pulled.includes(PAIR_LEVER) ? [lever(PAIR_LEVER, 'help', 'shown', ['one_short', 'one_over'],
+      'The learner picks a hand next to the match, with a finger too many or too few.',
+      // What is drawn only: whether a finger or an object is left without a partner is the learner's to see.
+      'Sets the group in a row above the fingers of the hand the learner picked last, with a line joining each object to the finger under it.')] : [])];
 }
 
 /** What the pulled levers put on screen, as a scene fact. Never the number asked for or which hand matches. */
@@ -100,6 +118,8 @@ export function leverFacts(item: CountingItem | null, pulled: readonly string[])
     pulled.includes(TAGS_LEVER) && makesASet(item.kind) && (item.kind === 'build_n' ? 'Each object put in carries a small number in the order put in.' : 'Each object taken carries a small number in the order taken.'),
     pulled.includes(LINE_LEVER) && 'The objects are laid out in a single row.',
     pulled.includes(HANDS_LEVER) && item.kind === 'subitize_perceptual' && 'A hand was taken away; the rest are left to choose from.',
+    pulled.includes(PAIR_LEVER) && item.kind === 'subitize_perceptual'
+      && 'Under the board, the group sits in a row above the fingers of the hand the learner picked last, a line joining each object to the finger under it.',
   ].filter((s): s is string => !!s);
   return on.join(' ');
 }

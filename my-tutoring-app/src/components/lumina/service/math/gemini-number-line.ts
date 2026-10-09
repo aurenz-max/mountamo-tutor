@@ -19,6 +19,8 @@ import {
   selectStartContrast,
   type NumberLineRemediationMove,
 } from './numberLineRemediation';
+import { buildHopsInstruction, maxDistance, minDistance, waysFor, type HopsTask }
+  from '../../primitives/visual-primitives/math/numberLineBuildHops';
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -51,6 +53,12 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `Primarily 3-5: fractions between benchmarks, decimals on a zoomed line.`,
     schemaDescription: "'find_between' (estimate between marks)",
   },
+  build_hops: {
+    promptDoc:
+      `"build_hops": OPEN BUILD. Student makes a stated number as their own hops from a start ("land on 12 in two hops"), `
+      + `then a different way. Code writes every number and the instruction; no model text.`,
+    schemaDescription: "'build_hops' (make a number in your own hops)",
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -79,7 +87,7 @@ function normalizeSupportTier(difficulty?: string): SupportTier | null {
 // Tuning — per-mode instance counts (see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a)
 // ---------------------------------------------------------------------------
 
-type ChallengeType = 'plot_point' | 'show_jump' | 'order_values' | 'find_between';
+type ChallengeType = 'plot_point' | 'show_jump' | 'order_values' | 'find_between' | 'build_hops';
 
 const DEFAULT_INSTANCE_COUNT = 7; // tier fallback (T1)
 const MAX_INSTANCE_COUNT = 8;
@@ -95,6 +103,8 @@ const COUNT_BY_MODE: Record<ChallengeType, number> = {
   show_jump: 4,
   order_values: 4,
   find_between: 4,
+  // Each build_hops item is made twice (a first way, then a different way): 3 items are 6 builds.
+  build_hops: 3,
 };
 
 function resolveCount(type: ChallengeType): number {
@@ -142,6 +152,9 @@ const TIER_GUARDRAIL =
  *  (anchors, arc, tick coarseness, jump steps); the LLM only writes the words. */
 function resolveSupportStructure(type: ChallengeType, tier: SupportTier): SupportScaffold {
   switch (type) {
+    case 'build_hops':
+      // The open build starts bare at every tier (its aids are levers); the tier only sets the hop count (hard: 3).
+      return { labelCoarseness: null, showAnchors: false, showJumpArc: false, jumpSteps: 1, promptLines: [] };
     case 'show_jump':
       return {
         labelCoarseness: null,
@@ -1483,6 +1496,57 @@ Return ONLY:
 }
 
 // ---------------------------------------------------------------------------
+// build_hops (open build): code owns every number, the instruction and the hint
+// ---------------------------------------------------------------------------
+
+/**
+ * The line and the asks for a build_hops session, or null when the line has no room. The start is 0 when the line
+ * holds it, else the line's first number. Each target is reached from the start by at least two different sets of
+ * hops (`minDistance`) and by the hop buttons (`maxDistance`), inside the scope's line; distinct per session.
+ */
+export function selectBuildHopsTasks(range: { min: number; max: number } | undefined, hopCount: number, count: number):
+  { line: { min: number; max: number }; tasks: HopsTask[] } | null {
+  const start = !range || (range.min <= 0 && range.max >= 0) ? 0 : Math.round(range.min);
+  const lineMax = Math.min(range ? Math.round(range.max) : start + 20, start + 20);
+  const hops = hopCount > 2 && lineMax - start < minDistance(hopCount) + count - 1 ? 2 : hopCount;
+  const lo = minDistance(hops), hi = Math.min(maxDistance(hops), lineMax - start);
+  // Two hops of at most 10 reach 19 or 20 only one way (10+9, 10+10), so those are never asked.
+  const open = Array.from({ length: Math.max(0, hi - lo + 1) }, (_, i) => lo + i).filter(d => waysFor(d, hops).length >= 2);
+  if (!open.length) return null;
+  const distances = shuffleInPlace(open).slice(0, count);
+  return { line: { min: start, max: lineMax },
+    tasks: distances.map(d => ({ start, target: start + d, hopCount: hops })) };
+}
+
+function buildHopsChallenge(task: HopsTask, index: number): NumberLineChallenge {
+  return {
+    id: `build_hops-${index}`, type: 'build_hops',
+    instruction: buildHopsInstruction(task),
+    hint: 'Pick a hop, look where it lands on the line, then pick the next hop.',
+    startValue: task.start, targetValues: [task.target], hopCount: task.hopCount,
+  };
+}
+
+async function generateBuildHopsChallenges(
+  topic: string,
+  gradeLevel: string,
+  config?: NumberLineSubConfig,
+): Promise<SubResult> {
+  const gradeBand = config?.canonicalGradeBand ?? resolveGradeBand(gradeLevel);
+  // The hard tier asks for three hops; the scaffolds stay bare at every tier (they are levers).
+  const hopCount = normalizeSupportTier(config?.difficulty) === 'hard' ? 3 : 2;
+  const picked = selectBuildHopsTasks(config?.numberRange, hopCount, resolveCount('build_hops'));
+  if (!picked) return emptySubResult('jump');
+  return {
+    title: 'Hop to the Number',
+    description: 'Make each number with your own hops on the number line, then make it a different way.',
+    range: picked.line, gradeBand, numberType: 'integer', interactionMode: 'jump',
+    challenges: picked.tasks.map(buildHopsChallenge),
+    highlights: [], operations: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Fallback challenges
 // ---------------------------------------------------------------------------
 
@@ -1517,6 +1581,10 @@ function buildFallbackChallenge(type: string, range: { min: number; max: number 
       hint: 'Look at the tick marks between the two values.',
     },
   };
+  if (type === 'build_hops') {
+    const picked = selectBuildHopsTasks(range, 2, 1);
+    if (picked) return buildHopsChallenge(picked.tasks[0], 0);
+  }
 
   return fallbacks[type] ?? fallbacks.plot_point;
 }
@@ -1645,6 +1713,9 @@ export const generateNumberLine = async (ctx: GenerationContext): Promise<Number
   }
   if (allowedTypes.includes('find_between')) {
     generators.push(generateFindBetweenChallenges(topic, gradeLevel, subConfig));
+  }
+  if (allowedTypes.includes('build_hops')) {
+    generators.push(generateBuildHopsChallenges(topic, gradeLevel, subConfig));
   }
 
   const subResults = await Promise.all(generators);

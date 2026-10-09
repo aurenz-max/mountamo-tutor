@@ -42,10 +42,10 @@
 
 ### R6 — speed_round is aid-free and has no levers · OBSERVED (user ruling 2026-10-02)
 - **Property:** speed_round shows a bare fact and a stepper; no picture, and `levers` is empty. A picture would make it equation_solve; recall has no step to make simpler.
-- **Probe:** `mathFactFluencyLevers.test.ts` (no levers on speed-round).
+- **Probe:** `mathFactFluencyLevers.test.ts` (no levers on speed-round). Its misses are the catalog's `unanswered.speed_round` (2026-10-08).
 
 ### R7 — Lever leak rules · OBSERVED (2026-10-02)
-- **Property:** `two_parts` and `fact_dots` draw only the printed numbers (no dots under the "?", no numeral on any dot group); `count_marks` numbers only the dots the learner tapped, and never splits a match picture into the fact's parts; `part_whole` draws the whole with the known part shaded and leaves the unknown part plain and unlabelled. Scene facts for levers state no count.
+- **Property:** `two_parts` and `fact_dots` draw only the printed numbers (no dots under the "?", no numeral on any dot group); `count_marks` numbers only the dots the learner tapped, and never splits a match picture into the fact's parts; `part_whole` draws the whole with the known part shaded and leaves the unknown part plain and unlabelled. On a fingers picture `two_parts` / `count_marks` keep the hands and draw their dots under them (2026-10-08). Scene facts for levers state no count. Per item, every miss a wrong choice can produce is answered by a lever on that item (visual_fact, match, equation_solve, missing_number).
 - **Probe:** `mathFactFluencyLevers.test.ts` leak tables on every saved payload; `MathFactFluency.levers.workspace.test.tsx`.
 
 ### R8 — Lever assistance record and simplify floor · OBSERVED (2026-10-02)
@@ -63,3 +63,4 @@ None open.
 ## Changelog
 
 - 2026-10-02: derived (initial, static). 8 requirements, 0 conflicts. R6-R8 added with the M3 lever slice.
+- 2026-10-08: R6 speed_round misses listed as unanswered; R7 fingers pictures get `two_parts` / `count_marks` (dots under the hands), and per-item miss coverage is probed on every saved payload.

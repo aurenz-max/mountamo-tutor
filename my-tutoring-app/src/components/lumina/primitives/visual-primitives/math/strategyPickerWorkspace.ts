@@ -49,7 +49,7 @@ export function strategyPickerMatches(c: StrategyPickerChallenge, v: StrategyPic
 }
 
 /** Strategies that draw the same kind of picture: a number line, equal groups, or every object counted. */
-const PICTURE_KIND: Record<StrategyId, string> = {
+export const PICTURE_KIND: Record<StrategyId, string> = {
   'counting-on': 'line', 'counting-back': 'line', doubles: 'groups', 'near-doubles': 'groups',
   'tally-marks': 'count-all', 'draw-objects': 'count-all', 'make-ten': 'frame',
 };

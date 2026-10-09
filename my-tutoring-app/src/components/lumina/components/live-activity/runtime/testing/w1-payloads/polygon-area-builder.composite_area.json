@@ -1,0 +1,109 @@
+{
+ "source": "batch-gate 2026-10-09 generation (Area of composite rectilinear figures)",
+ "primitiveId": "polygon-area-builder",
+ "evalMode": "composite_area",
+ "data": {
+  "title": "Finding the Area of Composite Polygons",
+  "description": "Practice decomposing irregular rectilinear figures into smaller rectangles to calculate their total area.",
+  "challengeType": "composite_area",
+  "gradeBand": "6",
+  "challenges": [
+   {
+    "type": "composite_area",
+    "figureType": "composite",
+    "parts": [
+     {
+      "x": 0,
+      "y": 0,
+      "w": 7,
+      "h": 2
+     },
+     {
+      "x": 2,
+      "y": 2,
+      "w": 5,
+      "h": 3
+     }
+    ],
+    "expectedArea": 29,
+    "unitLabel": "cm",
+    "narration": "A deck wrapping a corner is shaped like this figure.",
+    "instruction": "Split the figure into rectangles, find each area, then add them up.",
+    "hint": "Break the L-shape into two rectangles. Find length × width for each piece, then add the two areas.",
+    "id": "pab-1"
+   },
+   {
+    "type": "composite_area",
+    "figureType": "composite",
+    "parts": [
+     {
+      "x": 0,
+      "y": 0,
+      "w": 9,
+      "h": 4
+     },
+     {
+      "x": 0,
+      "y": 4,
+      "w": 5,
+      "h": 4
+     }
+    ],
+    "expectedArea": 56,
+    "unitLabel": "in",
+    "narration": "An L-shaped garden bed is shaped like this figure.",
+    "instruction": "Split the figure into rectangles, find each area, then add them up.",
+    "hint": "Break the L-shape into two rectangles. Find length × width for each piece, then add the two areas.",
+    "id": "pab-2"
+   },
+   {
+    "type": "composite_area",
+    "figureType": "composite",
+    "parts": [
+     {
+      "x": 0,
+      "y": 0,
+      "w": 9,
+      "h": 5
+     },
+     {
+      "x": 6,
+      "y": 5,
+      "w": 3,
+      "h": 5
+     }
+    ],
+    "expectedArea": 60,
+    "unitLabel": "cm",
+    "narration": "An L-shaped room floor is shaped like this figure.",
+    "instruction": "Split the figure into rectangles, find each area, then add them up.",
+    "hint": "Break the L-shape into two rectangles. Find length × width for each piece, then add the two areas.",
+    "id": "pab-3"
+   },
+   {
+    "type": "composite_area",
+    "figureType": "composite",
+    "parts": [
+     {
+      "x": 0,
+      "y": 0,
+      "w": 9,
+      "h": 4
+     },
+     {
+      "x": 0,
+      "y": 4,
+      "w": 7,
+      "h": 4
+     }
+    ],
+    "expectedArea": 64,
+    "unitLabel": "cm",
+    "narration": "A deck wrapping a corner is shaped like this figure.",
+    "instruction": "Split the figure into rectangles, find each area, then add them up.",
+    "hint": "Break the L-shape into two rectangles. Find length × width for each piece, then add the two areas.",
+    "id": "pab-4"
+   }
+  ]
+ }
+}

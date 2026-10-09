@@ -110,7 +110,7 @@ it.each(ALL_MODES)('%s publishes its own task with no scripted cue and no tutor 
   expect(task.task).not.toMatch(/\[SHS_|Say exactly|My turn|Your turn/);
   expect(JSON.stringify(task)).not.toMatch(/Say exactly/i);
   expect(h.state().affordances.filter(a => !a.controller).map(a => (a.action as any).operation ?? a.action.type).sort())
-    .toEqual(['begin_help', 'demonstrate']);
+    .toEqual(['begin_help', 'demonstrate', 'pull_lever']);
   expect(runtimePacket(h.state()).choices.some(a => ['retry', 'advance'].includes(a.action.type))).toBe(false);
   expect(task.evidence.attemptNumber).toBe(0);
   cleanup();

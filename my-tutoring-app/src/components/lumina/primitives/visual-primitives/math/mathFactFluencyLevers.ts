@@ -7,8 +7,9 @@
  * - `two_parts` (help, visual_fact): the picture redrawn as the fact's two parts in two colours (subtraction: the
  *   dots taken away crossed out). Answers `printed_number`, `other_operation`.
  * - `count_marks` (help, visual_fact and a picture-to-equation match): tapping a dot stamps its running count on it.
- *   Numbers only the dots tapped. Answers off-by-one. On a match it never splits the picture into the fact's parts,
- *   which would point at the matching equation.
+ *   Numbers only the dots tapped. Answers off-by-one, and off-by-more on a visual fact with no `smaller_fact` (one
+ *   already +1). On a match it never splits the picture into the fact's parts, which would point at the matching
+ *   equation.
  * - `fact_dots` (help, equation_solve and an equation-to-picture match): the model under the printed fact, nothing
  *   under the "?". Answers every miss.
  * - `part_whole` (help, missing_number): the model with the known part shaded and the unknown part hollow and
@@ -18,7 +19,10 @@
  * - `far_match` (simplify, match): an ungraded match with two choices whose totals are 3 or more apart.
  *
  * speed_round gets no lever (user ruling 2026-10-02): it is aid-free recall, a picture would make it equation_solve,
- * and recall has no step to make simpler. Fingers pictures get no dot lever: the hands cannot be tapped or split.
+ * and recall has no step to make simpler; its misses are in the catalog's `unanswered` list.
+ *
+ * A fingers picture (hand emoji) cannot be tapped or split, so on it `two_parts` and `count_marks` draw their dots
+ * UNDER the hands instead of in place of the picture (2026-10-08: fingers items had no help lever, J12).
  */
 import type { StepSegment, WorkspaceLever } from '../../../components/live-activity/runtime/contract';
 import type { MathFactFluencyChallenge } from './MathFactFluency';
@@ -36,7 +40,8 @@ type C = MathFactFluencyChallenge;
 const ALL_MISSES = ['other_operation', 'printed_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'];
 const BY_MORE = ['short_by_more', 'over_by_more'];
 const pictureToEquation = (c: C) => c.type === 'match' && c.matchDirection !== 'equation-to-visual';
-const dotPicture = (c: C) => c.visualType !== 'fingers';
+/** A fingers picture keeps its hands; a lever's dots are drawn under them. */
+export const fingersPicture = (c: C) => c.visualType === 'fingers';
 
 /**
  * The fact's printed numbers as dot segments, in reading order. `plain` and `added` are the two parts of a sum,
@@ -54,8 +59,8 @@ export function factModel(c: C): StepSegment[] {
 
 /** The help levers this challenge offers, in order. */
 function helpLevers(c: C): string[] {
-  if (c.type === 'visual-fact') return dotPicture(c) ? [PARTS_LEVER, MARKS_LEVER] : [];
-  if (c.type === 'match') return pictureToEquation(c) ? (dotPicture(c) ? [MARKS_LEVER] : []) : [DOTS_LEVER];
+  if (c.type === 'visual-fact') return [PARTS_LEVER, MARKS_LEVER];
+  if (c.type === 'match') return pictureToEquation(c) ? [MARKS_LEVER] : [DOTS_LEVER];
   if (c.type === 'equation-solve') return [DOTS_LEVER];
   if (c.type === 'missing-number') return [WHOLE_LEVER];
   return [];
@@ -154,18 +159,21 @@ export function mathFactLevers(c: C | null, pulled: readonly string[], maxNumber
   if (!c || c.type === 'speed-round') return [];
   const lever = (id: string, kind: WorkspaceLever['kind'], answers: string[], when: string, does: string): WorkspaceLever =>
     ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers, when, does });
+  const easier = simplerItem(c, maxNumber);
+  // A visual fact with no smaller fact (already +1): counting the picture is what is left for a far miscount.
+  const marksAnswer = c.type === 'match' ? ALL_MISSES : ['one_short', 'one_over', ...(easier ? [] : BY_MORE)];
+  const under = fingersPicture(c) ? ' The dots are drawn under the hands.' : '';
   const help = helpLevers(c).map(id => id === PARTS_LEVER
     ? lever(id, 'help', ['printed_number', 'other_operation'], 'The learner answers with a number from the fact, or combines the numbers the wrong way.',
-      'Redraws the picture as the fact\'s two parts in two colours (taken-away dots crossed out). No numbers are written.')
+      `Redraws the picture as the fact's two parts in two colours (taken-away dots crossed out). No numbers are written.${under}`)
     : id === MARKS_LEVER
-      ? lever(id, 'help', c.type === 'match' ? ALL_MISSES : ['one_short', 'one_over'], 'The learner loses count of the picture.',
-        'Makes each dot a tap target: a tapped dot shows its running count. Only dots the learner taps are numbered.')
+      ? lever(id, 'help', marksAnswer, 'The learner loses count of the picture.',
+        `Makes each dot a tap target: a tapped dot shows its running count. Only dots the learner taps are numbered.${under}`)
       : id === DOTS_LEVER
         ? lever(id, 'help', ALL_MISSES, 'The learner cannot work the bare fact.',
           'Draws dots under the printed fact: a group for each printed number, the taken-away dots crossed out. Nothing under the "?" and no numbers.')
         : lever(id, 'help', ALL_MISSES, 'The learner cannot find the missing number.',
           'Draws the fact as dots: the known part shaded, the missing part as hollow dots with no number.'));
-  const easier = simplerItem(c, maxNumber);
   const simplify = !easier ? [] : c.type === 'match'
     ? [lever(FAR_LEVER, 'simplify', BY_MORE, 'The choices are too close together to tell apart yet.',
       'Opens an easier match first: a different fact and two choices far apart. It is not graded; the full item comes back after it.')]
@@ -178,9 +186,10 @@ export function mathFactLevers(c: C | null, pulled: readonly string[], maxNumber
 export function leverFacts(c: C | null, pulled: readonly string[]): string {
   if (!c) return '';
   const on = (id: string) => pulled.includes(id) && helpLevers(c).includes(id);
+  const hands = fingersPicture(c);
   return [
-    on(PARTS_LEVER) && 'The picture shows the fact\'s two parts in two colours; dots taken away are crossed out. No numbers are written.',
-    on(MARKS_LEVER) && 'Each dot is a tap target; a tapped dot shows its running count.',
+    on(PARTS_LEVER) && `${hands ? 'Dots under the hands show' : 'The picture shows'} the fact's two parts in two colours; dots taken away are crossed out. No numbers are written.`,
+    on(MARKS_LEVER) && `${hands ? 'Dots under the hands are tap targets' : 'Each dot is a tap target'}; a tapped dot shows its running count.`,
     on(DOTS_LEVER) && 'Dots under the printed fact show each printed number; taken-away dots are crossed out. Nothing is drawn for the "?".',
     on(WHOLE_LEVER) && 'Dots show the fact: the known part shaded, the missing part hollow and unnumbered.',
   ].filter((s): s is string => !!s).join(' ');

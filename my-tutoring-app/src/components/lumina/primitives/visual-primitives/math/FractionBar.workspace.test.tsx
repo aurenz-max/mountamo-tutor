@@ -77,8 +77,8 @@ it.each(['identify', 'build', 'compare', 'add_subtract'] as const)('%s binds: a 
   expect(task.task).toMatch(/numerator and the denominator of 3\/4/);
   expect(task.demand).toMatchObject({ response: 'gesture', kind: mode, step: 'numerator', printedFraction: '3/4' });
   expect(task.workspace!.expectedAnswer).toBeUndefined();
-  // No lever on the three-step item, no Next or hint buttons on the workspace path.
-  expect(task.workspace!.levers ?? []).toEqual([]);
+  // The pick step's levers (`fractionBarLevers.ts`); no Next or hint buttons on the workspace path.
+  expect(task.workspace!.levers!.map(l => l.id)).toContain('model_fraction');
   expect(screen.queryByRole('button', { name: /show hint|next problem/i })).toBeNull();
   // Nothing goes to the tutor from the legacy path.
   expect(seam.legacy).not.toHaveBeenCalled();

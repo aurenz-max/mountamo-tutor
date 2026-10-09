@@ -820,7 +820,7 @@ export interface CoordinateGraphMetrics extends BasePrimitiveMetrics {
 
 export interface FunctionMachineMetrics extends BasePrimitiveMetrics {
   type: 'function-machine';
-  challengeType: 'observe' | 'predict' | 'discover_rule' | 'create_rule';
+  challengeType: 'observe' | 'predict' | 'discover_rule' | 'create_rule' | 'make_rule';
   totalChallenges: number;
   correctCount: number;
   attemptsCount: number;          // Total tries across all challenges
@@ -2910,7 +2910,7 @@ export interface SlopeTriangleMetrics extends BasePrimitiveMetrics {
 
 export interface PolygonAreaBuilderMetrics extends BasePrimitiveMetrics {
   type: 'polygon-area-builder';
-  challengeType: 'decompose' | 'find_area_triangle_parallelogram' | 'find_area_trapezoid' | 'composite_area' | 'coordinate_polygon' | 'build_area';
+  challengeType: 'decompose' | 'find_area_triangle_parallelogram' | 'find_area_trapezoid' | 'composite_area' | 'coordinate_polygon' | 'build_area' | 'build_perimeter';
   totalChallenges: number;
   correctCount: number;
   attemptsCount: number;

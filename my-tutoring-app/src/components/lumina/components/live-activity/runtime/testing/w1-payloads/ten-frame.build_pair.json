@@ -1,0 +1,72 @@
+{
+ "source": "qa/open-build/ten-frame-2026-10-08/generation.json (k-to-5)",
+ "primitiveId": "ten-frame",
+ "evalMode": "build_pair",
+ "data": {
+  "title": "Two-Colour Number Partners",
+  "description": "Explore how to make numbers up to 5 using red and yellow counters in different ways.",
+  "gradeBand": "K",
+  "mode": "single",
+  "showOptions": {
+   "showCount": true,
+   "showEquation": false,
+   "showEmptyCount": false,
+   "allowFlip": true
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "build_pair",
+    "targetCount": 3,
+    "hint": "Use red and yellow. Count all the counters on the frame.",
+    "narration": "Make the number with two colours, your own way.",
+    "instruction": "Make 3 with red and yellow counters!"
+   },
+   {
+    "id": "c2",
+    "type": "build_pair",
+    "targetCount": 3,
+    "hint": "Use red and yellow. Count all the counters on the frame.",
+    "narration": "Make the number with two colours, your own way.",
+    "instruction": "Make 3 with red and yellow counters!"
+   },
+   {
+    "id": "c3",
+    "type": "build_pair",
+    "targetCount": 4,
+    "hint": "Use red and yellow. Count all the counters on the frame.",
+    "narration": "Make the number with two colours, your own way.",
+    "instruction": "Make 4 with red and yellow counters!"
+   },
+   {
+    "id": "c4",
+    "type": "build_pair",
+    "targetCount": 4,
+    "hint": "Use red and yellow. Count all the counters on the frame.",
+    "narration": "Make the number with two colours, your own way.",
+    "instruction": "Make 4 with red and yellow counters!"
+   },
+   {
+    "id": "c5",
+    "type": "build_pair",
+    "targetCount": 5,
+    "hint": "Use red and yellow. Count all the counters on the frame.",
+    "narration": "Make the number with two colours, your own way.",
+    "instruction": "Make 5 with red and yellow counters!"
+   },
+   {
+    "id": "c6",
+    "type": "build_pair",
+    "targetCount": 5,
+    "hint": "Use red and yellow. Count all the counters on the frame.",
+    "narration": "Make the number with two colours, your own way.",
+    "instruction": "Make 5 with red and yellow counters!"
+   }
+  ],
+  "counters": {
+   "count": 0,
+   "color": "red",
+   "positions": []
+  }
+ }
+}

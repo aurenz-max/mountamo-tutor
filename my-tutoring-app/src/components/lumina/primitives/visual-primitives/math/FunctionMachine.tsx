@@ -22,6 +22,10 @@ import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResult
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import {
+  evaluateRule, rulesEquivalent, makeRuleKeys, MAKE_RULE_MAX_TILES, MAKE_RULE_WAYS, judgeMakeRule, makeRuleMissWords,
+  makeRuleAsk, makeRuleTarget, compareInput, showRule as ruleText, type MakeRuleMiss,
+} from './functionMachineDomain';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -31,7 +35,8 @@ export type FunctionMachineChallengeType =
   | 'observe'
   | 'predict'
   | 'discover_rule'
-  | 'create_rule';
+  | 'create_rule'
+  | 'make_rule';
 
 export interface FunctionMachineChallenge {
   id: string;
@@ -48,6 +53,10 @@ export interface FunctionMachineChallenge {
   /** Hint scaffolding level: 'full' = how-it-works + early hint; 'minimal' = standard
    *  (hint after 2 attempts); 'none' = no scaffolding hints. */
   hintLevel?: 'full' | 'minimal' | 'none';
+  // ── make_rule (open build) — "Make a machine that turns 4 into 12", then a different one. `rule` holds one machine
+  // code knows makes the pair; it is never shown. Absent on an older payload: the first queued input and its output.
+  makeInput?: number;
+  makeOutput?: number;
 }
 
 export interface FunctionMachineData {
@@ -83,6 +92,7 @@ const PHASE_TYPE_CONFIG: Record<FunctionMachineChallengeType, PhaseConfig> = {
   predict:       { label: 'Predict', icon: '🔮', accentColor: 'amber' },
   discover_rule: { label: 'Discover', icon: '💡', accentColor: 'emerald' },
   create_rule:   { label: 'Create', icon: '🛠️', accentColor: 'purple' },
+  make_rule:     { label: 'Make', icon: '🧰', accentColor: 'purple' },
 };
 
 const CHALLENGE_TYPE_LABEL: Record<FunctionMachineChallengeType, string> = {
@@ -90,43 +100,12 @@ const CHALLENGE_TYPE_LABEL: Record<FunctionMachineChallengeType, string> = {
   predict: 'Predict the Output',
   discover_rule: 'Discover the Rule',
   create_rule: 'Write the Rule',
+  make_rule: 'Make a Machine',
 };
 
 // ============================================================================
 // Helpers
 // ============================================================================
-
-/** Safely evaluate a rule string at a given x value. */
-const evaluateRule = (rule: string, x: number): number | null => {
-  if (!rule || !rule.trim()) return null;
-  try {
-    const expression = rule.replace(/x/g, `(${x})`);
-    if (!/^[\d+\-*/().^\s]+$/.test(expression)) return null;
-    const safeExpression = expression.replace(/\^/g, '**');
-    const result = new Function('return ' + safeExpression)();
-    if (typeof result !== 'number' || !isFinite(result)) return null;
-    return Math.round(result * 100) / 100;
-  } catch {
-    return null;
-  }
-};
-
-/** Normalize rule strings for textual comparison. */
-const normalizeRule = (r: string): string => {
-  if (!r) return '';
-  return r.replace(/\s/g, '').toLowerCase().replace(/\*/g, '');
-};
-
-/** Functional equivalence: two rules behave the same on multiple test inputs. */
-const rulesEquivalent = (a: string, b: string): boolean => {
-  if (normalizeRule(a) === normalizeRule(b)) return true;
-  const testInputs = [0, 1, 2, 3, 5, 10, -1];
-  return testInputs.every((x) => {
-    const va = evaluateRule(a, x);
-    const vb = evaluateRule(b, x);
-    return va !== null && vb !== null && Math.abs(va - vb) < 0.01;
-  });
-};
 
 const gradeLabel = (band?: string): string => {
   switch (band) {
@@ -151,6 +130,11 @@ const tutorRevealClause = (
   challengeType: FunctionMachineChallengeType,
   tier?: 'easy' | 'medium' | 'hard',
 ): string => {
+  if (challengeType === 'make_rule') {
+    // Open build: many rules pass and choosing one IS the task.
+    return 'REVEAL POLICY: the learner invents the rule. Never say a rule, an operation or a number that would make the pair; '
+      + 'you may ask what they could do to the input, and talk about the machine they built.';
+  }
   const ruleIsAnswer = challengeType === 'discover_rule' || challengeType === 'create_rule';
   if (ruleIsAnswer) {
     // NEVER name the rule. Tier dials how much strategy coaching is allowed.
@@ -262,6 +246,13 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
   // Between-challenge interstitial
   const [challengeDone, setChallengeDone] = useState(false);
 
+  // make_rule (open build): the tiles in the row, the machines already accepted on this item, the misses so far, and
+  // the last check's verdict (its words stay on screen until the next check; Try again keeps the row).
+  const [makeRow, setMakeRow] = useState<string[]>([]);
+  const [madeMachines, setMadeMachines] = useState<Array<{ tiles: string[]; rule: string }>>([]);
+  const [makeMisses, setMakeMisses] = useState(0);
+  const [makeVerdict, setMakeVerdict] = useState<{ kind: 'pass' | 'way' | MakeRuleMiss; words: string; gave: number | null } | null>(null);
+
   // -------------------------------------------------------------------------
   // Per-challenge reset effect — runs whenever advance() flips currentChallenge.id
   // -------------------------------------------------------------------------
@@ -302,8 +293,14 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
     setGuessResult(null);
     setGuessAttempts(0);
     setChallengeDone(false);
+    setMakeRow([]);
+    setMadeMachines([]);
+    setMakeMisses(0);
+    setMakeVerdict(null);
     recordedRef.current = false;
   }, [currentChallenge?.id]);
+
+  const makeTarget = challengeType === 'make_rule' && currentChallenge ? makeRuleTarget(currentChallenge) : null;
 
   // -------------------------------------------------------------------------
   // For create_rule: pre-populate the I/O pair table from the rule.
@@ -351,7 +348,14 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
     title,
     currentChallengeIndex: currentIndex + 1,
     totalChallenges: challenges.length,
-    rule: currentChallenge?.rule ?? '',
+    // make_rule: the stored rule is only one of many that pass; naming it would do the task, so the tutor never gets it.
+    rule: challengeType === 'make_rule' ? '' : currentChallenge?.rule ?? '',
+    ...(challengeType === 'make_rule' ? {
+      makeInput: makeTarget?.input ?? '',
+      makeOutput: makeTarget?.output ?? '',
+      machineInRow: ruleText(makeRow),
+      machinesMade: madeMachines.map((m) => ruleText(m.tiles)).join(' ; '),
+    } : {}),
     showRule: currentChallenge?.showRule ?? false,
     supportTier,
     processedPairs,
@@ -366,7 +370,7 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
   }), [
     challengeType, title, currentIndex, challenges.length, currentChallenge,
     supportTier, processedPairs, guessedRule, gradeBand, ruleComplexity, predictionsCorrect,
-    predictionsTotal, guessAttempts, guessResult,
+    predictionsTotal, guessAttempts, guessResult, makeTarget?.input, makeTarget?.output, makeRow, madeMachines,
   ]);
 
   const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
@@ -533,6 +537,72 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
       );
     }
   }, [currentChallenge, guessedRule, guessAttempts, challengeType, processedPairs, completeCurrentChallenge, sendText, supportTier]);
+
+  // -------------------------------------------------------------------------
+  // make_rule (open build): tap tiles into the row, tap a row tile to take it out, "I'm done!" runs the machine.
+  // -------------------------------------------------------------------------
+  const addMakeTile = useCallback((tile: string) => {
+    if (challengeDone) return;
+    SoundManager.tap();
+    setMakeRow((row) => (row.length >= MAKE_RULE_MAX_TILES ? row : [...row, tile]));
+  }, [challengeDone]);
+
+  const removeMakeTile = useCallback((index: number) => {
+    if (challengeDone) return;
+    setMakeRow((row) => row.filter((_, i) => i !== index));
+  }, [challengeDone]);
+
+  /**
+   * "I'm done!": the machine runs the learner's rule on the asked input. A first accepted machine is kept on screen
+   * and the row opens empty for the second; a miss keeps the row (Try again revises it); the second accepted machine
+   * completes the item.
+   */
+  const handleMakeDone = useCallback(() => {
+    if (!currentChallenge || !makeTarget || makeRow.length === 0 || challengeDone) return;
+    const { input, output } = makeTarget;
+    const verdict = judgeMakeRule(makeRow, input, output, madeMachines.map((m) => m.rule));
+    const built = ruleText(makeRow);
+    if (verdict.miss) {
+      SoundManager.playIncorrect();
+      setMakeMisses((n) => n + 1);
+      setMakeVerdict({ kind: verdict.miss, words: makeRuleMissWords(verdict, input, output), gave: verdict.gave });
+      sendText(
+        `[MACHINE_CHECKED] The learner built f(x) = ${built} and pressed I'm done. `
+        + (verdict.gave === null ? 'The machine could not run it. ' : `Fed ${input}, it gave ${verdict.gave}. `)
+        + `The ask: a machine that turns ${input} into ${output}${madeMachines.length ? `, working differently from their first machine (f(x) = ${ruleText(madeMachines[0].tiles)})` : ''}. `
+        + `The board checked it: not right (${verdict.miss}). ${tutorRevealClause('make_rule')}`,
+        { silent: true },
+      );
+      return;
+    }
+    SoundManager.playCorrect();
+    const made = [...madeMachines, { tiles: [...makeRow], rule: verdict.rule }];
+    setMadeMachines(made);
+    setMakeRow([]);
+    if (made.length < MAKE_RULE_WAYS) {
+      setMakeVerdict({ kind: 'way', words: `Yes! f(x) = ${built} turns ${input} into ${output}.`, gave: verdict.gave });
+      sendText(
+        `[MACHINE_CHECKED] The learner built f(x) = ${built}; fed ${input}, it gave ${output}. The board checked it: right. `
+        + `Next they make a different machine that also turns ${input} into ${output}. ${tutorRevealClause('make_rule')}`,
+        { silent: true },
+      );
+      return;
+    }
+    setMakeVerdict({ kind: 'pass', words: `Two different machines, and both turn ${input} into ${output}!`, gave: verdict.gave });
+    const attempts = makeMisses + 1;
+    completeCurrentChallenge({
+      challengeId: currentChallenge.id,
+      correct: true,
+      attempts,
+      score: phaseScore(attempts),
+      machines: made.map((m) => m.rule),
+    });
+    sendText(
+      `[PHASE_COMPLETE] Make a machine: the learner built f(x) = ${ruleText(made[0].tiles)} and f(x) = ${built}; both turn ${input} into ${output}. `
+      + `${makeMisses} miss(es) on the way. Celebrate that two different rules can share one input-output pair.`,
+      { silent: true },
+    );
+  }, [currentChallenge, makeTarget, makeRow, madeMachines, makeMisses, challengeDone, completeCurrentChallenge, sendText]);
 
   // -------------------------------------------------------------------------
   // Submit aggregate evaluation when all challenges complete
@@ -714,9 +784,22 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
             <h3 className="text-emerald-100 font-semibold text-lg mb-1">
               Function {currentIndex + 1} Complete!
             </h3>
-            <p className="text-sm text-emerald-200/80 mb-4">
-              Rule was <span className="font-mono font-bold text-white">f(x) = {currentChallenge.rule}</span>. Ready for the next one?
-            </p>
+            {challengeType === 'make_rule' && makeTarget ? (
+              <div className="text-sm text-emerald-200/80 mb-4 space-y-2" data-make-compare>
+                <p>Both your machines turn {makeTarget.input} into {makeTarget.output}. Feed them {compareInput(makeTarget.input)}:</p>
+                {madeMachines.map((m, i) => (
+                  <p key={i} className="font-mono">
+                    <span className="font-bold text-white">f(x) = {ruleText(m.tiles)}</span>
+                    {' '}gives {evaluateRule(m.rule, compareInput(makeTarget.input)) ?? '—'}
+                  </p>
+                ))}
+                <p>Ready for the next one?</p>
+              </div>
+            ) : (
+              <p className="text-sm text-emerald-200/80 mb-4">
+                Rule was <span className="font-mono font-bold text-white">f(x) = {currentChallenge.rule}</span>. Ready for the next one?
+              </p>
+            )}
             <LuminaActionButton action="next" onClick={() => advance()}>
               Next Function →
             </LuminaActionButton>
@@ -736,7 +819,11 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
                 <div className="flex flex-col items-center">
                   <span className="text-xs text-blue-400 font-mono uppercase tracking-wider mb-2">Input</span>
                   <div className="w-20 h-28 border-2 border-blue-400/40 rounded-t-lg bg-blue-500/10 relative flex items-center justify-center">
-                    {currentInput !== null && (
+                    {challengeType === 'make_rule' && makeTarget ? (
+                      <div className="w-11 h-11 rounded-full bg-blue-500/30 border-2 border-blue-400/60 flex items-center justify-center text-white font-bold text-sm">
+                        {makeTarget.input}
+                      </div>
+                    ) : currentInput !== null && (
                       <div className="w-11 h-11 rounded-full bg-blue-500/30 border-2 border-blue-400/60 flex items-center justify-center text-white font-bold animate-bounce text-sm">
                         {currentInput}
                       </div>
@@ -753,8 +840,12 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
                 <div className={`w-40 h-40 md:w-48 md:h-48 rounded-2xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 border-2 border-blue-400/40 flex flex-col items-center justify-center relative overflow-hidden shadow-[0_0_20px_rgba(59,130,246,0.2)] ${isProcessing ? 'border-blue-400/70' : ''}`}>
                   {isProcessing && <div className="absolute inset-0 bg-blue-500/10 animate-pulse" />}
                   <div className="relative z-10 text-center px-3">
-                    <div className="text-xs text-blue-300 font-mono mb-2 uppercase">Function Rule</div>
-                    {showRule ? (
+                    <div className="text-xs text-blue-300 font-mono mb-2 uppercase">{challengeType === 'make_rule' ? 'Your Machine' : 'Function Rule'}</div>
+                    {challengeType === 'make_rule' ? (
+                      <div data-make-machine className="text-lg font-bold text-white font-mono bg-slate-900/30 px-3 py-1.5 rounded-lg border border-blue-400/20 min-w-[6rem]">
+                        f(x) = {makeRow.length ? ruleText(makeRow) : '…'}
+                      </div>
+                    ) : showRule ? (
                       <div className="text-xl font-bold text-white font-mono bg-slate-900/30 px-3 py-1.5 rounded-lg border border-blue-400/20">
                         f(x) = {currentChallenge.rule}
                       </div>
@@ -780,6 +871,13 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
                 <div className="flex flex-col items-center">
                   <span className="text-xs text-purple-400 font-mono uppercase tracking-wider mb-2">Output</span>
                   <div className="w-20 h-28 border-2 border-purple-400/40 rounded-b-lg bg-purple-500/10 relative flex items-center justify-center">
+                    {challengeType === 'make_rule' && makeVerdict && makeVerdict.gave !== null && (
+                      <div data-make-output className={`w-11 h-11 rounded-full border-2 flex items-center justify-center text-white font-bold text-sm ${
+                        makeVerdict.kind === 'pass' || makeVerdict.kind === 'way' || makeVerdict.kind === 'same_machine'
+                          ? 'bg-emerald-500/30 border-emerald-400/60' : 'bg-rose-500/30 border-rose-400/60'}`}>
+                        {makeVerdict.gave}
+                      </div>
+                    )}
                     {currentOutput !== null && outputDisplay !== 'hidden' && (
                       <div className={`w-11 h-11 rounded-full bg-purple-500/30 border-2 border-purple-400/60 flex items-center justify-center text-white font-bold text-sm ${outputDisplay === 'animated' ? 'animate-bounce' : ''}`}>
                         {currentOutput}
@@ -827,7 +925,7 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
           )}
 
           {/* Available Inputs (observe / predict / discover_rule) */}
-          {challengeType !== 'create_rule' && (
+          {challengeType !== 'create_rule' && challengeType !== 'make_rule' && (
             <LuminaCard>
               <LuminaCardContent className="py-5">
                 <div className="flex items-center gap-3 mb-4">
@@ -864,7 +962,7 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
           )}
 
           {/* Processed Pairs (observe / predict / discover_rule) */}
-          {challengeType !== 'create_rule' && processedPairs.length > 0 && (
+          {challengeType !== 'create_rule' && challengeType !== 'make_rule' && processedPairs.length > 0 && (
             <LuminaCard>
               <LuminaCardContent className="py-5">
                 <div className="flex items-center justify-between mb-4">
@@ -921,6 +1019,82 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
                       (input {createRulePairs[0].input} → output {createRulePairs[0].output}).
                       Try a rule on it, then check it gives the right output for the next row too.
                     </p>
+                  </div>
+                )}
+              </LuminaCardContent>
+            </LuminaCard>
+          )}
+
+          {/* make_rule (open build): the ask, the accepted machine, the learner's row, the keypad, Start over + I'm done! */}
+          {challengeType === 'make_rule' && makeTarget && (
+            <LuminaCard data-make-card className="bg-purple-500/10 border-purple-400/30">
+              <LuminaCardContent className="py-5 space-y-4">
+                <h4 data-make-ask className="text-purple-100 font-semibold text-center text-lg">
+                  {makeRuleAsk(makeTarget.input, makeTarget.output, madeMachines.length + 1)}
+                </h4>
+                {madeMachines.length > 0 && (
+                  <div className="text-center text-sm text-emerald-200/90" data-made-machines>
+                    {madeMachines.map((m, i) => (
+                      <span key={i} className="inline-block font-mono px-3 py-1 rounded-lg bg-emerald-500/15 border border-emerald-400/30 mx-1">
+                        Machine {i + 1}: f(x) = {ruleText(m.tiles)} ✓
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="flex items-center justify-center gap-2 flex-wrap min-h-[52px]" data-make-row aria-label="Your machine's rule">
+                  <span className="text-purple-300 font-mono">f(x) =</span>
+                  {makeRow.length === 0 && (
+                    <span className="w-11 h-11 rounded-lg border-2 border-dashed border-purple-400/40" aria-hidden />
+                  )}
+                  {makeRow.map((tile, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      aria-label={`Take out ${tile}`}
+                      onClick={() => removeMakeTile(i)}
+                      className="min-w-[44px] h-11 px-2 rounded-lg bg-purple-500/25 border border-purple-400/50 text-white font-mono font-bold text-lg hover:bg-purple-500/40"
+                    >
+                      {tile}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex flex-wrap justify-center gap-2" data-make-keys>
+                  {makeRuleKeys(ruleComplexity).map((key) => (
+                    <button
+                      key={key}
+                      type="button"
+                      aria-label={`Add ${key}`}
+                      disabled={makeRow.length >= MAKE_RULE_MAX_TILES}
+                      onClick={() => addMakeTile(key)}
+                      className="min-w-[44px] h-11 px-2 rounded-lg bg-slate-800/60 border border-slate-500/40 text-white font-mono font-bold text-lg hover:bg-slate-700/60 disabled:opacity-40"
+                    >
+                      {key}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex justify-center gap-3">
+                  <LuminaButton onClick={() => setMakeRow([])} disabled={makeRow.length === 0}>
+                    Start over
+                  </LuminaButton>
+                  <LuminaActionButton action="check" onClick={handleMakeDone} disabled={makeRow.length === 0}>
+                    I&apos;m done!
+                  </LuminaActionButton>
+                </div>
+                {makeVerdict && (
+                  <div
+                    data-make-verdict={makeVerdict.kind}
+                    className={`p-3 rounded-lg text-center text-sm ${
+                      makeVerdict.kind === 'pass' || makeVerdict.kind === 'way'
+                        ? 'bg-emerald-500/15 border border-emerald-400/30 text-emerald-100'
+                        : 'bg-red-500/15 border border-red-400/30 text-red-200'}`}
+                  >
+                    {makeVerdict.words}
+                    {makeVerdict.kind !== 'pass' && makeVerdict.kind !== 'way' && hintLevel !== 'none'
+                      && makeMisses >= (hintLevel === 'full' ? 1 : 2) && (
+                      <span className="block mt-1 text-xs text-amber-200/80">
+                        Hint: what could the machine do to {makeTarget.input}: add something, take something away, multiply, or divide?
+                      </span>
+                    )}
                   </div>
                 )}
               </LuminaCardContent>
@@ -1009,6 +1183,13 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
                           <li>Type your prediction for the output</li>
                           <li>Then click an input — the machine reveals the answer</li>
                           <li>Predict every input in the queue</li>
+                        </>
+                      )}
+                      {challengeType === 'make_rule' && (
+                        <>
+                          <li>Tap tiles to build your machine&apos;s rule; tap a tile in the rule to take it out</li>
+                          <li>Press I&apos;m done! and the machine runs your rule on the input</li>
+                          <li>Then build a different machine that does the same job</li>
                         </>
                       )}
                       {challengeType === 'discover_rule' && (

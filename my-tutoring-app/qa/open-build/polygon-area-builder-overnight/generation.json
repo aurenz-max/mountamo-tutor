@@ -1,0 +1,317 @@
+{
+  "generatedAt": "2026-10-09T03:55:54.674Z",
+  "runs": [
+    {
+      "name": "g3",
+      "grade": "3",
+      "mode": "build_perimeter",
+      "difficulty": null,
+      "topic": "Perimeter: make shapes with a given perimeter on a grid",
+      "intent": "Make shapes with a given perimeter by shading unit squares; same perimeter, different shapes",
+      "issues": [],
+      "judged": [
+        {
+          "id": "pab-1",
+          "p": 10,
+          "first": "pass",
+          "second": "pass",
+          "firstAgain": "same_as_first",
+          "narrow": "two_short"
+        },
+        {
+          "id": "pab-2",
+          "p": 18,
+          "first": "pass",
+          "second": "pass",
+          "firstAgain": "same_as_first",
+          "narrow": "two_short"
+        },
+        {
+          "id": "pab-3",
+          "p": 22,
+          "first": "pass",
+          "second": "pass",
+          "firstAgain": "same_as_first",
+          "narrow": "two_short"
+        },
+        {
+          "id": "pab-4",
+          "p": 24,
+          "first": "pass",
+          "second": "pass",
+          "firstAgain": "same_as_first",
+          "narrow": "two_short"
+        }
+      ],
+      "oracle": {
+        "violations": 0,
+        "checked": 4
+      },
+      "data": {
+        "title": "Building Shapes with Fixed Perimeter",
+        "description": "Practice constructing different geometric shapes on a grid that all share the exact same outer perimeter length.",
+        "challengeType": "build_perimeter",
+        "gradeBand": "3",
+        "challenges": [
+          {
+            "type": "build_perimeter",
+            "figureType": "grid",
+            "targetPerimeter": 10,
+            "shapesAsked": 1,
+            "expectedArea": 10,
+            "unitLabel": "units",
+            "narration": "Each side of a square on the grid is one unit long.",
+            "instruction": "Make a shape with a perimeter of 10 units.",
+            "hint": "Walk around the outside of your shape and count each side of a square as you pass it.",
+            "id": "pab-1"
+          },
+          {
+            "type": "build_perimeter",
+            "figureType": "grid",
+            "targetPerimeter": 18,
+            "shapesAsked": 1,
+            "expectedArea": 18,
+            "unitLabel": "units",
+            "narration": "Each side of a square on the grid is one unit long.",
+            "instruction": "Make a shape with a perimeter of 18 units.",
+            "hint": "Walk around the outside of your shape and count each side of a square as you pass it.",
+            "id": "pab-2"
+          },
+          {
+            "type": "build_perimeter",
+            "figureType": "grid",
+            "targetPerimeter": 22,
+            "shapesAsked": 2,
+            "expectedArea": 22,
+            "unitLabel": "units",
+            "narration": "Each side of a square on the grid is one unit long.",
+            "instruction": "Make a shape with a perimeter of 22 units. Then make a different shape with the same perimeter.",
+            "hint": "Walk around the outside of your shape and count each side of a square as you pass it.",
+            "id": "pab-3"
+          },
+          {
+            "type": "build_perimeter",
+            "figureType": "grid",
+            "targetPerimeter": 24,
+            "shapesAsked": 2,
+            "expectedArea": 24,
+            "unitLabel": "units",
+            "narration": "Each side of a square on the grid is one unit long.",
+            "instruction": "Make a shape with a perimeter of 24 units. Then make a different shape with the same perimeter.",
+            "hint": "Walk around the outside of your shape and count each side of a square as you pass it.",
+            "id": "pab-4"
+          }
+        ]
+      }
+    },
+    {
+      "name": "g3-scoped",
+      "grade": "3",
+      "mode": "build_perimeter",
+      "difficulty": "hard",
+      "topic": "Perimeter of shapes up to 12 units",
+      "intent": "Make two different shapes with the same perimeter, perimeters up to 12 units",
+      "issues": [],
+      "judged": [
+        {
+          "id": "pab-1",
+          "p": 8,
+          "first": "pass",
+          "second": "pass",
+          "firstAgain": "same_as_first",
+          "narrow": "two_short"
+        },
+        {
+          "id": "pab-2",
+          "p": 10,
+          "first": "pass",
+          "second": "pass",
+          "firstAgain": "same_as_first",
+          "narrow": "two_short"
+        },
+        {
+          "id": "pab-3",
+          "p": 12,
+          "first": "pass",
+          "second": "pass",
+          "firstAgain": "same_as_first",
+          "narrow": "two_short"
+        }
+      ],
+      "oracle": {
+        "violations": 0,
+        "checked": 3
+      },
+      "data": {
+        "title": "Building Shapes with Fixed Perimeter",
+        "description": "Practice constructing different shapes on a grid that share the same given perimeter. Explore how figures with equal perimeters can have various forms and areas.",
+        "challengeType": "build_perimeter",
+        "gradeBand": "3",
+        "challenges": [
+          {
+            "type": "build_perimeter",
+            "figureType": "grid",
+            "targetPerimeter": 8,
+            "shapesAsked": 1,
+            "expectedArea": 8,
+            "unitLabel": "units",
+            "narration": "Each side of a square on the grid is one unit long.",
+            "instruction": "Make a shape with a perimeter of 8 units.",
+            "hint": "Walk around the outside of your shape and count each side of a square as you pass it.",
+            "id": "pab-1",
+            "showDecompositionGuides": false,
+            "showRegionAreaLabel": false,
+            "showGridOverlay": false,
+            "supportTier": "hard"
+          },
+          {
+            "type": "build_perimeter",
+            "figureType": "grid",
+            "targetPerimeter": 10,
+            "shapesAsked": 1,
+            "expectedArea": 10,
+            "unitLabel": "units",
+            "narration": "Each side of a square on the grid is one unit long.",
+            "instruction": "Make a shape with a perimeter of 10 units.",
+            "hint": "Walk around the outside of your shape and count each side of a square as you pass it.",
+            "id": "pab-2",
+            "showDecompositionGuides": false,
+            "showRegionAreaLabel": false,
+            "showGridOverlay": false,
+            "supportTier": "hard"
+          },
+          {
+            "type": "build_perimeter",
+            "figureType": "grid",
+            "targetPerimeter": 12,
+            "shapesAsked": 2,
+            "expectedArea": 12,
+            "unitLabel": "units",
+            "narration": "Each side of a square on the grid is one unit long.",
+            "instruction": "Make a shape with a perimeter of 12 units. Then make a different shape with the same perimeter.",
+            "hint": "Walk around the outside of your shape and count each side of a square as you pass it.",
+            "id": "pab-3",
+            "showDecompositionGuides": false,
+            "showRegionAreaLabel": false,
+            "showGridOverlay": false,
+            "supportTier": "hard"
+          }
+        ]
+      }
+    },
+    {
+      "name": "g3-plain",
+      "grade": "3",
+      "mode": "build_perimeter",
+      "difficulty": null,
+      "topic": "Perimeter of polygons",
+      "intent": null,
+      "issues": [],
+      "judged": [
+        {
+          "id": "pab-1",
+          "p": 10,
+          "first": "pass",
+          "second": "pass",
+          "firstAgain": "same_as_first",
+          "narrow": "two_short"
+        },
+        {
+          "id": "pab-2",
+          "p": 12,
+          "first": "pass",
+          "second": "pass",
+          "firstAgain": "same_as_first",
+          "narrow": "two_short"
+        },
+        {
+          "id": "pab-3",
+          "p": 14,
+          "first": "pass",
+          "second": "pass",
+          "firstAgain": "same_as_first",
+          "narrow": "two_short"
+        },
+        {
+          "id": "pab-4",
+          "p": 16,
+          "first": "pass",
+          "second": "pass",
+          "firstAgain": "same_as_first",
+          "narrow": "two_short"
+        }
+      ],
+      "oracle": {
+        "violations": 0,
+        "checked": 4
+      },
+      "data": {
+        "title": "Building Shapes with Perimeter",
+        "description": "Practice creating different shapes on a grid that share the exact same perimeter. Explore how figures with equal perimeters can have different shapes and areas.",
+        "challengeType": "build_perimeter",
+        "gradeBand": "3",
+        "challenges": [
+          {
+            "type": "build_perimeter",
+            "figureType": "grid",
+            "targetPerimeter": 10,
+            "shapesAsked": 1,
+            "expectedArea": 10,
+            "unitLabel": "units",
+            "narration": "Each side of a square on the grid is one unit long.",
+            "instruction": "Make a shape with a perimeter of 10 units.",
+            "hint": "Walk around the outside of your shape and count each side of a square as you pass it.",
+            "id": "pab-1"
+          },
+          {
+            "type": "build_perimeter",
+            "figureType": "grid",
+            "targetPerimeter": 12,
+            "shapesAsked": 1,
+            "expectedArea": 12,
+            "unitLabel": "units",
+            "narration": "Each side of a square on the grid is one unit long.",
+            "instruction": "Make a shape with a perimeter of 12 units.",
+            "hint": "Walk around the outside of your shape and count each side of a square as you pass it.",
+            "id": "pab-2"
+          },
+          {
+            "type": "build_perimeter",
+            "figureType": "grid",
+            "targetPerimeter": 14,
+            "shapesAsked": 2,
+            "expectedArea": 14,
+            "unitLabel": "units",
+            "narration": "Each side of a square on the grid is one unit long.",
+            "instruction": "Make a shape with a perimeter of 14 units. Then make a different shape with the same perimeter.",
+            "hint": "Walk around the outside of your shape and count each side of a square as you pass it.",
+            "id": "pab-3"
+          },
+          {
+            "type": "build_perimeter",
+            "figureType": "grid",
+            "targetPerimeter": 16,
+            "shapesAsked": 2,
+            "expectedArea": 16,
+            "unitLabel": "units",
+            "narration": "Each side of a square on the grid is one unit long.",
+            "instruction": "Make a shape with a perimeter of 16 units. Then make a different shape with the same perimeter.",
+            "hint": "Walk around the outside of your shape and count each side of a square as you pass it.",
+            "id": "pab-4"
+          }
+        ]
+      }
+    }
+  ],
+  "logs": [
+    "[PolygonAreaBuilder] evalMode: \"build_perimeter\" → schema enum: [build_perimeter] (β=2.4)",
+    "▱ Polygon Area build perimeter cap → 8..24 (from intent)",
+    "[PolygonAreaBuilder] Final: challengeType=build_perimeter, instances=4 [grid=10units², grid=18units², grid=22units², grid=24units²]",
+    "[PolygonAreaBuilder] evalMode: \"build_perimeter\" → schema enum: [build_perimeter] (β=2.4)",
+    "▱ Polygon Area build perimeter cap → 8..12 (from intent)",
+    "[PolygonAreaBuilder] Support tier \"hard\" applied per-challenge (single-mode build_perimeter)",
+    "[PolygonAreaBuilder] Final: challengeType=build_perimeter, instances=3 [grid=8units², grid=10units², grid=12units²]",
+    "[PolygonAreaBuilder] evalMode: \"build_perimeter\" → schema enum: [build_perimeter] (β=2.4)",
+    "[PolygonAreaBuilder] Final: challengeType=build_perimeter, instances=4 [grid=10units², grid=12units², grid=14units², grid=16units²]"
+  ]
+}

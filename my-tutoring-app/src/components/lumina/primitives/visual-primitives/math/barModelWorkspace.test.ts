@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { barModelMiss, barModelSpokenMisses, workspaceAssignment, type BarModelView } from './barModelWorkspace';
+import { barModelMiss, barModelSpokenMisses, workspaceAssignment, workspaceScene, type BarModelView } from './barModelWorkspace';
 import type { BarModelChallenge } from './BarModel';
 
 const rows = (...vs: number[]) => vs.map((value, i) => ({ label: `r${i}`, value }));
@@ -48,3 +48,11 @@ it.each([
 });
 
 it('a graph answered on screen lists none', () => expect(barModelSpokenMisses(read)).toEqual([]));
+
+it('build_graph: the scene numbers the axis by the learner\'s step, never the key step', () => {
+  const scaledBuild = ch('build_graph', { graphStyle: 'scaled_bar', expectedDataset: rows(12, 16, 20), expectedScaleStep: 2,
+    scale: { step: 2, max: 20 }, availableScaleSteps: [1, 2, 5, 10] });
+  expect(workspaceScene(scaledBuild, built([0, 0, 0])).facts.axis).toBe('numbered only at 0 and 20 until a step is chosen');
+  expect(workspaceScene(scaledBuild, built([12, 16, 20], 5)).facts.axis).toBe('numbered in steps of 5 up to 20');
+  expect(workspaceScene({ ...scaled, graphStyle: 'scaled_bar' }, pick(10)).facts.axis).toBe('numbered in steps of 10 up to 50');
+});

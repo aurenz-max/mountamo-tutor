@@ -14,7 +14,7 @@ import { LiveRuntimeContext } from '../../../components/live-activity/runtime/Li
 import { LiveRuntimeSurface } from '../../../components/live-activity/runtime/LiveRuntimeSurface';
 import type { WorkspaceInput } from '../../../components/live-activity/runtime/contract';
 import { getComponentById } from '../../../service/manifest/catalog';
-import { buildAreaAsk, buildAreaLevers } from './polygonAreaBuild';
+import { buildAreaAsk, buildAreaLevers, buildPerimeterAsk } from './polygonAreaBuild';
 
 const seam = vi.hoisted(() => ({ send: vi.fn(), submit: vi.fn(), watch: vi.fn() }));
 vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAIContext: () => ({
@@ -81,6 +81,8 @@ const row = (n: number, r = 0) => Array.from({ length: n }, (_, c) => [c, r] as 
 it.each(getComponentById('polygon-area-builder')!.evalModes!.map(m => m.evalMode))(
   '%s binds as a gesture item whose key never reaches the tutor', mode => {
     const ch: PolygonAreaChallenge = mode === 'build_area' ? ONE : mode === 'find_area_triangle_parallelogram' ? TRIANGLE
+      : mode === 'build_perimeter' ? { id: 'p', type: 'build_perimeter', figureType: 'grid', targetPerimeter: 12, expectedArea: 12,
+        shapesAsked: 1, unitLabel: 'units', narration: '', instruction: buildPerimeterAsk(12, 1), hint: '' }
       : { ...TRIANGLE, type: mode as PolygonAreaChallenge['type'], figureType: mode === 'decompose' ? 'parallelogram' : 'trapezoid',
         base2: 4, skew: 2, expectedArea: mode === 'decompose' ? 40 : 30, parts: [{ x: 0, y: 0, w: 4, h: 2 }, { x: 0, y: 2, w: 2, h: 2 }],
         vertices: [{ x: 0, y: 0 }, { x: 4, y: 0 }, { x: 0, y: 3 }] };
@@ -89,7 +91,7 @@ it.each(getComponentById('polygon-area-builder')!.evalModes!.map(m => m.evalMode
     expect(h.state().task!.task).toBe(ch.instruction);
     expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
     expect(JSON.stringify(h.demand())).not.toMatch(/expectedArea/);
-    if (mode !== 'build_area') expect(Object.values(h.demand()).join(' ')).not.toMatch(new RegExp(`\\b${ch.expectedArea}\\b`));
+    if (mode !== 'build_area' && mode !== 'build_perimeter') expect(Object.values(h.demand()).join(' ')).not.toMatch(new RegExp(`\\b${ch.expectedArea}\\b`));
     // The scripted cues never reach the tutor, and there is no Next of the primitive's own.
     expect(seam.send.mock.calls.flat().filter(x => typeof x === 'string').join(' ')).not.toMatch(/ACTIVITY_START|\[[A-Z]+_/);
     expect(screen.queryByRole('button', { name: /next figure/i })).toBeNull();

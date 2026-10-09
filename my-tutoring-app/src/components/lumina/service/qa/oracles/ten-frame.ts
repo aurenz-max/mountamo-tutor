@@ -30,6 +30,18 @@ export const tenFrameOracle: ContentOracle = {
     for (const c of challenges) {
       const id = String(c.id ?? `#${checked}`);
       const type = String(c.type ?? '');
+      if (type === 'build_pair') {
+        // Open build: the total is code-owned, 3..10 inside the scope bound, and every total is asked twice.
+        checked++;
+        const t = c.targetCount;
+        if (!Number.isInteger(t) || (t as number) < 3 || (t as number) > Math.min(10, ceiling)) {
+          violations.push({ check: 'scope', where: id, detail: `build_pair total ${JSON.stringify(t)} outside [3, ${Math.min(10, ceiling)}]` });
+        }
+        if (/\d+\s*(\+|and)\s*\d+/.test(`${c.hint ?? ''} ${c.narration ?? ''}`)) {
+          violations.push({ check: 'leak', where: id, detail: 'hint or narration names a pair' });
+        }
+        continue;
+      }
       if (type !== 'build') {
         uncheckedTypes.add(type);
         continue;

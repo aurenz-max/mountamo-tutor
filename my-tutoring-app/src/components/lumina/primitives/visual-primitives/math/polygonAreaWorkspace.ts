@@ -9,7 +9,7 @@
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { PolygonAreaChallenge } from './PolygonAreaBuilder';
-import { buildAreaFacts, isBuildArea, type Cell } from './polygonAreaBuild';
+import { buildAreaFacts, buildPerimeterFacts, isBuildPerimeter, isGridBuild, type Cell } from './polygonAreaBuild';
 
 export function workspaceAssignment(challenge: PolygonAreaChallenge): TeachingAssignment {
   return { id: challenge.id, task: challenge.instruction, response: 'gesture' };
@@ -67,7 +67,7 @@ export type AreaMiss = 'forgot_half' | 'halved' | 'added_sides' | 'one_piece' | 
 const near = (a: number, b: number) => Math.abs(a - b) < 0.01;
 
 export function areaMiss(c: PolygonAreaChallenge | null, typed: number): AreaMiss | undefined {
-  if (!c || isBuildArea(c) || !Number.isFinite(typed) || near(typed, c.expectedArea)) return undefined;
+  if (!c || isGridBuild(c) || !Number.isFinite(typed) || near(typed, c.expectedArea)) return undefined;
   const b = c.base ?? 0, h = c.height ?? 0;
   if ((c.figureType === 'triangle' || c.figureType === 'trapezoid') && near(typed, c.expectedArea * 2)) return 'forgot_half';
   if (c.figureType !== 'triangle' && c.figureType !== 'trapezoid' && near(typed, c.expectedArea / 2)) return 'halved';
@@ -81,7 +81,8 @@ export function areaMiss(c: PolygonAreaChallenge | null, typed: number): AreaMis
 }
 
 export function workspaceScene(c: PolygonAreaChallenge, view: PolygonAreaView): WorkspaceScene {
-  if (isBuildArea(c)) return { objects: [], facts: buildAreaFacts(c, view.cells, view.firstShape, view.practice) };
+  if (isBuildPerimeter(c)) return { objects: [], facts: buildPerimeterFacts(c, view.cells, view.firstShape, view.practice) };
+  if (isGridBuild(c)) return { objects: [], facts: buildAreaFacts(c, view.cells, view.firstShape, view.practice) };
   return {
     objects: [],
     facts: {
@@ -89,6 +90,8 @@ export function workspaceScene(c: PolygonAreaChallenge, view: PolygonAreaView): 
       figure: describeFigure(c),
       ...(c.type === 'decompose' ? { rearranged: view.rearranged ? 'yes' : 'no' } : {}),
       learnerWork: describeAreaWork(c, view),
+      ...(view.practice ? { practice: `A smaller ${c.figureType} is on screen in place of the item, on a unit grid. It is not `
+        + 'graded; the full item comes back after it.' } : {}),
       constraints: c.type === 'decompose'
         ? 'The learner drags the cut triangle into the slot to make a rectangle; that unlocks the answer box. Then they type '
           + 'the area and press Check; the screen checks it. You cannot drag, type or check for the learner.'

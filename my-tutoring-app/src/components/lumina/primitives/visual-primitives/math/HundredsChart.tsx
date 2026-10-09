@@ -25,6 +25,10 @@ import { withWorkspaceOnly } from '../../../components/live-activity/runtime/wit
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import { describeHundredsChartCheck, hundredsChartAssignment, hundredsChartMatches, hundredsChartMiss, hundredsChartScene }
   from './hundredsChartWorkspace';
+import {
+  DOTS_LEVER, MODEL_LEVER, PRACTICE_NOTE, TALLY_LEVER, TALLY_FACT, dotsFact, hopDots, hundredsChartLevers, modelChart, modelFact,
+  practiceItem, rowTally, type ChartModel,
+} from './hundredsChartLevers';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -161,7 +165,13 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
     phaseConfig: CHALLENGE_TYPE_CONFIG,
   });
 
-  const currentChallenge = challenges[currentChallengeIndex] ?? null;
+  // In-item levers (`hundredsChartLevers.ts`), keyed by the session item they were pulled on, and the easier
+  // practice chart a simplify lever puts in place of the session item until the observer returns to it.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<HundredsChartChallenge | null>(null);
+  const sessionChallenge = challenges[currentChallengeIndex] ?? null;
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = sessionChallenge && leverState.item === sessionChallenge.id ? leverState.pulled : [];
 
   // -------------------------------------------------------------------------
   // State
@@ -179,6 +189,7 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
 
   // A fresh challenge starts clean; Try again clears the rejected cells or choice.
   reopen.current = (retry) => {
+    if (!retry) setPractice(null);
     setSelectedCells(new Set());
     setSelectedOption(null);
     setFeedback('');
@@ -310,7 +321,12 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
     const isCorrect = hundredsChartMatches(currentChallenge, view);
 
 
-    if (isCorrect) {
+    if (isCorrect && practice) {
+      // An easier practice chart is ungraded: its success records nothing for the session.
+      SoundManager.playCorrect();
+      setFeedback('Correct!');
+      setFeedbackType('success');
+    } else if (isCorrect) {
       SoundManager.playCorrect();
       setFeedback('Correct!');
       setFeedbackType('success');
@@ -324,7 +340,7 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
       });
     } else {
       SoundManager.playIncorrect();
-      setCurrentRetries(r => r + 1);
+      if (!practice) setCurrentRetries(r => r + 1);
       setFeedback(currentChallenge.hint || 'Not quite. Try again!');
       setFeedbackType('error');
     }
@@ -366,11 +382,49 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
       ? selectedOption !== null
       : false;
 
+  // The session item's levers (`hundredsChartLevers.ts`); a help picture is drawn on or beside the session item only
+  // while it is pulled (or shown from the start on easy), never on a practice chart.
+  const leverSession = { challenges, gridMax };
+  const itemLevers = sessionChallenge ? hundredsChartLevers(sessionChallenge, leverSession, pulledLevers) : [];
+  const helpOn = (id: string) => !practice && itemLevers.some(l => l.id === id && l.pulled);
+  const tapped = Array.from(selectedCells).sort((a, b) => a - b);
+  const dotCells = sessionChallenge && helpOn(DOTS_LEVER) ? hopDots(sessionChallenge, tapped) : null;
+  const dotSet = new Set(dotCells ?? []);
+  const tally = sessionChallenge && helpOn(TALLY_LEVER) ? rowTally(sessionChallenge, tapped, gridMax) : null;
+  const shownModel: ChartModel | null = sessionChallenge && helpOn(MODEL_LEVER) ? modelChart(sessionChallenge, leverSession) : null;
+
   // What the tutor and the observer are shown, republished every render. Derived from the challenge
   // alone, so opening an item adds no revision after the advance.
   useLayoutEffect(() => {
-    if (!currentChallenge) return;
-    workspace.current = { ...hundredsChartScene(currentChallenge, { gridMax }) };
+    if (!currentChallenge || !sessionChallenge) return;
+    const scene = hundredsChartScene(currentChallenge, { gridMax });
+    const levers = practice ? [] : itemLevers;
+    const onScreen = [
+      dotCells ? dotsFact(sessionChallenge, tapped) : null,
+      tally ? TALLY_FACT : null,
+      shownModel ? modelFact(shownModel, sessionChallenge) : null,
+    ].filter(Boolean).join('. ');
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      levers,
+      pullLever: (id: string) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already on screen.`;
+        const next = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = practiceItem(sessionChallenge, leverSession);
+          if (!easier) return 'This item is already the plainest of its kind.';
+          setLeverState(next); setPractice(easier); reopen.current(true);
+          return { practice: hundredsChartAssignment(easier) };
+        }
+        setLeverState(next);
+        return true as const;
+      },
+      // Back to the full item, blank: the practice chart is not the learner's work on it.
+      endPractice: () => { setPractice(null); reopen.current(true); },
+    };
   });
 
   // -------------------------------------------------------------------------
@@ -441,6 +495,8 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
           />
         )}
 
+        {practice && <div className="text-center text-xs text-amber-300" data-practice>Practice chart</div>}
+
         {/* Challenge instruction */}
         {currentChallenge && !allChallengesComplete && (
           <LuminaPrompt>
@@ -454,8 +510,8 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
         )}
 
         {/* Hundreds Chart Grid — bespoke drag-to-paint interaction surface */}
-        <div className="flex justify-center">
-          <div ref={pip.ref('chart')} data-pip-object="chart">
+        <div className="flex flex-wrap items-start justify-center gap-4">
+          <div ref={pip.ref('chart')} data-pip-object="chart" className="flex items-start gap-1">
           <div
             ref={gridRef}
             className="grid gap-[2px] w-fit select-none"
@@ -503,7 +559,7 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
                   }}
                   disabled={!clickable && !isGiven}
                   className={`
-                    w-9 h-9 sm:w-10 sm:h-10 rounded text-xs sm:text-sm font-medium
+                    relative w-9 h-9 sm:w-10 sm:h-10 rounded text-xs sm:text-sm font-medium
                     transition-colors duration-75 border border-white/5
                     ${cellBg}
                     ${isHighlighted ? 'text-white font-bold' : 'text-slate-300'}
@@ -512,11 +568,27 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
                   `}
                 >
                   {num}
+                  {dotSet.has(num) && (
+                    // The help lever `hop_dots`: a cell passed over between two highlighted or tapped numbers.
+                    <span data-lever="hop-dot" aria-hidden
+                      className="pointer-events-none absolute bottom-0.5 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-amber-300" />
+                  )}
                 </button>
               );
             })}
           </div>
+          {tally && (
+            // The help lever `row_tally`: a dot per highlighted or tapped number in each row, the learner's own work.
+            <div className="grid gap-[2px]" data-lever="row-tally" aria-hidden>
+              {tally.map((count, row) => (
+                <div key={row} data-tally-row={row} className="flex h-9 sm:h-10 w-16 flex-wrap content-center items-center gap-0.5 pl-1">
+                  {Array.from({ length: count }, (_, i) => <span key={i} data-tally-dot className="h-1.5 w-1.5 rounded-full bg-amber-300" />)}
+                </div>
+              ))}
+            </div>
+          )}
           </div>
+          {shownModel && <ModelChart model={shownModel} />}
         </div>
 
         {/* Pip's dock sits between the chart and the answers below it
@@ -572,6 +644,25 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
         )}
       </LuminaCardContent>
     </LuminaCard>
+  );
+}
+
+/** The help lever `model_chart`: another count on a small 1-30 chart, its description under it; never the item's. */
+function ModelChart({ model }: { model: ChartModel }) {
+  const on = new Set(model.cells);
+  return (
+    <div className="flex flex-col items-center gap-1 rounded-xl border border-white/10 bg-slate-900/40 p-2" data-lever="model-chart">
+      <div className="text-[10px] text-slate-400">Another chart:</div>
+      <div className="grid gap-[1px]" style={{ gridTemplateColumns: 'repeat(10, minmax(0, 1fr))' }}>
+        {Array.from({ length: 30 }, (_, i) => i + 1).map(n => (
+          <div key={n} data-model-cell={n} data-on={on.has(n) || undefined}
+            className={`flex h-5 w-5 items-center justify-center rounded-sm text-[8px] ${on.has(n) ? 'bg-emerald-500/60 text-white' : 'bg-white/5 text-slate-500'}`}>
+            {n}
+          </div>
+        ))}
+      </div>
+      <div className="max-w-[13rem] text-center text-xs text-slate-200" data-model-caption>{model.caption}</div>
+    </div>
   );
 }
 

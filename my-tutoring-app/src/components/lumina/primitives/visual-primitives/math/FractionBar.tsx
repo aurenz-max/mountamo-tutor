@@ -20,9 +20,11 @@ import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { fractionBarDiagnosisEvidence, type FractionBarResponse } from './fractionBarEvidence';
 import {
-  COUNT_LEVER, REFERENCE_LEVER, barLevers, describeWork, fractionBarMiss, smallerBarTarget, workspaceAssignment, workspaceScene,
+  COUNT_LEVER, REFERENCE_LEVER, barLevers, describeWork, fractionBarMiss, workspaceAssignment, workspaceScene,
   type FractionBarView,
 } from './fractionBarWorkspace';
+import { MODEL_LEVER, NUMBER_PARTS_LEVER, STEP_COUNT_LEVER, barPractice, modelFraction, stepLeverFacts, stepLevers }
+  from './fractionBarLevers';
 import { cutInto, cutsFor, equalBuildMiss, halvePiece, makesEqual, readBuild, toggleShade, wholeCircle,
   type EqualBuildMiss, type Piece } from './fractionEqualBuild';
 import { BAR_H, BAR_W, FractionBarEqualScene, barParts } from './FractionBarEqualScene';
@@ -245,6 +247,11 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   const [practice, setPractice] = useState<FractionBarChallenge | null>(null);
   const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
   const leverOn = (id: string) => pulledLevers.includes(id);
+  // The three-step item's levers (`fractionBarLevers.ts`) draw on the session item only, never on a practice item.
+  const stepLeversOn = practice && !building ? [] : pulledLevers;
+  const readoutOn = showShadedReadout || stepLeversOn.includes(STEP_COUNT_LEVER);
+  const numeralsOn = showPartitionNumerals || stepLeversOn.includes(NUMBER_PARTS_LEVER);
+  const model = !building && stepLeversOn.includes(MODEL_LEVER) && sessionChallenge ? modelFraction(sessionChallenge) : null;
   /** What is on screen: the easier practice item while a simplify lever holds it, else the session item. */
   const currentChallenge = practice ?? sessionChallenge;
   const numerator = currentChallenge?.numerator ?? 1;
@@ -503,10 +510,12 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     picked: currentPhase === 'identify-numerator' ? selectedNumerator : selectedDenominator,
     shaded: building ? made.shaded : shadedCount,
     ...(building ? { parts: made.pieces, equalParts: made.equal } : {}),
-    readout: showShadedReadout,
-    levers: pulledLevers,
+    readout: readoutOn,
+    levers: building ? pulledLevers : stepLeversOn,
     practice: !!practice,
     ...over,
+    leverFacts: currentChallenge ? stepLeverFacts(sessionChallengeType, currentChallenge, over.phase ?? currentPhase,
+      [...stepLeversOn, ...(showShadedReadout ? [STEP_COUNT_LEVER] : []), ...(showPartitionNumerals ? [NUMBER_PARTS_LEVER] : [])]) : [],
   });
 
   /** A step's check, committed on both paths; a right numerator or denominator only moves to the next step. */
@@ -783,7 +792,9 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   // ── Workspace path: what the tutor and the observer are shown, republished every render ──
   useLayoutEffect(() => {
     if (!tutorOwned || !currentChallenge) return;
-    const levers = practice ? [] : barLevers(sessionChallengeType, sessionChallenge, pulledLevers, gradeBand);
+    const levers = practice ? [] : building ? barLevers(sessionChallengeType, sessionChallenge, pulledLevers, gradeBand)
+      : stepLevers(sessionChallengeType, sessionChallenge, currentPhase, pulledLevers,
+        { readout: showShadedReadout, numerals: showPartitionNumerals });
     const clear = () => { setPieces(wholeCircle()); setKnife(false); setFeedback(''); setFeedbackType('info'); };
     workspace.current = { ...workspaceScene(sessionChallengeType, currentChallenge, view()),
       levers,
@@ -793,7 +804,7 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
         if (practice || !sessionChallenge || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
         if (lever.kind === 'simplify') {
-          const easier = smallerBarTarget(sessionChallenge, gradeBand);
+          const easier = barPractice(sessionChallengeType, sessionChallenge, gradeBand);
           if (!easier) return 'There is no easier item for this one.';
           setLeverState({ item: sessionChallenge.id, pulled: [...pulledLevers, id] });
           setPractice(easier); clear();
@@ -917,6 +928,27 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
               )}
             </div>
           </div>
+
+          {/* ── model_fraction lever: a different fraction, its parts named and drawn; never this item's numbers ── */}
+          {model && (
+            <div className="flex flex-wrap items-center justify-center gap-6 mb-8 rounded-2xl border border-white/10 bg-slate-900/40 px-6 py-4"
+              data-lever="model_fraction">
+              <div className="grid grid-cols-[auto_auto] items-center gap-x-3 font-mono" aria-label={`Model fraction ${model.numerator}/${model.denominator}`}>
+                <span className="text-3xl text-white text-center">{model.numerator}</span>
+                <span className="text-sm text-purple-300">numerator</span>
+                <span className="h-px bg-slate-400" />
+                <span />
+                <span className="text-3xl text-white text-center">{model.denominator}</span>
+                <span className="text-sm text-blue-300">denominator</span>
+              </div>
+              <div className="flex h-10 w-48 overflow-hidden rounded border border-slate-500" data-model-bar>
+                {Array.from({ length: model.denominator }).map((_, i) => (
+                  <div key={i} className={`flex-1 border-r border-slate-500 last:border-r-0 ${i < model.numerator ? 'bg-slate-400' : 'bg-slate-800'}`}
+                    data-model-part={i < model.numerator ? 'shaded' : 'empty'} />
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* ── Within-challenge phase indicator (the three-step item) ── */}
           {!building && (
@@ -1094,13 +1126,12 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
                 {/* Current vs target — withdrawn at the hard tier so the student
                     shades from the fraction alone (the top fraction display, which
                     IS the prompt, always stays visible above). */}
-                {showShadedReadout && (
-                  <div className="flex items-center justify-between mb-4">
+                {/* running_count lever (or the tier's readout): the learner's own count, never coloured by the verdict. */}
+                {readoutOn && (
+                  <div className="flex items-center justify-between mb-4" data-lever="running_count">
                     <div className="text-lg font-mono text-white">
                       Shaded:{' '}
-                      <span
-                        className={`font-bold ${shadedCount === numerator ? 'text-emerald-300' : 'text-purple-300'}`}
-                      >
+                      <span className="font-bold text-purple-300">
                         {shadedCount}
                       </span>
                       <span className="text-slate-500">/{denominator}</span>
@@ -1115,13 +1146,8 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
                 )}
 
                 {/* The fraction bar */}
-                <div
-                  className={`flex border-2 rounded-lg overflow-hidden h-20 shadow-lg mb-4 transition-colors duration-300 ${
-                    shadedCount === numerator
-                      ? 'border-emerald-500/50'
-                      : 'border-slate-600'
-                  }`}
-                >
+                <div className="flex border-2 border-slate-600 rounded-lg overflow-hidden h-20 shadow-lg mb-4"
+                  {...(numeralsOn && denominator <= 12 ? { 'data-lever': 'number_parts' } : {})}>
                   {Array.from({ length: denominator }).map((_, i) => {
                     const isShaded = i < shadedCount;
                     return (
@@ -1141,7 +1167,7 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
                         }`}
                         title={`${isShaded ? 'Unshade' : 'Shade'} part ${i + 1}`}
                       >
-                        {showPartitionNumerals && denominator <= 12 && (
+                        {numeralsOn && denominator <= 12 && (
                           <span className="text-xs text-white/40 font-mono">{i + 1}</span>
                         )}
                       </button>

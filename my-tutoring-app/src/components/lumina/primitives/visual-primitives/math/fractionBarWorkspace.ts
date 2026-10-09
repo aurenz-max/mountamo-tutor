@@ -48,6 +48,8 @@ export interface FractionBarView {
   levers?: readonly string[];
   /** An easier practice item stands in for the item (a simplify lever). */
   practice?: boolean;
+  /** The three-step item's pulled levers, as drawn (`stepLeverFacts` in `fractionBarLevers.ts`). */
+  leverFacts?: readonly string[];
 }
 
 /** The learner's checked work, in their terms. Never the key. */
@@ -119,7 +121,7 @@ const LEVER_ANSWERS: Record<string, readonly string[]> = {
   [SMALLER_TARGET_LEVER]: ['same_pieces', 'cut_cannot_make', 'off_by_more', 'unequal_pieces'],
 };
 
-/** The levers on a build_equal item; none on the three-step item. */
+/** The levers on a build_equal item; the three-step item's are `stepLevers` (`fractionBarLevers.ts`). */
 export function barLevers(type: FractionBarChallengeType, ch: FractionBarChallenge | null, pulled: readonly string[],
   band?: string): WorkspaceLever[] {
   if (type !== 'build_equal' || !ch) return [];
@@ -175,7 +177,7 @@ export function workspaceScene(type: FractionBarChallengeType, ch: FractionBarCh
     }
     facts.constraints = STEP_CONSTRAINTS[view.phase];
   }
-  const onScreen = barLeverFacts(type, view.levers ?? []);
+  const onScreen = [...barLeverFacts(type, view.levers ?? []), ...(view.leverFacts ?? [])];
   if (onScreen.length) facts.onScreen = onScreen.join(' ');
   if (view.practice) facts.practice = 'An easier practice item is on screen in place of the item. It is not graded; the full item comes back after it.';
   return { objects: [], facts };

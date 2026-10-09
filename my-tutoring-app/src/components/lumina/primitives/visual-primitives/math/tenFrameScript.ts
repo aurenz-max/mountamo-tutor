@@ -113,9 +113,19 @@ export type TenFrameItemKind =
   | 'split'
   | 'build_teen'
   | 'decompose_teen'
+  | 'build_pair'
   | 'add'
   | 'subtract';
 export type TenFrameBand = 'K' | '1-2';
+
+/**
+ * `build_pair` is the OPEN BUILD of K.OA.3 (open build, math wave 3): the frame opens EMPTY and the learner makes
+ * the number out of red and yellow counters, any pair. `split` hands over the group and asks only where the line
+ * falls; here the learner makes the whole and its parts, so the count and the partition are both theirs. Judged in
+ * code at "I'm done!" with `split`'s judge and per-total ledger: the total, two non-empty colours, and a different
+ * pair each time the same total comes back. The total is public (the ask states it); a pair is never said first.
+ */
+export const isPairKind = (kind: string): boolean => kind === 'split' || kind === 'build_pair';
 
 /**
  * THE TEEN MODES ARE THE ONE PLACE K GETS A DOUBLE FRAME (contract R2 fork,
@@ -262,7 +272,7 @@ export const answerKindFor = (
   kind: TenFrameItemKind,
   band: TenFrameBand,
 ): 'voice' | 'gesture' =>
-  kind === 'build' || kind === 'split' || isTeenKind(kind) || (kind === 'make_ten' && band === 'K')
+  kind === 'build' || isPairKind(kind) || isTeenKind(kind) || (kind === 'make_ten' && band === 'K')
     ? 'gesture'
     : 'voice';
 
@@ -280,6 +290,7 @@ export const actionFor = (kind: TenFrameItemKind, band: TenFrameBand): string =>
   if (kind === 'make_ten') return band === 'K' ? 'fill' : 'complement';
   if (kind === 'add' || kind === 'subtract') return 'operate';
   if (kind === 'split') return 'split';
+  if (kind === 'build_pair') return 'make-pair';
   // The two teen actions are genuinely different hands — placing the loose ones
   // beside a given ten, versus finding the ten inside a scattered group — so
   // they get their own action words and the runner re-speaks the how-to-play
@@ -350,6 +361,12 @@ export const itemFromChallenge = (
       // "split a group of up to 5 objects into two smaller groups").
       return { ...base, shown: total, answer: total };
     }
+    case 'build_pair': {
+      // `split`'s gate on an EMPTY frame: the learner places the whole group, so nothing is seeded.
+      const total = ch.targetCount;
+      if (!int(total) || total < 2 || total > capacity) return null;
+      return { ...base, shown: 0, answer: total };
+    }
     case 'build_teen': {
       // The ten is GIVEN — a full top frame — and the child places the ones.
       // The teen number itself is the QUESTION (spoken in the ask), so the
@@ -418,15 +435,17 @@ export const itemsFromChallenges = (
     .map((ch) => itemFromChallenge(ch, ctx))
     .filter((item): item is TenFrameItem => item !== null);
 
-  const seenPerTotal = new Map<number, number>();
+  // Per kind and total: a `build_pair` of five and a `split` of five keep their own ledgers.
+  const seenPerTotal = new Map<string, number>();
   for (const item of items) {
     if (item.kind === 'decompose_teen') {
       item.seedCells = scatterCells(item.answer, ctx.capacity, item.id);
       continue;
     }
-    if (item.kind !== 'split') continue;
-    const nth = (seenPerTotal.get(item.answer) ?? 0) + 1;
-    seenPerTotal.set(item.answer, nth);
+    if (!isPairKind(item.kind)) continue;
+    const key = `${item.kind}:${item.answer}`;
+    const nth = (seenPerTotal.get(key) ?? 0) + 1;
+    seenPerTotal.set(key, nth);
     item.splitOrdinal = nth;
   }
   return items;
@@ -505,6 +524,8 @@ export const howToPlayFor = (item: TenFrameItem): string => {
       // Same taught gesture as `split`, different target: there the child
       // chooses where the line falls, here the line is fixed at ten.
       return 'The counters are all red. Tap a counter to turn it yellow — count them out as you go! ';
+    case 'build_pair':
+      return 'Pick red or yellow, then tap the boxes to put counters on. Tap a counter to take it off. Press I am done when you are finished! ';
     case 'add':
       return 'Put the counters on the frame, then say how many there are altogether. ';
     case 'subtract':
@@ -548,6 +569,11 @@ export const askFor = (item: TenFrameItem): string => {
       return (item.splitOrdinal ?? 1) > 1
         ? `${cap(shownWord)} ${countersWord(item.shown)} again. Your turn — show me a DIFFERENT way to make two groups.`
         : `Here are ${shownWord} ${countersWord(item.shown)}. Your turn — turn some yellow to make two groups.`;
+    case 'build_pair':
+      // The total is public, as on `split`; the parts are the learner's to choose and are never named first.
+      return (item.splitOrdinal ?? 1) > 1
+        ? `Make ${answerWord} again with red and yellow counters. Your turn — make it a DIFFERENT way.`
+        : `Make ${answerWord} with red and yellow counters. Your turn — use both colours.`;
     case 'build_teen': {
       // The TEN is public and it is the model being taught — a full frame IS
       // ten, and saying so is the whole of K.NBT.1's "ten ones". The ONES are
@@ -665,6 +691,25 @@ const splitCorrectionFor = (item: TenFrameItem, verdict: SplitVerdict): string =
   }
 };
 
+/** `build_pair`'s correction, per miss. Like `split`'s, no branch names a pair; the count branch names only the
+ *  total, which the ask already stated. */
+const pairCorrectionFor = (item: TenFrameItem, verdict: SplitVerdict): string => {
+  const totalWord = numberWordFor(item.answer);
+  switch (verdict) {
+    case 'miscount':
+      return `My turn: I need ${totalWord} counters on the frame altogether, red and yellow together. `
+        + `Count them all. Your turn — make ${totalWord}.`;
+    case 'repeat':
+      return `My turn: that makes ${totalWord}, and it is the same way you made it before. `
+        + `Your turn — make ${totalWord} with a different number of yellow counters.`;
+    case 'empty_part':
+    case 'correct':
+    default:
+      return `My turn: I want to see red counters AND yellow counters. Not just red. Not just yellow. `
+        + `Your turn — make ${totalWord} with both colours.`;
+  }
+};
+
 const correctionFor = (item: TenFrameItem): string => {
   const answerWord = numberWordFor(item.answer);
   const shownWord = numberWordFor(item.shown);
@@ -694,6 +739,8 @@ const correctionFor = (item: TenFrameItem): string => {
       // partition, which would hand over the answer the item is asking for —
       // the same restraint the K make-ten gesture correction already keeps.
       return splitCorrectionFor(item, 'empty_part');
+    case 'build_pair':
+      return pairCorrectionFor(item, 'empty_part');
     case 'add':
       return item.answer <= WALK_CEILING
         ? `My turn: ${numberWordFor(item.addend1 ?? 0)} plus ${numberWordFor(item.addend2 ?? 0)}. Watch me count. ${countWalk(item.answer)}. ${cap(answerWord)} altogether. Your turn. How many altogether?`
@@ -801,11 +848,12 @@ const silenceContract = (item: TenFrameItem): string =>
         // may be said; the red remainder is the decomposition the affirmation
         // exists to name.
         ? `Never say how many counters will be left red and never count the counters aloud for them. `
-        : item.kind === 'split'
+        : isPairKind(item.kind)
       // The banned material here is a PAIR, not a count — and it stays banned
       // for the whole session, because naming one way answers every later item
       // on this total too.
-          ? `Never suggest a pair of numbers that makes ${numberWordFor(item.answer)}, never say how many to turn yellow, and never count the counters aloud. `
+          ? `Never suggest a pair of numbers that makes ${numberWordFor(item.answer)}, never say how many `
+            + `${item.kind === 'split' ? 'to turn yellow' : 'of each colour to use or how many are on the frame'}, and never count the counters aloud. `
           : `Never say how many more are needed and never count the empty boxes aloud. `)
   + `Do not narrate what they are doing or fill the pause. `
   + `You will be told what they placed and whether it matches; only then do you speak.`;
@@ -844,8 +892,10 @@ export const itemCue = (item: TenFrameItem, opts: TenFrameCueOptions = {}): stri
 export const frameVerdictCue = (
   item: TenFrameItem,
   placed: number,
-  opts: { alreadyShown?: ReadonlySet<string> } = {},
+  opts: { alreadyShown?: ReadonlySet<string>; yellow?: number } = {},
 ): string => {
+  // `build_pair` commits the counters on the frame (`placed`) and how many of them are yellow.
+  if (item.kind === 'build_pair') return pairVerdictCue(item, { a: placed - (opts.yellow ?? 0), b: opts.yellow ?? 0 }, opts.alreadyShown);
   // `split` commits a PAIR. The gesture channel still carries one number —
   // how many the child turned yellow — because the total is fixed by the item,
   // so `b` determines `a` and no adapter or harness needs a second field.
@@ -931,6 +981,22 @@ export const splitVerdictCue = (
   return `${head}${line}Never read bracket tags aloud.`;
 };
 
+/** The `build_pair` verdict: the learner's own pair, judged by `judgeSplit` against the ledger for its total. */
+export const pairVerdictCue = (
+  item: TenFrameItem,
+  pair: TenFrameSplit,
+  alreadyShown: ReadonlySet<string> = new Set(),
+): string => {
+  const verdict = judgeSplit(item, pair, alreadyShown);
+  const head = `[TF_PAIR] The learner put ${pair.a} red and ${pair.b} yellow counters on the frame, `
+    + `${pair.a + pair.b} altogether; the ask was ${item.answer}. Verdict: ${verdict.toUpperCase()}`
+    + (verdict === 'repeat' ? ` (they already made this exact pair for ${item.answer} in this session)` : '') + '. ';
+  const line = verdict === 'correct'
+    ? `Say exactly: "Yes! ${cap(numberWordFor(pair.a))} red and ${numberWordFor(pair.b)} yellow make ${numberWordFor(item.answer)}." `
+    : `Say exactly: "${pairCorrectionFor(item, verdict)}" `;
+  return `${head}${line}Never read bracket tags aloud.`;
+};
+
 /** Correction cap reached: acknowledge warmly and carry the lesson forward. */
 export const moveOnCue = (
   item: TenFrameItem,
@@ -974,6 +1040,8 @@ export const stimulusFor = (item: TenFrameItem): string => {
       // Stimulus-side only: the total is on screen and in the ask. The PAIR the
       // child is working toward is never pushed through this channel.
       return `${numberWordFor(item.answer)} red ${countersWord(item.answer)} to split into two colour groups`;
+    case 'build_pair':
+      return `an empty frame; make ${numberWordFor(item.answer)} with red and yellow counters`;
     case 'build_teen':
       // Stimulus-side only: the full top frame and the teen number are both
       // public. The ones the child must place are not pushed.
@@ -1042,6 +1110,8 @@ const publicValuesFor = (item: TenFrameItem): number[] => {
       // derivable from them; `leakTokens` for this kind is empty by
       // construction and the silence contract carries the ban instead.
       return [item.answer];
+    case 'build_pair':
+      return [item.answer];
     case 'add':
       return [item.addend1 ?? 0, item.addend2 ?? 0];
     case 'subtract':
@@ -1099,6 +1169,19 @@ export const tenFrameHarnessAnswers = (item: TenFrameItem): TenFrameHarnessAnswe
           text: `all ${item.answer} turned yellow`,
           why: 'every counter flipped — one group and an empty one, which is not a decomposition',
         },
+        leakTokens: [],
+      };
+    }
+    case 'build_pair': {
+      // `placed` is the YELLOW count on a frame holding exactly the total; the rest are red. The signature miss is
+      // one colour only: the right number on the frame, and no second group.
+      const yellow = Math.max(1, Math.floor(item.answer / 2));
+      return {
+        ...base,
+        correct: `${item.answer - yellow} red and ${yellow} yellow on the frame`,
+        plainWrong: `${item.answer} red and no yellow on the frame`,
+        placed: { correct: yellow, wrong: 0 },
+        signatureWrong: { text: `${item.answer} red and no yellow on the frame`, why: 'one colour only, so there are not two groups' },
         leakTokens: [],
       };
     }

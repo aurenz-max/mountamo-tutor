@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { HundredsChartData, HundredsChartChallenge } from '../../primitives/visual-primitives/math/HundredsChart';
+import { PATTERN_DESCRIPTIONS } from '../../primitives/visual-primitives/math/hundredsChartLevers';
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import {
@@ -320,21 +321,8 @@ function buildInstruction(
   }
 }
 
-/** Correct visual pattern descriptions for each skip value on a 10×10 grid */
-const PATTERN_DESCRIPTIONS: Record<number, { correct: string; distractors: string[] }> = {
-  // skip=1 only becomes reachable inside a resolved sub-100 window (see
-  // resolveLegalSkips) — counting in order fills the board solid.
-  1:  { correct: 'They fill every row completely',         distractors: ['Every other cell in each row', 'A single diagonal line', 'They are scattered randomly'] },
-  2:  { correct: 'Every other cell in each row',           distractors: ['A checkerboard pattern', 'They fill every row completely', 'They are scattered randomly'] },
-  3:  { correct: 'A repeating diagonal pattern',           distractors: ['Every other cell in each row', 'They fill two columns', 'A zigzag going left and right'] },
-  4:  { correct: 'Columns that shift across rows',         distractors: ['Every other cell in each row', 'A single diagonal line', 'They fill every other row'] },
-  5:  { correct: 'Two vertical columns (5th and 10th)',    distractors: ['They fill every other row', 'A diagonal stripe across the grid', 'Every other cell in each row'] },
-  6:  { correct: 'A shifting pattern across rows',         distractors: ['Every other cell in each row', 'Two vertical columns', 'They fill every other row'] },
-  7:  { correct: 'A shifting diagonal pattern',            distractors: ['Every other cell in each row', 'They fill every other row', 'A zigzag going left and right'] },
-  8:  { correct: 'A sparse shifting pattern',              distractors: ['Every other cell in each row', 'A single diagonal line', 'They fill every other row'] },
-  9:  { correct: 'A slow diagonal stepping pattern',       distractors: ['They fill every other row', 'Every other cell in each row', 'They are scattered randomly'] },
-  10: { correct: 'One vertical column (the last column)',  distractors: ['They fill every other row', 'Every other cell in each row', 'A diagonal stripe across the grid'] },
-};
+// Correct visual pattern descriptions per skip value: `PATTERN_DESCRIPTIONS` in hundredsChartLevers.ts, shared with
+// the identify_pattern levers (model chart, simpler chart) so a caption is always an option's exact text.
 
 /** Skip-value distractor options for find_skip_value */
 const SKIP_VALUE_DISTRACTORS: Record<number, number[]> = {

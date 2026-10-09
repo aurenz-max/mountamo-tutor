@@ -436,9 +436,10 @@ describe('ten-frame catalog · DI frame', () => {
     // concrete build and the pictorial subitize. The two K.NBT.1 teen modes
     // slot in by difficulty rather than by arrival: `build_teen` (2.0) is a
     // concrete placement beside a GIVEN ten, `decompose_teen` (3.0) makes the
-    // child find the ten inside a scattered group.
+    // child find the ten inside a scattered group. `build_pair` (2.1) is decompose's open build: the child makes
+    // the group as well as its parts, a step above being handed it.
     expect(entry.evalModes?.map((m) => m.evalMode))
-      .toEqual(['build', 'decompose', 'build_teen', 'subitize', 'decompose_teen', 'make_ten', 'operate']);
+      .toEqual(['build', 'decompose', 'build_teen', 'build_pair', 'subitize', 'decompose_teen', 'make_ten', 'operate']);
     expect(entry.evalModes?.map((m) => m.beta)).toEqual([...entry.evalModes!].map((m) => m.beta).sort((a, b) => a - b));
     // The mic sentence must no longer read as covering the whole primitive:
     // build and decompose are judged from hands and need no spoken answer.

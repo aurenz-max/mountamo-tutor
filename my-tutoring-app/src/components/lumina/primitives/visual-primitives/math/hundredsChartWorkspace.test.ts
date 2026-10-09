@@ -16,7 +16,10 @@ it.each([
   [ch('complete_sequence', { givenCells: [4, 8], correctCells: [4, 8, 12, 16], skipValue: 4 }), cells(12, 16, 20), 'extra_cells'],
   [ch('complete_sequence', { givenCells: [2, 4], correctCells: [2, 4, 6, 8], skipValue: 2 }), cells(7, 10, 13), 'other_step'],
   [skip, pick('5'), undefined], [skip, pick('10'), 'twice_the_step'], [ch('find_skip_value', { skipValue: 10 }), pick('5'), 'half_the_step'],
-  [skip, pick('4'), 'one_short'], [skip, pick('2'), 'short_by_more'], [ch('identify_pattern', { correctAnswer: 'a' }), pick('b'), undefined],
+  [skip, pick('4'), 'one_short'], [skip, pick('2'), 'short_by_more'], [ch('identify_pattern', { correctAnswer: 'a' }), pick('A single diagonal line'), 'chose_diagonal'],
+  [ch('identify_pattern', { correctAnswer: 'a' }), pick('Two vertical columns (5th and 10th)'), 'chose_columns'],
+  [ch('identify_pattern', { correctAnswer: 'a' }), pick('Every other cell in each row'), 'chose_rows'],
+  [ch('identify_pattern', { correctAnswer: 'a' }), pick('A checkerboard pattern'), 'chose_scattered'],
 ] as const)('row %#', (c, view, miss) => {
   expect(hundredsChartMiss(c, view)).toBe(miss);
 });

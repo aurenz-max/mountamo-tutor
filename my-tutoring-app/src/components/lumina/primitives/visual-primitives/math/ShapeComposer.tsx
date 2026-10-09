@@ -30,6 +30,11 @@ import { SoundManager } from '../../../utils/SoundManager';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { shapeComposerPipPose } from '../../../pip/shapeComposerPipPose';
 import { useSpeechScope } from '../../../pip/useSpeechScope';
+import { useBuildWatcher } from '../../build-layer/buildLayer';
+import {
+  judgeShapeBuild, magnetTo, freeSpot, recipeText, SHAPE_BUILD_MISS_WORDS,
+  type RecipePart, type ShapeBuildMiss,
+} from './shapeComposerBuild';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -70,6 +75,9 @@ export interface ShapeComposerChallenge {
   compositeDescription?: string;
   expectedComponents?: ShapeComposerComponent[];
   divisionLineHints?: Array<{ x1: number; y1: number; x2: number; y2: number }>;
+  // free-create (open build): the shapes to compose from, stated in the ask. Absent on older payloads, which keep
+  // the old any-two-shapes check.
+  recipe?: RecipePart[];
   // how-many-ways
   targetForComposition?: string;
   allowedPieces?: string[];
@@ -119,6 +127,12 @@ const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
 const CANVAS_WIDTH = 400;
 const CANVAS_HEIGHT = 350;
 const SNAP_DISTANCE = 50;
+
+/** The open-build palette: every shape the grade band knows, so choosing the asked ones is part of the task. */
+const BUILD_PALETTE: Record<'K' | '1', string[]> = {
+  K: ['triangle', 'square', 'rectangle', 'circle'],
+  '1': ['triangle', 'square', 'rectangle', 'circle', 'hexagon', 'trapezoid', 'rhombus'],
+};
 
 // Shape colors for the palette
 const SHAPE_COLORS: Record<string, string> = {
@@ -191,7 +205,7 @@ interface ShapeSVGProps {
   opacity?: number;
   className?: string;
   onClick?: () => void;
-  onMouseDown?: (e: React.MouseEvent) => void;
+  onPointerDown?: (e: React.PointerEvent) => void;
   strokeColor?: string;
   strokeWidth?: number;
   showLabel?: boolean;
@@ -201,14 +215,14 @@ interface ShapeSVGProps {
 
 const ShapeSVG: React.FC<ShapeSVGProps> = ({
   shape, color, width, height, rotation = 0, x = 0, y = 0,
-  opacity = 1, className = '', onClick, onMouseDown,
+  opacity = 1, className = '', onClick, onPointerDown,
   strokeColor = 'rgba(255,255,255,0.3)', strokeWidth = 1.5, showLabel = false, pipRef, pipObject,
 }) => {
   const transform = `translate(${x}, ${y}) rotate(${rotation}, ${width / 2}, ${height / 2})`;
 
   return (
-    <g ref={pipRef} data-pip-object={pipObject} transform={transform} className={className} onClick={onClick} onMouseDown={onMouseDown}
-       style={{ cursor: onClick || onMouseDown ? 'pointer' : 'default' }}>
+    <g ref={pipRef} data-pip-object={pipObject} data-shape={shape} transform={transform} className={className} onClick={onClick} onPointerDown={onPointerDown}
+       style={{ cursor: onClick || onPointerDown ? 'pointer' : 'default' }}>
       {shape === 'circle' ? (
         <ellipse cx={width / 2} cy={height / 2} rx={width / 2} ry={height / 2}
                  fill={color} stroke={strokeColor} strokeWidth={strokeWidth} opacity={opacity} />
@@ -325,7 +339,8 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
     currentChallengeIndex,
     challengeType: currentChallenge?.type ?? 'compose-match',
     instruction: currentChallenge?.instruction ?? '',
-    targetShape: currentChallenge?.targetShape ?? currentChallenge?.targetPicture ?? '',
+    targetShape: currentChallenge?.targetShape ?? currentChallenge?.targetPicture
+      ?? (currentChallenge?.recipe ? recipeText(currentChallenge.recipe) : ''),
     piecesPlaced: placedShapes.length,
     totalPieces: currentChallenge?.pieces?.length ?? currentChallenge?.pictureSlots?.length ?? 0,
     expectedComponents: currentChallenge?.expectedComponents ?? [],
@@ -375,21 +390,43 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
   // Drag & Drop Handlers
   // -------------------------------------------------------------------------
   const isFreeCreate = currentChallenge?.type === 'free-create';
+  const isOpenBuild = isFreeCreate && !!currentChallenge?.recipe?.length;
 
-  const handleCanvasMouseMove = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
-    if (!dragging || !canvasRef.current) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * CANVAS_WIDTH - dragging.offsetX;
-    const y = ((e.clientY - rect.top) / rect.height) * CANVAS_HEIGHT - dragging.offsetY;
+  // Pointer -> canvas units through the svg's own screen matrix. The canvas is letterboxed (max height on a wider
+  // box), so scaling by the element's width put a dragged piece away from the finger on wide screens.
+  const toCanvas = useCallback((clientX: number, clientY: number) => {
+    const svg = canvasRef.current;
+    const m = svg?.getScreenCTM();
+    if (!svg || !m) return null;
+    const p = new DOMPoint(clientX, clientY).matrixTransform(m.inverse());
+    return { x: p.x, y: p.y };
+  }, []);
+
+  const handleCanvasMouseMove = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
+    if (!dragging) return;
+    const at = toCanvas(e.clientX, e.clientY);
+    if (!at) return;
+    const x = at.x - dragging.offsetX;
+    const y = at.y - dragging.offsetY;
 
     const setter = isFreeCreate ? setFreeCreateShapes : setPlacedShapes;
     setter(prev => prev.map(s =>
       s.id === dragging.id ? { ...s, x: Math.max(0, Math.min(CANVAS_WIDTH - s.width, x)), y: Math.max(0, Math.min(CANVAS_HEIGHT - s.height, y)) } : s
     ));
-  }, [dragging, isFreeCreate]);
+  }, [dragging, isFreeCreate, toCanvas]);
 
   const handleCanvasMouseUp = useCallback(() => {
     if (!dragging) return;
+    // Open build: a piece dropped close to another slides over until they touch, so a K hand can make edges meet.
+    if (isOpenBuild) {
+      setFreeCreateShapes(prev => {
+        const moved = prev.find(s => s.id === dragging.id);
+        if (!moved) return prev;
+        const to = magnetTo(moved, prev.filter(s => s.id !== moved.id));
+        if (to) SoundManager.snap();
+        return to ? prev.map(s => (s.id === moved.id ? { ...s, ...to } : s)) : prev;
+      });
+    }
     // Tactile snap feedback (sound only — the state updaters below do the actual snapping)
     const draggedNow = placedShapes.find(s => s.id === dragging.id);
     if (draggedNow) {
@@ -467,20 +504,18 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
       }));
     }
     setDragging(null);
-  }, [dragging, currentChallenge, snapTolerance, placedShapes]);
+  }, [dragging, currentChallenge, snapTolerance, placedShapes, isOpenBuild]);
 
-  const handleShapeMouseDown = useCallback((id: string, e: React.MouseEvent) => {
+  const handleShapeMouseDown = useCallback((id: string, e: React.PointerEvent) => {
     if (hasSubmittedEvaluation) return;
     e.preventDefault();
     const allShapes = isFreeCreate ? freeCreateShapes : placedShapes;
     const shape = allShapes.find(s => s.id === id);
-    if (!shape || !canvasRef.current) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    const mouseX = ((e.clientX - rect.left) / rect.width) * CANVAS_WIDTH;
-    const mouseY = ((e.clientY - rect.top) / rect.height) * CANVAS_HEIGHT;
-    setDragging({ id, offsetX: mouseX - shape.x, offsetY: mouseY - shape.y });
+    const at = shape && toCanvas(e.clientX, e.clientY);
+    if (!shape || !at) return;
+    setDragging({ id, offsetX: at.x - shape.x, offsetY: at.y - shape.y });
     setSelectedShapeId(id);
-  }, [hasSubmittedEvaluation, placedShapes, freeCreateShapes, isFreeCreate]);
+  }, [hasSubmittedEvaluation, placedShapes, freeCreateShapes, isFreeCreate, toCanvas]);
 
   // -------------------------------------------------------------------------
   // Palette: Add shape to canvas
@@ -500,7 +535,8 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
       rotation: 0,
     };
     if (currentChallenge?.type === 'free-create') {
-      setFreeCreateShapes(prev => [...prev, newShape]);
+      // A new piece lands in open space, never on top of the learner's work.
+      setFreeCreateShapes(prev => [...prev, { ...newShape, ...freeSpot(newShape, prev, CANVAS_WIDTH, CANVAS_HEIGHT) }]);
     } else {
       setPlacedShapes(prev => [...prev, newShape]);
     }
@@ -560,6 +596,7 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
     incrementAttempts();
 
     let correct = false;
+    let miss: ShapeBuildMiss | null = null;
 
     switch (currentChallenge.type) {
       case 'compose-match': {
@@ -611,8 +648,14 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
         break;
       }
       case 'free-create': {
-        // Always correct — celebrate creativity
-        correct = freeCreateShapes.length >= 2;
+        if (currentChallenge.recipe?.length) {
+          const verdict = judgeShapeBuild(currentChallenge.recipe, freeCreateShapes);
+          correct = verdict.pass;
+          miss = verdict.miss;
+        } else {
+          // Older payloads with no recipe: any two shapes.
+          correct = freeCreateShapes.length >= 2;
+        }
         break;
       }
     }
@@ -620,14 +663,14 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
     if (correct) {
       SoundManager.playCorrect();
       setFeedback(currentChallenge.type === 'free-create'
-        ? 'Amazing creation! 🎉'
+        ? (currentChallenge.recipe?.length ? 'You made one big shape from the shapes on the list! 🎉' : 'Amazing creation! 🎉')
         : 'Correct! Great job! 🎉');
       setFeedbackType('success');
       sendText(
         `[ANSWER_CORRECT] Student completed ${currentChallenge.type} challenge correctly. `
         + `${currentChallenge.type === 'compose-match' ? `They built ${currentChallenge.targetShape} from ${placedShapes.length} pieces.` : ''}`
         + `${currentChallenge.type === 'decompose' ? `They identified the components: ${decomposeTaps.join(', ')}.` : ''}`
-        + `${currentChallenge.type === 'free-create' ? `They used ${freeCreateShapes.length} shapes to create a picture.` : ''}`
+        + `${currentChallenge.type === 'free-create' ? `They composed their own picture from ${freeCreateShapes.map(s => s.shape).join(', ')}, every shape touching.` : ''}`
         + ` Congratulate briefly and use spatial vocabulary.`,
         { silent: true }
       );
@@ -639,13 +682,14 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
       });
     } else {
       SoundManager.playIncorrect();
-      const hintText = currentChallenge.hint ?? 'Try again! Look at the shapes carefully.';
+      const hintText = miss ? SHAPE_BUILD_MISS_WORDS[miss] : currentChallenge.hint ?? 'Try again! Look at the shapes carefully.';
       setFeedback(hintText);
       setFeedbackType('error');
       sendText(
         `[ANSWER_INCORRECT] ${currentChallenge.type} challenge. Attempt ${currentAttempts + 1}. `
         + `${currentChallenge.type === 'compose-match' ? `${placedShapes.length}/${(currentChallenge.pieces ?? []).length} pieces placed.` : ''}`
         + `${currentChallenge.type === 'decompose' ? `Student identified: ${decomposeTaps.join(', ')}. Expected: ${(currentChallenge.expectedComponents ?? []).map(c => `${c.count} ${c.shape}`).join(', ')}.` : ''}`
+        + `${miss ? `The board checked their picture: ${SHAPE_BUILD_MISS_WORDS[miss]} Their picture stays on the board to fix.` : ''}`
         + ` Give a spatial hint without revealing the answer.`
         + tutorRevealClause(),
         { silent: true }
@@ -752,6 +796,19 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
     };
   });
 
+  // The live line on an open build (shared build layer): what the picture looks like, never a verdict or a count.
+  const buildSeeing = useBuildWatcher({
+    buildKey: `${currentChallenge?.id}:${freeCreateShapes.map(s => `${s.shape}@${Math.round(s.x)},${Math.round(s.y)},${s.rotation}`).join('|')}`,
+    enabled: isOpenBuild && freeCreateShapes.length > 0 && !showingCorrectFeedback && !hasSubmittedEvaluation && !dragging,
+    svg: canvasRef,
+    // The task without the recipe or the touching rule: the line may never say whether the picture is right.
+    request: { task: 'Putting shapes together on a board to make a picture of the child’s own', numbers: 'never',
+      neverSay: ['touch', 'touching', 'list', 'correct', 'right', 'wrong'],
+      sceneNote: 'An empty board with faint dots. The child adds shapes from a palette, slides them and turns them.',
+      // The kinds as placed, so the line names the learner's shapes rightly (their own work, so naming it leaks nothing).
+      made: `shapes on the board: ${freeCreateShapes.map(s => s.shape).join(', ')}` },
+  });
+
   // -------------------------------------------------------------------------
   // Render helpers
   // -------------------------------------------------------------------------
@@ -806,8 +863,8 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
 
     // free-create / how-many-ways: generic palette
     if (currentChallenge.type === 'free-create' || currentChallenge.type === 'how-many-ways') {
-      const allowedShapes = currentChallenge.allowedPieces ??
-        ['triangle', 'square', 'rectangle', 'circle'];
+      const allowedShapes = currentChallenge.allowedPieces
+        ?? (isOpenBuild ? BUILD_PALETTE[gradeBand] : ['triangle', 'square', 'rectangle', 'circle']);
       return (
         <div className="flex flex-wrap gap-2 justify-center">
           {allowedShapes.map(shape => (
@@ -840,10 +897,10 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
       <svg ref={canvasRef}
         viewBox={`0 0 ${CANVAS_WIDTH} ${CANVAS_HEIGHT}`}
         className="w-full rounded-xl border border-white/10 bg-slate-800/50"
-        style={{ maxHeight: 350 }}
-        onMouseMove={handleCanvasMouseMove}
-        onMouseUp={handleCanvasMouseUp}
-        onMouseLeave={handleCanvasMouseUp}>
+        style={{ maxHeight: 350, touchAction: 'none' }}
+        onPointerMove={handleCanvasMouseMove}
+        onPointerUp={handleCanvasMouseUp}
+        onPointerLeave={handleCanvasMouseUp}>
         {/* Grid dots for guidance */}
         {Array.from({ length: 9 }, (_, row) =>
           Array.from({ length: 11 }, (_, col) => (
@@ -918,7 +975,7 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
             strokeColor={selectedShapeId === s.id ? '#FCD34D' : 'rgba(255,255,255,0.3)'}
             strokeWidth={selectedShapeId === s.id ? 2.5 : 1.5}
             pipRef={pip.ref(`piece-${s.id}`)} pipObject={`piece-${s.id}`}
-            onMouseDown={(e) => { pip.look(`piece-${s.id}`); handleShapeMouseDown(s.id, e); }} />
+            onPointerDown={(e) => { pip.look(`piece-${s.id}`); handleShapeMouseDown(s.id, e); }} />
         ))}
       </svg>
     );
@@ -1044,6 +1101,17 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
                 </span>
               </div>
               <p className="text-slate-100">{currentChallenge.instruction}</p>
+              {/* The recipe as pictures, for a child who cannot read the ask. It is the task, so it is shown. */}
+              {isOpenBuild && (
+                <div data-recipe aria-label={`Shapes to use: ${recipeText(currentChallenge.recipe!)}`}
+                  className="mt-2 flex flex-wrap items-center gap-1.5">
+                  {currentChallenge.recipe!.flatMap(r => Array.from({ length: r.count }, (_, i) => (
+                    <svg key={`${r.shape}-${i}`} width={30} height={30} viewBox="0 0 50 50" aria-hidden>
+                      <ShapeSVG shape={r.shape} color={SHAPE_COLORS[r.shape] || '#8B5CF6'} width={50} height={50} />
+                    </svg>
+                  )))}
+                </div>
+              )}
             </LuminaPrompt>
 
             {/* Canvas */}
@@ -1089,6 +1157,12 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
             {/* How Many Ways input */}
             {currentChallenge.type === 'how-many-ways' && !showingCorrectFeedback && renderHowManyWays()}
 
+            {isOpenBuild && buildSeeing && !showingCorrectFeedback && (
+              <div data-testid="build-watcher" className="text-center">
+                <span className="rounded-full bg-white/10 px-4 py-1.5 text-base text-amber-100">👀 {buildSeeing}</span>
+              </div>
+            )}
+
             {/* Feedback */}
             {feedback && (
               <LuminaFeedbackCard status={feedbackType === 'success' ? 'correct' : feedbackType === 'error' ? 'incorrect' : 'insight'}>
@@ -1102,6 +1176,16 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
                 <LuminaActionButton action="next" onClick={advanceToNextChallenge}>
                   {currentChallengeIndex + 1 < challenges.length ? 'Next Challenge →' : 'See Results →'}
                 </LuminaActionButton>
+              ) : isOpenBuild ? (
+                <>
+                  <LuminaButton disabled={freeCreateShapes.length === 0}
+                    onClick={() => { setFreeCreateShapes([]); setSelectedShapeId(null); }}>
+                    Start over
+                  </LuminaButton>
+                  <LuminaActionButton action="check" disabled={freeCreateShapes.length === 0} onClick={handleCheckAnswer}>
+                    I&apos;m done!
+                  </LuminaActionButton>
+                </>
               ) : (
                 <LuminaActionButton action="check" onClick={handleCheckAnswer}>
                   Check Answer

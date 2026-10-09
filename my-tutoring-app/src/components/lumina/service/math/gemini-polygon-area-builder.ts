@@ -18,8 +18,11 @@ import type {
 } from "../../primitives/visual-primitives/math/PolygonAreaBuilder";
 import {
   BUILD_MAX_AREA,
+  BUILD_MAX_PERIMETER,
   BUILD_MIN_AREA,
+  BUILD_MIN_PERIMETER,
   buildAreaAsk,
+  buildPerimeterAsk,
 } from "../../primitives/visual-primitives/math/polygonAreaBuild";
 
 // ---------------------------------------------------------------------------
@@ -63,6 +66,13 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `shape with a stated area ("Make a shape with an area of 12 squares"), then on some items a different shape with `
       + `the same area. Any shape with that area passes. The system picks every area; do not name one.`,
     schemaDescription: "'build_area' (make a shape with a given area on a square grid)",
+  },
+  build_perimeter: {
+    promptDoc:
+      `"build_perimeter": Grade 3 open build (3.MD.D.8). On an empty square grid the student shades unit squares into ONE `
+      + `shape whose perimeter is stated ("Make a shape with a perimeter of 12 units"), then on some items a different `
+      + `shape with the same perimeter. Any shape with that perimeter passes. The system picks every perimeter; do not name one.`,
+    schemaDescription: "'build_perimeter' (make a shape with a given perimeter on a square grid)",
   },
 };
 
@@ -124,7 +134,8 @@ const TIER_GUARDRAIL =
 function resolveSupportStructure(type: PolygonAreaChallengeType, tier: SupportTier): SupportScaffold {
   switch (type) {
     case 'build_area':
-      // The open build starts bare at every tier: counting the squares is the task, so its aids are levers pulled on a
+    case 'build_perimeter':
+      // The open builds start bare at every tier: counting the squares is the task, so its aids are levers pulled on a
       // miss (`polygonAreaBuild.ts`), never a tier flag.
       return {
         showDecompositionGuides: false,
@@ -343,6 +354,7 @@ const COUNT_BY_MODE: Record<PolygonAreaChallengeType, number> = {
   composite_area: 4,
   coordinate_polygon: 4,
   build_area: 4,
+  build_perimeter: 4,
 };
 
 // ---------------------------------------------------------------------------
@@ -361,9 +373,10 @@ const TIER_ORDER: PolygonAreaChallengeType[] = [
   'coordinate_polygon',              // Grade 7 — hardest
 ];
 
+// build_perimeter is not in the mixed rotation: it is the Grade 3 perimeter skill, not one of the area tiers.
 const TIER_RANK: Record<PolygonAreaChallengeType, number> = TIER_ORDER.reduce(
   (acc, t, i) => { acc[t] = i; return acc; },
-  {} as Record<PolygonAreaChallengeType, number>,
+  { build_perimeter: TIER_ORDER.length } as Record<PolygonAreaChallengeType, number>,
 );
 
 const MIXED_INSTANCE_COUNT = 8;  // all 6 modes once + 2 repeats of easier tiers
@@ -453,15 +466,48 @@ function buildBuildArea(): RawChallenge {
   };
 }
 
+// ── Open build (build_perimeter): code owns the perimeter ───────────────────
+// The perimeters a session asks for, even only. null → the default band; narrowed to the lesson scope (CLASS-3).
+let activePerimeterCap: { min: number; max: number } | null = null;
+const DEFAULT_BUILD_PERIMETER = { min: 8, max: 20 };
+
+function buildPerimeterRange(): number[] {
+  const lo = Math.max(BUILD_MIN_PERIMETER, activePerimeterCap?.min ?? DEFAULT_BUILD_PERIMETER.min);
+  const hi = Math.min(BUILD_MAX_PERIMETER, activePerimeterCap?.max ?? DEFAULT_BUILD_PERIMETER.max);
+  const evens: number[] = [];
+  for (let p = lo + (lo % 2); p <= hi; p += 2) evens.push(p);
+  return evens.length ? evens : [Math.min(BUILD_MAX_PERIMETER, lo + (lo % 2))];
+}
+
+/** One perimeter build item; `shapesAsked` and the instruction are set after selection, as for build_area. */
+function buildBuildPerimeter(): RawChallenge {
+  const perimeter = pick(buildPerimeterRange());
+  return {
+    type: 'build_perimeter',
+    figureType: 'grid',
+    targetPerimeter: perimeter,
+    shapesAsked: 1,
+    expectedArea: perimeter,
+    unitLabel: 'units',
+    narration: 'Each side of a square on the grid is one unit long.',
+    instruction: buildPerimeterAsk(perimeter, 1),
+    hint: 'Walk around the outside of your shape and count each side of a square as you pass it.',
+  };
+}
+
 /** A session's build items: the first half ask for one shape, the rest for a second, different shape too. */
 function finishBuildItems<T extends RawChallenge>(items: T[], twoShapes: boolean): T[] {
-  const builds = items.filter((c) => c.type === 'build_area');
-  const from = Math.ceil(builds.length / 2);
-  builds.forEach((c, i) => {
-    const shapes: 1 | 2 = twoShapes && i >= from ? 2 : 1;
-    c.shapesAsked = shapes;
-    c.instruction = buildAreaAsk(c.targetArea ?? c.expectedArea, shapes);
-  });
+  for (const type of ['build_area', 'build_perimeter'] as const) {
+    const builds = items.filter((c) => c.type === type);
+    const from = Math.ceil(builds.length / 2);
+    builds.forEach((c, i) => {
+      const shapes: 1 | 2 = twoShapes && i >= from ? 2 : 1;
+      c.shapesAsked = shapes;
+      c.instruction = type === 'build_area'
+        ? buildAreaAsk(c.targetArea ?? c.expectedArea, shapes)
+        : buildPerimeterAsk(c.targetPerimeter ?? c.expectedArea, shapes);
+    });
+  }
   return items;
 }
 
@@ -712,6 +758,8 @@ function canonicalKey(ch: RawChallenge): string {
       return `coord|${(ch.vertices ?? []).map((v) => `${v.x},${v.y}`).join(';')}`;
     case 'build_area':
       return `build|${ch.targetArea}`;
+    case 'build_perimeter':
+      return `perimeter|${ch.targetPerimeter}`;
   }
 }
 
@@ -724,10 +772,15 @@ export function selectPolygonAreaChallenges(
   count?: number,
   tier: SupportTier | null = null,
 ): PolygonAreaChallenge[] {
-  const target = Math.max(
+  const asked = Math.max(
     1,
     Math.min(MAX_INSTANCE_COUNT, count ?? COUNT_BY_MODE[challengeType] ?? DEFAULT_INSTANCE_COUNT),
   );
+  // A narrow perimeter scope ("up to 12": 8, 10, 12) has few even perimeters: ask each once rather than repeat one
+  // (never fewer than 3 items).
+  const target = challengeType === 'build_perimeter'
+    ? Math.min(asked, Math.max(3, buildPerimeterRange().length))
+    : asked;
 
   // Axis 2: when a tier is present, the structural shape is FIXED per the brief
   // (trapezoid asymmetry / composite piece-count / coordinate vertex-count /
@@ -744,6 +797,8 @@ export function selectPolygonAreaChallenges(
         return buildComposite(shape?.pieceCount);
       case 'build_area':
         return buildBuildArea();
+      case 'build_perimeter':
+        return buildBuildPerimeter();
       default:
         // never reached for the two multi-variant modes below
         return buildTrapezoid(shape?.trapezoidVariant);
@@ -848,6 +903,8 @@ function buildForType(type: PolygonAreaChallengeType, tier: SupportTier | null =
       return buildCoordinate(shape?.coordinateVariant ?? (Math.random() < 0.5 ? 'rectangle' : 'right_triangle'));
     case 'build_area':
       return buildBuildArea();
+    case 'build_perimeter':
+      return buildBuildPerimeter();
   }
 }
 
@@ -912,6 +969,9 @@ function recomputeArea(ch: PolygonAreaChallenge): number | null {
       return ch.vertices && ch.vertices.length >= 3 ? shoelace(ch.vertices) : null;
     case 'build_area':
       return ch.targetArea ?? null;
+    case 'build_perimeter':
+      // No area: the key is the stated perimeter, which must be even and inside the build band.
+      return ch.targetPerimeter && ch.targetPerimeter % 2 === 0 ? ch.targetPerimeter : null;
   }
 }
 
@@ -940,6 +1000,7 @@ const polygonAreaSchema: Schema = {
         'composite_area',
         'coordinate_polygon',
         'build_area',
+        'build_perimeter',
       ],
       description: "Difficulty tier of the session. The system uses this to build the figure pool.",
     },
@@ -981,6 +1042,7 @@ export const generatePolygonAreaBuilder = async (
     'composite_area',
     'coordinate_polygon',
     'build_area',
+    'build_perimeter',
   ];
 
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -1080,7 +1142,8 @@ Return ONLY the wrapper fields described above.
   // a {min,max} for the side lengths from topic+intent. Ceiling = widest builder span (2..16)
   // → narrow-only; null → grade default. Post-validation recomputes area, so correct always.
   // The open build has no side lengths: its scope is the area it asks for (CLASS-3, same resolver).
-  const isBuildSession = !isMixed && challengeType === 'build_area';
+  const isPerimeterSession = !isMixed && challengeType === 'build_perimeter';
+  const isBuildSession = !isMixed && (challengeType === 'build_area' || isPerimeterSession);
   const dimCap = isBuildSession ? null : await resolveScopeRange(
     ctx.scope,
     gradeLevel,
@@ -1088,13 +1151,20 @@ Return ONLY the wrapper fields described above.
     { min: 2, max: 16 },
   );
   if (dimCap) console.log(`▱ Polygon Area dimension cap → ${dimCap.min}..${dimCap.max} (from intent)`);
-  const areaCap = isBuildSession ? await resolveScopeRange(
+  const areaCap = isBuildSession && !isPerimeterSession ? await resolveScopeRange(
     ctx.scope,
     gradeLevel,
     'the area of the shape to make, in unit squares',
     { min: BUILD_MIN_AREA, max: BUILD_MAX_AREA },
   ) : null;
   if (areaCap) console.log(`▱ Polygon Area build area cap → ${areaCap.min}..${areaCap.max} (from intent)`);
+  const perimeterCap = isPerimeterSession ? await resolveScopeRange(
+    ctx.scope,
+    gradeLevel,
+    'the perimeter of the shape to make, in units',
+    { min: BUILD_MIN_PERIMETER, max: BUILD_MAX_PERIMETER },
+  ) : null;
+  if (perimeterCap) console.log(`▱ Polygon Area build perimeter cap → ${perimeterCap.min}..${perimeterCap.max} (from intent)`);
 
   // ── Build the per-challenge pool locally ──
   // Axis 2: pass supportTier so the constructive builders make the structurally
@@ -1104,11 +1174,13 @@ Return ONLY the wrapper fields described above.
   // the builders' capDims; set it across the SYNCHRONOUS selection only, then clear it.
   activeDimCap = dimCap;
   activeAreaCap = areaCap;
+  activePerimeterCap = perimeterCap;
   const challenges = isMixed
     ? selectMixedPolygonAreaChallenges(config?.instanceCount, supportTier)
     : selectPolygonAreaChallenges(challengeType, config?.instanceCount, supportTier);
   activeDimCap = null;
   activeAreaCap = null;
+  activePerimeterCap = null;
 
   // ── Post-validation: every expectedArea must match its geometry ──
   for (const ch of challenges) {
@@ -1141,7 +1213,7 @@ Return ONLY the wrapper fields described above.
   const gradeBand: '3' | '6' | '7' = isMixed
     ? '7' // mixed sessions reach the Grade 7 coordinate-polygon tier
     : isBuildSession
-      ? '3' // the open build is the Grade 3 area-by-counting skill
+      ? '3' // the open builds are the Grade 3 area-by-counting and perimeter skills
     : wrapper.gradeBand === '7' || wrapper.gradeBand === '6'
       ? wrapper.gradeBand
       : (challengeType === 'coordinate_polygon' ? '7' : '6');

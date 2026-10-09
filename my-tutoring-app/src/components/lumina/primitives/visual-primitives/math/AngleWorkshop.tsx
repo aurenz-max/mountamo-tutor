@@ -31,10 +31,15 @@ import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import {
   ANSWER_LABEL, CLOSER_LABEL, DONE_LABEL, PROTRACTOR_LABEL, RESET_LABEL, STEP_DEG, WIDER_LABEL,
-  describeAngleWork, makeAngleMiss, makeAngleMissWords, relationshipLabel, workspaceAssignment, workspaceScene, type AngleView,
+  classicMiss, describeAngleWork, makeAngleMiss, makeAngleMissWords, relationshipLabel, workspaceAssignment, workspaceScene,
+  type AngleView,
 } from './angleWorkshopWorkspace';
-import { CORNER_LEVER, PROTRACTOR_LEVER, coarserMakeAngle, makeAngleLeverFacts, makeAngleLevers } from './angleWorkshopLevers';
+import {
+  CORNER_LEVER, PRACTICE_NOTE, PROTRACTOR_LEVER, TENS_LEVER, TRY_X_LEVER, angleLeverFacts, angleWorkshopLevers, practiceFor,
+  tryYourX,
+} from './angleWorkshopLevers';
 import { AngleBuildScene } from './AngleBuildScene';
+import { AngleLeverOverlay } from './AngleLeverOverlay';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -147,6 +152,8 @@ export interface AngleWorkshopChallenge {
   showReadingCue?: boolean;
   /** classify_pairs: show relationship perception marks (right-angle square, equal-angle labels). Default true. */
   showPerceptionMarks?: boolean;
+  /** classify_pairs practice item (simplify lever): the only relationships offered. Absent = all four. */
+  choices?: AnglePairRelationship[];
 }
 
 export interface AngleWorkshopData {
@@ -324,14 +331,19 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
 
   const sessionChallenge = challenges[currentChallengeIndex] ?? null;
-  // make_angle levers (`angleWorkshopLevers.ts`), keyed by the session item they were pulled on, and the easier item a
-  // simplify lever put on screen in its place.
+  // Levers (`angleWorkshopLevers.ts`), keyed by the session item they were pulled on, and the easier item a simplify
+  // lever put on screen in its place.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<AngleWorkshopChallenge | null>(null);
   /** What is on screen: the easier item while a simplify lever holds it, else the session item. */
   const currentChallenge = practice ?? sessionChallenge;
   const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  /** The help pictures drawn: the session item's pulled levers, never on a practice item. */
+  const shownLevers = practice ? [] : pulledLevers;
   const challengeType = currentChallenge?.type ?? 'measure';
+  /** The learner's last checked wrong number on the session item (try_your_x puts it into the labels). */
+  const [lastWrong, setLastWrong] = useState<{ item: string; value: number }>({ item: '', value: NaN });
+  const lastWrongValue = !practice && lastWrong.item === sessionChallenge?.id ? lastWrong.value : undefined;
 
   // make_angle: the learner's opening, keyed by the item on screen, so a new item (or the easier practice item, or the
   // full item back after it) reads 0 in the same render. Try again keeps it.
@@ -360,7 +372,9 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   const submittedRef = useRef(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const needsProtractorFirst = challengeType === 'measure' && !protractorShown;
+  /** measure: the protractor is down when the learner placed it or the tens lever placed it. */
+  const protractorOn = protractorShown || shownLevers.includes(TENS_LEVER);
+  const needsProtractorFirst = challengeType === 'measure' && !protractorOn;
 
   // -------------------------------------------------------------------------
   // Per-challenge reset — fires whenever advance() flips currentChallenge.id.
@@ -517,7 +531,7 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
       const L = 190;
 
       // protractor overlay (the measuring tool)
-      if (protractorShown) {
+      if (protractorOn) {
         const PR = 158;
         strokeArcRad(cx, cy, PR, toRad(0), toRad(180), 'rgba(96,165,250,0.55)', 2);
         for (let d = 0; d <= 180; d += 5) {
@@ -550,7 +564,7 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
       wedgeDeg(cx, cy, 38, 0, m, FILL_A, COL_KNOWN);
       labelAtDeg(cx, cy, m / 2, 60, '?°', COL_UNKNOWN);
       dot(cx, cy, 4);
-      if (!protractorShown) {
+      if (!protractorOn) {
         label(cx, cy + 44, 'Place the protractor to read this angle', '#cbd5e1', 'center', '13px ui-sans-serif, system-ui, sans-serif');
       }
       return;
@@ -735,11 +749,13 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
         const towardA = { x: A.x, y: A.y };
         const towardB = { x: B.x, y: B.y };
 
-        // GIVEN angle at I1 — interior, right of transversal (lower-right wedge)
-        vertexAngle(I1, rightOf(I1), towardB, COL_KNOWN, FILL_KNOWN, `${ch.givenAngle}°`);
+        // GIVEN angle at I1, right of the transversal: interior (lower-right wedge), except on an alternate exterior
+        // pair, where it is exterior (upper-right), so that x at I2's lower-left is truly its alternate exterior
+        // partner (equal). Before 2026-10-09 it was interior there, which drew x as its supplement.
+        const rel = ch.transRelation ?? 'corresponding';
+        vertexAngle(I1, rightOf(I1), rel === 'alternate_exterior' ? towardA : towardB, COL_KNOWN, FILL_KNOWN, `${ch.givenAngle}°`);
 
         // UNKNOWN at I2 — position depends on the named relationship
-        const rel = ch.transRelation ?? 'corresponding';
         if (rel === 'corresponding') {
           vertexAngle(I2, rightOf(I2), towardB, COL_UNKNOWN, FILL_UNKNOWN, 'x°');
         } else if (rel === 'alternate_interior') {
@@ -786,7 +802,7 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
       }
       return;
     }
-  }, [currentChallenge, challengeType, protractorShown, resizeTick]);
+  }, [currentChallenge, challengeType, protractorOn, resizeTick]);
 
   // Redraw crisply when the canvas's displayed size changes.
   useEffect(() => {
@@ -886,7 +902,7 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   // -------------------------------------------------------------------------
   // Every check: the activity's own verdict, committed through the progress controller
   // -------------------------------------------------------------------------
-  const view: AngleView = { answerInput, relationship: selectedRelationship, protractorShown, opening };
+  const view: AngleView = { answerInput, relationship: selectedRelationship, protractorShown: protractorOn, opening };
 
   /**
    * Counts the attempt and records a correct result on both paths (on the workspace path it is the checked gesture),
@@ -913,7 +929,7 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
         return;
       }
       const correct = selectedRelationship === ch.expectedRelationship;
-      commit(ch, correct);
+      commit(ch, correct, classicMiss(ch, { relationship: selectedRelationship }));
       if (correct) {
         SoundManager.playCorrect();
         setFeedback(`Correct — these are ${ch.expectedRelationship} angles.`);
@@ -958,7 +974,8 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
       return;
     }
     const correct = Math.abs(parsed - ch.expectedAnswer) <= ch.tolerance;
-    commit(ch, correct);
+    commit(ch, correct, classicMiss(ch, { value: parsed }));
+    if (!correct && !practice) setLastWrong({ item: ch.id, value: parsed });
     const unit = ch.answerKind === 'x_value' ? '' : '°';
     if (correct) {
       SoundManager.playCorrect();
@@ -1071,36 +1088,34 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     );
   }, [allChallengesComplete, hasSubmittedEvaluation, progress.recordsEvaluation, challenges, challengeResults, currentChallenge, submitEvaluation, sendText]);
 
-  // Workspace path: what the tutor and the observer are shown, republished every render. make_angle adds its levers.
+  // Workspace path: what the tutor and the observer are shown, republished every render, with the session item's levers.
   useLayoutEffect(() => {
     if (!tutorOwned || !currentChallenge) return;
     const scene = workspaceScene(currentChallenge, view);
-    const onScreen = makeAngleLeverFacts(pulledLevers);
-    const levers = practice ? [] : makeAngleLevers(sessionChallenge, pulledLevers);
+    const onScreen = practice ? undefined : angleLeverFacts(sessionChallenge, pulledLevers, lastWrongValue);
+    const levers = practice ? [] : angleWorkshopLevers(sessionChallenge, pulledLevers, lastWrongValue);
     workspace.current = {
       ...scene,
-      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
-      // Only make_angle has levers; while its easier item is up they are off, and endPractice brings the full item back.
-      ...(sessionChallenge?.type === 'make_angle' ? {
-        levers,
-        // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
-        pullLever: (id: string) => {
-          const lever = levers.find(l => l.id === id);
-          if (practice || !sessionChallenge || !lever) return `No lever ${id} on this item.`;
-          if (lever.pulled) return `${id} is already pulled.`;
-          const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
-          if (lever.kind === 'simplify') {
-            const easier = coarserMakeAngle(sessionChallenge);
-            if (!easier) return 'There is no easier item for this one.';
-            setLeverState(pulled);
-            setFeedback(''); setFeedbackType(''); setPractice(easier);
-            return { practice: workspaceAssignment(easier) };
-          }
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: (id: string) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !sessionChallenge || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already on screen.`;
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = practiceFor(sessionChallenge);
+          if (!easier) return 'This item is already the plainest of its kind.';
           setLeverState(pulled);
-          return true as const;
-        },
-        endPractice: () => { setFeedback(''); setFeedbackType(''); setPractice(null); },
-      } : {}),
+          setFeedback(''); setFeedbackType(''); setPractice(easier);
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true as const;
+      },
+      // Back to the full item: its id changes back, so the per-item reset clears the practice work.
+      endPractice: () => { setFeedback(''); setFeedbackType(''); setPractice(null); },
     };
   });
 
@@ -1174,6 +1189,7 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
       <LuminaCardContent className="space-y-4">
         {/* Narration + instruction */}
         <LuminaPanel className="space-y-1">
+          {practice && <p className="text-xs text-amber-300" data-practice>Practice question</p>}
           {currentChallenge.narration && (
             <p className="text-slate-300 text-sm italic">{currentChallenge.narration}</p>
           )}
@@ -1232,26 +1248,32 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
         )}
         {/* Canvas — bespoke interaction surface. */}
         <div className={challengeType === 'make_angle' ? 'hidden' : 'p-3 bg-slate-800/30 rounded-2xl border border-cyan-500/20'}>
-          <canvas
-            ref={canvasRef}
-            width={CANVAS_W}
-            height={CANVAS_H}
-            className="rounded-lg w-full"
-            style={{ aspectRatio: `${CANVAS_W} / ${CANVAS_H}` }}
-          />
+          <div className="relative">
+            <canvas
+              ref={canvasRef}
+              width={CANVAS_W}
+              height={CANVAS_H}
+              className="rounded-lg w-full"
+              style={{ aspectRatio: `${CANVAS_W} / ${CANVAS_H}` }}
+            />
+            {challengeType !== 'make_angle' && <AngleLeverOverlay challenge={currentChallenge} pulled={shownLevers} />}
+          </div>
+          {shownLevers.includes(TRY_X_LEVER) && tryYourX(currentChallenge, lastWrongValue) && (
+            <p className="text-center text-sm text-amber-200 mt-2" data-lever="try-your-x">{tryYourX(currentChallenge, lastWrongValue)}</p>
+          )}
           {challengeType === 'measure' && (
             <div className="flex justify-center mt-2">
               <LuminaButton
                 tone="subtle"
                 size="sm"
                 onClick={() => {
-                  if (protractorShown) return;
+                  if (protractorOn) return;
                   SoundManager.snap();
                   setProtractorShown(true);
                 }}
-                disabled={protractorShown || hasSubmittedEvaluation}
+                disabled={protractorOn || hasSubmittedEvaluation}
               >
-                {protractorShown ? 'Protractor placed ✓' : PROTRACTOR_LABEL}
+                {protractorOn ? 'Protractor placed ✓' : PROTRACTOR_LABEL}
               </LuminaButton>
             </div>
           )}
@@ -1267,7 +1289,7 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
           <>
             {isRelationshipMode ? (
               <div className="grid grid-cols-2 gap-2">
-                {RELATIONSHIP_OPTIONS.map((opt) => {
+                {RELATIONSHIP_OPTIONS.filter((opt) => !currentChallenge.choices || currentChallenge.choices.includes(opt.value)).map((opt) => {
                   const state = isCurrentComplete
                     ? opt.value === currentChallenge.expectedRelationship ? 'correct' : 'dimmed'
                     : selectedRelationship === opt.value ? 'selected' : 'idle';

@@ -21,6 +21,11 @@
  *    and the child TURNS TEN OF THEM YELLOW. The scatter is load-bearing: a
  *    group seeded top-frame-first would make "flip the full row" a layout cue
  *    a child who cannot count to ten could follow.
+ *  - build_pair (open build): the frame opens EMPTY; the child picks red or
+ *    yellow and taps boxes to make the number from two colours, any pair, then
+ *    presses "I'm done!". The frame's code judges it with split's judge and
+ *    ledger (total, both colours, a different pair on a repeated total). No
+ *    stillness commit; Try again keeps the build.
  *  - split: the frame opens with the whole group already on it, all red, and
  *    the child TURNS SOME YELLOW. Where they put the line between the colours
  *    is the decomposition (contract R9). Taps flip; nothing is added or taken
@@ -84,6 +89,7 @@ import { commitGesture, useWorkspaceRunner, type LiveRun, type WorkspaceRunOptio
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { countsFlips, describeFrameResponse, evalModeForKind, workspaceAssignment, workspaceScene }
   from './tenFrameWorkspace';
+import { useBuildWatcher } from '../../build-layer/buildLayer';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -146,6 +152,7 @@ export interface TenFrameChallenge {
     | 'split'
     | 'build_teen'
     | 'decompose_teen'
+    | 'build_pair'
     | 'add'
     | 'subtract';
   /** Student-facing prompt. Synthesized deterministically by the generator from
@@ -212,6 +219,7 @@ const CHALLENGE_TYPE_CONFIG: Record<string, { label: string; icon: string }> = {
   split: { label: 'Split', icon: '🔴🟡' },
   build_teen: { label: 'Ten and Some More', icon: '🔟' },
   decompose_teen: { label: 'Find the Ten', icon: '🔍' },
+  build_pair: { label: 'Make It Two Colours', icon: '🎨' },
   add: { label: 'Add', icon: '➕' },
   subtract: { label: 'Subtract', icon: '➖' },
 };
@@ -228,7 +236,10 @@ const COUNTER_COLORS: Record<string, string> = {
  * (answer-leak rule). `yellow` is the flip count the child committed on `split`.
  */
 function rewardFor(item: TenFrameItem, yellow: number): string {
-  return item.kind === 'subitize'
+  return item.kind === 'build_pair'
+    // The pair the learner MADE, shown only after the check passed.
+    ? `${item.answer - yellow} + ${yellow} = ${item.answer}`
+    : item.kind === 'subitize'
     ? `${item.answer} — ${numberWordFor(item.answer)} ${item.answer === 1 ? 'counter' : 'counters'}!`
     : item.kind === 'split'
       // The pair the CHILD produced, not a target — this is the only moment
@@ -366,6 +377,8 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
    *  number turned YELLOW — the total is fixed by the item, so one number is
    *  the whole pair and the gesture channel needs no second field. */
   const pendingPlacementRef = useRef(0);
+  /** build_pair: what was on the frame at the last "I'm done!", both colours. */
+  const pairPlacedRef = useRef({ total: 0, yellow: 0 });
   const placementChangesRef = useRef(0);
   const fullFrameEverRef = useRef(false);
   /**
@@ -378,6 +391,12 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
    * the middle of a settle window must not lose what came before.
    */
   const shownSplitsRef = useRef<Map<number, Set<string>>>(new Map());
+  /** build_pair: the same ledger for the pairs the learner MADE, kept apart from split's (another task). */
+  const madePairsRef = useRef<Map<number, Set<string>>>(new Map());
+  /** build_pair: the colour the next tapped box gets. */
+  const [pairColour, setPairColour] = useState<'red' | 'yellow'>('red');
+  /** build_pair: the frame svg, for the build watcher's picture. */
+  const frameSvgRef = useRef<SVGSVGElement | null>(null);
   /** Evidence only: the code verdict on the last committed split, and "Show again" taps on this item. */
   const splitVerdictRef = useRef<SplitVerdict | null>(null);
   const reshowsRef = useRef(0);
@@ -410,7 +429,8 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
   );
 
   const observe = useCallback((item: TenFrameItem, heard: string | null) => tenFrameObservation(item, {
-    heard, onFrame: pendingPlacementRef.current, splitVerdict: splitVerdictRef.current, reshows: reshowsRef.current,
+    heard, onFrame: item.kind === 'build_pair' ? pairPlacedRef.current.total : pendingPlacementRef.current,
+    yellow: pairPlacedRef.current.yellow, splitVerdict: splitVerdictRef.current, reshows: reshowsRef.current,
     equationShown: showEquation && !isPreReader && (item.kind === 'add' || item.kind === 'subtract'),
     // `build`'s and `build_teen`'s count is a lever the scripted path never pulls, so it is never on screen there.
     countShown: showCount && item.kind === 'make_ten',
@@ -461,6 +481,7 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
     // Every split item starts all-red. Nothing about the previous partition
     // survives into the next ask — a carried-over flip would be a free part.
     setFlippedCells(new Set());
+    setPairColour('red');
     // Flip modes count YELLOWS from zero; placement modes count what is on the
     // frame, so their pending value starts at whatever was seeded.
     pendingPlacementRef.current =
@@ -571,11 +592,13 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
       // moment R4's "a correct response restores the counters" now hangs off
       // (it used to hang off a Check click that no longer exists).
       if (item.kind === 'subitize') setCountersVisible(true);
-      setReward(rewardFor(item, pendingPlacementRef.current));
+      setReward(rewardFor(item, item.kind === 'build_pair' ? pairPlacedRef.current.yellow : pendingPlacementRef.current));
     },
     onCorrectionRetry: (sessionItem) => {
       // Try again on the easier build keeps it: reset ITS frame, not the full item's.
       const item = practiceRef.current ?? sessionItem;
+      // An open build's Try again KEEPS the build, so the learner revises what they made.
+      if (item.kind === 'build_pair') return;
       // The tutor's correction re-modeled and re-asked in-band; restore the
       // working surface for another go. The settle window and the flash gate
       // are both re-armed by the runner on this path.
@@ -617,11 +640,12 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
   // Every build lever starts withdrawn at every tier: a count running under the frame from the first tap
   // lets the child tap until it reads the target, which skips the counting the item measures.
   const pulledLevers = leverState.item === sessionItem?.id ? leverState.pulled : [];
-  const leverKind = currentItem?.kind === 'build' || currentItem?.kind === 'build_teen';
+  const leverKind = currentItem?.kind === 'build' || currentItem?.kind === 'build_teen' || currentItem?.kind === 'build_pair';
   // What a lever reads beyond the item: the session (numbers still ahead stay out of models and practice) and,
   // on a split, the ways already shown for its total.
   const leverCtx: LeverContext = { session: items,
-    shownWays: sessionItem?.kind === 'split' ? shownSplitsRef.current.get(sessionItem.answer) : undefined };
+    shownWays: sessionItem?.kind === 'split' ? shownSplitsRef.current.get(sessionItem.answer)
+      : sessionItem?.kind === 'build_pair' ? madePairsRef.current.get(sessionItem.answer) : undefined };
   const view = leverView(sessionItem, pulledLevers, gradeBand, leverCtx);
   longLookRef.current = view.longLook;
   const fiveOnFrame = view.five;
@@ -682,6 +706,31 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
       cue: () => frameVerdictCue(item, enacted) });
   }, [runner]);
 
+  // ── Open build (build_pair): "I'm done!" commits what is on the frame, both colours ──
+  // Judged in code by `judgeSplit` against this total's ledger. The pair is recorded unconditionally when it is a
+  // two-colour pair of the right total (a practice item's never), as split records its ways.
+  const commitPair = useCallback(() => {
+    const item = displayItemRef.current;
+    if (!item || item.kind !== 'build_pair' || !runner.canAttempt || evaluation.hasSubmitted) return;
+    if (runner.isAwaitingGesture()) return;
+    const total = filledCells.size;
+    const yellow = Array.from(flippedCells).filter(c => filledCells.has(c)).length;
+    pairPlacedRef.current = { total, yellow };
+    const pair = { a: total - yellow, b: yellow };
+    const made = madePairsRef.current.get(item.answer) ?? new Set<string>();
+    const alreadyShown = new Set(made);
+    const verdict = judgeSplit(item, pair, alreadyShown);
+    splitVerdictRef.current = verdict;
+    if (total === item.answer && pair.a > 0 && pair.b > 0 && !practiceRef.current) {
+      made.add(splitKey(pair));
+      madePairsRef.current.set(item.answer, made);
+    }
+    SoundManager.tap();
+    commitGesture(runner, { response: describeFrameResponse(item, total, yellow), correct: verdict === 'correct',
+      miss: frameMiss(item, { placed: total, yellow, shownWays: alreadyShown }),
+      cue: () => frameVerdictCue(item, total, { alreadyShown, yellow }) });
+  }, [runner, evaluation.hasSubmitted, filledCells, flippedCells]);
+
   /** A hands turn closes on stillness. Any further tap resets the window, and
    *  the runner cancels it at item open, at a correction, and at the commit. */
   const armSettle = useCallback((onFrame: number) => {
@@ -705,6 +754,21 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
     // R4: subitizing is perceptual recognition, never tap-counting, and hidden
     // counters can never be manipulated.
     if (item.kind === 'subitize') return;
+
+    // build_pair: an empty box takes a counter of the chosen colour, a counter comes off. No stillness commit:
+    // the learner says when the build is finished ("I'm done!").
+    if (item.kind === 'build_pair') {
+      SoundManager.tap();
+      const placed = new Set(filledCells);
+      const yellow = new Set(flippedCells);
+      if (placed.has(cellIndex)) { placed.delete(cellIndex); yellow.delete(cellIndex); }
+      else { placed.add(cellIndex); if (pairColour === 'yellow') yellow.add(cellIndex); }
+      setFilledCells(placed);
+      setFlippedCells(yellow);
+      placementChangesRef.current += 1;
+      if (placed.size >= totalCells) fullFrameEverRef.current = true;
+      return;
+    }
 
     // split: the counters are the answer surface and the EMPTY cells are inert.
     // A tap FLIPS a counter between red and yellow — it never adds or removes
@@ -764,7 +828,7 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
     else pendingPlacementRef.current = placed.size;
   }, [
     runner, evaluation.hasSubmitted, filledCells, flippedCells, totalCells,
-    armSettle, commitPlacement,
+    armSettle, commitPlacement, pairColour,
   ]);
 
   const isSubitize = currentItem?.kind === 'subitize';
@@ -773,7 +837,8 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
   // W1 offers no demonstration targets; `present` runs the subitize flash.
   useLayoutEffect(() => {
     if (!tutorOwned || !currentItem) return;
-    const scene = workspaceScene(currentItem, { onFrame: filledCells.size, yellow: countsFlips(currentItem) ? flippedCells.size : 0,
+    const scene = workspaceScene(currentItem, { onFrame: filledCells.size,
+      yellow: countsFlips(currentItem) || currentItem.kind === 'build_pair' ? flippedCells.size : 0,
       hidden: isSubitize && !countersVisible });
     const onScreen = leverFacts(sessionItem, pulledLevers, gradeBand, leverCtx);
     workspace.current = {
@@ -840,12 +905,23 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
     };
   });
 
+  // The live line (shared build layer) on build_pair: what the frame looks like so far, NEVER a number.
+  const buildSeeing = useBuildWatcher({
+    buildKey: `${currentItem?.id}:${Array.from(filledCells).sort((a, b) => a - b).map(c => `${c}${flippedCells.has(c) ? 'y' : 'r'}`).join(',')}`,
+    enabled: currentItem?.kind === 'build_pair' && filledCells.size > 0 && runner.canAttempt && !evaluation.hasSubmitted,
+    svg: frameSvgRef,
+    request: { task: currentItem?.kind === 'build_pair' ? `Make ${currentItem.answer} with red and yellow counters` : '',
+      sceneNote: 'A ten frame: two rows of five boxes. The learner puts red and yellow counters in the boxes.', numbers: 'never' },
+  });
+  const pipFrameRef = pip.ref('frame');
+  const frameRef = useCallback((el: SVGSVGElement | null) => { pipFrameRef(el); frameSvgRef.current = el; }, [pipFrameRef]);
+
   // ── Rendering helpers ─────────────────────────────────────────────────────
   const colorForCell = useCallback((index: number): string => {
     // `split` owns its palette outright: the tutor's lines NAME red and yellow,
     // so a generator-chosen colour here would make her mouth disagree with the
     // child's screen (tenFrameScript's SPLIT_COLOR_* docblock).
-    if (currentItem?.kind === 'split' || currentItem?.kind === 'decompose_teen') {
+    if (currentItem?.kind === 'split' || currentItem?.kind === 'decompose_teen' || currentItem?.kind === 'build_pair') {
       return flippedCells.has(index) ? SPLIT_COLOR_B : SPLIT_COLOR_A;
     }
     if (twoColorMode?.enabled) {
@@ -933,7 +1009,7 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
         {cells}
         {/* Five-frame lever: the top row outlined and marked 5. Never offered when five is the number to build. */}
         {fiveOnFrame === frameIndex && (
-          <g data-lever="five-frame" pointerEvents="none">
+          <g data-lever="five-frame" data-aid pointerEvents="none">
             <rect x={offsetX + FRAME_PADDING - 5} y={FRAME_PADDING - 5} width={FRAME_COLS * (CELL_SIZE + CELL_GAP) - CELL_GAP + 10}
               height={CELL_SIZE + 10} rx={CELL_RADIUS + 4} fill="none" stroke="rgba(56,189,248,0.8)" strokeWidth={3} strokeDasharray="8 5" />
             <text x={offsetX + frameWidth + 4} y={FRAME_PADDING + CELL_SIZE / 2 + 6} fill="rgba(125,211,252,1)" fontSize={20} fontWeight={700}>5</text>
@@ -1004,7 +1080,7 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
   // empty frame, so the pull changes the screen. `make_ten` keeps the tier's `showCount`.
   const countPulled = leverKind && pulledLevers.includes(COUNT_LEVER);
   const showTrace = (leverKind ? countPulled : showCount) && countersVisible
-    && (kind === 'build' || kind === 'make_ten' || kind === 'build_teen')
+    && (kind === 'build' || kind === 'make_ten' || kind === 'build_teen' || kind === 'build_pair')
     && (filledCells.size > 0 || countPulled);
 
   const stageWord = runner.stage === 'judging'
@@ -1036,6 +1112,8 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
           <LuminaBadge accent="cyan" className="text-xs">
             {kind === 'split'
               ? 'Make two groups'
+              : kind === 'build_pair'
+                ? 'Build it'
               : kind === 'decompose_teen'
                 ? 'Find the ten'
                 : isGestureItem ? 'Use the frame' : 'Say it out loud'}
@@ -1068,7 +1146,7 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
 
             <div className="flex justify-center">
               <svg
-                ref={pip.ref('frame')}
+                ref={frameRef}
                 data-pip-object="frame"
                 width={svgWidth + (fiveOn ? 30 : 0)}
                 height={svgHeight}
@@ -1078,6 +1156,28 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
                 {Array.from({ length: frameCount }, (_, i) => renderFrame(i))}
               </svg>
             </div>
+
+            {/* Open build (build_pair): the two colours, the live line (never a number), and the commit. */}
+            {kind === 'build_pair' && (
+              <div className="flex flex-col items-center gap-3">
+                <div className="flex items-center gap-3" role="group" aria-label="Counter colour">
+                  {(['red', 'yellow'] as const).map(c => (
+                    <button key={c} type="button" aria-pressed={pairColour === c} aria-label={`${c === 'red' ? 'Red' : 'Yellow'} counters`}
+                      onClick={() => setPairColour(c)}
+                      className={`flex h-14 w-14 items-center justify-center rounded-full border-4 transition-transform ${pairColour === c ? 'scale-110 border-white' : 'border-white/20'}`}>
+                      <span className="block h-9 w-9 rounded-full" style={{ background: COUNTER_COLORS[c] }} />
+                    </button>
+                  ))}
+                </div>
+                <div className="flex min-h-8 items-center justify-center" aria-live="polite" data-testid="build-watcher">
+                  {buildSeeing && <span className="rounded-full bg-white/10 px-4 py-1.5 text-base text-amber-100">👀 {buildSeeing}</span>}
+                </div>
+                <LuminaButton tone="primary" disabled={!runner.canAttempt || filledCells.size === 0 || evaluation.hasSubmitted}
+                  onClick={commitPair}>
+                  I&apos;m done!
+                </LuminaButton>
+              </div>
+            )}
 
             {pipStore && <div ref={pip.dock} data-pip-dock={resolvedInstanceId}
               className="mx-auto flex min-h-28 w-full max-w-xl items-center rounded-2xl border border-cyan-300/10 bg-cyan-950/10 px-2" />}
@@ -1184,7 +1284,9 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
 
             {!isPreReader && (
               <p className="text-center text-xs text-slate-500">
-                {kind === 'split' || kind === 'decompose_teen'
+                {kind === 'build_pair'
+                  ? 'Pick a colour, tap the boxes to put counters on, tap a counter to take it off. Press I’m done! when it is finished.'
+                  : kind === 'split' || kind === 'decompose_teen'
                   ? 'Tap a counter to turn it yellow — the tutor checks when you stop.'
                   : isGestureItem
                     ? 'Tap the frame to place your counters — the tutor checks when you stop.'

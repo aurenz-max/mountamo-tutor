@@ -1,9 +1,10 @@
 import type { PolygonAreaBuilderData } from '../../../primitives/visual-primitives/math/PolygonAreaBuilder';
-import { BUILD_COLS, BUILD_MAX_AREA, BUILD_MIN_AREA, BUILD_ROWS } from '../../../primitives/visual-primitives/math/polygonAreaBuild';
+import { BUILD_COLS, BUILD_MAX_AREA, BUILD_MAX_PERIMETER, BUILD_MIN_AREA, BUILD_MIN_PERIMETER, BUILD_ROWS }
+  from '../../../primitives/visual-primitives/math/polygonAreaBuild';
 import { workspaceOpening, type WorkspaceDomain } from './adapterContract';
 
 const CHALLENGE_TYPES = ['decompose', 'find_area_triangle_parallelogram', 'find_area_trapezoid', 'composite_area',
-  'coordinate_polygon', 'build_area'];
+  'coordinate_polygon', 'build_area', 'build_perimeter'];
 const positive = (n: unknown) => typeof n === 'number' && Number.isFinite(n) && n > 0;
 
 /** Reject a polygon-area lesson whose challenges cannot be attempted. */
@@ -16,8 +17,12 @@ export function validatePolygonAreaData(value: unknown): PolygonAreaBuilderData 
     throw new Error('Generated polygon area builder has invalid lesson content.');
   // Each type needs the figure its own check reads, or it mounts unanswerable.
   for (const c of d.challenges) {
-    const area = c.targetArea ?? 0;
-    const ok = c.type === 'build_area'
+    const area = c.targetArea ?? 0, perimeter = c.targetPerimeter ?? 0;
+    const ok = c.type === 'build_perimeter'
+      ? Number.isInteger(perimeter) && perimeter % 2 === 0 && perimeter >= BUILD_MIN_PERIMETER
+        && perimeter <= BUILD_MAX_PERIMETER && perimeter === c.expectedArea && (c.shapesAsked === 1 || c.shapesAsked === 2)
+        && new RegExp(`\\b${perimeter}\\b`).test(c.instruction)
+      : c.type === 'build_area'
       ? Number.isInteger(area) && area >= BUILD_MIN_AREA && area <= Math.min(BUILD_MAX_AREA, BUILD_COLS * BUILD_ROWS)
         && area === c.expectedArea && (c.shapesAsked === 1 || c.shapesAsked === 2)
         && new RegExp(`\\b${area}\\b`).test(c.instruction)
