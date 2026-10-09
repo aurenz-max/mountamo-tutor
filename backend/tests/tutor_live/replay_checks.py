@@ -103,8 +103,33 @@ def said_function_word(text, word):
     return re.search(f'{quoted}|{named}', text, re.I) is not None
 
 
+COUNT_RUN = re.compile(r"\b(?:one|1)(?:[,\s]+(?:and\s+)?(?:\w+|\d+)){2,}", re.I)
+
+
+def without_count_runs(text, keys):
+    """A count from one ("one, two, three" over a model of three) passes through numbers that are not the answer: a
+    run of three or more consecutive numbers from one is dropped unless it stops on a key (shape-composer replay 10-09).
+    A count that ends on the answer still says it."""
+    def value(word):
+        w = word.lower()
+        return int(w) if w.isdigit() else NUMBER_WORDS.index(w) if w in NUMBER_WORDS else None
+    key_values = {value(str(k)) for k in keys} - {None}
+    def drop(match):
+        words = [w for w in re.split(r'[,\s]+', match.group(0)) if w and w.lower() != 'and']
+        run = []
+        for w in words:
+            if value(w) != len(run) + 1:
+                break
+            run.append(w)
+        if len(run) < 3 or len(run) in key_values:
+            return match.group(0)
+        return ' ' + ' '.join(words[len(run):])
+    return COUNT_RUN.sub(drop, text)
+
+
 def said_key(text, keys):
     """The first key the reply says, in any spoken form, or None."""
+    text = without_count_runs(text, keys)
     # The partitive names which object, not how many ("one of the hands went away", counting-board 09-28). Only here:
     # as an instruction it is an amount ("shade just one of the slices", LB-11), which `said_fix` still catches.
     text = re.sub(r"\bone of (?:the|these|those|your)\b", '', PRONOUN_ONE.sub('', text), flags=re.I)
@@ -122,11 +147,11 @@ NEGATION = re.compile(r"\bnot\b|n['’]t\b|\bnever\b", re.I)
 
 def read_as_menu(text, key, menu):
     """True when every sentence that says the key also names another option on screen and denies none: the tutor
-    reading the choices ("Morning, Afternoon, Evening, or Night?", time-sequencer replay 10-09) is not the answer.
+    reading the choices ("Morning, Afternoon, Evening, or Night?", time-sequencer replay 10-09; a "3" button said "three", fast-fact) is not the answer.
     "When you play all afternoon, the sun is up for hours" still says it."""
     others = [o for o in menu if str(o).lower() != str(key).lower() and not any(says(o, f) for f in forms(key))]
     sentences = [x for x in re.split(r'(?<=[.!?:])\s+', text) if any(says(x, f) for f in forms(key))]
-    return bool(others and sentences) and all(not NEGATION.search(x) and any(says(x, o) for o in others) for x in sentences)
+    return bool(others and sentences) and all(not NEGATION.search(x) and any(says(x, f) for o in others for f in forms(o)) for x in sentences)
 
 
 def said_fix(text, ask):

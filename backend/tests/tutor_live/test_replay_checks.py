@@ -113,3 +113,22 @@ def test_reading_the_menu_is_not_the_key(text, excused):
 
 def test_no_menu_keeps_the_key_check():
     assert check('Morning, afternoon or night?', 'start', ['morning'])['checks']['no_key_before_try'] is False
+
+
+def test_number_options_read_as_words():
+    # fast-fact replay 10-09: the buttons read 3, 4, 5; the tutor said them as words.
+    reply = {'text': 'Is it three, four, or five?', 'calls': []}
+    result = score(reply, {'kind': 'start'}, {'keys': ['4'], 'ask': 'How many stars?', 'leakTokens': [], 'menu': ['3', '4', '5']})
+    assert result['checks']['no_key_before_try'] is True
+
+
+@pytest.mark.parametrize('text,said', [
+    # shape-composer replay 10-09: counting the three-square model is not the answer two.
+    ('Look at the model: one, two, three squares in a row. How many triangles make your square?', False),
+    # A count that stops on the answer says it.
+    ('Count the triangles with me: one, two.', True),
+    ('Count them: one, two, three, four.', True),
+    ('You need two triangles.', True),
+])
+def test_a_count_from_one_says_only_where_it_stops(text, said):
+    assert (check(text, 'stuck', ['2'] if 'four' not in text else ['4'])['checks']['no_key_before_try'] is False) is said
